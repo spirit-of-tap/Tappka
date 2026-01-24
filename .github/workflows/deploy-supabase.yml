@@ -5,6 +5,8 @@ on:
     branches:
       - preview
       - production
+    paths:
+      - 'supabase/**'
   workflow_dispatch:
     inputs:
       environment:

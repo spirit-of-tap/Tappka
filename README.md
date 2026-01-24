@@ -72,3 +72,8 @@ Make sure that the project can run without setting up any environment variables,
 
 It is very nice to setup mcp with cursor for supabase. Look at [Supabase locally](http://localhost:54323) and go to the top for connection button. It will give you the option.
 There are cursor rules made for this nextjs project.
+
+# Publishing the project to the public
+
+You can simply **push to the preview branch** and it will be deployed to the preview environment.
+For production you will need to make a **pull request to the production branch** and it will be deployed to the production environment. You can approve it yourself, it's just for protection so that you don't accidentally deploy something to production.
