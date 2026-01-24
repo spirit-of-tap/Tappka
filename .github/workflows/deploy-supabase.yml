@@ -1,4 +1,4 @@
-name: Deploy Supabase Database
+name: Deploy Supabase Resources
 
 on:
   push:
@@ -31,10 +31,34 @@ jobs:
         with:
           version: latest
           
-      - name: Deploy migrations
+      - name: Link Supabase project
         run: |
           supabase link --project-ref $PROJECT_ID
+          
+      - name: Deploy database migrations
+        run: |
           supabase db push
+          
+      - name: Deploy Edge Functions
+        continue-on-error: true
+        run: |
+          if [ -d "supabase/functions" ] && [ "$(ls -A supabase/functions)" ]; then
+            echo "Deploying Edge Functions..."
+            supabase functions deploy
+          else
+            echo "No Edge Functions found, skipping deployment."
+          fi
+          
+      - name: Deploy Edge Function secrets
+        continue-on-error: true
+        run: |
+          if [ -f "supabase/.env.secrets" ]; then
+            echo "Deploying Edge Function secrets..."
+            supabase secrets set --env-file supabase/.env.secrets
+          else
+            echo "No secrets file found, skipping secrets deployment."
+          fi
+          
   deploy_production:
     environment: production
     runs-on: blacksmith-2vcpu-ubuntu-2404
@@ -50,7 +74,30 @@ jobs:
         with:
           version: latest
           
-      - name: Deploy migrations
+      - name: Link Supabase project
         run: |
           supabase link --project-ref $PROJECT_ID
+          
+      - name: Deploy database migrations
+        run: |
           supabase db push
+          
+      - name: Deploy Edge Functions
+        continue-on-error: true
+        run: |
+          if [ -d "supabase/functions" ] && [ "$(ls -A supabase/functions)" ]; then
+            echo "Deploying Edge Functions..."
+            supabase functions deploy
+          else
+            echo "No Edge Functions found, skipping deployment."
+          fi
+          
+      - name: Deploy Edge Function secrets
+        continue-on-error: true
+        run: |
+          if [ -f "supabase/.env.secrets" ]; then
+            echo "Deploying Edge Function secrets..."
+            supabase secrets set --env-file supabase/.env.secrets
+          else
+            echo "No secrets file found, skipping secrets deployment."
+          fi
