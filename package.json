@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "dev": "pnpm supabase start && next dev",
+    "dev": "pnpm supabase start && node scripts/setup-env.js && next dev",
+    "setup-env": "node scripts/setup-env.js",
     "build": "next build && next start",
     "lint": "eslint ."
   },
@@ -38,5 +39,6 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.3"
   },
-  "packageManager": "pnpm@10.28.1"
+  "packageManager": "pnpm@10.28.1",
+  "type": "module"
 }
