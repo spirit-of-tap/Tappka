@@ -52,6 +52,20 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        // TAP Brand Colors (direct access)
+        'tap-red': '#b31b1b',
+        'tap-white': '#fcfff7',
+        'tap-brown': '#2c1a1d',
+      },
+      fontFamily: {
+        // TAP Brand Typography
+        'heading': ['Poppins', 'sans-serif'], // Bold weight for headings
+        'body': ['Roboto', 'sans-serif'],     // Regular weight for body text
+        'quote': ['Pacifico', 'cursive'],     // For quotes and callouts
+        // Keep system defaults as fallbacks
+        sans: ['Roboto', 'system-ui', 'sans-serif'],
+        serif: ['Georgia', 'serif'],
+        mono: ['Consolas', 'Monaco', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",
