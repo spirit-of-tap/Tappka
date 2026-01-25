@@ -20,37 +20,56 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [repeatPassword, setRepeatPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
-    if (password !== repeatPassword) {
-      setError("Passwords do not match");
+    // Validation
+    if (!fullName.trim()) {
+      setError("Zadejte sve jmeno");
+      setIsLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Heslo musi mit alespon 6 znaku");
       setIsLoading(false);
       return;
     }
 
     try {
+      const supabase = createClient();
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
+          data: {
+            full_name: fullName.trim(),
+          },
+          emailRedirectTo: `${window.location.origin}/verify`,
         },
       });
-      if (error) throw error;
+
+      if (error) {
+        if (error.message.includes("already registered")) {
+          throw new Error("Tento e-mail je jiz registrovan");
+        }
+        throw error;
+      }
+
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(
+        error instanceof Error ? error.message : "Registrace se nezdarila"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -60,56 +79,70 @@ export function SignUpForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle className="text-2xl font-heading">Registrace</CardTitle>
+          <CardDescription>
+            Vytvorte si ucet. Tym a role budou prirazeny po overeni skolniho
+            e-mailu.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
+              {/* Full Name */}
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="fullName">Cele jmeno</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Jan Novak"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
+
+              {/* Email */}
+              <div className="grid gap-2">
+                <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="vas@email.cz"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Pouzijte svuj osobni e-mail (Gmail, Seznam, atd.)
+                </p>
               </div>
+
+              {/* Password */}
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
+                <Label htmlFor="password">Heslo</Label>
                 <Input
                   id="password"
                   type="password"
+                  placeholder="Minimalne 6 znaku"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
-                <Input
-                  id="repeat-password"
-                  type="password"
-                  required
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+
+              {/* Error */}
+              {error && <p className="text-sm text-destructive">{error}</p>}
+
+              {/* Submit */}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
+                {isLoading ? "Registruji..." : "Zaregistrovat se"}
               </Button>
             </div>
+
             <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
-                Login
+              Uz mas ucet?{" "}
+              <Link href="/" className="underline underline-offset-4">
+                Prihlasit se
               </Link>
             </div>
           </form>

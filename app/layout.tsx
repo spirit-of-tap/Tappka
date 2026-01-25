@@ -9,20 +9,20 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Tiimiakatemia Prague - Studuj jinak!",
+  title: "Tappka - Studentsky portal Tiimiakatemia Prague",
   description: "We do business to learn, to live fully we earn!",
 };
 
 // TAP Brand Typography
 const poppins = Poppins({
   variable: "--font-poppins",
-  weight: ["400", "600", "700", "800"], // Include Bold (700) for headings
+  weight: ["400", "600", "700", "800"],
   display: "swap",
   subsets: ["latin", "latin-ext"],
 });
 
 const roboto = Roboto({
-  variable: "--font-roboto", 
+  variable: "--font-roboto",
   weight: ["300", "400", "500", "700"],
   display: "swap",
   subsets: ["latin", "latin-ext"],
@@ -30,7 +30,7 @@ const roboto = Roboto({
 
 const pacifico = Pacifico({
   variable: "--font-pacifico",
-  weight: "400", // Pacifico only has regular weight
+  weight: "400",
   display: "swap",
   subsets: ["latin"],
 });
@@ -41,8 +41,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${roboto.variable} ${poppins.variable} ${pacifico.variable} font-body antialiased`}>
+    <html lang="cs" suppressHydrationWarning>
+      <body
+        className={`${roboto.variable} ${poppins.variable} ${pacifico.variable} font-body antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
