@@ -25,12 +25,12 @@ export default async function SignUpPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8">
           {/* Tappka Logo/Branding */}
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-heading font-bold text-primary">
+          <div className="text-center space-y-3">
+            <h1 className="text-5xl font-heading font-bold text-primary tracking-tight">
               Tappka
             </h1>
-            <p className="text-muted-foreground">
-              Studentský portál Tiimiakatemia Prague
+            <p className="text-muted-foreground text-sm">
+              Pro Téčka a kouče Tiimiakatemia Prague
             </p>
           </div>
 

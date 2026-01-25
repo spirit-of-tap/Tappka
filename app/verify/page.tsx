@@ -31,7 +31,7 @@ export default async function VerifyPage() {
       {/* Header */}
       <header className="flex justify-between items-center p-4">
         <div className="text-sm text-muted-foreground">
-          Přihlášeno jako: <span className="font-medium">{profile?.full_name || user.email}</span>
+          <span className="font-medium text-foreground">{profile?.full_name || user.email}</span>
         </div>
         <div className="flex gap-2">
           <ThemeSwitcher />
@@ -42,13 +42,13 @@ export default async function VerifyPage() {
       {/* Main content */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8">
-          {/* Header text */}
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-heading font-bold">
-              Ověření školního e-mailu
+          {/* Tappka Logo/Branding */}
+          <div className="text-center space-y-3">
+            <h1 className="text-5xl font-heading font-bold text-primary tracking-tight">
+              Tappka
             </h1>
-            <p className="text-muted-foreground">
-              Pro přístup do systému musíme ověřit váš školní e-mail
+            <p className="text-muted-foreground text-sm">
+              Ještě jeden krok k přístupu
             </p>
           </div>
 
