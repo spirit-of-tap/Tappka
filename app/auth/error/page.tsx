@@ -12,11 +12,11 @@ async function ErrorContent({
     <>
       {params?.error ? (
         <p className="text-sm text-muted-foreground">
-          Code error: {params.error}
+          Kód chyby: {params.error}
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">
-          An unspecified error occurred.
+          Nastala nespecifikovaná chyba.
         </p>
       )}
     </>
@@ -35,7 +35,7 @@ export default function Page({
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">
-                Sorry, something went wrong.
+                Omlouváme se, něco se pokazilo.
               </CardTitle>
             </CardHeader>
             <CardContent>

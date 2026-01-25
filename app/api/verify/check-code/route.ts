@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     // Validate inputs
     if (!school_email || !code) {
       return NextResponse.json(
-        { error: "Chybi e-mail nebo kod" },
+        { error: "Chybí e-mail nebo kód" },
         { status: 400 }
       );
     }
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Neautorizovano" },
+        { error: "Neautorizováno" },
         { status: 401 }
       );
     }
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     if (codeError || !verificationCode) {
       return NextResponse.json(
-        { error: "Kod vyprsel nebo neexistuje. Pozadejte o novy." },
+        { error: "Kód vypršel nebo neexistuje. Požádejte o nový." },
         { status: 400 }
       );
     }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         .eq("id", verificationCode.id);
 
       return NextResponse.json(
-        { error: "Prilis mnoho pokusu. Pozadejte o novy kod." },
+        { error: "Příliš mnoho pokusů. Požádejte o nový kód." },
         { status: 400 }
       );
     }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       const remainingAttempts = MAX_ATTEMPTS - verificationCode.attempts - 1;
       return NextResponse.json(
         {
-          error: `Neplatny kod. Zbyvajici pokusy: ${remainingAttempts}`,
+          error: `Neplatný kód. Zbývající pokusy: ${remainingAttempts}`,
         },
         { status: 400 }
       );
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     if (preRegError || !preRegistered) {
       console.error("Failed to get pre_registered_emails:", preRegError);
       return NextResponse.json(
-        { error: "Nepodarilo se nacist data z registrace" },
+        { error: "Nepodařilo se načíst data z registrace" },
         { status: 500 }
       );
     }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     if (profileError) {
       console.error("Failed to update profile:", profileError);
       return NextResponse.json(
-        { error: "Nepodarilo se aktualizovat profil" },
+        { error: "Nepodařilo se aktualizovat profil" },
         { status: 500 }
       );
     }
@@ -130,12 +130,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       verified: true,
-      message: "E-mail uspesne overen!",
+      message: "E-mail úspěšně ověřen!",
     });
   } catch (error) {
     console.error("Check code error:", error);
     return NextResponse.json(
-      { error: "Interni chyba serveru" },
+      { error: "Interní chyba serveru" },
       { status: 500 }
     );
   }

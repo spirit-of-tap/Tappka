@@ -15,7 +15,7 @@ import { User, Users, Shield } from "lucide-react";
 const ROLE_LABELS: Record<string, string> = {
   student: "Student",
   team_leader: "Team Leader",
-  coach: "Kouc",
+  coach: "Kouč",
   admin: "Admin",
 };
 
@@ -74,10 +74,10 @@ export default async function DashboardPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-heading font-bold">
-            Vitej, {profile.full_name?.split(" ")[0]}!
+            Vítej, {profile.full_name?.split(" ")[0]}!
           </h2>
           <p className="text-muted-foreground mt-1">
-            Toto je tvuj dashboard v Tappka.
+            Toto je tvůj dashboard v Tappka.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {profile.is_verified ? "Overeny ucet" : "Neovereny ucet"}
+                {profile.is_verified ? "Ověřený účet" : "Neověřený účet"}
               </p>
             </CardContent>
           </Card>
@@ -118,7 +118,7 @@ export default async function DashboardPage() {
           {/* Team card */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tym</CardTitle>
+              <CardTitle className="text-sm font-medium">Tým</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
                 <>
                   <div className="text-2xl font-bold">{profile.teams.name}</div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {profile.teams.year}. rocnik
+                    {profile.teams.year}. ročník
                   </p>
                 </>
               ) : (
@@ -135,7 +135,7 @@ export default async function DashboardPage() {
                     -
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Bez tymu
+                    Bez týmu
                   </p>
                 </>
               )}
@@ -147,14 +147,14 @@ export default async function DashboardPage() {
         <div className="mt-8">
           <Card>
             <CardHeader>
-              <CardTitle>Dalsi funkce</CardTitle>
+              <CardTitle>Další funkce</CardTitle>
               <CardDescription>
-                Tady budou dalsi funkce aplikace...
+                Tady budou další funkce aplikace...
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Rezervace mistnosti, eseje, schuzky a dalsi funkce budou brzy k
+                Rezervace místnosti, eseje, schůzky a další funkce budou brzy k
                 dispozici.
               </p>
             </CardContent>

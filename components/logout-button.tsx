@@ -13,5 +13,5 @@ export function LogoutButton() {
     router.push("/");
   };
 
-  return <Button onClick={logout}>Odhlasit se</Button>;
+  return <Button onClick={logout}>Odhlásit se</Button>;
 }

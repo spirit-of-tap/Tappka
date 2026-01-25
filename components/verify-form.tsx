@@ -55,14 +55,14 @@ export function VerifyForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Odeslani kodu se nezdarilo");
+        throw new Error(data.error || "Odeslání kódu se nezdařilo");
       }
 
       setStep("code");
       startCooldown();
     } catch (error: unknown) {
       setError(
-        error instanceof Error ? error.message : "Odeslani kodu se nezdarilo"
+        error instanceof Error ? error.message : "Odeslání kódu se nezdařilo"
       );
     } finally {
       setIsLoading(false);
@@ -84,7 +84,7 @@ export function VerifyForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Overeni se nezdarilo");
+        throw new Error(data.error || "Ověření se nezdařilo");
       }
 
       // Refresh auth state and redirect to dashboard
@@ -93,7 +93,7 @@ export function VerifyForm() {
       router.push("/dashboard");
     } catch (error: unknown) {
       setError(
-        error instanceof Error ? error.message : "Overeni se nezdarilo"
+        error instanceof Error ? error.message : "Ověření se nezdařilo"
       );
     } finally {
       setIsLoading(false);
@@ -115,13 +115,13 @@ export function VerifyForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Odeslani kodu se nezdarilo");
+        throw new Error(data.error || "Odeslání kódu se nezdařilo");
       }
 
       startCooldown();
     } catch (error: unknown) {
       setError(
-        error instanceof Error ? error.message : "Odeslani kodu se nezdarilo"
+        error instanceof Error ? error.message : "Odeslání kódu se nezdařilo"
       );
     } finally {
       setIsLoading(false);
@@ -147,19 +147,19 @@ export function VerifyForm() {
               {step === "email" ? (
                 <>
                   <Mail className="h-5 w-5" />
-                  Zadejte skolni e-mail
+                  Zadejte školní e-mail
                 </>
               ) : (
                 <>
                   <KeyRound className="h-5 w-5" />
-                  Zadejte overovaci kod
+                  Zadejte ověřovací kód
                 </>
               )}
             </CardTitle>
             <CardDescription>
               {step === "email"
-                ? "Zadejte svuj skolni e-mail (@pef.czu.cz nebo @studenti.czu.cz)"
-                : `Poslali jsme 6-mistny kod na ${schoolEmail}`}
+                ? "Zadejte svůj školní e-mail (@pef.czu.cz nebo @studenti.czu.cz)"
+                : `Poslali jsme 6-místný kód na ${schoolEmail}`}
             </CardDescription>
           </div>
         </div>
@@ -169,7 +169,7 @@ export function VerifyForm() {
           <form onSubmit={handleSendCode}>
             <div className="flex flex-col gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="schoolEmail">Skolni e-mail</Label>
+                <Label htmlFor="schoolEmail">Školní e-mail</Label>
                 <Input
                   id="schoolEmail"
                   type="email"
@@ -183,7 +183,7 @@ export function VerifyForm() {
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Odesilam..." : "Odeslat overovaci kod"}
+                {isLoading ? "Odesílám..." : "Odeslat ověřovací kód"}
               </Button>
             </div>
           </form>
@@ -191,7 +191,7 @@ export function VerifyForm() {
           <form onSubmit={handleVerifyCode}>
             <div className="flex flex-col gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="code">Overovaci kod</Label>
+                <Label htmlFor="code">Ověřovací kód</Label>
                 <Input
                   id="code"
                   type="text"
@@ -210,11 +210,11 @@ export function VerifyForm() {
               {error && <p className="text-sm text-destructive">{error}</p>}
 
               <Button type="submit" className="w-full" disabled={isLoading || code.length !== 6}>
-                {isLoading ? "Overuji..." : "Overit"}
+                {isLoading ? "Ověřuji..." : "Ověřit"}
               </Button>
 
               <div className="text-center text-sm">
-                <span className="text-muted-foreground">Neprisel kod? </span>
+                <span className="text-muted-foreground">Nepřišel kód? </span>
                 {cooldown > 0 ? (
                   <span className="text-muted-foreground">
                     Poslat znovu za {cooldown}s

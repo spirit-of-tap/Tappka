@@ -31,7 +31,7 @@ export default async function VerifyPage() {
       {/* Header */}
       <header className="flex justify-between items-center p-4">
         <div className="text-sm text-muted-foreground">
-          Prihlaseno jako: <span className="font-medium">{profile?.full_name || user.email}</span>
+          Přihlášeno jako: <span className="font-medium">{profile?.full_name || user.email}</span>
         </div>
         <div className="flex gap-2">
           <ThemeSwitcher />
@@ -45,10 +45,10 @@ export default async function VerifyPage() {
           {/* Header text */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-heading font-bold">
-              Overeni skolniho e-mailu
+              Ověření školního e-mailu
             </h1>
             <p className="text-muted-foreground">
-              Pro pristup do systemu musime overit vas skolni e-mail
+              Pro přístup do systému musíme ověřit váš školní e-mail
             </p>
           </div>
 

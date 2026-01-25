@@ -40,7 +40,7 @@ export default async function Home() {
               Tappka
             </h1>
             <p className="text-muted-foreground">
-              Studentsky portal Tiimiakatemia Prague
+              Studentský portál Tiimiakatemia Prague
             </p>
           </div>
 

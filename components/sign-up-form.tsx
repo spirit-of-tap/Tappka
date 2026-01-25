@@ -34,13 +34,13 @@ export function SignUpForm({
 
     // Validation
     if (!fullName.trim()) {
-      setError("Zadejte sve jmeno");
+      setError("Zadejte své jméno");
       setIsLoading(false);
       return;
     }
 
     if (password.length < 6) {
-      setError("Heslo musi mit alespon 6 znaku");
+      setError("Heslo musí mít alespoň 6 znaků");
       setIsLoading(false);
       return;
     }
@@ -60,15 +60,15 @@ export function SignUpForm({
 
       if (error) {
         if (error.message.includes("already registered")) {
-          throw new Error("Tento e-mail je jiz registrovan");
+          throw new Error("Tento e-mail je již registrován");
         }
         throw error;
       }
 
-      router.push("/auth/sign-up-success");
+      router.push("/verify");
     } catch (error: unknown) {
       setError(
-        error instanceof Error ? error.message : "Registrace se nezdarila"
+        error instanceof Error ? error.message : "Registrace se nezdařila"
       );
     } finally {
       setIsLoading(false);
@@ -81,7 +81,7 @@ export function SignUpForm({
         <CardHeader>
           <CardTitle className="text-2xl font-heading">Registrace</CardTitle>
           <CardDescription>
-            Vytvorte si ucet. Tym a role budou prirazeny po overeni skolniho
+            Vytvořte si účet. Tým a role budou přiřazeny po ověření školního
             e-mailu.
           </CardDescription>
         </CardHeader>
@@ -90,7 +90,7 @@ export function SignUpForm({
             <div className="flex flex-col gap-4">
               {/* Full Name */}
               <div className="grid gap-2">
-                <Label htmlFor="fullName">Cele jmeno</Label>
+                <Label htmlFor="fullName">Celé jméno</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -113,7 +113,7 @@ export function SignUpForm({
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Pouzijte svuj osobni e-mail (Gmail, Seznam, atd.)
+                  Použijte svůj osobní e-mail (Gmail, Seznam, atd.)
                 </p>
               </div>
 
@@ -123,7 +123,7 @@ export function SignUpForm({
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Minimalne 6 znaku"
+                  placeholder="Minimálně 6 znaků"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -140,9 +140,9 @@ export function SignUpForm({
             </div>
 
             <div className="mt-4 text-center text-sm">
-              Uz mas ucet?{" "}
+              Už máš účet?{" "}
               <Link href="/" className="underline underline-offset-4">
-                Prihlasit se
+                Přihlásit se
               </Link>
             </div>
           </form>

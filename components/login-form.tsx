@@ -41,9 +41,9 @@ export function LoginForm({
       router.push("/dashboard");
     } catch (error: unknown) {
       if (error instanceof Error && error.message.includes("Invalid")) {
-        setError("Neplatny e-mail nebo heslo");
+        setError("Neplatný e-mail nebo heslo");
       } else {
-        setError("Prihlaseni se nezdarilo");
+        setError("Přihlášení se nezdařilo");
       }
     } finally {
       setIsLoading(false);
@@ -54,8 +54,8 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-heading">Prihlasit se</CardTitle>
-          <CardDescription>Studentsky portal Tiimiakatemia</CardDescription>
+          <CardTitle className="text-2xl font-heading">Přihlásit se</CardTitle>
+          <CardDescription>Studentský portál Tiimiakatemia</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin}>
@@ -78,13 +78,13 @@ export function LoginForm({
                     href="/auth/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
-                    Zapomenute heslo?
+                    Zapomenuté heslo?
                   </Link>
                 </div>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Vase heslo"
+                  placeholder="Vaše heslo"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -92,11 +92,11 @@ export function LoginForm({
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Prihlasuji..." : "Prihlasit se"}
+                {isLoading ? "Přihlašuji..." : "Přihlásit se"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              Nemas ucet?{" "}
+              Nemáš účet?{" "}
               <Link
                 href="/auth/sign-up"
                 className="underline underline-offset-4"

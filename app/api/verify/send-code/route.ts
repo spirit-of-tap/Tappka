@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     if (!school_email || !hasValidDomain) {
       return NextResponse.json(
-        { error: "Neplatny format e-mailu. Pouzijte @pef.czu.cz nebo @studenti.czu.cz" },
+        { error: "Neplatný formát e-mailu. Použijte @pef.czu.cz nebo @studenti.czu.cz" },
         { status: 400 }
       );
     }
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Neautorizovano" },
+        { error: "Neautorizováno" },
         { status: 401 }
       );
     }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     if (preRegError || !preRegistered) {
       return NextResponse.json(
-        { error: "Tento e-mail neni v systemu registrovan. Kontaktujte administratora." },
+        { error: "Tento e-mail není v systému registrován. Kontaktujte administrátora." },
         { status: 400 }
       );
     }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Check if email already claimed by someone else
     if (preRegistered.claimed_by && preRegistered.claimed_by !== user.id) {
       return NextResponse.json(
-        { error: "Tento e-mail uz byl overen jinym uzivatelem" },
+        { error: "Tento e-mail už byl ověřen jiným uživatelem" },
         { status: 400 }
       );
     }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     if (count && count >= MAX_REQUESTS_PER_WINDOW) {
       return NextResponse.json(
-        { error: "Prilis mnoho pokusu. Zkuste to za hodinu." },
+        { error: "Příliš mnoho pokusů. Zkuste to za hodinu." },
         { status: 429 }
       );
     }
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       console.error("Failed to insert verification code:", insertError);
       return NextResponse.json(
-        { error: "Nepodarilo se vytvorit overovaci kod" },
+        { error: "Nepodařilo se vytvořit ověřovací kód" },
         { status: 500 }
       );
     }
@@ -117,11 +117,11 @@ export async function POST(request: NextRequest) {
     // In production, you would send the email here:
     // await sendVerificationEmail(school_email, code);
 
-    return NextResponse.json({ success: true, message: "Kod odeslan" });
+    return NextResponse.json({ success: true, message: "Kód odeslán" });
   } catch (error) {
     console.error("Send code error:", error);
     return NextResponse.json(
-      { error: "Interni chyba serveru" },
+      { error: "Interní chyba serveru" },
       { status: 500 }
     );
   }
