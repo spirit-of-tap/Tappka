@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Poppins, Roboto, Pacifico } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
@@ -9,12 +9,28 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "Tappka - Studentsky portal Tiimiakatemia Prague",
+  description: "We do business to learn, to live fully we earn!",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// TAP Brand Typography
+const poppins = Poppins({
+  variable: "--font-poppins",
+  weight: ["400", "600", "700", "800"],
+  display: "swap",
+  subsets: ["latin", "latin-ext"],
+});
+
+const roboto = Roboto({
+  variable: "--font-roboto",
+  weight: ["300", "400", "500", "700"],
+  display: "swap",
+  subsets: ["latin", "latin-ext"],
+});
+
+const pacifico = Pacifico({
+  variable: "--font-pacifico",
+  weight: "400",
   display: "swap",
   subsets: ["latin"],
 });
@@ -25,8 +41,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+    <html lang="cs" suppressHydrationWarning>
+      <body
+        className={`${roboto.variable} ${poppins.variable} ${pacifico.variable} font-body antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
