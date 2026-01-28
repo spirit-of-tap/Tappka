@@ -37,6 +37,7 @@ All czech should be just in localization files.
 ## Setup
 
 1. Install git if already not installed - https://git-scm.com/install/
+2. Install docker if already not installed - https://docs.docker.com/get-docker/
 2. Install node.js v24.x with pnpm 10.x if already not installed - https://nodejs.org/en/download/
 3. Install pnpm v10.x if you didn't choose it in the previous step
 
@@ -56,7 +57,8 @@ cd tappka
 ## Running the project after setup
 
 ```bash
-pnpm install && pnpm dev
+pnpm install
+pnpm dev
 ```
 
 The project will be available at [http://localhost:3000](http://localhost:3000)
