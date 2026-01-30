@@ -19,8 +19,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (user) {
-    // Logged in -> redirect to QR quick status page
-    const url = new URL(`/dashboard/reservations/${code}/qr`, request.url);
+    // Logged in -> redirect to quick status page
+    const url = new URL(`/dashboard/reservations/${code}/quick`, request.url);
     return NextResponse.redirect(url);
   } else {
     // Not logged in -> redirect to public page
