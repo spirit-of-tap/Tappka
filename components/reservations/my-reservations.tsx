@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,56 +22,59 @@ import type { ReservationWithDetails } from "@/lib/reservations/types";
 
 interface MyReservationsProps {
   reservations: ReservationWithDetails[];
+  joinedCoworks: ReservationWithDetails[];
 }
 
 /**
- * List of user's own reservations
+ * List of user's own reservations and joined coworks (content only, no card wrapper)
  */
-export function MyReservations({ reservations }: MyReservationsProps) {
-  if (reservations.length === 0) {
+export function MyReservations({ reservations, joinedCoworks }: MyReservationsProps) {
+  // Merge and sort by start_time
+  const allReservations = [
+    ...reservations.map(r => ({ ...r, isJoined: false })),
+    ...joinedCoworks.map(r => ({ ...r, isJoined: true }))
+  ].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+  if (allReservations.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Moje rezervace</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Nemáš žádné aktivní rezervace
-          </p>
-        </CardContent>
-      </Card>
+      <p className="text-muted-foreground text-sm">
+        Nemáš žádné aktivní rezervace
+      </p>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Moje rezervace</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {reservations.map((reservation) => (
-          <ReservationItem
-            key={reservation.id}
-            reservation={reservation}
-          />
-        ))}
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      {allReservations.map((reservation) => (
+        <ReservationItem
+          key={reservation.id}
+          reservation={reservation}
+          isJoined={reservation.isJoined}
+        />
+      ))}
+    </div>
   );
 }
 
 interface ReservationItemProps {
   reservation: ReservationWithDetails;
+  isJoined: boolean;
 }
 
-function ReservationItem({ reservation }: ReservationItemProps) {
+function ReservationItem({ reservation, isJoined }: ReservationItemProps) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
   
   const isActive = isReservationActive(reservation);
   const startDate = new Date(reservation.start_time);
   const endDate = new Date(reservation.end_time);
+  
+  // Owner name for joined coworks
+  const ownerName = isJoined 
+    ? (reservation.user?.full_name || reservation.team?.name || "Neznámý")
+    : null;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -94,11 +96,32 @@ function ReservationItem({ reservation }: ReservationItemProps) {
     }
   };
 
+  const handleLeave = async () => {
+    setIsLeaving(true);
+    try {
+      const response = await fetch(`/api/reservations/join?reservation_id=${reservation.id}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Nepodařilo se opustit cowork");
+      }
+
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
   return (
     <>
       <div 
         className="flex flex-col p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-        onClick={() => setEditOpen(true)}
+        onClick={() => !isJoined && setEditOpen(true)}
       >
         {/* Top row: Date badge + Content */}
         <div className="flex gap-3 mb-3">
@@ -124,8 +147,20 @@ function ReservationItem({ reservation }: ReservationItemProps) {
               {reservation.room?.code?.toUpperCase() || reservation.room?.name || "Místnost"} od {formatTime(startDate)} do {formatTime(endDate)}
             </p>
             
+            {/* Owner name for joined coworks */}
+            {isJoined && ownerName && (
+              <p className="text-xs text-muted-foreground mb-2">
+                Vytvořil/a: {ownerName}
+              </p>
+            )}
+            
             {/* Badges row */}
             <div className="flex flex-wrap gap-1.5">
+              {isJoined && (
+                <Badge variant="secondary" className="text-xs">
+                  Připojeno
+                </Badge>
+              )}
               {isActive && (
                 <Badge variant="default" className="text-xs">
                   Probíhá
@@ -148,57 +183,99 @@ function ReservationItem({ reservation }: ReservationItemProps) {
 
         {/* Bottom row: Action buttons spanning full width */}
         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="flex-[2]"
-            onClick={() => setEditOpen(true)}
-          >
-            Upravit
-          </Button>
-          
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          {isJoined ? (
+            // Joined cowork: Only "Opustit" button
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  disabled={isLeaving}
+                  className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  {isLeaving ? (
+                    <>
+                      <Loader2 className="size-4 mr-1 animate-spin" />
+                      Opustit
+                    </>
+                  ) : (
+                    "Opustit"
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Opustit cowork?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Opravdu chceš opustit cowork &quot;{reservation.title}&quot;?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Ne, zůstat</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLeave}>
+                    Ano, opustit
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          ) : (
+            // Own reservation: "Upravit" and "Smazat" buttons
+            <>
               <Button 
                 variant="outline" 
-                size="sm" 
-                disabled={isDeleting}
-                className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                size="sm"
+                className="flex-[2]"
+                onClick={() => setEditOpen(true)}
               >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="size-4 mr-1 animate-spin" />
-                    Smazat
-                  </>
-                ) : (
-                  "Smazat"
-                )}
+                Upravit
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Zrušit rezervaci?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Opravdu chceš zrušit rezervaci &quot;{reservation.title}&quot;? Tato akce nelze vrátit zpět.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Ne, ponechat</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>
-                  Ano, zrušit
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={isDeleting}
+                    className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="size-4 mr-1 animate-spin" />
+                        Smazat
+                      </>
+                    ) : (
+                      "Smazat"
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Zrušit rezervaci?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Opravdu chceš zrušit rezervaci &quot;{reservation.title}&quot;? Tato akce nelze vrátit zpět.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Ne, ponechat</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>
+                      Ano, zrušit
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Edit dialog - controlled */}
-      <EditReservationDialog
-        reservation={reservation}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-      />
+      {/* Edit dialog - controlled (only for owned reservations) */}
+      {!isJoined && (
+        <EditReservationDialog
+          reservation={reservation}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
     </>
   );
 }
