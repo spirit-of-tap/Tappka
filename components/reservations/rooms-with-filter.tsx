@@ -27,7 +27,7 @@ export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
         <RoomFilter rooms={rooms} onFilterChange={handleFilterChange} />
         {isFiltered && (
           <span className="text-sm text-muted-foreground">
-            {filteredRooms.length} z {rooms.length} místností
+            {filteredRooms.filter(r => !r.availabilityForFilter || r.availabilityForFilter.isAvailable).length} volné z {rooms.length} místností
           </span>
         )}
       </div>

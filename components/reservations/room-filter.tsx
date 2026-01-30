@@ -55,20 +55,51 @@ export function RoomFilter({ rooms, onFilterChange }: RoomFilterProps) {
       const result = await response.json();
       const reservations = result.data || [];
 
-      // Get list of busy room IDs
-      const busyRoomIds = new Set(reservations.map((r: { room_id: string }) => r.room_id));
+      // Annotate rooms with availability instead of filtering
+      const annotatedRooms = rooms.map((room) => {
+        const isDayAvailable = isRoomAvailableOnDay(room, date);
+        const conflictingReservation = reservations.find(
+          (r: { room_id: string; start_time: string; end_time: string; title: string }) => 
+            r.room_id === room.id
+        );
 
-      // Filter rooms
-      const availableRooms = rooms.filter((room) => {
-        // Check if room is available on this day
-        if (!isRoomAvailableOnDay(room, date)) {
-          return false;
+        // Room is available if it's open on this day AND no conflicts
+        const isAvailable = isDayAvailable && !conflictingReservation;
+
+        if (isAvailable) {
+          // Clear any previous filter metadata
+          return { ...room, availabilityForFilter: undefined };
         }
-        // Check if room has no conflicting reservations
-        return !busyRoomIds.has(room.id);
+
+        // Room is unavailable - add metadata explaining why
+        const reason = !isDayAvailable ? 'day_restricted' : 'occupied';
+        
+        // Format conflict time if occupied
+        let conflictTime: string | undefined;
+        let conflictTitle: string | undefined;
+        
+        if (conflictingReservation) {
+          const formatTime = (timeStr: string) => {
+            const d = new Date(timeStr);
+            return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+          };
+          
+          conflictTime = `${formatTime(conflictingReservation.start_time)}-${formatTime(conflictingReservation.end_time)}`;
+          conflictTitle = conflictingReservation.title;
+        }
+
+        return {
+          ...room,
+          availabilityForFilter: {
+            isAvailable: false,
+            reason: reason as 'occupied' | 'day_restricted',
+            conflictTime,
+            conflictTitle,
+          },
+        };
       });
 
-      onFilterChange(availableRooms);
+      onFilterChange(annotatedRooms);
       setIsOpen(false);
     } catch (error) {
       console.error("Error filtering rooms:", error);
@@ -151,7 +182,7 @@ export function RoomFilter({ rooms, onFilterChange }: RoomFilterProps) {
                 onClick={handleApply}
                 disabled={!date || !startTime || !endTime || isFiltering}
               >
-                {isFiltering ? "Hledám..." : "Najít volné"}
+                {isFiltering ? "Kontroluji..." : "Zkontrolovat dostupnost"}
               </Button>
             </div>
           </div>
