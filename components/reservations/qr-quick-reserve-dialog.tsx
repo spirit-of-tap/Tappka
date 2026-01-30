@@ -117,28 +117,28 @@ export function QRQuickReserveDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">Rychlá rezervace</DialogTitle>
+          <DialogTitle className="text-xl font-heading">Rychlá rezervace</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Room and duration info */}
-          <div className="p-4 rounded-lg bg-muted/50 space-y-1">
-            <p className="font-semibold text-base">{roomName}</p>
-            <p className="text-sm text-muted-foreground">
+          <div className="p-4 rounded-xl bg-muted/50 space-y-1 shadow-sm">
+            <p className="font-heading font-semibold text-base">{roomName}</p>
+            <p className="text-sm text-muted-foreground font-body">
               Délka: {getDurationLabel()}
             </p>
           </div>
 
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">Název</Label>
+            <Label htmlFor="title" className="text-sm font-heading font-medium">Název</Label>
             <Input
               id="title"
               placeholder="Např. Meeting, Práce..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
-              className="h-10"
+              className="h-12 font-body rounded-md"
             />
           </div>
 
@@ -152,14 +152,14 @@ export function QRQuickReserveDialog({
                 max={50}
                 value={personCount}
                 onChange={(e) => setPersonCount(parseInt(e.target.value) || 1)}
-                className="w-16 h-9 text-sm"
+                className="w-16 h-9 text-sm font-body"
               />
-              <span className="text-sm text-muted-foreground">osob</span>
+              <span className="text-sm text-muted-foreground font-body">osob</span>
             </div>
 
             <div className="flex items-center gap-2">
               <Share2 className="size-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm">Cowork</span>
+              <span className="text-sm font-body">Cowork</span>
               <Switch
                 checked={isCoworkOpen}
                 onCheckedChange={setIsCoworkOpen}
@@ -169,7 +169,7 @@ export function QRQuickReserveDialog({
 
           {/* Error */}
           {error && (
-            <p className="text-xs text-destructive bg-destructive/10 px-3 py-2 rounded-md">
+            <p className="text-xs text-destructive bg-destructive/10 px-3 py-2 rounded-md font-body">
               {error}
             </p>
           )}
@@ -178,7 +178,7 @@ export function QRQuickReserveDialog({
           <Button
             onClick={handleSubmit}
             disabled={isLoading || !title.trim()}
-            className="w-full h-11 font-semibold"
+            className="w-full h-12 font-heading font-semibold rounded-md"
           >
             {isLoading ? (
               <>
