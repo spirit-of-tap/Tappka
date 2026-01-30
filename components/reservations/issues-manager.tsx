@@ -199,14 +199,14 @@ function IssueItem({ issue, isLoading, onResolve, onReopen, onDelete }: IssueIte
   const isOpen = issue.status === "open";
 
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg border bg-card">
-      <div className={`p-2 rounded-lg ${isOpen ? "bg-orange-100 dark:bg-orange-950/50" : "bg-green-100 dark:bg-green-950/50"}`}>
+    <div className="flex flex-col sm:flex-row sm:items-start gap-3 p-3 rounded-lg border bg-card">
+      <div className={`p-2 rounded-lg flex-shrink-0 ${isOpen ? "bg-orange-100 dark:bg-orange-950/50" : "bg-green-100 dark:bg-green-950/50"}`}>
         <Icon className={`size-4 ${isOpen ? "text-orange-600 dark:text-orange-400" : "text-green-600 dark:text-green-400"}`} />
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-medium">{issue.room?.name || "Místnost"}</span>
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <span className="font-medium text-sm sm:text-base">{issue.room?.name || "Místnost"}</span>
           <Badge variant={isOpen ? "destructive" : "default"} className="text-xs">
             {ISSUE_TYPE_LABELS[issue.issue_type]}
           </Badge>
@@ -230,7 +230,7 @@ function IssueItem({ issue, isLoading, onResolve, onReopen, onDelete }: IssueIte
         </div>
       </div>
 
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-1 flex-shrink-0 self-end sm:self-start">
         {isLoading ? (
           <Loader2 className="size-4 animate-spin" />
         ) : (

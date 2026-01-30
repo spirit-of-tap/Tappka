@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, MapPin, Users, Edit, Trash2, Loader2 } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -97,75 +97,81 @@ function ReservationItem({ reservation }: ReservationItemProps) {
   return (
     <>
       <div 
-        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+        className="flex flex-col p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
         onClick={() => setEditOpen(true)}
       >
-        {/* Date badge */}
-        <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-primary/10 flex flex-col items-center justify-center">
-          <span className="text-xs text-muted-foreground">
-            {startDate.toLocaleDateString("cs-CZ", { weekday: "short" })}
-          </span>
-          <span className="text-lg font-bold text-primary">
-            {startDate.getDate()}
-          </span>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h4 className="font-medium truncate">{reservation.title}</h4>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                <span className="flex items-center gap-1">
-                  <MapPin className="size-3" />
-                  {reservation.room?.name || "Místnost"}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="size-3" />
-                  {formatTime(startDate)} - {formatTime(endDate)}
-                </span>
-                {reservation.person_count && (
-                  <span className="flex items-center gap-1">
-                    <Users className="size-3" />
-                    {reservation.person_count}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Status badge */}
-            {isActive && (
-              <Badge variant="default" className="flex-shrink-0">
-                Probíhá
-              </Badge>
-            )}
+        {/* Top row: Date badge + Content */}
+        <div className="flex gap-3 mb-3">
+          {/* Date badge - always on left with month */}
+          <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-primary/10 flex flex-col items-center justify-center">
+            <span className="text-xs text-muted-foreground uppercase">
+              {startDate.toLocaleDateString("cs-CZ", { weekday: "short" })}
+            </span>
+            <span className="text-lg font-bold text-primary">
+              {startDate.getDate()}.{startDate.getMonth() + 1}.
+            </span>
           </div>
 
-          {/* Cowork badge */}
-          {reservation.is_cowork_open && (
-            <Badge variant="outline" className="mt-2 text-xs">
-              Otevřeno pro cowork
-            </Badge>
-          )}
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            {/* Title */}
+            <h4 className="font-semibold text-base truncate mb-1">
+              {reservation.title}
+            </h4>
+            
+            {/* Room + Time in one line */}
+            <p className="text-sm text-muted-foreground mb-2">
+              {reservation.room?.code?.toUpperCase() || reservation.room?.name || "Místnost"} od {formatTime(startDate)} do {formatTime(endDate)}
+            </p>
+            
+            {/* Badges row */}
+            <div className="flex flex-wrap gap-1.5">
+              {isActive && (
+                <Badge variant="default" className="text-xs">
+                  Probíhá
+                </Badge>
+              )}
+              {reservation.is_cowork_open && (
+                <Badge variant="outline" className="text-xs">
+                  Cowork
+                </Badge>
+              )}
+              {reservation.person_count && (
+                <Badge variant="outline" className="text-xs">
+                  <Users className="size-3 mr-1" />
+                  {reservation.person_count}
+                </Badge>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex-shrink-0 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        {/* Bottom row: Action buttons spanning full width */}
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           <Button 
-            variant="ghost" 
-            size="icon-sm"
+            variant="outline" 
+            size="sm"
+            className="flex-[2]"
             onClick={() => setEditOpen(true)}
           >
-            <Edit className="size-4" />
+            Upravit
           </Button>
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon-sm" disabled={isDeleting}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={isDeleting}
+                className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
                 {isDeleting ? (
-                  <Loader2 className="size-4 animate-spin" />
+                  <>
+                    <Loader2 className="size-4 mr-1 animate-spin" />
+                    Smazat
+                  </>
                 ) : (
-                  <Trash2 className="size-4 text-destructive" />
+                  "Smazat"
                 )}
               </Button>
             </AlertDialogTrigger>

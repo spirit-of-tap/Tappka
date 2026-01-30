@@ -264,15 +264,15 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
             return (
               <div
                 key={breakItem.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-card gap-3"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                   <Badge className={typeInfo.color}>
                     <Icon className="size-3 mr-1" />
                     {typeInfo.label}
                   </Badge>
-                  <span className="font-medium">{breakItem.name}</span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="font-medium text-sm sm:text-base">{breakItem.name}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">
                     {format(new Date(breakItem.start_date), "d.M.yyyy")} - {format(new Date(breakItem.end_date), "d.M.yyyy")}
                   </span>
                 </div>
@@ -280,7 +280,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
                   variant="ghost"
                   size="icon-sm"
                   onClick={() => handleDelete(breakItem.id)}
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive self-end sm:self-auto"
                 >
                   <Trash2 className="size-4" />
                 </Button>

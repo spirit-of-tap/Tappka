@@ -373,8 +373,8 @@ export function TrainingSessionsManager({
               </Select>
             </div>
 
-            {/* Time */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Time - stack on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Od</Label>
                 <TimePicker value={startTime} onChange={handleStartTimeChange} hourOnly />
@@ -491,28 +491,28 @@ export function TrainingSessionsManager({
                   onMouseMove={handleMouseMove}
                   onClick={(e) => handleClick(e, schedule)}
                   className={cn(
-                    "flex items-center justify-between p-3 rounded-lg border bg-card cursor-pointer hover:bg-accent/50 transition-colors",
+                    "flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-card cursor-pointer hover:bg-accent/50 transition-colors gap-3",
                     draggedSchedule?.id === schedule.id && "opacity-50"
                   )}
                 >
-                  <div className="flex items-center gap-3">
-                    <GripVertical className="size-4 text-muted-foreground cursor-grab" />
-                    <Badge variant="secondary">
+                  <div className="flex items-start sm:items-center gap-3 flex-wrap">
+                    <GripVertical className="size-4 text-muted-foreground cursor-grab flex-shrink-0 hidden sm:block" />
+                    <Badge variant="secondary" className="text-xs">
                       {DAY_NAMES_CS[schedule.day_of_week]}
                     </Badge>
                     <div className="flex items-center gap-2 text-sm">
-                      <Clock className="size-4 text-muted-foreground" />
-                      <span>{schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}</span>
+                      <Clock className="size-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">{schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
-                      <Users className="size-4 text-muted-foreground" />
-                      <span>{schedule.team?.name}</span>
+                      <Users className="size-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">{schedule.team?.name}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">
                       {format(new Date(schedule.valid_from), "d.M.yyyy")} - {format(new Date(schedule.valid_until), "d.M.yyyy")}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 self-end sm:self-auto">
                     <Button
                       variant="ghost"
                       size="icon-sm"

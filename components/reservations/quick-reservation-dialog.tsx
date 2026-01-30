@@ -215,10 +215,10 @@ export function QuickReservationDialog({
             />
           </div>
 
-          {/* Person count and Cowork in a row */}
-          <div className="flex items-center gap-4">
+          {/* Person count and Cowork - responsive layout */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-2">
-              <Users className="size-4 text-muted-foreground" />
+              <Users className="size-4 text-muted-foreground flex-shrink-0" />
               <Input
                 type="number"
                 min={1}
@@ -230,8 +230,8 @@ export function QuickReservationDialog({
               <span className="text-sm text-muted-foreground">osob</span>
             </div>
 
-            <div className="flex items-center gap-2 ml-auto">
-              <Share2 className="size-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <Share2 className="size-4 text-muted-foreground flex-shrink-0" />
               <span className="text-sm">Cowork</span>
               <Switch
                 checked={isCoworkOpen}

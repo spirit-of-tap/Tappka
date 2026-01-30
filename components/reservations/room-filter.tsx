@@ -115,7 +115,8 @@ export function RoomFilter({ rooms, onFilterChange }: RoomFilterProps) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            {/* Time pickers - stack on very small screens */}
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Od</label>
                 <TimePicker

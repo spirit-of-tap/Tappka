@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { addDays, addWeeks, subWeeks, startOfWeek, format, isSameDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, CalendarDays, RotateCcw } from "lucide-react";
@@ -15,6 +15,7 @@ import {
 import { DaySchedule } from "./day-schedule";
 import { WeekSchedule } from "./week-schedule";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Reservation, ScheduleBreak } from "@/lib/reservations/types";
 import { DAY_NAMES_CS } from "@/lib/reservations/types";
 
@@ -33,6 +34,7 @@ type ViewMode = "day" | "week";
  * Calendar component with day/week toggle
  */
 export function CalendarView({ reservations, scheduleBreaks = [], availableDays, onSlotClick, onReservationClick, onDragCreate }: CalendarViewProps) {
+  const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [currentDate, setCurrentDate] = useState(() => {
     // If room has limited available days, start on the nearest available day
@@ -52,6 +54,13 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
     return new Date();
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Auto-switch to day view on mobile
+  useEffect(() => {
+    if (isMobile && viewMode === "week") {
+      setViewMode("day");
+    }
+  }, [isMobile, viewMode]);
 
   const today = new Date();
   const isToday = isSameDay(currentDate, today);
@@ -164,16 +173,18 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
     <div className="space-y-4">
       {/* Controls */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        {/* View mode toggle */}
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-          <TabsList>
-            <TabsTrigger value="day">Den</TabsTrigger>
-            <TabsTrigger value="week">Týden</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* View mode toggle - hide week tab on mobile */}
+        {!isMobile && (
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+            <TabsList>
+              <TabsTrigger value="day">Den</TabsTrigger>
+              <TabsTrigger value="week">Týden</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
 
         {/* Date navigation with calendar picker */}
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-1 flex-1 md:flex-initial">
           {/* Day name above (only in day view) */}
           {dayName && (
             <span className="text-sm font-medium text-muted-foreground capitalize">
@@ -181,7 +192,7 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
             </span>
           )}
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 w-full md:w-auto">
             <Button variant="outline" size="icon" onClick={handlePrev}>
               <ChevronLeft className="size-4" />
             </Button>
@@ -192,12 +203,12 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
                 <Button 
                   variant="outline" 
                   className={cn(
-                    "min-w-[180px] justify-center font-normal",
+                    "flex-1 md:min-w-[180px] justify-center font-normal",
                     !isToday && "text-foreground"
                   )}
                 >
-                  <CalendarDays className="size-4 mr-2" />
-                  {datePickerLabel}
+                  <CalendarDays className="size-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">{datePickerLabel}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="center">
@@ -224,7 +235,7 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
           size="sm" 
           onClick={handleToday}
           disabled={isOnNearestAvailable}
-          className="gap-2"
+          className="gap-2 w-full md:w-auto"
         >
           <RotateCcw className="size-4" />
           {goToButtonText}

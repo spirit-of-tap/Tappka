@@ -31,6 +31,8 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null); // Start position in pixels
   const [dragEnd, setDragEnd] = useState<number | null>(null); // End position in pixels
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isLongPress, setIsLongPress] = useState(false);
   const scheduleRef = useRef<HTMLDivElement>(null);
 
   // Generate hour slots
@@ -104,6 +106,76 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     setDragEnd(y);
   }, [getRelativeY]);
 
+  // Touch handlers for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    // Don't start drag if touching on a reservation
+    if ((e.target as HTMLElement).closest('[data-reservation]')) return;
+    
+    const touch = e.touches[0];
+    const y = getRelativeY(touch.clientY);
+    
+    // Store initial position
+    setDragStart(y);
+    
+    // Start long press timer (400ms)
+    const timer = setTimeout(() => {
+      setIsLongPress(true);
+      setIsDragging(true);
+      setDragEnd(y);
+      // Haptic feedback if available
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    }, 400);
+    
+    setLongPressTimer(timer);
+  }, [getRelativeY]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    // If long press timer is still pending, cancel it on any movement
+    if (longPressTimer && !isLongPress) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+      setDragStart(null);
+      // Allow normal scrolling
+      return;
+    }
+    
+    // Only handle drag if we're actively in long-press drag mode
+    if (isLongPress && isDragging) {
+      e.preventDefault(); // Prevent scrolling while dragging
+      const touch = e.touches[0];
+      const y = getRelativeY(touch.clientY);
+      setDragEnd(y);
+    }
+  }, [getRelativeY, longPressTimer, isLongPress, isDragging]);
+
+  const handleTouchEnd = useCallback(() => {
+    // Clear long press timer if it's still pending
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    
+    // If we were actively dragging after long press, finalize the drag
+    if (isLongPress && isDragging && dragStart !== null && dragEnd !== null) {
+      const startY = Math.min(dragStart, dragEnd);
+      const endY = Math.max(dragStart, dragEnd);
+      
+      const startTime = pixelToTime(startY);
+      const endTime = pixelToTime(endY + slotHeight);
+      onDragCreate?.(startTime, endTime);
+    }
+    // Note: We don't trigger click on short tap in touch mode
+    // Users can tap the hour slots directly for single clicks
+    
+    // Reset all state
+    setIsDragging(false);
+    setIsLongPress(false);
+    setDragStart(null);
+    setDragEnd(null);
+  }, [longPressTimer, isLongPress, isDragging, dragStart, dragEnd, slotHeight, pixelToTime, onDragCreate]);
+
   // Global mouse handlers for drag that continues outside the component
   const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
@@ -151,6 +223,15 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     }
   }, [isDragging, handleGlobalMouseMove, handleGlobalMouseUp]);
 
+  // Clean up long press timer on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+    };
+  }, [longPressTimer]);
+
   // Calculate drag selection preview
   const dragSelection = useMemo(() => {
     if (!isDragging || dragStart === null || dragEnd === null) return null;
@@ -194,14 +275,14 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
 
       {/* Time labels and grid */}
       <div className="flex">
-        {/* Time column */}
-        <div className="flex-shrink-0 w-16 border-r bg-muted/30">
+        {/* Time column - responsive width */}
+        <div className="flex-shrink-0 w-12 md:w-16 border-r bg-muted/30">
           {hours.map((hour) => (
             <div
               key={hour}
-              className="h-[60px] border-b last:border-b-0 flex items-start justify-end pr-2 pt-1"
+              className="h-[60px] border-b last:border-b-0 flex items-start justify-end pr-1 md:pr-2 pt-1"
             >
-              <span className="text-xs text-muted-foreground">
+              <span className="text-[10px] md:text-xs text-muted-foreground">
                 {hour.toString().padStart(2, "0")}:00
               </span>
             </div>
@@ -216,6 +297,9 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
             isDragging && "cursor-grabbing"
           )}
           onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {/* Hour grid lines */}
           {hours.map((hour) => (
@@ -232,7 +316,10 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
           {/* Drag selection preview */}
           {dragSelection && (
             <div
-              className="absolute left-0 right-2 mx-2 rounded-md bg-primary/20 border-2 border-primary border-dashed pointer-events-none z-10"
+              className={cn(
+                "absolute left-0 right-2 mx-2 rounded-md border-2 border-primary border-dashed pointer-events-none z-10",
+                isLongPress ? "bg-primary/30 animate-pulse" : "bg-primary/20"
+              )}
               style={{ 
                 top: `${dragSelection.top}px`, 
                 height: `${Math.max(dragSelection.height, 20)}px` 

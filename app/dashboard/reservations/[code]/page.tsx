@@ -153,31 +153,31 @@ export default async function RoomDetailPage({ params }: RoomDetailPageProps) {
 
   // Available days info
   const availableDaysText = room.available_days
-    ? room.available_days.map((d) => DAY_NAMES_CS[d]).join(", ")
+    ? room.available_days.map((d: number) => DAY_NAMES_CS[d]).join(", ")
     : "Každý den";
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
             <Link href="/dashboard/reservations">
               <ArrowLeft className="size-5" />
             </Link>
           </Button>
-          <div>
-            <h2 className="text-3xl font-heading font-bold">{room.name}</h2>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-2xl md:text-3xl font-heading font-bold break-words">{room.name}</h2>
             {room.description && (
-              <p className="text-muted-foreground mt-1">{room.description}</p>
+              <p className="text-muted-foreground mt-1 text-sm md:text-base">{room.description}</p>
             )}
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="outline">
-                <Calendar className="size-3 mr-1" />
-                {availableDaysText}
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <Badge variant="outline" className="text-xs">
+                <Calendar className="size-3 mr-1 flex-shrink-0" />
+                <span>{availableDaysText}</span>
               </Badge>
               {room.can_have_ts && (
-                <Badge variant="secondary">TS místnost</Badge>
+                <Badge variant="secondary" className="text-xs">TS místnost</Badge>
               )}
             </div>
           </div>
@@ -217,7 +217,7 @@ export default async function RoomDetailPage({ params }: RoomDetailPageProps) {
       {/* Main content */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Schedule */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-3 space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Rozvrh místnosti</CardTitle>
