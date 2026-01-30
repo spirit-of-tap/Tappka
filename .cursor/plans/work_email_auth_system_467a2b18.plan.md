@@ -91,9 +91,12 @@ flowchart TD
 
 Three tables with RLS policies managed entirely in Supabase:
 
-1. **`auth.users`** - Supabase-managed authentication (Google OAuth)
+1. **`users`** - Custom table to sync with auth.users (Google OAuth)
 2. **`profiles`** - User profile data with role and team membership
 3. **`teams`** - Team information
+
+Use MODDATETIME extension to set the `updated_at` column on every update.
+
 ```sql
 -- Role enum for profiles
 create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');
@@ -129,14 +132,12 @@ create table public.profiles (
   )
 );
 
+
 -- Indexes for common queries
 create index profiles_user_id_idx on public.profiles(user_id);
 create index profiles_work_email_idx on public.profiles(work_email);
 create index profiles_team_id_idx on public.profiles(team_id);
 ```
-
-
-> **Note**: `updated_at` is set by Next.js server actions on each update, not via database triggers. This keeps all logic in the application layer.
 
 ### Entity Relationships
 
@@ -221,32 +222,6 @@ client_id = "env(GOOGLE_CLIENT_ID)"
 secret = "env(GOOGLE_CLIENT_SECRET)"
 ```
 
-## Security Lockdown (Google OAuth Only)
-
-**Goal**: Users can ONLY authenticate via Google OAuth + work email verification. All other methods are blocked.
-
-### Blocked Scenarios
-
-| Attack Vector                               | How It's Blocked                                    |
-
-| ------------------------------------------- | --------------------------------------------------- |
-
-| Direct email/password signup                | `enable_signup = false` in auth.email               |
-
-| Other OAuth providers (Apple, GitHub, etc.) | All providers disabled except Google                |
-
-| Anonymous access                            | `enable_anonymous_sign_ins = false`                 |
-
-| Access without verified work email          | Middleware checks `profiles.user_id` is linked   |
-
-| Unverified/fake work email                  | OTP verification required before linking            |
-
-| Non-CZU domain emails                       | Domain validation (client + server + DB constraint) |
-
-| Access without pre-created profile          | Profile must exist before linking (admin creates profiles)           |
-
-| Revoked access                              | Middleware checks `profiles.removed_access IS NULL`           |
-
 ### Profile Verification (Next.js Middleware)
 
 All verification logic lives in Next.js middleware, not in Supabase:
@@ -267,9 +242,8 @@ This approach:
 The project has a `supabase/` directory with Supabase MCP (Model Context Protocol) integration available for:
 
 1. **Running migrations**: Apply and test database schema changes locally
-2. **Querying tables**: Verify RLS policies and data integrity
-3. **Debugging auth flow**: Inspect user sessions and profile data
-4. **Testing verification logic**: Query profiles and teams tables
+2. **Debugging auth flow**: Inspect user sessions and profile data
+3. **Testing verification logic**: Query profiles and teams tables
 
 **Useful MCP commands for development:**
 
@@ -278,85 +252,9 @@ The project has a `supabase/` directory with Supabase MCP (Model Context Protoco
 - Inspect auth.users and profiles tables
 - Test profile linking and access revocation queries
 
-## Files to DELETE (Password-based auth leftovers)
-
-These files are for email+password authentication and are **not needed** with Google OAuth:
-
-| File | Reason |
-
-|------|--------|
-
-| `components/login-form.tsx` | Replaced by Google login button |
-
-| `components/sign-up-form.tsx` | No separate signup - just Google OAuth |
-
-| `components/forgot-password-form.tsx` | No passwords to forget |
-
-| `components/update-password-form.tsx` | No passwords to update |
-
-| `app/auth/sign-up/page.tsx` | No separate signup page |
-
-| `app/auth/sign-up-success/page.tsx` | No signup confirmation |
-
-| `app/auth/forgot-password/page.tsx` | No password reset |
-
-| `app/auth/update-password/page.tsx` | No password update |
-
-## Files to KEEP and MODIFY
-
-| File | Changes |
-
-|------|---------|
-
-| `app/auth/login/page.tsx` | Replace with Google login button only |
-
-| `app/auth/confirm/route.ts` | Keep - used for OTP verification |
-
-| `app/auth/error/page.tsx` | Keep - error handling |
-
-| `components/auth-button.tsx` | Show verified work email instead |
-
-| `components/logout-button.tsx` | Keep as-is |
-
-| `lib/supabase/proxy.ts` | Add profile linking + access status database queries |
-
-## Files to CREATE
-
-### Constants (1 file)
-
-- `lib/constants/auth.ts` - Domain validation + role constants (~25 lines)
-
-### Database (1 file)
-
-- `supabase/migrations/001_auth_tables.sql` - Tables + RLS
-
-### Frontend (4 pages)
-
-- `app/auth/login/page.tsx` - Rewrite with Google button only
-- `app/auth/verify-work-email/page.tsx` - Work email + OTP form
-- `app/auth/pending-approval/page.tsx` - Simple "pending" message (profile not created yet)
-- `app/auth/access-revoked/page.tsx` - Access revoked message
-- `app/admin/profiles/page.tsx` - Manage profiles (admin only)
-- `app/admin/teams/page.tsx` - Manage teams (admin only)
-
-### Components (2 files)
-
-- `components/google-login-button.tsx` - Single OAuth button
-- `components/work-email-form.tsx` - Email input + OTP verification
-
-### Server Actions (1 file)
-
-- `lib/actions/auth.ts` - Profile linking, verification logic, access management
-
 ## Key Security Features
 
 ### Supabase (Data Layer)
-
-1. **RLS Policies** (row-level access control):
-
-   - Users can only read/update their own profile (limited fields)
-   - Only admins can create/delete profiles and manage teams
-   - Team data viewable by team members
 
 2. **Database Constraints**:
 
@@ -529,7 +427,6 @@ if (profile.removed_access) redirect('/auth/access-revoked');
 
 ## Simplicity Principles
 
-1. **No tRPC for auth** - Use Supabase client directly (fewer layers)
 2. **Business logic in Next.js** - Server actions and middleware handle all rules
 3. **Supabase for storage only** - No hooks, no custom functions, just tables + RLS
 4. **Minimal components** - Reuse shadcn/ui, no custom abstractions
