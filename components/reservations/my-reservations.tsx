@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Loader2 } from "lucide-react";
+import { Users, Loader2, CalendarOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,9 +37,12 @@ export function MyReservations({ reservations, joinedCoworks }: MyReservationsPr
 
   if (allReservations.length === 0) {
     return (
-      <p className="text-muted-foreground text-sm">
-        Nemáš žádné aktivní rezervace
-      </p>
+      <div className="flex flex-col items-center justify-center py-8 text-center">
+        <CalendarOff className="size-12 text-muted-foreground/50 mb-3" />
+        <p className="text-muted-foreground text-sm">
+          Nemáš žádné aktivní rezervace
+        </p>
+      </div>
     );
   }
 

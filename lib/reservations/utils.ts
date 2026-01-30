@@ -209,3 +209,56 @@ export function getReservationColorClasses(type: string): string {
       return "bg-blue-100 dark:bg-blue-950/50 border-blue-500 text-blue-900 dark:text-blue-100";
   }
 }
+
+/**
+ * Calculate time until reservation ends, in minutes
+ */
+export function getMinutesUntilFree(reservation: Reservation): number {
+  const now = new Date();
+  const end = new Date(reservation.end_time);
+  return Math.round((end.getTime() - now.getTime()) / (1000 * 60));
+}
+
+/**
+ * Format "free in X time" message
+ * Returns: "za 15 minut" or "v 14:30" (if more than 90 min)
+ */
+export function formatTimeUntilFree(reservation: Reservation): string {
+  const minutes = getMinutesUntilFree(reservation);
+  
+  if (minutes <= 0) {
+    return "právě teď";
+  }
+  
+  if (minutes <= 90) {
+    return `za ${minutes} ${minutes === 1 ? 'minutu' : minutes < 5 ? 'minuty' : 'minut'}`;
+  }
+  
+  // Show time instead
+  const end = new Date(reservation.end_time);
+  return `v ${formatTime(end)}`;
+}
+
+/**
+ * Get end time for quick reservation
+ */
+export function getQuickReservationEnd(durationMinutes: 30 | 60 | 120): Date {
+  const now = new Date();
+  const rounded = roundToSlot(now);
+  const end = new Date(rounded);
+  end.setMinutes(end.getMinutes() + durationMinutes);
+  return end;
+}
+
+/**
+ * Check if room is currently free
+ */
+export function isRoomFreeNow(reservations: Reservation[]): boolean {
+  const now = new Date();
+  return !reservations.some(r => {
+    const start = new Date(r.start_time);
+    const end = new Date(r.end_time);
+    return now >= start && now < end && r.status === 'active';
+  });
+}
+
