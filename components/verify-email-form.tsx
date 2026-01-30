@@ -30,8 +30,8 @@ export function VerifyEmailForm() {
 
   /**
    * Sends OTP code to the provided email
-   * Links the email identity to the current authenticated user
-   * With enable_manual_linking = true, verifying the OTP will link the identity
+   * Uses updateUser to add email identity to the current authenticated user
+   * This is the correct way to link an email identity to an existing OAuth account
    */
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,15 +46,22 @@ export function VerifyEmailForm() {
         return;
       }
 
-      // Send OTP to email for linking
-      // With enable_manual_linking = true, verifying the OTP while authenticated
-      // will link the email identity to the current user instead of creating a new user
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+      // Use updateUser to add email identity to existing authenticated user
+      // This sends a verification OTP to the email address
+      // With enable_manual_linking = true, this will link the email identity
+      // Note: This adds the email as a secondary identity, not changing the primary email
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         email: email.trim(),
       });
 
-      if (otpError) {
-        setError(otpError.message || "Failed to send OTP code");
+      if (updateError) {
+        // If email already exists, that's actually fine - it means it might already be linked
+        // or we need to handle it differently
+        if (updateError.message?.includes("already registered")) {
+          setError("This email is already registered. Please use a different email or sign in with that email.");
+        } else {
+          setError(updateError.message || "Failed to send OTP code");
+        }
         setIsLoading(false);
         return;
       }
@@ -70,6 +77,7 @@ export function VerifyEmailForm() {
 
   /**
    * Verifies the OTP code and links email identity to user
+   * Uses type 'email_change' since we're updating the user's email via updateUser()
    * With enable_manual_linking = true, this will link the email identity
    * to the existing authenticated user account
    */
@@ -79,13 +87,14 @@ export function VerifyEmailForm() {
     setIsLoading(true);
 
     try {
-      // Verify OTP code
-      // With enable_manual_linking = true, Supabase will link this email
-      // identity to the current authenticated user
+      // Verify OTP code for email change/linking
+      // Use type 'email_change' because we used updateUser() to initiate the flow
+      // With enable_manual_linking = true, this will link the email identity
+      // to the current authenticated user instead of creating a new user
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: otpCode.trim(),
-        type: "email",
+        type: "email_change",
       });
 
       if (verifyError) {
@@ -93,6 +102,9 @@ export function VerifyEmailForm() {
         setIsLoading(false);
         return;
       }
+
+      // Refresh session to ensure identities are updated
+      await supabase.auth.refreshSession();
 
       // Success - redirect to protected page
       router.push("/protected");
