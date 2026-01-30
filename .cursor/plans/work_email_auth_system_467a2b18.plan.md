@@ -150,23 +150,23 @@ secret = "env(GOOGLE_CLIENT_SECRET)"
 
 ### Blocked Scenarios
 
-| Attack Vector | How It's Blocked |
+| Attack Vector                               | How It's Blocked                                    |
 
-|---------------|------------------|
+| ------------------------------------------- | --------------------------------------------------- |
 
-| Direct email/password signup | `enable_signup = false` in auth.email |
+| Direct email/password signup                | `enable_signup = false` in auth.email               |
 
-| Other OAuth providers (Apple, GitHub, etc.) | All providers disabled except Google |
+| Other OAuth providers (Apple, GitHub, etc.) | All providers disabled except Google                |
 
-| Anonymous access | `enable_anonymous_sign_ins = false` |
+| Anonymous access                            | `enable_anonymous_sign_ins = false`                 |
 
-| Access without verified work email | Middleware checks `verified_work_email` JWT claim |
+| Access without verified work email          | Middleware checks `verified_work_email` JWT claim   |
 
-| Unverified/fake work email | OTP verification required before linking |
+| Unverified/fake work email                  | OTP verification required before linking            |
 
-| Non-CZU domain emails | Domain validation (client + server + DB constraint) |
+| Non-CZU domain emails                       | Domain validation (client + server + DB constraint) |
 
-| Access without approval | Middleware checks `is_approved` JWT claim |
+| Access without approval                     | Middleware checks `is_approved` JWT claim           |
 
 ### Optional: `before_user_created` Hook (Extra Layer)
 
@@ -265,25 +265,41 @@ The project has a `supabase/` directory with Supabase MCP (Model Context Protoco
 These files are for email+password authentication and are **not needed** with Google OAuth:
 
 | File | Reason |
+
 |------|--------|
+
 | `components/login-form.tsx` | Replaced by Google login button |
+
 | `components/sign-up-form.tsx` | No separate signup - just Google OAuth |
+
 | `components/forgot-password-form.tsx` | No passwords to forget |
+
 | `components/update-password-form.tsx` | No passwords to update |
+
 | `app/auth/sign-up/page.tsx` | No separate signup page |
+
 | `app/auth/sign-up-success/page.tsx` | No signup confirmation |
+
 | `app/auth/forgot-password/page.tsx` | No password reset |
+
 | `app/auth/update-password/page.tsx` | No password update |
 
 ## Files to KEEP and MODIFY
 
 | File | Changes |
+
 |------|---------|
+
 | `app/auth/login/page.tsx` | Replace with Google login button only |
+
 | `app/auth/confirm/route.ts` | Keep - used for OTP verification |
+
 | `app/auth/error/page.tsx` | Keep - error handling |
+
 | `components/auth-button.tsx` | Show verified work email instead |
+
 | `components/logout-button.tsx` | Keep as-is |
+
 | `lib/supabase/proxy.ts` | Add work email + approval JWT claim checks |
 
 ## Files to CREATE
@@ -377,6 +393,8 @@ Check JWT claims for `verified_work_email` and `is_approved` on every request to
 |------|------------|---------------|
 
 | Delete old auth files | Trivial | -500 lines |
+
+| Security lockdown config | Trivial | ~20 lines TOML |
 
 | Database migration | Low | ~50 lines SQL |
 

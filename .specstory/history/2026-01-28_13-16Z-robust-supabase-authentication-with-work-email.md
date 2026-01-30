@@ -1805,7 +1805,439 @@ The user wants me to update the plan to include the security lockdown configurat
 
 ---
 
+<think><details><summary>Thought Process</summary>
+Good, the plan file exists. Now I need to update it to add the security lockdown section. Let me add:
+1. A new todo for security lockdown
+2. A new section explaining the security configuration
+3. Update the Supabase Configuration Changes section to be more comprehensive
 
+Let me make these updates.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/tom/programming/tappka/.cursor/plans/work_email_auth_system_467a2b18.plan.md</summary>
+
+**Chunk 1**
+Lines added: 3, lines removed: undefined
+
+```diff
+@@ -6,4 +6,7 @@
+      content: Delete unused password-based auth files (8 files)
+      status: pending
++   - id: security-lockdown
++     content: Lock down Supabase to only allow Google OAuth (disable email signup, other providers)
++     status: pending
+    - id: db-schema
+      content: Create Supabase migration for approved_emails and user_profiles tables with RLS
+```
+
+**Chunk 2**
+Lines added: 1, lines removed: 1
+
+```diff
+@@ -13,5 +16,5 @@
+      status: pending
+    - id: supabase-config
+-     content: Update supabase/config.toml to enable manual_linking
++     content: Update supabase/config.toml (manual_linking, Google OAuth, security settings)
+      status: pending
+    - id: auth-constants
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me add the security lockdown section to the plan. I'll add it after the Supabase Configuration Changes section.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/tom/programming/tappka/.cursor/plans/work_email_auth_system_467a2b18.plan.md</summary>
+
+**Chunk 1**
+Lines added: 66, lines removed: 12
+
+```diff
+@@ -128,16 +128,70 @@
+  ## Supabase Configuration Changes
+  
+- 1. **Enable manual identity linking** in [&#96;supabase/config.toml&#96;](supabase/config.toml):
+-    &#96;&#96;&#96;toml
+-    enable_manual_linking = true
+-    &#96;&#96;&#96;
+- 
+- 2. **Configure Google OAuth provider** (requires Supabase Dashboard or production config)
+- 
+- 3. **Create custom access token hook** (Postgres function) to embed:
+- 
+-    - &#96;role&#96; (user/admin)
+-    - &#96;verified_work_email&#96;
+-    - &#96;is_approved&#96; boolean (checks against approved_emails table)
++ Update [&#96;supabase/config.toml&#96;](supabase/config.toml):
++ 
++ &#96;&#96;&#96;toml
++ [auth]
++ enable_manual_linking = true        # Required for work email linking
++ enable_anonymous_sign_ins = false   # Block anonymous access
++ 
++ [auth.email]
++ enable_signup = false               # Block direct email/password signup
++ enable_confirmations = false        # We use OTP for work email, not signup confirmation
++ 
++ [auth.external.google]
++ enabled = true
++ client_id = "env(GOOGLE_CLIENT_ID)"
++ secret = "env(GOOGLE_CLIENT_SECRET)"
++ &#96;&#96;&#96;
++ 
++ ## Security Lockdown (Google OAuth Only)
++ 
++ **Goal**: Users can ONLY authenticate via Google OAuth + work email verification. All other methods are blocked.
++ 
++ ### Blocked Scenarios
++ 
++ | Attack Vector | How It's Blocked |
++ |---------------|------------------|
++ | Direct email/password signup | &#96;enable_signup = false&#96; in auth.email |
++ | Other OAuth providers (Apple, GitHub, etc.) | All providers disabled except Google |
++ | Anonymous access | &#96;enable_anonymous_sign_ins = false&#96; |
++ | Access without verified work email | Middleware checks &#96;verified_work_email&#96; JWT claim |
++ | Unverified/fake work email | OTP verification required before linking |
++ | Non-CZU domain emails | Domain validation (client + server + DB constraint) |
++ | Access without approval | Middleware checks &#96;is_approved&#96; JWT claim |
++ 
++ ### Optional: &#96;before_user_created&#96; Hook (Extra Layer)
++ 
++ Postgres hook to reject any user not created via Google:
++ 
++ &#96;&#96;&#96;sql
++ create or replace function public.reject_non_google_signup(event jsonb)
++ returns jsonb
++ language plpgsql
++ security definer
++ as $$
++ begin
++   -- Only allow users created via Google OAuth
++   if event-&gt;'user'-&gt;'app_metadata'-&gt;&gt;'provider' != 'google' then
++     return jsonb_build_object(
++       'decision', 'reject',
++       'message', 'Only Google login is allowed'
++     );
++   end if;
++   return event;
++ end;
++ $$;
++ &#96;&#96;&#96;
++ 
++ Enable in config:
++ &#96;&#96;&#96;toml
++ [auth.hook.before_user_created]
++ enabled = true
++ uri = "pg-functions://postgres/public/reject_non_google_signup"
++ &#96;&#96;&#96;
++ 
++ ### Custom Access Token Hook
++ 
++ Postgres function to embed claims in JWT:
+  
+  ## Development &amp; Testing with Supabase MCP
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now I need to add the custom access token hook details. Let me find where that section should continue and add it.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/tom/programming/tappka/.cursor/plans/work_email_auth_system_467a2b18.plan.md</summary>
+
+**Chunk 1**
+Lines added: 40, lines removed: undefined
+
+```diff
+@@ -203,4 +203,44 @@
+  
+  Postgres function to embed claims in JWT:
++ 
++ &#96;&#96;&#96;sql
++ create or replace function public.custom_access_token_hook(event jsonb)
++ returns jsonb
++ language plpgsql
++ security definer
++ as $$
++ declare
++   claims jsonb;
++   user_role text;
++   work_email text;
++   is_approved boolean;
++ begin
++   -- Get user profile data
++   select role, verified_work_email into user_role, work_email
++   from public.user_profiles
++   where id = (event-&gt;&gt;'user_id')::uuid;
++ 
++   -- Check if work email is in approved list
++   select exists(
++     select 1 from public.approved_emails where email = work_email
++   ) into is_approved;
++ 
++   -- Build custom claims
++   claims := coalesce(event-&gt;'claims', '{}'::jsonb);
++   claims := jsonb_set(claims, '{role}', to_jsonb(coalesce(user_role, 'user')));
++   claims := jsonb_set(claims, '{verified_work_email}', to_jsonb(work_email));
++   claims := jsonb_set(claims, '{is_approved}', to_jsonb(coalesce(is_approved, false)));
++ 
++   return jsonb_set(event, '{claims}', claims);
++ end;
++ $$;
++ &#96;&#96;&#96;
++ 
++ Enable in config:
++ &#96;&#96;&#96;toml
++ [auth.hook.custom_access_token]
++ enabled = true
++ uri = "pg-functions://postgres/public/custom_access_token_hook"
++ &#96;&#96;&#96;
+  
+  ## Development &amp; Testing with Supabase MCP
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me also fix the table formatting issues that were in the file. Let me check and fix those.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/tom/programming/tappka/.cursor/plans/work_email_auth_system_467a2b18.plan.md</summary>
+
+**Chunk 1**
+Lines added: undefined, lines removed: 16
+
+```diff
+@@ -266,39 +266,23 @@
+  
+  | File | Reason |
+- 
+  |------|--------|
+- 
+  | &#96;components/login-form.tsx&#96; | Replaced by Google login button |
+- 
+  | &#96;components/sign-up-form.tsx&#96; | No separate signup - just Google OAuth |
+- 
+  | &#96;components/forgot-password-form.tsx&#96; | No passwords to forget |
+- 
+  | &#96;components/update-password-form.tsx&#96; | No passwords to update |
+- 
+  | &#96;app/auth/sign-up/page.tsx&#96; | No separate signup page |
+- 
+  | &#96;app/auth/sign-up-success/page.tsx&#96; | No signup confirmation |
+- 
+  | &#96;app/auth/forgot-password/page.tsx&#96; | No password reset |
+- 
+  | &#96;app/auth/update-password/page.tsx&#96; | No password update |
+  
+  ## Files to KEEP and MODIFY
+  
+  | File | Changes |
+- 
+  |------|---------|
+- 
+  | &#96;app/auth/login/page.tsx&#96; | Replace with Google login button only |
+- 
+  | &#96;app/auth/confirm/route.ts&#96; | Keep - used for OTP verification |
+- 
+  | &#96;app/auth/error/page.tsx&#96; | Keep - error handling |
+- 
+  | &#96;components/auth-button.tsx&#96; | Show verified work email instead |
+- 
+  | &#96;components/logout-button.tsx&#96; | Keep as-is |
+- 
+  | &#96;lib/supabase/proxy.ts&#96; | Add work email + approval JWT claim checks |
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me also fix the complexity table formatting and check if everything looks good.</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/tom/programming/tappka/.cursor/plans/work_email_auth_system_467a2b18.plan.md</summary>
+
+**Chunk 1**
+Lines added: 1, lines removed: 9
+
+```diff
+@@ -374,21 +374,13 @@
+  
+  | Task | Complexity | Lines of Code |
+- 
+  |------|------------|---------------|
+- 
+  | Delete old auth files | Trivial | -500 lines |
+- 
++ | Security lockdown config | Trivial | ~20 lines TOML |
+  | Database migration | Low | ~50 lines SQL |
+- 
+  | JWT claims hook | Low | ~30 lines SQL |
+- 
+  | Constants + validation | Trivial | ~15 lines |
+- 
+  | Middleware update | Low | ~20 lines |
+- 
+  | Google login page | Low | ~30 lines |
+- 
+  | Work email form | Medium | ~100 lines |
+- 
+  | Admin UI | Low | ~80 lines |
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Now let me read the final version of the plan to verify all changes look good.</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/tom/programming/tappka/.cursor/plans/work_email_auth_system_467a2b18.plan.md</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Good, the plan looks good. Let me also read the security section to confirm it's properly added:</details></think>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file">
+<details><summary>Tool use: **read_file** • Read file: /Users/tom/programming/tappka/.cursor/plans/work_email_auth_system_467a2b18.plan.md</summary>
+
+</details>
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+I see there's a table formatting issue in the Security Lockdown section. Let me fix that:</details></think>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="search_replace">
+
+<details><summary>Tool use: **search_replace** • Edit file: /Users/tom/programming/tappka/.cursor/plans/work_email_auth_system_467a2b18.plan.md</summary>
+
+**Chunk 1**
+Lines added: undefined, lines removed: 8
+
+```diff
+@@ -152,19 +152,11 @@
+  
+  | Attack Vector | How It's Blocked |
+- 
+  |---------------|------------------|
+- 
+  | Direct email/password signup | &#96;enable_signup = false&#96; in auth.email |
+- 
+  | Other OAuth providers (Apple, GitHub, etc.) | All providers disabled except Google |
+- 
+  | Anonymous access | &#96;enable_anonymous_sign_ins = false&#96; |
+- 
+  | Access without verified work email | Middleware checks &#96;verified_work_email&#96; JWT claim |
+- 
+  | Unverified/fake work email | OTP verification required before linking |
+- 
+  | Non-CZU domain emails | Domain validation (client + server + DB constraint) |
+- 
+  | Access without approval | Middleware checks &#96;is_approved&#96; JWT claim |
+  
+```
+
+</details>
+
+</tool-use>
+
+---
+
+<think><details><summary>Thought Process</summary>
+Good, the plan has been updated. Let me provide a summary of what was added.</details></think>
+
+---
+
+Done! I've updated the plan with a comprehensive **Security Lockdown** section. Here's what was added:
+
+## New Todo Added
+- `security-lockdown`: Lock down Supabase to only allow Google OAuth
+
+## New Sections Added
+
+### Supabase Configuration Changes (expanded)
+```toml
+[auth]
+enable_manual_linking = true        # Required for work email linking
+enable_anonymous_sign_ins = false   # Block anonymous access
+
+[auth.email]
+enable_signup = false               # Block direct email/password signup
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+```
+
+### Security Lockdown Table
+
+| Attack Vector | How It's Blocked |
+|---------------|------------------|
+| Direct email/password signup | `enable_signup = false` |
+| Other OAuth providers | All disabled except Google |
+| Anonymous access | `enable_anonymous_sign_ins = false` |
+| Access without verified work email | Middleware JWT check |
+| Unverified/fake work email | OTP verification required |
+| Non-CZU domain emails | Domain validation (3 layers) |
+| Access without approval | Middleware JWT check |
+
+### Two Postgres Hooks Added
+1. **`reject_non_google_signup`** - Optional extra layer to reject non-Google signups at DB level
+2. **`custom_access_token_hook`** - Embeds `role`, `verified_work_email`, and `is_approved` in JWT
+
+The plan is now ready for implementation. Would you like me to start?
 
 ---
 
