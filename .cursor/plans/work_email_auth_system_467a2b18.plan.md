@@ -1,6 +1,6 @@
 ---
 name: Work Email Auth System
-overview: Build a robust authentication system using Supabase with Google OAuth, manual identity linking for work email verification (@studenti.czu.cz or @pef.czu.cz), and role-based permissions with admin management UI.
+overview: Build a robust authentication system using Supabase with Google OAuth, work email verification (@studenti.czu.cz or @pef.czu.cz), profile linking, team management, and role-based permissions (student, team_leader, coach, admin).
 todos:
   - id: cleanup-old-auth
     content: Delete unused password-based auth files (8 files)
@@ -9,19 +9,22 @@ todos:
     content: Lock down Supabase to only allow Google OAuth (disable email signup, other providers)
     status: pending
   - id: db-schema
-    content: Create Supabase migration for approved_emails and user_profiles tables with RLS
+    content: Create Supabase migration for profiles and teams tables with RLS
     status: pending
-  - id: jwt-hook
-    content: Create and test custom_access_token hook using Supabase MCP
+  - id: profile-verification
+    content: Implement database-based profile verification (no JWT claims)
     status: pending
   - id: supabase-config
     content: Update supabase/config.toml (manual_linking, Google OAuth, security settings)
     status: pending
   - id: auth-constants
-    content: Create lib/constants/auth.ts with domain validation
+    content: Create lib/constants/auth.ts with domain validation and role constants
+    status: pending
+  - id: server-actions
+    content: Create lib/actions/auth.ts with profile linking, verification, access management
     status: pending
   - id: middleware-update
-    content: Update proxy.ts to check verified_work_email and is_approved JWT claims
+    content: Update proxy.ts to query profiles table for verified user and access status
     status: pending
   - id: google-login
     content: Create Google login button and rewrite login page
@@ -30,7 +33,7 @@ todos:
     content: Create work email verification page with OTP and identity linking
     status: pending
   - id: admin-ui
-    content: Create simple admin page for managing approved emails
+    content: Create admin pages for managing profiles and teams
     status: pending
 ---
 
@@ -43,27 +46,29 @@ flowchart TD
     subgraph auth_flow [Authentication Flow]
         A[User clicks Google Login] --> B[Google OAuth]
         B --> C[Redirect back with Google identity]
-        C --> D{Work email linked?}
+        C --> D{Profile linked to user?}
         D -->|No| E[Prompt for work email]
         E --> F{Domain is czu.cz?}
         F -->|No| G[Show domain error]
         G --> E
         F -->|Yes| H[Send OTP to work email]
         H --> I[User enters OTP]
-        I --> J[Link work email identity]
-        J --> K{Email in approved list?}
-        D -->|Yes| K
-        K -->|No| L[Pending Approval Page]
-        K -->|Yes| M[Grant Full Access]
+        I --> J{Profile exists for work email?}
+        J -->|No| K[Pending Approval Page]
+        J -->|Yes| L[Link profile to user]
+        D -->|Yes| M{Access revoked?}
+        L --> M
+        M -->|Yes| N[Show access revoked]
+        M -->|No| O[Grant Full Access]
     end
 
     subgraph request_flow [Request Validation]
-        N[Incoming Request] --> O[Middleware checks JWT]
-        O --> P{Has verified_work_email?}
-        P -->|No| Q[Redirect to verify email]
-        P -->|Yes| R{is_approved claim?}
-        R -->|No| S[Show pending approval]
-        R -->|Yes| T[Allow access]
+        P[Incoming Request] --> Q[Middleware queries database]
+        Q --> R{Profile linked to user?}
+        R -->|No| S[Redirect to verify email]
+        R -->|Yes| T{removed_access is null?}
+        T -->|No| U[Show access revoked]
+        T -->|Yes| V[Allow access]
     end
 ```
 
@@ -76,41 +81,97 @@ flowchart TD
    - Client-side: Immediate feedback
    - Server-side: Validated before `signInWithOtp` is called
 
-2. **After OTP (Approval Check)**: Check if specific email is in `approved_emails` table
+2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email
 
-   - Embedded in JWT via custom claims hook
+   - If profile exists with that work_email → link profile to auth.user
+   - If no profile exists → show "Pending Approval" (admin must create profile first)
    - Checked on every request via middleware
 
 ## Database Schema (Supabase Migrations)
 
-Two tables with RLS policies managed entirely in Supabase:
+Three tables with RLS policies managed entirely in Supabase:
 
-1. **`approved_emails`** - Pre-approved specific email addresses (admin-managed)
-2. **`user_profiles`** - User data with role and verified work email
+1. **`auth.users`** - Supabase-managed authentication (Google OAuth)
+2. **`profiles`** - User profile data with role and team membership
+3. **`teams`** - Team information
 ```sql
--- Key tables structure
-create table public.approved_emails (
+-- Role enum for profiles
+create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');
+
+-- Teams table
+create table public.teams (
   id uuid primary key default gen_random_uuid(),
-  email text unique not null,
-  created_by uuid references auth.users(id),
-  created_at timestamptz default now(),
+  name text not null,
+  picture text,
+  color text,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null
+);
+
+-- Profiles table (pre-created by admin, linked to user after verification)
+create table public.profiles (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  picture text,  -- defaults to Google profile picture on link
+  user_id uuid unique references auth.users(id) on delete set null,  -- linked after OTP verification
+  work_email text unique not null,
+  role public.profile_role not null default 'student',
+  team_id uuid references public.teams(id) on delete set null,
+  phone_number text,
+  personal_email text,
+  date_of_birth date,
+  removed_access timestamptz,  -- null = active, set = revoked
+  removed_access_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null,
   constraint valid_czu_domain check (
-    email like '%@studenti.czu.cz' or email like '%@pef.czu.cz'
+    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'
   )
 );
 
-create table public.user_profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  role text not null default 'user' check (role in ('user', 'admin')),
-  verified_work_email text unique,
-  google_email text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
+-- Indexes for common queries
+create index profiles_user_id_idx on public.profiles(user_id);
+create index profiles_work_email_idx on public.profiles(work_email);
+create index profiles_team_id_idx on public.profiles(team_id);
 ```
 
 
-## Allowed Domains (Hardcoded Constants)
+> **Note**: `updated_at` is set by Next.js server actions on each update, not via database triggers. This keeps all logic in the application layer.
+
+### Entity Relationships
+
+```
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│   auth.users    │       │    profiles     │       │     teams       │
+│  (Supabase)     │       │                 │       │                 │
+├─────────────────┤       ├─────────────────┤       ├─────────────────┤
+│ id (uuid)       │◄──┐   │ id (uuid)       │   ┌──►│ id (uuid)       │
+│ email (google)  │   │   │ name            │   │   │ name            │
+│ ...auth fields  │   └───│ user_id (1:1)   │   │   │ picture         │
+└─────────────────┘       │ work_email      │   │   │ color           │
+                          │ role (enum)     │   │   │ created_at      │
+                          │ team_id (n:1)───┼───┘   │ updated_at      │
+                          │ picture         │       └─────────────────┘
+                          │ phone_number    │
+                          │ personal_email  │
+                          │ date_of_birth   │
+                          │ removed_access  │
+                          │ removed_access_by│──┐
+                          │ created_at      │  │
+                          │ updated_at      │  │
+                          └─────────────────┘  │
+                                    ▲          │
+                                    └──────────┘ (self-reference)
+```
+
+### Verification Logic
+
+- **Unverified**: `profiles.user_id IS NULL` → User logged in with Google but hasn't verified work email
+- **Pending Approval**: Work email verified via OTP, but no profile exists with that email
+- **Verified & Active**: `profiles.user_id IS NOT NULL AND profiles.removed_access IS NULL`
+- **Access Revoked**: `profiles.removed_access IS NOT NULL`
+
+## Constants
 
 ```typescript
 // lib/constants/auth.ts
@@ -122,6 +183,22 @@ export const ALLOWED_WORK_EMAIL_DOMAINS = [
 export const isValidWorkEmailDomain = (email: string): boolean => {
   const domain = email.split('@')[1]?.toLowerCase();
   return ALLOWED_WORK_EMAIL_DOMAINS.includes(domain as any);
+};
+
+// Profile roles (matches database enum)
+export const PROFILE_ROLES = ['student', 'team_leader', 'coach', 'admin'] as const;
+export type ProfileRole = typeof PROFILE_ROLES[number];
+
+// Role hierarchy for permission checks
+export const ROLE_HIERARCHY: Record<ProfileRole, number> = {
+  student: 0,
+  team_leader: 1,
+  coach: 2,
+  admin: 3,
+} as const;
+
+export const hasMinimumRole = (userRole: ProfileRole, requiredRole: ProfileRole): boolean => {
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
 };
 ```
 
@@ -160,105 +237,46 @@ secret = "env(GOOGLE_CLIENT_SECRET)"
 
 | Anonymous access                            | `enable_anonymous_sign_ins = false`                 |
 
-| Access without verified work email          | Middleware checks `verified_work_email` JWT claim   |
+| Access without verified work email          | Middleware checks `profiles.user_id` is linked   |
 
 | Unverified/fake work email                  | OTP verification required before linking            |
 
 | Non-CZU domain emails                       | Domain validation (client + server + DB constraint) |
 
-| Access without approval                     | Middleware checks `is_approved` JWT claim           |
+| Access without pre-created profile          | Profile must exist before linking (admin creates profiles)           |
 
-### Optional: `before_user_created` Hook (Extra Layer)
+| Revoked access                              | Middleware checks `profiles.removed_access IS NULL`           |
 
-Postgres hook to reject any user not created via Google:
+### Profile Verification (Next.js Middleware)
 
-```sql
-create or replace function public.reject_non_google_signup(event jsonb)
-returns jsonb
-language plpgsql
-security definer
-as $$
-begin
-  -- Only allow users created via Google OAuth
-  if event->'user'->'app_metadata'->>'provider' != 'google' then
-    return jsonb_build_object(
-      'decision', 'reject',
-      'message', 'Only Google login is allowed'
-    );
-  end if;
-  return event;
-end;
-$$;
-```
+All verification logic lives in Next.js middleware, not in Supabase:
 
-Enable in config:
+- **Profile Linked**: Check `profiles.user_id` matches current auth.user.id
+- **Access Active**: Check `profiles.removed_access IS NULL`
+- **User Role**: Read `profiles.role` column (student, team_leader, coach, admin)
 
-```toml
-[auth.hook.before_user_created]
-enabled = true
-uri = "pg-functions://postgres/public/reject_non_google_signup"
-```
+This approach:
 
-### Custom Access Token Hook
-
-Postgres function to embed claims in JWT:
-
-```sql
-create or replace function public.custom_access_token_hook(event jsonb)
-returns jsonb
-language plpgsql
-security definer
-as $$
-declare
-  claims jsonb;
-  user_role text;
-  work_email text;
-  is_approved boolean;
-begin
-  -- Get user profile data
-  select role, verified_work_email into user_role, work_email
-  from public.user_profiles
-  where id = (event->>'user_id')::uuid;
-
-  -- Check if work email is in approved list
-  select exists(
-    select 1 from public.approved_emails where email = work_email
-  ) into is_approved;
-
-  -- Build custom claims
-  claims := coalesce(event->'claims', '{}'::jsonb);
-  claims := jsonb_set(claims, '{role}', to_jsonb(coalesce(user_role, 'user')));
-  claims := jsonb_set(claims, '{verified_work_email}', to_jsonb(work_email));
-  claims := jsonb_set(claims, '{is_approved}', to_jsonb(coalesce(is_approved, false)));
-
-  return jsonb_set(event, '{claims}', claims);
-end;
-$$;
-```
-
-Enable in config:
-
-```toml
-[auth.hook.custom_access_token]
-enabled = true
-uri = "pg-functions://postgres/public/custom_access_token_hook"
-```
+- Keeps all business logic in Next.js (single source of truth)
+- Allows real-time updates (e.g., instant access revocation)
+- Admin pre-creates profiles, users link via work email verification
+- Supabase only handles auth + data storage (no custom hooks or functions)
 
 ## Development & Testing with Supabase MCP
 
 The project has a `supabase/` directory with Supabase MCP (Model Context Protocol) integration available for:
 
-1. **Testing custom claims hook**: Execute and iterate on the Postgres function directly
-2. **Running migrations**: Apply and test database schema changes locally
-3. **Querying tables**: Verify RLS policies and data integrity
-4. **Debugging auth flow**: Inspect user sessions and JWT claims
+1. **Running migrations**: Apply and test database schema changes locally
+2. **Querying tables**: Verify RLS policies and data integrity
+3. **Debugging auth flow**: Inspect user sessions and profile data
+4. **Testing verification logic**: Query profiles and teams tables
 
 **Useful MCP commands for development:**
 
-- Run SQL queries to test the custom_access_token hook function
 - Verify RLS policies by querying as different user roles
-- Seed test data into approved_emails table
-- Inspect auth.users and user_profiles tables
+- Seed test data into profiles and teams tables
+- Inspect auth.users and profiles tables
+- Test profile linking and access revocation queries
 
 ## Files to DELETE (Password-based auth leftovers)
 
@@ -300,50 +318,71 @@ These files are for email+password authentication and are **not needed** with Go
 
 | `components/logout-button.tsx` | Keep as-is |
 
-| `lib/supabase/proxy.ts` | Add work email + approval JWT claim checks |
+| `lib/supabase/proxy.ts` | Add profile linking + access status database queries |
 
 ## Files to CREATE
 
 ### Constants (1 file)
 
-- `lib/constants/auth.ts` - Domain validation (10 lines)
+- `lib/constants/auth.ts` - Domain validation + role constants (~25 lines)
 
-### Database (2 files)
+### Database (1 file)
 
 - `supabase/migrations/001_auth_tables.sql` - Tables + RLS
-- `supabase/migrations/002_custom_claims_hook.sql` - JWT claims function
 
-### Frontend (3 pages)
+### Frontend (4 pages)
 
 - `app/auth/login/page.tsx` - Rewrite with Google button only
 - `app/auth/verify-work-email/page.tsx` - Work email + OTP form
-- `app/auth/pending-approval/page.tsx` - Simple "pending" message
-- `app/admin/users/page.tsx` - Approved emails table (admin only)
+- `app/auth/pending-approval/page.tsx` - Simple "pending" message (profile not created yet)
+- `app/auth/access-revoked/page.tsx` - Access revoked message
+- `app/admin/profiles/page.tsx` - Manage profiles (admin only)
+- `app/admin/teams/page.tsx` - Manage teams (admin only)
 
 ### Components (2 files)
 
 - `components/google-login-button.tsx` - Single OAuth button
 - `components/work-email-form.tsx` - Email input + OTP verification
 
-## Key Security Features (Handled by Supabase)
+### Server Actions (1 file)
 
-1. **RLS Policies**:
+- `lib/actions/auth.ts` - Profile linking, verification logic, access management
 
-   - Users can only read/update their own profile
-   - Only admins can manage approved emails
-   - Approved emails table viewable only by admins
+## Key Security Features
 
-2. **Custom JWT Claims Hook**:
+### Supabase (Data Layer)
 
-   - Runs on every token refresh
-   - Embeds role, verified_work_email, and is_approved directly in JWT
-   - No additional DB queries needed for authorization checks
+1. **RLS Policies** (row-level access control):
 
-3. **Domain Validation**:
+   - Users can only read/update their own profile (limited fields)
+   - Only admins can create/delete profiles and manage teams
+   - Team data viewable by team members
+
+2. **Database Constraints**:
+
+   - Domain constraint ensures only valid CZU domains in profiles
+   - Unique constraints on work_email, user_id
+
+### Next.js (Application Layer)
+
+1. **Middleware Verification**:
+
+   - Queries `profiles` table for linked user_id
+   - Checks `removed_access` is null for active access
+   - Enforces role-based route protection
+   - Real-time verification (instant access revocation)
+
+2. **Domain Validation** (in server actions):
 
    - Client-side validation for UX (immediate feedback)
    - Server-side validation before sending OTP
-   - Database constraint ensures only valid domains in approved_emails
+   - Validates email format and CZU domain
+
+3. **Access Management** (in server actions):
+
+   - Admin sets `removed_access` timestamp and `removed_access_by` profile
+   - Immediate effect on next request
+   - Audit trail of who revoked access and when
 
 ## Authentication Flow Details
 
@@ -366,25 +405,55 @@ const { error } = await supabase.auth.signInWithOtp({
 });
 ```
 
-### Step 3: OTP Verification and Identity Linking
+### Step 3: OTP Verification and Profile Linking
 
 ```typescript
-// After user enters OTP, verify and link
+// After user enters OTP, verify it
 const { error } = await supabase.auth.verifyOtp({
   email: workEmail,
   token: otpCode,
   type: 'email'
 });
 
-// Link the email identity to current Google user
-const { error } = await supabase.auth.linkIdentity({
-  provider: 'email'
-});
+// Check if profile exists for this work email
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('id')
+  .eq('work_email', workEmail)
+  .single();
+
+if (!profile) {
+  // No profile exists - redirect to pending approval
+  redirect('/auth/pending-approval');
+}
+
+// Link profile to current user
+const { data: { user } } = await supabase.auth.getUser();
+await supabase
+  .from('profiles')
+  .update({ 
+    user_id: user.id,
+    picture: user.user_metadata.avatar_url  // Default to Google picture
+  })
+  .eq('work_email', workEmail);
 ```
 
 ### Step 4: Middleware Validation
 
-Check JWT claims for `verified_work_email` and `is_approved` on every request to protected routes.
+Query database for profile linked to current auth.user and check `removed_access IS NULL` on every request to protected routes.
+
+```typescript
+// Middleware check
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('id, role, removed_access')
+  .eq('user_id', user.id)
+  .single();
+
+if (!profile) redirect('/auth/verify-work-email');
+if (profile.removed_access) redirect('/auth/access-revoked');
+// User has active access, continue...
+```
 
 ## Estimated Complexity
 
@@ -396,26 +465,73 @@ Check JWT claims for `verified_work_email` and `is_approved` on every request to
 
 | Security lockdown config | Trivial | ~20 lines TOML |
 
-| Database migration | Low | ~50 lines SQL |
+| Database migration | Low | ~50 lines SQL (profiles, teams, indexes) |
 
-| JWT claims hook | Low | ~30 lines SQL |
+| Constants + validation | Trivial | ~25 lines |
 
-| Constants + validation | Trivial | ~15 lines |
+| Server actions (business logic) | Medium | ~80 lines |
 
-| Middleware update | Low | ~20 lines |
+| Middleware update | Medium | ~50 lines (includes DB queries) |
 
 | Google login page | Low | ~30 lines |
 
-| Work email form | Medium | ~100 lines |
+| Work email form + linking | Medium | ~120 lines |
 
-| Admin UI | Low | ~80 lines |
+| Admin UI (profiles + teams) | Medium | ~150 lines |
 
-**Total new code**: ~325 lines (vs ~500 lines deleted)
+**Total new code**: ~525 lines (vs ~500 lines deleted)
+
+## Separation of Concerns
+
+### Supabase (Auth + Storage Only)
+
+- **Authentication**: Google OAuth flow, session management, OTP emails
+- **Database**: Store profiles, teams data with RLS for row-level access control
+- **No business logic**: No custom hooks, no stored procedures, no triggers for business rules
+
+### Next.js (All Business Logic)
+
+- **Middleware**: Profile verification, access checks, role-based routing
+- **Server Actions**: Profile linking, access revocation, team management
+- **Validation**: Domain validation, input sanitization, business rules
+- **Authorization**: Role hierarchy checks, permission enforcement
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Next.js                                  │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │ Middleware  │  │   Server    │  │      Components         │  │
+│  │ - Auth check│  │   Actions   │  │  - Login form           │  │
+│  │ - Profile   │  │ - Link      │  │  - OTP verification     │  │
+│  │   verify    │  │   profile   │  │  - Admin UI             │  │
+│  │ - Role gate │  │ - Revoke    │  │                         │  │
+│  │             │  │   access    │  │                         │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
+│         │                │                     │                 │
+│         └────────────────┼─────────────────────┘                 │
+│                          ▼                                       │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │              Supabase Client (data access only)             ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        Supabase                                  │
+│  ┌─────────────────────┐  ┌─────────────────────────────────┐   │
+│  │   Auth Service      │  │         PostgreSQL              │   │
+│  │  - Google OAuth     │  │  - profiles table               │   │
+│  │  - OTP emails       │  │  - teams table                  │   │
+│  │  - Session mgmt     │  │  - RLS policies (access ctrl)   │   │
+│  └─────────────────────┘  └─────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 
 ## Simplicity Principles
 
 1. **No tRPC for auth** - Use Supabase client directly (fewer layers)
-2. **No separate services** - Business logic in Supabase (RLS + hooks)
-3. **Minimal components** - Reuse shadcn/ui, no custom abstractions
-4. **Database-first validation** - Constraints + RLS handle security
-5. **JWT claims for authorization** - No per-request DB lookups
+2. **Business logic in Next.js** - Server actions and middleware handle all rules
+3. **Supabase for storage only** - No hooks, no custom functions, just tables + RLS
+4. **Minimal components** - Reuse shadcn/ui, no custom abstractions
+5. **Direct database queries** - Query profiles table for verification and access status
+6. **Admin-first onboarding** - Admin creates profiles, users link via work email verification
