@@ -229,9 +229,9 @@ export function RoomQuickStatus({
 
           {/* View full schedule button */}
           <Button 
-            variant="outline" 
+            variant="secondary" 
             size="lg" 
-            className={`w-full h-12 text-sm font-heading font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all border-2 ${textColor} hover:bg-white/10`}
+            className="w-full h-12 text-sm font-heading font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 bg-white/90 hover:bg-white text-foreground"
             asChild
           >
             <Link href={`/dashboard/reservations/${room.code}`}>
