@@ -4,12 +4,29 @@ import { AuthButton } from "@/components/auth-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import Link from "next/link";
 import { Suspense } from "react";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { hasEmailIdentity } from "@/lib/auth-helpers";
 
-export default function ProtectedLayout({
+export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+
+  // Redirect to login if not authenticated
+  if (!data?.claims) {
+    redirect("/auth/login");
+  }
+
+  // Redirect to verify email if no email identity linked
+  const hasEmail = await hasEmailIdentity();
+  if (!hasEmail) {
+    redirect("/auth/verify-email");
+  }
+
   return (
     <main className="min-h-screen flex flex-col items-center">
       <div className="flex-1 w-full flex flex-col gap-20 items-center">
