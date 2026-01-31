@@ -14,24 +14,24 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = searchParams.get("next");
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (!error) {
-      // Check if user has email identity linked
-      // If not, redirect to verify-email page
-      // Use the same supabase client to ensure we have the just-exchanged session
-      const hasEmail = await hasEmailIdentity(supabase);
-
-      // Validate the next parameter to prevent open redirects
-      const validatedNext = validateRedirectUrl(next, origin);
-      const redirectTo = validatedNext || (hasEmail ? "/protected" : "/auth/verify-email");
-
-      redirect(redirectTo);
-    }
+  if (!code) {
+    redirect(`/auth/error?error=${encodeURIComponent("No code provided")}`);
   }
 
-  // Redirect to error page if something went wrong
-  redirect(`/auth/error?error=Failed to authenticate with Google`);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error) {
+    redirect(`/auth/error?error=${encodeURIComponent(error.message)}`);
+  }
+
+  // Check if user has email identity linked
+  // If not, redirect to verify-email page
+  // Use the same supabase client to ensure we have the just-exchanged session
+  const hasEmail = await hasEmailIdentity(supabase);
+
+  // Validate the next parameter to prevent open redirects
+  const validatedNext = validateRedirectUrl(next, origin);
+  const redirectTo = validatedNext ?? (hasEmail ? "/protected" : "/auth/verify-email");
+
+  redirect(redirectTo);
 }

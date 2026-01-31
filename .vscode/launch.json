@@ -19,6 +19,14 @@
         "webpack:///./*": "${webRoot}/*",
         "webpack:///./~/*": "${webRoot}/node_modules/*"
       }
+    },
+    {
+      "name": "Attach to Node.js",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

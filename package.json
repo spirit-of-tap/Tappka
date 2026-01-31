@@ -13,7 +13,7 @@
     "docker:wait-and-restart-auth": "run-s wait-and-restart-docker docker:restart-auth",
     "docker:restart-auth": "node scripts/restart-docker-auth.js",
     "setup-env": "node scripts/setup-env.js",
-    "dev:next": "next dev",
+    "dev:next": "NODE_OPTIONS='--inspect' next dev",
     "build": "next build",
     "start": "next start"
   },

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isPublicRoute } from "@/lib/constants/auth";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -44,69 +45,54 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   const pathname = request.nextUrl.pathname;
-  const isPublicRoute = pathname === "/" || pathname.startsWith("/auth");
-  const isVerifyEmailRoute = pathname === "/auth/verify-email";
-  const isPendingApprovalRoute = pathname === "/auth/pending-approval";
 
-  // Redirect to login if not authenticated (except for public routes)
-  if (!isPublicRoute && !user) {
+  // Allow public routes without authentication
+  if (isPublicRoute(pathname)) {
+    return supabaseResponse;
+  }
+
+  // Redirect to login if not authenticated
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
-  // Check for email identity verification first if user is authenticated
-  // This check runs for protected routes and pending-approval route
-  // Skip this check only for verify-email route and other auth routes
-  if (user && !isVerifyEmailRoute && (!isPublicRoute || isPendingApprovalRoute)) {
-    // Check if user has an email identity (not just OAuth providers like Google)
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+  // Check if user has an email identity (not just OAuth providers like Google)
+  const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (authUser) {
-      const identities = authUser.identities || [];
-      const hasEmailIdentity = identities.some(
-        (identity) => identity.provider === "email"
-      );
+  if (!authUser) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    return NextResponse.redirect(url);
+  }
 
-      // If no email identity, redirect to verify email page
-      if (!hasEmailIdentity) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/auth/verify-email";
-        return NextResponse.redirect(url);
-      }
-    }
+  const identities = authUser.identities || [];
+  const hasEmailIdentity = identities.some(
+    (identity) => identity.provider === "email"
+  );
+
+  // If no email identity, redirect to verify email page
+  if (!hasEmailIdentity) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/verify-email";
+    return NextResponse.redirect(url);
   }
 
   // Check for linked profile if user is authenticated and not on public routes
   // Skip this check for verify-email and pending-approval routes
-  if (user && !isPublicRoute && !isVerifyEmailRoute && !isPendingApprovalRoute) {
-    // Get the public.users row linked to this auth user
-    const { data: publicUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("auth_user_id", user.sub)
-      .single();
+  // Get the public.users row and linked profile in a single query
+  const { data: publicUser } = await supabase
+    .from("users")
+    .select("id, profiles(id)")
+    .eq("auth_user_id", user.sub)
+    .single();
 
-    // If no publicUser or no linked profile, redirect to pending approval
-    if (!publicUser) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/auth/pending-approval";
-      return NextResponse.redirect(url);
-    }
-
-    // Check if there's a profile linked to this user
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("user_id", publicUser.id)
-      .single();
-
-    if (!profile) {
-      // User doesn't have a linked profile, redirect to pending approval
-      const url = request.nextUrl.clone();
-      url.pathname = "/auth/pending-approval";
-      return NextResponse.redirect(url);
-    }
+  // If no publicUser or no linked profile, redirect to pending approval
+  if (!publicUser || !publicUser.profiles || publicUser.profiles.length === 0) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/pending-approval";
+    return NextResponse.redirect(url);
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
