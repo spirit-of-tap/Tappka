@@ -16,8 +16,9 @@ import { GoogleLoginButton } from "@/components/google-login-button";
  */
 export function LoginForm({
   className,
+  next,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+}: React.ComponentPropsWithoutRef<"div"> & { next?: string }) {
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -29,7 +30,7 @@ export function LoginForm({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            <GoogleLoginButton />
+            <GoogleLoginButton next={next} />
           </div>
         </CardContent>
       </Card>

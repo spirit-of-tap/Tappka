@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const typeParam = searchParams.get("type");
+  const next = searchParams.get("next");
   const type: EmailOtpType | null =
     typeParam === "email_change" ? ("email_change" as EmailOtpType) : null;
 
@@ -61,5 +62,5 @@ export async function GET(request: NextRequest) {
     return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);
   }
 
-  return redirectWithCookies(createSuccessUrl(request), supabaseResponse);
+  return redirectWithCookies(createSuccessUrl(request, next), supabaseResponse);
 }

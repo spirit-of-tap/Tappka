@@ -61,9 +61,20 @@ export async function GET(request: NextRequest) {
 
   // Validate the next parameter to prevent open redirects
   const validatedNext = validateRedirectUrl(next, origin);
-  const redirectTo = validatedNext ?? (hasEmail ? DEFAULT_LOGGED_IN_PAGE : "/auth/verify-email");
 
-  const url = request.nextUrl.clone();
-  url.pathname = redirectTo;
-  return redirectWithCookies(url, supabaseResponse);
+  if (hasEmail) {
+    // User has email identity, redirect to next or default page
+    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;
+    const url = request.nextUrl.clone();
+    url.pathname = redirectTo;
+    return redirectWithCookies(url, supabaseResponse);
+  } else {
+    // User needs to verify email, preserve next parameter
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/verify-email";
+    if (validatedNext) {
+      url.searchParams.set("next", validatedNext);
+    }
+    return redirectWithCookies(url, supabaseResponse);
+  }
 }

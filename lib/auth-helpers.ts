@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { createServerClient } from "@supabase/ssr";
 import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
+import { validateRedirectUrl } from "@/lib/utils";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createServerClient>;
 
@@ -39,21 +40,27 @@ export async function hasEmailIdentity(
 export async function hasLinkedProfile(
   supabaseClient: SupabaseClient
 ): Promise<boolean> {
-  const { data: { user }, error } = await supabaseClient.auth.getUser();
+  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
-  if (error || !user) {
+  if (authError || !user) {
     return false;
   }
 
-  // Single query using nested select to check for linked profile
-  // Joins users and profiles tables in a single database call
-  const { data: userWithProfile } = await supabaseClient
-    .from("users")
-    .select("profiles(id)")
-    .eq("auth_user_id", user.id)
-    .single();
+  // Query profiles directly - RLS policy ensures user can only see their own profile
+  // The RLS policy checks: user_id in (select id from public.users where auth_user_id = auth.uid())
+  // This is more reliable than nested selects with RLS
+  const { data: profiles, error: queryError } = await supabaseClient
+    .from("profiles")
+    .select("id")
+    .limit(1);
 
-  return !!userWithProfile?.profiles && userWithProfile.profiles.length > 0;
+  // Return false if query failed or no profiles found
+  if (queryError || !profiles) {
+    return false;
+  }
+
+  // Check if at least one profile exists
+  return Array.isArray(profiles) && profiles.length > 0;
 }
 
 /**
@@ -68,9 +75,22 @@ export function createErrorUrl(request: NextRequest, errorMessage: string): URL 
 
 /**
  * Creates a success redirect URL
+ * @param request - The NextRequest object
+ * @param next - Optional next parameter to redirect to after success
+ * @returns URL object for redirect
  */
-export function createSuccessUrl(request: NextRequest): URL {
+export function createSuccessUrl(request: NextRequest, next?: string | null): URL {
   const url = request.nextUrl.clone();
+
+  if (next) {
+    // Validate next parameter to prevent open redirects
+    const validatedNext = validateRedirectUrl(next, request.nextUrl.origin);
+    if (validatedNext) {
+      url.pathname = validatedNext;
+      return url;
+    }
+  }
+
   url.pathname = DEFAULT_LOGGED_IN_PAGE;
   return url;
 }

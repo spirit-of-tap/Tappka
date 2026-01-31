@@ -71,7 +71,7 @@ const clearPersistedState = () => {
  * Form component for email verification via OTP
  * Allows users to link an email identity to their Google OAuth account
  */
-export function VerifyEmailForm() {
+export function VerifyEmailForm({ next }: { next?: string }) {
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -186,7 +186,7 @@ export function VerifyEmailForm() {
       setIsLoading(false);
       // Keep lastSubmittedOtp set to prevent re-submission of the same code
     }
-  }, [email, otpCode, supabase, router]);
+  }, [email, otpCode, next, supabase, router]);
 
   /**
    * Handles form submission for OTP verification

@@ -8,7 +8,7 @@ import { useState } from "react";
  * Google OAuth login button component
  * Handles both sign-in and sign-up flows seamlessly
  */
-export function GoogleLoginButton() {
+export function GoogleLoginButton({ next }: { next?: string }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -16,10 +16,15 @@ export function GoogleLoginButton() {
     const supabase = createClient();
 
     try {
+      const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
+      if (next) {
+        callbackUrl.searchParams.set("next", next);
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: callbackUrl.toString(),
         },
       });
 

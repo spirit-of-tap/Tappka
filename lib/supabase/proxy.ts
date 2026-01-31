@@ -56,6 +56,7 @@ export async function updateSession(request: NextRequest) {
   if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
@@ -65,6 +66,7 @@ export async function updateSession(request: NextRequest) {
   if (!authUser) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
@@ -72,6 +74,7 @@ export async function updateSession(request: NextRequest) {
   if (!(await hasEmailIdentity(supabase))) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/verify-email";
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
