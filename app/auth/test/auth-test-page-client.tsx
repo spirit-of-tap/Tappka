@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { type User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleLoginButton } from "@/components/google-login-button";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
  * - Email identity addition (should validate CZU domain)
  */
 export function AuthTestPageClient() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [testResults, setTestResults] = useState<{
     emailPassword?: { success: boolean; message: string };
@@ -32,7 +33,7 @@ export function AuthTestPageClient() {
     emailIdentity?: { success: boolean; message: string };
   }>({});
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     checkUser();
@@ -45,7 +46,7 @@ export function AuthTestPageClient() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const checkUser = async () => {
     const {
@@ -317,8 +318,8 @@ export function AuthTestPageClient() {
           {testResults.emailPassword && (
             <div
               className={`mt-4 p-3 rounded-md ${testResults.emailPassword.success
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-green-100 text-green-800"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-green-100 text-green-800"
                 }`}
             >
               <strong>Result:</strong> {testResults.emailPassword.message}
@@ -352,8 +353,8 @@ export function AuthTestPageClient() {
           {testResults.emailOTP && (
             <div
               className={`mt-4 p-3 rounded-md ${testResults.emailOTP.success
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-green-100 text-green-800"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-green-100 text-green-800"
                 }`}
             >
               <strong>Result:</strong> {testResults.emailOTP.message}
@@ -391,8 +392,8 @@ export function AuthTestPageClient() {
             {testResults.emailIdentity && (
               <div
                 className={`mt-4 p-3 rounded-md ${testResults.emailIdentity.success
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
                   }`}
               >
                 <strong>Result:</strong> {testResults.emailIdentity.message}

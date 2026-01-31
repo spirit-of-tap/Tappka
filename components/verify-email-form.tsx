@@ -147,7 +147,7 @@ export function VerifyEmailForm() {
    */
   const verifyOTP = useCallback(async () => {
     const trimmedOtp = otpCode.trim();
-    
+
     // Track the OTP being submitted to prevent re-submission
     setLastSubmittedOtp(trimmedOtp);
     setError(null);
@@ -248,7 +248,7 @@ export function VerifyEmailForm() {
     const trimmedOtp = otpCode.trim();
     const isOtpComplete = trimmedOtp.length === OTP_LENGTH;
     const isNewOtp = trimmedOtp !== lastSubmittedOtp;
-    
+
     if (step === "otp" && isOtpComplete && !isLoading && isNewOtp) {
       verifyOTP();
     }

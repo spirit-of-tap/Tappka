@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
       // Check if user has email identity linked
       // If not, redirect to verify-email page
       const hasEmail = await hasEmailIdentity();
-      
+
       // Validate the next parameter to prevent open redirects
       const validatedNext = validateRedirectUrl(next, origin);
       const redirectTo = validatedNext || (hasEmail ? "/protected" : "/auth/verify-email");
-      
+
       redirect(redirectTo);
     }
   }
