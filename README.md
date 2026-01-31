@@ -68,6 +68,8 @@ Supabase database is developed locally and synced automatically whenever pushed.
 Supabase Auth needs to be configured both on the project itself and in the local development environment.
 Make sure that the project can run without setting up any environment variables, this is so that we can get new T's to start vibecoding without them giving up.
 
+In case there is a conflict on the preview branch, the github action will reset the database and push the changes again. Therefore **do not store anything important in the preview database**.
+
 # Recommended Tools
 
 It is very nice to setup mcp with cursor for supabase. Look at [Supabase locally](http://localhost:54323) and go to the top for connection button. It will give you the option.
