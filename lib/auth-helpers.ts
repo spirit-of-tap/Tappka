@@ -86,12 +86,18 @@ export function createSuccessUrl(request: NextRequest, next?: string | null): UR
     // Validate next parameter to prevent open redirects
     const validatedNext = validateRedirectUrl(next, request.nextUrl.origin);
     if (validatedNext) {
-      url.pathname = validatedNext;
+      // Parse the redirect URL to handle query parameters and hash properly
+      const redirectUrl = new URL(validatedNext, request.nextUrl.origin);
+      url.pathname = redirectUrl.pathname;
+      url.search = redirectUrl.search;
+      url.hash = redirectUrl.hash;
       return url;
     }
   }
 
   url.pathname = DEFAULT_LOGGED_IN_PAGE;
+  url.search = ""; // Clear any existing search params
+  url.hash = ""; // Clear any existing hash
   return url;
 }
 

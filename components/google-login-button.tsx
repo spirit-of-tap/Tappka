@@ -18,6 +18,8 @@ export function GoogleLoginButton({ next }: { next?: string }) {
     try {
       const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
       if (next) {
+        // Properly encode the next parameter - it may contain query parameters itself
+        // Use encodeURIComponent to ensure it's properly encoded
         callbackUrl.searchParams.set("next", next);
       }
 

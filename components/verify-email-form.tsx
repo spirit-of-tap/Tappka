@@ -178,8 +178,9 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // Clear persisted state on success
       clearPersistedState();
 
-      // Success - redirect to protected page
-      router.push(DEFAULT_LOGGED_IN_PAGE);
+      // Success - redirect to next parameter or default page
+      const redirectTo = next ?? DEFAULT_LOGGED_IN_PAGE;
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");

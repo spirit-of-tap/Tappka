@@ -46,6 +46,8 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   const pathname = request.nextUrl.pathname;
+  // Include full path with query parameters and hash for next parameter
+  const fullPath = pathname + request.nextUrl.search + request.nextUrl.hash;
 
   // Allow public routes without authentication
   if (isPublicRoute(pathname)) {
@@ -56,7 +58,9 @@ export async function updateSession(request: NextRequest) {
   if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    url.searchParams.set("next", pathname);
+    url.search = ""; // Clear existing search params
+    url.hash = ""; // Clear existing hash
+    url.searchParams.set("next", fullPath);
     return NextResponse.redirect(url);
   }
 
@@ -66,7 +70,9 @@ export async function updateSession(request: NextRequest) {
   if (!authUser) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    url.searchParams.set("next", pathname);
+    url.search = ""; // Clear existing search params
+    url.hash = ""; // Clear existing hash
+    url.searchParams.set("next", fullPath);
     return NextResponse.redirect(url);
   }
 
@@ -74,7 +80,9 @@ export async function updateSession(request: NextRequest) {
   if (!(await hasEmailIdentity(supabase))) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/verify-email";
-    url.searchParams.set("next", pathname);
+    url.search = ""; // Clear existing search params
+    url.hash = ""; // Clear existing hash
+    url.searchParams.set("next", fullPath);
     return NextResponse.redirect(url);
   }
 
