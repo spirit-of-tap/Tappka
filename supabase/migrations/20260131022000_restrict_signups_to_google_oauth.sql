@@ -14,31 +14,48 @@ as $$
 declare
   v_provider text;
   v_encrypted_password text;
+  v_app_metadata jsonb;
+  v_identity jsonb;
+  v_has_google_identity boolean := false;
 begin
-  -- Extract provider from event
-  -- For OAuth signups, provider is in raw_user_meta_data
-  -- For email/password signups, there's an encrypted_password field
-  v_provider := event->'user'->'raw_user_meta_data'->>'provider';
+  -- Extract encrypted_password first (most reliable indicator of password signup)
   v_encrypted_password := event->'user'->>'encrypted_password';
   
-  -- Allow Google OAuth signups
-  if v_provider = 'google' then
-    return event;
-  end if;
-  
-  -- Block password-based signups (they have encrypted_password)
+  -- Block password-based signups immediately (they have encrypted_password)
   if v_encrypted_password is not null then
     raise exception 'Password-based signups are not allowed. Please use Google OAuth to sign in.';
   end if;
   
-  -- Block OTP-based email signups (no encrypted_password, but also no Google provider)
-  -- Check if this is an email signup attempt
-  if v_provider is null or v_provider != 'google' then
-    raise exception 'Only Google OAuth signups are allowed. Please use Google to sign in.';
+  -- Extract provider from multiple possible locations
+  -- 1. raw_user_meta_data->>'provider'
+  v_provider := event->'user'->'raw_user_meta_data'->>'provider';
+  
+  -- 2. app_metadata->>'provider'
+  v_app_metadata := event->'user'->'app_metadata';
+  if v_provider is null and v_app_metadata is not null then
+    v_provider := v_app_metadata->>'provider';
   end if;
   
-  -- Default: reject (should not reach here)
-  raise exception 'Signups are restricted to Google OAuth only.';
+  -- 3. Check identities array for Google provider (most reliable for OAuth)
+  if event->'user'->'identities' is not null then
+    for v_identity in 
+      select value from jsonb_array_elements(event->'user'->'identities')
+    loop
+      if v_identity->>'provider' = 'google' then
+        v_has_google_identity := true;
+        exit;
+      end if;
+    end loop;
+  end if;
+  
+  -- Allow Google OAuth signups (check both provider variable and identities array)
+  if v_provider = 'google' or v_has_google_identity then
+    return event;
+  end if;
+  
+  -- If we reach here, it's not a Google OAuth signup and not a password signup
+  -- This must be an OTP or other email-based signup attempt
+  raise exception 'Only Google OAuth signups are allowed. Please use Google to sign in.';
 end;
 $$;
 

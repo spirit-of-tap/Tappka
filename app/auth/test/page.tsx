@@ -292,11 +292,10 @@ export default function AuthTestPage() {
           </form>
           {testResults.emailPassword && (
             <div
-              className={`mt-4 p-3 rounded-md ${
-                testResults.emailPassword.success
+              className={`mt-4 p-3 rounded-md ${testResults.emailPassword.success
                   ? "bg-yellow-100 text-yellow-800"
                   : "bg-green-100 text-green-800"
-              }`}
+                }`}
             >
               <strong>Result:</strong> {testResults.emailPassword.message}
             </div>
@@ -328,11 +327,10 @@ export default function AuthTestPage() {
           </form>
           {testResults.emailOTP && (
             <div
-              className={`mt-4 p-3 rounded-md ${
-                testResults.emailOTP.success
+              className={`mt-4 p-3 rounded-md ${testResults.emailOTP.success
                   ? "bg-yellow-100 text-yellow-800"
                   : "bg-green-100 text-green-800"
-              }`}
+                }`}
             >
               <strong>Result:</strong> {testResults.emailOTP.message}
             </div>
@@ -368,11 +366,10 @@ export default function AuthTestPage() {
             </form>
             {testResults.emailIdentity && (
               <div
-                className={`mt-4 p-3 rounded-md ${
-                  testResults.emailIdentity.success
+                className={`mt-4 p-3 rounded-md ${testResults.emailIdentity.success
                     ? "bg-green-100 text-green-800"
                     : "bg-red-100 text-red-800"
-                }`}
+                  }`}
               >
                 <strong>Result:</strong> {testResults.emailIdentity.message}
               </div>
