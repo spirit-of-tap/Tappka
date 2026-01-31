@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { VerifyEmailForm } from "@/components/verify-email-form";
 import { LogoutButton } from "@/components/logout-button";
+import { hasLinkedProfile } from "@/lib/auth-helpers";
+import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
 /**
  * Email verification page
@@ -21,8 +23,16 @@ export default async function VerifyEmailPage({
     redirect("/auth/login");
   }
 
+  // Get search params once
   const params = await searchParams;
   const next = params.next;
+
+  // Redirect to protected if already has linked profile
+  // Respect the next parameter if provided, otherwise use default logged in page
+  const hasProfile = await hasLinkedProfile(supabase);
+  if (hasProfile) {
+    redirect(next ?? DEFAULT_LOGGED_IN_PAGE);
+  }
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 relative">

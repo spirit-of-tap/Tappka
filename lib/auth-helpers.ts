@@ -1,10 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { createServerClient } from "@supabase/ssr";
+import type { createBrowserClient } from "@supabase/ssr";
 import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { validateRedirectUrl } from "@/lib/utils";
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createServerClient>;
+type SupabaseClient =
+  | Awaited<ReturnType<typeof createClient>>
+  | ReturnType<typeof createServerClient>
+  | ReturnType<typeof createBrowserClient>;
 
 /**
  * Checks if the authenticated user has an email identity linked

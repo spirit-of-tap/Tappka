@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
+import { hasLinkedProfile } from "@/lib/auth-helpers";
 
 const STORAGE_KEY = "verify-email-form-state";
 
@@ -93,6 +94,15 @@ export function VerifyEmailForm({ next }: { next?: string }) {
     setIsLoading(true);
 
     try {
+      // Check if user already has a linked profile
+      // Once linked, email changes are not allowed to maintain profile connection
+      const hasProfile = await hasLinkedProfile(supabase);
+      if (hasProfile) {
+        setError("Cannot change email address once linked to a profile. Your email is used to maintain your profile connection.");
+        setIsLoading(false);
+        return;
+      }
+
       // Validate email format
       if (!email || !email.includes("@")) {
         setError("Please enter a valid email address");
