@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
@@ -83,8 +83,7 @@ export function VerifyEmailForm() {
    * With enable_manual_linking = true, this will link the email identity
    * to the existing authenticated user account
    */
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const verifyOTP = useCallback(async () => {
     setError(null);
     setIsLoading(true);
 
@@ -115,7 +114,25 @@ export function VerifyEmailForm() {
       setError("An unexpected error occurred");
       setIsLoading(false);
     }
+  }, [email, otpCode, supabase, router]);
+
+  /**
+   * Handles form submission for OTP verification
+   */
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await verifyOTP();
   };
+
+  /**
+   * Auto-submits the form when OTP code reaches 8 digits
+   * This handles paste events and manual entry
+   */
+  useEffect(() => {
+    if (step === "otp" && otpCode.length === 8 && !isLoading) {
+      verifyOTP();
+    }
+  }, [otpCode, step, isLoading, verifyOTP]);
 
   return (
     <Card>
@@ -163,13 +180,18 @@ export function VerifyEmailForm() {
               <Input
                 id="otp"
                 type="text"
-                placeholder="Enter 6-digit code"
+                placeholder="Enter 8-digit code"
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedText = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 8);
+                  setOtpCode(pastedText);
+                }}
                 disabled={isLoading}
                 required
                 autoFocus
-                maxLength={6}
+                maxLength={8}
               />
               <p className="text-xs text-muted-foreground">
                 Check your email for the verification code
