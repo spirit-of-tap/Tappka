@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
@@ -16,60 +16,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isValidWorkEmailDomain } from "@/lib/constants/auth";
 
-const STORAGE_KEY = "verify-email-form-state";
-
-interface StoredState {
-  step: "email" | "otp";
-  email: string;
+interface UserState {
+  suggested_work_email: string | null;
+  last_otp_sent_at: string | null;
 }
-
-/**
- * Loads persisted form state from sessionStorage
- */
-const loadPersistedState = (): Partial<StoredState> => {
-  if (typeof window === "undefined") return {};
-
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored) as StoredState;
-    }
-  } catch (err) {
-    // Ignore errors reading from storage
-  }
-
-  return {};
-};
-
-/**
- * Saves form state to sessionStorage
- */
-const savePersistedState = (state: StoredState) => {
-  if (typeof window === "undefined") return;
-
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (err) {
-    // Ignore errors writing to storage
-  }
-};
-
-/**
- * Clears persisted form state from sessionStorage
- */
-const clearPersistedState = () => {
-  if (typeof window === "undefined") return;
-
-  try {
-    sessionStorage.removeItem(STORAGE_KEY);
-  } catch (err) {
-    // Ignore errors clearing storage
-  }
-};
 
 /**
  * Form component for email verification via OTP
  * Allows users to link an email identity to their Google OAuth account
+ * State is managed in Supabase DB with Realtime sync
  */
 export function VerifyEmailForm() {
   const [email, setEmail] = useState("");
@@ -77,14 +32,165 @@ export function VerifyEmailForm() {
   const [step, setStep] = useState<"email" | "otp">("email");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoadingState, setIsLoadingState] = useState(true);
+  const [userState, setUserState] = useState<UserState>({
+    suggested_work_email: null,
+    last_otp_sent_at: null,
+  });
   const router = useRouter();
   const supabase = createClient();
+  const channelRef = useRef<any>(null);
+  const userIdRef = useRef<string | null>(null);
+
+  /**
+   * Determines the current step based on last_otp_sent_at timestamp
+   * If timestamp doesn't exist or is older than 3600 seconds (1 hour), show email step
+   * If timestamp is younger than 3600 seconds, show OTP step
+   */
+  const determineStep = useCallback((lastOtpSentAt: string | null): "email" | "otp" => {
+    if (!lastOtpSentAt) {
+      return "email";
+    }
+
+    const otpTimestamp = new Date(lastOtpSentAt).getTime();
+    const now = Date.now();
+    const secondsSinceOtp = (now - otpTimestamp) / 1000;
+
+    // If OTP was sent less than 3600 seconds (1 hour) ago, show OTP step
+    if (secondsSinceOtp < 3600) {
+      return "otp";
+    }
+
+    // Otherwise, show email step
+    return "email";
+  }, []);
+
+  /**
+   * Loads user state from database and sets up Realtime subscription
+   */
+  const loadUserState = useCallback(async () => {
+    setIsLoadingState(true);
+    setError(null);
+
+    try {
+      // Get current authenticated user
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !authUser) {
+        setError("You must be logged in to verify your email");
+        setIsLoadingState(false);
+        return;
+      }
+
+      userIdRef.current = authUser.id;
+
+      // Query public.users table to get id, suggested_work_email and last_otp_sent_at
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id, suggested_work_email, last_otp_sent_at")
+        .eq("auth_user_id", authUser.id)
+        .single();
+
+      if (userError) {
+        // User might not exist in public.users yet (should be created by trigger)
+        // Set default state and continue
+        setUserState({
+          suggested_work_email: null,
+          last_otp_sent_at: null,
+        });
+        setStep("email");
+        setIsLoadingState(false);
+        return;
+      }
+
+      const newState: UserState = {
+        suggested_work_email: userData?.suggested_work_email || null,
+        last_otp_sent_at: userData?.last_otp_sent_at || null,
+      };
+
+      setUserState(newState);
+
+      // Prefill email if suggested_work_email exists
+      if (newState.suggested_work_email) {
+        setEmail(newState.suggested_work_email);
+      }
+
+      // Determine step based on last_otp_sent_at
+      const determinedStep = determineStep(newState.last_otp_sent_at);
+      setStep(determinedStep);
+
+      // Set up Realtime subscription for this user
+      // Topic format: users:{public.users.id}
+      if (channelRef.current) {
+        await supabase.removeChannel(channelRef.current);
+      }
+
+      // Set auth before subscribing to private channel
+      await supabase.realtime.setAuth();
+
+      const channel = supabase
+        .channel(`users:${userData.id}`, {
+          config: {
+            broadcast: { self: true },
+            private: true,
+          },
+        })
+        .on(
+          "broadcast",
+          { event: "UPDATE" },
+          (payload: any) => {
+            console.log("Realtime UPDATE received:", payload);
+            // Update state when user record changes
+            // realtime.broadcast_changes sends new and old records
+            // Handle different payload structures
+            const newRecord = payload.payload?.new || payload.new || payload.payload || payload;
+
+            console.log("Extracted newRecord:", newRecord);
+
+            if (newRecord && (newRecord.suggested_work_email !== undefined || newRecord.last_otp_sent_at !== undefined)) {
+              console.log("Updating state from Realtime:", {
+                suggested_work_email: newRecord.suggested_work_email,
+                last_otp_sent_at: newRecord.last_otp_sent_at,
+              });
+
+              setUserState({
+                suggested_work_email: newRecord.suggested_work_email || null,
+                last_otp_sent_at: newRecord.last_otp_sent_at || null,
+              });
+
+              // Update step if needed
+              const newStep = determineStep(newRecord.last_otp_sent_at);
+              console.log("Determined step:", newStep, "from timestamp:", newRecord.last_otp_sent_at);
+              setStep(newStep);
+
+              // Update email if suggested_work_email changed
+              if (newRecord.suggested_work_email) {
+                setEmail(newRecord.suggested_work_email);
+              }
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            console.log("Subscribed to user updates");
+          } else if (status === "CHANNEL_ERROR") {
+            console.error("Error subscribing to user updates");
+          }
+        });
+
+      channelRef.current = channel;
+
+      setIsLoadingState(false);
+    } catch (err) {
+      setError("Failed to load user state");
+      setIsLoadingState(false);
+    }
+  }, [supabase, determineStep]);
 
   /**
    * Sends OTP code to the provided email
+   * Updates suggested_work_email and last_otp_sent_at in database
    * Uses updateUser to add email identity to the current authenticated user
-   * This is the correct way to link an email identity to an existing OAuth account
    */
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,19 +212,44 @@ export function VerifyEmailForm() {
         return;
       }
 
+      if (!userIdRef.current) {
+        setError("You must be logged in");
+        setIsLoading(false);
+        return;
+      }
+
+      const otpTimestamp = new Date().toISOString();
+
+      // Update database with suggested_work_email and last_otp_sent_at
+      const { error: updateDbError } = await supabase
+        .from("users")
+        .update({
+          suggested_work_email: email.trim(),
+          last_otp_sent_at: otpTimestamp,
+        })
+        .eq("auth_user_id", userIdRef.current);
+
+      if (updateDbError) {
+        setError("Failed to update user state");
+        setIsLoading(false);
+        return;
+      }
+
+      // Immediately update local state (fallback if Realtime doesn't fire)
+      setUserState({
+        suggested_work_email: email.trim(),
+        last_otp_sent_at: otpTimestamp,
+      });
+      setStep("otp");
+
       // Use updateUser to add email identity to existing authenticated user
       // This sends a verification link to the email address
       // With enable_manual_linking = true, this will link the email identity
-      // Note: This adds the email as a secondary identity, not changing the primary email
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser(
-        {
-          email: email.trim(),
-        },
-      );
+      const { error: updateError } = await supabase.auth.updateUser({
+        email: email.trim(),
+      });
 
       if (updateError) {
-        // If email already exists, that's actually fine - it means it might already be linked
-        // or we need to handle it differently
         if (updateError.message?.includes("already registered")) {
           setError("This email is already registered. Please use a different email or sign in with that email.");
         } else {
@@ -128,9 +259,6 @@ export function VerifyEmailForm() {
         return;
       }
 
-      // Move to OTP verification step
-      setStep("otp");
-      savePersistedState({ step: "otp", email: email.trim() });
       setIsLoading(false);
     } catch (err) {
       setError("An unexpected error occurred");
@@ -168,8 +296,15 @@ export function VerifyEmailForm() {
       // Refresh session to ensure identities are updated
       await supabase.auth.refreshSession();
 
-      // Clear persisted state on success
-      clearPersistedState();
+      // Clear OTP timestamp on success (reset to email step for next time)
+      if (userIdRef.current) {
+        await supabase
+          .from("users")
+          .update({
+            last_otp_sent_at: null,
+          })
+          .eq("auth_user_id", userIdRef.current);
+      }
 
       // Success - redirect to protected page
       router.push("/protected");
@@ -189,47 +324,19 @@ export function VerifyEmailForm() {
   };
 
   /**
-   * Loads persisted state from sessionStorage after component mounts (client-side only)
-   * This prevents hydration mismatches between server and client
+   * Loads user state from database on mount
    */
   useEffect(() => {
-    const persisted = loadPersistedState();
+    loadUserState();
 
-    // Validate persisted state - if on OTP step but no email, reset to email step
-    if (persisted.step === "otp" && (!persisted.email || !persisted.email.includes("@"))) {
-      setStep("email");
-      setEmail("");
-      clearPersistedState();
-      setIsHydrated(true);
-      return;
-    }
-
-    // Restore persisted state if valid
-    if (persisted.email && persisted.email.includes("@")) {
-      setEmail(persisted.email);
-    }
-    if (persisted.step === "email" || persisted.step === "otp") {
-      setStep(persisted.step);
-    }
-
-    setIsHydrated(true);
-  }, []);
-
-  /**
-   * Persists email changes to sessionStorage
-   * Only saves when we have a valid email address and after hydration
-   */
-  useEffect(() => {
-    // Don't persist until after hydration to avoid hydration mismatches
-    if (!isHydrated) return;
-
-    if (email && email.includes("@")) {
-      savePersistedState({ step, email });
-    } else if (step === "otp" && !email) {
-      // If on OTP step but no email, clear invalid state
-      clearPersistedState();
-    }
-  }, [email, step, isHydrated]);
+    // Cleanup Realtime subscription on unmount
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [loadUserState, supabase]);
 
   /**
    * Auto-submits the form when OTP code reaches 8 digits
@@ -240,6 +347,22 @@ export function VerifyEmailForm() {
       verifyOTP();
     }
   }, [otpCode, step, isLoading, verifyOTP]);
+
+  if (isLoadingState) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Verify Email</CardTitle>
+          <CardDescription>Loading...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-8">
+            <div className="text-sm text-muted-foreground">Loading user state...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -311,11 +434,20 @@ export function VerifyEmailForm() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => {
+                onClick={async () => {
                   setStep("email");
                   setOtpCode("");
                   setError(null);
-                  savePersistedState({ step: "email", email });
+
+                  // Clear OTP timestamp to reset to email step
+                  if (userIdRef.current) {
+                    await supabase
+                      .from("users")
+                      .update({
+                        last_otp_sent_at: null,
+                      })
+                      .eq("auth_user_id", userIdRef.current);
+                  }
                 }}
                 disabled={isLoading}
                 className="w-full"
