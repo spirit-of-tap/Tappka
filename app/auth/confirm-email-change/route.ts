@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { type EmailOtpType } from "@supabase/supabase-js";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
-import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
+import {
+  createErrorUrl,
+  createSuccessUrl,
+  redirectWithCookies,
+} from "@/lib/auth-helpers";
 
 /**
  * Handles email change confirmation callback using PKCE flow with token_hash
@@ -18,10 +20,10 @@ export async function GET(request: NextRequest) {
     typeParam === "email_change" ? ("email_change" as EmailOtpType) : null;
 
   if (!type) {
-    redirect(`/auth/error?error=${encodeURIComponent("Invalid type")}`);
+    return NextResponse.redirect(createErrorUrl(request, "Invalid type"));
   }
   if (!token_hash) {
-    redirect(`/auth/error?error=${encodeURIComponent("Invalid token hash")}`);
+    return NextResponse.redirect(createErrorUrl(request, "Invalid token hash"));
   }
   let supabaseResponse = NextResponse.next({
     request,
@@ -56,8 +58,8 @@ export async function GET(request: NextRequest) {
     token_hash,
   });
   if (error) {
-    redirect(`/auth/error?error=${encodeURIComponent(error.message)}`);
+    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);
   }
 
-  redirect(DEFAULT_LOGGED_IN_PAGE);
+  return redirectWithCookies(createSuccessUrl(request), supabaseResponse);
 }

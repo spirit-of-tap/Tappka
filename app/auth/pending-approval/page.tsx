@@ -17,13 +17,13 @@ export default async function PendingApprovalPage() {
   }
 
   // Redirect to verify email if no email identity linked
-  const hasEmail = await hasEmailIdentity();
+  const hasEmail = await hasEmailIdentity(supabase);
   if (!hasEmail) {
     redirect("/auth/verify-email");
   }
 
   // Redirect to protected if already has linked profile
-  const hasProfile = await hasLinkedProfile();
+  const hasProfile = await hasLinkedProfile(supabase);
   if (hasProfile) {
     redirect(DEFAULT_LOGGED_IN_PAGE);
   }

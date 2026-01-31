@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicRoute } from "@/lib/constants/auth";
+import { hasEmailIdentity, hasLinkedProfile } from "@/lib/auth-helpers";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -67,13 +68,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const identities = authUser.identities || [];
-  const hasEmailIdentity = identities.some(
-    (identity) => identity.provider === "email"
-  );
-
   // If no email identity, redirect to verify email page
-  if (!hasEmailIdentity) {
+  if (!(await hasEmailIdentity(supabase))) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/verify-email";
     return NextResponse.redirect(url);
@@ -81,15 +77,7 @@ export async function updateSession(request: NextRequest) {
 
   // Check for linked profile if user is authenticated and not on public routes
   // Skip this check for verify-email and pending-approval routes
-  // Get the public.users row and linked profile in a single query
-  const { data: publicUser } = await supabase
-    .from("users")
-    .select("id, profiles(id)")
-    .eq("auth_user_id", user.sub)
-    .single();
-
-  // If no publicUser or no linked profile, redirect to pending approval
-  if (!publicUser || !publicUser.profiles || publicUser.profiles.length === 0) {
+  if (!(await hasLinkedProfile(supabase))) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/pending-approval";
     return NextResponse.redirect(url);
