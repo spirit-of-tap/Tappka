@@ -17,29 +17,15 @@ declare
   v_email_change text;
   v_domain text;
 begin
-  -- Only validate on UPDATE (email changes), not INSERT (OAuth signups)
-  -- OAuth signups can have any email domain (e.g., Google emails)
+  -- Only validate on UPDATE (email changes), not INSERT (new user creation)
+  -- This allows OAuth signups (Google, etc.) to create accounts with any email
   if tg_op != 'UPDATE' then
     return NEW;
   end if;
 
-  -- Validate email field if it changed
-  if OLD.email is distinct from NEW.email then
-    v_email := NEW.email;
-    
-    -- Skip validation if email is null or empty
-    if v_email is not null and v_email != '' then
-      -- Extract domain from email (everything after @)
-      v_domain := lower(split_part(v_email, '@', 2));
-      
-      -- Validate domain is one of the allowed CZU domains
-      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then
-        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;
-      end if;
-    end if;
-  end if;
-
   -- Validate email_change field (where Supabase stores new email during change process)
+  -- This applies to ALL users (both OAuth and email-only)
+  -- OAuth users can sign up, but when they try to add an email identity, it must be CZU domain
   if OLD.email_change is distinct from NEW.email_change then
     v_email_change := NEW.email_change;
     
@@ -49,6 +35,26 @@ begin
       v_domain := lower(split_part(v_email_change, '@', 2));
       
       -- Validate domain is one of the allowed CZU domains
+      -- This applies to all users, including OAuth users trying to add email identity
+      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then
+        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;
+      end if;
+    end if;
+  end if;
+
+  -- Validate email field if it changed
+  -- For OAuth users: validate when they're changing from OAuth email to a new email
+  -- For email-only users: always validate
+  if OLD.email is distinct from NEW.email then
+    v_email := NEW.email;
+    
+    -- Skip validation if email is null or empty
+    if v_email is not null and v_email != '' then
+      -- Extract domain from email (everything after @)
+      v_domain := lower(split_part(v_email, '@', 2));
+      
+      -- Validate domain is one of the allowed CZU domains
+      -- This applies to all users when changing primary email
       if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then
         raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;
       end if;
@@ -76,4 +82,4 @@ execute function public.validate_czu_email_domain_trigger();
 
 -- Add comment explaining the security model
 comment on function public.validate_czu_email_domain_trigger() is 
-'Server-side trigger function that validates email domains at the database level. Uses SECURITY DEFINER to access auth.users table. Cannot be bypassed by client-side code.';
+'Server-side trigger function that validates email domains at the database level. Uses SECURITY DEFINER to access auth.users table. Cannot be bypassed by client-side code. Allows OAuth signups (INSERT) but validates email changes (UPDATE) for all users, including OAuth users trying to add email identities.';
