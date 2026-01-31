@@ -43,16 +43,45 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  const pathname = request.nextUrl.pathname;
+  const isPublicRoute = pathname === "/" || pathname.startsWith("/auth");
+
+  // Redirect to login if not authenticated (except for public routes)
+  if (!isPublicRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
+  }
+
+  // Check for linked profile if user is authenticated and not on public routes
+  if (user && !isPublicRoute) {
+    // Get the public.users row linked to this auth user
+    const { data: publicUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("auth_user_id", user.sub)
+      .single();
+
+    // If no publicUser or no linked profile, redirect to pending approval
+    if (!publicUser) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/pending-approval";
+      return NextResponse.redirect(url);
+    }
+
+    // Check if there's a profile linked to this user
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", publicUser.id)
+      .single();
+
+    if (!profile) {
+      // User doesn't have a linked profile, redirect to pending approval
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/pending-approval";
+      return NextResponse.redirect(url);
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
