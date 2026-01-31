@@ -14,23 +14,30 @@ interface RoomsWithFilterProps {
  */
 export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
   const [filteredRooms, setFilteredRooms] = useState<RoomWithStatus[]>(rooms);
-  const [isFiltered, setIsFiltered] = useState(false);
 
   const handleFilterChange = (newRooms: RoomWithStatus[]) => {
     setFilteredRooms(newRooms);
-    setIsFiltered(newRooms.length !== rooms.length);
   };
+
+  // Check if filter is active (any room has availabilityForFilter set)
+  const hasActiveFilter = filteredRooms.some(r => r.availabilityForFilter !== undefined);
+  
+  // Count available rooms when filter is active
+  const availableCount = filteredRooms.filter(
+    r => !r.availabilityForFilter || r.availabilityForFilter.isAvailable
+  ).length;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <RoomFilter rooms={rooms} onFilterChange={handleFilterChange} />
-        {isFiltered && (
-          <span className="text-sm text-muted-foreground">
-            {filteredRooms.filter(r => !r.availabilityForFilter || r.availabilityForFilter.isAvailable).length} volné z {rooms.length} místností
-          </span>
-        )}
-      </div>
+      <RoomFilter rooms={rooms} onFilterChange={handleFilterChange} />
+      
+      {/* Results Counter */}
+      {hasActiveFilter && (
+        <div className="text-sm text-muted-foreground px-1">
+          {availableCount} volné z {rooms.length} místností
+        </div>
+      )}
+      
       <RoomList rooms={filteredRooms} />
     </div>
   );
