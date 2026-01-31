@@ -66,7 +66,6 @@ for each row
 when (old.email is distinct from new.email)
 execute function public.link_user_to_profile();
 
-comment on trigger link_user_to_profile_trigger on auth.users is 'Trigger that automatically links profiles to users when auth.users.email changes. Runs after email update to ensure the change is committed before linking.';
 
 -- ============================================================================
 -- INITIAL DATA LINKING
