@@ -3,6 +3,7 @@ import { type EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
+import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
 /**
  * Handles email change confirmation callback using PKCE flow with token_hash
@@ -58,5 +59,5 @@ export async function GET(request: NextRequest) {
     redirect(`/auth/error?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/protected");
+  redirect(DEFAULT_LOGGED_IN_PAGE);
 }

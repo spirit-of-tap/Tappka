@@ -12,18 +12,18 @@ export const ALLOWED_WORK_EMAIL_DOMAINS: readonly string[] = [
 export const OTP_LENGTH = 8;
 
 /**
- * Valid email OTP types that can be used for verification
- * Used to validate query parameters before passing to Supabase auth API
- */
-export const VALID_EMAIL_OTP_TYPES = ['email_change', 'email'] as const;
-
-/**
  * Public route prefixes that do not require authentication
  * Routes starting with these prefixes are accessible without being logged in
  */
 export const PUBLIC_ROUTE_PREFIXES: readonly string[] = [
   '/auth',
 ] as const;
+
+/**
+ * Default page to redirect users to after successful login
+ * This is the main protected area of the application
+ */
+export const DEFAULT_LOGGED_IN_PAGE = '/protected';
 
 /**
  * Checks if a given pathname is a public route

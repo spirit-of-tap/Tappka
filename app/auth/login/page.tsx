@@ -1,6 +1,7 @@
 import { LoginForm } from "@/components/login-form";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
 export default async function Page() {
   const supabase = await createClient();
@@ -8,7 +9,7 @@ export default async function Page() {
 
   // Redirect to protected page if already logged in
   if (data?.claims) {
-    redirect("/protected");
+    redirect(DEFAULT_LOGGED_IN_PAGE);
   }
 
   return (

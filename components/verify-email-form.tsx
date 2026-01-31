@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { isValidWorkEmailDomain, OTP_LENGTH } from "@/lib/constants/auth";
+import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
 const STORAGE_KEY = "verify-email-form-state";
 
@@ -179,7 +179,7 @@ export function VerifyEmailForm() {
       clearPersistedState();
 
       // Success - redirect to protected page
-      router.push("/protected");
+      router.push(DEFAULT_LOGGED_IN_PAGE);
       router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");

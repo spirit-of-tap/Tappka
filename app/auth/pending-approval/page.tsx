@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { hasLinkedProfile } from "@/lib/auth-helpers";
+import { hasEmailIdentity, hasLinkedProfile } from "@/lib/auth-helpers";
+import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
 /**
  * Pending approval page
@@ -15,10 +16,16 @@ export default async function PendingApprovalPage() {
     redirect("/auth/login");
   }
 
+  // Redirect to verify email if no email identity linked
+  const hasEmail = await hasEmailIdentity();
+  if (!hasEmail) {
+    redirect("/auth/verify-email");
+  }
+
   // Redirect to protected if already has linked profile
   const hasProfile = await hasLinkedProfile();
   if (hasProfile) {
-    redirect("/protected");
+    redirect(DEFAULT_LOGGED_IN_PAGE);
   }
 
   return (

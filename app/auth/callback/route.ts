@@ -4,6 +4,7 @@ import { type NextRequest } from "next/server";
 
 import { hasEmailIdentity } from "@/lib/auth-helpers";
 import { validateRedirectUrl } from "@/lib/utils";
+import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
 /**
  * Handles OAuth callback from Google
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   // Validate the next parameter to prevent open redirects
   const validatedNext = validateRedirectUrl(next, origin);
-  const redirectTo = validatedNext ?? (hasEmail ? "/protected" : "/auth/verify-email");
+  const redirectTo = validatedNext ?? (hasEmail ? DEFAULT_LOGGED_IN_PAGE : "/auth/verify-email");
 
   redirect(redirectTo);
 }
