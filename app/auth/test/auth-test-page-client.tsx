@@ -78,12 +78,18 @@ export function AuthTestPageClient() {
           },
         }));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null
+            ? JSON.stringify(err)
+            : String(err);
       setTestResults((prev) => ({
         ...prev,
         emailPassword: {
           success: false,
-          message: err.message || "Unexpected error",
+          message: message || "Unexpected error",
         },
       }));
     }
@@ -119,12 +125,18 @@ export function AuthTestPageClient() {
           },
         }));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null
+            ? JSON.stringify(err)
+            : String(err);
       setTestResults((prev) => ({
         ...prev,
         emailOTP: {
           success: false,
-          message: err.message || "Unexpected error",
+          message: message || "Unexpected error",
         },
       }));
     }
@@ -170,12 +182,18 @@ export function AuthTestPageClient() {
           },
         }));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === "object" && err !== null
+            ? JSON.stringify(err)
+            : String(err);
       setTestResults((prev) => ({
         ...prev,
         emailIdentity: {
           success: false,
-          message: err.message || "Unexpected error",
+          message: message || "Unexpected error",
         },
       }));
     }
