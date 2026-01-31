@@ -47,12 +47,14 @@ export function VerifyEmailForm() {
       }
 
       // Use updateUser to add email identity to existing authenticated user
-      // This sends a verification OTP to the email address
+      // This sends a verification link to the email address
       // With enable_manual_linking = true, this will link the email identity
       // Note: This adds the email as a secondary identity, not changing the primary email
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
-        email: email.trim(),
-      });
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser(
+        {
+          email: email.trim(),
+        },
+      );
 
       if (updateError) {
         // If email already exists, that's actually fine - it means it might already be linked

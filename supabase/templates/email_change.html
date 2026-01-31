@@ -1,0 +1,10 @@
+<h2>Tappka - potvrďte svůj CZU email</h2>
+
+<p>Klikněte na odkaz níže a potvrďte svůj email:</p>
+<p>
+  <a href="{{ .SiteURL }}/auth/confirm-email-change?token_hash={{ .TokenHash }}&type=email_change">
+    Potvrdit email
+  </a>
+</p>
+
+<p>Nebo zadejte tento kód: {{ .Token }}</p>

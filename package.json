@@ -1,12 +1,21 @@
 {
   "private": true,
   "scripts": {
-    "dev": "pnpm supabase start && node scripts/setup-env.js && next dev",
-    "setup-env": "node scripts/setup-env.js",
-    "build": "next build",
-    "start": "next start",
+    "restart": "run-s stop dev",
+    "stop": "pnpm supabase stop",
+    "dev": "run-s supabase:start wait-and-restart-docker dev:parallel",
+    "strip": "node scripts/strip-user-responses.js",
     "lint": "eslint .",
-    "strip": "node scripts/strip-user-responses.js"
+    "dev:parallel": "run-p docker:restart-auth setup-env dev:next",
+    "supabase:start": "pnpm supabase start",
+    "supabase:stop": "pnpm supabase stop",
+    "wait-and-restart-docker": "node scripts/wait-and-restart-docker.js",
+    "docker:wait-and-restart-auth": "run-s wait-and-restart-docker docker:restart-auth",
+    "docker:restart-auth": "docker restart supabase_auth_Tappka",
+    "setup-env": "node scripts/setup-env.js",
+    "dev:next": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -35,6 +44,7 @@
     "autoprefixer": "^10.4.23",
     "eslint": "^9.39.2",
     "eslint-config-next": "15.3.1",
+    "npm-run-all": "^4.1.5",
     "postcss": "^8.5.6",
     "supabase": "^2.72.8",
     "tailwindcss": "^3.4.19",
