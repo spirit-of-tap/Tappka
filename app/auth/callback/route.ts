@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
 
 import { hasEmailIdentity } from "@/lib/auth-helpers";
+import { validateRedirectUrl } from "@/lib/utils";
 
 /**
  * Handles OAuth callback from Google
@@ -21,7 +22,11 @@ export async function GET(request: NextRequest) {
       // Check if user has email identity linked
       // If not, redirect to verify-email page
       const hasEmail = await hasEmailIdentity();
-      const redirectTo = next || (hasEmail ? "/protected" : "/auth/verify-email");
+      
+      // Validate the next parameter to prevent open redirects
+      const validatedNext = validateRedirectUrl(next, origin);
+      const redirectTo = validatedNext || (hasEmail ? "/protected" : "/auth/verify-email");
+      
       redirect(redirectTo);
     }
   }
