@@ -18,7 +18,7 @@ on:
           - production
 
 jobs:
-  deploy_staging:
+  deploy_preview:
     environment: preview
     runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.ref == 'refs/heads/preview' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'preview')
@@ -39,7 +39,7 @@ jobs:
           
       - name: Deploy database migrations
         run: |
-          supabase db push
+          supabase db push --include-all
           
       - name: Deploy Edge Functions
         continue-on-error: true
