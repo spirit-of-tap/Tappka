@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { type EmailOtpType } from "@supabase/supabase-js";
-import { VALID_EMAIL_OTP_TYPES } from "@/lib/constants/auth";
 
 /**
  * Handles email change confirmation callback using PKCE flow with token_hash
@@ -12,10 +11,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
   const typeParam = searchParams.get("type");
-  const type: EmailOtpType | null = 
-    typeParam && (VALID_EMAIL_OTP_TYPES as readonly string[]).includes(typeParam)
-      ? (typeParam as EmailOtpType)
-      : null;
+  const type: EmailOtpType | null =
+    typeParam === "email_change" ? ("email_change" as EmailOtpType) : null;
 
   let supabaseResponse = NextResponse.next({
     request,
