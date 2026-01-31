@@ -1,7 +1,7 @@
 /**
  * Allowed work email domains for CZU authentication
  */
-export const ALLOWED_WORK_EMAIL_DOMAINS = [
+export const ALLOWED_WORK_EMAIL_DOMAINS: readonly string[] = [
   'studenti.czu.cz',
   'pef.czu.cz',
 ] as const;
@@ -28,5 +28,8 @@ export const isValidWorkEmailDomain = (email: string): boolean => {
   }
 
   const domain = email.split('@')[1]?.toLowerCase();
-  return ALLOWED_WORK_EMAIL_DOMAINS.includes(domain as any);
+  if (domain === undefined) {
+    return false;
+  }
+  return ALLOWED_WORK_EMAIL_DOMAINS.includes(domain);
 };
