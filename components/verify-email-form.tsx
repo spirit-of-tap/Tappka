@@ -15,6 +15,57 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const STORAGE_KEY = "verify-email-form-state";
+
+interface StoredState {
+  step: "email" | "otp";
+  email: string;
+}
+
+/**
+ * Loads persisted form state from sessionStorage
+ */
+const loadPersistedState = (): Partial<StoredState> => {
+  if (typeof window === "undefined") return {};
+  
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored) as StoredState;
+    }
+  } catch (err) {
+    // Ignore errors reading from storage
+  }
+  
+  return {};
+};
+
+/**
+ * Saves form state to sessionStorage
+ */
+const savePersistedState = (state: StoredState) => {
+  if (typeof window === "undefined") return;
+  
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (err) {
+    // Ignore errors writing to storage
+  }
+};
+
+/**
+ * Clears persisted form state from sessionStorage
+ */
+const clearPersistedState = () => {
+  if (typeof window === "undefined") return;
+  
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch (err) {
+    // Ignore errors clearing storage
+  }
+};
+
 /**
  * Form component for email verification via OTP
  * Allows users to link an email identity to their Google OAuth account
@@ -25,6 +76,7 @@ export function VerifyEmailForm() {
   const [step, setStep] = useState<"email" | "otp">("email");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -70,6 +122,7 @@ export function VerifyEmailForm() {
 
       // Move to OTP verification step
       setStep("otp");
+      savePersistedState({ step: "otp", email: email.trim() });
       setIsLoading(false);
     } catch (err) {
       setError("An unexpected error occurred");
@@ -107,6 +160,9 @@ export function VerifyEmailForm() {
       // Refresh session to ensure identities are updated
       await supabase.auth.refreshSession();
 
+      // Clear persisted state on success
+      clearPersistedState();
+
       // Success - redirect to protected page
       router.push("/protected");
       router.refresh();
@@ -125,6 +181,49 @@ export function VerifyEmailForm() {
   };
 
   /**
+   * Loads persisted state from sessionStorage after component mounts (client-side only)
+   * This prevents hydration mismatches between server and client
+   */
+  useEffect(() => {
+    const persisted = loadPersistedState();
+    
+    // Validate persisted state - if on OTP step but no email, reset to email step
+    if (persisted.step === "otp" && (!persisted.email || !persisted.email.includes("@"))) {
+      setStep("email");
+      setEmail("");
+      clearPersistedState();
+      setIsHydrated(true);
+      return;
+    }
+    
+    // Restore persisted state if valid
+    if (persisted.email && persisted.email.includes("@")) {
+      setEmail(persisted.email);
+    }
+    if (persisted.step === "email" || persisted.step === "otp") {
+      setStep(persisted.step);
+    }
+    
+    setIsHydrated(true);
+  }, []);
+
+  /**
+   * Persists email changes to sessionStorage
+   * Only saves when we have a valid email address and after hydration
+   */
+  useEffect(() => {
+    // Don't persist until after hydration to avoid hydration mismatches
+    if (!isHydrated) return;
+    
+    if (email && email.includes("@")) {
+      savePersistedState({ step, email });
+    } else if (step === "otp" && !email) {
+      // If on OTP step but no email, clear invalid state
+      clearPersistedState();
+    }
+  }, [email, step, isHydrated]);
+
+  /**
    * Auto-submits the form when OTP code reaches 8 digits
    * This handles paste events and manual entry
    */
@@ -141,7 +240,7 @@ export function VerifyEmailForm() {
         <CardDescription>
           {step === "email"
             ? "Link an email address to your account using OTP verification"
-            : "Enter the OTP code sent to your email"}
+            : `Enter the OTP code sent to ${email || "your email"}`}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -208,6 +307,7 @@ export function VerifyEmailForm() {
                   setStep("email");
                   setOtpCode("");
                   setError(null);
+                  savePersistedState({ step: "email", email });
                 }}
                 disabled={isLoading}
                 className="w-full"
