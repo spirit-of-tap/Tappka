@@ -21,6 +21,8 @@ create table public.users (
   auth_user_id uuid unique references auth.users(id) on delete cascade,
   google_email text not null unique,
   suggested_work_email text,
+  verified_work_email text,
+  verified_work_email_at timestamptz,
   google_profile_picture text,
   google_full_name text,
   last_otp_sent_at timestamptz,

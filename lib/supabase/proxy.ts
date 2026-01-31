@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isPublicRoute } from "@/lib/constants/auth";
+import { isPublicRoute, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { hasEmailIdentity, hasLinkedProfile, redirectWithCookies } from "@/lib/auth-helpers";
+import { validateRedirectUrl } from "@/lib/utils";
 
 /**
  * Safely executes an async check function, catching any errors
@@ -72,6 +73,30 @@ export async function updateSession(request: NextRequest) {
 
   // Allow public routes without authentication
   if (isPublicRoute(pathname)) {
+    // Handle authenticated users visiting login page - redirect them
+    if (pathname === "/auth/login") {
+      // Use getUser() instead of getClaims() to validate the user actually exists
+      // getClaims() can return truthy values even with invalid/deleted users
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      // Only redirect if we have a valid user (not just claims)
+      // This prevents infinite redirect loops when token is invalid but claims exist
+      if (!error && user) {
+        // Get next parameter from query string
+        const next = request.nextUrl.searchParams.get("next");
+
+        // Validate next parameter to prevent open redirects
+        const origin = request.nextUrl.origin;
+        const validatedNext = next ? validateRedirectUrl(next, origin) : null;
+        const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;
+
+        const url = request.nextUrl.clone();
+        url.pathname = redirectTo;
+        url.search = ""; // Clear existing search params
+        url.hash = ""; // Clear existing hash
+        return redirectWithCookies(url, supabaseResponse);
+      }
+    }
     return supabaseResponse;
   }
 
@@ -86,7 +111,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Check if user has an email identity (not just OAuth providers like Google)
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const { data: getUserData, error } = await supabase.auth.getUser();
+  const authUser = getUserData?.user;
+
+  if (error) {
+    console.error("supabase.auth.getUser error", error);
+  }
 
   if (!authUser) {
     const url = request.nextUrl.clone();

@@ -21,6 +21,9 @@ declare
   -- Whitelist: fields that users are allowed to modify
   v_allowed_fields text[] := array['suggested_work_email'];
   
+  -- System fields: can be updated by trigger functions (SECURITY DEFINER), not by users
+  v_system_fields text[] := array['verified_work_email', 'verified_work_email_at'];
+  
   -- Fields with special handling logic (not reset from OLD)
   v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];
   
@@ -32,7 +35,7 @@ declare
   -- Column name for iteration
   v_column_name text;
 begin
-  -- Convert records to jsonb for dynamic manipulation
+  -- Convert records to jsonb for dynamic manipulation (must be first)
   v_old_jsonb := to_jsonb(old);
   v_new_jsonb := to_jsonb(new);
   
@@ -46,6 +49,19 @@ begin
       v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb->v_column_name);
     end if;
   end loop;
+  
+  -- Allow system fields to be updated by trigger functions
+  -- When verified_work_email is being set/changed, this indicates a system trigger update
+  -- Users cannot directly set verified_work_email due to RLS and application logic
+  if v_new_jsonb ? 'verified_work_email' and (v_old_jsonb->>'verified_work_email') is distinct from (v_new_jsonb->>'verified_work_email') then
+    -- This is a system update setting verified_work_email, allow both system fields
+    foreach v_column_name in array v_system_fields
+    loop
+      if v_new_jsonb ? v_column_name then
+        v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb->v_column_name);
+      end if;
+    end loop;
+  end if;
   
   -- Handle special field: last_otp_sent_at
   -- Automatically update when suggested_work_email changes
@@ -70,7 +86,7 @@ begin
 end;
 $$;
 
-comment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only using a dynamic whitelist approach. Automatically updates last_otp_sent_at when suggested_work_email changes. Dynamically protects all columns except allowed fields, ensuring new columns added in future migrations are automatically protected without requiring function updates.';
+comment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only. Allows verified_work_email and verified_work_email_at to be updated by system trigger functions when verified_work_email is being set. Automatically updates last_otp_sent_at when suggested_work_email changes.';
 
 -- ============================================================================
 -- TRIGGERS
