@@ -111,9 +111,32 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // This sends a verification link to the email address
       // With enable_manual_linking = true, this will link the email identity
       // Note: This adds the email as a secondary identity, not changing the primary email
+
+      // Construct the redirect URL with next parameter if available
+      // Ensure URL ends with ? or & so Supabase can append token_hash
+      const confirmUrl = new URL(`${window.location.origin}/auth/confirm-email-change`);
+      if (next) {
+        confirmUrl.searchParams.set("next", next);
+      }
+
+      // Ensure URL ends with ? or & for token_hash to be appended
+      let redirectUrl = confirmUrl.toString();
+      if (confirmUrl.search === "") {
+        // No query parameters, add ? for token_hash
+        redirectUrl += "?";
+      } else {
+        // Has query parameters, ensure it ends with & for token_hash
+        if (!redirectUrl.endsWith("&")) {
+          redirectUrl += "&";
+        }
+      }
+
       const { data: updateData, error: updateError } = await supabase.auth.updateUser(
         {
           email: email.trim(),
+        },
+        {
+          emailRedirectTo: redirectUrl,
         },
       );
 

@@ -13745,3 +13745,14541 @@ The `next` parameter now survives redirects from `proxy.ts` and preserves the fu
 
 ---
 
+_**User**_
+
+Infinite redirect happens when I have invalid token http://localhost:3000/auth/login?next=%2Fprotected
+
+Ie when I delete the user in supabase this happens
+
+@node (1017-1036) 
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+Investigating the redirect loop. Likely causes: the login page redirects authenticated users, or the proxy treats the login page as protected. Checking the login page and proxy logic:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/lib/supabase/proxy.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/lib/constants/auth.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+The login page checks `data?.claims` and redirects, but with an invalid token (e.g., deleted user) the claims may be truthy but invalid, causing a redirect loop. Updating the login page to validate the user instead of only checking claims:
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="semantic_search_full">
+<details>
+<summary>Tool use: **semantic_search_full**</summary>
+
+
+Parameters:
+
+```json
+{
+  "query": "How does getClaims work when user is deleted or token is invalid?",
+  "topK": 10,
+  "explanation": ""
+}
+```
+Result:
+
+```json
+{
+  "codeResults": [
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/supabase/proxy.ts",
+        "range": {
+          "startPosition": {
+            "column": 51
+          },
+          "endPosition": {
+            "line": 110,
+            "column": 1
+          }
+        },
+        "contents": "import { NextResponse, type NextRequest } from \"next/server\";\nimport { isPublicRoute } from \"@/lib/constants/auth\";\nimport { hasEmailIdentity, hasLinkedProfile } from \"@/lib/auth-helpers\";\n\nexport async function updateSession(request: NextRequest) {\n  let supabaseResponse = NextResponse.next({\n    request,\n  });\n\n  // If the env vars are not set, skip proxy check. You can remove this\n  // once you setup the project.\n\n  // With Fluid compute, don't put this client in a global environment\n  // variable. Always create a new one on each request.\n  const supabase = createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return request.cookies.getAll();\n        },\n        setAll(cookiesToSet) {\n          cookiesToSet.forEach(({ name, value }) =&gt;\n            request.cookies.set(name, value),\n          );\n          supabaseResponse = NextResponse.next({\n            request,\n          });\n          cookiesToSet.forEach(({ name, value, options }) =&gt;\n            supabaseResponse.cookies.set(name, value, options),\n          );\n        },\n      },\n    },\n  );\n\n  // Do not run code between createServerClient and\n  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug\n  // issues with users being randomly logged out.\n\n  // IMPORTANT: If you remove getClaims() and you use server-side rendering\n  // with the Supabase client, your users may be randomly logged out.\n  const { data } = await supabase.auth.getClaims();\n  const user = data?.claims;\n\n  const pathname = request.nextUrl.pathname;\n  // Include full path with query parameters and hash for next parameter\n  const fullPath = pathname + request.nextUrl.search + request.nextUrl.hash;\n\n  // Allow public routes without authentication\n  if (isPublicRoute(pathname)) {\n    return supabaseResponse;\n  }\n\n  // Redirect to login if not authenticated\n  if (!user)\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { NextResponse, type NextRequest } from \"next/server\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { isPublicRoute } from \"@/lib/constants/auth\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { hasEmailIdentity, hasLinkedProfile } from \"@/lib/auth-helpers\";",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "export async function updateSession(request: NextRequest) {",
+            "lineNumber": 6,
+            "isSignature": true
+          },
+          {
+            "text": "  let supabaseResponse = NextResponse.next({",
+            "lineNumber": 7
+          },
+          {
+            "text": "    request,",
+            "lineNumber": 8
+          },
+          {
+            "text": "  });",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "  // If the env vars are not set, skip proxy check. You can remove this",
+            "lineNumber": 11
+          },
+          {
+            "text": "  // once you setup the project.",
+            "lineNumber": 12
+          },
+          {
+            "lineNumber": 13
+          },
+          {
+            "text": "  // With Fluid compute, don't put this client in a global environment",
+            "lineNumber": 14
+          },
+          {
+            "text": "  // variable. Always create a new one on each request.",
+            "lineNumber": 15
+          },
+          {
+            "text": "  const supabase = createServerClient(",
+            "lineNumber": 16
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 17
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 18
+          },
+          {
+            "text": "    {",
+            "lineNumber": 19
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 20
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 21
+          },
+          {
+            "text": "          return request.cookies.getAll();",
+            "lineNumber": 22
+          },
+          {
+            "text": "        },",
+            "lineNumber": 23
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 24
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value }) =&gt;",
+            "lineNumber": 25
+          },
+          {
+            "text": "            request.cookies.set(name, value),",
+            "lineNumber": 26
+          },
+          {
+            "text": "          );",
+            "lineNumber": 27
+          },
+          {
+            "text": "          supabaseResponse = NextResponse.next({",
+            "lineNumber": 28
+          },
+          {
+            "text": "            request,",
+            "lineNumber": 29
+          },
+          {
+            "text": "          });",
+            "lineNumber": 30
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value, options }) =&gt;",
+            "lineNumber": 31
+          },
+          {
+            "text": "            supabaseResponse.cookies.set(name, value, options),",
+            "lineNumber": 32
+          },
+          {
+            "text": "          );",
+            "lineNumber": 33
+          },
+          {
+            "text": "        },",
+            "lineNumber": 34
+          },
+          {
+            "text": "      },",
+            "lineNumber": 35
+          },
+          {
+            "text": "    },",
+            "lineNumber": 36
+          },
+          {
+            "text": "  );",
+            "lineNumber": 37
+          },
+          {
+            "lineNumber": 38
+          },
+          {
+            "text": "  // Do not run code between createServerClient and",
+            "lineNumber": 39
+          },
+          {
+            "text": "  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug",
+            "lineNumber": 40
+          },
+          {
+            "text": "  // issues with users being randomly logged out.",
+            "lineNumber": 41
+          },
+          {
+            "lineNumber": 42
+          },
+          {
+            "text": "  // IMPORTANT: If you remove getClaims() and you use server-side rendering",
+            "lineNumber": 43
+          },
+          {
+            "text": "  // with the Supabase client, your users may be randomly logged out.",
+            "lineNumber": 44
+          },
+          {
+            "text": "  const { data } = await supabase.auth.getClaims();",
+            "lineNumber": 45
+          },
+          {
+            "text": "  const user = data?.claims;",
+            "lineNumber": 46
+          },
+          {
+            "lineNumber": 47
+          },
+          {
+            "text": "  const pathname = request.nextUrl.pathname;",
+            "lineNumber": 48
+          },
+          {
+            "text": "  // Include full path with query parameters and hash for next parameter",
+            "lineNumber": 49
+          },
+          {
+            "text": "  const fullPath = pathname + request.nextUrl.search + request.nextUrl.hash;",
+            "lineNumber": 50
+          },
+          {
+            "lineNumber": 51
+          },
+          {
+            "text": "  // Allow public routes without authentication",
+            "lineNumber": 52
+          },
+          {
+            "text": "  if (isPublicRoute(pathname)) {",
+            "lineNumber": 53
+          },
+          {
+            "text": "    return supabaseResponse;",
+            "lineNumber": 54
+          },
+          {
+            "text": "  }",
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  // Redirect to login if not authenticated",
+            "lineNumber": 57
+          },
+          {
+            "text": "  if (!user)",
+            "lineNumber": 58
+          },
+          {
+            "text": "}",
+            "lineNumber": 111,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3638724088668823
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/supabase/proxy.ts",
+        "range": {
+          "startPosition": {
+            "line": 5
+          },
+          "endPosition": {
+            "line": 110,
+            "column": 1
+          }
+        },
+        "contents": "export async function updateSession(request: NextRequest) {\n\n\n  // Redirect to login if not authenticated\n  if (!user) {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/login\";\n    url.search = \"\"; // Clear existing search params\n    url.hash = \"\"; // Clear existing hash\n    url.searchParams.set(\"next\", fullPath);\n    return NextResponse.redirect(url);\n  }\n\n  // Check if user has an email identity (not just OAuth providers like Google)\n  const { data: { user: authUser } } = await supabase.auth.getUser();\n\n  if (!authUser) {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/login\";\n    url.search = \"\"; // Clear existing search params\n    url.hash = \"\"; // Clear existing hash\n    url.searchParams.set(\"next\", fullPath);\n    return NextResponse.redirect(url);\n  }\n\n  // If no email identity, redirect to verify email page\n  if (!(await hasEmailIdentity(supabase))) {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/verify-email\";\n    url.search = \"\"; // Clear existing search params\n    url.hash = \"\";\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 6,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 6,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 6,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 7,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export async function updateSession(request: NextRequest) {",
+            "lineNumber": 6,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  // Redirect to login if not authenticated",
+            "lineNumber": 57
+          },
+          {
+            "text": "  if (!user) {",
+            "lineNumber": 58
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 59
+          },
+          {
+            "text": "    url.pathname = \"/auth/login\";",
+            "lineNumber": 60
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 61
+          },
+          {
+            "text": "    url.hash = \"\"; // Clear existing hash",
+            "lineNumber": 62
+          },
+          {
+            "text": "    url.searchParams.set(\"next\", fullPath);",
+            "lineNumber": 63
+          },
+          {
+            "text": "    return NextResponse.redirect(url);",
+            "lineNumber": 64
+          },
+          {
+            "text": "  }",
+            "lineNumber": 65
+          },
+          {
+            "lineNumber": 66
+          },
+          {
+            "text": "  // Check if user has an email identity (not just OAuth providers like Google)",
+            "lineNumber": 67
+          },
+          {
+            "text": "  const { data: { user: authUser } } = await supabase.auth.getUser();",
+            "lineNumber": 68
+          },
+          {
+            "lineNumber": 69
+          },
+          {
+            "text": "  if (!authUser) {",
+            "lineNumber": 70
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 71
+          },
+          {
+            "text": "    url.pathname = \"/auth/login\";",
+            "lineNumber": 72
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 73
+          },
+          {
+            "text": "    url.hash = \"\"; // Clear existing hash",
+            "lineNumber": 74
+          },
+          {
+            "text": "    url.searchParams.set(\"next\", fullPath);",
+            "lineNumber": 75
+          },
+          {
+            "text": "    return NextResponse.redirect(url);",
+            "lineNumber": 76
+          },
+          {
+            "text": "  }",
+            "lineNumber": 77
+          },
+          {
+            "lineNumber": 78
+          },
+          {
+            "text": "  // If no email identity, redirect to verify email page",
+            "lineNumber": 79
+          },
+          {
+            "text": "  if (!(await hasEmailIdentity(supabase))) {",
+            "lineNumber": 80
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 81
+          },
+          {
+            "text": "    url.pathname = \"/auth/verify-email\";",
+            "lineNumber": 82
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 83
+          },
+          {
+            "text": "    url.hash = \"\";",
+            "lineNumber": 84
+          },
+          {
+            "text": "}",
+            "lineNumber": 111,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.33529460430145264
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/protected/page.tsx",
+        "range": {
+          "startPosition": {
+            "column": 43
+          },
+          "endPosition": {
+            "line": 42,
+            "column": 1
+          }
+        },
+        "contents": "import { createClient } from \"@/lib/supabase/server\";\nimport { InfoIcon } from \"lucide-react\";\nimport { FetchDataSteps } from \"@/components/tutorial/fetch-data-steps\";\nimport { Suspense } from \"react\";\n\nasync function UserDetails() {\n  const supabase = await createClient();\n  const { data, error } = await supabase.auth.getClaims();\n\n  if (error || !data?.claims) {\n    redirect(\"/auth/login\");\n  }\n\n  return JSON.stringify(data.claims, null, 2);\n}\n\nexport default function ProtectedPage() {\n  return\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { createClient } from \"@/lib/supabase/server\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { InfoIcon } from \"lucide-react\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { FetchDataSteps } from \"@/components/tutorial/fetch-data-steps\";",
+            "lineNumber": 5
+          },
+          {
+            "text": "import { Suspense } from \"react\";",
+            "lineNumber": 6
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "async function UserDetails() {",
+            "lineNumber": 8,
+            "isSignature": true
+          },
+          {
+            "text": "  const supabase = await createClient();",
+            "lineNumber": 9
+          },
+          {
+            "text": "  const { data, error } = await supabase.auth.getClaims();",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "  if (error || !data?.claims) {",
+            "lineNumber": 12
+          },
+          {
+            "text": "    redirect(\"/auth/login\");",
+            "lineNumber": 13
+          },
+          {
+            "text": "  }",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "  return JSON.stringify(data.claims, null, 2);",
+            "lineNumber": 16
+          },
+          {
+            "text": "}",
+            "lineNumber": 17,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 18
+          },
+          {
+            "text": "export default function ProtectedPage() {",
+            "lineNumber": 19,
+            "isSignature": true
+          },
+          {
+            "text": "  return",
+            "lineNumber": 20
+          },
+          {
+            "text": "}",
+            "lineNumber": 43,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3279553949832916
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/supabase/proxy.ts",
+        "range": {
+          "startPosition": {
+            "line": 5
+          },
+          "endPosition": {
+            "line": 110,
+            "column": 1
+          }
+        },
+        "contents": "export async function updateSession(request: NextRequest) {\n {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/verify-email\";\n    url.search = \"\"; // Clear existing search params\n    url.hash = \"\"; // Clear existing hash\n    url.searchParams.set(\"next\", fullPath);\n    return NextResponse.redirect(url);\n  }\n\n  // Check for linked profile if user is authenticated and not on public routes\n  // Skip this check for verify-email and pending-approval routes\n  if (!(await hasLinkedProfile(supabase))) {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/pending-approval\";\n    return NextResponse.redirect(url);\n  }\n\n  // IMPORTANT: You *must* return the supabaseResponse object as it is.\n  // If you're creating a new response object with NextResponse.next() make sure to:\n  // 1. Pass the request in it, like so:\n  //    const myNewResponse = NextResponse.next({ request })\n  // 2. Copy over the cookies, like so:\n  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())\n  // 3. Change the myNewResponse object to fit your needs, but avoid changing\n  //    the cookies!\n  // 4. Finally:\n  //    return myNewResponse\n  // If this is not done, you may be causing the browser and server to go out\n  // of sync and terminate the user's session prematurely!\n\n  return supabaseResponse;\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 6,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 6,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 6,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 7,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export async function updateSession(request: NextRequest) {",
+            "lineNumber": 6,
+            "isSignature": true
+          },
+          {
+            "text": " {",
+            "lineNumber": 80
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 81
+          },
+          {
+            "text": "    url.pathname = \"/auth/verify-email\";",
+            "lineNumber": 82
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 83
+          },
+          {
+            "text": "    url.hash = \"\"; // Clear existing hash",
+            "lineNumber": 84
+          },
+          {
+            "text": "    url.searchParams.set(\"next\", fullPath);",
+            "lineNumber": 85
+          },
+          {
+            "text": "    return NextResponse.redirect(url);",
+            "lineNumber": 86
+          },
+          {
+            "text": "  }",
+            "lineNumber": 87
+          },
+          {
+            "lineNumber": 88
+          },
+          {
+            "text": "  // Check for linked profile if user is authenticated and not on public routes",
+            "lineNumber": 89
+          },
+          {
+            "text": "  // Skip this check for verify-email and pending-approval routes",
+            "lineNumber": 90
+          },
+          {
+            "text": "  if (!(await hasLinkedProfile(supabase))) {",
+            "lineNumber": 91
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 92
+          },
+          {
+            "text": "    url.pathname = \"/auth/pending-approval\";",
+            "lineNumber": 93
+          },
+          {
+            "text": "    return NextResponse.redirect(url);",
+            "lineNumber": 94
+          },
+          {
+            "text": "  }",
+            "lineNumber": 95
+          },
+          {
+            "lineNumber": 96
+          },
+          {
+            "text": "  // IMPORTANT: You *must* return the supabaseResponse object as it is.",
+            "lineNumber": 97
+          },
+          {
+            "text": "  // If you're creating a new response object with NextResponse.next() make sure to:",
+            "lineNumber": 98
+          },
+          {
+            "text": "  // 1. Pass the request in it, like so:",
+            "lineNumber": 99
+          },
+          {
+            "text": "  //    const myNewResponse = NextResponse.next({ request })",
+            "lineNumber": 100
+          },
+          {
+            "text": "  // 2. Copy over the cookies, like so:",
+            "lineNumber": 101
+          },
+          {
+            "text": "  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())",
+            "lineNumber": 102
+          },
+          {
+            "text": "  // 3. Change the myNewResponse object to fit your needs, but avoid changing",
+            "lineNumber": 103
+          },
+          {
+            "text": "  //    the cookies!",
+            "lineNumber": 104
+          },
+          {
+            "text": "  // 4. Finally:",
+            "lineNumber": 105
+          },
+          {
+            "text": "  //    return myNewResponse",
+            "lineNumber": 106
+          },
+          {
+            "text": "  // If this is not done, you may be causing the browser and server to go out",
+            "lineNumber": 107
+          },
+          {
+            "text": "  // of sync and terminate the user's session prematurely!",
+            "lineNumber": 108
+          },
+          {
+            "lineNumber": 109
+          },
+          {
+            "text": "  return supabaseResponse;",
+            "lineNumber": 110
+          },
+          {
+            "text": "}",
+            "lineNumber": 111,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3191477656364441
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/login/page.tsx",
+        "range": {
+          "startPosition": {
+            "column": 52
+          },
+          "endPosition": {
+            "line": 29,
+            "column": 1
+          }
+        },
+        "contents": "import { createClient } from \"@/lib/supabase/server\";\nimport { redirect } from \"next/navigation\";\nimport { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";\nimport { validateRedirectUrl } from \"@/lib/utils\";\n\nexport default async function Page({\n  searchParams,\n}: {\n  searchParams: Promise&lt;{ next?: string }&gt;;\n}) {\n  const supabase = await createClient();\n  const { data } = await supabase.auth.getClaims();\n\n  // Redirect to protected page if already logged in\n  if (data?.claims) {\n    redirect(DEFAULT_LOGGED_IN_PAGE);\n  }\n\n  const params = await searchParams;\n  const next = params.next;\n\n  return (\n    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;\n      &lt;div className=\"w-full max-w-sm\"&gt;\n        &lt;LoginForm next={next} /&gt;\n      &lt;/div&gt;\n    &lt;/div&gt;\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { createClient } from \"@/lib/supabase/server\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { redirect } from \"next/navigation\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { validateRedirectUrl } from \"@/lib/utils\";",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 6
+          },
+          {
+            "text": "export default async function Page({",
+            "lineNumber": 7,
+            "isSignature": true
+          },
+          {
+            "text": "  searchParams,",
+            "lineNumber": 8,
+            "isSignature": true
+          },
+          {
+            "text": "}: {",
+            "lineNumber": 9,
+            "isSignature": true
+          },
+          {
+            "text": "  searchParams: Promise&lt;{ next?: string }&gt;;",
+            "lineNumber": 10,
+            "isSignature": true
+          },
+          {
+            "text": "}) {",
+            "lineNumber": 11,
+            "isSignature": true
+          },
+          {
+            "text": "  const supabase = await createClient();",
+            "lineNumber": 12
+          },
+          {
+            "text": "  const { data } = await supabase.auth.getClaims();",
+            "lineNumber": 13
+          },
+          {
+            "lineNumber": 14
+          },
+          {
+            "text": "  // Redirect to protected page if already logged in",
+            "lineNumber": 15
+          },
+          {
+            "text": "  if (data?.claims) {",
+            "lineNumber": 16
+          },
+          {
+            "text": "    redirect(DEFAULT_LOGGED_IN_PAGE);",
+            "lineNumber": 17
+          },
+          {
+            "text": "  }",
+            "lineNumber": 18
+          },
+          {
+            "lineNumber": 19
+          },
+          {
+            "text": "  const params = await searchParams;",
+            "lineNumber": 20
+          },
+          {
+            "text": "  const next = params.next;",
+            "lineNumber": 21
+          },
+          {
+            "lineNumber": 22
+          },
+          {
+            "text": "  return (",
+            "lineNumber": 23
+          },
+          {
+            "text": "    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;",
+            "lineNumber": 24
+          },
+          {
+            "text": "      &lt;div className=\"w-full max-w-sm\"&gt;",
+            "lineNumber": 25
+          },
+          {
+            "text": "        &lt;LoginForm next={next} /&gt;",
+            "lineNumber": 26
+          },
+          {
+            "text": "      &lt;/div&gt;",
+            "lineNumber": 27
+          },
+          {
+            "text": "    &lt;/div&gt;",
+            "lineNumber": 28
+          },
+          {
+            "text": "  );",
+            "lineNumber": 29
+          },
+          {
+            "text": "}",
+            "lineNumber": 30,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.29086539149284363
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/auth-button.tsx",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 23,
+            "column": 1
+          }
+        },
+        "contents": "import Link from \"next/link\";\nimport { Button } from \"./ui/button\";\nimport { createClient } from \"@/lib/supabase/server\";\nimport { LogoutButton } from \"./logout-button\";\n\nexport async function AuthButton() {\n  const supabase = await createClient();\n\n  // You can also use getUser() which will be slower.\n  const { data } = await supabase.auth.getClaims();\n\n  const user = data?.claims;\n\n  return user ? (\n    &lt;div className=\"flex items-center gap-4\"&gt;\n      Hey, {user.email}!\n      &lt;LogoutButton /&gt;\n    &lt;/div&gt;\n  ) : (\n    &lt;Button asChild size=\"sm\" variant={\"default\"}&gt;\n      &lt;Link href=\"/auth/login\"&gt;Sign in with Google&lt;/Link&gt;\n    &lt;/Button&gt;\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import Link from \"next/link\";",
+            "lineNumber": 1
+          },
+          {
+            "text": "import { Button } from \"./ui/button\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { createClient } from \"@/lib/supabase/server\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { LogoutButton } from \"./logout-button\";",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "export async function AuthButton() {",
+            "lineNumber": 6,
+            "isSignature": true
+          },
+          {
+            "text": "  const supabase = await createClient();",
+            "lineNumber": 7
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "  // You can also use getUser() which will be slower.",
+            "lineNumber": 9
+          },
+          {
+            "text": "  const { data } = await supabase.auth.getClaims();",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "  const user = data?.claims;",
+            "lineNumber": 12
+          },
+          {
+            "lineNumber": 13
+          },
+          {
+            "text": "  return user ? (",
+            "lineNumber": 14
+          },
+          {
+            "text": "    &lt;div className=\"flex items-center gap-4\"&gt;",
+            "lineNumber": 15
+          },
+          {
+            "text": "      Hey, {user.email}!",
+            "lineNumber": 16
+          },
+          {
+            "text": "      &lt;LogoutButton /&gt;",
+            "lineNumber": 17
+          },
+          {
+            "text": "    &lt;/div&gt;",
+            "lineNumber": 18
+          },
+          {
+            "text": "  ) : (",
+            "lineNumber": 19
+          },
+          {
+            "text": "    &lt;Button asChild size=\"sm\" variant={\"default\"}&gt;",
+            "lineNumber": 20
+          },
+          {
+            "text": "      &lt;Link href=\"/auth/login\"&gt;Sign in with Google&lt;/Link&gt;",
+            "lineNumber": 21
+          },
+          {
+            "text": "    &lt;/Button&gt;",
+            "lineNumber": 22
+          },
+          {
+            "text": "  );",
+            "lineNumber": 23
+          },
+          {
+            "text": "}",
+            "lineNumber": 24,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.2719579041004181
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/callback/route.ts",
+        "range": {
+          "startPosition": {
+            "column": 61
+          },
+          "endPosition": {
+            "line": 87,
+            "column": 1
+          }
+        },
+        "contents": "import { createServerClient } from \"@supabase/ssr\";\nimport {\n  createErrorUrl,\n  redirectWithCookies,\n  hasEmailIdentity,\n} from \"@/lib/auth-helpers\";\nimport { validateRedirectUrl } from \"@/lib/utils\";\nimport { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";\n\n/**\n * Handles OAuth callback from Google\n * Exchanges the code for a session and redirects appropriately\n * Ensures cookies are properly set before redirecting\n */\nexport async function GET(request: NextRequest) {\n  const { searchParams, origin } = new URL(request.url);\n  const code = searchParams.get(\"code\");\n  const next = searchParams.get(\"next\");\n\n  if (!code) {\n    return NextResponse.redirect(createErrorUrl(request, \"No code provided\"));\n  }\n\n  let supabaseResponse = NextResponse.next({\n    request,\n  });\n\n  const supabase = createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return request.cookies.getAll();\n        },\n        setAll(cookiesToSet) {\n          cookiesToSet.forEach(({ name, value }) =&gt; {\n            request.cookies.set(name, value);\n          });\n          supabaseResponse = NextResponse.next({\n            request,\n          });\n          cookiesToSet.forEach(({ name, value, options }) =&gt; {\n            supabaseResponse.cookies.set(name, value, options);\n          });\n        },\n      },\n    },\n  );\n\n  const { error } = await supabase.auth.exchangeCodeForSession(code);\n  if (error) {\n    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);\n  }\n\n  // Check if user has email identity linked\n  // If not, redirect to verify-email page\n  // Use the same supabase client to ensure we have the just-exchanged session\n  const hasEmail = await hasEmailIdentity(supabase);\n\n  // Validate the next parameter to prevent open redirects\n  const validatedNext = validateRedirectUrl(next, origin);\n\n  if (hasEmail) {\n    // User has email identity, redirect to next or default page\n    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { createServerClient } from \"@supabase/ssr\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import {",
+            "lineNumber": 3
+          },
+          {
+            "text": "  createErrorUrl,",
+            "lineNumber": 4
+          },
+          {
+            "text": "  redirectWithCookies,",
+            "lineNumber": 5
+          },
+          {
+            "text": "  hasEmailIdentity,",
+            "lineNumber": 6
+          },
+          {
+            "text": "} from \"@/lib/auth-helpers\";",
+            "lineNumber": 7
+          },
+          {
+            "text": "import { validateRedirectUrl } from \"@/lib/utils\";",
+            "lineNumber": 8
+          },
+          {
+            "text": "import { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "/**",
+            "lineNumber": 11
+          },
+          {
+            "text": " * Handles OAuth callback from Google",
+            "lineNumber": 12
+          },
+          {
+            "text": " * Exchanges the code for a session and redirects appropriately",
+            "lineNumber": 13
+          },
+          {
+            "text": " * Ensures cookies are properly set before redirecting",
+            "lineNumber": 14
+          },
+          {
+            "text": " */",
+            "lineNumber": 15
+          },
+          {
+            "text": "export async function GET(request: NextRequest) {",
+            "lineNumber": 16,
+            "isSignature": true
+          },
+          {
+            "text": "  const { searchParams, origin } = new URL(request.url);",
+            "lineNumber": 17
+          },
+          {
+            "text": "  const code = searchParams.get(\"code\");",
+            "lineNumber": 18
+          },
+          {
+            "text": "  const next = searchParams.get(\"next\");",
+            "lineNumber": 19
+          },
+          {
+            "lineNumber": 20
+          },
+          {
+            "text": "  if (!code) {",
+            "lineNumber": 21
+          },
+          {
+            "text": "    return NextResponse.redirect(createErrorUrl(request, \"No code provided\"));",
+            "lineNumber": 22
+          },
+          {
+            "text": "  }",
+            "lineNumber": 23
+          },
+          {
+            "lineNumber": 24
+          },
+          {
+            "text": "  let supabaseResponse = NextResponse.next({",
+            "lineNumber": 25
+          },
+          {
+            "text": "    request,",
+            "lineNumber": 26
+          },
+          {
+            "text": "  });",
+            "lineNumber": 27
+          },
+          {
+            "lineNumber": 28
+          },
+          {
+            "text": "  const supabase = createServerClient(",
+            "lineNumber": 29
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 30
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 31
+          },
+          {
+            "text": "    {",
+            "lineNumber": 32
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 33
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 34
+          },
+          {
+            "text": "          return request.cookies.getAll();",
+            "lineNumber": 35
+          },
+          {
+            "text": "        },",
+            "lineNumber": 36
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 37
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value }) =&gt; {",
+            "lineNumber": 38
+          },
+          {
+            "text": "            request.cookies.set(name, value);",
+            "lineNumber": 39
+          },
+          {
+            "text": "          });",
+            "lineNumber": 40
+          },
+          {
+            "text": "          supabaseResponse = NextResponse.next({",
+            "lineNumber": 41
+          },
+          {
+            "text": "            request,",
+            "lineNumber": 42
+          },
+          {
+            "text": "          });",
+            "lineNumber": 43
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value, options }) =&gt; {",
+            "lineNumber": 44
+          },
+          {
+            "text": "            supabaseResponse.cookies.set(name, value, options);",
+            "lineNumber": 45
+          },
+          {
+            "text": "          });",
+            "lineNumber": 46
+          },
+          {
+            "text": "        },",
+            "lineNumber": 47
+          },
+          {
+            "text": "      },",
+            "lineNumber": 48
+          },
+          {
+            "text": "    },",
+            "lineNumber": 49
+          },
+          {
+            "text": "  );",
+            "lineNumber": 50
+          },
+          {
+            "lineNumber": 51
+          },
+          {
+            "text": "  const { error } = await supabase.auth.exchangeCodeForSession(code);",
+            "lineNumber": 52
+          },
+          {
+            "text": "  if (error) {",
+            "lineNumber": 53
+          },
+          {
+            "text": "    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);",
+            "lineNumber": 54
+          },
+          {
+            "text": "  }",
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  // Check if user has email identity linked",
+            "lineNumber": 57
+          },
+          {
+            "text": "  // If not, redirect to verify-email page",
+            "lineNumber": 58
+          },
+          {
+            "text": "  // Use the same supabase client to ensure we have the just-exchanged session",
+            "lineNumber": 59
+          },
+          {
+            "text": "  const hasEmail = await hasEmailIdentity(supabase);",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "  // Validate the next parameter to prevent open redirects",
+            "lineNumber": 62
+          },
+          {
+            "text": "  const validatedNext = validateRedirectUrl(next, origin);",
+            "lineNumber": 63
+          },
+          {
+            "lineNumber": 64
+          },
+          {
+            "text": "  if (hasEmail) {",
+            "lineNumber": 65
+          },
+          {
+            "text": "    // User has email identity, redirect to next or default page",
+            "lineNumber": 66
+          },
+          {
+            "text": "    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;",
+            "lineNumber": 67
+          },
+          {
+            "text": "}",
+            "lineNumber": 88,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.26494479179382324
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/verify-email/page.tsx",
+        "range": {
+          "startPosition": {
+            "column": 53
+          },
+          "endPosition": {
+            "line": 32,
+            "column": 1
+          }
+        },
+        "contents": "import { redirect } from \"next/navigation\";\nimport { VerifyEmailForm } from \"@/components/verify-email-form\";\n\n/**\n * Email verification page\n * Users can link an email via OTP to their Google OAuth account\n * Users with existing email identities can also access this page to add additional emails\n */\nexport default async function VerifyEmailPage({\n  searchParams,\n}: {\n  searchParams: Promise&lt;{ next?: string }&gt;;\n}) {\n  const supabase = await createClient();\n  const { data } = await supabase.auth.getClaims();\n\n  // Redirect to login if not authenticated\n  if (!data?.claims) {\n    redirect(\"/auth/login\");\n  }\n\n  const params = await searchParams;\n  const next = params.next;\n\n  return (\n    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;\n      &lt;div className=\"w-full max-w-sm\"&gt;\n        &lt;VerifyEmailForm next={next} /&gt;\n      &lt;/div&gt;\n    &lt;/div&gt;\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { redirect } from \"next/navigation\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { VerifyEmailForm } from \"@/components/verify-email-form\";",
+            "lineNumber": 3
+          },
+          {
+            "lineNumber": 4
+          },
+          {
+            "text": "/**",
+            "lineNumber": 5
+          },
+          {
+            "text": " * Email verification page",
+            "lineNumber": 6
+          },
+          {
+            "text": " * Users can link an email via OTP to their Google OAuth account",
+            "lineNumber": 7
+          },
+          {
+            "text": " * Users with existing email identities can also access this page to add additional emails",
+            "lineNumber": 8
+          },
+          {
+            "text": " */",
+            "lineNumber": 9
+          },
+          {
+            "text": "export default async function VerifyEmailPage({",
+            "lineNumber": 10,
+            "isSignature": true
+          },
+          {
+            "text": "  searchParams,",
+            "lineNumber": 11,
+            "isSignature": true
+          },
+          {
+            "text": "}: {",
+            "lineNumber": 12,
+            "isSignature": true
+          },
+          {
+            "text": "  searchParams: Promise&lt;{ next?: string }&gt;;",
+            "lineNumber": 13,
+            "isSignature": true
+          },
+          {
+            "text": "}) {",
+            "lineNumber": 14,
+            "isSignature": true
+          },
+          {
+            "text": "  const supabase = await createClient();",
+            "lineNumber": 15
+          },
+          {
+            "text": "  const { data } = await supabase.auth.getClaims();",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "  // Redirect to login if not authenticated",
+            "lineNumber": 18
+          },
+          {
+            "text": "  if (!data?.claims) {",
+            "lineNumber": 19
+          },
+          {
+            "text": "    redirect(\"/auth/login\");",
+            "lineNumber": 20
+          },
+          {
+            "text": "  }",
+            "lineNumber": 21
+          },
+          {
+            "lineNumber": 22
+          },
+          {
+            "text": "  const params = await searchParams;",
+            "lineNumber": 23
+          },
+          {
+            "text": "  const next = params.next;",
+            "lineNumber": 24
+          },
+          {
+            "lineNumber": 25
+          },
+          {
+            "text": "  return (",
+            "lineNumber": 26
+          },
+          {
+            "text": "    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;",
+            "lineNumber": 27
+          },
+          {
+            "text": "      &lt;div className=\"w-full max-w-sm\"&gt;",
+            "lineNumber": 28
+          },
+          {
+            "text": "        &lt;VerifyEmailForm next={next} /&gt;",
+            "lineNumber": 29
+          },
+          {
+            "text": "      &lt;/div&gt;",
+            "lineNumber": 30
+          },
+          {
+            "text": "    &lt;/div&gt;",
+            "lineNumber": 31
+          },
+          {
+            "text": "  );",
+            "lineNumber": 32
+          },
+          {
+            "text": "}",
+            "lineNumber": 33,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.2540552616119385
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/pending-approval/page.tsx",
+        "range": {
+          "startPosition": {
+            "column": 53
+          },
+          "endPosition": {
+            "line": 49,
+            "column": 1
+          }
+        },
+        "contents": "import { redirect } from \"next/navigation\";\nimport { hasEmailIdentity, hasLinkedProfile } from \"@/lib/auth-helpers\";\nimport { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";\n\n/**\n * Pending approval page\n * Shown to users who have verified their email but don't have a linked profile yet\n */\nexport default async function PendingApprovalPage() {\n  const supabase = await createClient();\n  const { data } = await supabase.auth.getClaims();\n\n  // Redirect to login if not authenticated\n  if (!data?.claims) {\n    redirect(\"/auth/login\");\n  }\n\n  // Redirect to verify email if no email identity linked\n  const hasEmail = await hasEmailIdentity(supabase);\n  if (!hasEmail) {\n    redirect(\"/auth/verify-email\");\n  }\n\n  // Redirect to protected if already has linked profile\n  const hasProfile = await hasLinkedProfile(supabase);\n  if (hasProfile) {\n    redirect(DEFAULT_LOGGED_IN_PAGE);\n  }\n\n  return (\n    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;\n      &lt;div className=\"w-full max-w-md\"&gt;\n        &lt;div className=\"flex flex-col gap-6\"&gt;\n          &lt;div className=\"flex flex-col gap-2\"&gt;\n            &lt;h1 className=\"text-2xl font-bold\"&gt;Pending Approval&lt;/h1&gt;\n            &lt;p className=\"text-muted-foreground\"&gt;\n              Your email address has been verified, but you need an admin to approve your account before you can access protected areas.\n            &lt;/p&gt;\n          &lt;/div&gt;\n          &lt;div className=\"rounded-lg border p-4 bg-muted/50\"&gt;\n            &lt;p className=\"text-sm\"&gt;\n              Please contact an administrator to approve your email address. Once approved, you will be able to access all protected areas of the application.\n            &lt;/p&gt;\n          &lt;/div&gt;\n        &lt;/div&gt;\n      &lt;/div&gt;\n    &lt;/div&gt;\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { redirect } from \"next/navigation\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { hasEmailIdentity, hasLinkedProfile } from \"@/lib/auth-helpers\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "/**",
+            "lineNumber": 6
+          },
+          {
+            "text": " * Pending approval page",
+            "lineNumber": 7
+          },
+          {
+            "text": " * Shown to users who have verified their email but don't have a linked profile yet",
+            "lineNumber": 8
+          },
+          {
+            "text": " */",
+            "lineNumber": 9
+          },
+          {
+            "text": "export default async function PendingApprovalPage() {",
+            "lineNumber": 10,
+            "isSignature": true
+          },
+          {
+            "text": "  const supabase = await createClient();",
+            "lineNumber": 11
+          },
+          {
+            "text": "  const { data } = await supabase.auth.getClaims();",
+            "lineNumber": 12
+          },
+          {
+            "lineNumber": 13
+          },
+          {
+            "text": "  // Redirect to login if not authenticated",
+            "lineNumber": 14
+          },
+          {
+            "text": "  if (!data?.claims) {",
+            "lineNumber": 15
+          },
+          {
+            "text": "    redirect(\"/auth/login\");",
+            "lineNumber": 16
+          },
+          {
+            "text": "  }",
+            "lineNumber": 17
+          },
+          {
+            "lineNumber": 18
+          },
+          {
+            "text": "  // Redirect to verify email if no email identity linked",
+            "lineNumber": 19
+          },
+          {
+            "text": "  const hasEmail = await hasEmailIdentity(supabase);",
+            "lineNumber": 20
+          },
+          {
+            "text": "  if (!hasEmail) {",
+            "lineNumber": 21
+          },
+          {
+            "text": "    redirect(\"/auth/verify-email\");",
+            "lineNumber": 22
+          },
+          {
+            "text": "  }",
+            "lineNumber": 23
+          },
+          {
+            "lineNumber": 24
+          },
+          {
+            "text": "  // Redirect to protected if already has linked profile",
+            "lineNumber": 25
+          },
+          {
+            "text": "  const hasProfile = await hasLinkedProfile(supabase);",
+            "lineNumber": 26
+          },
+          {
+            "text": "  if (hasProfile) {",
+            "lineNumber": 27
+          },
+          {
+            "text": "    redirect(DEFAULT_LOGGED_IN_PAGE);",
+            "lineNumber": 28
+          },
+          {
+            "text": "  }",
+            "lineNumber": 29
+          },
+          {
+            "lineNumber": 30
+          },
+          {
+            "text": "  return (",
+            "lineNumber": 31
+          },
+          {
+            "text": "    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;",
+            "lineNumber": 32
+          },
+          {
+            "text": "      &lt;div className=\"w-full max-w-md\"&gt;",
+            "lineNumber": 33
+          },
+          {
+            "text": "        &lt;div className=\"flex flex-col gap-6\"&gt;",
+            "lineNumber": 34
+          },
+          {
+            "text": "          &lt;div className=\"flex flex-col gap-2\"&gt;",
+            "lineNumber": 35
+          },
+          {
+            "text": "            &lt;h1 className=\"text-2xl font-bold\"&gt;Pending Approval&lt;/h1&gt;",
+            "lineNumber": 36
+          },
+          {
+            "text": "            &lt;p className=\"text-muted-foreground\"&gt;",
+            "lineNumber": 37
+          },
+          {
+            "text": "              Your email address has been verified, but you need an admin to approve your account before you can access protected areas.",
+            "lineNumber": 38
+          },
+          {
+            "text": "            &lt;/p&gt;",
+            "lineNumber": 39
+          },
+          {
+            "text": "          &lt;/div&gt;",
+            "lineNumber": 40
+          },
+          {
+            "text": "          &lt;div className=\"rounded-lg border p-4 bg-muted/50\"&gt;",
+            "lineNumber": 41
+          },
+          {
+            "text": "            &lt;p className=\"text-sm\"&gt;",
+            "lineNumber": 42
+          },
+          {
+            "text": "              Please contact an administrator to approve your email address. Once approved, you will be able to access all protected areas of the application.",
+            "lineNumber": 43
+          },
+          {
+            "text": "            &lt;/p&gt;",
+            "lineNumber": 44
+          },
+          {
+            "text": "          &lt;/div&gt;",
+            "lineNumber": 45
+          },
+          {
+            "text": "        &lt;/div&gt;",
+            "lineNumber": 46
+          },
+          {
+            "text": "      &lt;/div&gt;",
+            "lineNumber": 47
+          },
+          {
+            "text": "    &lt;/div&gt;",
+            "lineNumber": 48
+          },
+          {
+            "text": "  );",
+            "lineNumber": 49
+          },
+          {
+            "text": "}",
+            "lineNumber": 50,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.243499755859375
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/confirm-email-change/route.ts",
+        "range": {
+          "startPosition": {
+            "column": 61
+          },
+          "endPosition": {
+            "line": 65,
+            "column": 1
+          }
+        },
+        "contents": "import { type EmailOtpType } from \"@supabase/supabase-js\";\nimport { createServerClient } from \"@supabase/ssr\";\nimport {\n  createErrorUrl,\n  createSuccessUrl,\n  redirectWithCookies,\n} from \"@/lib/auth-helpers\";\n\n/**\n * Handles email change confirmation callback using PKCE flow with token_hash\n * Verifies the OTP token and redirects appropriately\n * Ensures cookies are properly set before redirecting\n */\nexport async function GET(request: NextRequest) {\n  const { searchParams } = new URL(request.url);\n  const token_hash = searchParams.get(\"token_hash\");\n  const typeParam = searchParams.get(\"type\");\n  const next = searchParams.get(\"next\");\n  const type: EmailOtpType | null =\n    typeParam === \"email_change\" ? (\"email_change\" as EmailOtpType) : null;\n\n  if (!type) {\n    return NextResponse.redirect(createErrorUrl(request, \"Invalid type\"));\n  }\n  if (!token_hash) {\n    return NextResponse.redirect(createErrorUrl(request, \"Invalid token hash\"));\n  }\n  let supabaseResponse = NextResponse.next({\n    request,\n  });\n\n  const supabase = createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return request.cookies.getAll();\n        },\n        setAll(cookiesToSet) {\n          cookiesToSet.forEach(({ name, value }) =&gt; {\n            request.cookies.set(name, value);\n          });\n          supabaseResponse = NextResponse.next({\n            request,\n          });\n          cookiesToSet.forEach(({ name, value, options }) =&gt; {\n            supabaseResponse.cookies.set(name, value, options);\n          });\n        },\n      },\n    },\n  );\n\n\n  const { error } = await supabase.auth.verifyOtp({\n    type,\n    token_hash,\n  });\n  if (error) {\n    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);\n  }\n\n  return redirectWithCookies(createSuccessUrl(request, next), supabaseResponse);\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { type EmailOtpType } from \"@supabase/supabase-js\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { createServerClient } from \"@supabase/ssr\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import {",
+            "lineNumber": 4
+          },
+          {
+            "text": "  createErrorUrl,",
+            "lineNumber": 5
+          },
+          {
+            "text": "  createSuccessUrl,",
+            "lineNumber": 6
+          },
+          {
+            "text": "  redirectWithCookies,",
+            "lineNumber": 7
+          },
+          {
+            "text": "} from \"@/lib/auth-helpers\";",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "/**",
+            "lineNumber": 10
+          },
+          {
+            "text": " * Handles email change confirmation callback using PKCE flow with token_hash",
+            "lineNumber": 11
+          },
+          {
+            "text": " * Verifies the OTP token and redirects appropriately",
+            "lineNumber": 12
+          },
+          {
+            "text": " * Ensures cookies are properly set before redirecting",
+            "lineNumber": 13
+          },
+          {
+            "text": " */",
+            "lineNumber": 14
+          },
+          {
+            "text": "export async function GET(request: NextRequest) {",
+            "lineNumber": 15,
+            "isSignature": true
+          },
+          {
+            "text": "  const { searchParams } = new URL(request.url);",
+            "lineNumber": 16
+          },
+          {
+            "text": "  const token_hash = searchParams.get(\"token_hash\");",
+            "lineNumber": 17
+          },
+          {
+            "text": "  const typeParam = searchParams.get(\"type\");",
+            "lineNumber": 18
+          },
+          {
+            "text": "  const next = searchParams.get(\"next\");",
+            "lineNumber": 19
+          },
+          {
+            "text": "  const type: EmailOtpType | null =",
+            "lineNumber": 20
+          },
+          {
+            "text": "    typeParam === \"email_change\" ? (\"email_change\" as EmailOtpType) : null;",
+            "lineNumber": 21
+          },
+          {
+            "lineNumber": 22
+          },
+          {
+            "text": "  if (!type) {",
+            "lineNumber": 23
+          },
+          {
+            "text": "    return NextResponse.redirect(createErrorUrl(request, \"Invalid type\"));",
+            "lineNumber": 24
+          },
+          {
+            "text": "  }",
+            "lineNumber": 25
+          },
+          {
+            "text": "  if (!token_hash) {",
+            "lineNumber": 26
+          },
+          {
+            "text": "    return NextResponse.redirect(createErrorUrl(request, \"Invalid token hash\"));",
+            "lineNumber": 27
+          },
+          {
+            "text": "  }",
+            "lineNumber": 28
+          },
+          {
+            "text": "  let supabaseResponse = NextResponse.next({",
+            "lineNumber": 29
+          },
+          {
+            "text": "    request,",
+            "lineNumber": 30
+          },
+          {
+            "text": "  });",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "  const supabase = createServerClient(",
+            "lineNumber": 33
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 34
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 35
+          },
+          {
+            "text": "    {",
+            "lineNumber": 36
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 37
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 38
+          },
+          {
+            "text": "          return request.cookies.getAll();",
+            "lineNumber": 39
+          },
+          {
+            "text": "        },",
+            "lineNumber": 40
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 41
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value }) =&gt; {",
+            "lineNumber": 42
+          },
+          {
+            "text": "            request.cookies.set(name, value);",
+            "lineNumber": 43
+          },
+          {
+            "text": "          });",
+            "lineNumber": 44
+          },
+          {
+            "text": "          supabaseResponse = NextResponse.next({",
+            "lineNumber": 45
+          },
+          {
+            "text": "            request,",
+            "lineNumber": 46
+          },
+          {
+            "text": "          });",
+            "lineNumber": 47
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value, options }) =&gt; {",
+            "lineNumber": 48
+          },
+          {
+            "text": "            supabaseResponse.cookies.set(name, value, options);",
+            "lineNumber": 49
+          },
+          {
+            "text": "          });",
+            "lineNumber": 50
+          },
+          {
+            "text": "        },",
+            "lineNumber": 51
+          },
+          {
+            "text": "      },",
+            "lineNumber": 52
+          },
+          {
+            "text": "    },",
+            "lineNumber": 53
+          },
+          {
+            "text": "  );",
+            "lineNumber": 54
+          },
+          {
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  const { error } = await supabase.auth.verifyOtp({",
+            "lineNumber": 57
+          },
+          {
+            "text": "    type,",
+            "lineNumber": 58
+          },
+          {
+            "text": "    token_hash,",
+            "lineNumber": 59
+          },
+          {
+            "text": "  });",
+            "lineNumber": 60
+          },
+          {
+            "text": "  if (error) {",
+            "lineNumber": 61
+          },
+          {
+            "text": "    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);",
+            "lineNumber": 62
+          },
+          {
+            "text": "  }",
+            "lineNumber": 63
+          },
+          {
+            "lineNumber": 64
+          },
+          {
+            "text": "  return redirectWithCookies(createSuccessUrl(request, next), supabaseResponse);",
+            "lineNumber": 65
+          },
+          {
+            "text": "}",
+            "lineNumber": 66,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.24085690081119537
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/supabase/server.ts",
+        "range": {
+          "startPosition": {
+            "column": 51
+          },
+          "endPosition": {
+            "line": 33,
+            "column": 1
+          }
+        },
+        "contents": "import { cookies } from \"next/headers\";\n\n/**\n * Especially important if using Fluid compute: Don't put this client in a\n * global variable. Always create a new client within each function when using\n * it.\n */\nexport async function createClient() {\n  const cookieStore = await cookies();\n\n  return createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return cookieStore.getAll();\n        },\n        setAll(cookiesToSet) {\n          try {\n            cookiesToSet.forEach(({ name, value, options }) =&gt;\n              cookieStore.set(name, value, options),\n            );\n          } catch {\n            // The &#96;setAll&#96; method was called from a Server Component.\n            // This can be ignored if you have proxy refreshing\n            // user sessions.\n          }\n        },\n      },\n    },\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { cookies } from \"next/headers\";",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "/**",
+            "lineNumber": 4
+          },
+          {
+            "text": " * Especially important if using Fluid compute: Don't put this client in a",
+            "lineNumber": 5
+          },
+          {
+            "text": " * global variable. Always create a new client within each function when using",
+            "lineNumber": 6
+          },
+          {
+            "text": " * it.",
+            "lineNumber": 7
+          },
+          {
+            "text": " */",
+            "lineNumber": 8
+          },
+          {
+            "text": "export async function createClient() {",
+            "lineNumber": 9,
+            "isSignature": true
+          },
+          {
+            "text": "  const cookieStore = await cookies();",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "  return createServerClient(",
+            "lineNumber": 12
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 13
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 14
+          },
+          {
+            "text": "    {",
+            "lineNumber": 15
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 16
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 17
+          },
+          {
+            "text": "          return cookieStore.getAll();",
+            "lineNumber": 18
+          },
+          {
+            "text": "        },",
+            "lineNumber": 19
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 20
+          },
+          {
+            "text": "          try {",
+            "lineNumber": 21
+          },
+          {
+            "text": "            cookiesToSet.forEach(({ name, value, options }) =&gt;",
+            "lineNumber": 22
+          },
+          {
+            "text": "              cookieStore.set(name, value, options),",
+            "lineNumber": 23
+          },
+          {
+            "text": "            );",
+            "lineNumber": 24
+          },
+          {
+            "text": "          } catch {",
+            "lineNumber": 25
+          },
+          {
+            "text": "            // The &#96;setAll&#96; method was called from a Server Component.",
+            "lineNumber": 26
+          },
+          {
+            "text": "            // This can be ignored if you have proxy refreshing",
+            "lineNumber": 27
+          },
+          {
+            "text": "            // user sessions.",
+            "lineNumber": 28
+          },
+          {
+            "text": "          }",
+            "lineNumber": 29
+          },
+          {
+            "text": "        },",
+            "lineNumber": 30
+          },
+          {
+            "text": "      },",
+            "lineNumber": 31
+          },
+          {
+            "text": "    },",
+            "lineNumber": 32
+          },
+          {
+            "text": "  );",
+            "lineNumber": 33
+          },
+          {
+            "text": "}",
+            "lineNumber": 34,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.2200494408607483
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/callback/route.ts",
+        "range": {
+          "startPosition": {
+            "line": 15
+          },
+          "endPosition": {
+            "line": 87,
+            "column": 1
+          }
+        },
+        "contents": "export async function GET(request: NextRequest) {\n\n\n  if (hasEmail) {\n    // User has email identity, redirect to next or default page\n    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;\n    \n    // Parse the redirect URL to handle query parameters properly\n    const redirectUrl = new URL(redirectTo, origin);\n    const url = request.nextUrl.clone();\n    url.pathname = redirectUrl.pathname;\n    url.search = redirectUrl.search;\n    url.hash = redirectUrl.hash;\n    \n    return redirectWithCookies(url, supabaseResponse);\n  } else {\n    // User needs to verify email, preserve next parameter\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/verify-email\";\n    url.search = \"\"; // Clear existing search params\n    if (validatedNext) {\n      // Properly encode the next parameter\n      url.searchParams.set(\"next\", validatedNext);\n    }\n    return redirectWithCookies(url, supabaseResponse);\n  }\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 16,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 16,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 16,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 17,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export async function GET(request: NextRequest) {",
+            "lineNumber": 16,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 63
+          },
+          {
+            "lineNumber": 64
+          },
+          {
+            "text": "  if (hasEmail) {",
+            "lineNumber": 65
+          },
+          {
+            "text": "    // User has email identity, redirect to next or default page",
+            "lineNumber": 66
+          },
+          {
+            "text": "    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;",
+            "lineNumber": 67
+          },
+          {
+            "text": "    ",
+            "lineNumber": 68
+          },
+          {
+            "text": "    // Parse the redirect URL to handle query parameters properly",
+            "lineNumber": 69
+          },
+          {
+            "text": "    const redirectUrl = new URL(redirectTo, origin);",
+            "lineNumber": 70
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 71
+          },
+          {
+            "text": "    url.pathname = redirectUrl.pathname;",
+            "lineNumber": 72
+          },
+          {
+            "text": "    url.search = redirectUrl.search;",
+            "lineNumber": 73
+          },
+          {
+            "text": "    url.hash = redirectUrl.hash;",
+            "lineNumber": 74
+          },
+          {
+            "text": "    ",
+            "lineNumber": 75
+          },
+          {
+            "text": "    return redirectWithCookies(url, supabaseResponse);",
+            "lineNumber": 76
+          },
+          {
+            "text": "  } else {",
+            "lineNumber": 77
+          },
+          {
+            "text": "    // User needs to verify email, preserve next parameter",
+            "lineNumber": 78
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 79
+          },
+          {
+            "text": "    url.pathname = \"/auth/verify-email\";",
+            "lineNumber": 80
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 81
+          },
+          {
+            "text": "    if (validatedNext) {",
+            "lineNumber": 82
+          },
+          {
+            "text": "      // Properly encode the next parameter",
+            "lineNumber": 83
+          },
+          {
+            "text": "      url.searchParams.set(\"next\", validatedNext);",
+            "lineNumber": 84
+          },
+          {
+            "text": "    }",
+            "lineNumber": 85
+          },
+          {
+            "text": "    return redirectWithCookies(url, supabaseResponse);",
+            "lineNumber": 86
+          },
+          {
+            "text": "  }",
+            "lineNumber": 87
+          },
+          {
+            "text": "}",
+            "lineNumber": 88,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.21436789631843567
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 251
+          },
+          "endPosition": {
+            "line": 326
+          }
+        },
+        "contents": "   - No Row Level Security policies\n   - No database triggers or functions\n   - All access control handled by Next.js\n\n### Next.js (Application Layer - All Business Logic)\n\n1. **Middleware Verification**:\n\n   - Queries &#96;profiles&#96; table for linked user_id\n   - Checks &#96;removed_access&#96; is null for active access\n   - Enforces role-based route protection\n   - Real-time verification (instant access revocation)\n\n2. **Domain Validation** (in server actions):\n\n   - Client-side validation for UX (immediate feedback)\n   - Server-side validation before sending OTP\n   - Validates email format and CZU domain\n\n3. **Access Management** (in server actions):\n\n   - Admin sets &#96;removed_access&#96; timestamp and &#96;removed_access_by&#96; profile\n   - Immediate effect on next request\n   - Audit trail of who revoked access and when\n\n## Authentication Flow Details\n\n### Step 1: Google Login\n\nUser clicks Google login button, Supabase handles OAuth flow.\n\n### Step 2: Work Email Input with Domain Validation\n\n&#96;&#96;&#96;typescript\n// Validate domain before sending OTP\nif (!isValidWorkEmailDomain(workEmail)) {\n  throw new Error('Email must be @studenti.czu.cz or @pef.czu.cz');\n}\n\n// Send OTP to work email (only after domain validation passes)\nconst { error } = await supabase.auth.signInWithOtp({\n  email: workEmail,\n  options: { shouldCreateUser: false }\n});\n&#96;&#96;&#96;\n\n### Step 3: OTP Verification and Profile Linking\n\n&#96;&#96;&#96;typescript\n// After user enters OTP, verify it\nconst { error } = await supabase.auth.verifyOtp({\n  email: workEmail,\n  token: otpCode,\n  type: 'email'\n});\n\n// Check if profile exists for this work email\nconst { data: profile } = await supabase\n  .from('profiles')\n  .select('id')\n  .eq('work_email', workEmail)\n  .single();\n\nif (!profile) {\n  // No profile exists - redirect to pending approval\n  redirect('/auth/pending-approval');\n}\n\n// Link profile to current user\nconst { data: { user } } = await supabase.auth.getUser();\nawait supabase\n  .from('profiles')\n  .update({ \n    user_id: user.id,",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "   - No Row Level Security policies",
+            "lineNumber": 253
+          },
+          {
+            "text": "   - No database triggers or functions",
+            "lineNumber": 254
+          },
+          {
+            "text": "   - All access control handled by Next.js",
+            "lineNumber": 255
+          },
+          {
+            "lineNumber": 256
+          },
+          {
+            "text": "### Next.js (Application Layer - All Business Logic)",
+            "lineNumber": 257
+          },
+          {
+            "lineNumber": 258
+          },
+          {
+            "text": "1. **Middleware Verification**:",
+            "lineNumber": 259
+          },
+          {
+            "lineNumber": 260
+          },
+          {
+            "text": "   - Queries &#96;profiles&#96; table for linked user_id",
+            "lineNumber": 261
+          },
+          {
+            "text": "   - Checks &#96;removed_access&#96; is null for active access",
+            "lineNumber": 262
+          },
+          {
+            "text": "   - Enforces role-based route protection",
+            "lineNumber": 263
+          },
+          {
+            "text": "   - Real-time verification (instant access revocation)",
+            "lineNumber": 264
+          },
+          {
+            "lineNumber": 265
+          },
+          {
+            "text": "2. **Domain Validation** (in server actions):",
+            "lineNumber": 266
+          },
+          {
+            "lineNumber": 267
+          },
+          {
+            "text": "   - Client-side validation for UX (immediate feedback)",
+            "lineNumber": 268
+          },
+          {
+            "text": "   - Server-side validation before sending OTP",
+            "lineNumber": 269
+          },
+          {
+            "text": "   - Validates email format and CZU domain",
+            "lineNumber": 270
+          },
+          {
+            "lineNumber": 271
+          },
+          {
+            "text": "3. **Access Management** (in server actions):",
+            "lineNumber": 272
+          },
+          {
+            "lineNumber": 273
+          },
+          {
+            "text": "   - Admin sets &#96;removed_access&#96; timestamp and &#96;removed_access_by&#96; profile",
+            "lineNumber": 274
+          },
+          {
+            "text": "   - Immediate effect on next request",
+            "lineNumber": 275
+          },
+          {
+            "text": "   - Audit trail of who revoked access and when",
+            "lineNumber": 276
+          },
+          {
+            "lineNumber": 277
+          },
+          {
+            "text": "## Authentication Flow Details",
+            "lineNumber": 278
+          },
+          {
+            "lineNumber": 279
+          },
+          {
+            "text": "### Step 1: Google Login",
+            "lineNumber": 280
+          },
+          {
+            "lineNumber": 281
+          },
+          {
+            "text": "User clicks Google login button, Supabase handles OAuth flow.",
+            "lineNumber": 282
+          },
+          {
+            "lineNumber": 283
+          },
+          {
+            "text": "### Step 2: Work Email Input with Domain Validation",
+            "lineNumber": 284
+          },
+          {
+            "lineNumber": 285
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 286
+          },
+          {
+            "text": "// Validate domain before sending OTP",
+            "lineNumber": 287
+          },
+          {
+            "text": "if (!isValidWorkEmailDomain(workEmail)) {",
+            "lineNumber": 288
+          },
+          {
+            "text": "  throw new Error('Email must be @studenti.czu.cz or @pef.czu.cz');",
+            "lineNumber": 289
+          },
+          {
+            "text": "}",
+            "lineNumber": 290
+          },
+          {
+            "lineNumber": 291
+          },
+          {
+            "text": "// Send OTP to work email (only after domain validation passes)",
+            "lineNumber": 292
+          },
+          {
+            "text": "const { error } = await supabase.auth.signInWithOtp({",
+            "lineNumber": 293
+          },
+          {
+            "text": "  email: workEmail,",
+            "lineNumber": 294
+          },
+          {
+            "text": "  options: { shouldCreateUser: false }",
+            "lineNumber": 295
+          },
+          {
+            "text": "});",
+            "lineNumber": 296
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 297
+          },
+          {
+            "lineNumber": 298
+          },
+          {
+            "text": "### Step 3: OTP Verification and Profile Linking",
+            "lineNumber": 299
+          },
+          {
+            "lineNumber": 300
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 301
+          },
+          {
+            "text": "// After user enters OTP, verify it",
+            "lineNumber": 302
+          },
+          {
+            "text": "const { error } = await supabase.auth.verifyOtp({",
+            "lineNumber": 303
+          },
+          {
+            "text": "  email: workEmail,",
+            "lineNumber": 304
+          },
+          {
+            "text": "  token: otpCode,",
+            "lineNumber": 305
+          },
+          {
+            "text": "  type: 'email'",
+            "lineNumber": 306
+          },
+          {
+            "text": "});",
+            "lineNumber": 307
+          },
+          {
+            "lineNumber": 308
+          },
+          {
+            "text": "// Check if profile exists for this work email",
+            "lineNumber": 309
+          },
+          {
+            "text": "const { data: profile } = await supabase",
+            "lineNumber": 310
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 311
+          },
+          {
+            "text": "  .select('id')",
+            "lineNumber": 312
+          },
+          {
+            "text": "  .eq('work_email', workEmail)",
+            "lineNumber": 313
+          },
+          {
+            "text": "  .single();",
+            "lineNumber": 314
+          },
+          {
+            "lineNumber": 315
+          },
+          {
+            "text": "if (!profile) {",
+            "lineNumber": 316
+          },
+          {
+            "text": "  // No profile exists - redirect to pending approval",
+            "lineNumber": 317
+          },
+          {
+            "text": "  redirect('/auth/pending-approval');",
+            "lineNumber": 318
+          },
+          {
+            "text": "}",
+            "lineNumber": 319
+          },
+          {
+            "lineNumber": 320
+          },
+          {
+            "text": "// Link profile to current user",
+            "lineNumber": 321
+          },
+          {
+            "text": "const { data: { user } } = await supabase.auth.getUser();",
+            "lineNumber": 322
+          },
+          {
+            "text": "await supabase",
+            "lineNumber": 323
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 324
+          },
+          {
+            "text": "  .update({ ",
+            "lineNumber": 325
+          },
+          {
+            "text": "    user_id: user.id,",
+            "lineNumber": 326
+          }
+        ]
+      },
+      "score": 0.2035672664642334
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 73
+          },
+          "endPosition": {
+            "line": 356,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\nconst handleSendOTP = async \n\n    }\n  };\n\n  /**\n   * Verifies the OTP code and links email identity to user\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\n   * With enable_manual_linking = true, this will link the email identity\n   * to the existing authenticated user account\n   */\n  const verifyOTP = useCallback(async () =&gt; {\n    const trimmedOtp = otpCode.trim();\n\n    // Track the OTP being submitted to prevent re-submission\n    setLastSubmittedOtp(trimmedOtp);\n    setError(null);\n    setIsLoading(true);\n\n    try {\n      // Verify OTP code for email change/linking\n      // Use type 'email_change' because we used updateUser() to initiate the flow\n      // With enable_manual_linking = true, this will link the email identity\n      // to the current authenticated user instead of creating a new user\n      const { error: verifyError } = await supabase.auth.verifyOtp({\n        email: email.trim(),\n        token: trimmedOtp,\n        type: \"email_change\",\n      });\n\n      if (verifyError) {\n        setError(verifyError.message || \"Invalid OTP code\");\n        setIsLoading(false);\n        // Keep lastSubmittedOtp set to prevent re-submission of the same code\n        // The code remains in the input so user can see what they entered\n        return;\n      }\n\n      // Refresh session to ensure identities are updated\n      await supabase.auth.refreshSession();\n\n      // Clear persisted state on success\n      clearPersistedState();\n\n      // Success - redirect to next parameter or default page\n      const redirectTo = next ?? DEFAULT_LOGGED_IN_PAGE;\n      router.push(redirectTo);\n      router.refresh();\n    } catch (err) {\n      setError(\"An unexpected error occurred\");\n      setIsLoading(false);\n      // Keep lastSubmittedOtp set to prevent re-submission of the same code\n    }\n  }, [email, otpCode, next, supabase, router]);\n\n  /**\n   * Handles form submission for OTP verification\n   */\n  const handleVerifyOTP = async (e: React.FormEvent) =&gt; {\n    e.preventDefault();\n    await verifyOTP();\n  };\n\n  /**\n   * Loads persisted state from sessionStorage after component mounts (client-side only)\n   * This prevents hydration mismatches between server and client\n   */\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 74,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 74,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 74,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 75,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 74,
+            "isSignature": true
+          },
+          {
+            "text": "const handleSendOTP = async ",
+            "lineNumber": 90
+          },
+          {
+            "lineNumber": 138
+          },
+          {
+            "text": "    }",
+            "lineNumber": 139
+          },
+          {
+            "text": "  };",
+            "lineNumber": 140
+          },
+          {
+            "lineNumber": 141
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 142
+          },
+          {
+            "text": "   * Verifies the OTP code and links email identity to user",
+            "lineNumber": 143
+          },
+          {
+            "text": "   * Uses type 'email_change' since we're updating the user's email via updateUser()",
+            "lineNumber": 144
+          },
+          {
+            "text": "   * With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 145
+          },
+          {
+            "text": "   * to the existing authenticated user account",
+            "lineNumber": 146
+          },
+          {
+            "text": "   */",
+            "lineNumber": 147
+          },
+          {
+            "text": "  const verifyOTP = useCallback(async () =&gt; {",
+            "lineNumber": 148
+          },
+          {
+            "text": "    const trimmedOtp = otpCode.trim();",
+            "lineNumber": 149
+          },
+          {
+            "lineNumber": 150
+          },
+          {
+            "text": "    // Track the OTP being submitted to prevent re-submission",
+            "lineNumber": 151
+          },
+          {
+            "text": "    setLastSubmittedOtp(trimmedOtp);",
+            "lineNumber": 152
+          },
+          {
+            "text": "    setError(null);",
+            "lineNumber": 153
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 154
+          },
+          {
+            "lineNumber": 155
+          },
+          {
+            "text": "    try {",
+            "lineNumber": 156
+          },
+          {
+            "text": "      // Verify OTP code for email change/linking",
+            "lineNumber": 157
+          },
+          {
+            "text": "      // Use type 'email_change' because we used updateUser() to initiate the flow",
+            "lineNumber": 158
+          },
+          {
+            "text": "      // With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 159
+          },
+          {
+            "text": "      // to the current authenticated user instead of creating a new user",
+            "lineNumber": 160
+          },
+          {
+            "text": "      const { error: verifyError } = await supabase.auth.verifyOtp({",
+            "lineNumber": 161
+          },
+          {
+            "text": "        email: email.trim(),",
+            "lineNumber": 162
+          },
+          {
+            "text": "        token: trimmedOtp,",
+            "lineNumber": 163
+          },
+          {
+            "text": "        type: \"email_change\",",
+            "lineNumber": 164
+          },
+          {
+            "text": "      });",
+            "lineNumber": 165
+          },
+          {
+            "lineNumber": 166
+          },
+          {
+            "text": "      if (verifyError) {",
+            "lineNumber": 167
+          },
+          {
+            "text": "        setError(verifyError.message || \"Invalid OTP code\");",
+            "lineNumber": 168
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 169
+          },
+          {
+            "text": "        // Keep lastSubmittedOtp set to prevent re-submission of the same code",
+            "lineNumber": 170
+          },
+          {
+            "text": "        // The code remains in the input so user can see what they entered",
+            "lineNumber": 171
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 172
+          },
+          {
+            "text": "      }",
+            "lineNumber": 173
+          },
+          {
+            "lineNumber": 174
+          },
+          {
+            "text": "      // Refresh session to ensure identities are updated",
+            "lineNumber": 175
+          },
+          {
+            "text": "      await supabase.auth.refreshSession();",
+            "lineNumber": 176
+          },
+          {
+            "lineNumber": 177
+          },
+          {
+            "text": "      // Clear persisted state on success",
+            "lineNumber": 178
+          },
+          {
+            "text": "      clearPersistedState();",
+            "lineNumber": 179
+          },
+          {
+            "lineNumber": 180
+          },
+          {
+            "text": "      // Success - redirect to next parameter or default page",
+            "lineNumber": 181
+          },
+          {
+            "text": "      const redirectTo = next ?? DEFAULT_LOGGED_IN_PAGE;",
+            "lineNumber": 182
+          },
+          {
+            "text": "      router.push(redirectTo);",
+            "lineNumber": 183
+          },
+          {
+            "text": "      router.refresh();",
+            "lineNumber": 184
+          },
+          {
+            "text": "    } catch (err) {",
+            "lineNumber": 185
+          },
+          {
+            "text": "      setError(\"An unexpected error occurred\");",
+            "lineNumber": 186
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 187
+          },
+          {
+            "text": "      // Keep lastSubmittedOtp set to prevent re-submission of the same code",
+            "lineNumber": 188
+          },
+          {
+            "text": "    }",
+            "lineNumber": 189
+          },
+          {
+            "text": "  }, [email, otpCode, next, supabase, router]);",
+            "lineNumber": 190
+          },
+          {
+            "lineNumber": 191
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 192
+          },
+          {
+            "text": "   * Handles form submission for OTP verification",
+            "lineNumber": 193
+          },
+          {
+            "text": "   */",
+            "lineNumber": 194
+          },
+          {
+            "text": "  const handleVerifyOTP = async (e: React.FormEvent) =&gt; {",
+            "lineNumber": 195
+          },
+          {
+            "text": "    e.preventDefault();",
+            "lineNumber": 196
+          },
+          {
+            "text": "    await verifyOTP();",
+            "lineNumber": 197
+          },
+          {
+            "text": "  };",
+            "lineNumber": 198
+          },
+          {
+            "lineNumber": 199
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 200
+          },
+          {
+            "text": "   * Loads persisted state from sessionStorage after component mounts (client-side only)",
+            "lineNumber": 201
+          },
+          {
+            "text": "   * This prevents hydration mismatches between server and client",
+            "lineNumber": 202
+          },
+          {
+            "text": "   */",
+            "lineNumber": 203
+          },
+          {
+            "text": "}",
+            "lineNumber": 357,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.19286419451236725
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/auth-helpers.ts",
+        "range": {
+          "startPosition": {
+            "line": 32,
+            "column": 1
+          },
+          "endPosition": {
+            "line": 73,
+            "column": 1
+          }
+        },
+        "contents": "/**\n * Checks if the authenticated user has a linked profile\n * @param supabaseClient - Supabase client to use. Must be provided to use existing client.\n * @returns true if user has a linked profile, false otherwise\n */\nexport async function hasLinkedProfile(\n  supabaseClient: SupabaseClient\n): Promise&lt;boolean&gt; {\n  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();\n\n  if (authError || !user) {\n    return false;\n  }\n\n  // Query profiles directly - RLS policy ensures user can only see their own profile\n  // The RLS policy checks: user_id in (select id from public.users where auth_user_id = auth.uid())\n  // This is more reliable than nested selects with RLS\n  const { data: profiles, error: queryError } = await supabaseClient\n    .from(\"profiles\")\n    .select(\"id\")\n    .limit(1);\n\n  // Return false if query failed or no profiles found\n  if (queryError || !profiles) {\n    return false;\n  }\n\n  // Check if at least one profile exists\n  return Array.isArray(profiles) &amp;&amp; profiles.length &gt; 0;\n}\n\n/**\n * Creates an error URL with the given error message\n */\nexport function createErrorUrl(request: NextRequest, errorMessage: string): URL {\n  const url = request.nextUrl.clone();\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "/**",
+            "lineNumber": 35
+          },
+          {
+            "text": " * Checks if the authenticated user has a linked profile",
+            "lineNumber": 36
+          },
+          {
+            "text": " * @param supabaseClient - Supabase client to use. Must be provided to use existing client.",
+            "lineNumber": 37
+          },
+          {
+            "text": " * @returns true if user has a linked profile, false otherwise",
+            "lineNumber": 38
+          },
+          {
+            "text": " */",
+            "lineNumber": 39
+          },
+          {
+            "text": "export async function hasLinkedProfile(",
+            "lineNumber": 40,
+            "isSignature": true
+          },
+          {
+            "text": "  supabaseClient: SupabaseClient",
+            "lineNumber": 41,
+            "isSignature": true
+          },
+          {
+            "text": "): Promise&lt;boolean&gt; {",
+            "lineNumber": 42,
+            "isSignature": true
+          },
+          {
+            "text": "  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();",
+            "lineNumber": 43
+          },
+          {
+            "lineNumber": 44
+          },
+          {
+            "text": "  if (authError || !user) {",
+            "lineNumber": 45
+          },
+          {
+            "text": "    return false;",
+            "lineNumber": 46
+          },
+          {
+            "text": "  }",
+            "lineNumber": 47
+          },
+          {
+            "lineNumber": 48
+          },
+          {
+            "text": "  // Query profiles directly - RLS policy ensures user can only see their own profile",
+            "lineNumber": 49
+          },
+          {
+            "text": "  // The RLS policy checks: user_id in (select id from public.users where auth_user_id = auth.uid())",
+            "lineNumber": 50
+          },
+          {
+            "text": "  // This is more reliable than nested selects with RLS",
+            "lineNumber": 51
+          },
+          {
+            "text": "  const { data: profiles, error: queryError } = await supabaseClient",
+            "lineNumber": 52
+          },
+          {
+            "text": "    .from(\"profiles\")",
+            "lineNumber": 53
+          },
+          {
+            "text": "    .select(\"id\")",
+            "lineNumber": 54
+          },
+          {
+            "text": "    .limit(1);",
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  // Return false if query failed or no profiles found",
+            "lineNumber": 57
+          },
+          {
+            "text": "  if (queryError || !profiles) {",
+            "lineNumber": 58
+          },
+          {
+            "text": "    return false;",
+            "lineNumber": 59
+          },
+          {
+            "text": "  }",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "  // Check if at least one profile exists",
+            "lineNumber": 62
+          },
+          {
+            "text": "  return Array.isArray(profiles) &amp;&amp; profiles.length &gt; 0;",
+            "lineNumber": 63
+          },
+          {
+            "text": "}",
+            "lineNumber": 64,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 65
+          },
+          {
+            "text": "/**",
+            "lineNumber": 66
+          },
+          {
+            "text": " * Creates an error URL with the given error message",
+            "lineNumber": 67
+          },
+          {
+            "text": " */",
+            "lineNumber": 68
+          },
+          {
+            "text": "export function createErrorUrl(request: NextRequest, errorMessage: string): URL {",
+            "lineNumber": 69,
+            "isSignature": true
+          },
+          {
+            "text": "  const url = request.nextUrl.clone();",
+            "lineNumber": 70
+          },
+          {
+            "text": "}",
+            "lineNumber": 74,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.19208693504333496
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 46
+          },
+          "endPosition": {
+            "line": 102
+          }
+        },
+        "contents": "create table public.profiles (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  picture text,\n  user_id uuid unique references public.users(id) on delete set null,\n  work_email text unique not null,\n  role public.profile_role not null default 'student',\n  team_id uuid references public.teams(id) on delete set null,\n  phone_number text,\n  personal_email text,\n  date_of_birth date,\n  removed_access timestamptz,\n  removed_access_by uuid references public.profiles(id) on delete set null,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null,\n  constraint valid_czu_domain check (\n    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'\n  )\n);\n\ncomment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to automatically update updated_at column\ncreate or replace function public.handle_updated_at()\nreturns trigger\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\nbegin\n  new.updated_at := now();\n  return new;\nend;\n$$;\n\ncomment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';\n\n-- Create trigger function to populate public.users on auth.users creation\n-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email\ncreate or replace function public.handle_new_auth_user()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_google_email text;\n  v_google_full_name text;\n  v_google_profile_picture text;\n  v_raw_meta_data jsonb;\nbegin\n  v_raw_meta_data := new.raw_user_meta_data;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 47
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 48
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 49
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 50
+          },
+          {
+            "text": "  user_id uuid unique references public.users(id) on delete set null,",
+            "lineNumber": 51
+          },
+          {
+            "text": "  work_email text unique not null,",
+            "lineNumber": 52
+          },
+          {
+            "text": "  role public.profile_role not null default 'student',",
+            "lineNumber": 53
+          },
+          {
+            "text": "  team_id uuid references public.teams(id) on delete set null,",
+            "lineNumber": 54
+          },
+          {
+            "text": "  phone_number text,",
+            "lineNumber": 55
+          },
+          {
+            "text": "  personal_email text,",
+            "lineNumber": 56
+          },
+          {
+            "text": "  date_of_birth date,",
+            "lineNumber": 57
+          },
+          {
+            "text": "  removed_access timestamptz,",
+            "lineNumber": 58
+          },
+          {
+            "text": "  removed_access_by uuid references public.profiles(id) on delete set null,",
+            "lineNumber": 59
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 60
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null,",
+            "lineNumber": 61
+          },
+          {
+            "text": "  constraint valid_czu_domain check (",
+            "lineNumber": 62
+          },
+          {
+            "text": "    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'",
+            "lineNumber": 63
+          },
+          {
+            "text": "  )",
+            "lineNumber": 64
+          },
+          {
+            "text": ");",
+            "lineNumber": 65
+          },
+          {
+            "lineNumber": 66
+          },
+          {
+            "text": "comment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';",
+            "lineNumber": 67
+          },
+          {
+            "lineNumber": 68
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 69
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 70
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 71
+          },
+          {
+            "lineNumber": 72
+          },
+          {
+            "text": "-- Create trigger function to automatically update updated_at column",
+            "lineNumber": 73
+          },
+          {
+            "text": "create or replace function public.handle_updated_at()",
+            "lineNumber": 74
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 75
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 76
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 77
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 78
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 79
+          },
+          {
+            "text": "begin",
+            "lineNumber": 80
+          },
+          {
+            "text": "  new.updated_at := now();",
+            "lineNumber": 81
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 82
+          },
+          {
+            "text": "end;",
+            "lineNumber": 83
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 84
+          },
+          {
+            "lineNumber": 85
+          },
+          {
+            "text": "comment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';",
+            "lineNumber": 86
+          },
+          {
+            "lineNumber": 87
+          },
+          {
+            "text": "-- Create trigger function to populate public.users on auth.users creation",
+            "lineNumber": 88
+          },
+          {
+            "text": "-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email",
+            "lineNumber": 89
+          },
+          {
+            "text": "create or replace function public.handle_new_auth_user()",
+            "lineNumber": 90
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 91
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 92
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 93
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 94
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 95
+          },
+          {
+            "text": "declare",
+            "lineNumber": 96
+          },
+          {
+            "text": "  v_google_email text;",
+            "lineNumber": 97
+          },
+          {
+            "text": "  v_google_full_name text;",
+            "lineNumber": 98
+          },
+          {
+            "text": "  v_google_profile_picture text;",
+            "lineNumber": 99
+          },
+          {
+            "text": "  v_raw_meta_data jsonb;",
+            "lineNumber": 100
+          },
+          {
+            "text": "begin",
+            "lineNumber": 101
+          },
+          {
+            "text": "  v_raw_meta_data := new.raw_user_meta_data;",
+            "lineNumber": 102
+          }
+        ]
+      },
+      "score": 0.18624866008758545
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/auth-helpers.ts",
+        "range": {
+          "startPosition": {
+            "line": 6
+          },
+          "endPosition": {
+            "line": 38,
+            "column": 3
+          }
+        },
+        "contents": "type SupabaseClient = ;\n\n/**\n * Checks if the authenticated user has an email identity linked\n * (not just OAuth providers like Google)\n * @param supabaseClient - Supabase client to use. Must be provided to use existing client.\n * @returns true if user has an email identity, false otherwise\n */\nexport async function hasEmailIdentity(\n  supabaseClient: SupabaseClient\n): Promise&lt;boolean&gt; {\n  const { data: { user }, error } = await supabaseClient.auth.getUser();\n\n  if (error || !user) {\n    return false;\n  }\n\n  // Check if user has an email identity (not just OAuth)\n  // User identities include: email, google, etc.\n  // We need at least one email identity\n  const identities = user.identities || [];\n\n  // Check if any identity is an email identity (not OAuth)\n  return identities.some(\n    (identity: { provider: string }) =&gt; identity.provider === \"email\"\n  );\n}\n\n/**\n * Checks if the authenticated user has a linked profile\n * @param supabaseClient - Supabase client to use. Must be provided to use existing client.\n * @returns true if user has a linked profile, false otherwise\n */",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "type SupabaseClient = ;",
+            "lineNumber": 7,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "/**",
+            "lineNumber": 9
+          },
+          {
+            "text": " * Checks if the authenticated user has an email identity linked",
+            "lineNumber": 10
+          },
+          {
+            "text": " * (not just OAuth providers like Google)",
+            "lineNumber": 11
+          },
+          {
+            "text": " * @param supabaseClient - Supabase client to use. Must be provided to use existing client.",
+            "lineNumber": 12
+          },
+          {
+            "text": " * @returns true if user has an email identity, false otherwise",
+            "lineNumber": 13
+          },
+          {
+            "text": " */",
+            "lineNumber": 14
+          },
+          {
+            "text": "export async function hasEmailIdentity(",
+            "lineNumber": 15,
+            "isSignature": true
+          },
+          {
+            "text": "  supabaseClient: SupabaseClient",
+            "lineNumber": 16,
+            "isSignature": true
+          },
+          {
+            "text": "): Promise&lt;boolean&gt; {",
+            "lineNumber": 17,
+            "isSignature": true
+          },
+          {
+            "text": "  const { data: { user }, error } = await supabaseClient.auth.getUser();",
+            "lineNumber": 18
+          },
+          {
+            "lineNumber": 19
+          },
+          {
+            "text": "  if (error || !user) {",
+            "lineNumber": 20
+          },
+          {
+            "text": "    return false;",
+            "lineNumber": 21
+          },
+          {
+            "text": "  }",
+            "lineNumber": 22
+          },
+          {
+            "lineNumber": 23
+          },
+          {
+            "text": "  // Check if user has an email identity (not just OAuth)",
+            "lineNumber": 24
+          },
+          {
+            "text": "  // User identities include: email, google, etc.",
+            "lineNumber": 25
+          },
+          {
+            "text": "  // We need at least one email identity",
+            "lineNumber": 26
+          },
+          {
+            "text": "  const identities = user.identities || [];",
+            "lineNumber": 27
+          },
+          {
+            "lineNumber": 28
+          },
+          {
+            "text": "  // Check if any identity is an email identity (not OAuth)",
+            "lineNumber": 29
+          },
+          {
+            "text": "  return identities.some(",
+            "lineNumber": 30
+          },
+          {
+            "text": "    (identity: { provider: string }) =&gt; identity.provider === \"email\"",
+            "lineNumber": 31
+          },
+          {
+            "text": "  );",
+            "lineNumber": 32
+          },
+          {
+            "text": "}",
+            "lineNumber": 33,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 34
+          },
+          {
+            "text": "/**",
+            "lineNumber": 35
+          },
+          {
+            "text": " * Checks if the authenticated user has a linked profile",
+            "lineNumber": 36
+          },
+          {
+            "text": " * @param supabaseClient - Supabase client to use. Must be provided to use existing client.",
+            "lineNumber": 37
+          },
+          {
+            "text": " * @returns true if user has a linked profile, false otherwise",
+            "lineNumber": 38
+          },
+          {
+            "text": " */",
+            "lineNumber": 39
+          }
+        ]
+      },
+      "score": 0.1697569489479065
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/logout-button.tsx",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 16,
+            "column": 1
+          }
+        },
+        "contents": "\"use client\";\n\nimport { createClient } from \"@/lib/supabase/client\";\nimport { Button } from \"@/components/ui/button\";\nimport { useRouter } from \"next/navigation\";\n\nexport function LogoutButton() {\n  const router = useRouter();\n\n  const logout = async () =&gt; {\n    const supabase = createClient();\n    await supabase.auth.signOut();\n    router.push(\"/auth/login\");\n  };\n\n  return &lt;Button onClick={logout}&gt;Logout&lt;/Button&gt;;\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "\"use client\";",
+            "lineNumber": 1
+          },
+          {
+            "lineNumber": 2
+          },
+          {
+            "text": "import { createClient } from \"@/lib/supabase/client\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { Button } from \"@/components/ui/button\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { useRouter } from \"next/navigation\";",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 6
+          },
+          {
+            "text": "export function LogoutButton() {",
+            "lineNumber": 7,
+            "isSignature": true
+          },
+          {
+            "text": "  const router = useRouter();",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "  const logout = async () =&gt; {",
+            "lineNumber": 10
+          },
+          {
+            "text": "    const supabase = createClient();",
+            "lineNumber": 11
+          },
+          {
+            "text": "    await supabase.auth.signOut();",
+            "lineNumber": 12
+          },
+          {
+            "text": "    router.push(\"/auth/login\");",
+            "lineNumber": 13
+          },
+          {
+            "text": "  };",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "  return &lt;Button onClick={logout}&gt;Logout&lt;/Button&gt;;",
+            "lineNumber": 16
+          },
+          {
+            "text": "}",
+            "lineNumber": 17,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.16680985689163208
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 38
+          },
+          "endPosition": {
+            "line": 97
+          }
+        },
+        "contents": "## Architecture Overview\n\n&#96;&#96;&#96;mermaid\nflowchart TD\n    subgraph auth_flow [Authentication Flow]\n        A[User clicks Google Login] --&gt; B[Google OAuth]\n        B --&gt; C[Redirect back with Google identity]\n        C --&gt; D{Profile linked to user?}\n        D --&gt;|No| E[Prompt for work email]\n        E --&gt; F{Domain is czu.cz?}\n        F --&gt;|No| G[Show domain error]\n        G --&gt; E\n        F --&gt;|Yes| H[Send OTP to work email]\n        H --&gt; I[User enters OTP]\n        I --&gt; J{Profile exists for work email?}\n        J --&gt;|No| K[Pending Approval Page]\n        J --&gt;|Yes| L[Link profile to user]\n        D --&gt;|Yes| M{Access revoked?}\n        L --&gt; M\n        M --&gt;|Yes| N[Show access revoked]\n        M --&gt;|No| O[Grant Full Access]\n    end\n\n    subgraph request_flow [Request Validation]\n        P[Incoming Request] --&gt; Q[Middleware queries database]\n        Q --&gt; R{Profile linked to user?}\n        R --&gt;|No| S[Redirect to verify email]\n        R --&gt;|Yes| T{removed_access is null?}\n        T --&gt;|No| U[Show access revoked]\n        T --&gt;|Yes| V[Allow access]\n    end\n&#96;&#96;&#96;\n\n## Validation Flow\n\n**Two-stage validation:**\n\n1. **Before OTP (Domain Check)**: Validate email ends with &#96;@studenti.czu.cz&#96; or &#96;@pef.czu.cz&#96;\n\n   - Client-side: Immediate feedback\n   - Server-side: Validated before &#96;signInWithOtp&#96; is called\n\n2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email\n\n   - If profile exists with that work_email → link profile to auth.user\n   - If no profile exists → show \"Pending Approval\" (admin must create profile first)\n   - Checked on every request via middleware\n\n## Database Schema (Supabase Migrations)\n\nTwo tables with **no RLS** - all access control is handled in Next.js:\n\n1. **&#96;users&#96;** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions\n2. **&#96;profiles&#96;** - User authentication profile data with role and access control\n\n**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.\n\nUse MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "## Architecture Overview",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "&#96;&#96;&#96;mermaid",
+            "lineNumber": 41
+          },
+          {
+            "text": "flowchart TD",
+            "lineNumber": 42
+          },
+          {
+            "text": "    subgraph auth_flow [Authentication Flow]",
+            "lineNumber": 43
+          },
+          {
+            "text": "        A[User clicks Google Login] --&gt; B[Google OAuth]",
+            "lineNumber": 44
+          },
+          {
+            "text": "        B --&gt; C[Redirect back with Google identity]",
+            "lineNumber": 45
+          },
+          {
+            "text": "        C --&gt; D{Profile linked to user?}",
+            "lineNumber": 46
+          },
+          {
+            "text": "        D --&gt;|No| E[Prompt for work email]",
+            "lineNumber": 47
+          },
+          {
+            "text": "        E --&gt; F{Domain is czu.cz?}",
+            "lineNumber": 48
+          },
+          {
+            "text": "        F --&gt;|No| G[Show domain error]",
+            "lineNumber": 49
+          },
+          {
+            "text": "        G --&gt; E",
+            "lineNumber": 50
+          },
+          {
+            "text": "        F --&gt;|Yes| H[Send OTP to work email]",
+            "lineNumber": 51
+          },
+          {
+            "text": "        H --&gt; I[User enters OTP]",
+            "lineNumber": 52
+          },
+          {
+            "text": "        I --&gt; J{Profile exists for work email?}",
+            "lineNumber": 53
+          },
+          {
+            "text": "        J --&gt;|No| K[Pending Approval Page]",
+            "lineNumber": 54
+          },
+          {
+            "text": "        J --&gt;|Yes| L[Link profile to user]",
+            "lineNumber": 55
+          },
+          {
+            "text": "        D --&gt;|Yes| M{Access revoked?}",
+            "lineNumber": 56
+          },
+          {
+            "text": "        L --&gt; M",
+            "lineNumber": 57
+          },
+          {
+            "text": "        M --&gt;|Yes| N[Show access revoked]",
+            "lineNumber": 58
+          },
+          {
+            "text": "        M --&gt;|No| O[Grant Full Access]",
+            "lineNumber": 59
+          },
+          {
+            "text": "    end",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "    subgraph request_flow [Request Validation]",
+            "lineNumber": 62
+          },
+          {
+            "text": "        P[Incoming Request] --&gt; Q[Middleware queries database]",
+            "lineNumber": 63
+          },
+          {
+            "text": "        Q --&gt; R{Profile linked to user?}",
+            "lineNumber": 64
+          },
+          {
+            "text": "        R --&gt;|No| S[Redirect to verify email]",
+            "lineNumber": 65
+          },
+          {
+            "text": "        R --&gt;|Yes| T{removed_access is null?}",
+            "lineNumber": 66
+          },
+          {
+            "text": "        T --&gt;|No| U[Show access revoked]",
+            "lineNumber": 67
+          },
+          {
+            "text": "        T --&gt;|Yes| V[Allow access]",
+            "lineNumber": 68
+          },
+          {
+            "text": "    end",
+            "lineNumber": 69
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 70
+          },
+          {
+            "lineNumber": 71
+          },
+          {
+            "text": "## Validation Flow",
+            "lineNumber": 72
+          },
+          {
+            "lineNumber": 73
+          },
+          {
+            "text": "**Two-stage validation:**",
+            "lineNumber": 74
+          },
+          {
+            "lineNumber": 75
+          },
+          {
+            "text": "1. **Before OTP (Domain Check)**: Validate email ends with &#96;@studenti.czu.cz&#96; or &#96;@pef.czu.cz&#96;",
+            "lineNumber": 76
+          },
+          {
+            "lineNumber": 77
+          },
+          {
+            "text": "   - Client-side: Immediate feedback",
+            "lineNumber": 78
+          },
+          {
+            "text": "   - Server-side: Validated before &#96;signInWithOtp&#96; is called",
+            "lineNumber": 79
+          },
+          {
+            "lineNumber": 80
+          },
+          {
+            "text": "2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "   - If profile exists with that work_email → link profile to auth.user",
+            "lineNumber": 83
+          },
+          {
+            "text": "   - If no profile exists → show \"Pending Approval\" (admin must create profile first)",
+            "lineNumber": 84
+          },
+          {
+            "text": "   - Checked on every request via middleware",
+            "lineNumber": 85
+          },
+          {
+            "lineNumber": 86
+          },
+          {
+            "text": "## Database Schema (Supabase Migrations)",
+            "lineNumber": 87
+          },
+          {
+            "lineNumber": 88
+          },
+          {
+            "text": "Two tables with **no RLS** - all access control is handled in Next.js:",
+            "lineNumber": 89
+          },
+          {
+            "lineNumber": 90
+          },
+          {
+            "text": "1. **&#96;users&#96;** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions",
+            "lineNumber": 91
+          },
+          {
+            "text": "2. **&#96;profiles&#96;** - User authentication profile data with role and access control",
+            "lineNumber": 92
+          },
+          {
+            "lineNumber": 93
+          },
+          {
+            "text": "**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.",
+            "lineNumber": 94
+          },
+          {
+            "lineNumber": 95
+          },
+          {
+            "text": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+            "lineNumber": 96
+          }
+        ]
+      },
+      "score": 0.1658329963684082
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 192
+          },
+          "endPosition": {
+            "line": 257
+          }
+        },
+        "contents": "begin\n  v_encrypted_password := event-&gt;'user'-&gt;&gt;'encrypted_password';\n  \n  if v_encrypted_password is not null then\n    raise exception 'Password-based signups are not allowed. Please use Google OAuth to sign in.';\n  end if;\n  \n  v_provider := event-&gt;'user'-&gt;'raw_user_meta_data'-&gt;&gt;'provider';\n  v_app_metadata := event-&gt;'user'-&gt;'app_metadata';\n  if v_provider is null and v_app_metadata is not null then\n    v_provider := v_app_metadata-&gt;&gt;'provider';\n  end if;\n  \n  if event-&gt;'user'-&gt;'identities' is not null then\n    for v_identity in \n      select value from jsonb_array_elements(event-&gt;'user'-&gt;'identities')\n    loop\n      if v_identity-&gt;&gt;'provider' = 'google' then\n        v_has_google_identity := true;\n        exit;\n      end if;\n    end loop;\n  end if;\n  \n  if v_provider = 'google' or v_has_google_identity then\n    return event;\n  end if;\n  \n  raise exception 'Only Google OAuth signups are allowed. Please use Google to sign in.';\nend;\n$$;\n\ncomment on function public.before_user_created_hook(jsonb) is 'Hook function that restricts signups to Google OAuth only. Blocks password-based and OTP signups.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create triggers for updated_at on all tables\ncreate trigger users_updated_at_trigger\nbefore update on public.users\nfor each row\nexecute function public.handle_updated_at();\n\ncreate trigger teams_updated_at_trigger\nbefore update on public.teams\nfor each row\nexecute function public.handle_updated_at();\n\ncreate trigger profiles_updated_at_trigger\nbefore update on public.profiles\nfor each row\nexecute function public.handle_updated_at();\n\n-- Create trigger on auth.users table to populate public.users\ndrop trigger if exists on_auth_user_created on auth.users;\n\ncreate trigger on_auth_user_created\nafter insert on auth.users\nfor each row\nexecute function public.handle_new_auth_user();\n\n-- Create trigger on auth.users table for email domain validation\ndrop trigger if exists validate_czu_email_domain_trigger on auth.users;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "begin",
+            "lineNumber": 193
+          },
+          {
+            "text": "  v_encrypted_password := event-&gt;'user'-&gt;&gt;'encrypted_password';",
+            "lineNumber": 194
+          },
+          {
+            "text": "  ",
+            "lineNumber": 195
+          },
+          {
+            "text": "  if v_encrypted_password is not null then",
+            "lineNumber": 196
+          },
+          {
+            "text": "    raise exception 'Password-based signups are not allowed. Please use Google OAuth to sign in.';",
+            "lineNumber": 197
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 198
+          },
+          {
+            "text": "  ",
+            "lineNumber": 199
+          },
+          {
+            "text": "  v_provider := event-&gt;'user'-&gt;'raw_user_meta_data'-&gt;&gt;'provider';",
+            "lineNumber": 200
+          },
+          {
+            "text": "  v_app_metadata := event-&gt;'user'-&gt;'app_metadata';",
+            "lineNumber": 201
+          },
+          {
+            "text": "  if v_provider is null and v_app_metadata is not null then",
+            "lineNumber": 202
+          },
+          {
+            "text": "    v_provider := v_app_metadata-&gt;&gt;'provider';",
+            "lineNumber": 203
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 204
+          },
+          {
+            "text": "  ",
+            "lineNumber": 205
+          },
+          {
+            "text": "  if event-&gt;'user'-&gt;'identities' is not null then",
+            "lineNumber": 206
+          },
+          {
+            "text": "    for v_identity in ",
+            "lineNumber": 207
+          },
+          {
+            "text": "      select value from jsonb_array_elements(event-&gt;'user'-&gt;'identities')",
+            "lineNumber": 208
+          },
+          {
+            "text": "    loop",
+            "lineNumber": 209
+          },
+          {
+            "text": "      if v_identity-&gt;&gt;'provider' = 'google' then",
+            "lineNumber": 210
+          },
+          {
+            "text": "        v_has_google_identity := true;",
+            "lineNumber": 211
+          },
+          {
+            "text": "        exit;",
+            "lineNumber": 212
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 213
+          },
+          {
+            "text": "    end loop;",
+            "lineNumber": 214
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 215
+          },
+          {
+            "text": "  ",
+            "lineNumber": 216
+          },
+          {
+            "text": "  if v_provider = 'google' or v_has_google_identity then",
+            "lineNumber": 217
+          },
+          {
+            "text": "    return event;",
+            "lineNumber": 218
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 219
+          },
+          {
+            "text": "  ",
+            "lineNumber": 220
+          },
+          {
+            "text": "  raise exception 'Only Google OAuth signups are allowed. Please use Google to sign in.';",
+            "lineNumber": 221
+          },
+          {
+            "text": "end;",
+            "lineNumber": 222
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 223
+          },
+          {
+            "lineNumber": 224
+          },
+          {
+            "text": "comment on function public.before_user_created_hook(jsonb) is 'Hook function that restricts signups to Google OAuth only. Blocks password-based and OTP signups.';",
+            "lineNumber": 225
+          },
+          {
+            "lineNumber": 226
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 227
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 228
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 229
+          },
+          {
+            "lineNumber": 230
+          },
+          {
+            "text": "-- Create triggers for updated_at on all tables",
+            "lineNumber": 231
+          },
+          {
+            "text": "create trigger users_updated_at_trigger",
+            "lineNumber": 232
+          },
+          {
+            "text": "before update on public.users",
+            "lineNumber": 233
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 234
+          },
+          {
+            "text": "execute function public.handle_updated_at();",
+            "lineNumber": 235
+          },
+          {
+            "lineNumber": 236
+          },
+          {
+            "text": "create trigger teams_updated_at_trigger",
+            "lineNumber": 237
+          },
+          {
+            "text": "before update on public.teams",
+            "lineNumber": 238
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 239
+          },
+          {
+            "text": "execute function public.handle_updated_at();",
+            "lineNumber": 240
+          },
+          {
+            "lineNumber": 241
+          },
+          {
+            "text": "create trigger profiles_updated_at_trigger",
+            "lineNumber": 242
+          },
+          {
+            "text": "before update on public.profiles",
+            "lineNumber": 243
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 244
+          },
+          {
+            "text": "execute function public.handle_updated_at();",
+            "lineNumber": 245
+          },
+          {
+            "lineNumber": 246
+          },
+          {
+            "text": "-- Create trigger on auth.users table to populate public.users",
+            "lineNumber": 247
+          },
+          {
+            "text": "drop trigger if exists on_auth_user_created on auth.users;",
+            "lineNumber": 248
+          },
+          {
+            "lineNumber": 249
+          },
+          {
+            "text": "create trigger on_auth_user_created",
+            "lineNumber": 250
+          },
+          {
+            "text": "after insert on auth.users",
+            "lineNumber": 251
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 252
+          },
+          {
+            "text": "execute function public.handle_new_auth_user();",
+            "lineNumber": 253
+          },
+          {
+            "lineNumber": 254
+          },
+          {
+            "text": "-- Create trigger on auth.users table for email domain validation",
+            "lineNumber": 255
+          },
+          {
+            "text": "drop trigger if exists validate_czu_email_domain_trigger on auth.users;",
+            "lineNumber": 256
+          }
+        ]
+      },
+      "score": 0.16517780721187592
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./proxy.ts",
+        "range": {
+          "startPosition": {
+            "column": 53
+          },
+          "endPosition": {
+            "line": 19,
+            "column": 1
+          }
+        },
+        "contents": "import { type NextRequest } from \"next/server\";\n\nexport async function proxy(request: NextRequest) {\n  return await updateSession(request);\n}\n\nexport const config = {\n  matcher: [\n    /*\n     * Match all request paths except:\n     * - _next/static (static files)\n     * - _next/image (image optimization files)\n     * - favicon.ico (favicon file)\n     * - images - .svg, .png, .jpg, .jpeg, .gif, .webp\n     * Feel free to modify this pattern to include more paths.\n     */\n,\n};",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { type NextRequest } from \"next/server\";",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "export async function proxy(request: NextRequest) {",
+            "lineNumber": 4,
+            "isSignature": true
+          },
+          {
+            "text": "  return await updateSession(request);",
+            "lineNumber": 5
+          },
+          {
+            "text": "}",
+            "lineNumber": 6,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "export const config = {",
+            "lineNumber": 8
+          },
+          {
+            "text": "  matcher: [",
+            "lineNumber": 9
+          },
+          {
+            "text": "    /*",
+            "lineNumber": 10
+          },
+          {
+            "text": "     * Match all request paths except:",
+            "lineNumber": 11
+          },
+          {
+            "text": "     * - _next/static (static files)",
+            "lineNumber": 12
+          },
+          {
+            "text": "     * - _next/image (image optimization files)",
+            "lineNumber": 13
+          },
+          {
+            "text": "     * - favicon.ico (favicon file)",
+            "lineNumber": 14
+          },
+          {
+            "text": "     * - images - .svg, .png, .jpg, .jpeg, .gif, .webp",
+            "lineNumber": 15
+          },
+          {
+            "text": "     * Feel free to modify this pattern to include more paths.",
+            "lineNumber": 16
+          },
+          {
+            "text": "     */",
+            "lineNumber": 17
+          },
+          {
+            "text": ",",
+            "lineNumber": 19
+          },
+          {
+            "text": "};",
+            "lineNumber": 20
+          }
+        ]
+      },
+      "score": 0.16422605514526367
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 73
+          },
+          "endPosition": {
+            "line": 356,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\nconst handleSendOTP = async  {\n    e.preventDefault();\n    setError(null);\n    setIsLoading(true);\n\n    try {\n      // Validate email format\n      if (!email || !email.includes(\"@\")) {\n        setError(\"Please enter a valid email address\");\n        setIsLoading(false);\n        return;\n      }\n\n      // Validate CZU domain\n      if (!isValidWorkEmailDomain(email.trim())) {\n        setError(\"Email must end with @pef.czu.cz or @studenti.czu.cz\");\n        setIsLoading(false);\n        return;\n      }\n\n      // Use updateUser to add email identity to existing authenticated user\n      // This sends a verification link to the email address\n      // With enable_manual_linking = true, this will link the email identity\n      // Note: This adds the email as a secondary identity, not changing the primary email\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\n        {\n          email: email.trim(),\n        },\n      );\n\n      if (updateError) {\n        // If email already exists, that's actually fine - it means it might already be linked\n        // or we need to handle it differently\n        if (updateError.message?.includes(\"already registered\")) {\n          setError(\"This email is already registered. Please use a different email or sign in with that email.\");\n        } else {\n          setError(updateError.message || \"Failed to send OTP code\");\n        }\n        setIsLoading(false);\n        return;\n      }\n\n      // Move to OTP verification step\n      setStep(\"otp\");\n      savePersistedState({ step: \"otp\", email: email.trim() });\n      setIsLoading(false);\n    } catch (err) {\n      setError(\"An unexpected error occurred\");\n      setIsLoading(false);\n    }\n  };\n\n  /**\n   * Verifies the OTP code and links email identity to user\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\n   * With enable_manual_linking = true, this will link the email identity\n   * to the existing authenticated user account\n   */\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 74,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 74,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 74,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 75,
+                "column": 3
+              }
+            },
+            {
+              "startPosition": {
+                "line": 90,
+                "column": 3
+              },
+              "endPosition": {
+                "line": 90,
+                "column": 9
+              }
+            },
+            {
+              "startPosition": {
+                "line": 90,
+                "column": 9
+              },
+              "endPosition": {
+                "line": 90,
+                "column": 31
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 74,
+            "isSignature": true
+          },
+          {
+            "text": "const handleSendOTP = async  {",
+            "lineNumber": 90
+          },
+          {
+            "text": "    e.preventDefault();",
+            "lineNumber": 91
+          },
+          {
+            "text": "    setError(null);",
+            "lineNumber": 92
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 93
+          },
+          {
+            "lineNumber": 94
+          },
+          {
+            "text": "    try {",
+            "lineNumber": 95
+          },
+          {
+            "text": "      // Validate email format",
+            "lineNumber": 96
+          },
+          {
+            "text": "      if (!email || !email.includes(\"@\")) {",
+            "lineNumber": 97
+          },
+          {
+            "text": "        setError(\"Please enter a valid email address\");",
+            "lineNumber": 98
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 99
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 100
+          },
+          {
+            "text": "      }",
+            "lineNumber": 101
+          },
+          {
+            "lineNumber": 102
+          },
+          {
+            "text": "      // Validate CZU domain",
+            "lineNumber": 103
+          },
+          {
+            "text": "      if (!isValidWorkEmailDomain(email.trim())) {",
+            "lineNumber": 104
+          },
+          {
+            "text": "        setError(\"Email must end with @pef.czu.cz or @studenti.czu.cz\");",
+            "lineNumber": 105
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 106
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 107
+          },
+          {
+            "text": "      }",
+            "lineNumber": 108
+          },
+          {
+            "lineNumber": 109
+          },
+          {
+            "text": "      // Use updateUser to add email identity to existing authenticated user",
+            "lineNumber": 110
+          },
+          {
+            "text": "      // This sends a verification link to the email address",
+            "lineNumber": 111
+          },
+          {
+            "text": "      // With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 112
+          },
+          {
+            "text": "      // Note: This adds the email as a secondary identity, not changing the primary email",
+            "lineNumber": 113
+          },
+          {
+            "text": "      const { data: updateData, error: updateError } = await supabase.auth.updateUser(",
+            "lineNumber": 114
+          },
+          {
+            "text": "        {",
+            "lineNumber": 115
+          },
+          {
+            "text": "          email: email.trim(),",
+            "lineNumber": 116
+          },
+          {
+            "text": "        },",
+            "lineNumber": 117
+          },
+          {
+            "text": "      );",
+            "lineNumber": 118
+          },
+          {
+            "lineNumber": 119
+          },
+          {
+            "text": "      if (updateError) {",
+            "lineNumber": 120
+          },
+          {
+            "text": "        // If email already exists, that's actually fine - it means it might already be linked",
+            "lineNumber": 121
+          },
+          {
+            "text": "        // or we need to handle it differently",
+            "lineNumber": 122
+          },
+          {
+            "text": "        if (updateError.message?.includes(\"already registered\")) {",
+            "lineNumber": 123
+          },
+          {
+            "text": "          setError(\"This email is already registered. Please use a different email or sign in with that email.\");",
+            "lineNumber": 124
+          },
+          {
+            "text": "        } else {",
+            "lineNumber": 125
+          },
+          {
+            "text": "          setError(updateError.message || \"Failed to send OTP code\");",
+            "lineNumber": 126
+          },
+          {
+            "text": "        }",
+            "lineNumber": 127
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 128
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 129
+          },
+          {
+            "text": "      }",
+            "lineNumber": 130
+          },
+          {
+            "lineNumber": 131
+          },
+          {
+            "text": "      // Move to OTP verification step",
+            "lineNumber": 132
+          },
+          {
+            "text": "      setStep(\"otp\");",
+            "lineNumber": 133
+          },
+          {
+            "text": "      savePersistedState({ step: \"otp\", email: email.trim() });",
+            "lineNumber": 134
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 135
+          },
+          {
+            "text": "    } catch (err) {",
+            "lineNumber": 136
+          },
+          {
+            "text": "      setError(\"An unexpected error occurred\");",
+            "lineNumber": 137
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 138
+          },
+          {
+            "text": "    }",
+            "lineNumber": 139
+          },
+          {
+            "text": "  };",
+            "lineNumber": 140
+          },
+          {
+            "lineNumber": 141
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 142
+          },
+          {
+            "text": "   * Verifies the OTP code and links email identity to user",
+            "lineNumber": 143
+          },
+          {
+            "text": "   * Uses type 'email_change' since we're updating the user's email via updateUser()",
+            "lineNumber": 144
+          },
+          {
+            "text": "   * With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 145
+          },
+          {
+            "text": "   * to the existing authenticated user account",
+            "lineNumber": 146
+          },
+          {
+            "text": "   */",
+            "lineNumber": 147
+          },
+          {
+            "text": "}",
+            "lineNumber": 357,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.15881186723709106
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131161556_link_users_to_profiles.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 55
+          }
+        },
+        "contents": "-- Migration: Link users to profiles based on email matching\n-- Purpose: Automatically links profile rows to user rows when auth.users.email matches profiles.work_email\n-- Affected tables: profiles, users, auth.users\n-- Special considerations: Runs automatically when user email changes in auth.users table\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to link profiles to users based on email matching\n-- Matches auth.users.email with profiles.work_email and links via public.users\n-- Runs with SECURITY DEFINER to access auth.users table\ncreate or replace function public.link_user_to_profile()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_user_id uuid;\n  v_auth_email text;\nbegin\n  -- Get the email from auth.users (use NEW.email after update)\n  v_auth_email := new.email;\n  \n  -- Only proceed if email is not null and has changed\n  if v_auth_email is null or v_auth_email = '' then\n    return new;\n  end if;\n  \n  -- Find the public.users row that matches this auth.users.id\n  select id into v_user_id\n  from public.users\n  where auth_user_id = new.id;\n  \n  -- If no matching public.users row found, return early\n  if v_user_id is null then\n    return new;\n  end if;\n  \n  -- Link profile to user if work_email matches auth.users.email\n  -- Only update if profile exists and is not already linked to a different user\n  -- Normalize both sides of comparison to handle case/whitespace differences\n  update public.profiles\n  set user_id = v_user_id\n  where lower(trim(work_email)) = lower(trim(v_auth_email))\n    and (user_id is null or user_id = v_user_id);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.link_user_to_profile() is 'Trigger function that automatically links profile rows to user rows when auth.users.email matches profiles.work_email. Matches based on currently logged in user email (auth.users.email), uid in user table row (public.users.auth_user_id), and work_email in profile table row (public.profiles.work_email).';\n\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Link users to profiles based on email matching",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Automatically links profile rows to user rows when auth.users.email matches profiles.work_email",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: profiles, users, auth.users",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: Runs automatically when user email changes in auth.users table",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "-- Create trigger function to link profiles to users based on email matching",
+            "lineNumber": 10
+          },
+          {
+            "text": "-- Matches auth.users.email with profiles.work_email and links via public.users",
+            "lineNumber": 11
+          },
+          {
+            "text": "-- Runs with SECURITY DEFINER to access auth.users table",
+            "lineNumber": 12
+          },
+          {
+            "text": "create or replace function public.link_user_to_profile()",
+            "lineNumber": 13
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 14
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 15
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 16
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 17
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 18
+          },
+          {
+            "text": "declare",
+            "lineNumber": 19
+          },
+          {
+            "text": "  v_user_id uuid;",
+            "lineNumber": 20
+          },
+          {
+            "text": "  v_auth_email text;",
+            "lineNumber": 21
+          },
+          {
+            "text": "begin",
+            "lineNumber": 22
+          },
+          {
+            "text": "  -- Get the email from auth.users (use NEW.email after update)",
+            "lineNumber": 23
+          },
+          {
+            "text": "  v_auth_email := new.email;",
+            "lineNumber": 24
+          },
+          {
+            "text": "  ",
+            "lineNumber": 25
+          },
+          {
+            "text": "  -- Only proceed if email is not null and has changed",
+            "lineNumber": 26
+          },
+          {
+            "text": "  if v_auth_email is null or v_auth_email = '' then",
+            "lineNumber": 27
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 28
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 29
+          },
+          {
+            "text": "  ",
+            "lineNumber": 30
+          },
+          {
+            "text": "  -- Find the public.users row that matches this auth.users.id",
+            "lineNumber": 31
+          },
+          {
+            "text": "  select id into v_user_id",
+            "lineNumber": 32
+          },
+          {
+            "text": "  from public.users",
+            "lineNumber": 33
+          },
+          {
+            "text": "  where auth_user_id = new.id;",
+            "lineNumber": 34
+          },
+          {
+            "text": "  ",
+            "lineNumber": 35
+          },
+          {
+            "text": "  -- If no matching public.users row found, return early",
+            "lineNumber": 36
+          },
+          {
+            "text": "  if v_user_id is null then",
+            "lineNumber": 37
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 38
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 39
+          },
+          {
+            "text": "  ",
+            "lineNumber": 40
+          },
+          {
+            "text": "  -- Link profile to user if work_email matches auth.users.email",
+            "lineNumber": 41
+          },
+          {
+            "text": "  -- Only update if profile exists and is not already linked to a different user",
+            "lineNumber": 42
+          },
+          {
+            "text": "  -- Normalize both sides of comparison to handle case/whitespace differences",
+            "lineNumber": 43
+          },
+          {
+            "text": "  update public.profiles",
+            "lineNumber": 44
+          },
+          {
+            "text": "  set user_id = v_user_id",
+            "lineNumber": 45
+          },
+          {
+            "text": "  where lower(trim(work_email)) = lower(trim(v_auth_email))",
+            "lineNumber": 46
+          },
+          {
+            "text": "    and (user_id is null or user_id = v_user_id);",
+            "lineNumber": 47
+          },
+          {
+            "text": "  ",
+            "lineNumber": 48
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 49
+          },
+          {
+            "text": "end;",
+            "lineNumber": 50
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 51
+          },
+          {
+            "lineNumber": 52
+          },
+          {
+            "text": "comment on function public.link_user_to_profile() is 'Trigger function that automatically links profile rows to user rows when auth.users.email matches profiles.work_email. Matches based on currently logged in user email (auth.users.email), uid in user table row (public.users.auth_user_id), and work_email in profile table row (public.profiles.work_email).';",
+            "lineNumber": 53
+          },
+          {
+            "lineNumber": 54
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 55
+          }
+        ]
+      },
+      "score": 0.15606474876403809
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 322
+          },
+          "endPosition": {
+            "line": 393
+          }
+        },
+        "contents": "await supabase\n  .from('profiles')\n  .update({ \n    user_id: user.id,\n    picture: user.user_metadata.avatar_url  // Default to Google picture\n  })\n  .eq('work_email', workEmail);\n&#96;&#96;&#96;\n\n### Step 4: Middleware Validation\n\nQuery database for profile linked to current auth.user and check &#96;removed_access IS NULL&#96; on every request to protected routes.\n\n&#96;&#96;&#96;typescript\n// Middleware check\nconst { data: profile } = await supabase\n  .from('profiles')\n  .select('id, role, removed_access')\n  .eq('user_id', user.id)\n  .single();\n\nif (!profile) redirect('/auth/verify-work-email');\nif (profile.removed_access) redirect('/auth/access-revoked');\n// User has active access, continue...\n&#96;&#96;&#96;\n\n## Estimated Complexity\n\n| Task | Complexity | Lines of Code |\n\n|------|------------|---------------|\n\n| Delete old auth files | Trivial | -500 lines |\n\n| Security lockdown config | Trivial | ~20 lines TOML |\n\n| Database migration | Low | ~40 lines SQL (users, profiles, indexes) |\n\n| Constants + validation | Trivial | ~25 lines |\n\n| Server actions (auth logic) | Medium | ~60 lines |\n\n| Middleware update | Medium | ~50 lines (includes DB queries) |\n\n| Google login page | Low | ~30 lines |\n\n| Work email form + linking | Medium | ~120 lines |\n\n| Pending approval page | Low | ~20 lines |\n\n| Access revoked page | Low | ~20 lines |\n\n**Total new code**: ~385 lines (vs ~500 lines deleted)\n\n## Separation of Concerns\n\n### Supabase (Auth + Storage Only)\n\n- **Authentication**: Google OAuth flow, session management, OTP emails\n- **Database**: Store profiles and users data (no RLS - Next.js handles access control)\n- **No business logic**: No custom hooks, no stored procedures, no triggers, no functions\n\n### Next.js (All Business Logic)\n\n- **Middleware**: Profile verification, access checks, role-based routing\n- **Server Actions**: Profile linking, access revocation\n- **Validation**: Domain validation, input sanitization, business rules\n- **Authorization**: Role hierarchy checks, permission enforcement\n&#96;&#96;&#96;\n┌─────────────────────────────────────────────────────────────────┐\n│                         Next.js                                  │",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "await supabase",
+            "lineNumber": 323
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 324
+          },
+          {
+            "text": "  .update({ ",
+            "lineNumber": 325
+          },
+          {
+            "text": "    user_id: user.id,",
+            "lineNumber": 326
+          },
+          {
+            "text": "    picture: user.user_metadata.avatar_url  // Default to Google picture",
+            "lineNumber": 327
+          },
+          {
+            "text": "  })",
+            "lineNumber": 328
+          },
+          {
+            "text": "  .eq('work_email', workEmail);",
+            "lineNumber": 329
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 330
+          },
+          {
+            "lineNumber": 331
+          },
+          {
+            "text": "### Step 4: Middleware Validation",
+            "lineNumber": 332
+          },
+          {
+            "lineNumber": 333
+          },
+          {
+            "text": "Query database for profile linked to current auth.user and check &#96;removed_access IS NULL&#96; on every request to protected routes.",
+            "lineNumber": 334
+          },
+          {
+            "lineNumber": 335
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 336
+          },
+          {
+            "text": "// Middleware check",
+            "lineNumber": 337
+          },
+          {
+            "text": "const { data: profile } = await supabase",
+            "lineNumber": 338
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 339
+          },
+          {
+            "text": "  .select('id, role, removed_access')",
+            "lineNumber": 340
+          },
+          {
+            "text": "  .eq('user_id', user.id)",
+            "lineNumber": 341
+          },
+          {
+            "text": "  .single();",
+            "lineNumber": 342
+          },
+          {
+            "lineNumber": 343
+          },
+          {
+            "text": "if (!profile) redirect('/auth/verify-work-email');",
+            "lineNumber": 344
+          },
+          {
+            "text": "if (profile.removed_access) redirect('/auth/access-revoked');",
+            "lineNumber": 345
+          },
+          {
+            "text": "// User has active access, continue...",
+            "lineNumber": 346
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 347
+          },
+          {
+            "lineNumber": 348
+          },
+          {
+            "text": "## Estimated Complexity",
+            "lineNumber": 349
+          },
+          {
+            "lineNumber": 350
+          },
+          {
+            "text": "| Task | Complexity | Lines of Code |",
+            "lineNumber": 351
+          },
+          {
+            "lineNumber": 352
+          },
+          {
+            "text": "|------|------------|---------------|",
+            "lineNumber": 353
+          },
+          {
+            "lineNumber": 354
+          },
+          {
+            "text": "| Delete old auth files | Trivial | -500 lines |",
+            "lineNumber": 355
+          },
+          {
+            "lineNumber": 356
+          },
+          {
+            "text": "| Security lockdown config | Trivial | ~20 lines TOML |",
+            "lineNumber": 357
+          },
+          {
+            "lineNumber": 358
+          },
+          {
+            "text": "| Database migration | Low | ~40 lines SQL (users, profiles, indexes) |",
+            "lineNumber": 359
+          },
+          {
+            "lineNumber": 360
+          },
+          {
+            "text": "| Constants + validation | Trivial | ~25 lines |",
+            "lineNumber": 361
+          },
+          {
+            "lineNumber": 362
+          },
+          {
+            "text": "| Server actions (auth logic) | Medium | ~60 lines |",
+            "lineNumber": 363
+          },
+          {
+            "lineNumber": 364
+          },
+          {
+            "text": "| Middleware update | Medium | ~50 lines (includes DB queries) |",
+            "lineNumber": 365
+          },
+          {
+            "lineNumber": 366
+          },
+          {
+            "text": "| Google login page | Low | ~30 lines |",
+            "lineNumber": 367
+          },
+          {
+            "lineNumber": 368
+          },
+          {
+            "text": "| Work email form + linking | Medium | ~120 lines |",
+            "lineNumber": 369
+          },
+          {
+            "lineNumber": 370
+          },
+          {
+            "text": "| Pending approval page | Low | ~20 lines |",
+            "lineNumber": 371
+          },
+          {
+            "lineNumber": 372
+          },
+          {
+            "text": "| Access revoked page | Low | ~20 lines |",
+            "lineNumber": 373
+          },
+          {
+            "lineNumber": 374
+          },
+          {
+            "text": "**Total new code**: ~385 lines (vs ~500 lines deleted)",
+            "lineNumber": 375
+          },
+          {
+            "lineNumber": 376
+          },
+          {
+            "text": "## Separation of Concerns",
+            "lineNumber": 377
+          },
+          {
+            "lineNumber": 378
+          },
+          {
+            "text": "### Supabase (Auth + Storage Only)",
+            "lineNumber": 379
+          },
+          {
+            "lineNumber": 380
+          },
+          {
+            "text": "- **Authentication**: Google OAuth flow, session management, OTP emails",
+            "lineNumber": 381
+          },
+          {
+            "text": "- **Database**: Store profiles and users data (no RLS - Next.js handles access control)",
+            "lineNumber": 382
+          },
+          {
+            "text": "- **No business logic**: No custom hooks, no stored procedures, no triggers, no functions",
+            "lineNumber": 383
+          },
+          {
+            "lineNumber": 384
+          },
+          {
+            "text": "### Next.js (All Business Logic)",
+            "lineNumber": 385
+          },
+          {
+            "lineNumber": 386
+          },
+          {
+            "text": "- **Middleware**: Profile verification, access checks, role-based routing",
+            "lineNumber": 387
+          },
+          {
+            "text": "- **Server Actions**: Profile linking, access revocation",
+            "lineNumber": 388
+          },
+          {
+            "text": "- **Validation**: Domain validation, input sanitization, business rules",
+            "lineNumber": 389
+          },
+          {
+            "text": "- **Authorization**: Role hierarchy checks, permission enforcement",
+            "lineNumber": 390
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 391
+          },
+          {
+            "text": "┌─────────────────────────────────────────────────────────────────┐",
+            "lineNumber": 392
+          },
+          {
+            "text": "│                         Next.js                                  │",
+            "lineNumber": 393
+          }
+        ]
+      },
+      "score": 0.1531842052936554
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/config.toml",
+        "range": {
+          "startPosition": {
+            "line": 107
+          },
+          "endPosition": {
+            "line": 169
+          }
+        },
+        "contents": "file_size_limit = \"50MiB\"\n\n# Uncomment to configure local storage buckets\n# [storage.buckets.images]\n# public = false\n# file_size_limit = \"50MiB\"\n# allowed_mime_types = [\"image/png\", \"image/jpeg\"]\n# objects_path = \"./images\"\n\n# Allow connections via S3 compatible clients\n[storage.s3_protocol]\nenabled = true\n\n# Image transformation API is available to Supabase Pro plan.\n# [storage.image_transformation]\n# enabled = true\n\n# Store analytical data in S3 for running ETL jobs over Iceberg Catalog\n# This feature is only available on the hosted platform.\n[storage.analytics]\nenabled = false\nmax_namespaces = 5\nmax_tables = 10\nmax_catalogs = 2\n\n# Analytics Buckets is available to Supabase Pro plan.\n# [storage.analytics.buckets.my-warehouse]\n\n# Store vector embeddings in S3 for large and durable datasets\n# This feature is only available on the hosted platform.\n[storage.vector]\nenabled = false\nmax_buckets = 10\nmax_indexes = 5\n\n# Vector Buckets is available to Supabase Pro plan.\n# [storage.vector.buckets.documents-openai]\n\n[auth]\nenabled = true\n# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used\n# in emails.\nsite_url = \"http://localhost:3000\"\n# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.\nadditional_redirect_urls = [\n  \"http://localhost:3000/auth/callback\",\n  \"http://localhost:3000/auth/confirm-email-change\",\n]\n# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).\njwt_expiry = 3600\n# JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:&lt;port&gt;/auth/v1).\n# jwt_issuer = \"\"\n# Path to JWT signing key. DO NOT commit your signing keys file to git.\n# signing_keys_path = \"./signing_keys.json\"\n# If disabled, the refresh token will never expire.\nenable_refresh_token_rotation = true\n# Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.\n# Requires enable_refresh_token_rotation = true.\nrefresh_token_reuse_interval = 10\n# Allow/disallow new user signups to your project.\nenable_signup = true\n# Allow/disallow anonymous sign-ins to your project.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "file_size_limit = \"50MiB\"",
+            "lineNumber": 108
+          },
+          {
+            "lineNumber": 109
+          },
+          {
+            "text": "# Uncomment to configure local storage buckets",
+            "lineNumber": 110
+          },
+          {
+            "text": "# [storage.buckets.images]",
+            "lineNumber": 111
+          },
+          {
+            "text": "# public = false",
+            "lineNumber": 112
+          },
+          {
+            "text": "# file_size_limit = \"50MiB\"",
+            "lineNumber": 113
+          },
+          {
+            "text": "# allowed_mime_types = [\"image/png\", \"image/jpeg\"]",
+            "lineNumber": 114
+          },
+          {
+            "text": "# objects_path = \"./images\"",
+            "lineNumber": 115
+          },
+          {
+            "lineNumber": 116
+          },
+          {
+            "text": "# Allow connections via S3 compatible clients",
+            "lineNumber": 117
+          },
+          {
+            "text": "[storage.s3_protocol]",
+            "lineNumber": 118
+          },
+          {
+            "text": "enabled = true",
+            "lineNumber": 119
+          },
+          {
+            "lineNumber": 120
+          },
+          {
+            "text": "# Image transformation API is available to Supabase Pro plan.",
+            "lineNumber": 121
+          },
+          {
+            "text": "# [storage.image_transformation]",
+            "lineNumber": 122
+          },
+          {
+            "text": "# enabled = true",
+            "lineNumber": 123
+          },
+          {
+            "lineNumber": 124
+          },
+          {
+            "text": "# Store analytical data in S3 for running ETL jobs over Iceberg Catalog",
+            "lineNumber": 125
+          },
+          {
+            "text": "# This feature is only available on the hosted platform.",
+            "lineNumber": 126
+          },
+          {
+            "text": "[storage.analytics]",
+            "lineNumber": 127
+          },
+          {
+            "text": "enabled = false",
+            "lineNumber": 128
+          },
+          {
+            "text": "max_namespaces = 5",
+            "lineNumber": 129
+          },
+          {
+            "text": "max_tables = 10",
+            "lineNumber": 130
+          },
+          {
+            "text": "max_catalogs = 2",
+            "lineNumber": 131
+          },
+          {
+            "lineNumber": 132
+          },
+          {
+            "text": "# Analytics Buckets is available to Supabase Pro plan.",
+            "lineNumber": 133
+          },
+          {
+            "text": "# [storage.analytics.buckets.my-warehouse]",
+            "lineNumber": 134
+          },
+          {
+            "lineNumber": 135
+          },
+          {
+            "text": "# Store vector embeddings in S3 for large and durable datasets",
+            "lineNumber": 136
+          },
+          {
+            "text": "# This feature is only available on the hosted platform.",
+            "lineNumber": 137
+          },
+          {
+            "text": "[storage.vector]",
+            "lineNumber": 138
+          },
+          {
+            "text": "enabled = false",
+            "lineNumber": 139
+          },
+          {
+            "text": "max_buckets = 10",
+            "lineNumber": 140
+          },
+          {
+            "text": "max_indexes = 5",
+            "lineNumber": 141
+          },
+          {
+            "lineNumber": 142
+          },
+          {
+            "text": "# Vector Buckets is available to Supabase Pro plan.",
+            "lineNumber": 143
+          },
+          {
+            "text": "# [storage.vector.buckets.documents-openai]",
+            "lineNumber": 144
+          },
+          {
+            "lineNumber": 145
+          },
+          {
+            "text": "[auth]",
+            "lineNumber": 146
+          },
+          {
+            "text": "enabled = true",
+            "lineNumber": 147
+          },
+          {
+            "text": "# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used",
+            "lineNumber": 148
+          },
+          {
+            "text": "# in emails.",
+            "lineNumber": 149
+          },
+          {
+            "text": "site_url = \"http://localhost:3000\"",
+            "lineNumber": 150
+          },
+          {
+            "text": "# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.",
+            "lineNumber": 151
+          },
+          {
+            "text": "additional_redirect_urls = [",
+            "lineNumber": 152
+          },
+          {
+            "text": "  \"http://localhost:3000/auth/callback\",",
+            "lineNumber": 153
+          },
+          {
+            "text": "  \"http://localhost:3000/auth/confirm-email-change\",",
+            "lineNumber": 154
+          },
+          {
+            "text": "]",
+            "lineNumber": 155
+          },
+          {
+            "text": "# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).",
+            "lineNumber": 156
+          },
+          {
+            "text": "jwt_expiry = 3600",
+            "lineNumber": 157
+          },
+          {
+            "text": "# JWT issuer URL. If not set, defaults to the local API URL (http://127.0.0.1:&lt;port&gt;/auth/v1).",
+            "lineNumber": 158
+          },
+          {
+            "text": "# jwt_issuer = \"\"",
+            "lineNumber": 159
+          },
+          {
+            "text": "# Path to JWT signing key. DO NOT commit your signing keys file to git.",
+            "lineNumber": 160
+          },
+          {
+            "text": "# signing_keys_path = \"./signing_keys.json\"",
+            "lineNumber": 161
+          },
+          {
+            "text": "# If disabled, the refresh token will never expire.",
+            "lineNumber": 162
+          },
+          {
+            "text": "enable_refresh_token_rotation = true",
+            "lineNumber": 163
+          },
+          {
+            "text": "# Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.",
+            "lineNumber": 164
+          },
+          {
+            "text": "# Requires enable_refresh_token_rotation = true.",
+            "lineNumber": 165
+          },
+          {
+            "text": "refresh_token_reuse_interval = 10",
+            "lineNumber": 166
+          },
+          {
+            "text": "# Allow/disallow new user signups to your project.",
+            "lineNumber": 167
+          },
+          {
+            "text": "enable_signup = true",
+            "lineNumber": 168
+          },
+          {
+            "text": "# Allow/disallow anonymous sign-ins to your project.",
+            "lineNumber": 169
+          }
+        ]
+      },
+      "score": 0.15104210376739502
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+The login page uses `getClaims()`, which can return truthy claims even with an invalid token (e.g., deleted user). This causes a redirect to `/protected`, which then redirects back to login, creating a loop. Updating the login page to use `getUser()` instead, which validates the user exists:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "app/auth/login/page.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "app/auth/login/page.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Validating the `next` parameter before redirecting:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Fixing the issue: page components don't have access to `request`. Using `headers()` to get the origin:
+
+
+---
+
+The string to replace was not found in the file.
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="read_lints">
+<details>
+          <summary>Tool use: **read_lints** • Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `app/auth/login/page.tsx`
+
+Lint results
+
+Lint errors for `app/auth/login/page.tsx`
+
+
+| Message | Range | Severity |
+|-------|-------|----------|
+| Cannot find name 'request'. Did you mean 'Request'? | 25:60-25:67 | DIAGNOSTIC_SEVERITY_ERROR |
+
+
+</details>
+</tool-use>
+
+---
+
+
+Reading the file and fixing it:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="read_lints">
+<details>
+          <summary>Tool use: **read_lints** • Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `app/auth/login/page.tsx`
+
+Lint results
+
+Lint errors for `app/auth/login/page.tsx`
+
+
+| Message | Range | Severity |
+|-------|-------|----------|
+| Cannot find name 'request'. Did you mean 'Request'? | 26:60-26:67 | DIAGNOSTIC_SEVERITY_ERROR |
+
+
+</details>
+</tool-use>
+
+---
+
+
+Reading the file again to check its current state:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/app/auth/login/page.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Checking lints again:
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "app/auth/login/page.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "app/auth/login/page.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+## Summary
+
+Fixed the infinite redirect loop caused by invalid tokens (e.g., deleted users).
+
+### Root Cause
+The login page used `getClaims()`, which can return truthy claims even when the token is invalid or the user is deleted. This caused:
+1. Login page sees claims → redirects to `/protected`
+2. Proxy sees invalid user → redirects back to `/auth/login?next=/protected`
+3. Loop repeats
+
+### Solution
+
+1. **Changed authentication check** (`app/auth/login/page.tsx`):
+   - Switched from `getClaims()` to `getUser()` to validate the user exists
+   - `getUser()` returns `null`/error if the user is deleted or the token is invalid
+   - Prevents redirects when only stale claims exist
+
+2. **Added `next` parameter validation**:
+   - Validates the `next` parameter before redirecting
+   - Uses `headers()` to get the origin for validation (page components don't have `request`)
+   - Prevents open redirect vulnerabilities
+
+3. **Improved redirect logic**:
+   - Uses the validated `next` parameter if available
+   - Falls back to `DEFAULT_LOGGED_IN_PAGE` if `next` is invalid or missing
+
+Now when a user is deleted:
+- `getUser()` returns `null`/error
+- Login page doesn't redirect
+- User can log in normally
+- No infinite redirect loop
+
+The infinite redirect loop should now be resolved.
+
+---
+
+_**User**_
+
+It's not passed into supabase mail link. Use redirect to parameter when changing the email
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+Checking how email changes are handled and ensuring the `next` parameter is passed through the email verification link:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/app/auth/confirm-email-change/route.ts</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="semantic_search_full">
+<details>
+<summary>Tool use: **semantic_search_full**</summary>
+
+
+Parameters:
+
+```json
+{
+  "query": "How does updateUser email work with redirectTo parameter in Supabase?",
+  "topK": 10,
+  "explanation": ""
+}
+```
+Result:
+
+```json
+{
+  "codeResults": [
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/supabase/proxy.ts",
+        "range": {
+          "startPosition": {
+            "line": 5
+          },
+          "endPosition": {
+            "line": 110,
+            "column": 1
+          }
+        },
+        "contents": "export async function updateSession(request: NextRequest) {\n\n\n  // Redirect to login if not authenticated\n  if (!user) {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/login\";\n    url.search = \"\"; // Clear existing search params\n    url.hash = \"\"; // Clear existing hash\n    url.searchParams.set(\"next\", fullPath);\n    return NextResponse.redirect(url);\n  }\n\n  // Check if user has an email identity (not just OAuth providers like Google)\n  const { data: { user: authUser } } = await supabase.auth.getUser();\n\n  if (!authUser) {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/login\";\n    url.search = \"\"; // Clear existing search params\n    url.hash = \"\"; // Clear existing hash\n    url.searchParams.set(\"next\", fullPath);\n    return NextResponse.redirect(url);\n  }\n\n  // If no email identity, redirect to verify email page\n  if (!(await hasEmailIdentity(supabase))) {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/verify-email\";\n    url.search = \"\"; // Clear existing search params\n    url.hash = \"\"; // Clear existing hash\n    url.searchParams.set(\"next\", fullPath);\n    return NextResponse.redirect(url);\n  }\n\n  // Check for linked profile if user is authenticated and not on public routes\n  // Skip this check for verify-email and pending-approval routes\n  if (!(await hasLinkedProfile(supabase))) {\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/pending-approval\";\n    return NextResponse.redirect(url);\n  }\n\n  // IMPORTANT: You *must* return the supabaseResponse object as it is.\n  // If you're creating a new response object with NextResponse.next() make sure to:\n  // 1. Pass the request in it, like so:\n  //    const myNewResponse = NextResponse.next({ request })\n  // 2. Copy over the cookies, like so:\n  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())\n  // 3. Change the myNewResponse object to fit your needs, but avoid changing\n  //    the cookies!\n  // 4. Finally:\n  //    return myNewResponse\n  // If this is not done, you may be causing the browser and server to go out\n  // of sync and terminate the user's session prematurely!\n\n  return supabaseResponse;\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 6,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 6,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 6,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 7,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export async function updateSession(request: NextRequest) {",
+            "lineNumber": 6,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  // Redirect to login if not authenticated",
+            "lineNumber": 57
+          },
+          {
+            "text": "  if (!user) {",
+            "lineNumber": 58
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 59
+          },
+          {
+            "text": "    url.pathname = \"/auth/login\";",
+            "lineNumber": 60
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 61
+          },
+          {
+            "text": "    url.hash = \"\"; // Clear existing hash",
+            "lineNumber": 62
+          },
+          {
+            "text": "    url.searchParams.set(\"next\", fullPath);",
+            "lineNumber": 63
+          },
+          {
+            "text": "    return NextResponse.redirect(url);",
+            "lineNumber": 64
+          },
+          {
+            "text": "  }",
+            "lineNumber": 65
+          },
+          {
+            "lineNumber": 66
+          },
+          {
+            "text": "  // Check if user has an email identity (not just OAuth providers like Google)",
+            "lineNumber": 67
+          },
+          {
+            "text": "  const { data: { user: authUser } } = await supabase.auth.getUser();",
+            "lineNumber": 68
+          },
+          {
+            "lineNumber": 69
+          },
+          {
+            "text": "  if (!authUser) {",
+            "lineNumber": 70
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 71
+          },
+          {
+            "text": "    url.pathname = \"/auth/login\";",
+            "lineNumber": 72
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 73
+          },
+          {
+            "text": "    url.hash = \"\"; // Clear existing hash",
+            "lineNumber": 74
+          },
+          {
+            "text": "    url.searchParams.set(\"next\", fullPath);",
+            "lineNumber": 75
+          },
+          {
+            "text": "    return NextResponse.redirect(url);",
+            "lineNumber": 76
+          },
+          {
+            "text": "  }",
+            "lineNumber": 77
+          },
+          {
+            "lineNumber": 78
+          },
+          {
+            "text": "  // If no email identity, redirect to verify email page",
+            "lineNumber": 79
+          },
+          {
+            "text": "  if (!(await hasEmailIdentity(supabase))) {",
+            "lineNumber": 80
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 81
+          },
+          {
+            "text": "    url.pathname = \"/auth/verify-email\";",
+            "lineNumber": 82
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 83
+          },
+          {
+            "text": "    url.hash = \"\"; // Clear existing hash",
+            "lineNumber": 84
+          },
+          {
+            "text": "    url.searchParams.set(\"next\", fullPath);",
+            "lineNumber": 85
+          },
+          {
+            "text": "    return NextResponse.redirect(url);",
+            "lineNumber": 86
+          },
+          {
+            "text": "  }",
+            "lineNumber": 87
+          },
+          {
+            "lineNumber": 88
+          },
+          {
+            "text": "  // Check for linked profile if user is authenticated and not on public routes",
+            "lineNumber": 89
+          },
+          {
+            "text": "  // Skip this check for verify-email and pending-approval routes",
+            "lineNumber": 90
+          },
+          {
+            "text": "  if (!(await hasLinkedProfile(supabase))) {",
+            "lineNumber": 91
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 92
+          },
+          {
+            "text": "    url.pathname = \"/auth/pending-approval\";",
+            "lineNumber": 93
+          },
+          {
+            "text": "    return NextResponse.redirect(url);",
+            "lineNumber": 94
+          },
+          {
+            "text": "  }",
+            "lineNumber": 95
+          },
+          {
+            "lineNumber": 96
+          },
+          {
+            "text": "  // IMPORTANT: You *must* return the supabaseResponse object as it is.",
+            "lineNumber": 97
+          },
+          {
+            "text": "  // If you're creating a new response object with NextResponse.next() make sure to:",
+            "lineNumber": 98
+          },
+          {
+            "text": "  // 1. Pass the request in it, like so:",
+            "lineNumber": 99
+          },
+          {
+            "text": "  //    const myNewResponse = NextResponse.next({ request })",
+            "lineNumber": 100
+          },
+          {
+            "text": "  // 2. Copy over the cookies, like so:",
+            "lineNumber": 101
+          },
+          {
+            "text": "  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())",
+            "lineNumber": 102
+          },
+          {
+            "text": "  // 3. Change the myNewResponse object to fit your needs, but avoid changing",
+            "lineNumber": 103
+          },
+          {
+            "text": "  //    the cookies!",
+            "lineNumber": 104
+          },
+          {
+            "text": "  // 4. Finally:",
+            "lineNumber": 105
+          },
+          {
+            "text": "  //    return myNewResponse",
+            "lineNumber": 106
+          },
+          {
+            "text": "  // If this is not done, you may be causing the browser and server to go out",
+            "lineNumber": 107
+          },
+          {
+            "text": "  // of sync and terminate the user's session prematurely!",
+            "lineNumber": 108
+          },
+          {
+            "lineNumber": 109
+          },
+          {
+            "text": "  return supabaseResponse;",
+            "lineNumber": 110
+          },
+          {
+            "text": "}",
+            "lineNumber": 111,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.45984289050102234
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 73
+          },
+          "endPosition": {
+            "line": 356,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\nconst handleSendOTP = async \n\n    }\n  };\n\n  /**\n   * Verifies the OTP code and links email identity to user\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\n   * With enable_manual_linking = true, this will link the email identity\n   * to the existing authenticated user account\n   */\n  const verifyOTP = useCallback(async () =&gt; {\n    const trimmedOtp = otpCode.trim();\n\n    // Track the OTP being submitted to prevent re-submission\n    setLastSubmittedOtp(trimmedOtp);\n    setError(null);\n    setIsLoading(true);\n\n    try {\n      // Verify OTP code for email change/linking\n      // Use type 'email_change' because we used updateUser() to initiate the flow\n      // With enable_manual_linking = true, this will link the email identity\n      // to the current authenticated user instead of creating a new user\n      const { error: verifyError } = await supabase.auth.verifyOtp({\n        email: email.trim(),\n        token: trimmedOtp,\n        type: \"email_change\",\n      });\n\n      if (verifyError) {\n        setError(verifyError.message || \"Invalid OTP code\");\n        setIsLoading(false);\n        // Keep lastSubmittedOtp set to prevent re-submission of the same code\n        // The code remains in the input so user can see what they entered\n        return;\n      }\n\n      // Refresh session to ensure identities are updated\n      await supabase.auth.refreshSession();\n\n      // Clear persisted state on success\n      clearPersistedState();\n\n      // Success - redirect to next parameter or default page\n      const redirectTo = next ?? DEFAULT_LOGGED_IN_PAGE;\n      router.push(redirectTo);\n      router.refresh();\n    } catch (err) {\n      setError(\"An unexpected error occurred\");\n      setIsLoading(false);\n      // Keep lastSubmittedOtp set to prevent re-submission of the same code\n    }\n  }, [email, otpCode, next, supabase, router]);\n\n  /**\n   * Handles form submission for OTP verification\n   */\n  const handleVerifyOTP = async (e: React.FormEvent) =&gt; {\n    e.preventDefault();\n    await verifyOTP();\n  };\n\n  /**\n   * Loads persisted state from sessionStorage after component mounts (client-side only)\n   * This prevents hydration mismatches between server and client\n   */\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 74,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 74,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 74,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 75,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 74,
+            "isSignature": true
+          },
+          {
+            "text": "const handleSendOTP = async ",
+            "lineNumber": 90
+          },
+          {
+            "lineNumber": 138
+          },
+          {
+            "text": "    }",
+            "lineNumber": 139
+          },
+          {
+            "text": "  };",
+            "lineNumber": 140
+          },
+          {
+            "lineNumber": 141
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 142
+          },
+          {
+            "text": "   * Verifies the OTP code and links email identity to user",
+            "lineNumber": 143
+          },
+          {
+            "text": "   * Uses type 'email_change' since we're updating the user's email via updateUser()",
+            "lineNumber": 144
+          },
+          {
+            "text": "   * With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 145
+          },
+          {
+            "text": "   * to the existing authenticated user account",
+            "lineNumber": 146
+          },
+          {
+            "text": "   */",
+            "lineNumber": 147
+          },
+          {
+            "text": "  const verifyOTP = useCallback(async () =&gt; {",
+            "lineNumber": 148
+          },
+          {
+            "text": "    const trimmedOtp = otpCode.trim();",
+            "lineNumber": 149
+          },
+          {
+            "lineNumber": 150
+          },
+          {
+            "text": "    // Track the OTP being submitted to prevent re-submission",
+            "lineNumber": 151
+          },
+          {
+            "text": "    setLastSubmittedOtp(trimmedOtp);",
+            "lineNumber": 152
+          },
+          {
+            "text": "    setError(null);",
+            "lineNumber": 153
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 154
+          },
+          {
+            "lineNumber": 155
+          },
+          {
+            "text": "    try {",
+            "lineNumber": 156
+          },
+          {
+            "text": "      // Verify OTP code for email change/linking",
+            "lineNumber": 157
+          },
+          {
+            "text": "      // Use type 'email_change' because we used updateUser() to initiate the flow",
+            "lineNumber": 158
+          },
+          {
+            "text": "      // With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 159
+          },
+          {
+            "text": "      // to the current authenticated user instead of creating a new user",
+            "lineNumber": 160
+          },
+          {
+            "text": "      const { error: verifyError } = await supabase.auth.verifyOtp({",
+            "lineNumber": 161
+          },
+          {
+            "text": "        email: email.trim(),",
+            "lineNumber": 162
+          },
+          {
+            "text": "        token: trimmedOtp,",
+            "lineNumber": 163
+          },
+          {
+            "text": "        type: \"email_change\",",
+            "lineNumber": 164
+          },
+          {
+            "text": "      });",
+            "lineNumber": 165
+          },
+          {
+            "lineNumber": 166
+          },
+          {
+            "text": "      if (verifyError) {",
+            "lineNumber": 167
+          },
+          {
+            "text": "        setError(verifyError.message || \"Invalid OTP code\");",
+            "lineNumber": 168
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 169
+          },
+          {
+            "text": "        // Keep lastSubmittedOtp set to prevent re-submission of the same code",
+            "lineNumber": 170
+          },
+          {
+            "text": "        // The code remains in the input so user can see what they entered",
+            "lineNumber": 171
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 172
+          },
+          {
+            "text": "      }",
+            "lineNumber": 173
+          },
+          {
+            "lineNumber": 174
+          },
+          {
+            "text": "      // Refresh session to ensure identities are updated",
+            "lineNumber": 175
+          },
+          {
+            "text": "      await supabase.auth.refreshSession();",
+            "lineNumber": 176
+          },
+          {
+            "lineNumber": 177
+          },
+          {
+            "text": "      // Clear persisted state on success",
+            "lineNumber": 178
+          },
+          {
+            "text": "      clearPersistedState();",
+            "lineNumber": 179
+          },
+          {
+            "lineNumber": 180
+          },
+          {
+            "text": "      // Success - redirect to next parameter or default page",
+            "lineNumber": 181
+          },
+          {
+            "text": "      const redirectTo = next ?? DEFAULT_LOGGED_IN_PAGE;",
+            "lineNumber": 182
+          },
+          {
+            "text": "      router.push(redirectTo);",
+            "lineNumber": 183
+          },
+          {
+            "text": "      router.refresh();",
+            "lineNumber": 184
+          },
+          {
+            "text": "    } catch (err) {",
+            "lineNumber": 185
+          },
+          {
+            "text": "      setError(\"An unexpected error occurred\");",
+            "lineNumber": 186
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 187
+          },
+          {
+            "text": "      // Keep lastSubmittedOtp set to prevent re-submission of the same code",
+            "lineNumber": 188
+          },
+          {
+            "text": "    }",
+            "lineNumber": 189
+          },
+          {
+            "text": "  }, [email, otpCode, next, supabase, router]);",
+            "lineNumber": 190
+          },
+          {
+            "lineNumber": 191
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 192
+          },
+          {
+            "text": "   * Handles form submission for OTP verification",
+            "lineNumber": 193
+          },
+          {
+            "text": "   */",
+            "lineNumber": 194
+          },
+          {
+            "text": "  const handleVerifyOTP = async (e: React.FormEvent) =&gt; {",
+            "lineNumber": 195
+          },
+          {
+            "text": "    e.preventDefault();",
+            "lineNumber": 196
+          },
+          {
+            "text": "    await verifyOTP();",
+            "lineNumber": 197
+          },
+          {
+            "text": "  };",
+            "lineNumber": 198
+          },
+          {
+            "lineNumber": 199
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 200
+          },
+          {
+            "text": "   * Loads persisted state from sessionStorage after component mounts (client-side only)",
+            "lineNumber": 201
+          },
+          {
+            "text": "   * This prevents hydration mismatches between server and client",
+            "lineNumber": 202
+          },
+          {
+            "text": "   */",
+            "lineNumber": 203
+          },
+          {
+            "text": "}",
+            "lineNumber": 357,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.4574418067932129
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 73
+          },
+          "endPosition": {
+            "line": 356,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\nconst handleSendOTP = async  {\n    e.preventDefault();\n    setError(null);\n    setIsLoading(true);\n\n    try {\n      // Validate email format\n      if (!email || !email.includes(\"@\")) {\n        setError(\"Please enter a valid email address\");\n        setIsLoading(false);\n        return;\n      }\n\n      // Validate CZU domain\n      if (!isValidWorkEmailDomain(email.trim())) {\n        setError(\"Email must end with @pef.czu.cz or @studenti.czu.cz\");\n        setIsLoading(false);\n        return;\n      }\n\n      // Use updateUser to add email identity to existing authenticated user\n      // This sends a verification link to the email address\n      // With enable_manual_linking = true, this will link the email identity\n      // Note: This adds the email as a secondary identity, not changing the primary email\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\n        {\n          email: email.trim(),\n        },\n      );\n\n      if (updateError) {\n        // If email already exists, that's actually fine - it means it might already be linked\n        // or we need to handle it differently\n        if (updateError.message?.includes(\"already registered\")) {\n          setError(\"This email is already registered. Please use a different email or sign in with that email.\");\n        } else {\n          setError(updateError.message || \"Failed to send OTP code\");\n        }\n        setIsLoading(false);\n        return;\n      }\n\n      // Move to OTP verification step\n      setStep(\"otp\");\n      savePersistedState({ step: \"otp\", email: email.trim() });\n      setIsLoading(false);\n    } catch (err) {\n      setError(\"An unexpected error occurred\");\n      setIsLoading(false);\n    }\n  };\n\n  /**\n   * Verifies the OTP code and links email identity to user\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\n   * With enable_manual_linking = true, this will link the email identity\n   * to the existing authenticated user account\n   */\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 74,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 74,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 74,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 75,
+                "column": 3
+              }
+            },
+            {
+              "startPosition": {
+                "line": 90,
+                "column": 3
+              },
+              "endPosition": {
+                "line": 90,
+                "column": 9
+              }
+            },
+            {
+              "startPosition": {
+                "line": 90,
+                "column": 9
+              },
+              "endPosition": {
+                "line": 90,
+                "column": 31
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 74,
+            "isSignature": true
+          },
+          {
+            "text": "const handleSendOTP = async  {",
+            "lineNumber": 90
+          },
+          {
+            "text": "    e.preventDefault();",
+            "lineNumber": 91
+          },
+          {
+            "text": "    setError(null);",
+            "lineNumber": 92
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 93
+          },
+          {
+            "lineNumber": 94
+          },
+          {
+            "text": "    try {",
+            "lineNumber": 95
+          },
+          {
+            "text": "      // Validate email format",
+            "lineNumber": 96
+          },
+          {
+            "text": "      if (!email || !email.includes(\"@\")) {",
+            "lineNumber": 97
+          },
+          {
+            "text": "        setError(\"Please enter a valid email address\");",
+            "lineNumber": 98
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 99
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 100
+          },
+          {
+            "text": "      }",
+            "lineNumber": 101
+          },
+          {
+            "lineNumber": 102
+          },
+          {
+            "text": "      // Validate CZU domain",
+            "lineNumber": 103
+          },
+          {
+            "text": "      if (!isValidWorkEmailDomain(email.trim())) {",
+            "lineNumber": 104
+          },
+          {
+            "text": "        setError(\"Email must end with @pef.czu.cz or @studenti.czu.cz\");",
+            "lineNumber": 105
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 106
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 107
+          },
+          {
+            "text": "      }",
+            "lineNumber": 108
+          },
+          {
+            "lineNumber": 109
+          },
+          {
+            "text": "      // Use updateUser to add email identity to existing authenticated user",
+            "lineNumber": 110
+          },
+          {
+            "text": "      // This sends a verification link to the email address",
+            "lineNumber": 111
+          },
+          {
+            "text": "      // With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 112
+          },
+          {
+            "text": "      // Note: This adds the email as a secondary identity, not changing the primary email",
+            "lineNumber": 113
+          },
+          {
+            "text": "      const { data: updateData, error: updateError } = await supabase.auth.updateUser(",
+            "lineNumber": 114
+          },
+          {
+            "text": "        {",
+            "lineNumber": 115
+          },
+          {
+            "text": "          email: email.trim(),",
+            "lineNumber": 116
+          },
+          {
+            "text": "        },",
+            "lineNumber": 117
+          },
+          {
+            "text": "      );",
+            "lineNumber": 118
+          },
+          {
+            "lineNumber": 119
+          },
+          {
+            "text": "      if (updateError) {",
+            "lineNumber": 120
+          },
+          {
+            "text": "        // If email already exists, that's actually fine - it means it might already be linked",
+            "lineNumber": 121
+          },
+          {
+            "text": "        // or we need to handle it differently",
+            "lineNumber": 122
+          },
+          {
+            "text": "        if (updateError.message?.includes(\"already registered\")) {",
+            "lineNumber": 123
+          },
+          {
+            "text": "          setError(\"This email is already registered. Please use a different email or sign in with that email.\");",
+            "lineNumber": 124
+          },
+          {
+            "text": "        } else {",
+            "lineNumber": 125
+          },
+          {
+            "text": "          setError(updateError.message || \"Failed to send OTP code\");",
+            "lineNumber": 126
+          },
+          {
+            "text": "        }",
+            "lineNumber": 127
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 128
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 129
+          },
+          {
+            "text": "      }",
+            "lineNumber": 130
+          },
+          {
+            "lineNumber": 131
+          },
+          {
+            "text": "      // Move to OTP verification step",
+            "lineNumber": 132
+          },
+          {
+            "text": "      setStep(\"otp\");",
+            "lineNumber": 133
+          },
+          {
+            "text": "      savePersistedState({ step: \"otp\", email: email.trim() });",
+            "lineNumber": 134
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 135
+          },
+          {
+            "text": "    } catch (err) {",
+            "lineNumber": 136
+          },
+          {
+            "text": "      setError(\"An unexpected error occurred\");",
+            "lineNumber": 137
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 138
+          },
+          {
+            "text": "    }",
+            "lineNumber": 139
+          },
+          {
+            "text": "  };",
+            "lineNumber": 140
+          },
+          {
+            "lineNumber": 141
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 142
+          },
+          {
+            "text": "   * Verifies the OTP code and links email identity to user",
+            "lineNumber": 143
+          },
+          {
+            "text": "   * Uses type 'email_change' since we're updating the user's email via updateUser()",
+            "lineNumber": 144
+          },
+          {
+            "text": "   * With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 145
+          },
+          {
+            "text": "   * to the existing authenticated user account",
+            "lineNumber": 146
+          },
+          {
+            "text": "   */",
+            "lineNumber": 147
+          },
+          {
+            "text": "}",
+            "lineNumber": 357,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.4536999464035034
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/forgot-password-form.tsx",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 104,
+            "column": 1
+          }
+        },
+        "contents": "\"use client\";\n\nimport { cn } from \"@/lib/utils\";\nimport { createClient } from \"@/lib/supabase/client\";\nimport { Button } from \"@/components/ui/button\";\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardHeader,\n  CardTitle,\n} from \"@/components/ui/card\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport Link from \"next/link\";\nimport { useState } from \"react\";\n\nexport function ForgotPasswordForm({\n  className,\n  ...props\n}: React.ComponentPropsWithoutRef&lt;\"div\"&gt;) {\n  const [email, setEmail] = useState(\"\");\n  const [error, setError] = useState&lt;string | null&gt;(null);\n  const [success, setSuccess] = useState(false);\n  const [isLoading, setIsLoading] = useState(false);\n\n  const handleForgotPassword = async (e: React.FormEvent) =&gt; {\n    e.preventDefault();\n    const supabase = createClient();\n    setIsLoading(true);\n    setError(null);\n\n    try {\n      // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration\n      const { error } = await supabase.auth.resetPasswordForEmail(email, {\n        redirectTo: &#96;${window.location.origin}/auth/update-password&#96;,\n      });\n      if (error) throw error;\n      setSuccess(true);\n    } catch (error: unknown) {\n      setError(error instanceof Error ? error.message : \"An error occurred\");\n    } finally {\n      setIsLoading(false);\n    }\n  };\n\n  return (\n    &lt;div className={cn(\"flex flex-col gap-6\", className)} {...props}&gt;\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "\"use client\";",
+            "lineNumber": 1
+          },
+          {
+            "lineNumber": 2
+          },
+          {
+            "text": "import { cn } from \"@/lib/utils\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { createClient } from \"@/lib/supabase/client\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { Button } from \"@/components/ui/button\";",
+            "lineNumber": 5
+          },
+          {
+            "text": "import {",
+            "lineNumber": 6
+          },
+          {
+            "text": "  Card,",
+            "lineNumber": 7
+          },
+          {
+            "text": "  CardContent,",
+            "lineNumber": 8
+          },
+          {
+            "text": "  CardDescription,",
+            "lineNumber": 9
+          },
+          {
+            "text": "  CardHeader,",
+            "lineNumber": 10
+          },
+          {
+            "text": "  CardTitle,",
+            "lineNumber": 11
+          },
+          {
+            "text": "} from \"@/components/ui/card\";",
+            "lineNumber": 12
+          },
+          {
+            "text": "import { Input } from \"@/components/ui/input\";",
+            "lineNumber": 13
+          },
+          {
+            "text": "import { Label } from \"@/components/ui/label\";",
+            "lineNumber": 14
+          },
+          {
+            "text": "import Link from \"next/link\";",
+            "lineNumber": 15
+          },
+          {
+            "text": "import { useState } from \"react\";",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "export function ForgotPasswordForm({",
+            "lineNumber": 18,
+            "isSignature": true
+          },
+          {
+            "text": "  className,",
+            "lineNumber": 19,
+            "isSignature": true
+          },
+          {
+            "text": "  ...props",
+            "lineNumber": 20,
+            "isSignature": true
+          },
+          {
+            "text": "}: React.ComponentPropsWithoutRef&lt;\"div\"&gt;) {",
+            "lineNumber": 21,
+            "isSignature": true
+          },
+          {
+            "text": "  const [email, setEmail] = useState(\"\");",
+            "lineNumber": 22
+          },
+          {
+            "text": "  const [error, setError] = useState&lt;string | null&gt;(null);",
+            "lineNumber": 23
+          },
+          {
+            "text": "  const [success, setSuccess] = useState(false);",
+            "lineNumber": 24
+          },
+          {
+            "text": "  const [isLoading, setIsLoading] = useState(false);",
+            "lineNumber": 25
+          },
+          {
+            "lineNumber": 26
+          },
+          {
+            "text": "  const handleForgotPassword = async (e: React.FormEvent) =&gt; {",
+            "lineNumber": 27
+          },
+          {
+            "text": "    e.preventDefault();",
+            "lineNumber": 28
+          },
+          {
+            "text": "    const supabase = createClient();",
+            "lineNumber": 29
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 30
+          },
+          {
+            "text": "    setError(null);",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "    try {",
+            "lineNumber": 33
+          },
+          {
+            "text": "      // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration",
+            "lineNumber": 34
+          },
+          {
+            "text": "      const { error } = await supabase.auth.resetPasswordForEmail(email, {",
+            "lineNumber": 35
+          },
+          {
+            "text": "        redirectTo: &#96;${window.location.origin}/auth/update-password&#96;,",
+            "lineNumber": 36
+          },
+          {
+            "text": "      });",
+            "lineNumber": 37
+          },
+          {
+            "text": "      if (error) throw error;",
+            "lineNumber": 38
+          },
+          {
+            "text": "      setSuccess(true);",
+            "lineNumber": 39
+          },
+          {
+            "text": "    } catch (error: unknown) {",
+            "lineNumber": 40
+          },
+          {
+            "text": "      setError(error instanceof Error ? error.message : \"An error occurred\");",
+            "lineNumber": 41
+          },
+          {
+            "text": "    } finally {",
+            "lineNumber": 42
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 43
+          },
+          {
+            "text": "    }",
+            "lineNumber": 44
+          },
+          {
+            "text": "  };",
+            "lineNumber": 45
+          },
+          {
+            "lineNumber": 46
+          },
+          {
+            "text": "  return (",
+            "lineNumber": 47
+          },
+          {
+            "text": "    &lt;div className={cn(\"flex flex-col gap-6\", className)} {...props}&gt;",
+            "lineNumber": 48
+          },
+          {
+            "text": "}",
+            "lineNumber": 105,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.4444589614868164
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/callback/route.ts",
+        "range": {
+          "startPosition": {
+            "line": 15
+          },
+          "endPosition": {
+            "line": 87,
+            "column": 1
+          }
+        },
+        "contents": "export async function GET(request: NextRequest) {\n\n\n  if (hasEmail) {\n    // User has email identity, redirect to next or default page\n    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;\n    \n    // Parse the redirect URL to handle query parameters properly\n    const redirectUrl = new URL(redirectTo, origin);\n    const url = request.nextUrl.clone();\n    url.pathname = redirectUrl.pathname;\n    url.search = redirectUrl.search;\n    url.hash = redirectUrl.hash;\n    \n    return redirectWithCookies(url, supabaseResponse);\n  } else {\n    // User needs to verify email, preserve next parameter\n    const url = request.nextUrl.clone();\n    url.pathname = \"/auth/verify-email\";\n    url.search = \"\"; // Clear existing search params\n    if (validatedNext) {\n      // Properly encode the next parameter\n      url.searchParams.set(\"next\", validatedNext);\n    }\n    return redirectWithCookies(url, supabaseResponse);\n  }\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 16,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 16,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 16,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 17,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export async function GET(request: NextRequest) {",
+            "lineNumber": 16,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 63
+          },
+          {
+            "lineNumber": 64
+          },
+          {
+            "text": "  if (hasEmail) {",
+            "lineNumber": 65
+          },
+          {
+            "text": "    // User has email identity, redirect to next or default page",
+            "lineNumber": 66
+          },
+          {
+            "text": "    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;",
+            "lineNumber": 67
+          },
+          {
+            "text": "    ",
+            "lineNumber": 68
+          },
+          {
+            "text": "    // Parse the redirect URL to handle query parameters properly",
+            "lineNumber": 69
+          },
+          {
+            "text": "    const redirectUrl = new URL(redirectTo, origin);",
+            "lineNumber": 70
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 71
+          },
+          {
+            "text": "    url.pathname = redirectUrl.pathname;",
+            "lineNumber": 72
+          },
+          {
+            "text": "    url.search = redirectUrl.search;",
+            "lineNumber": 73
+          },
+          {
+            "text": "    url.hash = redirectUrl.hash;",
+            "lineNumber": 74
+          },
+          {
+            "text": "    ",
+            "lineNumber": 75
+          },
+          {
+            "text": "    return redirectWithCookies(url, supabaseResponse);",
+            "lineNumber": 76
+          },
+          {
+            "text": "  } else {",
+            "lineNumber": 77
+          },
+          {
+            "text": "    // User needs to verify email, preserve next parameter",
+            "lineNumber": 78
+          },
+          {
+            "text": "    const url = request.nextUrl.clone();",
+            "lineNumber": 79
+          },
+          {
+            "text": "    url.pathname = \"/auth/verify-email\";",
+            "lineNumber": 80
+          },
+          {
+            "text": "    url.search = \"\"; // Clear existing search params",
+            "lineNumber": 81
+          },
+          {
+            "text": "    if (validatedNext) {",
+            "lineNumber": 82
+          },
+          {
+            "text": "      // Properly encode the next parameter",
+            "lineNumber": 83
+          },
+          {
+            "text": "      url.searchParams.set(\"next\", validatedNext);",
+            "lineNumber": 84
+          },
+          {
+            "text": "    }",
+            "lineNumber": 85
+          },
+          {
+            "text": "    return redirectWithCookies(url, supabaseResponse);",
+            "lineNumber": 86
+          },
+          {
+            "text": "  }",
+            "lineNumber": 87
+          },
+          {
+            "text": "}",
+            "lineNumber": 88,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.4251624345779419
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/confirm-email-change/route.ts",
+        "range": {
+          "startPosition": {
+            "column": 61
+          },
+          "endPosition": {
+            "line": 65,
+            "column": 1
+          }
+        },
+        "contents": "import { type EmailOtpType } from \"@supabase/supabase-js\";\nimport { createServerClient } from \"@supabase/ssr\";\nimport {\n  createErrorUrl,\n  createSuccessUrl,\n  redirectWithCookies,\n} from \"@/lib/auth-helpers\";\n\n/**\n * Handles email change confirmation callback using PKCE flow with token_hash\n * Verifies the OTP token and redirects appropriately\n * Ensures cookies are properly set before redirecting\n */\nexport async function GET(request: NextRequest) {\n  const { searchParams } = new URL(request.url);\n  const token_hash = searchParams.get(\"token_hash\");\n  const typeParam = searchParams.get(\"type\");\n  const next = searchParams.get(\"next\");\n  const type: EmailOtpType | null =\n    typeParam === \"email_change\" ? (\"email_change\" as EmailOtpType) : null;\n\n  if (!type) {\n    return NextResponse.redirect(createErrorUrl(request, \"Invalid type\"));\n  }\n  if (!token_hash) {\n    return NextResponse.redirect(createErrorUrl(request, \"Invalid token hash\"));\n  }\n  let supabaseResponse = NextResponse.next({\n    request,\n  });\n\n  const supabase = createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return request.cookies.getAll();\n        },\n        setAll(cookiesToSet) {\n          cookiesToSet.forEach(({ name, value }) =&gt; {\n            request.cookies.set(name, value);\n          });\n          supabaseResponse = NextResponse.next({\n            request,\n          });\n          cookiesToSet.forEach(({ name, value, options }) =&gt; {\n            supabaseResponse.cookies.set(name, value, options);\n          });\n        },\n      },\n    },\n  );\n\n\n  const { error } = await supabase.auth.verifyOtp({\n    type,\n    token_hash,\n  });\n  if (error) {\n    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);\n  }\n\n  return redirectWithCookies(createSuccessUrl(request, next), supabaseResponse);\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { type EmailOtpType } from \"@supabase/supabase-js\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { createServerClient } from \"@supabase/ssr\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import {",
+            "lineNumber": 4
+          },
+          {
+            "text": "  createErrorUrl,",
+            "lineNumber": 5
+          },
+          {
+            "text": "  createSuccessUrl,",
+            "lineNumber": 6
+          },
+          {
+            "text": "  redirectWithCookies,",
+            "lineNumber": 7
+          },
+          {
+            "text": "} from \"@/lib/auth-helpers\";",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "/**",
+            "lineNumber": 10
+          },
+          {
+            "text": " * Handles email change confirmation callback using PKCE flow with token_hash",
+            "lineNumber": 11
+          },
+          {
+            "text": " * Verifies the OTP token and redirects appropriately",
+            "lineNumber": 12
+          },
+          {
+            "text": " * Ensures cookies are properly set before redirecting",
+            "lineNumber": 13
+          },
+          {
+            "text": " */",
+            "lineNumber": 14
+          },
+          {
+            "text": "export async function GET(request: NextRequest) {",
+            "lineNumber": 15,
+            "isSignature": true
+          },
+          {
+            "text": "  const { searchParams } = new URL(request.url);",
+            "lineNumber": 16
+          },
+          {
+            "text": "  const token_hash = searchParams.get(\"token_hash\");",
+            "lineNumber": 17
+          },
+          {
+            "text": "  const typeParam = searchParams.get(\"type\");",
+            "lineNumber": 18
+          },
+          {
+            "text": "  const next = searchParams.get(\"next\");",
+            "lineNumber": 19
+          },
+          {
+            "text": "  const type: EmailOtpType | null =",
+            "lineNumber": 20
+          },
+          {
+            "text": "    typeParam === \"email_change\" ? (\"email_change\" as EmailOtpType) : null;",
+            "lineNumber": 21
+          },
+          {
+            "lineNumber": 22
+          },
+          {
+            "text": "  if (!type) {",
+            "lineNumber": 23
+          },
+          {
+            "text": "    return NextResponse.redirect(createErrorUrl(request, \"Invalid type\"));",
+            "lineNumber": 24
+          },
+          {
+            "text": "  }",
+            "lineNumber": 25
+          },
+          {
+            "text": "  if (!token_hash) {",
+            "lineNumber": 26
+          },
+          {
+            "text": "    return NextResponse.redirect(createErrorUrl(request, \"Invalid token hash\"));",
+            "lineNumber": 27
+          },
+          {
+            "text": "  }",
+            "lineNumber": 28
+          },
+          {
+            "text": "  let supabaseResponse = NextResponse.next({",
+            "lineNumber": 29
+          },
+          {
+            "text": "    request,",
+            "lineNumber": 30
+          },
+          {
+            "text": "  });",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "  const supabase = createServerClient(",
+            "lineNumber": 33
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 34
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 35
+          },
+          {
+            "text": "    {",
+            "lineNumber": 36
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 37
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 38
+          },
+          {
+            "text": "          return request.cookies.getAll();",
+            "lineNumber": 39
+          },
+          {
+            "text": "        },",
+            "lineNumber": 40
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 41
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value }) =&gt; {",
+            "lineNumber": 42
+          },
+          {
+            "text": "            request.cookies.set(name, value);",
+            "lineNumber": 43
+          },
+          {
+            "text": "          });",
+            "lineNumber": 44
+          },
+          {
+            "text": "          supabaseResponse = NextResponse.next({",
+            "lineNumber": 45
+          },
+          {
+            "text": "            request,",
+            "lineNumber": 46
+          },
+          {
+            "text": "          });",
+            "lineNumber": 47
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value, options }) =&gt; {",
+            "lineNumber": 48
+          },
+          {
+            "text": "            supabaseResponse.cookies.set(name, value, options);",
+            "lineNumber": 49
+          },
+          {
+            "text": "          });",
+            "lineNumber": 50
+          },
+          {
+            "text": "        },",
+            "lineNumber": 51
+          },
+          {
+            "text": "      },",
+            "lineNumber": 52
+          },
+          {
+            "text": "    },",
+            "lineNumber": 53
+          },
+          {
+            "text": "  );",
+            "lineNumber": 54
+          },
+          {
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  const { error } = await supabase.auth.verifyOtp({",
+            "lineNumber": 57
+          },
+          {
+            "text": "    type,",
+            "lineNumber": 58
+          },
+          {
+            "text": "    token_hash,",
+            "lineNumber": 59
+          },
+          {
+            "text": "  });",
+            "lineNumber": 60
+          },
+          {
+            "text": "  if (error) {",
+            "lineNumber": 61
+          },
+          {
+            "text": "    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);",
+            "lineNumber": 62
+          },
+          {
+            "text": "  }",
+            "lineNumber": 63
+          },
+          {
+            "lineNumber": 64
+          },
+          {
+            "text": "  return redirectWithCookies(createSuccessUrl(request, next), supabaseResponse);",
+            "lineNumber": 65
+          },
+          {
+            "text": "}",
+            "lineNumber": 66,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3982144594192505
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/callback/route.ts",
+        "range": {
+          "startPosition": {
+            "column": 61
+          },
+          "endPosition": {
+            "line": 87,
+            "column": 1
+          }
+        },
+        "contents": "import { createServerClient } from \"@supabase/ssr\";\nimport {\n  createErrorUrl,\n  redirectWithCookies,\n  hasEmailIdentity,\n} from \"@/lib/auth-helpers\";\nimport { validateRedirectUrl } from \"@/lib/utils\";\nimport { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";\n\n/**\n * Handles OAuth callback from Google\n * Exchanges the code for a session and redirects appropriately\n * Ensures cookies are properly set before redirecting\n */\nexport async function GET(request: NextRequest) {\n  const { searchParams, origin } = new URL(request.url);\n  const code = searchParams.get(\"code\");\n  const next = searchParams.get(\"next\");\n\n  if (!code) {\n    return NextResponse.redirect(createErrorUrl(request, \"No code provided\"));\n  }\n\n  let supabaseResponse = NextResponse.next({\n    request,\n  });\n\n  const supabase = createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return request.cookies.getAll();\n        },\n        setAll(cookiesToSet) {\n          cookiesToSet.forEach(({ name, value }) =&gt; {\n            request.cookies.set(name, value);\n          });\n          supabaseResponse = NextResponse.next({\n            request,\n          });\n          cookiesToSet.forEach(({ name, value, options }) =&gt; {\n            supabaseResponse.cookies.set(name, value, options);\n          });\n        },\n      },\n    },\n  );\n\n  const { error } = await supabase.auth.exchangeCodeForSession(code);\n  if (error) {\n    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);\n  }\n\n  // Check if user has email identity linked\n  // If not, redirect to verify-email page\n  // Use the same supabase client to ensure we have the just-exchanged session\n  const hasEmail = await hasEmailIdentity(supabase);\n\n  // Validate the next parameter to prevent open redirects\n  const validatedNext = validateRedirectUrl(next, origin);\n\n  if (hasEmail) {\n    // User has email identity, redirect to next or default page\n    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { createServerClient } from \"@supabase/ssr\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import {",
+            "lineNumber": 3
+          },
+          {
+            "text": "  createErrorUrl,",
+            "lineNumber": 4
+          },
+          {
+            "text": "  redirectWithCookies,",
+            "lineNumber": 5
+          },
+          {
+            "text": "  hasEmailIdentity,",
+            "lineNumber": 6
+          },
+          {
+            "text": "} from \"@/lib/auth-helpers\";",
+            "lineNumber": 7
+          },
+          {
+            "text": "import { validateRedirectUrl } from \"@/lib/utils\";",
+            "lineNumber": 8
+          },
+          {
+            "text": "import { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "/**",
+            "lineNumber": 11
+          },
+          {
+            "text": " * Handles OAuth callback from Google",
+            "lineNumber": 12
+          },
+          {
+            "text": " * Exchanges the code for a session and redirects appropriately",
+            "lineNumber": 13
+          },
+          {
+            "text": " * Ensures cookies are properly set before redirecting",
+            "lineNumber": 14
+          },
+          {
+            "text": " */",
+            "lineNumber": 15
+          },
+          {
+            "text": "export async function GET(request: NextRequest) {",
+            "lineNumber": 16,
+            "isSignature": true
+          },
+          {
+            "text": "  const { searchParams, origin } = new URL(request.url);",
+            "lineNumber": 17
+          },
+          {
+            "text": "  const code = searchParams.get(\"code\");",
+            "lineNumber": 18
+          },
+          {
+            "text": "  const next = searchParams.get(\"next\");",
+            "lineNumber": 19
+          },
+          {
+            "lineNumber": 20
+          },
+          {
+            "text": "  if (!code) {",
+            "lineNumber": 21
+          },
+          {
+            "text": "    return NextResponse.redirect(createErrorUrl(request, \"No code provided\"));",
+            "lineNumber": 22
+          },
+          {
+            "text": "  }",
+            "lineNumber": 23
+          },
+          {
+            "lineNumber": 24
+          },
+          {
+            "text": "  let supabaseResponse = NextResponse.next({",
+            "lineNumber": 25
+          },
+          {
+            "text": "    request,",
+            "lineNumber": 26
+          },
+          {
+            "text": "  });",
+            "lineNumber": 27
+          },
+          {
+            "lineNumber": 28
+          },
+          {
+            "text": "  const supabase = createServerClient(",
+            "lineNumber": 29
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 30
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 31
+          },
+          {
+            "text": "    {",
+            "lineNumber": 32
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 33
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 34
+          },
+          {
+            "text": "          return request.cookies.getAll();",
+            "lineNumber": 35
+          },
+          {
+            "text": "        },",
+            "lineNumber": 36
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 37
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value }) =&gt; {",
+            "lineNumber": 38
+          },
+          {
+            "text": "            request.cookies.set(name, value);",
+            "lineNumber": 39
+          },
+          {
+            "text": "          });",
+            "lineNumber": 40
+          },
+          {
+            "text": "          supabaseResponse = NextResponse.next({",
+            "lineNumber": 41
+          },
+          {
+            "text": "            request,",
+            "lineNumber": 42
+          },
+          {
+            "text": "          });",
+            "lineNumber": 43
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value, options }) =&gt; {",
+            "lineNumber": 44
+          },
+          {
+            "text": "            supabaseResponse.cookies.set(name, value, options);",
+            "lineNumber": 45
+          },
+          {
+            "text": "          });",
+            "lineNumber": 46
+          },
+          {
+            "text": "        },",
+            "lineNumber": 47
+          },
+          {
+            "text": "      },",
+            "lineNumber": 48
+          },
+          {
+            "text": "    },",
+            "lineNumber": 49
+          },
+          {
+            "text": "  );",
+            "lineNumber": 50
+          },
+          {
+            "lineNumber": 51
+          },
+          {
+            "text": "  const { error } = await supabase.auth.exchangeCodeForSession(code);",
+            "lineNumber": 52
+          },
+          {
+            "text": "  if (error) {",
+            "lineNumber": 53
+          },
+          {
+            "text": "    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);",
+            "lineNumber": 54
+          },
+          {
+            "text": "  }",
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  // Check if user has email identity linked",
+            "lineNumber": 57
+          },
+          {
+            "text": "  // If not, redirect to verify-email page",
+            "lineNumber": 58
+          },
+          {
+            "text": "  // Use the same supabase client to ensure we have the just-exchanged session",
+            "lineNumber": 59
+          },
+          {
+            "text": "  const hasEmail = await hasEmailIdentity(supabase);",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "  // Validate the next parameter to prevent open redirects",
+            "lineNumber": 62
+          },
+          {
+            "text": "  const validatedNext = validateRedirectUrl(next, origin);",
+            "lineNumber": 63
+          },
+          {
+            "lineNumber": 64
+          },
+          {
+            "text": "  if (hasEmail) {",
+            "lineNumber": 65
+          },
+          {
+            "text": "    // User has email identity, redirect to next or default page",
+            "lineNumber": 66
+          },
+          {
+            "text": "    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;",
+            "lineNumber": 67
+          },
+          {
+            "text": "}",
+            "lineNumber": 88,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3841116428375244
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131161556_link_users_to_profiles.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 55
+          }
+        },
+        "contents": "-- Migration: Link users to profiles based on email matching\n-- Purpose: Automatically links profile rows to user rows when auth.users.email matches profiles.work_email\n-- Affected tables: profiles, users, auth.users\n-- Special considerations: Runs automatically when user email changes in auth.users table\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to link profiles to users based on email matching\n-- Matches auth.users.email with profiles.work_email and links via public.users\n-- Runs with SECURITY DEFINER to access auth.users table\ncreate or replace function public.link_user_to_profile()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_user_id uuid;\n  v_auth_email text;\nbegin\n  -- Get the email from auth.users (use NEW.email after update)\n  v_auth_email := new.email;\n  \n  -- Only proceed if email is not null and has changed\n  if v_auth_email is null or v_auth_email = '' then\n    return new;\n  end if;\n  \n  -- Find the public.users row that matches this auth.users.id\n  select id into v_user_id\n  from public.users\n  where auth_user_id = new.id;\n  \n  -- If no matching public.users row found, return early\n  if v_user_id is null then\n    return new;\n  end if;\n  \n  -- Link profile to user if work_email matches auth.users.email\n  -- Only update if profile exists and is not already linked to a different user\n  -- Normalize both sides of comparison to handle case/whitespace differences\n  update public.profiles\n  set user_id = v_user_id\n  where lower(trim(work_email)) = lower(trim(v_auth_email))\n    and (user_id is null or user_id = v_user_id);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.link_user_to_profile() is 'Trigger function that automatically links profile rows to user rows when auth.users.email matches profiles.work_email. Matches based on currently logged in user email (auth.users.email), uid in user table row (public.users.auth_user_id), and work_email in profile table row (public.profiles.work_email).';\n\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Link users to profiles based on email matching",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Automatically links profile rows to user rows when auth.users.email matches profiles.work_email",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: profiles, users, auth.users",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: Runs automatically when user email changes in auth.users table",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "-- Create trigger function to link profiles to users based on email matching",
+            "lineNumber": 10
+          },
+          {
+            "text": "-- Matches auth.users.email with profiles.work_email and links via public.users",
+            "lineNumber": 11
+          },
+          {
+            "text": "-- Runs with SECURITY DEFINER to access auth.users table",
+            "lineNumber": 12
+          },
+          {
+            "text": "create or replace function public.link_user_to_profile()",
+            "lineNumber": 13
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 14
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 15
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 16
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 17
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 18
+          },
+          {
+            "text": "declare",
+            "lineNumber": 19
+          },
+          {
+            "text": "  v_user_id uuid;",
+            "lineNumber": 20
+          },
+          {
+            "text": "  v_auth_email text;",
+            "lineNumber": 21
+          },
+          {
+            "text": "begin",
+            "lineNumber": 22
+          },
+          {
+            "text": "  -- Get the email from auth.users (use NEW.email after update)",
+            "lineNumber": 23
+          },
+          {
+            "text": "  v_auth_email := new.email;",
+            "lineNumber": 24
+          },
+          {
+            "text": "  ",
+            "lineNumber": 25
+          },
+          {
+            "text": "  -- Only proceed if email is not null and has changed",
+            "lineNumber": 26
+          },
+          {
+            "text": "  if v_auth_email is null or v_auth_email = '' then",
+            "lineNumber": 27
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 28
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 29
+          },
+          {
+            "text": "  ",
+            "lineNumber": 30
+          },
+          {
+            "text": "  -- Find the public.users row that matches this auth.users.id",
+            "lineNumber": 31
+          },
+          {
+            "text": "  select id into v_user_id",
+            "lineNumber": 32
+          },
+          {
+            "text": "  from public.users",
+            "lineNumber": 33
+          },
+          {
+            "text": "  where auth_user_id = new.id;",
+            "lineNumber": 34
+          },
+          {
+            "text": "  ",
+            "lineNumber": 35
+          },
+          {
+            "text": "  -- If no matching public.users row found, return early",
+            "lineNumber": 36
+          },
+          {
+            "text": "  if v_user_id is null then",
+            "lineNumber": 37
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 38
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 39
+          },
+          {
+            "text": "  ",
+            "lineNumber": 40
+          },
+          {
+            "text": "  -- Link profile to user if work_email matches auth.users.email",
+            "lineNumber": 41
+          },
+          {
+            "text": "  -- Only update if profile exists and is not already linked to a different user",
+            "lineNumber": 42
+          },
+          {
+            "text": "  -- Normalize both sides of comparison to handle case/whitespace differences",
+            "lineNumber": 43
+          },
+          {
+            "text": "  update public.profiles",
+            "lineNumber": 44
+          },
+          {
+            "text": "  set user_id = v_user_id",
+            "lineNumber": 45
+          },
+          {
+            "text": "  where lower(trim(work_email)) = lower(trim(v_auth_email))",
+            "lineNumber": 46
+          },
+          {
+            "text": "    and (user_id is null or user_id = v_user_id);",
+            "lineNumber": 47
+          },
+          {
+            "text": "  ",
+            "lineNumber": 48
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 49
+          },
+          {
+            "text": "end;",
+            "lineNumber": 50
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 51
+          },
+          {
+            "lineNumber": 52
+          },
+          {
+            "text": "comment on function public.link_user_to_profile() is 'Trigger function that automatically links profile rows to user rows when auth.users.email matches profiles.work_email. Matches based on currently logged in user email (auth.users.email), uid in user table row (public.users.auth_user_id), and work_email in profile table row (public.profiles.work_email).';",
+            "lineNumber": 53
+          },
+          {
+            "lineNumber": 54
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 55
+          }
+        ]
+      },
+      "score": 0.3657362461090088
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/verify-email/page.tsx",
+        "range": {
+          "startPosition": {
+            "column": 53
+          },
+          "endPosition": {
+            "line": 32,
+            "column": 1
+          }
+        },
+        "contents": "import { redirect } from \"next/navigation\";\nimport { VerifyEmailForm } from \"@/components/verify-email-form\";\n\n/**\n * Email verification page\n * Users can link an email via OTP to their Google OAuth account\n * Users with existing email identities can also access this page to add additional emails\n */\nexport default async function VerifyEmailPage({\n  searchParams,\n}: {\n  searchParams: Promise&lt;{ next?: string }&gt;;\n}) {\n  const supabase = await createClient();\n  const { data } = await supabase.auth.getClaims();\n\n  // Redirect to login if not authenticated\n  if (!data?.claims) {\n    redirect(\"/auth/login\");\n  }\n\n  const params = await searchParams;\n  const next = params.next;\n\n  return (\n    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;\n      &lt;div className=\"w-full max-w-sm\"&gt;\n        &lt;VerifyEmailForm next={next} /&gt;\n      &lt;/div&gt;\n    &lt;/div&gt;\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { redirect } from \"next/navigation\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { VerifyEmailForm } from \"@/components/verify-email-form\";",
+            "lineNumber": 3
+          },
+          {
+            "lineNumber": 4
+          },
+          {
+            "text": "/**",
+            "lineNumber": 5
+          },
+          {
+            "text": " * Email verification page",
+            "lineNumber": 6
+          },
+          {
+            "text": " * Users can link an email via OTP to their Google OAuth account",
+            "lineNumber": 7
+          },
+          {
+            "text": " * Users with existing email identities can also access this page to add additional emails",
+            "lineNumber": 8
+          },
+          {
+            "text": " */",
+            "lineNumber": 9
+          },
+          {
+            "text": "export default async function VerifyEmailPage({",
+            "lineNumber": 10,
+            "isSignature": true
+          },
+          {
+            "text": "  searchParams,",
+            "lineNumber": 11,
+            "isSignature": true
+          },
+          {
+            "text": "}: {",
+            "lineNumber": 12,
+            "isSignature": true
+          },
+          {
+            "text": "  searchParams: Promise&lt;{ next?: string }&gt;;",
+            "lineNumber": 13,
+            "isSignature": true
+          },
+          {
+            "text": "}) {",
+            "lineNumber": 14,
+            "isSignature": true
+          },
+          {
+            "text": "  const supabase = await createClient();",
+            "lineNumber": 15
+          },
+          {
+            "text": "  const { data } = await supabase.auth.getClaims();",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "  // Redirect to login if not authenticated",
+            "lineNumber": 18
+          },
+          {
+            "text": "  if (!data?.claims) {",
+            "lineNumber": 19
+          },
+          {
+            "text": "    redirect(\"/auth/login\");",
+            "lineNumber": 20
+          },
+          {
+            "text": "  }",
+            "lineNumber": 21
+          },
+          {
+            "lineNumber": 22
+          },
+          {
+            "text": "  const params = await searchParams;",
+            "lineNumber": 23
+          },
+          {
+            "text": "  const next = params.next;",
+            "lineNumber": 24
+          },
+          {
+            "lineNumber": 25
+          },
+          {
+            "text": "  return (",
+            "lineNumber": 26
+          },
+          {
+            "text": "    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;",
+            "lineNumber": 27
+          },
+          {
+            "text": "      &lt;div className=\"w-full max-w-sm\"&gt;",
+            "lineNumber": 28
+          },
+          {
+            "text": "        &lt;VerifyEmailForm next={next} /&gt;",
+            "lineNumber": 29
+          },
+          {
+            "text": "      &lt;/div&gt;",
+            "lineNumber": 30
+          },
+          {
+            "text": "    &lt;/div&gt;",
+            "lineNumber": 31
+          },
+          {
+            "text": "  );",
+            "lineNumber": 32
+          },
+          {
+            "text": "}",
+            "lineNumber": 33,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3588137626647949
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 67,
+            "column": 2
+          },
+          "endPosition": {
+            "line": 356,
+            "column": 1
+          }
+        },
+        "contents": "/**\n * Form component for email verification via OTP\n * Allows users to link an email identity to their Google OAuth account\n */\nexport function VerifyEmailForm({ next }: { next?: string }) {\n  const [email, setEmail] = useState(\"\");\n  const [otpCode, setOtpCode] = useState(\"\");\n  const [step, setStep] = useState&lt;\"email\" | \"otp\"&gt;(\"email\");\n  const [isLoading, setIsLoading] = useState(false);\n  const [error, setError] = useState&lt;string | null&gt;(null);\n  const [isHydrated, setIsHydrated] = useState(false);\n  const [lastSubmittedOtp, setLastSubmittedOtp] = useState&lt;string | null&gt;(null);\n  const router = useRouter();\n  const supabase = createClient();\n\n  /**\n   * Sends OTP code to the provided email\n   * Uses updateUser to add email identity to the current authenticated user\n   * This is the correct way to link an email identity to an existing OAuth account\n   */\n  const handleSendOTP = async (e: React.FormEvent) =&gt; {\n    e.preventDefault();\n    setError(null);\n    setIsLoading(true);\n;\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "/**",
+            "lineNumber": 70
+          },
+          {
+            "text": " * Form component for email verification via OTP",
+            "lineNumber": 71
+          },
+          {
+            "text": " * Allows users to link an email identity to their Google OAuth account",
+            "lineNumber": 72
+          },
+          {
+            "text": " */",
+            "lineNumber": 73
+          },
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 74,
+            "isSignature": true
+          },
+          {
+            "text": "  const [email, setEmail] = useState(\"\");",
+            "lineNumber": 75
+          },
+          {
+            "text": "  const [otpCode, setOtpCode] = useState(\"\");",
+            "lineNumber": 76
+          },
+          {
+            "text": "  const [step, setStep] = useState&lt;\"email\" | \"otp\"&gt;(\"email\");",
+            "lineNumber": 77
+          },
+          {
+            "text": "  const [isLoading, setIsLoading] = useState(false);",
+            "lineNumber": 78
+          },
+          {
+            "text": "  const [error, setError] = useState&lt;string | null&gt;(null);",
+            "lineNumber": 79
+          },
+          {
+            "text": "  const [isHydrated, setIsHydrated] = useState(false);",
+            "lineNumber": 80
+          },
+          {
+            "text": "  const [lastSubmittedOtp, setLastSubmittedOtp] = useState&lt;string | null&gt;(null);",
+            "lineNumber": 81
+          },
+          {
+            "text": "  const router = useRouter();",
+            "lineNumber": 82
+          },
+          {
+            "text": "  const supabase = createClient();",
+            "lineNumber": 83
+          },
+          {
+            "lineNumber": 84
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 85
+          },
+          {
+            "text": "   * Sends OTP code to the provided email",
+            "lineNumber": 86
+          },
+          {
+            "text": "   * Uses updateUser to add email identity to the current authenticated user",
+            "lineNumber": 87
+          },
+          {
+            "text": "   * This is the correct way to link an email identity to an existing OAuth account",
+            "lineNumber": 88
+          },
+          {
+            "text": "   */",
+            "lineNumber": 89
+          },
+          {
+            "text": "  const handleSendOTP = async (e: React.FormEvent) =&gt; {",
+            "lineNumber": 90
+          },
+          {
+            "text": "    e.preventDefault();",
+            "lineNumber": 91
+          },
+          {
+            "text": "    setError(null);",
+            "lineNumber": 92
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 93
+          },
+          {
+            "text": ";",
+            "lineNumber": 140
+          },
+          {
+            "text": "}",
+            "lineNumber": 357,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3531927466392517
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/supabase/proxy.ts",
+        "range": {
+          "startPosition": {
+            "column": 51
+          },
+          "endPosition": {
+            "line": 110,
+            "column": 1
+          }
+        },
+        "contents": "import { NextResponse, type NextRequest } from \"next/server\";\nimport { isPublicRoute } from \"@/lib/constants/auth\";\nimport { hasEmailIdentity, hasLinkedProfile } from \"@/lib/auth-helpers\";\n\nexport async function updateSession(request: NextRequest) {\n  let supabaseResponse = NextResponse.next({\n    request,\n  });\n\n  // If the env vars are not set, skip proxy check. You can remove this\n  // once you setup the project.\n\n  // With Fluid compute, don't put this client in a global environment\n  // variable. Always create a new one on each request.\n  const supabase = createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return request.cookies.getAll();\n        },\n        setAll(cookiesToSet) {\n          cookiesToSet.forEach(({ name, value }) =&gt;\n            request.cookies.set(name, value),\n          );\n          supabaseResponse = NextResponse.next({\n            request,\n          });\n          cookiesToSet.forEach(({ name, value, options }) =&gt;\n            supabaseResponse.cookies.set(name, value, options),\n          );\n        },\n      },\n    },\n  );\n\n  // Do not run code between createServerClient and\n  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug\n  // issues with users being randomly logged out.\n\n  // IMPORTANT: If you remove getClaims() and you use server-side rendering\n  // with the Supabase client, your users may be randomly logged out.\n  const { data } = await supabase.auth.getClaims();\n  const user = data?.claims;\n\n  const pathname = request.nextUrl.pathname;\n  // Include full path with query parameters and hash for next parameter\n  const fullPath = pathname + request.nextUrl.search + request.nextUrl.hash;\n\n  // Allow public routes without authentication\n  if (isPublicRoute(pathname)) {\n    return supabaseResponse;\n  }\n\n  // Redirect to login if not authenticated\n  if (!user)\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { NextResponse, type NextRequest } from \"next/server\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { isPublicRoute } from \"@/lib/constants/auth\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { hasEmailIdentity, hasLinkedProfile } from \"@/lib/auth-helpers\";",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "export async function updateSession(request: NextRequest) {",
+            "lineNumber": 6,
+            "isSignature": true
+          },
+          {
+            "text": "  let supabaseResponse = NextResponse.next({",
+            "lineNumber": 7
+          },
+          {
+            "text": "    request,",
+            "lineNumber": 8
+          },
+          {
+            "text": "  });",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "  // If the env vars are not set, skip proxy check. You can remove this",
+            "lineNumber": 11
+          },
+          {
+            "text": "  // once you setup the project.",
+            "lineNumber": 12
+          },
+          {
+            "lineNumber": 13
+          },
+          {
+            "text": "  // With Fluid compute, don't put this client in a global environment",
+            "lineNumber": 14
+          },
+          {
+            "text": "  // variable. Always create a new one on each request.",
+            "lineNumber": 15
+          },
+          {
+            "text": "  const supabase = createServerClient(",
+            "lineNumber": 16
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 17
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 18
+          },
+          {
+            "text": "    {",
+            "lineNumber": 19
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 20
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 21
+          },
+          {
+            "text": "          return request.cookies.getAll();",
+            "lineNumber": 22
+          },
+          {
+            "text": "        },",
+            "lineNumber": 23
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 24
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value }) =&gt;",
+            "lineNumber": 25
+          },
+          {
+            "text": "            request.cookies.set(name, value),",
+            "lineNumber": 26
+          },
+          {
+            "text": "          );",
+            "lineNumber": 27
+          },
+          {
+            "text": "          supabaseResponse = NextResponse.next({",
+            "lineNumber": 28
+          },
+          {
+            "text": "            request,",
+            "lineNumber": 29
+          },
+          {
+            "text": "          });",
+            "lineNumber": 30
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value, options }) =&gt;",
+            "lineNumber": 31
+          },
+          {
+            "text": "            supabaseResponse.cookies.set(name, value, options),",
+            "lineNumber": 32
+          },
+          {
+            "text": "          );",
+            "lineNumber": 33
+          },
+          {
+            "text": "        },",
+            "lineNumber": 34
+          },
+          {
+            "text": "      },",
+            "lineNumber": 35
+          },
+          {
+            "text": "    },",
+            "lineNumber": 36
+          },
+          {
+            "text": "  );",
+            "lineNumber": 37
+          },
+          {
+            "lineNumber": 38
+          },
+          {
+            "text": "  // Do not run code between createServerClient and",
+            "lineNumber": 39
+          },
+          {
+            "text": "  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug",
+            "lineNumber": 40
+          },
+          {
+            "text": "  // issues with users being randomly logged out.",
+            "lineNumber": 41
+          },
+          {
+            "lineNumber": 42
+          },
+          {
+            "text": "  // IMPORTANT: If you remove getClaims() and you use server-side rendering",
+            "lineNumber": 43
+          },
+          {
+            "text": "  // with the Supabase client, your users may be randomly logged out.",
+            "lineNumber": 44
+          },
+          {
+            "text": "  const { data } = await supabase.auth.getClaims();",
+            "lineNumber": 45
+          },
+          {
+            "text": "  const user = data?.claims;",
+            "lineNumber": 46
+          },
+          {
+            "lineNumber": 47
+          },
+          {
+            "text": "  const pathname = request.nextUrl.pathname;",
+            "lineNumber": 48
+          },
+          {
+            "text": "  // Include full path with query parameters and hash for next parameter",
+            "lineNumber": 49
+          },
+          {
+            "text": "  const fullPath = pathname + request.nextUrl.search + request.nextUrl.hash;",
+            "lineNumber": 50
+          },
+          {
+            "lineNumber": 51
+          },
+          {
+            "text": "  // Allow public routes without authentication",
+            "lineNumber": 52
+          },
+          {
+            "text": "  if (isPublicRoute(pathname)) {",
+            "lineNumber": 53
+          },
+          {
+            "text": "    return supabaseResponse;",
+            "lineNumber": 54
+          },
+          {
+            "text": "  }",
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  // Redirect to login if not authenticated",
+            "lineNumber": 57
+          },
+          {
+            "text": "  if (!user)",
+            "lineNumber": 58
+          },
+          {
+            "text": "}",
+            "lineNumber": 111,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3515479564666748
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 251
+          },
+          "endPosition": {
+            "line": 326
+          }
+        },
+        "contents": "   - No Row Level Security policies\n   - No database triggers or functions\n   - All access control handled by Next.js\n\n### Next.js (Application Layer - All Business Logic)\n\n1. **Middleware Verification**:\n\n   - Queries &#96;profiles&#96; table for linked user_id\n   - Checks &#96;removed_access&#96; is null for active access\n   - Enforces role-based route protection\n   - Real-time verification (instant access revocation)\n\n2. **Domain Validation** (in server actions):\n\n   - Client-side validation for UX (immediate feedback)\n   - Server-side validation before sending OTP\n   - Validates email format and CZU domain\n\n3. **Access Management** (in server actions):\n\n   - Admin sets &#96;removed_access&#96; timestamp and &#96;removed_access_by&#96; profile\n   - Immediate effect on next request\n   - Audit trail of who revoked access and when\n\n## Authentication Flow Details\n\n### Step 1: Google Login\n\nUser clicks Google login button, Supabase handles OAuth flow.\n\n### Step 2: Work Email Input with Domain Validation\n\n&#96;&#96;&#96;typescript\n// Validate domain before sending OTP\nif (!isValidWorkEmailDomain(workEmail)) {\n  throw new Error('Email must be @studenti.czu.cz or @pef.czu.cz');\n}\n\n// Send OTP to work email (only after domain validation passes)\nconst { error } = await supabase.auth.signInWithOtp({\n  email: workEmail,\n  options: { shouldCreateUser: false }\n});\n&#96;&#96;&#96;\n\n### Step 3: OTP Verification and Profile Linking\n\n&#96;&#96;&#96;typescript\n// After user enters OTP, verify it\nconst { error } = await supabase.auth.verifyOtp({\n  email: workEmail,\n  token: otpCode,\n  type: 'email'\n});\n\n// Check if profile exists for this work email\nconst { data: profile } = await supabase\n  .from('profiles')\n  .select('id')\n  .eq('work_email', workEmail)\n  .single();\n\nif (!profile) {\n  // No profile exists - redirect to pending approval\n  redirect('/auth/pending-approval');\n}\n\n// Link profile to current user\nconst { data: { user } } = await supabase.auth.getUser();\nawait supabase\n  .from('profiles')\n  .update({ \n    user_id: user.id,",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "   - No Row Level Security policies",
+            "lineNumber": 253
+          },
+          {
+            "text": "   - No database triggers or functions",
+            "lineNumber": 254
+          },
+          {
+            "text": "   - All access control handled by Next.js",
+            "lineNumber": 255
+          },
+          {
+            "lineNumber": 256
+          },
+          {
+            "text": "### Next.js (Application Layer - All Business Logic)",
+            "lineNumber": 257
+          },
+          {
+            "lineNumber": 258
+          },
+          {
+            "text": "1. **Middleware Verification**:",
+            "lineNumber": 259
+          },
+          {
+            "lineNumber": 260
+          },
+          {
+            "text": "   - Queries &#96;profiles&#96; table for linked user_id",
+            "lineNumber": 261
+          },
+          {
+            "text": "   - Checks &#96;removed_access&#96; is null for active access",
+            "lineNumber": 262
+          },
+          {
+            "text": "   - Enforces role-based route protection",
+            "lineNumber": 263
+          },
+          {
+            "text": "   - Real-time verification (instant access revocation)",
+            "lineNumber": 264
+          },
+          {
+            "lineNumber": 265
+          },
+          {
+            "text": "2. **Domain Validation** (in server actions):",
+            "lineNumber": 266
+          },
+          {
+            "lineNumber": 267
+          },
+          {
+            "text": "   - Client-side validation for UX (immediate feedback)",
+            "lineNumber": 268
+          },
+          {
+            "text": "   - Server-side validation before sending OTP",
+            "lineNumber": 269
+          },
+          {
+            "text": "   - Validates email format and CZU domain",
+            "lineNumber": 270
+          },
+          {
+            "lineNumber": 271
+          },
+          {
+            "text": "3. **Access Management** (in server actions):",
+            "lineNumber": 272
+          },
+          {
+            "lineNumber": 273
+          },
+          {
+            "text": "   - Admin sets &#96;removed_access&#96; timestamp and &#96;removed_access_by&#96; profile",
+            "lineNumber": 274
+          },
+          {
+            "text": "   - Immediate effect on next request",
+            "lineNumber": 275
+          },
+          {
+            "text": "   - Audit trail of who revoked access and when",
+            "lineNumber": 276
+          },
+          {
+            "lineNumber": 277
+          },
+          {
+            "text": "## Authentication Flow Details",
+            "lineNumber": 278
+          },
+          {
+            "lineNumber": 279
+          },
+          {
+            "text": "### Step 1: Google Login",
+            "lineNumber": 280
+          },
+          {
+            "lineNumber": 281
+          },
+          {
+            "text": "User clicks Google login button, Supabase handles OAuth flow.",
+            "lineNumber": 282
+          },
+          {
+            "lineNumber": 283
+          },
+          {
+            "text": "### Step 2: Work Email Input with Domain Validation",
+            "lineNumber": 284
+          },
+          {
+            "lineNumber": 285
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 286
+          },
+          {
+            "text": "// Validate domain before sending OTP",
+            "lineNumber": 287
+          },
+          {
+            "text": "if (!isValidWorkEmailDomain(workEmail)) {",
+            "lineNumber": 288
+          },
+          {
+            "text": "  throw new Error('Email must be @studenti.czu.cz or @pef.czu.cz');",
+            "lineNumber": 289
+          },
+          {
+            "text": "}",
+            "lineNumber": 290
+          },
+          {
+            "lineNumber": 291
+          },
+          {
+            "text": "// Send OTP to work email (only after domain validation passes)",
+            "lineNumber": 292
+          },
+          {
+            "text": "const { error } = await supabase.auth.signInWithOtp({",
+            "lineNumber": 293
+          },
+          {
+            "text": "  email: workEmail,",
+            "lineNumber": 294
+          },
+          {
+            "text": "  options: { shouldCreateUser: false }",
+            "lineNumber": 295
+          },
+          {
+            "text": "});",
+            "lineNumber": 296
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 297
+          },
+          {
+            "lineNumber": 298
+          },
+          {
+            "text": "### Step 3: OTP Verification and Profile Linking",
+            "lineNumber": 299
+          },
+          {
+            "lineNumber": 300
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 301
+          },
+          {
+            "text": "// After user enters OTP, verify it",
+            "lineNumber": 302
+          },
+          {
+            "text": "const { error } = await supabase.auth.verifyOtp({",
+            "lineNumber": 303
+          },
+          {
+            "text": "  email: workEmail,",
+            "lineNumber": 304
+          },
+          {
+            "text": "  token: otpCode,",
+            "lineNumber": 305
+          },
+          {
+            "text": "  type: 'email'",
+            "lineNumber": 306
+          },
+          {
+            "text": "});",
+            "lineNumber": 307
+          },
+          {
+            "lineNumber": 308
+          },
+          {
+            "text": "// Check if profile exists for this work email",
+            "lineNumber": 309
+          },
+          {
+            "text": "const { data: profile } = await supabase",
+            "lineNumber": 310
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 311
+          },
+          {
+            "text": "  .select('id')",
+            "lineNumber": 312
+          },
+          {
+            "text": "  .eq('work_email', workEmail)",
+            "lineNumber": 313
+          },
+          {
+            "text": "  .single();",
+            "lineNumber": 314
+          },
+          {
+            "lineNumber": 315
+          },
+          {
+            "text": "if (!profile) {",
+            "lineNumber": 316
+          },
+          {
+            "text": "  // No profile exists - redirect to pending approval",
+            "lineNumber": 317
+          },
+          {
+            "text": "  redirect('/auth/pending-approval');",
+            "lineNumber": 318
+          },
+          {
+            "text": "}",
+            "lineNumber": 319
+          },
+          {
+            "lineNumber": 320
+          },
+          {
+            "text": "// Link profile to current user",
+            "lineNumber": 321
+          },
+          {
+            "text": "const { data: { user } } = await supabase.auth.getUser();",
+            "lineNumber": 322
+          },
+          {
+            "text": "await supabase",
+            "lineNumber": 323
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 324
+          },
+          {
+            "text": "  .update({ ",
+            "lineNumber": 325
+          },
+          {
+            "text": "    user_id: user.id,",
+            "lineNumber": 326
+          }
+        ]
+      },
+      "score": 0.34826093912124634
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/login/page.tsx",
+        "range": {
+          "startPosition": {
+            "column": 52
+          },
+          "endPosition": {
+            "line": 46,
+            "column": 1
+          }
+        },
+        "contents": "import { createClient } from \"@/lib/supabase/server\";\nimport { redirect } from \"next/navigation\";\nimport { headers } from \"next/headers\";\nimport { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";\nimport { validateRedirectUrl } from \"@/lib/utils\";\n\nexport default async function Page({\n  searchParams,\n}: {\n  searchParams: Promise&lt;{ next?: string }&gt;;\n}) {\n  const supabase = await createClient();\n  // Use getUser() instead of getClaims() to validate the user actually exists\n  // getClaims() can return truthy values even with invalid/deleted users\n  const { data: { user }, error } = await supabase.auth.getUser();\n\n  // Only redirect if we have a valid user (not just claims)\n  // This prevents infinite redirect loops when token is invalid but claims exist\n  if (!error &amp;&amp; user) {\n    // Use next parameter if available, otherwise default\n    const params = await searchParams;\n    const next = params.next;\n    \n    // Get origin from headers for validation\n    const headersList = await headers();\n    const host = headersList.get(\"host\");\n    const protocol = headersList.get(\"x-forwarded-proto\") || \"http\";\n    const origin = host ? &#96;${protocol}://${host}&#96; : \"\";\n    \n    // Validate next parameter to prevent open redirects\n    const validatedNext = next ? validateRedirectUrl(next, origin) : null;\n    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;\n    redirect(redirectTo);\n  }\n\n  const params = await searchParams;\n  const next = params.next;\n\n  return (\n    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;\n      &lt;div className=\"w-full max-w-sm\"&gt;\n        &lt;LoginForm next={next} /&gt;\n      &lt;/div&gt;\n    &lt;/div&gt;\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { createClient } from \"@/lib/supabase/server\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { redirect } from \"next/navigation\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { headers } from \"next/headers\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";",
+            "lineNumber": 5
+          },
+          {
+            "text": "import { validateRedirectUrl } from \"@/lib/utils\";",
+            "lineNumber": 6
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "export default async function Page({",
+            "lineNumber": 8,
+            "isSignature": true
+          },
+          {
+            "text": "  searchParams,",
+            "lineNumber": 9,
+            "isSignature": true
+          },
+          {
+            "text": "}: {",
+            "lineNumber": 10,
+            "isSignature": true
+          },
+          {
+            "text": "  searchParams: Promise&lt;{ next?: string }&gt;;",
+            "lineNumber": 11,
+            "isSignature": true
+          },
+          {
+            "text": "}) {",
+            "lineNumber": 12,
+            "isSignature": true
+          },
+          {
+            "text": "  const supabase = await createClient();",
+            "lineNumber": 13
+          },
+          {
+            "text": "  // Use getUser() instead of getClaims() to validate the user actually exists",
+            "lineNumber": 14
+          },
+          {
+            "text": "  // getClaims() can return truthy values even with invalid/deleted users",
+            "lineNumber": 15
+          },
+          {
+            "text": "  const { data: { user }, error } = await supabase.auth.getUser();",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "  // Only redirect if we have a valid user (not just claims)",
+            "lineNumber": 18
+          },
+          {
+            "text": "  // This prevents infinite redirect loops when token is invalid but claims exist",
+            "lineNumber": 19
+          },
+          {
+            "text": "  if (!error &amp;&amp; user) {",
+            "lineNumber": 20
+          },
+          {
+            "text": "    // Use next parameter if available, otherwise default",
+            "lineNumber": 21
+          },
+          {
+            "text": "    const params = await searchParams;",
+            "lineNumber": 22
+          },
+          {
+            "text": "    const next = params.next;",
+            "lineNumber": 23
+          },
+          {
+            "text": "    ",
+            "lineNumber": 24
+          },
+          {
+            "text": "    // Get origin from headers for validation",
+            "lineNumber": 25
+          },
+          {
+            "text": "    const headersList = await headers();",
+            "lineNumber": 26
+          },
+          {
+            "text": "    const host = headersList.get(\"host\");",
+            "lineNumber": 27
+          },
+          {
+            "text": "    const protocol = headersList.get(\"x-forwarded-proto\") || \"http\";",
+            "lineNumber": 28
+          },
+          {
+            "text": "    const origin = host ? &#96;${protocol}://${host}&#96; : \"\";",
+            "lineNumber": 29
+          },
+          {
+            "text": "    ",
+            "lineNumber": 30
+          },
+          {
+            "text": "    // Validate next parameter to prevent open redirects",
+            "lineNumber": 31
+          },
+          {
+            "text": "    const validatedNext = next ? validateRedirectUrl(next, origin) : null;",
+            "lineNumber": 32
+          },
+          {
+            "text": "    const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;",
+            "lineNumber": 33
+          },
+          {
+            "text": "    redirect(redirectTo);",
+            "lineNumber": 34
+          },
+          {
+            "text": "  }",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "  const params = await searchParams;",
+            "lineNumber": 37
+          },
+          {
+            "text": "  const next = params.next;",
+            "lineNumber": 38
+          },
+          {
+            "lineNumber": 39
+          },
+          {
+            "text": "  return (",
+            "lineNumber": 40
+          },
+          {
+            "text": "    &lt;div className=\"flex min-h-svh w-full items-center justify-center p-6 md:p-10\"&gt;",
+            "lineNumber": 41
+          },
+          {
+            "text": "      &lt;div className=\"w-full max-w-sm\"&gt;",
+            "lineNumber": 42
+          },
+          {
+            "text": "        &lt;LoginForm next={next} /&gt;",
+            "lineNumber": 43
+          },
+          {
+            "text": "      &lt;/div&gt;",
+            "lineNumber": 44
+          },
+          {
+            "text": "    &lt;/div&gt;",
+            "lineNumber": 45
+          },
+          {
+            "text": "  );",
+            "lineNumber": 46
+          },
+          {
+            "text": "}",
+            "lineNumber": 47,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3450256586074829
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131161556_link_users_to_profiles.sql",
+        "range": {
+          "startPosition": {
+            "line": 52
+          },
+          "endPosition": {
+            "line": 89
+          }
+        },
+        "contents": "comment on function public.link_user_to_profile() is 'Trigger function that automatically links profile rows to user rows when auth.users.email matches profiles.work_email. Matches based on currently logged in user email (auth.users.email), uid in user table row (public.users.auth_user_id), and work_email in profile table row (public.profiles.work_email).';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create trigger on auth.users table to link profiles when email changes\n-- Runs AFTER UPDATE to ensure email change is committed\ndrop trigger if exists link_user_to_profile_trigger on auth.users;\n\ncreate trigger link_user_to_profile_trigger\nafter update of email on auth.users\nfor each row\nwhen (old.email is distinct from new.email)\nexecute function public.link_user_to_profile();\n\ncomment on trigger link_user_to_profile_trigger on auth.users is 'Trigger that automatically links profiles to users when auth.users.email changes. Runs after email update to ensure the change is committed before linking.';\n\n-- ============================================================================\n-- INITIAL DATA LINKING\n-- ============================================================================\n\n-- Link existing profiles to users based on current email matches\n-- This handles any existing data that needs to be linked\n-- Normalize both sides of comparison to handle case/whitespace differences\nupdate public.profiles p\nset user_id = u.id\nfrom public.users u\ninner join auth.users au on u.auth_user_id = au.id\nwhere lower(trim(p.work_email)) = lower(trim(au.email))\n  and (p.user_id is null or p.user_id = u.id);\n\ncomment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification. Automatically linked when auth.users.email matches profiles.work_email.';\n\n-- ============================================================================\n-- GRANTS\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "comment on function public.link_user_to_profile() is 'Trigger function that automatically links profile rows to user rows when auth.users.email matches profiles.work_email. Matches based on currently logged in user email (auth.users.email), uid in user table row (public.users.auth_user_id), and work_email in profile table row (public.profiles.work_email).';",
+            "lineNumber": 53
+          },
+          {
+            "lineNumber": 54
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 55
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 56
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 57
+          },
+          {
+            "lineNumber": 58
+          },
+          {
+            "text": "-- Create trigger on auth.users table to link profiles when email changes",
+            "lineNumber": 59
+          },
+          {
+            "text": "-- Runs AFTER UPDATE to ensure email change is committed",
+            "lineNumber": 60
+          },
+          {
+            "text": "drop trigger if exists link_user_to_profile_trigger on auth.users;",
+            "lineNumber": 61
+          },
+          {
+            "lineNumber": 62
+          },
+          {
+            "text": "create trigger link_user_to_profile_trigger",
+            "lineNumber": 63
+          },
+          {
+            "text": "after update of email on auth.users",
+            "lineNumber": 64
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 65
+          },
+          {
+            "text": "when (old.email is distinct from new.email)",
+            "lineNumber": 66
+          },
+          {
+            "text": "execute function public.link_user_to_profile();",
+            "lineNumber": 67
+          },
+          {
+            "lineNumber": 68
+          },
+          {
+            "text": "comment on trigger link_user_to_profile_trigger on auth.users is 'Trigger that automatically links profiles to users when auth.users.email changes. Runs after email update to ensure the change is committed before linking.';",
+            "lineNumber": 69
+          },
+          {
+            "lineNumber": 70
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 71
+          },
+          {
+            "text": "-- INITIAL DATA LINKING",
+            "lineNumber": 72
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 73
+          },
+          {
+            "lineNumber": 74
+          },
+          {
+            "text": "-- Link existing profiles to users based on current email matches",
+            "lineNumber": 75
+          },
+          {
+            "text": "-- This handles any existing data that needs to be linked",
+            "lineNumber": 76
+          },
+          {
+            "text": "-- Normalize both sides of comparison to handle case/whitespace differences",
+            "lineNumber": 77
+          },
+          {
+            "text": "update public.profiles p",
+            "lineNumber": 78
+          },
+          {
+            "text": "set user_id = u.id",
+            "lineNumber": 79
+          },
+          {
+            "text": "from public.users u",
+            "lineNumber": 80
+          },
+          {
+            "text": "inner join auth.users au on u.auth_user_id = au.id",
+            "lineNumber": 81
+          },
+          {
+            "text": "where lower(trim(p.work_email)) = lower(trim(au.email))",
+            "lineNumber": 82
+          },
+          {
+            "text": "  and (p.user_id is null or p.user_id = u.id);",
+            "lineNumber": 83
+          },
+          {
+            "lineNumber": 84
+          },
+          {
+            "text": "comment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification. Automatically linked when auth.users.email matches profiles.work_email.';",
+            "lineNumber": 85
+          },
+          {
+            "lineNumber": 86
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 87
+          },
+          {
+            "text": "-- GRANTS",
+            "lineNumber": 88
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 89
+          }
+        ]
+      },
+      "score": 0.32038235664367676
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 35
+          }
+        },
+        "contents": "-- Migration: Restrict user updates to suggested_work_email only\n-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at\n-- Affected tables: users\n-- Special considerations: Prevents users from modifying any other fields in the users table\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to restrict updates to suggested_work_email only\n-- Automatically updates last_otp_sent_at when suggested_work_email changes\n-- Prevents users from modifying any other fields in the users table\n-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones\ncreate or replace function public.handle_user_update_restriction()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth, pg_catalog\nas $$\ndeclare\n  -- Whitelist: fields that users are allowed to modify\n  v_allowed_fields text[] := array['suggested_work_email'];\n  \n  -- Fields with special handling logic (not reset from OLD)\n  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];\n  \n  -- JSONB representations of OLD and NEW records\n  v_old_jsonb jsonb;\n  v_new_jsonb jsonb;\n  v_result_jsonb jsonb;\n  \n  -- Column name for iteration\n  v_column_name text;\nbegin\n  -- Convert records to jsonb for dynamic manipulation",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Restrict user updates to suggested_work_email only",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: Prevents users from modifying any other fields in the users table",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "-- Create trigger function to restrict updates to suggested_work_email only",
+            "lineNumber": 10
+          },
+          {
+            "text": "-- Automatically updates last_otp_sent_at when suggested_work_email changes",
+            "lineNumber": 11
+          },
+          {
+            "text": "-- Prevents users from modifying any other fields in the users table",
+            "lineNumber": 12
+          },
+          {
+            "text": "-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones",
+            "lineNumber": 13
+          },
+          {
+            "text": "create or replace function public.handle_user_update_restriction()",
+            "lineNumber": 14
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 15
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 16
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 17
+          },
+          {
+            "text": "set search_path = public, auth, pg_catalog",
+            "lineNumber": 18
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 19
+          },
+          {
+            "text": "declare",
+            "lineNumber": 20
+          },
+          {
+            "text": "  -- Whitelist: fields that users are allowed to modify",
+            "lineNumber": 21
+          },
+          {
+            "text": "  v_allowed_fields text[] := array['suggested_work_email'];",
+            "lineNumber": 22
+          },
+          {
+            "text": "  ",
+            "lineNumber": 23
+          },
+          {
+            "text": "  -- Fields with special handling logic (not reset from OLD)",
+            "lineNumber": 24
+          },
+          {
+            "text": "  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];",
+            "lineNumber": 25
+          },
+          {
+            "text": "  ",
+            "lineNumber": 26
+          },
+          {
+            "text": "  -- JSONB representations of OLD and NEW records",
+            "lineNumber": 27
+          },
+          {
+            "text": "  v_old_jsonb jsonb;",
+            "lineNumber": 28
+          },
+          {
+            "text": "  v_new_jsonb jsonb;",
+            "lineNumber": 29
+          },
+          {
+            "text": "  v_result_jsonb jsonb;",
+            "lineNumber": 30
+          },
+          {
+            "text": "  ",
+            "lineNumber": 31
+          },
+          {
+            "text": "  -- Column name for iteration",
+            "lineNumber": 32
+          },
+          {
+            "text": "  v_column_name text;",
+            "lineNumber": 33
+          },
+          {
+            "text": "begin",
+            "lineNumber": 34
+          },
+          {
+            "text": "  -- Convert records to jsonb for dynamic manipulation",
+            "lineNumber": 35
+          }
+        ]
+      },
+      "score": 0.31905901432037354
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {
+            "line": 32
+          },
+          "endPosition": {
+            "line": 77
+          }
+        },
+        "contents": "  v_column_name text;\nbegin\n  -- Convert records to jsonb for dynamic manipulation\n  v_old_jsonb := to_jsonb(old);\n  v_new_jsonb := to_jsonb(new);\n  \n  -- Start with OLD values (protected state)\n  v_result_jsonb := v_old_jsonb;\n  \n  -- Allow only whitelisted fields from NEW to override OLD values\n  foreach v_column_name in array v_allowed_fields\n  loop\n    if v_new_jsonb ? v_column_name then\n      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);\n    end if;\n  end loop;\n  \n  -- Handle special field: last_otp_sent_at\n  -- Automatically update when suggested_work_email changes\n  if (v_old_jsonb-&gt;&gt;'suggested_work_email') is distinct from (v_new_jsonb-&gt;&gt;'suggested_work_email') then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));\n  else\n    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');\n  end if;\n  \n  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)\n  -- But we include it here to ensure it's not reset\n  if v_new_jsonb ? 'updated_at' then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');\n  end if;\n  \n  -- Convert jsonb back to record type using jsonb_populate_record\n  -- This preserves proper type casting for all columns\n  new := jsonb_populate_record(null::public.users, v_result_jsonb);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only using a dynamic whitelist approach. Automatically updates last_otp_sent_at when suggested_work_email changes. Dynamically protects all columns except allowed fields, ensuring new columns added in future migrations are automatically protected without requiring function updates.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_column_name text;",
+            "lineNumber": 33
+          },
+          {
+            "text": "begin",
+            "lineNumber": 34
+          },
+          {
+            "text": "  -- Convert records to jsonb for dynamic manipulation",
+            "lineNumber": 35
+          },
+          {
+            "text": "  v_old_jsonb := to_jsonb(old);",
+            "lineNumber": 36
+          },
+          {
+            "text": "  v_new_jsonb := to_jsonb(new);",
+            "lineNumber": 37
+          },
+          {
+            "text": "  ",
+            "lineNumber": 38
+          },
+          {
+            "text": "  -- Start with OLD values (protected state)",
+            "lineNumber": 39
+          },
+          {
+            "text": "  v_result_jsonb := v_old_jsonb;",
+            "lineNumber": 40
+          },
+          {
+            "text": "  ",
+            "lineNumber": 41
+          },
+          {
+            "text": "  -- Allow only whitelisted fields from NEW to override OLD values",
+            "lineNumber": 42
+          },
+          {
+            "text": "  foreach v_column_name in array v_allowed_fields",
+            "lineNumber": 43
+          },
+          {
+            "text": "  loop",
+            "lineNumber": 44
+          },
+          {
+            "text": "    if v_new_jsonb ? v_column_name then",
+            "lineNumber": 45
+          },
+          {
+            "text": "      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);",
+            "lineNumber": 46
+          },
+          {
+            "text": "    end if;",
+            "lineNumber": 47
+          },
+          {
+            "text": "  end loop;",
+            "lineNumber": 48
+          },
+          {
+            "text": "  ",
+            "lineNumber": 49
+          },
+          {
+            "text": "  -- Handle special field: last_otp_sent_at",
+            "lineNumber": 50
+          },
+          {
+            "text": "  -- Automatically update when suggested_work_email changes",
+            "lineNumber": 51
+          },
+          {
+            "text": "  if (v_old_jsonb-&gt;&gt;'suggested_work_email') is distinct from (v_new_jsonb-&gt;&gt;'suggested_work_email') then",
+            "lineNumber": 52
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));",
+            "lineNumber": 53
+          },
+          {
+            "text": "  else",
+            "lineNumber": 54
+          },
+          {
+            "text": "    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed",
+            "lineNumber": 55
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');",
+            "lineNumber": 56
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 57
+          },
+          {
+            "text": "  ",
+            "lineNumber": 58
+          },
+          {
+            "text": "  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)",
+            "lineNumber": 59
+          },
+          {
+            "text": "  -- But we include it here to ensure it's not reset",
+            "lineNumber": 60
+          },
+          {
+            "text": "  if v_new_jsonb ? 'updated_at' then",
+            "lineNumber": 61
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');",
+            "lineNumber": 62
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 63
+          },
+          {
+            "text": "  ",
+            "lineNumber": 64
+          },
+          {
+            "text": "  -- Convert jsonb back to record type using jsonb_populate_record",
+            "lineNumber": 65
+          },
+          {
+            "text": "  -- This preserves proper type casting for all columns",
+            "lineNumber": 66
+          },
+          {
+            "text": "  new := jsonb_populate_record(null::public.users, v_result_jsonb);",
+            "lineNumber": 67
+          },
+          {
+            "text": "  ",
+            "lineNumber": 68
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 69
+          },
+          {
+            "text": "end;",
+            "lineNumber": 70
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 71
+          },
+          {
+            "lineNumber": 72
+          },
+          {
+            "text": "comment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only using a dynamic whitelist approach. Automatically updates last_otp_sent_at when suggested_work_email changes. Dynamically protects all columns except allowed fields, ensuring new columns added in future migrations are automatically protected without requiring function updates.';",
+            "lineNumber": 73
+          },
+          {
+            "lineNumber": 74
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 75
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 76
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 77
+          }
+        ]
+      },
+      "score": 0.3189525604248047
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {
+            "line": 73
+          },
+          "endPosition": {
+            "line": 111
+          }
+        },
+        "contents": "-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create trigger to enforce update restrictions on users table\n-- This trigger runs BEFORE the update to prevent field modifications\ndrop trigger if exists users_update_restriction_trigger on public.users;\n\ncreate trigger users_update_restriction_trigger\nbefore update on public.users\nfor each row\nexecute function public.handle_user_update_restriction();\n\n-- ============================================================================\n-- RLS POLICIES\n-- ============================================================================\n\n-- Drop the existing permissive update policy\ndrop policy if exists \"Users can update their own user record\" on public.users;\n\n-- Create a new restrictive update policy that only allows updating suggested_work_email\n-- The trigger function will enforce that only suggested_work_email can be changed\ncreate policy \"Users can update only suggested_work_email\" on public.users\nfor update\nto authenticated\nusing ( (select auth.uid()) = auth_user_id )\nwith check ( (select auth.uid()) = auth_user_id );\n\ncomment on policy \"Users can update only suggested_work_email\" on public.users is 'RLS policy that allows authenticated users to update only their own user record. The handle_user_update_restriction() trigger enforces that only suggested_work_email can be modified, and automatically updates last_otp_sent_at.';\n\n-- ============================================================================\n-- GRANTS\n-- ============================================================================\n\n-- Grant execute permissions for the new trigger function\ngrant execute on function public.handle_user_update_restriction() to authenticated;\ngrant execute on function public.handle_user_update_restriction() to anon;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 75
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 76
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 77
+          },
+          {
+            "lineNumber": 78
+          },
+          {
+            "text": "-- Create trigger to enforce update restrictions on users table",
+            "lineNumber": 79
+          },
+          {
+            "text": "-- This trigger runs BEFORE the update to prevent field modifications",
+            "lineNumber": 80
+          },
+          {
+            "text": "drop trigger if exists users_update_restriction_trigger on public.users;",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "create trigger users_update_restriction_trigger",
+            "lineNumber": 83
+          },
+          {
+            "text": "before update on public.users",
+            "lineNumber": 84
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 85
+          },
+          {
+            "text": "execute function public.handle_user_update_restriction();",
+            "lineNumber": 86
+          },
+          {
+            "lineNumber": 87
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 88
+          },
+          {
+            "text": "-- RLS POLICIES",
+            "lineNumber": 89
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 90
+          },
+          {
+            "lineNumber": 91
+          },
+          {
+            "text": "-- Drop the existing permissive update policy",
+            "lineNumber": 92
+          },
+          {
+            "text": "drop policy if exists \"Users can update their own user record\" on public.users;",
+            "lineNumber": 93
+          },
+          {
+            "lineNumber": 94
+          },
+          {
+            "text": "-- Create a new restrictive update policy that only allows updating suggested_work_email",
+            "lineNumber": 95
+          },
+          {
+            "text": "-- The trigger function will enforce that only suggested_work_email can be changed",
+            "lineNumber": 96
+          },
+          {
+            "text": "create policy \"Users can update only suggested_work_email\" on public.users",
+            "lineNumber": 97
+          },
+          {
+            "text": "for update",
+            "lineNumber": 98
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 99
+          },
+          {
+            "text": "using ( (select auth.uid()) = auth_user_id )",
+            "lineNumber": 100
+          },
+          {
+            "text": "with check ( (select auth.uid()) = auth_user_id );",
+            "lineNumber": 101
+          },
+          {
+            "lineNumber": 102
+          },
+          {
+            "text": "comment on policy \"Users can update only suggested_work_email\" on public.users is 'RLS policy that allows authenticated users to update only their own user record. The handle_user_update_restriction() trigger enforces that only suggested_work_email can be modified, and automatically updates last_otp_sent_at.';",
+            "lineNumber": 103
+          },
+          {
+            "lineNumber": 104
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 105
+          },
+          {
+            "text": "-- GRANTS",
+            "lineNumber": 106
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 107
+          },
+          {
+            "lineNumber": 108
+          },
+          {
+            "text": "-- Grant execute permissions for the new trigger function",
+            "lineNumber": 109
+          },
+          {
+            "text": "grant execute on function public.handle_user_update_restriction() to authenticated;",
+            "lineNumber": 110
+          },
+          {
+            "text": "grant execute on function public.handle_user_update_restriction() to anon;",
+            "lineNumber": 111
+          }
+        ]
+      },
+      "score": 0.3048991858959198
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 100
+          },
+          "endPosition": {
+            "line": 149
+          }
+        },
+        "contents": "begin\n  v_raw_meta_data := new.raw_user_meta_data;\n  v_google_email := coalesce(new.email, v_raw_meta_data-&gt;&gt;'email');\n  v_google_full_name := v_raw_meta_data-&gt;&gt;'full_name';\n  v_google_profile_picture := coalesce(\n    v_raw_meta_data-&gt;&gt;'avatar_url',\n    v_raw_meta_data-&gt;&gt;'picture'\n  );\n  \n  insert into public.users (\n    auth_user_id,\n    google_email,\n    google_full_name,\n    google_profile_picture\n  )\n  values (\n    new.id,\n    v_google_email,\n    v_google_full_name,\n    v_google_profile_picture\n  )\n  on conflict (auth_user_id) do update set\n    google_email = coalesce(excluded.google_email, public.users.google_email),\n    google_full_name = coalesce(excluded.google_full_name, public.users.google_full_name),\n    google_profile_picture = coalesce(excluded.google_profile_picture, public.users.google_profile_picture);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.handle_new_auth_user() is 'Trigger function that automatically creates a row in public.users table when a new user is created in auth.users. Extracts Google OAuth profile data from auth.users.raw_user_meta_data.';\n\n-- Create validation trigger function for CZU email domain\n-- Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz\ncreate or replace function public.validate_czu_email_domain_trigger()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_email text;\n  v_email_change text;\n  v_domain text;\nbegin\n  if tg_op != 'UPDATE' then\n    return NEW;\n  end if;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "begin",
+            "lineNumber": 101
+          },
+          {
+            "text": "  v_raw_meta_data := new.raw_user_meta_data;",
+            "lineNumber": 102
+          },
+          {
+            "text": "  v_google_email := coalesce(new.email, v_raw_meta_data-&gt;&gt;'email');",
+            "lineNumber": 103
+          },
+          {
+            "text": "  v_google_full_name := v_raw_meta_data-&gt;&gt;'full_name';",
+            "lineNumber": 104
+          },
+          {
+            "text": "  v_google_profile_picture := coalesce(",
+            "lineNumber": 105
+          },
+          {
+            "text": "    v_raw_meta_data-&gt;&gt;'avatar_url',",
+            "lineNumber": 106
+          },
+          {
+            "text": "    v_raw_meta_data-&gt;&gt;'picture'",
+            "lineNumber": 107
+          },
+          {
+            "text": "  );",
+            "lineNumber": 108
+          },
+          {
+            "text": "  ",
+            "lineNumber": 109
+          },
+          {
+            "text": "  insert into public.users (",
+            "lineNumber": 110
+          },
+          {
+            "text": "    auth_user_id,",
+            "lineNumber": 111
+          },
+          {
+            "text": "    google_email,",
+            "lineNumber": 112
+          },
+          {
+            "text": "    google_full_name,",
+            "lineNumber": 113
+          },
+          {
+            "text": "    google_profile_picture",
+            "lineNumber": 114
+          },
+          {
+            "text": "  )",
+            "lineNumber": 115
+          },
+          {
+            "text": "  values (",
+            "lineNumber": 116
+          },
+          {
+            "text": "    new.id,",
+            "lineNumber": 117
+          },
+          {
+            "text": "    v_google_email,",
+            "lineNumber": 118
+          },
+          {
+            "text": "    v_google_full_name,",
+            "lineNumber": 119
+          },
+          {
+            "text": "    v_google_profile_picture",
+            "lineNumber": 120
+          },
+          {
+            "text": "  )",
+            "lineNumber": 121
+          },
+          {
+            "text": "  on conflict (auth_user_id) do update set",
+            "lineNumber": 122
+          },
+          {
+            "text": "    google_email = coalesce(excluded.google_email, public.users.google_email),",
+            "lineNumber": 123
+          },
+          {
+            "text": "    google_full_name = coalesce(excluded.google_full_name, public.users.google_full_name),",
+            "lineNumber": 124
+          },
+          {
+            "text": "    google_profile_picture = coalesce(excluded.google_profile_picture, public.users.google_profile_picture);",
+            "lineNumber": 125
+          },
+          {
+            "text": "  ",
+            "lineNumber": 126
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 127
+          },
+          {
+            "text": "end;",
+            "lineNumber": 128
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 129
+          },
+          {
+            "lineNumber": 130
+          },
+          {
+            "text": "comment on function public.handle_new_auth_user() is 'Trigger function that automatically creates a row in public.users table when a new user is created in auth.users. Extracts Google OAuth profile data from auth.users.raw_user_meta_data.';",
+            "lineNumber": 131
+          },
+          {
+            "lineNumber": 132
+          },
+          {
+            "text": "-- Create validation trigger function for CZU email domain",
+            "lineNumber": 133
+          },
+          {
+            "text": "-- Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz",
+            "lineNumber": 134
+          },
+          {
+            "text": "create or replace function public.validate_czu_email_domain_trigger()",
+            "lineNumber": 135
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 136
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 137
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 138
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 139
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 140
+          },
+          {
+            "text": "declare",
+            "lineNumber": 141
+          },
+          {
+            "text": "  v_email text;",
+            "lineNumber": 142
+          },
+          {
+            "text": "  v_email_change text;",
+            "lineNumber": 143
+          },
+          {
+            "text": "  v_domain text;",
+            "lineNumber": 144
+          },
+          {
+            "text": "begin",
+            "lineNumber": 145
+          },
+          {
+            "text": "  if tg_op != 'UPDATE' then",
+            "lineNumber": 146
+          },
+          {
+            "text": "    return NEW;",
+            "lineNumber": 147
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 148
+          }
+        ]
+      },
+      "score": 0.29792261123657227
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/google-login-button.tsx",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 75,
+            "column": 1
+          }
+        },
+        "contents": "\"use client\";\n\nimport { createClient } from \"@/lib/supabase/client\";\nimport { Button } from \"@/components/ui/button\";\nimport { useState } from \"react\";\n\n/**\n * Google OAuth login button component\n * Handles both sign-in and sign-up flows seamlessly\n */\nexport function GoogleLoginButton({ next }: { next?: string }) {\n  const [isLoading, setIsLoading] = useState(false);\n\n  const handleGoogleLogin = async () =&gt; {\n    setIsLoading(true);\n    const supabase = createClient();\n\n    try {\n      const callbackUrl = new URL(&#96;${window.location.origin}/auth/callback&#96;);\n      if (next) {\n        // Properly encode the next parameter - it may contain query parameters itself\n        // Use encodeURIComponent to ensure it's properly encoded\n        callbackUrl.searchParams.set(\"next\", next);\n      }\n\n      const { error } = await supabase.auth.signInWithOAuth({\n        provider: \"google\",\n        options: {\n          redirectTo: callbackUrl.toString(),\n        },\n      });\n\n      if (error) {\n        console.error(\"Google OAuth error:\", error);\n        setIsLoading(false);\n      }\n      // Note: User will be redirected to Google, so we don't reset loading state here\n    } catch (error) {\n      console.error(\"Unexpected error:\", error);\n      setIsLoading(false);\n    }\n  };\n\n  return\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "\"use client\";",
+            "lineNumber": 1
+          },
+          {
+            "lineNumber": 2
+          },
+          {
+            "text": "import { createClient } from \"@/lib/supabase/client\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { Button } from \"@/components/ui/button\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { useState } from \"react\";",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 6
+          },
+          {
+            "text": "/**",
+            "lineNumber": 7
+          },
+          {
+            "text": " * Google OAuth login button component",
+            "lineNumber": 8
+          },
+          {
+            "text": " * Handles both sign-in and sign-up flows seamlessly",
+            "lineNumber": 9
+          },
+          {
+            "text": " */",
+            "lineNumber": 10
+          },
+          {
+            "text": "export function GoogleLoginButton({ next }: { next?: string }) {",
+            "lineNumber": 11,
+            "isSignature": true
+          },
+          {
+            "text": "  const [isLoading, setIsLoading] = useState(false);",
+            "lineNumber": 12
+          },
+          {
+            "lineNumber": 13
+          },
+          {
+            "text": "  const handleGoogleLogin = async () =&gt; {",
+            "lineNumber": 14
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 15
+          },
+          {
+            "text": "    const supabase = createClient();",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "    try {",
+            "lineNumber": 18
+          },
+          {
+            "text": "      const callbackUrl = new URL(&#96;${window.location.origin}/auth/callback&#96;);",
+            "lineNumber": 19
+          },
+          {
+            "text": "      if (next) {",
+            "lineNumber": 20
+          },
+          {
+            "text": "        // Properly encode the next parameter - it may contain query parameters itself",
+            "lineNumber": 21
+          },
+          {
+            "text": "        // Use encodeURIComponent to ensure it's properly encoded",
+            "lineNumber": 22
+          },
+          {
+            "text": "        callbackUrl.searchParams.set(\"next\", next);",
+            "lineNumber": 23
+          },
+          {
+            "text": "      }",
+            "lineNumber": 24
+          },
+          {
+            "lineNumber": 25
+          },
+          {
+            "text": "      const { error } = await supabase.auth.signInWithOAuth({",
+            "lineNumber": 26
+          },
+          {
+            "text": "        provider: \"google\",",
+            "lineNumber": 27
+          },
+          {
+            "text": "        options: {",
+            "lineNumber": 28
+          },
+          {
+            "text": "          redirectTo: callbackUrl.toString(),",
+            "lineNumber": 29
+          },
+          {
+            "text": "        },",
+            "lineNumber": 30
+          },
+          {
+            "text": "      });",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "      if (error) {",
+            "lineNumber": 33
+          },
+          {
+            "text": "        console.error(\"Google OAuth error:\", error);",
+            "lineNumber": 34
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 35
+          },
+          {
+            "text": "      }",
+            "lineNumber": 36
+          },
+          {
+            "text": "      // Note: User will be redirected to Google, so we don't reset loading state here",
+            "lineNumber": 37
+          },
+          {
+            "text": "    } catch (error) {",
+            "lineNumber": 38
+          },
+          {
+            "text": "      console.error(\"Unexpected error:\", error);",
+            "lineNumber": 39
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 40
+          },
+          {
+            "text": "    }",
+            "lineNumber": 41
+          },
+          {
+            "text": "  };",
+            "lineNumber": 42
+          },
+          {
+            "lineNumber": 43
+          },
+          {
+            "text": "  return",
+            "lineNumber": 44
+          },
+          {
+            "text": "}",
+            "lineNumber": 76,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.29565009474754333
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/auth-helpers.ts",
+        "range": {
+          "startPosition": {
+            "line": 73,
+            "column": 1
+          },
+          "endPosition": {
+            "line": 106,
+            "column": 3
+          }
+        },
+        "contents": "/**\n * Creates a success redirect URL\n * @param request - The NextRequest object\n * @param next - Optional next parameter to redirect to after success\n * @returns URL object for redirect\n */\nexport function createSuccessUrl(request: NextRequest, next?: string | null): URL {\n  const url = request.nextUrl.clone();\n\n  if (next) {\n    // Validate next parameter to prevent open redirects\n    const validatedNext = validateRedirectUrl(next, request.nextUrl.origin);\n    if (validatedNext) {\n      // Parse the redirect URL to handle query parameters and hash properly\n      const redirectUrl = new URL(validatedNext, request.nextUrl.origin);\n      url.pathname = redirectUrl.pathname;\n      url.search = redirectUrl.search;\n      url.hash = redirectUrl.hash;\n      return url;\n    }\n  }\n\n  url.pathname = DEFAULT_LOGGED_IN_PAGE;\n  url.search = \"\"; // Clear any existing search params\n  url.hash = \"\"; // Clear any existing hash\n  return url;\n}\n\n/**\n * Creates a redirect response with cookies copied from supabaseResponse\n * Preserves all cookie options (httpOnly, secure, sameSite, etc.)\n */",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "/**",
+            "lineNumber": 76
+          },
+          {
+            "text": " * Creates a success redirect URL",
+            "lineNumber": 77
+          },
+          {
+            "text": " * @param request - The NextRequest object",
+            "lineNumber": 78
+          },
+          {
+            "text": " * @param next - Optional next parameter to redirect to after success",
+            "lineNumber": 79
+          },
+          {
+            "text": " * @returns URL object for redirect",
+            "lineNumber": 80
+          },
+          {
+            "text": " */",
+            "lineNumber": 81
+          },
+          {
+            "text": "export function createSuccessUrl(request: NextRequest, next?: string | null): URL {",
+            "lineNumber": 82,
+            "isSignature": true
+          },
+          {
+            "text": "  const url = request.nextUrl.clone();",
+            "lineNumber": 83
+          },
+          {
+            "lineNumber": 84
+          },
+          {
+            "text": "  if (next) {",
+            "lineNumber": 85
+          },
+          {
+            "text": "    // Validate next parameter to prevent open redirects",
+            "lineNumber": 86
+          },
+          {
+            "text": "    const validatedNext = validateRedirectUrl(next, request.nextUrl.origin);",
+            "lineNumber": 87
+          },
+          {
+            "text": "    if (validatedNext) {",
+            "lineNumber": 88
+          },
+          {
+            "text": "      // Parse the redirect URL to handle query parameters and hash properly",
+            "lineNumber": 89
+          },
+          {
+            "text": "      const redirectUrl = new URL(validatedNext, request.nextUrl.origin);",
+            "lineNumber": 90
+          },
+          {
+            "text": "      url.pathname = redirectUrl.pathname;",
+            "lineNumber": 91
+          },
+          {
+            "text": "      url.search = redirectUrl.search;",
+            "lineNumber": 92
+          },
+          {
+            "text": "      url.hash = redirectUrl.hash;",
+            "lineNumber": 93
+          },
+          {
+            "text": "      return url;",
+            "lineNumber": 94
+          },
+          {
+            "text": "    }",
+            "lineNumber": 95
+          },
+          {
+            "text": "  }",
+            "lineNumber": 96
+          },
+          {
+            "lineNumber": 97
+          },
+          {
+            "text": "  url.pathname = DEFAULT_LOGGED_IN_PAGE;",
+            "lineNumber": 98
+          },
+          {
+            "text": "  url.search = \"\"; // Clear any existing search params",
+            "lineNumber": 99
+          },
+          {
+            "text": "  url.hash = \"\"; // Clear any existing hash",
+            "lineNumber": 100
+          },
+          {
+            "text": "  return url;",
+            "lineNumber": 101
+          },
+          {
+            "text": "}",
+            "lineNumber": 102,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 103
+          },
+          {
+            "text": "/**",
+            "lineNumber": 104
+          },
+          {
+            "text": " * Creates a redirect response with cookies copied from supabaseResponse",
+            "lineNumber": 105
+          },
+          {
+            "text": " * Preserves all cookie options (httpOnly, secure, sameSite, etc.)",
+            "lineNumber": 106
+          },
+          {
+            "text": " */",
+            "lineNumber": 107
+          }
+        ]
+      },
+      "score": 0.2951521873474121
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 46
+          },
+          "endPosition": {
+            "line": 102
+          }
+        },
+        "contents": "create table public.profiles (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  picture text,\n  user_id uuid unique references public.users(id) on delete set null,\n  work_email text unique not null,\n  role public.profile_role not null default 'student',\n  team_id uuid references public.teams(id) on delete set null,\n  phone_number text,\n  personal_email text,\n  date_of_birth date,\n  removed_access timestamptz,\n  removed_access_by uuid references public.profiles(id) on delete set null,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null,\n  constraint valid_czu_domain check (\n    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'\n  )\n);\n\ncomment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to automatically update updated_at column\ncreate or replace function public.handle_updated_at()\nreturns trigger\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\nbegin\n  new.updated_at := now();\n  return new;\nend;\n$$;\n\ncomment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';\n\n-- Create trigger function to populate public.users on auth.users creation\n-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email\ncreate or replace function public.handle_new_auth_user()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_google_email text;\n  v_google_full_name text;\n  v_google_profile_picture text;\n  v_raw_meta_data jsonb;\nbegin\n  v_raw_meta_data := new.raw_user_meta_data;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 47
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 48
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 49
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 50
+          },
+          {
+            "text": "  user_id uuid unique references public.users(id) on delete set null,",
+            "lineNumber": 51
+          },
+          {
+            "text": "  work_email text unique not null,",
+            "lineNumber": 52
+          },
+          {
+            "text": "  role public.profile_role not null default 'student',",
+            "lineNumber": 53
+          },
+          {
+            "text": "  team_id uuid references public.teams(id) on delete set null,",
+            "lineNumber": 54
+          },
+          {
+            "text": "  phone_number text,",
+            "lineNumber": 55
+          },
+          {
+            "text": "  personal_email text,",
+            "lineNumber": 56
+          },
+          {
+            "text": "  date_of_birth date,",
+            "lineNumber": 57
+          },
+          {
+            "text": "  removed_access timestamptz,",
+            "lineNumber": 58
+          },
+          {
+            "text": "  removed_access_by uuid references public.profiles(id) on delete set null,",
+            "lineNumber": 59
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 60
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null,",
+            "lineNumber": 61
+          },
+          {
+            "text": "  constraint valid_czu_domain check (",
+            "lineNumber": 62
+          },
+          {
+            "text": "    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'",
+            "lineNumber": 63
+          },
+          {
+            "text": "  )",
+            "lineNumber": 64
+          },
+          {
+            "text": ");",
+            "lineNumber": 65
+          },
+          {
+            "lineNumber": 66
+          },
+          {
+            "text": "comment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';",
+            "lineNumber": 67
+          },
+          {
+            "lineNumber": 68
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 69
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 70
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 71
+          },
+          {
+            "lineNumber": 72
+          },
+          {
+            "text": "-- Create trigger function to automatically update updated_at column",
+            "lineNumber": 73
+          },
+          {
+            "text": "create or replace function public.handle_updated_at()",
+            "lineNumber": 74
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 75
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 76
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 77
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 78
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 79
+          },
+          {
+            "text": "begin",
+            "lineNumber": 80
+          },
+          {
+            "text": "  new.updated_at := now();",
+            "lineNumber": 81
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 82
+          },
+          {
+            "text": "end;",
+            "lineNumber": 83
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 84
+          },
+          {
+            "lineNumber": 85
+          },
+          {
+            "text": "comment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';",
+            "lineNumber": 86
+          },
+          {
+            "lineNumber": 87
+          },
+          {
+            "text": "-- Create trigger function to populate public.users on auth.users creation",
+            "lineNumber": 88
+          },
+          {
+            "text": "-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email",
+            "lineNumber": 89
+          },
+          {
+            "text": "create or replace function public.handle_new_auth_user()",
+            "lineNumber": 90
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 91
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 92
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 93
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 94
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 95
+          },
+          {
+            "text": "declare",
+            "lineNumber": 96
+          },
+          {
+            "text": "  v_google_email text;",
+            "lineNumber": 97
+          },
+          {
+            "text": "  v_google_full_name text;",
+            "lineNumber": 98
+          },
+          {
+            "text": "  v_google_profile_picture text;",
+            "lineNumber": 99
+          },
+          {
+            "text": "  v_raw_meta_data jsonb;",
+            "lineNumber": 100
+          },
+          {
+            "text": "begin",
+            "lineNumber": 101
+          },
+          {
+            "text": "  v_raw_meta_data := new.raw_user_meta_data;",
+            "lineNumber": 102
+          }
+        ]
+      },
+      "score": 0.2937242388725281
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 254
+          },
+          "endPosition": {
+            "line": 301
+          }
+        },
+        "contents": "-- Create trigger on auth.users table for email domain validation\ndrop trigger if exists validate_czu_email_domain_trigger on auth.users;\n\ncreate trigger validate_czu_email_domain_trigger\nbefore update of email, email_change on auth.users\nfor each row\nexecute function public.validate_czu_email_domain_trigger();\n\n-- ============================================================================\n-- INDEXES\n-- ============================================================================\n\ncreate index profiles_user_id_idx on public.profiles(user_id);\ncreate index profiles_work_email_idx on public.profiles(work_email);\ncreate index profiles_team_id_idx on public.profiles(team_id);\ncreate index profiles_team_id_user_id_idx on public.profiles(team_id, user_id);\ncreate index users_google_email_idx on public.users(google_email);\ncreate index users_suggested_work_email_idx on public.users(suggested_work_email);\ncreate index if not exists idx_realtime_messages_topic on realtime.messages(topic);\n\n-- ============================================================================\n-- REALTIME\n-- ============================================================================\n\nalter publication supabase_realtime add table public.users;\n\n-- ============================================================================\n-- ROW LEVEL SECURITY\n-- ============================================================================\n\n-- Enable RLS on all tables\nalter table public.users enable row level security;\nalter table public.profiles enable row level security;\nalter table public.teams enable row level security;\n\n-- ============================================================================\n-- RLS POLICIES - USERS TABLE\n-- ============================================================================\n\n-- Users can view their own user record\ncreate policy \"Users can view their own user record\" on public.users\nfor select\nto authenticated\nusing ( (select auth.uid()) = auth_user_id );\n\n-- Users can update their own user record\ncreate policy \"Users can update their own user record\" on public.users",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Create trigger on auth.users table for email domain validation",
+            "lineNumber": 255
+          },
+          {
+            "text": "drop trigger if exists validate_czu_email_domain_trigger on auth.users;",
+            "lineNumber": 256
+          },
+          {
+            "lineNumber": 257
+          },
+          {
+            "text": "create trigger validate_czu_email_domain_trigger",
+            "lineNumber": 258
+          },
+          {
+            "text": "before update of email, email_change on auth.users",
+            "lineNumber": 259
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 260
+          },
+          {
+            "text": "execute function public.validate_czu_email_domain_trigger();",
+            "lineNumber": 261
+          },
+          {
+            "lineNumber": 262
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 263
+          },
+          {
+            "text": "-- INDEXES",
+            "lineNumber": 264
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 265
+          },
+          {
+            "lineNumber": 266
+          },
+          {
+            "text": "create index profiles_user_id_idx on public.profiles(user_id);",
+            "lineNumber": 267
+          },
+          {
+            "text": "create index profiles_work_email_idx on public.profiles(work_email);",
+            "lineNumber": 268
+          },
+          {
+            "text": "create index profiles_team_id_idx on public.profiles(team_id);",
+            "lineNumber": 269
+          },
+          {
+            "text": "create index profiles_team_id_user_id_idx on public.profiles(team_id, user_id);",
+            "lineNumber": 270
+          },
+          {
+            "text": "create index users_google_email_idx on public.users(google_email);",
+            "lineNumber": 271
+          },
+          {
+            "text": "create index users_suggested_work_email_idx on public.users(suggested_work_email);",
+            "lineNumber": 272
+          },
+          {
+            "text": "create index if not exists idx_realtime_messages_topic on realtime.messages(topic);",
+            "lineNumber": 273
+          },
+          {
+            "lineNumber": 274
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 275
+          },
+          {
+            "text": "-- REALTIME",
+            "lineNumber": 276
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 277
+          },
+          {
+            "lineNumber": 278
+          },
+          {
+            "text": "alter publication supabase_realtime add table public.users;",
+            "lineNumber": 279
+          },
+          {
+            "lineNumber": 280
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 281
+          },
+          {
+            "text": "-- ROW LEVEL SECURITY",
+            "lineNumber": 282
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 283
+          },
+          {
+            "lineNumber": 284
+          },
+          {
+            "text": "-- Enable RLS on all tables",
+            "lineNumber": 285
+          },
+          {
+            "text": "alter table public.users enable row level security;",
+            "lineNumber": 286
+          },
+          {
+            "text": "alter table public.profiles enable row level security;",
+            "lineNumber": 287
+          },
+          {
+            "text": "alter table public.teams enable row level security;",
+            "lineNumber": 288
+          },
+          {
+            "lineNumber": 289
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 290
+          },
+          {
+            "text": "-- RLS POLICIES - USERS TABLE",
+            "lineNumber": 291
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 292
+          },
+          {
+            "lineNumber": 293
+          },
+          {
+            "text": "-- Users can view their own user record",
+            "lineNumber": 294
+          },
+          {
+            "text": "create policy \"Users can view their own user record\" on public.users",
+            "lineNumber": 295
+          },
+          {
+            "text": "for select",
+            "lineNumber": 296
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 297
+          },
+          {
+            "text": "using ( (select auth.uid()) = auth_user_id );",
+            "lineNumber": 298
+          },
+          {
+            "lineNumber": 299
+          },
+          {
+            "text": "-- Users can update their own user record",
+            "lineNumber": 300
+          },
+          {
+            "text": "create policy \"Users can update their own user record\" on public.users",
+            "lineNumber": 301
+          }
+        ]
+      },
+      "score": 0.28572601079940796
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 142
+          },
+          "endPosition": {
+            "line": 195
+          }
+        },
+        "contents": "  v_email_change text;\n  v_domain text;\nbegin\n  if tg_op != 'UPDATE' then\n    return NEW;\n  end if;\n\n  if OLD.email_change is distinct from NEW.email_change then\n    v_email_change := NEW.email_change;\n    \n    if v_email_change is not null and v_email_change != '' then\n      v_domain := lower(split_part(v_email_change, '@', 2));\n      \n      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then\n        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;\n      end if;\n    end if;\n  end if;\n\n  if OLD.email is distinct from NEW.email then\n    v_email := NEW.email;\n    \n    if v_email is not null and v_email != '' then\n      v_domain := lower(split_part(v_email, '@', 2));\n      \n      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then\n        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;\n      end if;\n    end if;\n  end if;\n\n  return NEW;\nend;\n$$;\n\ncomment on function public.validate_czu_email_domain_trigger() is 'Server-side trigger function that validates email domains at the database level. Uses SECURITY DEFINER to access auth.users table. Validates email changes (UPDATE) for all users.';\n\n-- Create before_user_created hook to restrict signups to Google OAuth only\ncreate or replace function public.before_user_created_hook(event jsonb)\nreturns jsonb\nlanguage plpgsql\nsecurity definer\nset search_path = ''\nas $$\ndeclare\n  v_provider text;\n  v_encrypted_password text;\n  v_app_metadata jsonb;\n  v_identity jsonb;\n  v_has_google_identity boolean := false;\nbegin\n  v_encrypted_password := event-&gt;'user'-&gt;&gt;'encrypted_password';\n  ",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_email_change text;",
+            "lineNumber": 143
+          },
+          {
+            "text": "  v_domain text;",
+            "lineNumber": 144
+          },
+          {
+            "text": "begin",
+            "lineNumber": 145
+          },
+          {
+            "text": "  if tg_op != 'UPDATE' then",
+            "lineNumber": 146
+          },
+          {
+            "text": "    return NEW;",
+            "lineNumber": 147
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 148
+          },
+          {
+            "lineNumber": 149
+          },
+          {
+            "text": "  if OLD.email_change is distinct from NEW.email_change then",
+            "lineNumber": 150
+          },
+          {
+            "text": "    v_email_change := NEW.email_change;",
+            "lineNumber": 151
+          },
+          {
+            "text": "    ",
+            "lineNumber": 152
+          },
+          {
+            "text": "    if v_email_change is not null and v_email_change != '' then",
+            "lineNumber": 153
+          },
+          {
+            "text": "      v_domain := lower(split_part(v_email_change, '@', 2));",
+            "lineNumber": 154
+          },
+          {
+            "text": "      ",
+            "lineNumber": 155
+          },
+          {
+            "text": "      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then",
+            "lineNumber": 156
+          },
+          {
+            "text": "        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;",
+            "lineNumber": 157
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 158
+          },
+          {
+            "text": "    end if;",
+            "lineNumber": 159
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 160
+          },
+          {
+            "lineNumber": 161
+          },
+          {
+            "text": "  if OLD.email is distinct from NEW.email then",
+            "lineNumber": 162
+          },
+          {
+            "text": "    v_email := NEW.email;",
+            "lineNumber": 163
+          },
+          {
+            "text": "    ",
+            "lineNumber": 164
+          },
+          {
+            "text": "    if v_email is not null and v_email != '' then",
+            "lineNumber": 165
+          },
+          {
+            "text": "      v_domain := lower(split_part(v_email, '@', 2));",
+            "lineNumber": 166
+          },
+          {
+            "text": "      ",
+            "lineNumber": 167
+          },
+          {
+            "text": "      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then",
+            "lineNumber": 168
+          },
+          {
+            "text": "        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;",
+            "lineNumber": 169
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 170
+          },
+          {
+            "text": "    end if;",
+            "lineNumber": 171
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 172
+          },
+          {
+            "lineNumber": 173
+          },
+          {
+            "text": "  return NEW;",
+            "lineNumber": 174
+          },
+          {
+            "text": "end;",
+            "lineNumber": 175
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 176
+          },
+          {
+            "lineNumber": 177
+          },
+          {
+            "text": "comment on function public.validate_czu_email_domain_trigger() is 'Server-side trigger function that validates email domains at the database level. Uses SECURITY DEFINER to access auth.users table. Validates email changes (UPDATE) for all users.';",
+            "lineNumber": 178
+          },
+          {
+            "lineNumber": 179
+          },
+          {
+            "text": "-- Create before_user_created hook to restrict signups to Google OAuth only",
+            "lineNumber": 180
+          },
+          {
+            "text": "create or replace function public.before_user_created_hook(event jsonb)",
+            "lineNumber": 181
+          },
+          {
+            "text": "returns jsonb",
+            "lineNumber": 182
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 183
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 184
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 185
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 186
+          },
+          {
+            "text": "declare",
+            "lineNumber": 187
+          },
+          {
+            "text": "  v_provider text;",
+            "lineNumber": 188
+          },
+          {
+            "text": "  v_encrypted_password text;",
+            "lineNumber": 189
+          },
+          {
+            "text": "  v_app_metadata jsonb;",
+            "lineNumber": 190
+          },
+          {
+            "text": "  v_identity jsonb;",
+            "lineNumber": 191
+          },
+          {
+            "text": "  v_has_google_identity boolean := false;",
+            "lineNumber": 192
+          },
+          {
+            "text": "begin",
+            "lineNumber": 193
+          },
+          {
+            "text": "  v_encrypted_password := event-&gt;'user'-&gt;&gt;'encrypted_password';",
+            "lineNumber": 194
+          },
+          {
+            "text": "  ",
+            "lineNumber": 195
+          }
+        ]
+      },
+      "score": 0.28246086835861206
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 38
+          },
+          "endPosition": {
+            "line": 97
+          }
+        },
+        "contents": "## Architecture Overview\n\n&#96;&#96;&#96;mermaid\nflowchart TD\n    subgraph auth_flow [Authentication Flow]\n        A[User clicks Google Login] --&gt; B[Google OAuth]\n        B --&gt; C[Redirect back with Google identity]\n        C --&gt; D{Profile linked to user?}\n        D --&gt;|No| E[Prompt for work email]\n        E --&gt; F{Domain is czu.cz?}\n        F --&gt;|No| G[Show domain error]\n        G --&gt; E\n        F --&gt;|Yes| H[Send OTP to work email]\n        H --&gt; I[User enters OTP]\n        I --&gt; J{Profile exists for work email?}\n        J --&gt;|No| K[Pending Approval Page]\n        J --&gt;|Yes| L[Link profile to user]\n        D --&gt;|Yes| M{Access revoked?}\n        L --&gt; M\n        M --&gt;|Yes| N[Show access revoked]\n        M --&gt;|No| O[Grant Full Access]\n    end\n\n    subgraph request_flow [Request Validation]\n        P[Incoming Request] --&gt; Q[Middleware queries database]\n        Q --&gt; R{Profile linked to user?}\n        R --&gt;|No| S[Redirect to verify email]\n        R --&gt;|Yes| T{removed_access is null?}\n        T --&gt;|No| U[Show access revoked]\n        T --&gt;|Yes| V[Allow access]\n    end\n&#96;&#96;&#96;\n\n## Validation Flow\n\n**Two-stage validation:**\n\n1. **Before OTP (Domain Check)**: Validate email ends with &#96;@studenti.czu.cz&#96; or &#96;@pef.czu.cz&#96;\n\n   - Client-side: Immediate feedback\n   - Server-side: Validated before &#96;signInWithOtp&#96; is called\n\n2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email\n\n   - If profile exists with that work_email → link profile to auth.user\n   - If no profile exists → show \"Pending Approval\" (admin must create profile first)\n   - Checked on every request via middleware\n\n## Database Schema (Supabase Migrations)\n\nTwo tables with **no RLS** - all access control is handled in Next.js:\n\n1. **&#96;users&#96;** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions\n2. **&#96;profiles&#96;** - User authentication profile data with role and access control\n\n**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.\n\nUse MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "## Architecture Overview",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "&#96;&#96;&#96;mermaid",
+            "lineNumber": 41
+          },
+          {
+            "text": "flowchart TD",
+            "lineNumber": 42
+          },
+          {
+            "text": "    subgraph auth_flow [Authentication Flow]",
+            "lineNumber": 43
+          },
+          {
+            "text": "        A[User clicks Google Login] --&gt; B[Google OAuth]",
+            "lineNumber": 44
+          },
+          {
+            "text": "        B --&gt; C[Redirect back with Google identity]",
+            "lineNumber": 45
+          },
+          {
+            "text": "        C --&gt; D{Profile linked to user?}",
+            "lineNumber": 46
+          },
+          {
+            "text": "        D --&gt;|No| E[Prompt for work email]",
+            "lineNumber": 47
+          },
+          {
+            "text": "        E --&gt; F{Domain is czu.cz?}",
+            "lineNumber": 48
+          },
+          {
+            "text": "        F --&gt;|No| G[Show domain error]",
+            "lineNumber": 49
+          },
+          {
+            "text": "        G --&gt; E",
+            "lineNumber": 50
+          },
+          {
+            "text": "        F --&gt;|Yes| H[Send OTP to work email]",
+            "lineNumber": 51
+          },
+          {
+            "text": "        H --&gt; I[User enters OTP]",
+            "lineNumber": 52
+          },
+          {
+            "text": "        I --&gt; J{Profile exists for work email?}",
+            "lineNumber": 53
+          },
+          {
+            "text": "        J --&gt;|No| K[Pending Approval Page]",
+            "lineNumber": 54
+          },
+          {
+            "text": "        J --&gt;|Yes| L[Link profile to user]",
+            "lineNumber": 55
+          },
+          {
+            "text": "        D --&gt;|Yes| M{Access revoked?}",
+            "lineNumber": 56
+          },
+          {
+            "text": "        L --&gt; M",
+            "lineNumber": 57
+          },
+          {
+            "text": "        M --&gt;|Yes| N[Show access revoked]",
+            "lineNumber": 58
+          },
+          {
+            "text": "        M --&gt;|No| O[Grant Full Access]",
+            "lineNumber": 59
+          },
+          {
+            "text": "    end",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "    subgraph request_flow [Request Validation]",
+            "lineNumber": 62
+          },
+          {
+            "text": "        P[Incoming Request] --&gt; Q[Middleware queries database]",
+            "lineNumber": 63
+          },
+          {
+            "text": "        Q --&gt; R{Profile linked to user?}",
+            "lineNumber": 64
+          },
+          {
+            "text": "        R --&gt;|No| S[Redirect to verify email]",
+            "lineNumber": 65
+          },
+          {
+            "text": "        R --&gt;|Yes| T{removed_access is null?}",
+            "lineNumber": 66
+          },
+          {
+            "text": "        T --&gt;|No| U[Show access revoked]",
+            "lineNumber": 67
+          },
+          {
+            "text": "        T --&gt;|Yes| V[Allow access]",
+            "lineNumber": 68
+          },
+          {
+            "text": "    end",
+            "lineNumber": 69
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 70
+          },
+          {
+            "lineNumber": 71
+          },
+          {
+            "text": "## Validation Flow",
+            "lineNumber": 72
+          },
+          {
+            "lineNumber": 73
+          },
+          {
+            "text": "**Two-stage validation:**",
+            "lineNumber": 74
+          },
+          {
+            "lineNumber": 75
+          },
+          {
+            "text": "1. **Before OTP (Domain Check)**: Validate email ends with &#96;@studenti.czu.cz&#96; or &#96;@pef.czu.cz&#96;",
+            "lineNumber": 76
+          },
+          {
+            "lineNumber": 77
+          },
+          {
+            "text": "   - Client-side: Immediate feedback",
+            "lineNumber": 78
+          },
+          {
+            "text": "   - Server-side: Validated before &#96;signInWithOtp&#96; is called",
+            "lineNumber": 79
+          },
+          {
+            "lineNumber": 80
+          },
+          {
+            "text": "2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "   - If profile exists with that work_email → link profile to auth.user",
+            "lineNumber": 83
+          },
+          {
+            "text": "   - If no profile exists → show \"Pending Approval\" (admin must create profile first)",
+            "lineNumber": 84
+          },
+          {
+            "text": "   - Checked on every request via middleware",
+            "lineNumber": 85
+          },
+          {
+            "lineNumber": 86
+          },
+          {
+            "text": "## Database Schema (Supabase Migrations)",
+            "lineNumber": 87
+          },
+          {
+            "lineNumber": 88
+          },
+          {
+            "text": "Two tables with **no RLS** - all access control is handled in Next.js:",
+            "lineNumber": 89
+          },
+          {
+            "lineNumber": 90
+          },
+          {
+            "text": "1. **&#96;users&#96;** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions",
+            "lineNumber": 91
+          },
+          {
+            "text": "2. **&#96;profiles&#96;** - User authentication profile data with role and access control",
+            "lineNumber": 92
+          },
+          {
+            "lineNumber": 93
+          },
+          {
+            "text": "**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.",
+            "lineNumber": 94
+          },
+          {
+            "lineNumber": 95
+          },
+          {
+            "text": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+            "lineNumber": 96
+          }
+        ]
+      },
+      "score": 0.2737990617752075
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/config.toml",
+        "range": {
+          "startPosition": {
+            "line": 207
+          },
+          "endPosition": {
+            "line": 267
+          }
+        },
+        "contents": "double_confirm_changes = false\n# If enabled, users need to confirm their email address before signing in.\nenable_confirmations = true\n# If enabled, users will need to reauthenticate or have logged in recently to change their password.\nsecure_password_change = false\n# Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.\nmax_frequency = \"1s\"\n# Number of characters used in the email OTP.\notp_length = 8\n# Number of seconds before the email OTP expires (defaults to 1 hour).\notp_expiry = 3600\n\n# Use a production-ready SMTP server\n# [auth.email.smtp]\n# enabled = true\n# host = \"smtp.sendgrid.net\"\n# port = 587\n# user = \"apikey\"\n# pass = \"env(SENDGRID_API_KEY)\"\n# admin_email = \"admin@email.com\"\n# sender_name = \"Admin\"\n\n# Uncomment to customize email template\n# [auth.email.template.invite]\n# subject = \"You have been invited\"\n# content_path = \"./supabase/templates/invite.html\"\n\n# Custom email template for email change confirmation (PKCE flow)\n[auth.email.template.email_change]\nsubject = \"Tappka - potvrďte svůj CZU email\"\ncontent_path = \"supabase/templates/email_change.html\"\n\n# Uncomment to customize notification email template\n# [auth.email.notification.password_changed]\n# enabled = true\n# subject = \"Your password has been changed\"\n# content_path = \"./templates/password_changed_notification.html\"\n\n[auth.sms]\n# Allow/disallow new user signups via SMS to your project.\nenable_signup = false\n# If enabled, users need to confirm their phone number before signing in.\nenable_confirmations = false\n# Template for sending OTP to users\ntemplate = \"Your code is {{ .Code }}\"\n# Controls the minimum amount of time that must pass before sending another sms otp.\nmax_frequency = \"5s\"\n\n# Use pre-defined map of phone number to OTP for testing.\n# [auth.sms.test_otp]\n# 4152127777 = \"123456\"\n\n# Configure logged in session timeouts.\n# [auth.sessions]\n# Force log out after the specified duration.\n# timebox = \"24h\"\n# Force log out if the user has been inactive longer than the specified duration.\n# inactivity_timeout = \"8h\"\n\n# This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "double_confirm_changes = false",
+            "lineNumber": 208
+          },
+          {
+            "text": "# If enabled, users need to confirm their email address before signing in.",
+            "lineNumber": 209
+          },
+          {
+            "text": "enable_confirmations = true",
+            "lineNumber": 210
+          },
+          {
+            "text": "# If enabled, users will need to reauthenticate or have logged in recently to change their password.",
+            "lineNumber": 211
+          },
+          {
+            "text": "secure_password_change = false",
+            "lineNumber": 212
+          },
+          {
+            "text": "# Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.",
+            "lineNumber": 213
+          },
+          {
+            "text": "max_frequency = \"1s\"",
+            "lineNumber": 214
+          },
+          {
+            "text": "# Number of characters used in the email OTP.",
+            "lineNumber": 215
+          },
+          {
+            "text": "otp_length = 8",
+            "lineNumber": 216
+          },
+          {
+            "text": "# Number of seconds before the email OTP expires (defaults to 1 hour).",
+            "lineNumber": 217
+          },
+          {
+            "text": "otp_expiry = 3600",
+            "lineNumber": 218
+          },
+          {
+            "lineNumber": 219
+          },
+          {
+            "text": "# Use a production-ready SMTP server",
+            "lineNumber": 220
+          },
+          {
+            "text": "# [auth.email.smtp]",
+            "lineNumber": 221
+          },
+          {
+            "text": "# enabled = true",
+            "lineNumber": 222
+          },
+          {
+            "text": "# host = \"smtp.sendgrid.net\"",
+            "lineNumber": 223
+          },
+          {
+            "text": "# port = 587",
+            "lineNumber": 224
+          },
+          {
+            "text": "# user = \"apikey\"",
+            "lineNumber": 225
+          },
+          {
+            "text": "# pass = \"env(SENDGRID_API_KEY)\"",
+            "lineNumber": 226
+          },
+          {
+            "text": "# admin_email = \"admin@email.com\"",
+            "lineNumber": 227
+          },
+          {
+            "text": "# sender_name = \"Admin\"",
+            "lineNumber": 228
+          },
+          {
+            "lineNumber": 229
+          },
+          {
+            "text": "# Uncomment to customize email template",
+            "lineNumber": 230
+          },
+          {
+            "text": "# [auth.email.template.invite]",
+            "lineNumber": 231
+          },
+          {
+            "text": "# subject = \"You have been invited\"",
+            "lineNumber": 232
+          },
+          {
+            "text": "# content_path = \"./supabase/templates/invite.html\"",
+            "lineNumber": 233
+          },
+          {
+            "lineNumber": 234
+          },
+          {
+            "text": "# Custom email template for email change confirmation (PKCE flow)",
+            "lineNumber": 235
+          },
+          {
+            "text": "[auth.email.template.email_change]",
+            "lineNumber": 236
+          },
+          {
+            "text": "subject = \"Tappka - potvrďte svůj CZU email\"",
+            "lineNumber": 237
+          },
+          {
+            "text": "content_path = \"supabase/templates/email_change.html\"",
+            "lineNumber": 238
+          },
+          {
+            "lineNumber": 239
+          },
+          {
+            "text": "# Uncomment to customize notification email template",
+            "lineNumber": 240
+          },
+          {
+            "text": "# [auth.email.notification.password_changed]",
+            "lineNumber": 241
+          },
+          {
+            "text": "# enabled = true",
+            "lineNumber": 242
+          },
+          {
+            "text": "# subject = \"Your password has been changed\"",
+            "lineNumber": 243
+          },
+          {
+            "text": "# content_path = \"./templates/password_changed_notification.html\"",
+            "lineNumber": 244
+          },
+          {
+            "lineNumber": 245
+          },
+          {
+            "text": "[auth.sms]",
+            "lineNumber": 246
+          },
+          {
+            "text": "# Allow/disallow new user signups via SMS to your project.",
+            "lineNumber": 247
+          },
+          {
+            "text": "enable_signup = false",
+            "lineNumber": 248
+          },
+          {
+            "text": "# If enabled, users need to confirm their phone number before signing in.",
+            "lineNumber": 249
+          },
+          {
+            "text": "enable_confirmations = false",
+            "lineNumber": 250
+          },
+          {
+            "text": "# Template for sending OTP to users",
+            "lineNumber": 251
+          },
+          {
+            "text": "template = \"Your code is {{ .Code }}\"",
+            "lineNumber": 252
+          },
+          {
+            "text": "# Controls the minimum amount of time that must pass before sending another sms otp.",
+            "lineNumber": 253
+          },
+          {
+            "text": "max_frequency = \"5s\"",
+            "lineNumber": 254
+          },
+          {
+            "lineNumber": 255
+          },
+          {
+            "text": "# Use pre-defined map of phone number to OTP for testing.",
+            "lineNumber": 256
+          },
+          {
+            "text": "# [auth.sms.test_otp]",
+            "lineNumber": 257
+          },
+          {
+            "text": "# 4152127777 = \"123456\"",
+            "lineNumber": 258
+          },
+          {
+            "lineNumber": 259
+          },
+          {
+            "text": "# Configure logged in session timeouts.",
+            "lineNumber": 260
+          },
+          {
+            "text": "# [auth.sessions]",
+            "lineNumber": 261
+          },
+          {
+            "text": "# Force log out after the specified duration.",
+            "lineNumber": 262
+          },
+          {
+            "text": "# timebox = \"24h\"",
+            "lineNumber": 263
+          },
+          {
+            "text": "# Force log out if the user has been inactive longer than the specified duration.",
+            "lineNumber": 264
+          },
+          {
+            "text": "# inactivity_timeout = \"8h\"",
+            "lineNumber": 265
+          },
+          {
+            "lineNumber": 266
+          },
+          {
+            "text": "# This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.",
+            "lineNumber": 267
+          }
+        ]
+      },
+      "score": 0.26875364780426025
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Updating `updateUser` to include `redirectTo` so the `next` parameter is included in the email verification link:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="web_search">
+<details>
+            <summary>Tool use: **web_search** • Searched web `undefined` • **1** results</summary>
+        
+| Title | URL | Chunk |
+|-------|-----|-------|
+| Web search results for query: Supabase updateUser emailRedirectTo parameter documentation |  | Links:<br/>1. [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)<br/>2. [emailRedirectTo parameter not working - Supabase ignoring custom redirect urls](https://www.answeroverflow.com/m/1408097673549975644)<br/>3. [Search code, repositories, users, issues, pull requests...](https://github.com/supabase/auth-js/pull/410)<br/>4. [Redirect URLs](https://supabase.io/docs/guides/auth/redirect-urls)<br/>5. [Search code, repositories, users, issues, pull requests...](https://github.com/supabase/supabase-js/issues/895)<br/><br/># Supabase updateUser emailRedirectTo Parameter<br/><br/>The `emailRedirectTo` parameter is used to specify a custom redirect URL for email-based authentication flows in Supabase. Here's what you need to know:<br/><br/>## How It Works<br/><br/>The `emailRedirectTo` parameter allows you to override the default Site URL configured in your Supabase dashboard when sending authentication emails.[1] When using passwordless sign-ins or OTP authentication, you can pass this parameter to control where users are redirected after clicking email links.[1]<br/><br/>## Important Requirements<br/><br/>Any URL specified in `emailRedirectTo` must be added to your allowed Redirect URLs list in the Supabase dashboard under URL Configuration.[1] The Site URL defined in URL Configuration serves as the default redirect when no `emailRedirectTo` is specified, and this is critical for email confirmations and password resets.[1]<br/><br/>## Known Issues<br/><br/>There are documented cases where the `emailRedirectTo` parameter is being ignored by Supabase, with confirmation emails redirecting to the dashboard Site URL instead of the custom URL provided.[2][5] This appears to be an ongoing issue where the parameter may not properly override the default Site URL in all scenarios.[5]<br/><br/>## Implementation Note<br/><br/>Support for the `redirectTo` option in the `updateUser` method was added via a pull request to the auth-js library to allow specifying redirect URLs when updating user information.[3] |
+
+</details>
+</tool-use>
+
+---
+
+
+Updating `updateUser` to include the `next` parameter in `emailRedirectTo`:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "components/verify-email-form.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "components/verify-email-form.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Verifying the Supabase API signature. Checking if `updateUser` accepts options as a second parameter:
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "updateUser|emailRedirectTo",
+  "caseInsensitive": true
+}
+```
+Result:
+
+```json
+{
+  "success": {
+    "pattern": "updateUser|emailRedirectTo",
+    "outputMode": "content",
+    "workspaceResults": {
+      "/Users/tom/programming/tappka": {
+        "content": {
+          "matches": [
+            {
+              "file": "./components/verify-email-form.tsx",
+              "matches": [
+                {
+                  "lineNumber": 87,
+                  "content": "   * Uses updateUser to add email identity to the current authenticated user"
+                },
+                {
+                  "lineNumber": 110,
+                  "content": "      // Use updateUser to add email identity to existing authenticated user"
+                },
+                {
+                  "lineNumber": 121,
+                  "content": "      const { data: updateData, error: updateError } = await supabase.auth.updateUser("
+                },
+                {
+                  "lineNumber": 126,
+                  "content": "          emailRedirectTo: confirmUrl.toString(),"
+                },
+                {
+                  "lineNumber": 154,
+                  "content": "   * Uses type 'email_change' since we're updating the user's email via updateUser()"
+                },
+                {
+                  "lineNumber": 168,
+                  "content": "      // Use type 'email_change' because we used updateUser() to initiate the flow"
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_20-12Z-authentication-next-parameter.md",
+              "matches": [
+                {
+                  "lineNumber": 1701,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1759,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 1813,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 9766,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"1. Updated &amp;amp;#96;verify-email-form.tsx&amp;amp;#96; to include &amp;amp;#96;emailRedirectTo&amp;amp;#96; pointing to &amp;amp;#96;/auth/confirm-email-change&amp;amp;#96; when calling &amp;amp;#96;updateUser&amp;amp;#96;.\\\"\""
+                },
+                {
+                  "lineNumber": 9778,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 9790,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The &amp;amp;#96;emailRedirectTo&amp;amp;#96; looks correct. Supabase redirects to the root URL when the redirect URL isn't whitelisted. Added &amp;amp;#96;/auth/confirm-email-change&amp;amp;#96; to &amp;amp;#96;additional_redirect_urls&amp;amp;#96; in the config.\\\"\""
+                },
+                {
+                  "lineNumber": 9798,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\"\""
+                },
+                {
+                  "lineNumber": 9806,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 9810,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 10006,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"1. Updated &amp;amp;amp;#96;verify-email-form.tsx&amp;amp;amp;#96; to include &amp;amp;amp;#96;emailRedirectTo&amp;amp;amp;#96; pointing to &amp;amp;amp;#96;/auth/confirm-email-change&amp;amp;amp;#96; when calling &amp;amp;amp;#96;updateUser&amp;amp;amp;#96;.\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 10018,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"          emailRedirectTo: &amp;amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;amp;#96;,\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 10030,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"The &amp;amp;amp;#96;emailRedirectTo&amp;amp;amp;#96; looks correct. Supabase redirects to the root URL when the redirect URL isn't whitelisted. Added &amp;amp;amp;#96;/auth/confirm-email-change&amp;amp;amp;#96; to &amp;amp;amp;#96;additional_redirect_urls&amp;amp;amp;#96; in the config.\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 10038,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 10046,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"          emailRedirectTo: &amp;amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;amp;#96;,\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 10050,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"          emailRedirectTo: &amp;amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;amp;#96;,\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 10118,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"1. Updated &amp;amp;#96;verify-email-form.tsx&amp;amp;#96; to include &amp;amp;#96;emailRedirectTo&amp;amp;#96; pointing to &amp;amp;#96;/auth/confirm-email-change&amp;amp;#96; when calling &amp;amp;#96;updateUser&amp;amp;#96;.\\\"\""
+                },
+                {
+                  "lineNumber": 10130,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 10142,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The &amp;amp;#96;emailRedirectTo&amp;amp;#96; looks correct. Supabase redirects to the root URL when the redirect URL isn't whitelisted. Added &amp;amp;#96;/auth/confirm-email-change&amp;amp;#96; to &amp;amp;#96;additional_redirect_urls&amp;amp;#96; in the config.\\\"\""
+                },
+                {
+                  "lineNumber": 10150,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\"\""
+                },
+                {
+                  "lineNumber": 10158,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 10162,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 11486,
+                  "content": "                  \"content\": \"1. Updated &amp;#96;verify-email-form.tsx&amp;#96; to include &amp;#96;emailRedirectTo&amp;#96; pointing to &amp;#96;/auth/confirm-email-change&amp;#96; when calling &amp;#96;updateUser&amp;#96;.\""
+                },
+                {
+                  "lineNumber": 11590,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 11594,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 11706,
+                  "content": "                  \"content\": \"The &amp;#96;emailRedirectTo&amp;#96; looks correct. Supabase redirects to the root URL when the redirect URL isn't whitelisted. Added &amp;#96;/auth/confirm-email-change&amp;#96; to &amp;#96;additional_redirect_urls&amp;#96; in the config.\""
+                },
+                {
+                  "lineNumber": 11714,
+                  "content": "                  \"content\": \"emailRedirectTo: &amp;#96;${window.location.origin}/auth/confirm-email-change&amp;#96;,\""
+                },
+                {
+                  "lineNumber": 11758,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 11762,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 11802,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 11806,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 16269,
+                  "content": "        \"contents\": \"export function VerifyEmailForm({ next }: { next?: string }) {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 16327,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 16381,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 17813,
+                  "content": "        \"contents\": \"export function VerifyEmailForm({ next }: { next?: string }) {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.u [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 17942,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 17958,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 18075,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_20-02Z-auth-cookie-preservation-on-email-change-redirect.md",
+              "matches": [
+                {
+                  "lineNumber": 1896,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1954,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 2008,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 6273,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6331,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 6385,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_20-00Z-supabase-response-handling.md",
+              "matches": [
+                {
+                  "lineNumber": 1052,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1110,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 1164,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 4104,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4233,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 4249,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 4366,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_19-13Z-auth-client-recreation-with-proxy.md",
+              "matches": [
+                {
+                  "lineNumber": 3295,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3353,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3407,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_19-10Z-auth-email-change-route-constants.md",
+              "matches": [
+                {
+                  "lineNumber": 222,
+                  "content": "                  \"content\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\""
+                },
+                {
+                  "lineNumber": 226,
+                  "content": "                  \"content\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\""
+                },
+                {
+                  "lineNumber": 289,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    const trimmedOtp = otpCode.trim();\\\\n\\\\n    // Track the OTP being submitted to prevent re-submission\\\\n    setLastSubmittedOtp(trimmedOtp);\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      c [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 293,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 297,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 317,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 321,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 338,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 342,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 370,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    const trimmedOtp = otpCode.trim();\\\\n\\\\n    // Track the OTP being submitted to prevent re-submission\\\\n    setLastSubmittedOtp(trimmedOtp);\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      c [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 374,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 378,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 399,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    const trimmedOtp = otpCode.trim();\\\\n\\\\n    // Track the OTP being submitted to prevent re-submission\\\\n    setLastSubmittedOtp(trimmedOtp);\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      c [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 403,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 407,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 415,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 419,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 440,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    const trimmedOtp = otpCode.trim();\\\\n\\\\n    // Track the OTP being submitted to prevent re-submission\\\\n    setLastSubmittedOtp(trimmedOtp);\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      c [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 444,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 448,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 456,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 460,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 464,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    const trimmedOtp = otpCode.trim();\\\\n\\\\n    // Track the OTP being submitted to prevent re-submission\\\\n    setLastSubmittedOtp(trimmedOtp);\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      c [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 468,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 472,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 521,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 525,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 529,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 533,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 537,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 541,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 545,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 549,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    e.preventDefault();\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 553,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    e.preventDefault();\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 557,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 561,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"                  \\\\\\\\\\\\\\\"content\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"        \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n      // Verify OTP code for ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 565,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"                  \\\\\\\\\\\\\\\"content\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"        \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n      // Verify OTP code for ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 569,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"                  \\\\\\\\\\\\\\\"content\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"        \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n      // Verify OTP code for ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 573,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"                  \\\\\\\\\\\\\\\"content\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"        \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n      // Verify OTP code for ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 577,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 581,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 585,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 589,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 593,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    e.preventDefault();\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 597,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    e.preventDefault();\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 601,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 605,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 609,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\nconst \\\\\\\\n;\\\\\\\\n\\\\\\\\n      if (updateError) {\\\\\\\\n        if (updateError.message?.includes(\\\\\\\\\\\\\\\"already registered\\\\\\\\\\\\\\\")) {\\\\\\\\n          setError(\\\\\\\\\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\\\\\\\\\");\\\\\\\\n        } else {\\\\\\\\n          setError(updateError.message || \\\\\\\\\\\\\\\"Failed to send OTP code\\\\\\\\\\\\\\\");\\\\\\\\n        }\\\\\\\\n        setIsLoading(false);\\\\\\\\n        return;\\\\\\\\n      }\\\\\\\\n\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking =  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 613,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 617,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 621,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linkin [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 625,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linkin [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 633,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 653,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 657,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 661,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' bec [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 670,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 674,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 678,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 686,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 690,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 699,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 703,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 707,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 755,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 759,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 763,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 767,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 771,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 811,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\nconst \\\\\\\\n;\\\\\\\\n\\\\\\\\n      if (updateError) {\\\\\\\\n        if (updateError.message?.includes(\\\\\\\\\\\\\\\"already registered\\\\\\\\\\\\\\\")) {\\\\\\\\n          setError(\\\\\\\\\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\\\\\\\\\");\\\\\\\\n        } else {\\\\\\\\n          setError(updateError.message || \\\\\\\\\\\\\\\"Failed to send OTP code\\\\\\\\\\\\\\\");\\\\\\\\n        }\\\\\\\\n        setIsLoading(false);\\\\\\\\n        return;\\\\\\\\n      }\\\\\\\\n\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking =  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 872,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 908,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 912,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 916,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1172,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1256,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\nconst \\\\\\\\n;\\\\\\\\n\\\\\\\\n      if (updateError) {\\\\\\\\n        if (updateError.message?.includes(\\\\\\\\\\\\\\\"already registered\\\\\\\\\\\\\\\")) {\\\\\\\\n          setError(\\\\\\\\\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\\\\\\\\\");\\\\\\\\n        } else {\\\\\\\\n          setError(updateError.message || \\\\\\\\\\\\\\\"Failed to send OTP code\\\\\\\\\\\\\\\");\\\\\\\\n        }\\\\\\\\n        setIsLoading(false);\\\\\\\\n        return;\\\\\\\\n      }\\\\\\\\n\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking =  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1260,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1264,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1284,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1288,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1292,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1296,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1496,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\"\""
+                },
+                {
+                  "lineNumber": 1500,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\"\""
+                },
+                {
+                  "lineNumber": 1516,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1528,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1532,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1536,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1568,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1584,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linkin [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1588,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1592,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1600,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linkin [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1604,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1608,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1676,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1688,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1692,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1696,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1748,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"- Google user adds email: Google user calls &amp;amp;#96;updateUser({ email: 'new@example.com' })&amp;amp;#96; → UPDATE operation → &amp;amp;#96;email_change&amp;amp;#96; field updated → trigger validates → must be CZU domain → blocks if invalid\\\"\""
+                },
+                {
+                  "lineNumber": 1804,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1880,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1884,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1888,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1896,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1900,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1904,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1908,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1916,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 1964,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 2028,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The issue: &amp;amp;#96;signInWithOtp()&amp;amp;#96; + &amp;amp;#96;verifyOtp()&amp;amp;#96; creates a new user/session instead of linking. For linking an email identity to an existing authenticated user, use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. Updating the implementation:\\\"\""
+                },
+                {
+                  "lineNumber": 2032,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"For linking an email identity to an existing authenticated user, we should use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. However, this may change the primary email rather than add a secondary identity.\\\"\""
+                },
+                {
+                  "lineNumber": 2036,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"Two separate users confirmed. &amp;amp;#96;signInWithOtp()&amp;amp;#96; creates a new user instead of linking. For linking an email identity to an existing authenticated user, use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. Updating the implementation:\\\"\""
+                },
+                {
+                  "lineNumber": 2040,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"Code already uses &amp;amp;#96;updateUser()&amp;amp;#96; and &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;. Verifying OTP may create a new session. Refreshing the session after verification to ensure identities are linked:\\\"\""
+                },
+                {
+                  "lineNumber": 2044,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' bec [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2048,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 2052,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 2060,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The implementation looks correct. The issue is that &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\\\"\""
+                },
+                {
+                  "lineNumber": 2064,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The code now uses &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;, which should link the email identity when manual linking is enabled. However, there's a known limitation: &amp;amp;#96;updateUser()&amp;amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\\\"\""
+                },
+                {
+                  "lineNumber": 2068,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"1. Test the current implementation with &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;\\\"\""
+                },
+                {
+                  "lineNumber": 2072,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2076,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 2080,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 2088,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2092,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 2176,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2212,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2216,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2220,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2476,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2552,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\nconst \\\\\\\\\\\\\\\\n;\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n      if (updateError) {\\\\\\\\\\\\\\\\n        if (updateError.message?.includes(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"already registered\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\")) {\\\\\\\\\\\\\\\\n          setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n        } else {\\\\\\\\\\\\\\\\n          setError(updateError.message || \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"Failed to send OTP code\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n        }\\\\\\\\\\\\\\\\n        setIsLoading(false);\\\\\\\\\\\\\\\\n        return;\\\\\\\\\\\\\\\\n      }\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    } catch (err) {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2556,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2560,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2580,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2584,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2588,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2592,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2780,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2784,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2800,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2812,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2816,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2820,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2852,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2868,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n      // Move to OTP verification step\\\\\\\\\\\\\\\\n      setStep(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    } catch (err) {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2872,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2876,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2884,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n      // Move to OTP verification step\\\\\\\\\\\\\\\\n      setStep(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    } catch (err) {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2888,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2892,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2960,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2972,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2976,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 2980,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3032,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"- Google user adds email: Google user calls &amp;amp;amp;#96;updateUser({ email: 'new@example.com' })&amp;amp;amp;#96; → UPDATE operation → &amp;amp;amp;#96;email_change&amp;amp;amp;#96; field updated → trigger validates → must be CZU domain → blocks if invalid\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3088,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3164,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    e.preventDefault();\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3168,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3172,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3180,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3184,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    e.preventDefault();\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'ema [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3188,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3192,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3200,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3248,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3312,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"The issue: &amp;amp;amp;#96;signInWithOtp()&amp;amp;amp;#96; + &amp;amp;amp;#96;verifyOtp()&amp;amp;amp;#96; creates a new user/session instead of linking. For linking an email identity to an existing authenticated user, use &amp;amp;amp;#96;updateUser()&amp;amp;amp;#96; to add the email, then verify with &amp;amp;amp;#96;verifyOtp()&amp;amp;amp;#96; using type &amp;amp;amp;#96;'email_change'&amp;amp;amp;#96;. Updating the implementation:\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3316,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"For linking an email identity to an existing authenticated user, we should use &amp;amp;amp;#96;updateUser()&amp;amp;amp;#96; to add the email, then verify with &amp;amp;amp;#96;verifyOtp()&amp;amp;amp;#96; using type &amp;amp;amp;#96;'email_change'&amp;amp;amp;#96;. However, this may change the primary email rather than add a secondary identity.\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3320,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"Two separate users confirmed. &amp;amp;amp;#96;signInWithOtp()&amp;amp;amp;#96; creates a new user instead of linking. For linking an email identity to an existing authenticated user, use &amp;amp;amp;#96;updateUser()&amp;amp;amp;#96; to add the email, then verify with &amp;amp;amp;#96;verifyOtp()&amp;amp;amp;#96; using type &amp;amp;amp;#96;'email_change'&amp;amp;amp;#96;. Updating the implementation:\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3324,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"Code already uses &amp;amp;amp;#96;updateUser()&amp;amp;amp;#96; and &amp;amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;amp;#96;. Verifying OTP may create a new session. Refreshing the session after verification to ensure identities are linked:\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3328,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n      // Move to OTP verification step\\\\\\\\\\\\\\\\n      setStep(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    } catch (err) {\\\\\\\\\\\\\\\\n      setError(\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");\\\\\\\\\\\\\\\\n      setIsLoading(false);\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    e.preventDefault() [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3332,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3336,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"            \\\\\\\\\\\\\\\"text\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\",\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3344,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"The implementation looks correct. The issue is that &amp;amp;amp;#96;updateUser()&amp;amp;amp;#96; + &amp;amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3348,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"The code now uses &amp;amp;amp;#96;updateUser()&amp;amp;amp;#96; + &amp;amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;amp;#96;, which should link the email identity when manual linking is enabled. However, there's a known limitation: &amp;amp;amp;#96;updateUser()&amp;amp;amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3352,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"1. Test the current implementation with &amp;amp;amp;#96;updateUser()&amp;amp;amp;#96; + &amp;amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;amp;#96;\\\\\\\"\\\"\""
+                },
+                {
+                  "lineNumber": 3360,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3396,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3400,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3404,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3660,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3744,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\nconst \\\\\\\\n;\\\\\\\\n\\\\\\\\n      if (updateError) {\\\\\\\\n        if (updateError.message?.includes(\\\\\\\\\\\\\\\"already registered\\\\\\\\\\\\\\\")) {\\\\\\\\n          setError(\\\\\\\\\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\\\\\\\\\");\\\\\\\\n        } else {\\\\\\\\n          setError(updateError.message || \\\\\\\\\\\\\\\"Failed to send OTP code\\\\\\\\\\\\\\\");\\\\\\\\n        }\\\\\\\\n        setIsLoading(false);\\\\\\\\n        return;\\\\\\\\n      }\\\\\\\\n\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking =  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3748,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3752,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3772,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3776,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3780,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3784,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 3984,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\"\""
+                },
+                {
+                  "lineNumber": 3988,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\"\""
+                },
+                {
+                  "lineNumber": 4004,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4016,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4020,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4024,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4056,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4072,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linkin [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4076,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4080,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4088,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linkin [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4092,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4096,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4164,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4176,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4180,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4184,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4236,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"- Google user adds email: Google user calls &amp;amp;#96;updateUser({ email: 'new@example.com' })&amp;amp;#96; → UPDATE operation → &amp;amp;#96;email_change&amp;amp;#96; field updated → trigger validates → must be CZU domain → blocks if invalid\\\"\""
+                },
+                {
+                  "lineNumber": 4292,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4368,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4372,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4376,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4384,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4388,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4392,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4396,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4404,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4452,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4516,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The issue: &amp;amp;#96;signInWithOtp()&amp;amp;#96; + &amp;amp;#96;verifyOtp()&amp;amp;#96; creates a new user/session instead of linking. For linking an email identity to an existing authenticated user, use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. Updating the implementation:\\\"\""
+                },
+                {
+                  "lineNumber": 4520,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"For linking an email identity to an existing authenticated user, we should use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. However, this may change the primary email rather than add a secondary identity.\\\"\""
+                },
+                {
+                  "lineNumber": 4524,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"Two separate users confirmed. &amp;amp;#96;signInWithOtp()&amp;amp;#96; creates a new user instead of linking. For linking an email identity to an existing authenticated user, use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. Updating the implementation:\\\"\""
+                },
+                {
+                  "lineNumber": 4528,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"Code already uses &amp;amp;#96;updateUser()&amp;amp;#96; and &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;. Verifying OTP may create a new session. Refreshing the session after verification to ensure identities are linked:\\\"\""
+                },
+                {
+                  "lineNumber": 4532,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' bec [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4536,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4540,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 4548,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The implementation looks correct. The issue is that &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\\\"\""
+                },
+                {
+                  "lineNumber": 4552,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The code now uses &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;, which should link the email identity when manual linking is enabled. However, there's a known limitation: &amp;amp;#96;updateUser()&amp;amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\\\"\""
+                },
+                {
+                  "lineNumber": 4556,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"1. Test the current implementation with &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;\\\"\""
+                },
+                {
+                  "lineNumber": 4560,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4564,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 4568,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 4589,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4593,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 4629,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4633,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 4637,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 4909,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4913,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5006,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\nconst \\\\n;\\\\n\\\\n      if (updateError) {\\\\n        if (updateError.message?.includes(\\\\\\\"already registered\\\\\\\")) {\\\\n          setError(\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\");\\\\n        } else {\\\\n          setError(updateError.message || \\\\\\\"Failed to send OTP code\\\\\\\");\\\\n        }\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = u [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5010,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5014,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5039,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5043,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5047,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5051,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5055,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5273,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\\\n        {\\\\n          email: email.trim(),\\\\n        },\\\\n      );\\\\n\\\\n      if (updateError) {\\\\n        // If email already exists, that's actually fine - it means it m [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5277,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5293,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5297,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5301,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5337,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\\\n        {\\\\n          email: email.trim(),\\\\n        },\\\\n      );\\\\n\\\\n      if (updateError) {\\\\n        // If email already exists, that's actually fine - it means it m [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5341,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5361,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      savePersistedState({ step: \\\\\\\"otp\\\\\\\", email: email.trim() });\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5365,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5369,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5377,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      savePersistedState({ step: \\\\\\\"otp\\\\\\\", email: email.trim() });\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5381,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5385,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5461,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5465,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5481,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5485,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5489,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5541,
+                  "content": "                  \"content\": \"- Google user adds email: Google user calls &amp;#96;updateUser({ email: 'new@example.com' })&amp;#96; → UPDATE operation → &amp;#96;email_change&amp;#96; field updated → trigger validates → must be CZU domain → blocks if invalid\""
+                },
+                {
+                  "lineNumber": 5601,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5605,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5702,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyEr [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5706,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5710,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5718,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5722,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5726,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyEr [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5730,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5734,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5742,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5746,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5798,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5802,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5871,
+                  "content": "                  \"content\": \"The issue: &amp;#96;signInWithOtp()&amp;#96; + &amp;#96;verifyOtp()&amp;#96; creates a new user/session instead of linking. For linking an email identity to an existing authenticated user, use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. Updating the implementation:\""
+                },
+                {
+                  "lineNumber": 5875,
+                  "content": "                  \"content\": \"For linking an email identity to an existing authenticated user, we should use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. However, this may change the primary email rather than add a secondary identity.\""
+                },
+                {
+                  "lineNumber": 5879,
+                  "content": "                  \"content\": \"Two separate users confirmed. &amp;#96;signInWithOtp()&amp;#96; creates a new user instead of linking. For linking an email identity to an existing authenticated user, use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. Updating the implementation:\""
+                },
+                {
+                  "lineNumber": 5883,
+                  "content": "                  \"content\": \"Code already uses &amp;#96;updateUser()&amp;#96; and &amp;#96;verifyOtp(type: 'email_change')&amp;#96;. Verifying OTP may create a new session. Refreshing the session after verification to ensure identities are linked:\""
+                },
+                {
+                  "lineNumber": 5887,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5891,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5895,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 5903,
+                  "content": "                  \"content\": \"The implementation looks correct. The issue is that &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\""
+                },
+                {
+                  "lineNumber": 5907,
+                  "content": "                  \"content\": \"The code now uses &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96;, which should link the email identity when manual linking is enabled. However, there's a known limitation: &amp;#96;updateUser()&amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\""
+                },
+                {
+                  "lineNumber": 5911,
+                  "content": "                  \"content\": \"1. Test the current implementation with &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96;\""
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_18-03Z-email-otp-type-validation.md",
+              "matches": [
+                {
+                  "lineNumber": 798,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 856,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 910,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 2289,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2418,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 2434,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 2551,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3333,
+                  "content": "        \"contents\": \"/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isHydrated, setIsHydrated] = useState(false);\\n  const [lastSubmittedOtp, setLastSubmittedOtp] = useState&amp;lt;string | null&amp;gt;(null);\\n  const router = useRouter();\\n  const supabase = createClient();\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n   [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3405,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_17-54Z-auth-callback-identity-check-client.md",
+              "matches": [
+                {
+                  "lineNumber": 996,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1125,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 1141,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 1258,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 1981,
+                  "content": "        \"contents\": \"export function AuthTestPageClient() {\\nconst testEmailOTPSignup = async \\n\\n  };\\n\\n  const testEmailIdentityAddition = async (\\n    e: React.FormEvent&amp;lt;HTMLFormElement&amp;gt;\\n  ) =&amp;gt; {\\n    e.preventDefault();\\n    const formData = new FormData(e.currentTarget);\\n    const email = formData.get(\\\"email\\\") as string;\\n\\n    if (!user) {\\n      setTestResults((prev) =&amp;gt; ({\\n        ...prev,\\n        emailIdentity: {\\n          success: false,\\n          message: \\\"You must be logged in to test email identity addition\\\",\\n        },\\n      }));\\n      return;\\n    }\\n\\n    try {\\n      const { error } = await supabase.auth.updateUser({\\n        email: email.trim(),\\n      });\\n\\n      if (error) {\\n        setTestResults((prev) =&amp;gt; ({\\n          ...prev,\\n          emailIdentity: {\\n            success: false,\\n            message: error.message || \\\"Failed to add email identity\\\",\\n          },\\n        }));\\n      } else {\\n        setTestResults((prev) =&amp;gt; [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2101,
+                  "content": "            \"text\": \"      const { error } = await supabase.auth.updateUser({\","
+                },
+                {
+                  "lineNumber": 2334,
+                  "content": "        \"contents\": \"/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isHydrated, setIsHydrated] = useState(false);\\n  const [lastSubmittedOtp, setLastSubmittedOtp] = useState&amp;lt;string | null&amp;gt;(null);\\n  const router = useRouter();\\n  const supabase = createClient();\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n   [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2406,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 3270,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3328,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3382,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_17-50Z-user-email-verification-flow.md",
+              "matches": [
+                {
+                  "lineNumber": 68,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 126,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 180,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 669,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 798,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 814,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 931,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 2182,
+                  "content": "        \"contents\": \"/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isHydrated, setIsHydrated] = useState(false);\\n  const [lastSubmittedOtp, setLastSubmittedOtp] = useState&amp;lt;string | null&amp;gt;(null);\\n  const router = useRouter();\\n  const supabase = createClient();\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n   [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2254,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_17-36Z-missing-email-verification-in-middleware.md",
+              "matches": [
+                {
+                  "lineNumber": 3675,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3733,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3787,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 4935,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5064,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 5080,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 5197,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 5233,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    const trimmedOtp = otpCode.trim();\\n\\n    // Track the OTP being submitted to prevent re-submission\\n    setLastSubmittedOtp(trimmedOtp);\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5291,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 5345,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 5977,
+                  "content": "        \"contents\": \"/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isHydrated, setIsHydrated] = useState(false);\\n  const [lastSubmittedOtp, setLastSubmittedOtp] = useState&amp;lt;string | null&amp;gt;(null);\\n  const router = useRouter();\\n  const supabase = createClient();\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n   [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6049,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_17-29Z-unused-data-variable-removal.md",
+              "matches": [
+                {
+                  "lineNumber": 119,
+                  "content": "3. Line 171: &#96;testEmailIdentityAddition&#96; — removed &#96;data&#96; from &#96;updateUser&#96; response"
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_17-27Z-supabase-user-type-and-client-memoization.md",
+              "matches": [
+                {
+                  "lineNumber": 270,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 291,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 311,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 360,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 368,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 380,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 404,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 408,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 412,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 436,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 448,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 456,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 468,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 472,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"                  \\\\\\\"content\\\\\\\": \\\\\\\"        \\\\\\\\\\\\\\\"contents\\\\\\\\\\\\\\\": \\\\\\\\\\\\\\\"export function VerifyEmailForm() {\\\\\\\\\\\\\\\\nconst handleSendOTP = async \\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  };\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n  /**\\\\\\\\\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n   * to the existing authenticated user account\\\\\\\\\\\\\\\\n   */\\\\\\\\\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;amp;gt; {\\\\\\\\\\\\\\\\n    setError(null);\\\\\\\\\\\\\\\\n    setIsLoading(true);\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\n    try {\\\\\\\\\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\\\\\\\\\n      // to  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 496,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 508,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 524,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 548,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 552,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 556,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 656,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 677,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 757,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\nconst \\\\n;\\\\n\\\\n      if (updateError) {\\\\n        if (updateError.message?.includes(\\\\\\\"already registered\\\\\\\")) {\\\\n          setError(\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\");\\\\n        } else {\\\\n          setError(updateError.message || \\\\\\\"Failed to send OTP code\\\\\\\");\\\\n        }\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = u [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 782,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 849,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 933,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      savePersistedState({ step: \\\\\\\"otp\\\\\\\", email: email.trim() });\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 937,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      savePersistedState({ step: \\\\\\\"otp\\\\\\\", email: email.trim() });\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 969,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1010,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyEr [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1022,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyEr [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1079,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the [... omitted end of long line]"
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_17-07Z-auth-callback-open-redirect-prevention.md",
+              "matches": [
+                {
+                  "lineNumber": 1055,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1113,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 1152,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 4319,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4448,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 4464,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 4581,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_16-33Z-linked-profile-access-to-protected-routes.md",
+              "matches": [
+                {
+                  "lineNumber": 3216,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3274,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3313,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 11862,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 11991,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 12007,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 12124,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 12992,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 13050,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 13089,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 16048,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst loadUserState = async () =&amp;amp;gt; {\\\\n\\\\n\\\\n      channelRef.current = channel;\\\\n\\\\n      setIsLoadingState(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"Failed to load user state\\\\\\\");\\\\n      setIsLoadingState(false);\\\\n    }\\\\n  }, [supabase, determineStep]);\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Updates suggested_work_email and last_otp_sent_at in database\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkE [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 16056,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\nconst \\\\n;\\\\n\\\\n      if (updateError) {\\\\n        if (updateError.message?.includes(\\\\\\\"already registered\\\\\\\")) {\\\\n          setError(\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\");\\\\n        } else {\\\\n          setError(updateError.message || \\\\\\\"Failed to send OTP code\\\\\\\");\\\\n        }\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = u [... omitted end of long line]"
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_16-12Z-user-profile-linking-migration.md",
+              "matches": [
+                {
+                  "lineNumber": 5648,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5652,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5700,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5704,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 5712,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 6205,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6209,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 6351,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\nconst \\\\n;\\\\n\\\\n      if (updateError) {\\\\n        if (updateError.message?.includes(\\\\\\\"already registered\\\\\\\")) {\\\\n          setError(\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\");\\\\n        } else {\\\\n          setError(updateError.message || \\\\\\\"Failed to send OTP code\\\\\\\");\\\\n        }\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = u [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6355,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 6363,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 6404,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6408,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 6412,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6416,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 6424,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 6867,
+                  "content": "                  \"content\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\""
+                },
+                {
+                  "lineNumber": 6875,
+                  "content": "                  \"content\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\""
+                },
+                {
+                  "lineNumber": 6949,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\\\n        {\\\\n          email: email.trim(),\\\\n        },\\\\n      );\\\\n\\\\n      if (updateError) {\\\\n        // If email already exists, that's actually fine - it means it m [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6953,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 6981,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6985,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 6993,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 7225,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\\\n        {\\\\n          email: email.trim(),\\\\n        },\\\\n      );\\\\n\\\\n      if (updateError) {\\\\n        // If email already exists, that's actually fine - it means it m [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7229,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 7281,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      savePersistedState({ step: \\\\\\\"otp\\\\\\\", email: email.trim() });\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7285,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 7293,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 7317,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      savePersistedState({ step: \\\\\\\"otp\\\\\\\", email: email.trim() });\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7321,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 7329,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 7513,
+                  "content": "                  \"content\": \"The migration is active and will validate email domains at the database level when users change their email via &amp;#96;updateUser()&amp;#96;.\""
+                },
+                {
+                  "lineNumber": 7521,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"-- Migration: Validate CZU email domain (Modern Approach)\\\\n-- Purpose: Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz\\\\n-- This uses a public schema function that can be called via RPC from the application layer\\\\n-- This is the modern approach when you don't have direct access to the auth schema\\\\n\\\\n-- Create validation function in public schema (modern approach)\\\\n-- This function can be called via RPC from the application layer before calling updateUser()\\\\ncreate or replace function public.validate_czu_email_domain(email_to_validate text)\\\\nreturns boolean\\\\nlanguage plpgsql\\\\nsecurity invoker\\\\nset search_path = ''\\\\nstable\\\\nas $$\\\\ndeclare\\\\n  v_domain text;\\\\nbegin\\\\n  -- Skip validation if email is null or empty\\\\n  if email_to_validate is null or email_to_validate = '' then\\\\n    return false;\\\\n  end if;\\\\n\\\\n  -- Extract domain from email (everything after @)\\\\n  v_domain := lo [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7529,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7533,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 7561,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7565,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 7573,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 7709,
+                  "content": "                  \"content\": \"- Google user adds email: Google user calls &amp;#96;updateUser({ email: 'new@example.com' })&amp;#96; → UPDATE operation → &amp;#96;email_change&amp;#96; field updated → trigger validates → must be CZU domain → blocks if invalid\""
+                },
+                {
+                  "lineNumber": 7829,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7833,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 8063,
+                  "content": "                  \"content\": \"      \\\"parameters\\\": \\\"{\\\\\\\"graphql_query\\\\\\\":\\\\\\\"{\\\\\\\\n  searchDocs(query: \\\\\\\\\\\\\\\"updateUser email change confirmation redirectTo emailRedirectTo\\\\\\\\\\\\\\\", limit: 3) {\\\\\\\\n    nodes {\\\\\\\\n      title\\\\\\\\n      href\\\\\\\\n      content\\\\\\\\n    }\\\\\\\\n  }\\\\\\\\n}\\\\\\\"}\\\",\""
+                },
+                {
+                  "lineNumber": 8083,
+                  "content": "                  \"content\": \"1. Updated &amp;#96;verify-email-form.tsx&amp;#96; to include &amp;#96;emailRedirectTo&amp;#96; pointing to &amp;#96;/auth/confirm-email-change&amp;#96; when calling &amp;#96;updateUser&amp;#96;.\""
+                },
+                {
+                  "lineNumber": 8107,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyEr [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 8111,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 8119,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 8127,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 8131,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 8135,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 8167,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyEr [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 8171,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 8179,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 8203,
+                  "content": "                  \"content\": \"The &amp;#96;emailRedirectTo&amp;#96; looks correct. Supabase redirects to the root URL when the redirect URL isn't whitelisted. Added &amp;#96;/auth/confirm-email-change&amp;#96; to &amp;#96;additional_redirect_urls&amp;#96; in the config.\""
+                },
+                {
+                  "lineNumber": 8227,
+                  "content": "                  \"content\": \"emailRedirectTo: &amp;#96;${window.location.origin}/auth/confirm-email-change&amp;#96;,\""
+                },
+                {
+                  "lineNumber": 8263,
+                  "content": "                  \"content\": \"      \\\"parameters\\\": \\\"{\\\\\\\"graphql_query\\\\\\\":\\\\\\\"{\\\\\\\\n  searchDocs(query: \\\\\\\\\\\\\\\"email template token_hash email change updateUser\\\\\\\\\\\\\\\", limit: 5) {\\\\\\\\n    nodes {\\\\\\\\n      title\\\\\\\\n      href\\\\\\\\n      content\\\\\\\\n    }\\\\\\\\n  }\\\\\\\\n}\\\\\\\"}\\\",\""
+                },
+                {
+                  "lineNumber": 8311,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 8315,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 8319,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 8451,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 8455,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 8459,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 8572,
+                  "content": "                  \"content\": \"The issue: &amp;#96;signInWithOtp()&amp;#96; + &amp;#96;verifyOtp()&amp;#96; creates a new user/session instead of linking. For linking an email identity to an existing authenticated user, use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. Updating the implementation:\""
+                },
+                {
+                  "lineNumber": 8580,
+                  "content": "                  \"content\": \"For linking an email identity to an existing authenticated user, we should use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. However, this may change the primary email rather than add a secondary identity.\""
+                },
+                {
+                  "lineNumber": 8584,
+                  "content": "                  \"content\": \"Two separate users confirmed. &amp;#96;signInWithOtp()&amp;#96; creates a new user instead of linking. For linking an email identity to an existing authenticated user, use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. Updating the implementation:\""
+                },
+                {
+                  "lineNumber": 8588,
+                  "content": "                  \"content\": \"Code already uses &amp;#96;updateUser()&amp;#96; and &amp;#96;verifyOtp(type: 'email_change')&amp;#96;. Verifying OTP may create a new session. Refreshing the session after verification to ensure identities are linked:\""
+                },
+                {
+                  "lineNumber": 8596,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 8600,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 8608,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 8632,
+                  "content": "                  \"content\": \"The implementation looks correct. The issue is that &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\""
+                },
+                {
+                  "lineNumber": 8636,
+                  "content": "                  \"content\": \"The code now uses &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96;, which should link the email identity when manual linking is enabled. However, there's a known limitation: &amp;#96;updateUser()&amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\""
+                },
+                {
+                  "lineNumber": 8640,
+                  "content": "                  \"content\": \"1. Test the current implementation with &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96;\""
+                },
+                {
+                  "lineNumber": 10048,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 10106,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 10145,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 10623,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 10752,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 10768,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 10885,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 12755,
+                  "content": "        \"contents\": \"/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isHydrated, setIsHydrated] = useState(false);\\n  const router = useRouter();\\n  const supabase = createClient();\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n;\\n}\","
+                },
+                {
+                  "lineNumber": 12823,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 14587,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 14631,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 14635,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 14643,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15059,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15179,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\nconst \\\\\\\\n;\\\\\\\\n\\\\\\\\n      if (updateError) {\\\\\\\\n        if (updateError.message?.includes(\\\\\\\\\\\\\\\"already registered\\\\\\\\\\\\\\\")) {\\\\\\\\n          setError(\\\\\\\\\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\\\\\\\\\");\\\\\\\\n        } else {\\\\\\\\n          setError(updateError.message || \\\\\\\\\\\\\\\"Failed to send OTP code\\\\\\\\\\\\\\\");\\\\\\\\n        }\\\\\\\\n        setIsLoading(false);\\\\\\\\n        return;\\\\\\\\n      }\\\\\\\\n\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking =  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 15183,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15191,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15223,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15227,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 15231,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15239,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15555,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\"\""
+                },
+                {
+                  "lineNumber": 15563,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\"\""
+                },
+                {
+                  "lineNumber": 15631,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15659,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 15663,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15671,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15831,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15875,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linkin [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 15879,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15887,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15911,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      savePersistedState({ step: \\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\", email: email.trim() });\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linkin [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 15915,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 15923,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16095,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The migration is active and will validate email domains at the database level when users change their email via &amp;amp;#96;updateUser()&amp;amp;#96;.\\\"\""
+                },
+                {
+                  "lineNumber": 16103,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"-- Migration: Validate CZU email domain (Modern Approach)\\\\\\\\n-- Purpose: Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\\n-- This uses a public schema function that can be called via RPC from the application layer\\\\\\\\n-- This is the modern approach when you don't have direct access to the auth schema\\\\\\\\n\\\\\\\\n-- Create validation function in public schema (modern approach)\\\\\\\\n-- This function can be called via RPC from the application layer before calling updateUser()\\\\\\\\ncreate or replace function public.validate_czu_email_domain(email_to_validate text)\\\\\\\\nreturns boolean\\\\\\\\nlanguage plpgsql\\\\\\\\nsecurity invoker\\\\\\\\nset search_path = ''\\\\\\\\nstable\\\\\\\\nas $$\\\\\\\\ndeclare\\\\\\\\n  v_domain text;\\\\\\\\nbegin\\\\\\\\n  -- Skip validation if email is null or empty\\\\\\\\n  if email_to_validate is null or email_to_validate = '' then\\\\\\\\n    return false;\\\\\\\\n  end  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 16111,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16139,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const verifyOTP = useCallback(async () =&amp;amp;amp;gt; {\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // to the current authenticated user instead of creating a new user\\\\\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 16143,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16151,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16279,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"- Google user adds email: Google user calls &amp;amp;#96;updateUser({ email: 'new@example.com' })&amp;amp;#96; → UPDATE operation → &amp;amp;#96;email_change&amp;amp;#96; field updated → trigger validates → must be CZU domain → blocks if invalid\\\"\""
+                },
+                {
+                  "lineNumber": 16391,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16567,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"      \\\\\\\"parameters\\\\\\\": \\\\\\\"{\\\\\\\\\\\\\\\"graphql_query\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"{\\\\\\\\\\\\\\\\n  searchDocs(query: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"updateUser email change confirmation redirectTo emailRedirectTo\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\", limit: 3) {\\\\\\\\\\\\\\\\n    nodes {\\\\\\\\\\\\\\\\n      title\\\\\\\\\\\\\\\\n      href\\\\\\\\\\\\\\\\n      content\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  }\\\\\\\\\\\\\\\\n}\\\\\\\\\\\\\\\"}\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16587,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"1. Updated &amp;amp;#96;verify-email-form.tsx&amp;amp;#96; to include &amp;amp;#96;emailRedirectTo&amp;amp;#96; pointing to &amp;amp;#96;/auth/confirm-email-change&amp;amp;#96; when calling &amp;amp;#96;updateUser&amp;amp;#96;.\\\"\""
+                },
+                {
+                  "lineNumber": 16611,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 16615,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16623,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16631,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16635,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16659,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\\\\\n      // [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 16663,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16671,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16695,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The &amp;amp;#96;emailRedirectTo&amp;amp;#96; looks correct. Supabase redirects to the root URL when the redirect URL isn't whitelisted. Added &amp;amp;#96;/auth/confirm-email-change&amp;amp;#96; to &amp;amp;#96;additional_redirect_urls&amp;amp;#96; in the config.\\\"\""
+                },
+                {
+                  "lineNumber": 16719,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\"\""
+                },
+                {
+                  "lineNumber": 16755,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"      \\\\\\\"parameters\\\\\\\": \\\\\\\"{\\\\\\\\\\\\\\\"graphql_query\\\\\\\\\\\\\\\":\\\\\\\\\\\\\\\"{\\\\\\\\\\\\\\\\n  searchDocs(query: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"email template token_hash email change updateUser\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\", limit: 5) {\\\\\\\\\\\\\\\\n    nodes {\\\\\\\\\\\\\\\\n      title\\\\\\\\\\\\\\\\n      href\\\\\\\\\\\\\\\\n      content\\\\\\\\\\\\\\\\n    }\\\\\\\\\\\\\\\\n  }\\\\\\\\\\\\\\\\n}\\\\\\\\\\\\\\\"}\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16791,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16795,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16915,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"          emailRedirectTo: &amp;amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;amp;#96;,\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 16919,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 17011,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The issue: &amp;amp;#96;signInWithOtp()&amp;amp;#96; + &amp;amp;#96;verifyOtp()&amp;amp;#96; creates a new user/session instead of linking. For linking an email identity to an existing authenticated user, use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. Updating the implementation:\\\"\""
+                },
+                {
+                  "lineNumber": 17015,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"For linking an email identity to an existing authenticated user, we should use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. However, this may change the primary email rather than add a secondary identity.\\\"\""
+                },
+                {
+                  "lineNumber": 17019,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"Two separate users confirmed. &amp;amp;#96;signInWithOtp()&amp;amp;#96; creates a new user instead of linking. For linking an email identity to an existing authenticated user, use &amp;amp;#96;updateUser()&amp;amp;#96; to add the email, then verify with &amp;amp;#96;verifyOtp()&amp;amp;#96; using type &amp;amp;#96;'email_change'&amp;amp;#96;. Updating the implementation:\\\"\""
+                },
+                {
+                  "lineNumber": 17023,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"Code already uses &amp;amp;#96;updateUser()&amp;amp;#96; and &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;. Verifying OTP may create a new session. Refreshing the session after verification to ensure identities are linked:\\\"\""
+                },
+                {
+                  "lineNumber": 17027,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"        \\\\\\\"contents\\\\\\\": \\\\\\\"export function VerifyEmailForm() {\\\\\\\\nconst handleSendOTP = async \\\\\\\\n\\\\\\\\n\\\\\\\\n      // Move to OTP verification step\\\\\\\\n      setStep(\\\\\\\\\\\\\\\"otp\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    } catch (err) {\\\\\\\\n      setError(\\\\\\\\\\\\\\\"An unexpected error occurred\\\\\\\\\\\\\\\");\\\\\\\\n      setIsLoading(false);\\\\\\\\n    }\\\\\\\\n  };\\\\\\\\n\\\\\\\\n  /**\\\\\\\\n   * Verifies the OTP code and links email identity to user\\\\\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\\\\\n   * to the existing authenticated user account\\\\\\\\n   */\\\\\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;amp;gt; {\\\\\\\\n    e.preventDefault();\\\\\\\\n    setError(null);\\\\\\\\n    setIsLoading(true);\\\\\\\\n\\\\\\\\n    try {\\\\\\\\n      // Verify OTP code for email change/linking\\\\\\\\n      // Use type 'email_change' bec [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 17031,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 17039,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"            \\\\\\\"text\\\\\\\": \\\\\\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\\\\",\\\"\""
+                },
+                {
+                  "lineNumber": 17055,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The implementation looks correct. The issue is that &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\\\"\""
+                },
+                {
+                  "lineNumber": 17059,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"The code now uses &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;, which should link the email identity when manual linking is enabled. However, there's a known limitation: &amp;amp;#96;updateUser()&amp;amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\\\"\""
+                },
+                {
+                  "lineNumber": 17063,
+                  "content": "                  \"content\": \"                  \\\"content\\\": \\\"1. Test the current implementation with &amp;amp;#96;updateUser()&amp;amp;#96; + &amp;amp;#96;verifyOtp(type: 'email_change')&amp;amp;#96;\\\"\""
+                },
+                {
+                  "lineNumber": 17419,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 17423,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 17479,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 17483,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 17495,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 18024,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 18028,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 18170,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\nconst \\\\n;\\\\n\\\\n      if (updateError) {\\\\n        if (updateError.message?.includes(\\\\\\\"already registered\\\\\\\")) {\\\\n          setError(\\\\\\\"This email is already registered. Please use a different email or sign in with that email.\\\\\\\");\\\\n        } else {\\\\n          setError(updateError.message || \\\\\\\"Failed to send OTP code\\\\\\\");\\\\n        }\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = u [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 18174,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 18186,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 18239,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 18243,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 18247,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 18251,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 18263,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 18751,
+                  "content": "                  \"content\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\""
+                },
+                {
+                  "lineNumber": 18763,
+                  "content": "                  \"content\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\""
+                },
+                {
+                  "lineNumber": 18861,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\\\n        {\\\\n          email: email.trim(),\\\\n        },\\\\n      );\\\\n\\\\n      if (updateError) {\\\\n        // If email already exists, that's actually fine - it means it m [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 18865,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 18893,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 18897,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 18909,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 19217,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\\\n        {\\\\n          email: email.trim(),\\\\n        },\\\\n      );\\\\n\\\\n      if (updateError) {\\\\n        // If email already exists, that's actually fine - it means it m [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19221,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 19281,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      savePersistedState({ step: \\\\\\\"otp\\\\\\\", email: email.trim() });\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19285,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 19297,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 19329,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      savePersistedState({ step: \\\\\\\"otp\\\\\\\", email: email.trim() });\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19333,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 19345,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 19569,
+                  "content": "                  \"content\": \"The migration is active and will validate email domains at the database level when users change their email via &amp;#96;updateUser()&amp;#96;.\""
+                },
+                {
+                  "lineNumber": 19577,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"-- Migration: Validate CZU email domain (Modern Approach)\\\\n-- Purpose: Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz\\\\n-- This uses a public schema function that can be called via RPC from the application layer\\\\n-- This is the modern approach when you don't have direct access to the auth schema\\\\n\\\\n-- Create validation function in public schema (modern approach)\\\\n-- This function can be called via RPC from the application layer before calling updateUser()\\\\ncreate or replace function public.validate_czu_email_domain(email_to_validate text)\\\\nreturns boolean\\\\nlanguage plpgsql\\\\nsecurity invoker\\\\nset search_path = ''\\\\nstable\\\\nas $$\\\\ndeclare\\\\n  v_domain text;\\\\nbegin\\\\n  -- Skip validation if email is null or empty\\\\n  if email_to_validate is null or email_to_validate = '' then\\\\n    return false;\\\\n  end if;\\\\n\\\\n  -- Extract domain from email (everything after @)\\\\n  v_domain := lo [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19585,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19589,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 19625,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const verifyOTP = useCallback(async () =&amp;amp;gt; {\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\\\n        email: email.trim(),\\\\n        token: otpCode.trim(),\\\\n        type: \\\\\\\"e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19629,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 19641,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 19801,
+                  "content": "                  \"content\": \"- Google user adds email: Google user calls &amp;#96;updateUser({ email: 'new@example.com' })&amp;#96; → UPDATE operation → &amp;#96;email_change&amp;#96; field updated → trigger validates → must be CZU domain → blocks if invalid\""
+                },
+                {
+                  "lineNumber": 19929,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async  {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Validate CZU domain\\\\n      if (!isValidWorkEmailDomain(email.trim())) {\\\\n        setError(\\\\\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\\\n      const { data: updateData, e [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19933,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 20175,
+                  "content": "                  \"content\": \"      \\\"parameters\\\": \\\"{\\\\\\\"graphql_query\\\\\\\":\\\\\\\"{\\\\\\\\n  searchDocs(query: \\\\\\\\\\\\\\\"updateUser email change confirmation redirectTo emailRedirectTo\\\\\\\\\\\\\\\", limit: 3) {\\\\\\\\n    nodes {\\\\\\\\n      title\\\\\\\\n      href\\\\\\\\n      content\\\\\\\\n    }\\\\\\\\n  }\\\\\\\\n}\\\\\\\"}\\\",\""
+                },
+                {
+                  "lineNumber": 20195,
+                  "content": "                  \"content\": \"1. Updated &amp;#96;verify-email-form.tsx&amp;#96; to include &amp;#96;emailRedirectTo&amp;#96; pointing to &amp;#96;/auth/confirm-email-change&amp;#96; when calling &amp;#96;updateUser&amp;#96;.\""
+                },
+                {
+                  "lineNumber": 20219,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyEr [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 20223,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 20235,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 20255,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 20259,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 20263,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 20295,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // to the current authenticated user instead of creating a new user\\\\n      const { error: verifyEr [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 20299,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 20311,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 20339,
+                  "content": "                  \"content\": \"The &amp;#96;emailRedirectTo&amp;#96; looks correct. Supabase redirects to the root URL when the redirect URL isn't whitelisted. Added &amp;#96;/auth/confirm-email-change&amp;#96; to &amp;#96;additional_redirect_urls&amp;#96; in the config.\""
+                },
+                {
+                  "lineNumber": 20363,
+                  "content": "                  \"content\": \"emailRedirectTo: &amp;#96;${window.location.origin}/auth/confirm-email-change&amp;#96;,\""
+                },
+                {
+                  "lineNumber": 20399,
+                  "content": "                  \"content\": \"      \\\"parameters\\\": \\\"{\\\\\\\"graphql_query\\\\\\\":\\\\\\\"{\\\\\\\\n  searchDocs(query: \\\\\\\\\\\\\\\"email template token_hash email change updateUser\\\\\\\\\\\\\\\", limit: 5) {\\\\\\\\n    nodes {\\\\\\\\n      title\\\\\\\\n      href\\\\\\\\n      content\\\\\\\\n    }\\\\\\\\n  }\\\\\\\\n}\\\\\\\"}\\\",\""
+                },
+                {
+                  "lineNumber": 20455,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 20459,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 20463,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 20603,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\n\\\\n\\\\n  /**\\\\n   * Sends OTP code to the provided email\\\\n   * Uses updateUser to add email identity to the current authenticated user\\\\n   * This is the correct way to link an email identity to an existing OAuth account\\\\n   */\\\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Validate email format\\\\n      if (!email || !email.includes(\\\\\\\"@\\\\\\\")) {\\\\n        setError(\\\\\\\"Please enter a valid email address\\\\\\\");\\\\n        setIsLoading(false);\\\\n        return;\\\\n      }\\\\n\\\\n      // Use updateUser to add email identity to existing authenticated user\\\\n      // This sends a verification link to the email address\\\\n      // With enable_manual_linking = true, this will link the email identity\\\\n      // Note: This adds the email as a secondary identity, not changing the primary email [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 20607,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"          emailRedirectTo: &amp;amp;#96;${window.location.origin}/auth/confirm-email-change&amp;amp;#96;,\\\",\""
+                },
+                {
+                  "lineNumber": 20611,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 20740,
+                  "content": "                  \"content\": \"Updating the implementation to use &amp;#96;updateUser&amp;#96; for linking email identities, since &amp;#96;signInWithOtp&amp;#96;/&amp;#96;verifyOtp&amp;#96; creates a new session. Using &amp;#96;updateUser&amp;#96; to add and verify the email:\""
+                },
+                {
+                  "lineNumber": 20748,
+                  "content": "                  \"content\": \"The issue: &amp;#96;signInWithOtp()&amp;#96; + &amp;#96;verifyOtp()&amp;#96; creates a new user/session instead of linking. For linking an email identity to an existing authenticated user, use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. Updating the implementation:\""
+                },
+                {
+                  "lineNumber": 20760,
+                  "content": "                  \"content\": \"For linking an email identity to an existing authenticated user, we should use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. However, this may change the primary email rather than add a secondary identity.\""
+                },
+                {
+                  "lineNumber": 20764,
+                  "content": "                  \"content\": \"Two separate users confirmed. &amp;#96;signInWithOtp()&amp;#96; creates a new user instead of linking. For linking an email identity to an existing authenticated user, use &amp;#96;updateUser()&amp;#96; to add the email, then verify with &amp;#96;verifyOtp()&amp;#96; using type &amp;#96;'email_change'&amp;#96;. Updating the implementation:\""
+                },
+                {
+                  "lineNumber": 20768,
+                  "content": "                  \"content\": \"Code already uses &amp;#96;updateUser()&amp;#96; and &amp;#96;verifyOtp(type: 'email_change')&amp;#96;. Verifying OTP may create a new session. Refreshing the session after verification to ensure identities are linked:\""
+                },
+                {
+                  "lineNumber": 20776,
+                  "content": "                  \"content\": \"        \\\"contents\\\": \\\"export function VerifyEmailForm() {\\\\nconst handleSendOTP = async \\\\n\\\\n\\\\n      // Move to OTP verification step\\\\n      setStep(\\\\\\\"otp\\\\\\\");\\\\n      setIsLoading(false);\\\\n    } catch (err) {\\\\n      setError(\\\\\\\"An unexpected error occurred\\\\\\\");\\\\n      setIsLoading(false);\\\\n    }\\\\n  };\\\\n\\\\n  /**\\\\n   * Verifies the OTP code and links email identity to user\\\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\\n   * With enable_manual_linking = true, this will link the email identity\\\\n   * to the existing authenticated user account\\\\n   */\\\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;amp;gt; {\\\\n    e.preventDefault();\\\\n    setError(null);\\\\n    setIsLoading(true);\\\\n\\\\n    try {\\\\n      // Verify OTP code for email change/linking\\\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\\\n      // With enable_manual_linking = true, this will link the [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 20780,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"   * Uses type 'email_change' since we're updating the user's email via updateUser()\\\",\""
+                },
+                {
+                  "lineNumber": 20792,
+                  "content": "                  \"content\": \"            \\\"text\\\": \\\"      // Use type 'email_change' because we used updateUser() to initiate the flow\\\",\""
+                },
+                {
+                  "lineNumber": 20828,
+                  "content": "                  \"content\": \"The implementation looks correct. The issue is that &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\""
+                },
+                {
+                  "lineNumber": 20836,
+                  "content": "                  \"content\": \"The code now uses &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96;, which should link the email identity when manual linking is enabled. However, there's a known limitation: &amp;#96;updateUser()&amp;#96; may change the primary email instead of adding a secondary identity for OAuth users.\""
+                },
+                {
+                  "lineNumber": 20840,
+                  "content": "                  \"content\": \"1. Test the current implementation with &amp;#96;updateUser()&amp;#96; + &amp;#96;verifyOtp(type: 'email_change')&amp;#96;\""
+                },
+                {
+                  "lineNumber": 23191,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 23249,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 23288,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_15-55Z-suggested-work-email-migration.md",
+              "matches": [
+                {
+                  "lineNumber": 1009,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1138,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 1154,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 1271,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3680,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3738,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3777,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 4312,
+                  "content": "        \"contents\": \"export default function AuthTestPage() {\\nconst testEmailOTPSignup = async \\n\\n    }\\n  };\\n\\n  const testEmailIdentityAddition = async (\\n    e: React.FormEvent&amp;lt;HTMLFormElement&amp;gt;\\n  ) =&amp;gt; {\\n    e.preventDefault();\\n    const formData = new FormData(e.currentTarget);\\n    const email = formData.get(\\\"email\\\") as string;\\n\\n    if (!user) {\\n      setTestResults((prev) =&amp;gt; ({\\n        ...prev,\\n        emailIdentity: {\\n          success: false,\\n          message: \\\"You must be logged in to test email identity addition\\\",\\n        },\\n      }));\\n      return;\\n    }\\n\\n    try {\\n      const { data, error } = await supabase.auth.updateUser({\\n        email: email.trim(),\\n      });\\n\\n      if (error) {\\n        setTestResults((prev) =&amp;gt; ({\\n          ...prev,\\n          emailIdentity: {\\n            success: false,\\n            message: error.message || \\\"Failed to add email identity\\\",\\n          },\\n        }));\\n      } else {\\n        setTestResul [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 4436,
+                  "content": "            \"text\": \"      const { data, error } = await supabase.auth.updateUser({\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_14-54Z-supabase-user-creation-data-population.md",
+              "matches": [
+                {
+                  "lineNumber": 4964,
+                  "content": "  \"result\": \"{\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"{\\\\\\\"searchDocs\\\\\\\":{\\\\\\\"nodes\\\\\\\":[{\\\\\\\"title\\\\\\\":\\\\\\\"Migrate from Auth0 to Supabase Auth\\\\\\\",\\\\\\\"href\\\\\\\":\\\\\\\"https://supabase.com/docs/guides/platform/migrating-to-supabase/auth0\\\\\\\",\\\\\\\"content\\\\\\\":\\\\\\\"# Migrate from Auth0 to Supabase Auth\\\\\\\\n\\\\\\\\nLearn how to migrate your users from Auth0\\\\\\\\n\\\\\\\\nYou can migrate your users from Auth0 to Supabase Auth.\\\\\\\\n\\\\\\\\nChanging authentication providers for a production app is an important operation. It can affect most aspects of your application. Prepare in advance by reading this guide, and develop a plan for handling the key migration steps and possible problems.\\\\\\\\n\\\\\\\\nWith advance planning, a smooth and safe Auth migration is possible.\\\\\\\\n\\\\\\\\n\\\\\\\\n## Before you begin\\\\\\\\n\\\\\\\\nBefore beginning, consider the answers to the following questions. They will help you need decide if you need to migrate, and which strategy to use:\\\\\\\\n\\\\\\\\n*   How do Auth provider costs scale as you [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 9335,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 9464,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 9480,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 9597,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_04-06Z-postgresql-function-missing-identities-field.md",
+              "matches": [
+                {
+                  "lineNumber": 3276,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst loadUserState = async () =&amp;gt; {\\n\\n\\n      channelRef.current = channel;\\n\\n      setIsLoadingState(false);\\n    } catch (err) {\\n      setError(\\\"Failed to load user state\\\");\\n      setIsLoadingState(false);\\n    }\\n  }, [supabase, determineStep]);\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Updates suggested_work_email and last_otp_sent_at in database\\n   * Uses updateUser to add email identity to the current authenticated user\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @s [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3394,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 3594,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 3606,
+                  "content": "            \"text\": \"      const { error: updateError } = await supabase.auth.updateUser({\","
+                },
+                {
+                  "lineNumber": 5317,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\nconst \\n;\\n\\n      if (updateError) {\\n        if (updateError.message?.includes(\\\"already registered\\\")) {\\n          setError(\\\"This email is already registered. Please use a different email or sign in with that email.\\\");\\n        } else {\\n          setError(updateError.message || \\\"Failed to send OTP code\\\");\\n        }\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      setIsLoading(false);\\n    } catch (err) {\\n      setError(\\\"An unexpected error occurred\\\");\\n      setIsLoading(false);\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5458,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 5497,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_03-13Z-database-schema-with-user-table-changes.md",
+              "matches": [
+                {
+                  "lineNumber": 2987,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3116,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 3132,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 3249,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3699,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3757,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 3796,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 13919,
+                  "content": "        \"contents\": \"export default function AuthTestPage() {\\nconst testEmailOTPSignup = async \\n\\n    }\\n  };\\n\\n  const testEmailIdentityAddition = async (\\n    e: React.FormEvent&amp;lt;HTMLFormElement&amp;gt;\\n  ) =&amp;gt; {\\n    e.preventDefault();\\n    const formData = new FormData(e.currentTarget);\\n    const email = formData.get(\\\"email\\\") as string;\\n\\n    if (!user) {\\n      setTestResults((prev) =&amp;gt; ({\\n        ...prev,\\n        emailIdentity: {\\n          success: false,\\n          message: \\\"You must be logged in to test email identity addition\\\",\\n        },\\n      }));\\n      return;\\n    }\\n\\n    try {\\n      const { data, error } = await supabase.auth.updateUser({\\n        email: email.trim(),\\n      });\\n\\n      if (error) {\\n        setTestResults((prev) =&amp;gt; ({\\n          ...prev,\\n          emailIdentity: {\\n            success: false,\\n            message: error.message || \\\"Failed to add email identity\\\",\\n          },\\n        }));\\n      } else {\\n        setTestResul [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 14043,
+                  "content": "            \"text\": \"      const { data, error } = await supabase.auth.updateUser({\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_03-12Z-supabase-auth-id-data.md",
+              "matches": [
+                {
+                  "lineNumber": 3646,
+                  "content": "        \"contents\": \"export default function AuthTestPage() {\\nconst testEmailOTPSignup = async \\n\\n    }\\n  };\\n\\n  const testEmailIdentityAddition = async (\\n    e: React.FormEvent&amp;lt;HTMLFormElement&amp;gt;\\n  ) =&amp;gt; {\\n    e.preventDefault();\\n    const formData = new FormData(e.currentTarget);\\n    const email = formData.get(\\\"email\\\") as string;\\n\\n    if (!user) {\\n      setTestResults((prev) =&amp;gt; ({\\n        ...prev,\\n        emailIdentity: {\\n          success: false,\\n          message: \\\"You must be logged in to test email identity addition\\\",\\n        },\\n      }));\\n      return;\\n    }\\n\\n    try {\\n      const { data, error } = await supabase.auth.updateUser({\\n        email: email.trim(),\\n      });\\n\\n      if (error) {\\n        setTestResults((prev) =&amp;gt; ({\\n          ...prev,\\n          emailIdentity: {\\n            success: false,\\n            message: error.message || \\\"Failed to add email identity\\\",\\n          },\\n        }));\\n      } else {\\n        setTestResul [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3770,
+                  "content": "            \"text\": \"      const { data, error } = await supabase.auth.updateUser({\","
+                },
+                {
+                  "lineNumber": 5619,
+                  "content": "                  \"content\": \"Adding validation on the &amp;#96;auth.identities&amp;#96; table for email identity creation, since &amp;#96;updateUser&amp;#96; may create an identity rather than updating the email field:\""
+                },
+                {
+                  "lineNumber": 5707,
+                  "content": "                  \"content\": \"- When &amp;#96;supabase.auth.updateUser({ email: '...' })&amp;#96; is called, Supabase updates the &amp;#96;auth.users&amp;#96; table\""
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-31_01-34Z-email-change-domain-validation.md",
+              "matches": [
+                {
+                  "lineNumber": 68,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n          email: email.trim(),\\n        },\\n      );\\n\\n      if (updateError) {\\n        // If email already exists, that's actually fine - it means it might already be linked\\n        // or we need to handle it differe [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 170,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 186,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 303,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 586,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 644,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 683,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 2499,
+                  "content": "        \"contents\": \"/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isHydrated, setIsHydrated] = useState(false);\\n  const router = useRouter();\\n  const supabase = createClient();\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n;\\n}\","
+                },
+                {
+                  "lineNumber": 2567,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 10306,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n          email: email.trim(),\\n        },\\n      );\\n\\n      if (updateError) {\\n        // If email already exists, that's actually fine - it means it might already be linked\\n        // or we need to handle it differe [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 10408,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 10424,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 10541,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 15235,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\n\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.aut [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 15367,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 15383,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 16523,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n\\n      // Move to OTP verification step\\n      setStep(\\\"otp\\\");\\n      savePersistedState({ step: \\\"otp\\\", email: email.trim() });\\n      setIsLoading(false);\\n    } catch (err) {\\n      setError(\\\"An unexpected error occurred\\\");\\n      setIsLoading(false);\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current a [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 16612,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 16651,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 19087,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n\\n      // Move to OTP verification step\\n      setStep(\\\"otp\\\");\\n      savePersistedState({ step: \\\"otp\\\", email: email.trim() });\\n      setIsLoading(false);\\n    } catch (err) {\\n      setError(\\\"An unexpected error occurred\\\");\\n      setIsLoading(false);\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current a [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19176,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 19215,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 19570,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\n\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.aut [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 19702,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 19718,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 21304,
+                  "content": "        \"contents\": \"const clearPersistedState = \\n catch (err) {\\n    // Ignore errors clearing storage\\n  }\\n};\\n\\n/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isHydrated, setIsHydrated] = useState(false);\\n  const router = useRouter();\\n  const supabase = createClient();\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefaul [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 21395,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 24089,
+                  "content": "        \"contents\": \"export const formatUserData = (user: User): FormattedUser =&amp;gt; ({\\n  id: user.id,\\n  name: &amp;#96;${user.firstName} ${user.lastName}&amp;#96;,\\n  email: user.email.toLowerCase(),\\n  isActive: user.status === 'active'\\n});\\n\\n/**\\n * Higher-order function that wraps async functions with error handling\\n * @param fn - The async function to wrap\\n * @returns A new function with error handling\\n */\\nexport const withErrorHandling = &amp;lt;T extends any[], R&amp;gt;(\\n  fn: (...args: T) =&amp;gt; Promise&amp;lt;R&amp;gt;\\n) =&amp;gt; async (...args: T): Promise&amp;lt;R&amp;gt; =&amp;gt; {\\n  try {\\n    return await fn(...args);\\n  } catch (error) {\\n    console.error('Function error:', error);\\n    throw error;\\n  }\\n};\\n\\n/**\\n * Composes multiple functions to process user data\\n * Applies formatting, error handling, and validation in sequence\\n */\\nexport const processUserData = pipe(\\n  formatUserData,\\n  withErrorHandling,\\n  validateUserData\\n);\\n\\n/**\\n * Updates a user in an array without mutating the [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 24250,
+                  "content": "            \"text\": \"export const updateUser = (users: User[], userId: string, updates: Partial&amp;lt;User&amp;gt;): User[] =&amp;gt;\","
+                },
+                {
+                  "lineNumber": 24790,
+                  "content": "Adding validation on the &#96;auth.identities&#96; table for email identity creation, since &#96;updateUser&#96; may create an identity rather than updating the email field:"
+                },
+                {
+                  "lineNumber": 24871,
+                  "content": "      \"parameters\": \"{\\\"name\\\":\\\"add_validate_czu_email_identity_trigger\\\",\\\"query\\\":\\\"-- Create function to validate CZU email domain for identities\\\\n-- This validates email identities (provider = 'email') when they are created\\\\ncreate or replace function auth.validate_czu_email_identity_domain()\\\\nreturns trigger\\\\nlanguage plpgsql\\\\nsecurity invoker\\\\nset search_path = ''\\\\nas $$\\\\ndeclare\\\\n  v_email text;\\\\n  v_domain text;\\\\nbegin\\\\n  -- Only validate email identities, not OAuth providers (google, etc.)\\\\n  if NEW.provider != 'email' then\\\\n    return NEW;\\\\n  end if;\\\\n\\\\n  -- Get the email being set\\\\n  v_email := NEW.email;\\\\n\\\\n  -- Skip validation if email is null or empty\\\\n  if v_email is null or v_email = '' then\\\\n    return NEW;\\\\n  end if;\\\\n\\\\n  -- Extract domain from email (everything after @)\\\\n  v_domain := lower(split_part(v_email, '@', 2));\\\\n\\\\n  -- Validate domain is one of the allowed CZU domains\\\\n  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 24993,
+                  "content": "- Catches email identities created via the &#96;updateUser()&#96; flow"
+                },
+                {
+                  "lineNumber": 25333,
+                  "content": "The migration is active and will validate email domains at the database level when users change their email via &#96;updateUser()&#96;."
+                },
+                {
+                  "lineNumber": 25615,
+                  "content": "3. **Updated the component** — calls the RPC function for server-side validation before &#96;updateUser()&#96;"
+                },
+                {
+                  "lineNumber": 25627,
+                  "content": "- Validation happens before &#96;updateUser()&#96; is called"
+                },
+                {
+                  "lineNumber": 25685,
+                  "content": "        \"contents\": \"-- Migration: Validate CZU email domain (Modern Approach)\\n-- Purpose: Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz\\n-- This uses a public schema function that can be called via RPC from the application layer\\n-- This is the modern approach when you don't have direct access to the auth schema\\n\\n-- Create validation function in public schema (modern approach)\\n-- This function can be called via RPC from the application layer before calling updateUser()\\ncreate or replace function public.validate_czu_email_domain(email_to_validate text)\\nreturns boolean\\nlanguage plpgsql\\nsecurity invoker\\nset search_path = ''\\nstable\\nas $$\\ndeclare\\n  v_domain text;\\nbegin\\n  -- Skip validation if email is null or empty\\n  if email_to_validate is null or email_to_validate = '' then\\n    return false;\\n  end if;\\n\\n  -- Extract domain from email (everything after @)\\n  v_domain := lower(split_part(email_to_validate, '@', 2));\\n\\n  -- Vali [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 25712,
+                  "content": "            \"text\": \"-- This function can be called via RPC from the application layer before calling updateUser()\","
+                },
+                {
+                  "lineNumber": 25832,
+                  "content": "            \"text\": \"'Validates that an email address ends with @pef.czu.cz or @studenti.czu.cz. Returns true if valid, false otherwise. Call this function via RPC before calling auth.updateUser() to ensure server-side validation.';\","
+                },
+                {
+                  "lineNumber": 25851,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 25980,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 25996,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 26113,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 27070,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const verifyOTP = useCallback(async () =&amp;gt; {\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.trim(),\\n        token: otpCode.trim(),\\n        type: \\\"email_change\\\",\\n      });\\n\\n      if (verifyError) {\\n         [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 27128,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 27167,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 28789,
+                  "content": "        \"contents\": \"/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isHydrated, setIsHydrated] = useState(false);\\n  const router = useRouter();\\n  const supabase = createClient();\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n;\\n}\","
+                },
+                {
+                  "lineNumber": 28857,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 31174,
+                  "content": "- When &#96;supabase.auth.updateUser({ email: '...' })&#96; is called, Supabase updates the &#96;auth.users&#96; table"
+                },
+                {
+                  "lineNumber": 31828,
+                  "content": "- Google user adds email: Google user calls &#96;updateUser({ email: 'new@example.com' })&#96; → UPDATE operation → &#96;email_change&#96; field updated → trigger validates → must be CZU domain → blocks if invalid"
+                },
+                {
+                  "lineNumber": 35874,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async  {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Validate CZU domain\\n      if (!isValidWorkEmailDomain(email.trim())) {\\n        setError(\\\"Email must end with @pef.czu.cz or @studenti.czu.cz\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\\n        {\\n     [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 36003,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 36019,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 36136,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 37040,
+                  "content": "- Adding email identity: Google user calls &#96;updateUser({ email })&#96; → trigger validates → must be CZU domain"
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-30_23-01Z-supabase-email-change-confirmation-link.md",
+              "matches": [
+                {
+                  "lineNumber": 110,
+                  "content": "      \"parameters\": \"{\\\"graphql_query\\\":\\\"{\\\\n  searchDocs(query: \\\\\\\"updateUser email confirmation redirectTo callback\\\\\\\", limit: 5) {\\\\n    nodes {\\\\n      title\\\\n      href\\\\n      content\\\\n    }\\\\n  }\\\\n}\\\"}\","
+                },
+                {
+                  "lineNumber": 164,
+                  "content": "      \"parameters\": \"{\\\"graphql_query\\\":\\\"{\\\\n  searchDocs(query: \\\\\\\"updateUser email change confirmation redirectTo emailRedirectTo\\\\\\\", limit: 3) {\\\\n    nodes {\\\\n      title\\\\n      href\\\\n      content\\\\n    }\\\\n  }\\\\n}\\\"}\","
+                },
+                {
+                  "lineNumber": 195,
+                  "content": "1. Updating &#96;verify-email-form.tsx&#96; to include &#96;emailRedirectTo&#96; in &#96;updateUser&#96;."
+                },
+                {
+                  "lineNumber": 232,
+                  "content": "1. Updated &#96;verify-email-form.tsx&#96; to include &#96;emailRedirectTo&#96; pointing to &#96;/auth/confirm-email-change&#96; when calling &#96;updateUser&#96;."
+                },
+                {
+                  "lineNumber": 740,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n {\\n      setError(\\\"An unexpected error occurred\\\");\\n      setIsLoading(false);\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.tri [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 807,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 850,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 3378,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\n\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supaba [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3424,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 3486,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 3502,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser({\","
+                },
+                {
+                  "lineNumber": 3514,
+                  "content": "            \"text\": \"          emailRedirectTo: &amp;#96;${window.location.origin}/auth/confirm-email-change&amp;#96;,\","
+                },
+                {
+                  "lineNumber": 3619,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 5873,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n {\\n      setError(\\\"An unexpected error occurred\\\");\\n      setIsLoading(false);\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of creating a new user\\n      const { error: verifyError } = await supabase.auth.verifyOtp({\\n        email: email.tri [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 5940,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 5983,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 9337,
+                  "content": "The redirect URL isn't being used. Checking the &#96;updateUser&#96; call and Supabase configuration:"
+                },
+                {
+                  "lineNumber": 9370,
+                  "content": "      \"parameters\": \"{\\\"graphql_query\\\":\\\"{\\\\n  searchDocs(query: \\\\\\\"updateUser emailRedirectTo redirect URL configuration\\\\\\\", limit: 3) {\\\\n    nodes {\\\\n      title\\\\n      href\\\\n      content\\\\n    }\\\\n  }\\\\n}\\\"}\","
+                },
+                {
+                  "lineNumber": 9423,
+                  "content": "Added the redirect URL to the Supabase config. Restart Supabase for the change to take effect. Verifying the &#96;emailRedirectTo&#96; format:"
+                },
+                {
+                  "lineNumber": 9437,
+                  "content": "The &#96;emailRedirectTo&#96; looks correct. Supabase redirects to the root URL when the redirect URL isn't whitelisted. Added &#96;/auth/confirm-email-change&#96; to &#96;additional_redirect_urls&#96; in the config."
+                },
+                {
+                  "lineNumber": 9498,
+                  "content": "1. In &#96;components/verify-email-form.tsx&#96; (line 56) — as the &#96;emailRedirectTo&#96; option when calling &#96;updateUser&#96;:"
+                },
+                {
+                  "lineNumber": 9500,
+                  "content": "emailRedirectTo: &#96;${window.location.origin}/auth/confirm-email-change&#96;,"
+                },
+                {
+                  "lineNumber": 9513,
+                  "content": "- Specified in &#96;emailRedirectTo&#96; (tells Supabase where to redirect)"
+                },
+                {
+                  "lineNumber": 9597,
+                  "content": "      \"parameters\": \"{\\\"graphql_query\\\":\\\"{\\\\n  searchDocs(query: \\\\\\\"email template token_hash email change updateUser\\\\\\\", limit: 5) {\\\\n    nodes {\\\\n      title\\\\n      href\\\\n      content\\\\n    }\\\\n  }\\\\n}\\\"}\","
+                },
+                {
+                  "lineNumber": 15200,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\n\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supaba [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 15246,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 15308,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 15324,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 15344,
+                  "content": "            \"text\": \"          emailRedirectTo: &amp;#96;${window.location.origin}/auth/confirm-email-change&amp;#96;,\","
+                },
+                {
+                  "lineNumber": 15449,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 15763,
+                  "content": "Verifying the implementation. Checking if we need to remove &#96;emailRedirectTo&#96; since the template includes the URL:"
+                },
+                {
+                  "lineNumber": 15790,
+                  "content": "4. **Removed &#96;emailRedirectTo&#96;** from &#96;updateUser&#96; since the template includes the URL"
+                },
+                {
+                  "lineNumber": 15801,
+                  "content": "2. Test the flow — when you call &#96;updateUser&#96;, the email will use the custom template with &#96;token_hash&#96;, and clicking the link will work without the PKCE code verifier error."
+                },
+                {
+                  "lineNumber": 18940,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\n\\n\\n  /**\\n   * Sends OTP code to the provided email\\n   * Uses updateUser to add email identity to the current authenticated user\\n   * This is the correct way to link an email identity to an existing OAuth account\\n   */\\n  const handleSendOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Validate email format\\n      if (!email || !email.includes(\\\"@\\\")) {\\n        setError(\\\"Please enter a valid email address\\\");\\n        setIsLoading(false);\\n        return;\\n      }\\n\\n      // Use updateUser to add email identity to existing authenticated user\\n      // This sends a verification link to the email address\\n      // With enable_manual_linking = true, this will link the email identity\\n      // Note: This adds the email as a secondary identity, not changing the primary email\\n      const { data: updateData, error: updateError } = await supaba [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 18986,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 19048,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 19064,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\","
+                },
+                {
+                  "lineNumber": 19084,
+                  "content": "            \"text\": \"          emailRedirectTo: &amp;#96;${window.location.origin}/auth/confirm-email-change&amp;#96;,\","
+                },
+                {
+                  "lineNumber": 19189,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 21653,
+                  "content": "After restarting, when you call &#96;updateUser&#96; to change an email, Supabase will use your custom template with &#96;token_hash&#96; instead of the default template with &#96;code&#96;. The email link will be:"
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-30_21-57Z-authentication-email-linking.md",
+              "matches": [
+                {
+                  "lineNumber": 6067,
+                  "content": "Updating the implementation to use &#96;updateUser&#96; for linking email identities, since &#96;signInWithOtp&#96;/&#96;verifyOtp&#96; creates a new session. Using &#96;updateUser&#96; to add and verify the email:"
+                },
+                {
+                  "lineNumber": 6093,
+                  "content": "Reverting to &#96;signInWithOtp&#96; since &#96;updateUser&#96; changes the primary email. Using OTP to link an additional email identity:"
+                },
+                {
+                  "lineNumber": 6407,
+                  "content": "  \"result\": \"{\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"{\\\\\\\"searchDocs\\\\\\\":{\\\\\\\"nodes\\\\\\\":[{\\\\\\\"title\\\\\\\":\\\\\\\"Identity Linking\\\\\\\",\\\\\\\"href\\\\\\\":\\\\\\\"https://supabase.com/docs/guides/auth/auth-identity-linking\\\\\\\",\\\\\\\"content\\\\\\\":\\\\\\\"# Identity Linking\\\\\\\\n\\\\\\\\nManage the identities associated with your user\\\\\\\\n\\\\\\\\n## Identity linking strategies\\\\\\\\n\\\\\\\\nCurrently, Supabase Auth supports 2 strategies to link an identity to a user:\\\\\\\\n\\\\\\\\n1.  [Automatic Linking](#automatic-linking)\\\\\\\\n2.  [Manual Linking](#manual-linking-beta)\\\\\\\\n\\\\\\\\n\\\\\\\\n### Automatic linking\\\\\\\\n\\\\\\\\nSupabase Auth automatically links identities with the same email address to a single user. This helps to improve the user experience when multiple OAuth login options are presented since the user does not need to remember which OAuth account they used to sign up with. When a new user signs in with OAuth, Supabase Auth will attempt to look for an existing user that uses the same email address. If a match is found, t [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6419,
+                  "content": "The issue: &#96;signInWithOtp()&#96; + &#96;verifyOtp()&#96; creates a new user/session instead of linking. For linking an email identity to an existing authenticated user, use &#96;updateUser()&#96; to add the email, then verify with &#96;verifyOtp()&#96; using type &#96;'email_change'&#96;. Updating the implementation:"
+                },
+                {
+                  "lineNumber": 6470,
+                  "content": "      \"parameters\": \"{\\\"graphql_query\\\":\\\"{\\\\n  searchDocs(query: \\\\\\\"updateUser email link identity OAuth existing user\\\\\\\", limit: 2) {\\\\n    nodes {\\\\n      title\\\\n      href\\\\n      content\\\\n    }\\\\n  }\\\\n}\\\"}\","
+                },
+                {
+                  "lineNumber": 6487,
+                  "content": "  \"result\": \"{\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"{\\\\\\\"searchDocs\\\\\\\":{\\\\\\\"nodes\\\\\\\":[{\\\\\\\"title\\\\\\\":\\\\\\\"Anonymous Sign-Ins\\\\\\\",\\\\\\\"href\\\\\\\":\\\\\\\"https://supabase.com/docs/guides/auth/auth-anonymous\\\\\\\",\\\\\\\"content\\\\\\\":\\\\\\\"# Anonymous Sign-Ins\\\\\\\\n\\\\\\\\nCreate and use anonymous users to authenticate with Supabase\\\\\\\\n\\\\\\\\n[Enable Anonymous Sign-Ins](/dashboard/project/_/auth/providers) to build apps which provide users an authenticated experience without requiring users to enter an email address, password, use an OAuth provider or provide any other PII (Personally Identifiable Information). Later, when ready, the user can link an authentication method to their account.\\\\\\\\n\\\\\\\\n&amp;lt;Admonition type=\\\\\\\\\\\\\\\"note\\\\\\\\\\\\\\\" label=\\\\\\\\\\\\\\\"Anonymous user vs the anon key\\\\\\\\\\\\\\\"&amp;gt;\\\\\\\\n  Calling &amp;#96;signInAnonymously()&amp;#96; creates an anonymous user. It's just like a permanent user, except the user can't access their account if they sign out, clear browsing data, or use another device.\\\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 6501,
+                  "content": "For linking an email identity to an existing authenticated user, we should use &#96;updateUser()&#96; to add the email, then verify with &#96;verifyOtp()&#96; using type &#96;'email_change'&#96;. However, this may change the primary email rather than add a secondary identity."
+                },
+                {
+                  "lineNumber": 6549,
+                  "content": "Two separate users confirmed. &#96;signInWithOtp()&#96; creates a new user instead of linking. For linking an email identity to an existing authenticated user, use &#96;updateUser()&#96; to add the email, then verify with &#96;verifyOtp()&#96; using type &#96;'email_change'&#96;. Updating the implementation:"
+                },
+                {
+                  "lineNumber": 6563,
+                  "content": "Code already uses &#96;updateUser()&#96; and &#96;verifyOtp(type: 'email_change')&#96;. Verifying OTP may create a new session. Refreshing the session after verification to ensure identities are linked:"
+                },
+                {
+                  "lineNumber": 6579,
+                  "content": "Checking if &#96;updateUser()&#96; changes the primary email instead of adding a secondary identity. Verifying the current implementation and testing a different approach if needed:"
+                },
+                {
+                  "lineNumber": 6593,
+                  "content": "The implementation looks correct. The issue may be that &#96;updateUser()&#96; changes the primary email instead of adding a secondary identity for OAuth users. Verifying the current flow and adding better error handling and logging to diagnose:"
+                },
+                {
+                  "lineNumber": 6609,
+                  "content": "Creating a server action to manually link identities after OTP verification, since &#96;updateUser()&#96; may not link correctly for OAuth users:"
+                },
+                {
+                  "lineNumber": 6996,
+                  "content": "        \"contents\": \"\\\"use client\\\";\\n\\nimport { useState } from \\\"react\\\";\\nimport { createClient } from \\\"@/lib/supabase/client\\\";\\nimport { useRouter } from \\\"next/navigation\\\";\\nimport {\\n  Card,\\n  CardContent,\\n  CardDescription,\\n  CardHeader,\\n  CardTitle,\\n} from \\\"@/components/ui/card\\\";\\nimport { Input } from \\\"@/components/ui/input\\\";\\nimport { Label } from \\\"@/components/ui/label\\\";\\nimport { Button } from \\\"@/components/ui/button\\\";\\nimport { cn } from \\\"@/lib/utils\\\";\\n\\n/**\\n * Form component for email verification via OTP\\n * Allows users to link an email identity to their Google OAuth account\\n */\\nexport function VerifyEmailForm() {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [otpCode, setOtpCode] = useState(\\\"\\\");\\n  const [step, setStep] = useState&amp;lt;\\\"email\\\" | \\\"otp\\\"&amp;gt;(\\\"email\\\");\\n  const [isLoading, setIsLoading] = useState(false);\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const router = useRouter();\\n  const supabase =  [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7126,
+                  "content": "            \"text\": \"   * Uses updateUser to add email identity to the current authenticated user\","
+                },
+                {
+                  "lineNumber": 7188,
+                  "content": "            \"text\": \"      // Use updateUser to add email identity to existing authenticated user\","
+                },
+                {
+                  "lineNumber": 7204,
+                  "content": "            \"text\": \"      const { data: updateData, error: updateError } = await supabase.auth.updateUser({\","
+                },
+                {
+                  "lineNumber": 7306,
+                  "content": "        \"contents\": \"export function VerifyEmailForm() {\\nconst handleSendOTP = async \\n\\n\\n      // Move to OTP verification step\\n      setStep(\\\"otp\\\");\\n      setIsLoading(false);\\n    } catch (err) {\\n      setError(\\\"An unexpected error occurred\\\");\\n      setIsLoading(false);\\n    }\\n  };\\n\\n  /**\\n   * Verifies the OTP code and links email identity to user\\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\\n   * With enable_manual_linking = true, this will link the email identity\\n   * to the existing authenticated user account\\n   */\\n  const handleVerifyOTP = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    setError(null);\\n    setIsLoading(true);\\n\\n    try {\\n      // Verify OTP code for email change/linking\\n      // Use type 'email_change' because we used updateUser() to initiate the flow\\n      // With enable_manual_linking = true, this will link the email identity\\n      // to the current authenticated user instead of c [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 7391,
+                  "content": "            \"text\": \"   * Uses type 'email_change' since we're updating the user's email via updateUser()\","
+                },
+                {
+                  "lineNumber": 7434,
+                  "content": "            \"text\": \"      // Use type 'email_change' because we used updateUser() to initiate the flow\","
+                },
+                {
+                  "lineNumber": 12036,
+                  "content": "The implementation looks correct. The issue is that &#96;updateUser()&#96; + &#96;verifyOtp(type: 'email_change')&#96; may change the primary email instead of adding a secondary identity for OAuth users."
+                },
+                {
+                  "lineNumber": 12045,
+                  "content": "The code now uses &#96;updateUser()&#96; + &#96;verifyOtp(type: 'email_change')&#96;, which should link the email identity when manual linking is enabled. However, there's a known limitation: &#96;updateUser()&#96; may change the primary email instead of adding a secondary identity for OAuth users."
+                },
+                {
+                  "lineNumber": 12048,
+                  "content": "1. Test the current implementation with &#96;updateUser()&#96; + &#96;verifyOtp(type: 'email_change')&#96;"
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-30_19-43Z-work-email-authentication,-no-administration-features.md",
+              "matches": [
+                {
+                  "lineNumber": 1315,
+                  "content": "        \"contents\": \"\\\"use client\\\";\\n\\nimport { cn } from \\\"@/lib/utils\\\";\\nimport { createClient } from \\\"@/lib/supabase/client\\\";\\nimport { Button } from \\\"@/components/ui/button\\\";\\nimport {\\n  Card,\\n  CardContent,\\n  CardDescription,\\n  CardHeader,\\n  CardTitle,\\n} from \\\"@/components/ui/card\\\";\\nimport { Input } from \\\"@/components/ui/input\\\";\\nimport { Label } from \\\"@/components/ui/label\\\";\\nimport Link from \\\"next/link\\\";\\nimport { useRouter } from \\\"next/navigation\\\";\\nimport { useState } from \\\"react\\\";\\n\\nexport function SignUpForm({\\n  className,\\n  ...props\\n}: React.ComponentPropsWithoutRef&amp;lt;\\\"div\\\"&amp;gt;) {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [password, setPassword] = useState(\\\"\\\");\\n  const [repeatPassword, setRepeatPassword] = useState(\\\"\\\");\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isLoading, setIsLoading] = useState(false);\\n  const router = useRouter();\\n\\n  const handleSignUp = async (e: React.FormEvent) =&amp;gt; [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 1502,
+                  "content": "            \"text\": \"          emailRedirectTo: &amp;#96;${window.location.origin}/protected&amp;#96;,\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-30_19-18Z-work-email-authentication-system-plan.md",
+              "matches": [
+                {
+                  "lineNumber": 1960,
+                  "content": "        \"contents\": \"\\\"use client\\\";\\n\\nimport { cn } from \\\"@/lib/utils\\\";\\nimport { createClient } from \\\"@/lib/supabase/client\\\";\\nimport { Button } from \\\"@/components/ui/button\\\";\\nimport {\\n  Card,\\n  CardContent,\\n  CardDescription,\\n  CardHeader,\\n  CardTitle,\\n} from \\\"@/components/ui/card\\\";\\nimport { Input } from \\\"@/components/ui/input\\\";\\nimport { Label } from \\\"@/components/ui/label\\\";\\nimport Link from \\\"next/link\\\";\\nimport { useRouter } from \\\"next/navigation\\\";\\nimport { useState } from \\\"react\\\";\\n\\nexport function SignUpForm({\\n  className,\\n  ...props\\n}: React.ComponentPropsWithoutRef&amp;lt;\\\"div\\\"&amp;gt;) {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [password, setPassword] = useState(\\\"\\\");\\n  const [repeatPassword, setRepeatPassword] = useState(\\\"\\\");\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isLoading, setIsLoading] = useState(false);\\n  const router = useRouter();\\n\\n  const handleSignUp = async (e: React.FormEvent) =&amp;gt; [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 2147,
+                  "content": "            \"text\": \"          emailRedirectTo: &amp;#96;${window.location.origin}/protected&amp;#96;,\","
+                },
+                {
+                  "lineNumber": 3828,
+                  "content": "        \"contents\": \"\\\"use client\\\";\\n\\nimport { cn } from \\\"@/lib/utils\\\";\\nimport { createClient } from \\\"@/lib/supabase/client\\\";\\nimport { Button } from \\\"@/components/ui/button\\\";\\nimport {\\n  Card,\\n  CardContent,\\n  CardDescription,\\n  CardHeader,\\n  CardTitle,\\n} from \\\"@/components/ui/card\\\";\\nimport { Input } from \\\"@/components/ui/input\\\";\\nimport { Label } from \\\"@/components/ui/label\\\";\\nimport { useRouter } from \\\"next/navigation\\\";\\nimport { useState } from \\\"react\\\";\\n\\nexport function UpdatePasswordForm({\\n  className,\\n  ...props\\n}: React.ComponentPropsWithoutRef&amp;lt;\\\"div\\\"&amp;gt;) {\\n  const [password, setPassword] = useState(\\\"\\\");\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isLoading, setIsLoading] = useState(false);\\n  const router = useRouter();\\n\\n  const handleForgotPassword = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    const supabase = createClient();\\n    setIsLoading(true);\\n    setError(null);\\n\\n    try {\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3964,
+                  "content": "            \"text\": \"      const { error } = await supabase.auth.updateUser({ password });\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-30_18-34Z-work-email-authentication-system-plan.md",
+              "matches": [
+                {
+                  "lineNumber": 2958,
+                  "content": "        \"contents\": \"\\\"use client\\\";\\n\\nimport { cn } from \\\"@/lib/utils\\\";\\nimport { createClient } from \\\"@/lib/supabase/client\\\";\\nimport { Button } from \\\"@/components/ui/button\\\";\\nimport {\\n  Card,\\n  CardContent,\\n  CardDescription,\\n  CardHeader,\\n  CardTitle,\\n} from \\\"@/components/ui/card\\\";\\nimport { Input } from \\\"@/components/ui/input\\\";\\nimport { Label } from \\\"@/components/ui/label\\\";\\nimport Link from \\\"next/link\\\";\\nimport { useRouter } from \\\"next/navigation\\\";\\nimport { useState } from \\\"react\\\";\\n\\nexport function SignUpForm({\\n  className,\\n  ...props\\n}: React.ComponentPropsWithoutRef&amp;lt;\\\"div\\\"&amp;gt;) {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [password, setPassword] = useState(\\\"\\\");\\n  const [repeatPassword, setRepeatPassword] = useState(\\\"\\\");\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isLoading, setIsLoading] = useState(false);\\n  const router = useRouter();\\n\\n  const handleSignUp = async (e: React.FormEvent) =&amp;gt; [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 3145,
+                  "content": "            \"text\": \"          emailRedirectTo: &amp;#96;${window.location.origin}/protected&amp;#96;,\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-30_17-52Z-work-email-authentication-system-plan.md",
+              "matches": [
+                {
+                  "lineNumber": 8934,
+                  "content": "        \"contents\": \"\\\"use client\\\";\\n\\nimport { cn } from \\\"@/lib/utils\\\";\\nimport { createClient } from \\\"@/lib/supabase/client\\\";\\nimport { Button } from \\\"@/components/ui/button\\\";\\nimport {\\n  Card,\\n  CardContent,\\n  CardDescription,\\n  CardHeader,\\n  CardTitle,\\n} from \\\"@/components/ui/card\\\";\\nimport { Input } from \\\"@/components/ui/input\\\";\\nimport { Label } from \\\"@/components/ui/label\\\";\\nimport Link from \\\"next/link\\\";\\nimport { useRouter } from \\\"next/navigation\\\";\\nimport { useState } from \\\"react\\\";\\n\\nexport function SignUpForm({\\n  className,\\n  ...props\\n}: React.ComponentPropsWithoutRef&amp;lt;\\\"div\\\"&amp;gt;) {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [password, setPassword] = useState(\\\"\\\");\\n  const [repeatPassword, setRepeatPassword] = useState(\\\"\\\");\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isLoading, setIsLoading] = useState(false);\\n  const router = useRouter();\\n\\n  const handleSignUp = async (e: React.FormEvent) =&amp;gt; [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 9121,
+                  "content": "            \"text\": \"          emailRedirectTo: &amp;#96;${window.location.origin}/protected&amp;#96;,\","
+                }
+              ]
+            },
+            {
+              "file": "./.specstory/history/2026-01-30_17-51Z-work-email-authentication-system-plan.md",
+              "matches": [
+                {
+                  "lineNumber": 11804,
+                  "content": "        \"contents\": \"export const formatUserData = (user: User): FormattedUser =&amp;gt; ({\\n  id: user.id,\\n  name: &amp;#96;${user.firstName} ${user.lastName}&amp;#96;,\\n  email: user.email.toLowerCase(),\\n  isActive: user.status === 'active'\\n});\\n\\n/**\\n * Higher-order function that wraps async functions with error handling\\n * @param fn - The async function to wrap\\n * @returns A new function with error handling\\n */\\nexport const withErrorHandling = &amp;lt;T extends any[], R&amp;gt;(\\n  fn: (...args: T) =&amp;gt; Promise&amp;lt;R&amp;gt;\\n) =&amp;gt; async (...args: T): Promise&amp;lt;R&amp;gt; =&amp;gt; {\\n  try {\\n    return await fn(...args);\\n  } catch (error) {\\n    console.error('Function error:', error);\\n    throw error;\\n  }\\n};\\n\\n/**\\n * Composes multiple functions to process user data\\n * Applies formatting, error handling, and validation in sequence\\n */\\nexport const processUserData = pipe(\\n  formatUserData,\\n  withErrorHandling,\\n  validateUserData\\n);\\n\\n/**\\n * Updates a user in an array without mutating the [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 11965,
+                  "content": "            \"text\": \"export const updateUser = (users: User[], userId: string, updates: Partial&amp;lt;User&amp;gt;): User[] =&amp;gt;\","
+                },
+                {
+                  "lineNumber": 13386,
+                  "content": "        \"contents\": \"\\\"use client\\\";\\n\\nimport { cn } from \\\"@/lib/utils\\\";\\nimport { createClient } from \\\"@/lib/supabase/client\\\";\\nimport { Button } from \\\"@/components/ui/button\\\";\\nimport {\\n  Card,\\n  CardContent,\\n  CardDescription,\\n  CardHeader,\\n  CardTitle,\\n} from \\\"@/components/ui/card\\\";\\nimport { Input } from \\\"@/components/ui/input\\\";\\nimport { Label } from \\\"@/components/ui/label\\\";\\nimport { useRouter } from \\\"next/navigation\\\";\\nimport { useState } from \\\"react\\\";\\n\\nexport function UpdatePasswordForm({\\n  className,\\n  ...props\\n}: React.ComponentPropsWithoutRef&amp;lt;\\\"div\\\"&amp;gt;) {\\n  const [password, setPassword] = useState(\\\"\\\");\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isLoading, setIsLoading] = useState(false);\\n  const router = useRouter();\\n\\n  const handleForgotPassword = async (e: React.FormEvent) =&amp;gt; {\\n    e.preventDefault();\\n    const supabase = createClient();\\n    setIsLoading(true);\\n    setError(null);\\n\\n    try {\\ [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 13522,
+                  "content": "            \"text\": \"      const { error } = await supabase.auth.updateUser({ password });\","
+                },
+                {
+                  "lineNumber": 13591,
+                  "content": "        \"contents\": \"\\\"use client\\\";\\n\\nimport { cn } from \\\"@/lib/utils\\\";\\nimport { createClient } from \\\"@/lib/supabase/client\\\";\\nimport { Button } from \\\"@/components/ui/button\\\";\\nimport {\\n  Card,\\n  CardContent,\\n  CardDescription,\\n  CardHeader,\\n  CardTitle,\\n} from \\\"@/components/ui/card\\\";\\nimport { Input } from \\\"@/components/ui/input\\\";\\nimport { Label } from \\\"@/components/ui/label\\\";\\nimport Link from \\\"next/link\\\";\\nimport { useRouter } from \\\"next/navigation\\\";\\nimport { useState } from \\\"react\\\";\\n\\nexport function SignUpForm({\\n  className,\\n  ...props\\n}: React.ComponentPropsWithoutRef&amp;lt;\\\"div\\\"&amp;gt;) {\\n  const [email, setEmail] = useState(\\\"\\\");\\n  const [password, setPassword] = useState(\\\"\\\");\\n  const [repeatPassword, setRepeatPassword] = useState(\\\"\\\");\\n  const [error, setError] = useState&amp;lt;string | null&amp;gt;(null);\\n  const [isLoading, setIsLoading] = useState(false);\\n  const router = useRouter();\\n\\n  const handleSignUp = async (e: React.FormEvent) =&amp;gt; [... omitted end of long line]"
+                },
+                {
+                  "lineNumber": 13778,
+                  "content": "            \"text\": \"          emailRedirectTo: &amp;#96;${window.location.origin}/protected&amp;#96;,\","
+                }
+              ]
+            },
+            {
+              "file": "./.cursor/rules/nextjs-development.mdc",
+              "matches": [
+                {
+                  "lineNumber": 610,
+                  "content": "export const updateUser = (users: User[], userId: string, updates: Partial&lt;User&gt;): User[] =&gt;"
+                }
+              ]
+            }
+          ],
+          "totalLines": 817,
+          "totalMatchedLines": 817
+        }
+      }
+    }
+  }
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Verifying the implementation is correct:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+## Summary
+
+Updated the email verification flow to include the `next` parameter in the Supabase email link.
+
+### Changes Made:
+
+**Updated `verify-email-form.tsx`**:
+- Added `emailRedirectTo` to the `updateUser` call
+- Constructs the redirect URL with the `next` parameter included
+- The email verification link now goes to `/auth/confirm-email-change?next=/protected` (or whatever the `next` value is)
+
+### How It Works Now:
+
+1. User visits `/auth/verify-email?next=/protected`
+2. User enters email and clicks "Send OTP"
+3. `updateUser` is called with:
+   ```typescript
+   emailRedirectTo: "http://localhost:3000/auth/confirm-email-change?next=/protected"
+   ```
+4. Supabase sends an email with a link that includes the `next` parameter
+5. When the user clicks the email link, they're redirected to:
+   `/auth/confirm-email-change?token_hash=...&type=email_change&next=/protected`
+6. The `confirm-email-change` route (already implemented) reads the `next` parameter and redirects the user to `/protected` after successful verification
+
+The `next` parameter is now preserved through the entire email verification flow, including the email link sent by Supabase.
+
+---
+
+_**User**_
+
+@components/verify-email-form.tsx:126 
+
+Make sure there is either ? or & trailing after the url (so that we can put token hash in there)
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
+<details>
+<summary>Tool use: **read_file_v2**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+Status: **loading**
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_file_v2">
+<details>
+<summary>Tool use: **read_file_v2**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+Status: **loading**
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+Status: **loading**
+
+
+</details>
+</tool-use>
+
+---
+
+
+
+---
+

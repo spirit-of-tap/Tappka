@@ -49,3 +49,5 @@ Write Postgres-compatible SQL code for Supabase migration files that:
 - Make sure to use public schema for all tables and functions. Do not use auth schema as we do not have permissions for it in production.
 
 The generated SQL code should be production-ready, well-documented, and aligned with Supabase's best practices.
+
+**Do not comment on auth.tables as we do not have permissions for it in production.**

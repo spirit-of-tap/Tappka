@@ -1,12 +1,8 @@
 import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
 import { AuthButton } from "@/components/auth-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import Link from "next/link";
 import { Suspense } from "react";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { hasEmailIdentity } from "@/lib/auth-helpers";
 
 export default async function ProtectedLayout({
   children,
