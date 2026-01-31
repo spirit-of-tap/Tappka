@@ -40,9 +40,10 @@ begin
   
   -- Link profile to user if work_email matches auth.users.email
   -- Only update if profile exists and is not already linked to a different user
+  -- Normalize both sides of comparison to handle case/whitespace differences
   update public.profiles
   set user_id = v_user_id
-  where work_email = lower(trim(v_auth_email))
+  where lower(trim(work_email)) = lower(trim(v_auth_email))
     and (user_id is null or user_id = v_user_id);
   
   return new;
@@ -73,11 +74,12 @@ comment on trigger link_user_to_profile_trigger on auth.users is 'Trigger that a
 
 -- Link existing profiles to users based on current email matches
 -- This handles any existing data that needs to be linked
+-- Normalize both sides of comparison to handle case/whitespace differences
 update public.profiles p
 set user_id = u.id
 from public.users u
 inner join auth.users au on u.auth_user_id = au.id
-where p.work_email = lower(trim(au.email))
+where lower(trim(p.work_email)) = lower(trim(au.email))
   and (p.user_id is null or p.user_id = u.id);
 
 comment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification. Automatically linked when auth.users.email matches profiles.work_email.';
@@ -88,4 +90,3 @@ comment on table public.profiles is 'User profile data with role and team member
 
 -- Grant execute permissions for the trigger function
 grant execute on function public.link_user_to_profile() to authenticated;
-grant execute on function public.link_user_to_profile() to anon;

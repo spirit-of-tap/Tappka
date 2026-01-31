@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
     if (!error) {
       // Check if user has email identity linked
       // If not, redirect to verify-email page
-      const hasEmail = await hasEmailIdentity();
+      // Use the same supabase client to ensure we have the just-exchanged session
+      const hasEmail = await hasEmailIdentity(supabase);
 
       // Validate the next parameter to prevent open redirects
       const validatedNext = validateRedirectUrl(next, origin);

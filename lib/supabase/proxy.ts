@@ -45,6 +45,8 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isPublicRoute = pathname === "/" || pathname.startsWith("/auth");
+  const isVerifyEmailRoute = pathname === "/auth/verify-email";
+  const isPendingApprovalRoute = pathname === "/auth/pending-approval";
 
   // Redirect to login if not authenticated (except for public routes)
   if (!isPublicRoute && !user) {
@@ -53,8 +55,31 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Check for email identity verification first if user is authenticated
+  // This check runs for protected routes and pending-approval route
+  // Skip this check only for verify-email route and other auth routes
+  if (user && !isVerifyEmailRoute && (!isPublicRoute || isPendingApprovalRoute)) {
+    // Check if user has an email identity (not just OAuth providers like Google)
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+
+    if (authUser) {
+      const identities = authUser.identities || [];
+      const hasEmailIdentity = identities.some(
+        (identity) => identity.provider === "email"
+      );
+
+      // If no email identity, redirect to verify email page
+      if (!hasEmailIdentity) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/auth/verify-email";
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
   // Check for linked profile if user is authenticated and not on public routes
-  if (user && !isPublicRoute) {
+  // Skip this check for verify-email and pending-approval routes
+  if (user && !isPublicRoute && !isVerifyEmailRoute && !isPendingApprovalRoute) {
     // Get the public.users row linked to this auth user
     const { data: publicUser } = await supabase
       .from("users")

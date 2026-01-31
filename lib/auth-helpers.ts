@@ -3,10 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * Checks if the authenticated user has an email identity linked
  * (not just OAuth providers like Google)
+ * @param supabaseClient - Optional Supabase client to use. If not provided, creates a new client.
  * @returns true if user has an email identity, false otherwise
  */
-export async function hasEmailIdentity(): Promise<boolean> {
-  const supabase = await createClient();
+export async function hasEmailIdentity(
+  supabaseClient?: Awaited<ReturnType<typeof createClient>>
+): Promise<boolean> {
+  const supabase = supabaseClient ?? await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {
@@ -36,23 +39,13 @@ export async function hasLinkedProfile(): Promise<boolean> {
     return false;
   }
 
-  // Get the public.users row linked to this auth user
-  const { data: publicUser } = await supabase
+  // Single query using nested select to check for linked profile
+  // Joins users and profiles tables in a single database call
+  const { data: userWithProfile } = await supabase
     .from("users")
-    .select("id")
+    .select("profiles(id)")
     .eq("auth_user_id", user.id)
     .single();
 
-  if (!publicUser) {
-    return false;
-  }
-
-  // Check if there's a profile linked to this user
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("user_id", publicUser.id)
-    .single();
-
-  return !!profile;
+  return !!userWithProfile?.profiles && userWithProfile.profiles.length > 0;
 }

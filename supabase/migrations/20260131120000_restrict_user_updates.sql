@@ -10,38 +10,67 @@
 -- Create trigger function to restrict updates to suggested_work_email only
 -- Automatically updates last_otp_sent_at when suggested_work_email changes
 -- Prevents users from modifying any other fields in the users table
+-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones
 create or replace function public.handle_user_update_restriction()
 returns trigger
 language plpgsql
 security definer
-set search_path = public, auth
+set search_path = public, auth, pg_catalog
 as $$
-begin
-  -- Allow only suggested_work_email to be changed
-  -- Reset all other fields to their original values to prevent modification
-  new.id := old.id;
-  new.auth_user_id := old.auth_user_id;
-  new.google_email := old.google_email;
-  new.google_profile_picture := old.google_profile_picture;
-  new.google_full_name := old.google_full_name;
-  new.created_at := old.created_at;
+declare
+  -- Whitelist: fields that users are allowed to modify
+  v_allowed_fields text[] := array['suggested_work_email'];
   
-  -- Automatically update last_otp_sent_at when suggested_work_email changes
-  if old.suggested_work_email is distinct from new.suggested_work_email then
-    new.last_otp_sent_at := now();
+  -- Fields with special handling logic (not reset from OLD)
+  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];
+  
+  -- JSONB representations of OLD and NEW records
+  v_old_jsonb jsonb;
+  v_new_jsonb jsonb;
+  v_result_jsonb jsonb;
+  
+  -- Column name for iteration
+  v_column_name text;
+begin
+  -- Convert records to jsonb for dynamic manipulation
+  v_old_jsonb := to_jsonb(old);
+  v_new_jsonb := to_jsonb(new);
+  
+  -- Start with OLD values (protected state)
+  v_result_jsonb := v_old_jsonb;
+  
+  -- Allow only whitelisted fields from NEW to override OLD values
+  foreach v_column_name in array v_allowed_fields
+  loop
+    if v_new_jsonb ? v_column_name then
+      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb->v_column_name);
+    end if;
+  end loop;
+  
+  -- Handle special field: last_otp_sent_at
+  -- Automatically update when suggested_work_email changes
+  if (v_old_jsonb->>'suggested_work_email') is distinct from (v_new_jsonb->>'suggested_work_email') then
+    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));
   else
     -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed
-    new.last_otp_sent_at := old.last_otp_sent_at;
+    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb->'last_otp_sent_at');
   end if;
   
-  -- updated_at is handled by the existing handle_updated_at() trigger
-  -- so we don't need to set it here
+  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)
+  -- But we include it here to ensure it's not reset
+  if v_new_jsonb ? 'updated_at' then
+    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb->'updated_at');
+  end if;
+  
+  -- Convert jsonb back to record type using jsonb_populate_record
+  -- This preserves proper type casting for all columns
+  new := jsonb_populate_record(null::public.users, v_result_jsonb);
   
   return new;
 end;
 $$;
 
-comment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only. Automatically updates last_otp_sent_at when suggested_work_email changes. Prevents modification of all other fields including google_email, google_profile_picture, google_full_name, auth_user_id, id, and created_at.';
+comment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only using a dynamic whitelist approach. Automatically updates last_otp_sent_at when suggested_work_email changes. Dynamically protects all columns except allowed fields, ensuring new columns added in future migrations are automatically protected without requiring function updates.';
 
 -- ============================================================================
 -- TRIGGERS

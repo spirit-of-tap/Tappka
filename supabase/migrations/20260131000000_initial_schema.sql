@@ -118,7 +118,11 @@ begin
     v_google_email,
     v_google_full_name,
     v_google_profile_picture
-  );
+  )
+  on conflict (auth_user_id) do update set
+    google_email = coalesce(excluded.google_email, public.users.google_email),
+    google_full_name = coalesce(excluded.google_full_name, public.users.google_full_name),
+    google_profile_picture = coalesce(excluded.google_profile_picture, public.users.google_profile_picture);
   
   return new;
 end;
@@ -266,7 +270,6 @@ create index profiles_team_id_idx on public.profiles(team_id);
 create index profiles_team_id_user_id_idx on public.profiles(team_id, user_id);
 create index users_google_email_idx on public.users(google_email);
 create index users_suggested_work_email_idx on public.users(suggested_work_email);
-create index users_auth_user_id_idx on public.users(auth_user_id);
 create index if not exists idx_realtime_messages_topic on realtime.messages(topic);
 
 -- ============================================================================
@@ -345,10 +348,8 @@ using (
 -- GRANTS
 -- ============================================================================
 
--- Grant execute permissions for trigger functions
-grant execute on function public.handle_new_auth_user() to authenticated;
-grant execute on function public.handle_new_auth_user() to anon;
-grant execute on function public.validate_czu_email_domain_trigger() to authenticated;
-grant execute on function public.validate_czu_email_domain_trigger() to anon;
-grant execute on function public.before_user_created_hook(jsonb) to authenticated;
-grant execute on function public.before_user_created_hook(jsonb) to anon;
+-- Grant execute permissions for Supabase Auth hook function
+-- Trigger functions (handle_new_auth_user, validate_czu_email_domain_trigger) are invoked by triggers, not directly, so no EXECUTE grants needed
+grant execute on function public.before_user_created_hook(jsonb) to supabase_auth_admin;
+grant usage on schema public to supabase_auth_admin;
+revoke execute on function public.before_user_created_hook(jsonb) from anon, authenticated, public;

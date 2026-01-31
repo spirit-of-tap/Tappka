@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { type EmailOtpType } from "@supabase/supabase-js";
+import { VALID_EMAIL_OTP_TYPES } from "@/lib/constants/auth";
 
 /**
  * Handles email change confirmation callback using PKCE flow with token_hash
@@ -10,7 +11,11 @@ import { type EmailOtpType } from "@supabase/supabase-js";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as EmailOtpType | null;
+  const typeParam = searchParams.get("type");
+  const type: EmailOtpType | null = 
+    typeParam && (VALID_EMAIL_OTP_TYPES as readonly string[]).includes(typeParam)
+      ? (typeParam as EmailOtpType)
+      : null;
 
   let supabaseResponse = NextResponse.next({
     request,
@@ -26,15 +31,15 @@ export async function GET(request: NextRequest) {
             return request.cookies.getAll();
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value),
-            );
+            cookiesToSet.forEach(({ name, value }) => {
+              request.cookies.set(name, value);
+            });
             supabaseResponse = NextResponse.next({
               request,
             });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options),
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              supabaseResponse.cookies.set(name, value, options);
+            });
           },
         },
       },

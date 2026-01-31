@@ -63,7 +63,7 @@ export function AuthTestPageClient() {
     const password = formData.get("password") as string;
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -108,7 +108,7 @@ export function AuthTestPageClient() {
     const email = formData.get("email") as string;
 
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: true,
@@ -168,7 +168,7 @@ export function AuthTestPageClient() {
     }
 
     try {
-      const { data, error } = await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         email: email.trim(),
       });
 
@@ -253,7 +253,7 @@ export function AuthTestPageClient() {
               <div>
                 <strong>Identities:</strong>
                 <div className="mt-2 space-y-1">
-                  {user.identities?.map((identity: any) => (
+                  {user.identities?.map((identity) => (
                     <Badge key={identity.id} variant="outline" className="mr-2">
                       {identity.provider}
                     </Badge>

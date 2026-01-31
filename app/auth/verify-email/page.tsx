@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { VerifyEmailForm } from "@/components/verify-email-form";
-import { hasEmailIdentity } from "@/lib/auth-helpers";
 
 /**
  * Email verification page
- * Users must link an email via OTP to their Google OAuth account
+ * Users can link an email via OTP to their Google OAuth account
+ * Users with existing email identities can also access this page to add additional emails
  */
 export default async function VerifyEmailPage() {
   const supabase = await createClient();
@@ -14,12 +14,6 @@ export default async function VerifyEmailPage() {
   // Redirect to login if not authenticated
   if (!data?.claims) {
     redirect("/auth/login");
-  }
-
-  // Redirect to protected if already has email identity
-  const hasEmail = await hasEmailIdentity();
-  if (hasEmail) {
-    redirect("/protected");
   }
 
   return (
