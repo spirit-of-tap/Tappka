@@ -6,6 +6,8 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  // If the env vars are not set, skip proxy check. You can remove this
+  // once you setup the project.
 
   // With Fluid compute, don't put this client in a global environment
   // variable. Always create a new one on each request.

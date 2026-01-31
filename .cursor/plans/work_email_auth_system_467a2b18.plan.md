@@ -1,15 +1,9 @@
 ---
 name: Work Email Auth System
-overview: Build a robust authentication system using Supabase with Google OAuth, work email verification (@studenti.czu.cz or @pef.czu.cz), profile linking, team management, and role-based permissions (student, team_leader, coach, admin).
+overview: Build a robust authentication system using Supabase with Google OAuth, work email verification (@studenti.czu.cz or @pef.czu.cz)
 todos:
-  - id: cleanup-old-auth
-    content: Delete unused password-based auth files (8 files)
-    status: pending
-  - id: security-lockdown
-    content: Lock down Supabase to only allow Google OAuth (disable email signup, other providers)
-    status: pending
   - id: db-schema
-    content: Create Supabase migration for profiles and teams tables with RLS
+    content: Create Supabase migration for users and profiles tables (no RLS - access control in Next.js)
     status: pending
   - id: profile-verification
     content: Implement database-based profile verification (no JWT claims)
@@ -21,7 +15,7 @@ todos:
     content: Create lib/constants/auth.ts with domain validation and role constants
     status: pending
   - id: server-actions
-    content: Create lib/actions/auth.ts with profile linking, verification, access management
+    content: Create lib/actions/auth.ts with profile linking, verification, and access revocation
     status: pending
   - id: middleware-update
     content: Update proxy.ts to query profiles table for verified user and access status
@@ -32,8 +26,11 @@ todos:
   - id: verify-email-flow
     content: Create work email verification page with OTP and identity linking
     status: pending
-  - id: admin-ui
-    content: Create admin pages for managing profiles and teams
+  - id: pending-approval-page
+    content: Create pending approval page for users without profiles
+    status: pending
+  - id: access-revoked-page
+    content: Create access revoked page for users with revoked access
     status: pending
 ---
 
@@ -89,40 +86,38 @@ flowchart TD
 
 ## Database Schema (Supabase Migrations)
 
-Three tables with RLS policies managed entirely in Supabase:
+Two tables with **no RLS** - all access control is handled in Next.js:
 
-1. **`users`** - Custom table to sync with auth.users (Google OAuth)
-2. **`profiles`** - User profile data with role and team membership
-3. **`teams`** - Team information
+1. **`users`** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions
+2. **`profiles`** - User authentication profile data with role and access control
+
+**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.
 
 Use MODDATETIME extension to set the `updated_at` column on every update.
 
 ```sql
--- Role enum for profiles
-create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');
-
--- Teams table
-create table public.teams (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
+-- Users table to sync with auth.users (Google OAuth)
+-- Note: Synced via Next.js server actions, not database triggers
+create table public.users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  name text,
   picture text,
-  color text,
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null
 );
 
+-- Role enum for profiles (authorization)
+create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');
+
 -- Profiles table (pre-created by admin, linked to user after verification)
+-- Focus: Authentication and authorization only
 create table public.profiles (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  picture text,  -- defaults to Google profile picture on link
-  user_id uuid unique references auth.users(id) on delete set null,  -- linked after OTP verification
+  user_id uuid unique references public.users(id) on delete set null,  -- linked after OTP verification
   work_email text unique not null,
   role public.profile_role not null default 'student',
-  team_id uuid references public.teams(id) on delete set null,
-  phone_number text,
-  personal_email text,
-  date_of_birth date,
   removed_access timestamptz,  -- null = active, set = revoked
   removed_access_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz default now() not null,
@@ -132,30 +127,23 @@ create table public.profiles (
   )
 );
 
-
--- Indexes for common queries
+-- Indexes for auth queries
 create index profiles_user_id_idx on public.profiles(user_id);
 create index profiles_work_email_idx on public.profiles(work_email);
-create index profiles_team_id_idx on public.profiles(team_id);
 ```
 
 ### Entity Relationships
 
 ```
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│   auth.users    │       │    profiles     │       │     teams       │
-│  (Supabase)     │       │                 │       │                 │
-├─────────────────┤       ├─────────────────┤       ├─────────────────┤
-│ id (uuid)       │◄──┐   │ id (uuid)       │   ┌──►│ id (uuid)       │
-│ email (google)  │   │   │ name            │   │   │ name            │
-│ ...auth fields  │   └───│ user_id (1:1)   │   │   │ picture         │
-└─────────────────┘       │ work_email      │   │   │ color           │
-                          │ role (enum)     │   │   │ created_at      │
-                          │ team_id (n:1)───┼───┘   │ updated_at      │
-                          │ picture         │       └─────────────────┘
-                          │ phone_number    │
-                          │ personal_email  │
-                          │ date_of_birth   │
+┌─────────────────┐       ┌─────────────────┐
+│   auth.users    │       │    profiles     │
+│  (Supabase)     │       │  (Auth only)    │
+├─────────────────┤       ├─────────────────┤
+│ id (uuid)       │◄──┐   │ id (uuid)       │
+│ email (google)  │   │   │ name            │
+│ ...auth fields  │   └───│ user_id (1:1)   │
+└─────────────────┘       │ work_email      │
+                          │ role (enum)     │
                           │ removed_access  │
                           │ removed_access_by│──┐
                           │ created_at      │  │
@@ -243,25 +231,30 @@ The project has a `supabase/` directory with Supabase MCP (Model Context Protoco
 
 1. **Running migrations**: Apply and test database schema changes locally
 2. **Debugging auth flow**: Inspect user sessions and profile data
-3. **Testing verification logic**: Query profiles and teams tables
+3. **Testing verification logic**: Query profiles table for auth checks
 
 **Useful MCP commands for development:**
 
-- Verify RLS policies by querying as different user roles
-- Seed test data into profiles and teams tables
+- Seed test data into profiles table for auth testing
 - Inspect auth.users and profiles tables
 - Test profile linking and access revocation queries
 
 ## Key Security Features
 
-### Supabase (Data Layer)
+### Supabase (Data Layer Only)
 
-2. **Database Constraints**:
+1. **Database Constraints**:
 
    - Domain constraint ensures only valid CZU domains in profiles
    - Unique constraints on work_email, user_id
 
-### Next.js (Application Layer)
+2. **No RLS or Functions**:
+
+   - No Row Level Security policies
+   - No database triggers or functions
+   - All access control handled by Next.js
+
+### Next.js (Application Layer - All Business Logic)
 
 1. **Middleware Verification**:
 
@@ -363,11 +356,11 @@ if (profile.removed_access) redirect('/auth/access-revoked');
 
 | Security lockdown config | Trivial | ~20 lines TOML |
 
-| Database migration | Low | ~50 lines SQL (profiles, teams, indexes) |
+| Database migration | Low | ~40 lines SQL (users, profiles, indexes) |
 
 | Constants + validation | Trivial | ~25 lines |
 
-| Server actions (business logic) | Medium | ~80 lines |
+| Server actions (auth logic) | Medium | ~60 lines |
 
 | Middleware update | Medium | ~50 lines (includes DB queries) |
 
@@ -375,22 +368,24 @@ if (profile.removed_access) redirect('/auth/access-revoked');
 
 | Work email form + linking | Medium | ~120 lines |
 
-| Admin UI (profiles + teams) | Medium | ~150 lines |
+| Pending approval page | Low | ~20 lines |
 
-**Total new code**: ~525 lines (vs ~500 lines deleted)
+| Access revoked page | Low | ~20 lines |
+
+**Total new code**: ~385 lines (vs ~500 lines deleted)
 
 ## Separation of Concerns
 
 ### Supabase (Auth + Storage Only)
 
 - **Authentication**: Google OAuth flow, session management, OTP emails
-- **Database**: Store profiles, teams data with RLS for row-level access control
-- **No business logic**: No custom hooks, no stored procedures, no triggers for business rules
+- **Database**: Store profiles and users data (no RLS - Next.js handles access control)
+- **No business logic**: No custom hooks, no stored procedures, no triggers, no functions
 
 ### Next.js (All Business Logic)
 
 - **Middleware**: Profile verification, access checks, role-based routing
-- **Server Actions**: Profile linking, access revocation, team management
+- **Server Actions**: Profile linking, access revocation
 - **Validation**: Domain validation, input sanitization, business rules
 - **Authorization**: Role hierarchy checks, permission enforcement
 ```
@@ -400,8 +395,8 @@ if (profile.removed_access) redirect('/auth/access-revoked');
 │  │ Middleware  │  │   Server    │  │      Components         │  │
 │  │ - Auth check│  │   Actions   │  │  - Login form           │  │
 │  │ - Profile   │  │ - Link      │  │  - OTP verification     │  │
-│  │   verify    │  │   profile   │  │  - Admin UI             │  │
-│  │ - Role gate │  │ - Revoke    │  │                         │  │
+│  │   verify    │  │   profile   │  │  - Pending approval     │  │
+│  │ - Role gate │  │ - Revoke    │  │  - Access revoked       │  │
 │  │             │  │   access    │  │                         │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
 │         │                │                     │                 │
@@ -418,8 +413,8 @@ if (profile.removed_access) redirect('/auth/access-revoked');
 │  ┌─────────────────────┐  ┌─────────────────────────────────┐   │
 │  │   Auth Service      │  │         PostgreSQL              │   │
 │  │  - Google OAuth     │  │  - profiles table               │   │
-│  │  - OTP emails       │  │  - teams table                  │   │
-│  │  - Session mgmt     │  │  - RLS policies (access ctrl)   │   │
+│  │  - OTP emails       │  │  - users table                  │   │
+│  │  - Session mgmt     │  │  - No RLS (Next.js handles)     │   │
 │  └─────────────────────┘  └─────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -427,8 +422,12 @@ if (profile.removed_access) redirect('/auth/access-revoked');
 
 ## Simplicity Principles
 
-2. **Business logic in Next.js** - Server actions and middleware handle all rules
-3. **Supabase for storage only** - No hooks, no custom functions, just tables + RLS
-4. **Minimal components** - Reuse shadcn/ui, no custom abstractions
-5. **Direct database queries** - Query profiles table for verification and access status
-6. **Admin-first onboarding** - Admin creates profiles, users link via work email verification
+1. **Business logic in Next.js** - Server actions and middleware handle all rules
+2. **Supabase for storage only** - No hooks, no custom functions, no RLS, just tables
+3. **Minimal components** - Reuse shadcn/ui, no custom abstractions
+4. **Direct database queries** - Query profiles table for verification and access status
+5. **Admin-first onboarding** - Admin creates profiles, users link via work email verification
+
+# Common Traps to Avoid
+
+1. The auth flow will get stuck once the user is redirected back to the nextjs app from supabase.
