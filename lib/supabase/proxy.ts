@@ -91,6 +91,8 @@ export async function updateSession(request: NextRequest) {
   if (!(await hasLinkedProfile(supabase))) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/pending-approval";
+    url.search = ""; // Strip all query parameters (e.g., from email verification or QR code)
+    url.hash = ""; // Strip hash as well
     return NextResponse.redirect(url);
   }
 
