@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicRoute } from "@/lib/constants/auth";
-import { hasEmailIdentity, hasLinkedProfile } from "@/lib/auth-helpers";
+import { hasEmailIdentity, hasLinkedProfile, redirectWithCookies } from "@/lib/auth-helpers";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -61,7 +61,7 @@ export async function updateSession(request: NextRequest) {
     url.search = ""; // Clear existing search params
     url.hash = ""; // Clear existing hash
     url.searchParams.set("next", fullPath);
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url, supabaseResponse);
   }
 
   // Check if user has an email identity (not just OAuth providers like Google)
@@ -73,7 +73,7 @@ export async function updateSession(request: NextRequest) {
     url.search = ""; // Clear existing search params
     url.hash = ""; // Clear existing hash
     url.searchParams.set("next", fullPath);
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url, supabaseResponse);
   }
 
   // If no email identity, redirect to verify email page
@@ -83,7 +83,7 @@ export async function updateSession(request: NextRequest) {
     url.search = ""; // Clear existing search params
     url.hash = ""; // Clear existing hash
     url.searchParams.set("next", fullPath);
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url, supabaseResponse);
   }
 
   // Check for linked profile if user is authenticated and not on public routes
@@ -93,7 +93,8 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/auth/pending-approval";
     url.search = ""; // Strip all query parameters (e.g., from email verification or QR code)
     url.hash = ""; // Strip hash as well
-    return NextResponse.redirect(url);
+    url.searchParams.set("next", fullPath);
+    return redirectWithCookies(url, supabaseResponse);
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
