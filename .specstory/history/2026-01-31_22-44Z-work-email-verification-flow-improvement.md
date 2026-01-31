@@ -13287,3 +13287,21 @@ The migration file now matches what's in the database, and the function should w
 
 ---
 
+_**User**_
+
+pnpm lint
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+Running the linter:
+
+
+---
+
+Cancelled
+
+---
+

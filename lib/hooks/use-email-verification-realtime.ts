@@ -50,11 +50,6 @@ export function useEmailVerificationRealtime() {
         // Channel name format: user:{auth_user_id}:verification
         const channelName = `user:${user.id}:verification`;
 
-        // Check if channel already exists and is subscribed
-        if (channelRef.current?.state === "SUBSCRIBED") {
-          return;
-        }
-
         // Create channel with private configuration
         const channel = supabase.channel(channelName, {
           config: {
