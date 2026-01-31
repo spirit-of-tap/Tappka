@@ -36,9 +36,15 @@ export function AuthTestPageClient() {
 
   useEffect(() => {
     checkUser();
-    supabase.auth.onAuthStateChange(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
       checkUser();
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkUser = async () => {
