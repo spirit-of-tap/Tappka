@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { VerifyEmailForm } from "@/components/verify-email-form";
+import { LogoutButton } from "@/components/logout-button";
 
 /**
  * Email verification page
@@ -24,7 +25,10 @@ export default async function VerifyEmailPage({
   const next = params.next;
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 relative">
+      <div className="absolute top-6 right-6 md:top-10 md:right-10">
+        <LogoutButton />
+      </div>
       <div className="w-full max-w-sm">
         <VerifyEmailForm next={next} />
       </div>
