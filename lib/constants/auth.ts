@@ -12,7 +12,6 @@ export const ALLOWED_WORK_EMAIL_DOMAINS = [
  * @returns True if the email ends with @studenti.czu.cz or @pef.czu.cz, false otherwise
  */
 export const isValidWorkEmailDomain = (email: string): boolean => {
-  return true;
   if (!email || !email.includes('@')) {
     return false;
   }
