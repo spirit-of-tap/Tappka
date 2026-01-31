@@ -19,6 +19,6 @@
         "webpack:///./*": "${webRoot}/*",
         "webpack:///./~/*": "${webRoot}/node_modules/*"
       }
-    },
+    }
   ]
 }
