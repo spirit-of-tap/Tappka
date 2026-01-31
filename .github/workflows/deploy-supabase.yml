@@ -39,7 +39,7 @@ jobs:
           
       - name: Deploy database migrations
         run: |
-          supabase db push || (supabase db reset --linked --yes && supabase db push --include-linked)
+          supabase db push || (supabase db reset --linked --yes && supabase db push --include-all)
           
       - name: Deploy Edge Functions
         continue-on-error: true
