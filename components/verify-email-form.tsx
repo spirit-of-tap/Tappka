@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { isValidWorkEmailDomain } from "@/lib/constants/auth";
+import { isValidWorkEmailDomain, OTP_LENGTH } from "@/lib/constants/auth";
 
 const STORAGE_KEY = "verify-email-form-state";
 
@@ -78,6 +78,7 @@ export function VerifyEmailForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [lastSubmittedOtp, setLastSubmittedOtp] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -145,6 +146,10 @@ export function VerifyEmailForm() {
    * to the existing authenticated user account
    */
   const verifyOTP = useCallback(async () => {
+    const trimmedOtp = otpCode.trim();
+    
+    // Track the OTP being submitted to prevent re-submission
+    setLastSubmittedOtp(trimmedOtp);
     setError(null);
     setIsLoading(true);
 
@@ -155,13 +160,15 @@ export function VerifyEmailForm() {
       // to the current authenticated user instead of creating a new user
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email: email.trim(),
-        token: otpCode.trim(),
+        token: trimmedOtp,
         type: "email_change",
       });
 
       if (verifyError) {
         setError(verifyError.message || "Invalid OTP code");
         setIsLoading(false);
+        // Keep lastSubmittedOtp set to prevent re-submission of the same code
+        // The code remains in the input so user can see what they entered
         return;
       }
 
@@ -177,6 +184,7 @@ export function VerifyEmailForm() {
     } catch (err) {
       setError("An unexpected error occurred");
       setIsLoading(false);
+      // Keep lastSubmittedOtp set to prevent re-submission of the same code
     }
   }, [email, otpCode, supabase, router]);
 
@@ -232,14 +240,19 @@ export function VerifyEmailForm() {
   }, [email, step, isHydrated]);
 
   /**
-   * Auto-submits the form when OTP code reaches 8 digits
+   * Auto-submits the form when OTP code reaches the expected length
    * This handles paste events and manual entry
+   * Prevents re-submission of the same OTP code after a failed verification
    */
   useEffect(() => {
-    if (step === "otp" && otpCode.length === 8 && !isLoading) {
+    const trimmedOtp = otpCode.trim();
+    const isOtpComplete = trimmedOtp.length === OTP_LENGTH;
+    const isNewOtp = trimmedOtp !== lastSubmittedOtp;
+    
+    if (step === "otp" && isOtpComplete && !isLoading && isNewOtp) {
       verifyOTP();
     }
-  }, [otpCode, step, isLoading, verifyOTP]);
+  }, [otpCode, step, isLoading, lastSubmittedOtp, verifyOTP]);
 
   return (
     <Card>
@@ -287,18 +300,29 @@ export function VerifyEmailForm() {
               <Input
                 id="otp"
                 type="text"
-                placeholder="Enter 8-digit code"
+                placeholder={`Enter ${OTP_LENGTH}-digit code`}
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                onChange={(e) => {
+                  const newValue = e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH);
+                  setOtpCode(newValue);
+                  // Clear lastSubmittedOtp when user starts typing a new code
+                  if (lastSubmittedOtp !== null && newValue !== lastSubmittedOtp) {
+                    setLastSubmittedOtp(null);
+                  }
+                }}
                 onPaste={(e) => {
                   e.preventDefault();
-                  const pastedText = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 8);
+                  const pastedText = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
                   setOtpCode(pastedText);
+                  // Clear lastSubmittedOtp when user pastes a new code
+                  if (lastSubmittedOtp !== null && pastedText !== lastSubmittedOtp) {
+                    setLastSubmittedOtp(null);
+                  }
                 }}
                 disabled={isLoading}
                 required
                 autoFocus
-                maxLength={8}
+                maxLength={OTP_LENGTH}
               />
               <p className="text-xs text-muted-foreground">
                 Check your email for the verification code
@@ -315,6 +339,7 @@ export function VerifyEmailForm() {
                   setStep("email");
                   setOtpCode("");
                   setError(null);
+                  setLastSubmittedOtp(null);
                   savePersistedState({ step: "email", email });
                 }}
                 disabled={isLoading}
