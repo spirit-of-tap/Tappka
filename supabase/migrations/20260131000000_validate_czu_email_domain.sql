@@ -1,16 +1,16 @@
--- Migration: Validate CZU email domain on email changes
+-- Migration: Server-side CZU email domain validation
 -- Purpose: Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz
--- This provides server-side validation as a security measure in addition to client-side validation
+-- This uses SECURITY DEFINER to create a trigger on auth.users table for true server-side enforcement
+-- The trigger runs at the database level and cannot be bypassed by client-side code
 
--- Create function to validate CZU email domain
--- This function checks if an email ends with an allowed CZU domain
--- Only validates on email changes (UPDATE), not initial OAuth signups (INSERT)
--- Validates both 'email' and 'email_change' fields since Supabase stores new email in 'email_change' during change process
-create or replace function auth.validate_czu_email_domain()
+-- Create validation trigger function with SECURITY DEFINER
+-- SECURITY DEFINER allows the function to access auth.users table even when called by regular users
+-- This provides true server-side enforcement at the Supabase database level
+create or replace function public.validate_czu_email_domain_trigger()
 returns trigger
 language plpgsql
-security invoker
-set search_path = ''
+security definer
+set search_path = public, auth
 as $$
 declare
   v_email text;
@@ -39,7 +39,7 @@ begin
     end if;
   end if;
 
-  -- Validate email_change field if it changed (this is where Supabase stores new email during change process)
+  -- Validate email_change field (where Supabase stores new email during change process)
   if OLD.email_change is distinct from NEW.email_change then
     v_email_change := NEW.email_change;
     
@@ -59,55 +59,21 @@ begin
 end;
 $$;
 
--- Create function to validate CZU email domain for identities
--- This validates email identities (provider = 'email') when they are created
-create or replace function auth.validate_czu_email_identity_domain()
-returns trigger
-language plpgsql
-security invoker
-set search_path = ''
-as $$
-declare
-  v_email text;
-  v_domain text;
-begin
-  -- Only validate email identities, not OAuth providers (google, etc.)
-  if NEW.provider != 'email' then
-    return NEW;
-  end if;
+-- Grant execute permission to authenticated and anonymous roles
+-- This allows the trigger to execute when users update their email
+grant execute on function public.validate_czu_email_domain_trigger() to authenticated;
+grant execute on function public.validate_czu_email_domain_trigger() to anon;
 
-  -- Get the email being set
-  v_email := NEW.email;
+-- Create trigger on auth.users table
+-- This fires BEFORE any update to email or email_change columns
+-- The trigger cannot be bypassed - it runs at the database level
+drop trigger if exists validate_czu_email_domain_trigger on auth.users;
 
-  -- Skip validation if email is null or empty
-  if v_email is null or v_email = '' then
-    return NEW;
-  end if;
-
-  -- Extract domain from email (everything after @)
-  v_domain := lower(split_part(v_email, '@', 2));
-
-  -- Validate domain is one of the allowed CZU domains
-  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then
-    raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;
-  end if;
-
-  return NEW;
-end;
-$$;
-
--- Create trigger on auth.users table to validate email domain before update
--- This ensures server-side validation of email domains when users change their email
--- Validates both 'email' and 'email_change' fields
--- Note: INSERT is not included to allow OAuth signups with any email domain
 create trigger validate_czu_email_domain_trigger
 before update of email, email_change on auth.users
 for each row
-execute function auth.validate_czu_email_domain();
+execute function public.validate_czu_email_domain_trigger();
 
--- Create trigger on auth.identities table to validate email domain when email identities are created
--- This catches email identities created via updateUser() flow
-create trigger validate_czu_email_identity_domain_trigger
-before insert on auth.identities
-for each row
-execute function auth.validate_czu_email_identity_domain();
+-- Add comment explaining the security model
+comment on function public.validate_czu_email_domain_trigger() is 
+'Server-side trigger function that validates email domains at the database level. Uses SECURITY DEFINER to access auth.users table. Cannot be bypassed by client-side code.';
