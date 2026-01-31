@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { isValidWorkEmailDomain } from "@/lib/constants/auth";
 
 const STORAGE_KEY = "verify-email-form-state";
 
@@ -27,7 +28,7 @@ interface StoredState {
  */
 const loadPersistedState = (): Partial<StoredState> => {
   if (typeof window === "undefined") return {};
-  
+
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -36,7 +37,7 @@ const loadPersistedState = (): Partial<StoredState> => {
   } catch (err) {
     // Ignore errors reading from storage
   }
-  
+
   return {};
 };
 
@@ -45,7 +46,7 @@ const loadPersistedState = (): Partial<StoredState> => {
  */
 const savePersistedState = (state: StoredState) => {
   if (typeof window === "undefined") return;
-  
+
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (err) {
@@ -58,7 +59,7 @@ const savePersistedState = (state: StoredState) => {
  */
 const clearPersistedState = () => {
   if (typeof window === "undefined") return;
-  
+
   try {
     sessionStorage.removeItem(STORAGE_KEY);
   } catch (err) {
@@ -94,6 +95,13 @@ export function VerifyEmailForm() {
       // Validate email format
       if (!email || !email.includes("@")) {
         setError("Please enter a valid email address");
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate CZU domain
+      if (!isValidWorkEmailDomain(email.trim())) {
+        setError("Email must end with @pef.czu.cz or @studenti.czu.cz");
         setIsLoading(false);
         return;
       }
@@ -186,7 +194,7 @@ export function VerifyEmailForm() {
    */
   useEffect(() => {
     const persisted = loadPersistedState();
-    
+
     // Validate persisted state - if on OTP step but no email, reset to email step
     if (persisted.step === "otp" && (!persisted.email || !persisted.email.includes("@"))) {
       setStep("email");
@@ -195,7 +203,7 @@ export function VerifyEmailForm() {
       setIsHydrated(true);
       return;
     }
-    
+
     // Restore persisted state if valid
     if (persisted.email && persisted.email.includes("@")) {
       setEmail(persisted.email);
@@ -203,7 +211,7 @@ export function VerifyEmailForm() {
     if (persisted.step === "email" || persisted.step === "otp") {
       setStep(persisted.step);
     }
-    
+
     setIsHydrated(true);
   }, []);
 
@@ -214,7 +222,7 @@ export function VerifyEmailForm() {
   useEffect(() => {
     // Don't persist until after hydration to avoid hydration mismatches
     if (!isHydrated) return;
-    
+
     if (email && email.includes("@")) {
       savePersistedState({ step, email });
     } else if (step === "otp" && !email) {
@@ -257,7 +265,7 @@ export function VerifyEmailForm() {
               <Input
                 id="email"
                 type="email"
-                placeholder="your.email@example.com"
+                placeholder="your.email@pef.czu.cz"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -265,7 +273,7 @@ export function VerifyEmailForm() {
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                You can use a different email than your Google account
+                Email must end with @pef.czu.cz or @studenti.czu.cz
               </p>
             </div>
             <Button type="submit" disabled={isLoading} className="w-full">
