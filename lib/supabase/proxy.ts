@@ -3,6 +3,27 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isPublicRoute } from "@/lib/constants/auth";
 import { hasEmailIdentity, hasLinkedProfile, redirectWithCookies } from "@/lib/auth-helpers";
 
+/**
+ * Safely executes an async check function, catching any errors
+ * and treating them as a failed check to preserve graceful redirect behavior
+ * @param checkFn - The async function to execute
+ * @param checkName - Name of the check for logging purposes
+ * @returns Object with ok boolean and optional error
+ */
+async function safeCheck(
+  checkFn: () => Promise<boolean>,
+  checkName: string,
+): Promise<{ ok: boolean; error?: Error }> {
+  try {
+    const result = await checkFn();
+    return { ok: result };
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`Error in ${checkName}:`, err);
+    return { ok: false, error: err };
+  }
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -77,7 +98,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   // If no email identity, redirect to verify email page
-  if (!(await hasEmailIdentity(supabase))) {
+  // Treat errors as "no identity" to preserve graceful redirect behavior
+  const emailIdentityCheck = await safeCheck(
+    () => hasEmailIdentity(supabase),
+    "hasEmailIdentity",
+  );
+  if (!emailIdentityCheck.ok) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/verify-email";
     url.search = ""; // Clear existing search params
@@ -88,7 +114,12 @@ export async function updateSession(request: NextRequest) {
 
   // Check for linked profile if user is authenticated and not on public routes
   // Skip this check for verify-email and pending-approval routes
-  if (!(await hasLinkedProfile(supabase))) {
+  // Treat errors as "no profile" to preserve graceful redirect behavior
+  const linkedProfileCheck = await safeCheck(
+    () => hasLinkedProfile(supabase),
+    "hasLinkedProfile",
+  );
+  if (!linkedProfileCheck.ok) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/pending-approval";
     url.search = ""; // Strip all query parameters (e.g., from email verification or QR code)

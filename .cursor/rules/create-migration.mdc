@@ -14,9 +14,9 @@ This project uses the migrations provided by the Supabase CLI.
 
 Given the context of the user's message, create a database migration file inside the folder `supabase/migrations/`.
 
-The file MUST following this naming convention:
+The file MUST follow this naming convention:
 
-The file MUST be named in the format `YYYYMMDDHHmmss_short_description.sql` with proper casing for months, minutes, and seconds in UTC time:
+The file MUST be named in the format `YYYYMMDDHHmmss_short_description.sql` using zero‑padded numeric components in UTC time:
 
 1. `YYYY` - Four digits for the year (e.g., `2024`).
 2. `MM` - Two digits for the month (01 to 12).
