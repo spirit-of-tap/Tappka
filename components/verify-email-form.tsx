@@ -162,6 +162,19 @@ export function VerifyEmailForm({ next }: { next?: string }) {
         return;
       }
 
+      // Update suggested_work_email in public.users table
+      // This enables cross-device synchronization and persistence
+      // The trigger will automatically set last_otp_sent_at
+      const { error: userUpdateError } = await supabase
+        .from("users")
+        .update({ suggested_work_email: email.trim() })
+        .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id);
+
+      if (userUpdateError) {
+        // Log error but don't block the flow - OTP was sent successfully
+        console.error("Failed to update suggested_work_email:", userUpdateError);
+      }
+
       // Move to OTP verification step
       setStep("otp");
       savePersistedState({ step: "otp", email: email.trim() });

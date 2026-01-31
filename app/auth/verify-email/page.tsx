@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { VerifyEmailForm } from "@/components/verify-email-form";
 import { LogoutButton } from "@/components/logout-button";
+import { EmailVerificationRealtimeListener } from "@/components/email-verification-realtime-listener";
 import { hasLinkedProfile } from "@/lib/auth-helpers";
 import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
@@ -36,6 +37,7 @@ export default async function VerifyEmailPage({
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 relative">
+      <EmailVerificationRealtimeListener />
       <div className="absolute top-6 right-6 md:top-10 md:right-10">
         <LogoutButton />
       </div>
