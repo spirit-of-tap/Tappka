@@ -154,7 +154,6 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Check for linked profile if user is authenticated and not on public routes
-  // Skip this check for verify-email and pending-approval routes
   // Treat errors as "no profile" to preserve graceful redirect behavior
   const linkedProfileCheck = await safeCheck(
     () => hasLinkedProfile(supabase),
@@ -162,7 +161,7 @@ export async function updateSession(request: NextRequest) {
   );
   if (!linkedProfileCheck.ok) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/pending-approval";
+    url.pathname = "/auth/onboarding";
     url.search = ""; // Strip all query parameters (e.g., from email verification or QR code)
     url.hash = ""; // Strip hash as well
     url.searchParams.set("next", fullPath);

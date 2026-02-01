@@ -6,6 +6,7 @@ import { WelcomeStep } from "@/components/onboarding/welcome-step";
 import { VerifyEmailForm } from "@/components/verify-email-form";
 import { LogoutButton } from "@/components/logout-button";
 import { EmailVerificationRealtimeListener } from "@/components/email-verification-realtime-listener";
+import { ProfileLinkRealtimeListener } from "@/components/profile-link-realtime-listener";
 
 interface OnboardingClientProps {
   next?: string;
@@ -31,8 +32,9 @@ export function OnboardingClient({ next }: OnboardingClientProps) {
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 relative">
-      {/* Realtime listener for email verification */}
+      {/* Realtime listeners for email verification and profile linking */}
       <EmailVerificationRealtimeListener />
+      <ProfileLinkRealtimeListener />
       
       {/* Logout button */}
       <div className="absolute top-6 right-6 md:top-10 md:right-10">

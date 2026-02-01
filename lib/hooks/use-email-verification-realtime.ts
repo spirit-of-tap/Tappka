@@ -79,9 +79,9 @@ export function useEmailVerificationRealtime() {
               // Get current pathname to determine if we should redirect
               const currentPath = window.location.pathname;
 
-              // If user is on verify-email page, redirect to default logged-in page
+              // If user is on onboarding page, redirect to default logged-in page
               // Otherwise, refresh the current page to show updated state
-              if (currentPath === "/auth/verify-email") {
+              if (currentPath === "/auth/onboarding") {
                 router.push(DEFAULT_LOGGED_IN_PAGE);
               } else {
                 // Refresh current page to show updated verification status
