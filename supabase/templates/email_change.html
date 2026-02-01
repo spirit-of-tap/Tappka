@@ -1,0 +1,10 @@
+<h2>Potvrďte svůj email</h2>
+
+<p>Klikněte na odkaz níže a potvrďte svůj email:</p>
+<p>
+  <a href="{{ .RedirectTo }}token_hash={{ .TokenHash }}&type=email_change">
+    Potvrdit email
+  </a>
+</p>
+
+<p>Nebo zadejte tento kód: {{ .Token }}</p>
