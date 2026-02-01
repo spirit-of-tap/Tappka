@@ -190,7 +190,7 @@ export function RoomQuickStatus({
                 {alternativeRooms.map((altRoom) => (
                   <Link
                     key={altRoom.id}
-                    href={`/dashboard/reservations/${altRoom.code}/qr`}
+                    href={`/dashboard/reservations/${altRoom.code}/quick`}
                     className="flex items-center justify-between p-4 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all active:scale-[0.98] shadow-lg"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">

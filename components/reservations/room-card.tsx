@@ -19,6 +19,8 @@ export function RoomCard({ room }: RoomCardProps) {
   const isOccupied = room.currentReservation !== null;
   const hasIssue = room.hasOpenIssue;
   const isLocked = hasIssue && room.issueType === "locked";
+  const filterAvailability = room.availabilityForFilter;
+  const isFilteredOut = filterAvailability && !filterAvailability.isAvailable;
 
   // Determine status color
   const statusColor = isLocked
@@ -38,19 +40,47 @@ export function RoomCard({ room }: RoomCardProps) {
     : { label: "Volná", variant: "default" as const, icon: null };
 
   return (
-    <Link href={`/dashboard/reservations/${room.code}`} className="block h-full">
+    <Link 
+      href={`/dashboard/reservations/${room.code}`} 
+      className={cn("block h-full", isFilteredOut && "opacity-70")}
+    >
       <Card
         className={cn(
-          "h-full transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer border-l-4",
-          statusColor
+          "h-full transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer border-l-4 relative overflow-hidden",
+          statusColor,
+          isFilteredOut && "grayscale-[30%]"
         )}
       >
-        <CardContent className="p-4 h-full flex flex-col">
+        {/* Diagonal stripe pattern for unavailable rooms */}
+        {isFilteredOut && (
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.03) 10px, rgba(0, 0, 0, 0.03) 20px)',
+            }}
+          />
+        )}
+        <CardContent className="p-4 h-full flex flex-col relative z-10">
           {/* Locked banner */}
           {isLocked && (
             <div className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-4 mb-3 bg-orange-200 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200">
               <Lock className="size-4" />
               <span className="text-sm font-medium">Místnost je zamčená</span>
+            </div>
+          )}
+
+          {/* Filter unavailability banner */}
+          {isFilteredOut && (
+            <div className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-4 mb-3 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+              <Clock className="size-4 flex-shrink-0" />
+              <span className="text-sm font-medium line-clamp-2">
+                {filterAvailability.reason === 'day_restricted'
+                  ? 'Nedostupná v tento den'
+                  : filterAvailability.conflictTime && filterAvailability.conflictTitle
+                  ? `Obsazeno ${filterAvailability.conflictTime} – ${filterAvailability.conflictTitle}`
+                  : `Obsazeno ${filterAvailability.conflictTime || 'v tento čas'}`
+                }
+              </span>
             </div>
           )}
 

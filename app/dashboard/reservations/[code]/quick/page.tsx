@@ -3,14 +3,14 @@ import { notFound } from "next/navigation";
 import { RoomQuickStatus } from "@/components/reservations/room-quick-status";
 import type { Room, Reservation, RoomIssue } from "@/lib/reservations/types";
 
-interface QRPageProps {
+interface QuickPageProps {
   params: Promise<{ code: string }>;
 }
 
-export async function generateMetadata({ params }: QRPageProps) {
+export async function generateMetadata({ params }: QuickPageProps) {
   const { code } = await params;
   return {
-    title: `${code.toUpperCase()} | QR Scan | Tappka`,
+    title: `${code.toUpperCase()} | Quick Status | Tappka`,
   };
 }
 
@@ -45,10 +45,10 @@ function sortAlternativeRooms(rooms: Room[], currentRoom: Room): Room[] {
 }
 
 /**
- * QR Code quick status page
- * Shows instant room availability status with split-screen colored design
+ * Quick status page for room scans
+ * Shows instant room availability status with fullscreen colored design
  */
-export default async function QRQuickStatusPage({ params }: QRPageProps) {
+export default async function QuickStatusPage({ params }: QuickPageProps) {
   const { code } = await params;
   const supabase = await createClient();
 
