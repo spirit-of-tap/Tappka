@@ -1,4 +1,3 @@
-## This was the final prompt that worked ##
 
 I would like to replace the current email + password login with google login.
 

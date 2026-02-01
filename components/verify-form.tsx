@@ -129,23 +129,20 @@ export function VerifyForm() {
     <div className="w-full max-w-md space-y-6">
       {/* Step indicator */}
       <div className="flex items-center gap-3">
-        <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-          step === "email" 
-            ? "bg-primary text-primary-foreground" 
+        <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step === "email"
+            ? "bg-primary text-primary-foreground"
             : "bg-primary/20 text-primary"
-        }`}>
+          }`}>
           1
         </div>
         <div className="flex-1 h-1 bg-border rounded-full overflow-hidden">
-          <div className={`h-full bg-primary transition-all duration-500 ${
-            step === "code" ? "w-full" : "w-0"
-          }`} />
+          <div className={`h-full bg-primary transition-all duration-500 ${step === "code" ? "w-full" : "w-0"
+            }`} />
         </div>
-        <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-          step === "code" 
-            ? "bg-primary text-primary-foreground" 
+        <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step === "code"
+            ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground"
-        }`}>
+          }`}>
           2
         </div>
       </div>

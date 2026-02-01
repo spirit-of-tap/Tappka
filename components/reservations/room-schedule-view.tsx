@@ -22,9 +22,9 @@ interface RoomScheduleViewProps {
  * Client-side wrapper for the room schedule calendar
  * Supports drag-to-create reservations with conflict detection
  */
-export function RoomScheduleView({ 
-  reservations, 
-  scheduleBreaks = [], 
+export function RoomScheduleView({
+  reservations,
+  scheduleBreaks = [],
   currentUserId,
   roomId,
   roomName,
@@ -34,7 +34,7 @@ export function RoomScheduleView({
   const router = useRouter();
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  
+
   // Quick reservation dialog state
   const [quickDialogOpen, setQuickDialogOpen] = useState(false);
   const [dragStartTime, setDragStartTime] = useState<Date | null>(null);
@@ -82,10 +82,10 @@ export function RoomScheduleView({
 
   const handleDragCreate = (startTime: Date, endTime: Date) => {
     const conflict = findConflict(startTime, endTime);
-    
+
     setDragStartTime(startTime);
     setDragEndTime(endTime);
-    
+
     if (conflict) {
       // Show conflict resolution dialog
       setConflictingReservation(conflict);

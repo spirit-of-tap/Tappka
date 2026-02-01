@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { code } = await params;
     const supabase = await createClient();
-    
+
     // Check authentication
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -126,10 +126,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (currentReservation) {
       const endTime = new Date(currentReservation.end_time);
       const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
-      
-      const occupantName = currentReservation.user?.full_name || 
-                          currentReservation.team?.name || 
-                          "Neznámý";
+
+      const occupantName = currentReservation.user?.full_name ||
+        currentReservation.team?.name ||
+        "Neznámý";
 
       response.currentReservation = {
         title: currentReservation.title,

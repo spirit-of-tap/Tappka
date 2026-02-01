@@ -58,7 +58,7 @@ export function ForgotPasswordForm({
             e-mail s instrukcemi pro reset hesla.
           </p>
 
-          <Link href="/">
+          <Link href="/auth/login">
             <Button variant="outline" className="w-full h-12 text-base">
               Zpět na přihlášení
             </Button>
@@ -115,7 +115,7 @@ export function ForgotPasswordForm({
 
           {/* Back to login */}
           <Link
-            href="/"
+            href="/auth/login"
             className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

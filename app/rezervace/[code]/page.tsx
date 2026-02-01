@@ -50,7 +50,7 @@ export default async function RezerevacePage({ params }: RezervecePageProps) {
 
   // Fetch current reservation and issues
   const now = new Date().toISOString();
-  
+
   const [currentResResult, issuesResult] = await Promise.all([
     supabase
       .from("reservations")
@@ -60,7 +60,7 @@ export default async function RezerevacePage({ params }: RezervecePageProps) {
       .lte("start_time", now)
       .gt("end_time", now)
       .single(),
-    
+
     supabase
       .from("room_issues")
       .select("*")

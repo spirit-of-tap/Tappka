@@ -17,9 +17,9 @@ export default function NotFound() {
           {/* Giant 404 with icon */}
           <div className="space-y-4">
             <div className="flex justify-center">
-              <SearchX 
-                className="w-24 h-24 text-primary/20" 
-                strokeWidth={1.5} 
+              <SearchX
+                className="w-24 h-24 text-primary/20"
+                strokeWidth={1.5}
               />
             </div>
             <h1 className="text-8xl md:text-9xl font-heading font-bold text-primary tracking-tight">

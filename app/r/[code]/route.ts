@@ -14,10 +14,10 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { code } = await params;
   const supabase = await createClient();
-  
+
   // Check if user is logged in
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (user) {
     // Logged in -> redirect to quick status page
     const url = new URL(`/dashboard/reservations/${code}/quick`, request.url);

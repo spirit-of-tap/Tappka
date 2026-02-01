@@ -39,9 +39,9 @@ interface RoomQuickStatusProps {
 /**
  * QR Code Quick Status - Split screen with colored top half
  */
-export function RoomQuickStatus({ 
-  room, 
-  status, 
+export function RoomQuickStatus({
+  room,
+  status,
   currentReservation,
   issues,
   alternativeRooms = [],
@@ -58,7 +58,7 @@ export function RoomQuickStatus({
   const formatTimeUntilFree = () => {
     if (!currentReservation) return "";
     const minutes = currentReservation.endsInMinutes;
-    
+
     if (minutes <= 0) return "právě teď";
     if (minutes <= 90) {
       return `za ${minutes} ${minutes === 1 ? 'minutu' : minutes < 5 ? 'minuty' : 'minut'}`;
@@ -79,8 +79,8 @@ export function RoomQuickStatus({
     <div className={`fixed inset-0 ${bgColor} ${textColor} overflow-y-auto`}>
       {/* Close button - fixed top right */}
       <div className="absolute top-4 right-4 z-50">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           className={`${textColor} hover:bg-white/20 rounded-full`}
           asChild
@@ -121,11 +121,11 @@ export function RoomQuickStatus({
                 </p>
               </>
             )}
-            
+
             {status === 'occupied' && currentReservation && (
               <>
                 <p className="text-3xl font-heading font-bold tracking-tight">OBSAZENO</p>
-                
+
                 {/* Reservation details */}
                 <div className="space-y-4 bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
                   <p className="text-xl font-heading font-semibold">{currentReservation.title}</p>
@@ -145,11 +145,11 @@ export function RoomQuickStatus({
                 </div>
               </>
             )}
-            
+
             {status === 'free' && (
               <>
                 <p className="text-3xl font-heading font-bold tracking-tight">VOLNÁ TEĎ</p>
-                
+
                 {/* Quick reserve buttons */}
                 <div className="flex flex-col gap-3 max-w-xs mx-auto">
                   <Button
@@ -185,7 +185,7 @@ export function RoomQuickStatus({
           {status === 'occupied' && alternativeRooms.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-heading font-semibold text-center">Volné alternativy</h3>
-              
+
               <div className="space-y-2">
                 {alternativeRooms.map((altRoom) => (
                   <Link
@@ -204,7 +204,7 @@ export function RoomQuickStatus({
                         Volná
                       </Badge>
                     </div>
-                    
+
                     <ArrowRight className="size-4 ml-2 shrink-0" />
                   </Link>
                 ))}
@@ -228,9 +228,9 @@ export function RoomQuickStatus({
           )}
 
           {/* View full schedule button */}
-          <Button 
-            variant="secondary" 
-            size="lg" 
+          <Button
+            variant="secondary"
+            size="lg"
             className="w-full h-12 text-sm font-heading font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 bg-white/90 hover:bg-white text-foreground"
             asChild
           >

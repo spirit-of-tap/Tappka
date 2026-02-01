@@ -26,22 +26,22 @@ export function RoomCard({ room }: RoomCardProps) {
   const statusColor = isLocked
     ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
     : hasIssue
-    ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20"
-    : isOccupied
-    ? "border-red-500 bg-red-50 dark:bg-red-950/20"
-    : "border-green-500 bg-green-50 dark:bg-green-950/20";
+      ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20"
+      : isOccupied
+        ? "border-red-500 bg-red-50 dark:bg-red-950/20"
+        : "border-green-500 bg-green-50 dark:bg-green-950/20";
 
   const statusBadge = isLocked
     ? { label: "Zamčená", variant: "secondary" as const, icon: Lock }
     : hasIssue
-    ? { label: "Problém", variant: "secondary" as const, icon: AlertTriangle }
-    : isOccupied
-    ? { label: "Obsazeno", variant: "destructive" as const, icon: null }
-    : { label: "Volná", variant: "default" as const, icon: null };
+      ? { label: "Problém", variant: "secondary" as const, icon: AlertTriangle }
+      : isOccupied
+        ? { label: "Obsazeno", variant: "destructive" as const, icon: null }
+        : { label: "Volná", variant: "default" as const, icon: null };
 
   return (
-    <Link 
-      href={`/dashboard/reservations/${room.code}`} 
+    <Link
+      href={`/dashboard/reservations/${room.code}`}
       className={cn("block h-full", isFilteredOut && "opacity-70")}
     >
       <Card
@@ -53,7 +53,7 @@ export function RoomCard({ room }: RoomCardProps) {
       >
         {/* Diagonal stripe pattern for unavailable rooms */}
         {isFilteredOut && (
-          <div 
+          <div
             className="absolute inset-0 pointer-events-none"
             style={{
               backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.03) 10px, rgba(0, 0, 0, 0.03) 20px)',
@@ -77,8 +77,8 @@ export function RoomCard({ room }: RoomCardProps) {
                 {filterAvailability.reason === 'day_restricted'
                   ? 'Nedostupná v tento den'
                   : filterAvailability.conflictTime && filterAvailability.conflictTitle
-                  ? `Obsazeno ${filterAvailability.conflictTime} – ${filterAvailability.conflictTitle}`
-                  : `Obsazeno ${filterAvailability.conflictTime || 'v tento čas'}`
+                    ? `Obsazeno ${filterAvailability.conflictTime} – ${filterAvailability.conflictTitle}`
+                    : `Obsazeno ${filterAvailability.conflictTime || 'v tento čas'}`
                 }
               </span>
             </div>
@@ -92,8 +92,8 @@ export function RoomCard({ room }: RoomCardProps) {
                 {room.description || "\u00A0"}
               </p>
             </div>
-            <Badge 
-              variant={statusBadge.variant} 
+            <Badge
+              variant={statusBadge.variant}
               className={cn(
                 "flex-shrink-0",
                 isLocked && "bg-orange-500 text-white hover:bg-orange-600"

@@ -12,7 +12,7 @@ export default async function VerifyPage() {
 
   // Must be logged in to access verification
   if (!user) {
-    redirect("/");
+    redirect("/auth/login");
   }
 
   // Check if already verified
