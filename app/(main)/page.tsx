@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, Users, Shield } from "lucide-react";
+import { FirstLoginConfetti } from "@/components/first-login-confetti";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Student",
@@ -30,6 +31,9 @@ export default async function DashboardPage() {
 
   return (
     <>
+      {/* First login confetti */}
+      <FirstLoginConfetti />
+      
       <div className="mb-8">
         <h2 className="text-3xl font-heading font-bold">
           Vítej, {profile?.name?.split(" ")[0]}!

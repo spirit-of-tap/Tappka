@@ -84,8 +84,13 @@ export default async function Home({ searchParams }: LoginPageProps) {
       </div>
 
       {/* Footer */}
-      <footer className="p-4 md:p-6 text-center text-xs text-muted-foreground">
-        <p>© Tiimiakatemia Prague {new Date().getFullYear()}</p>
+      <footer className="p-4 md:p-6 text-center space-y-2">
+        <p className="text-xs text-muted-foreground">
+          © Tiimiakatemia Prague {new Date().getFullYear()}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Vlastník: Spirit of TAP | Tvůrce: IT House | Financováno z komunitní kasy
+        </p>
       </footer>
     </main>
   );
