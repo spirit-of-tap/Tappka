@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, validateRedirectUrl } from "@/lib/utils";
 import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { hasLinkedProfile } from "@/lib/auth-helpers";
 
@@ -126,7 +126,11 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // Ensure URL ends with ? or & so Supabase can append token_hash
       const confirmUrl = new URL(`${window.location.origin}/auth/confirm-email-change`);
       if (next) {
-        confirmUrl.searchParams.set("next", next);
+        // Validate next parameter to prevent open redirects
+        const validatedNext = validateRedirectUrl(next, window.location.origin);
+        if (validatedNext) {
+          confirmUrl.searchParams.set("next", validatedNext);
+        }
       }
 
       // Ensure URL ends with ? or & for token_hash to be appended
@@ -225,7 +229,9 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       clearPersistedState();
 
       // Success - redirect to next parameter or default page
-      const redirectTo = next ?? DEFAULT_LOGGED_IN_PAGE;
+      // Validate next parameter to prevent open redirects
+      const validatedNext = next ? validateRedirectUrl(next, window.location.origin) : null;
+      const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;
       router.push(redirectTo);
       router.refresh();
     } catch (err) {

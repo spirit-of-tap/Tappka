@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
@@ -19,7 +19,7 @@ import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
  */
 export function useEmailVerificationRealtime() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const isSubscribedRef = useRef(false);
 
@@ -64,7 +64,7 @@ export function useEmailVerificationRealtime() {
         channel.on(
           "broadcast",
           { event: "verified_work_email_changed" },
-          async (payload) => {
+          async () => {
             if (!mounted) return;
 
             try {
@@ -97,7 +97,6 @@ export function useEmailVerificationRealtime() {
         await supabase.realtime.setAuth();
 
         // Subscribe to channel
-        // Subscription status is handled via the callback function
         channel.subscribe((status, err) => {
           if (status === "SUBSCRIBED") {
             isSubscribedRef.current = true;
