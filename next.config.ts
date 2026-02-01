@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
-
 const nextConfig: NextConfig = {
-  // cacheComponents requires Suspense boundaries for dynamic data
-  // Disabled until we properly implement them
+  allowedDevOrigins: [
+    "127.0.0.1",
+    "localhost",
+  ],
 };
-
 export default nextConfig;

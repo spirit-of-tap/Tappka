@@ -1,25 +1,37 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { hasEnvVars } from "../utils";
+import { isPublicRoute, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
+import { hasEmailIdentity, hasLinkedProfile, redirectWithCookies } from "@/lib/auth-helpers";
+import { validateRedirectUrl } from "@/lib/utils";
 
-// Routes that don't require authentication
-const PUBLIC_ROUTES = ["/", "/auth/sign-up", "/auth/forgot-password", "/auth/error"];
-
-// Routes that require auth but NOT verification (semi-protected)
-const SEMI_PROTECTED_ROUTES = ["/verify", "/auth/update-password"];
-
-// API routes that should be handled separately
-const API_ROUTES = ["/api/"];
+/**
+ * Safely executes an async check function, catching any errors
+ * and treating them as a failed check to preserve graceful redirect behavior
+ * @param checkFn - The async function to execute
+ * @param checkName - Name of the check for logging purposes
+ * @returns Object with ok boolean and optional error
+ */
+async function safeCheck(
+  checkFn: () => Promise<boolean>,
+  checkName: string,
+): Promise<{ ok: boolean; error?: Error }> {
+  try {
+    const result = await checkFn();
+    return { ok: result };
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`Error in ${checkName}:`, err);
+    return { ok: false, error: err };
+  }
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
-  // If the env vars are not set, skip proxy check
-  if (!hasEnvVars) {
-    return supabaseResponse;
-  }
+  // If the env vars are not set, skip proxy check. You can remove this
+  // once you setup the project.
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,44 +60,94 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   const pathname = request.nextUrl.pathname;
+  // Include full path with query parameters and hash for next parameter
+  const fullPath = pathname + request.nextUrl.search + request.nextUrl.hash;
 
-  // Allow API routes through (they handle their own auth)
-  if (API_ROUTES.some((route) => pathname.startsWith(route))) {
+  // Allow public routes without authentication
+  if (isPublicRoute(pathname)) {
+    // Handle authenticated users visiting login page - redirect them
+    if (pathname === "/auth/login") {
+      // Use getUser() instead of getClaims() to validate the user actually exists
+      // getClaims() can return truthy values even with invalid/deleted users
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      // Only redirect if we have a valid user (not just claims)
+      // This prevents infinite redirect loops when token is invalid but claims exist
+      if (!error && user) {
+        // Get next parameter from query string
+        const next = request.nextUrl.searchParams.get("next");
+
+        // Validate next parameter to prevent open redirects
+        const origin = request.nextUrl.origin;
+        const validatedNext = next ? validateRedirectUrl(next, origin) : null;
+        const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;
+
+        const url = request.nextUrl.clone();
+        url.pathname = redirectTo;
+        url.search = ""; // Clear existing search params
+        url.hash = ""; // Clear existing hash
+        return redirectWithCookies(url, supabaseResponse);
+      }
+    }
     return supabaseResponse;
   }
 
-  // Check if it's a public route
-  const isPublicRoute =
-    PUBLIC_ROUTES.includes(pathname) ||
-    pathname.startsWith("/auth/") ||
-    pathname.startsWith("/_next");
-
-  // Check if it's a semi-protected route (needs auth, not verification)
-  const isSemiProtectedRoute = SEMI_PROTECTED_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(route + "/")
-  );
-
-  // No user - redirect to login unless on public route
+  // Redirect to login if not authenticated
   if (!user) {
-    if (!isPublicRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
-    }
-    return supabaseResponse;
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    url.search = ""; // Clear existing search params
+    url.hash = ""; // Clear existing hash
+    url.searchParams.set("next", fullPath);
+    return redirectWithCookies(url, supabaseResponse);
   }
 
-  // User is logged in
-  // If on public routes (except password update), redirect to dashboard or verify
-  if (isPublicRoute && !pathname.startsWith("/auth/update-password")) {
-    // We'll do verification check on the page level for better UX
-    // Just redirect logged-in users away from login/signup
-    if (pathname === "/" || pathname === "/auth/sign-up") {
-      const url = request.nextUrl.clone();
-      // Redirect to dashboard - the page will handle verification check
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
+  // Check if user has an email identity (not just OAuth providers like Google)
+  const { data: getUserData, error } = await supabase.auth.getUser();
+  const authUser = getUserData?.user;
+
+  if (error) {
+    console.error("supabase.auth.getUser error", error);
+  }
+
+  if (!authUser) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    url.search = ""; // Clear existing search params
+    url.hash = ""; // Clear existing hash
+    url.searchParams.set("next", fullPath);
+    return redirectWithCookies(url, supabaseResponse);
+  }
+
+  // If no email identity, redirect to verify email page
+  // Treat errors as "no identity" to preserve graceful redirect behavior
+  const emailIdentityCheck = await safeCheck(
+    () => hasEmailIdentity(supabase),
+    "hasEmailIdentity",
+  );
+  if (!emailIdentityCheck.ok) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/verify-email";
+    url.search = ""; // Clear existing search params
+    url.hash = ""; // Clear existing hash
+    url.searchParams.set("next", fullPath);
+    return redirectWithCookies(url, supabaseResponse);
+  }
+
+  // Check for linked profile if user is authenticated and not on public routes
+  // Skip this check for verify-email and pending-approval routes
+  // Treat errors as "no profile" to preserve graceful redirect behavior
+  const linkedProfileCheck = await safeCheck(
+    () => hasLinkedProfile(supabase),
+    "hasLinkedProfile",
+  );
+  if (!linkedProfileCheck.ok) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/pending-approval";
+    url.search = ""; // Strip all query parameters (e.g., from email verification or QR code)
+    url.hash = ""; // Strip hash as well
+    url.searchParams.set("next", fullPath);
+    return redirectWithCookies(url, supabaseResponse);
   }
 
   // For semi-protected routes, just allow through (verify page handles its own logic)
