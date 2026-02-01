@@ -169,14 +169,21 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // Update suggested_work_email in public.users table
       // This enables cross-device synchronization and persistence
       // The trigger will automatically set last_otp_sent_at
-      const { error: userUpdateError } = await supabase
-        .from("users")
-        .update({ suggested_work_email: email.trim() })
-        .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id);
+      const { data: userData, error: getUserError } = await supabase.auth.getUser();
 
-      if (userUpdateError) {
+      if (getUserError || !userData?.user?.id) {
         // Log error but don't block the flow - OTP was sent successfully
-        console.error("Failed to update suggested_work_email:", userUpdateError);
+        console.error("Failed to get user for suggested_work_email update:", getUserError || "User ID is undefined");
+      } else {
+        const { error: userUpdateError } = await supabase
+          .from("users")
+          .update({ suggested_work_email: email.trim() })
+          .eq("auth_user_id", userData.user.id);
+
+        if (userUpdateError) {
+          // Log error but don't block the flow - OTP was sent successfully
+          console.error("Failed to update suggested_work_email:", userUpdateError);
+        }
       }
 
       // Move to OTP verification step
