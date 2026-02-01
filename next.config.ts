@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+import withPWA from "@ducanh2912/next-pwa";
+
 const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
@@ -8,4 +10,14 @@ const nextConfig: NextConfig = {
     "localhost",
   ],
 };
-export default nextConfig;
+
+export default withPWA({
+  dest: "public",
+  register: true,
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+})(nextConfig);
