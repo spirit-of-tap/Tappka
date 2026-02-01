@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import {
   Card,
   CardContent,
@@ -13,6 +14,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { cn, validateRedirectUrl } from "@/lib/utils";
 import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { hasLinkedProfile } from "@/lib/auth-helpers";
@@ -119,7 +125,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
 
       // Validate CZU domain
       if (!isValidWorkEmailDomain(email.trim())) {
-        setError("Email musí končit na @pef.czu.cz nebo @studenti.czu.cz");
+        setError("Použij prosím svůj ČZU email");
         setIsLoading(false);
         return;
       }
@@ -267,8 +273,18 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
   /**
    * Loads persisted state from sessionStorage after component mounts (client-side only)
    * This prevents hydration mismatches between server and client
+   * In wizard mode, always start fresh from email step
    */
   useEffect(() => {
+    // In wizard mode, always start from email step (don't restore state)
+    if (wizardMode) {
+      setStep("email");
+      setEmail("");
+      clearPersistedState();
+      setIsHydrated(true);
+      return;
+    }
+
     const persisted = loadPersistedState();
 
     // Validate persisted state - if on OTP step but no email, reset to email step
@@ -289,7 +305,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     }
 
     setIsHydrated(true);
-  }, []);
+  }, [wizardMode]);
 
   /**
    * Persists email changes to sessionStorage
@@ -345,11 +361,11 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
         {step === "email" ? (
           <form onSubmit={handleSendOTP} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Tvůj email</Label>
+              <Label htmlFor="email">Tvůj ČZU email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="tvuj.email@pef.czu.cz"
+                placeholder="jmeno.prijmeni@pef.czu.cz"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -357,7 +373,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                Email musí končit na @pef.czu.cz nebo @studenti.czu.cz
+                Použij svůj ČZU email
               </p>
             </div>
             <Button type="submit" disabled={isLoading} className="w-full">
@@ -367,36 +383,36 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
         ) : (
           <form onSubmit={handleVerifyOTP} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="otp">Ověřovací kód</Label>
-              <Input
-                id="otp"
-                type="text"
-                placeholder={`Zadej ${OTP_LENGTH}-místný kód`}
-                value={otpCode}
-                onChange={(e) => {
-                  const newValue = e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH);
-                  setOtpCode(newValue);
-                  // Clear lastSubmittedOtp when user starts typing a new code
-                  if (lastSubmittedOtp !== null && newValue !== lastSubmittedOtp) {
-                    setLastSubmittedOtp(null);
-                  }
-                }}
-                onPaste={(e) => {
-                  e.preventDefault();
-                  const pastedText = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
-                  setOtpCode(pastedText);
-                  // Clear lastSubmittedOtp when user pastes a new code
-                  if (lastSubmittedOtp !== null && pastedText !== lastSubmittedOtp) {
-                    setLastSubmittedOtp(null);
-                  }
-                }}
-                disabled={isLoading}
-                required
-                autoFocus
-                maxLength={OTP_LENGTH}
-              />
-              <p className="text-xs text-muted-foreground">
-                Koukni do emailu, měl by tam být ověřovací kód
+              <Label htmlFor="otp">Ověřovací kód (volitelně)</Label>
+              <div className="flex justify-center">
+                <InputOTP
+                  id="otp"
+                  maxLength={OTP_LENGTH}
+                  value={otpCode}
+                  pattern={REGEXP_ONLY_DIGITS}
+                  onChange={(value) => {
+                    setOtpCode(value);
+                    // Clear lastSubmittedOtp when user starts typing a new code
+                    if (lastSubmittedOtp !== null && value !== lastSubmittedOtp) {
+                      setLastSubmittedOtp(null);
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                    <InputOTPSlot index={6} />
+                    <InputOTPSlot index={7} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Klikni na tlačítko v emailu nebo zadej kód výše. Koukni i do spamu.
               </p>
             </div>
             <div className="flex flex-col gap-2">

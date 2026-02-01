@@ -61,13 +61,13 @@ export function OnboardingClient({ next }: OnboardingClientProps) {
             <div className="text-center">
               <h2 className="text-xl font-semibold">
                 {verifyStep === "email"
-                  ? "Krok 1: Ověření školního emailu"
-                  : "Krok 2: Zadejte ověřovací kód"}
+                  ? "Ověření ČZU emailu"
+                  : "Potvrď svůj email"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {verifyStep === "email"
-                  ? "Zadejte váš školní email pro ověření účtu"
-                  : "Zadejte kód, který byl odeslán na váš email"}
+                  ? "Zadej svůj ČZU email, na který ti pošleme ověřovací email."
+                  : "Klikni na tlačítko v emailu. Alternativně můžeš zadat ověřovací kód."}
               </p>
             </div>
 

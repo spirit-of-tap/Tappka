@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { WizardProgress } from "./wizard-progress";
 import { cn } from "@/lib/utils";
 
@@ -24,17 +23,15 @@ export function WizardLayout({
   className,
 }: WizardLayoutProps) {
   return (
-    <div className="w-full max-w-md">
-      <Card className={cn("", className)}>
-        {showProgress && (
-          <CardHeader className="space-y-4 pb-4">
-            <WizardProgress currentStep={currentStep} totalSteps={totalSteps} />
-          </CardHeader>
-        )}
-        <CardContent className={showProgress ? "pt-0" : ""}>
-          {children}
-        </CardContent>
-      </Card>
+    <div className={cn("w-full max-w-md", className)}>
+      {showProgress && (
+        <div className="space-y-4 mb-6">
+          <WizardProgress currentStep={currentStep} totalSteps={totalSteps} />
+        </div>
+      )}
+      <div>
+        {children}
+      </div>
     </div>
   );
 }
