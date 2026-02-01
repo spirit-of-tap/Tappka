@@ -50,7 +50,7 @@ export function GoogleLoginButton({ next }: { next?: string }) {
       variant="outline"
     >
       {isLoading ? (
-        "Connecting..."
+        "Připojování..."
       ) : (
         <>
           <svg
@@ -68,7 +68,7 @@ export function GoogleLoginButton({ next }: { next?: string }) {
               d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 52.6 94.3 256s164.2 203.4 254.5 203.4c56.5 0 86.9-31.7 98.1-72.5 10.7-38.6 4.1-66.1-3.5-88.3H248v-94.8h240z"
             ></path>
           </svg>
-          Continue with Google
+          Přihlásit se přes google
         </>
       )}
     </Button>

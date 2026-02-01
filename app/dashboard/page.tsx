@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   // Get profile with team info
-  const profile = await getCurrentUserProfile(supabase)
+  const profile = await getCurrentUserProfile(supabase, true)
 
 
 
@@ -80,7 +80,7 @@ export default async function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {profile?.team_id ? (
+            {profile?.team ? (
               <>
                 <div className="text-2xl font-bold">{profile?.team?.name}</div>
                 <p className="text-xs text-muted-foreground mt-1">

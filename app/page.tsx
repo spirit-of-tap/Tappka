@@ -1,8 +1,15 @@
 import { LoginForm } from "@/components/login-form";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { DeveloperLinks } from "@/components/developer-links";
+import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
 export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
@@ -24,8 +31,18 @@ export default async function Home() {
             </p>
           </div>
 
-          {/* Login Form */}
-          <LoginForm />
+          {/* Conditional content based on login status */}
+          {isLoggedIn ? (
+            <div className="flex flex-col gap-4">
+              <Button asChild className="w-full" size="lg">
+                <Link href={DEFAULT_LOGGED_IN_PAGE}>
+                  přejít do Tappky
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <LoginForm />
+          )}
 
           {/* Developer Tools */}
           <DeveloperLinks />

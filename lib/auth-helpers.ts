@@ -26,6 +26,7 @@ export interface Profile {
   work_email: string;
   role: ProfileRole;
   team_id: string | null;
+  team: Team | null;
   phone_number: string | null;
   personal_email: string | null;
   date_of_birth: string | null;
@@ -46,13 +47,6 @@ export interface Team {
   year: number | null;
   created_at: string;
   updated_at: string;
-}
-
-/**
- * Profile with team data included
- */
-export interface ProfileWithTeam extends Profile {
-  team: Team | null;
 }
 
 /**
@@ -116,13 +110,13 @@ export async function hasLinkedProfile(
  * Gets the current authenticated user's profile, optionally with team data included
  * Uses RLS policy to ensure user can only see their own profile
  * @param supabaseClient - Supabase client to use. Must be provided to use existing client.
- * @param includeTeam - Whether to fetch team data along with the profile. Defaults to true.
- * @returns The profile data with team (if includeTeam is true) or null otherwise
+ * @param includeTeam - Whether to fetch team data along with the profile. Defaults to false.
+ * @returns The profile data with team populated (if includeTeam is true) or null if not found
  */
 export async function getCurrentUserProfile(
   supabaseClient: SupabaseClient,
   includeTeam: boolean = false,
-): Promise<ProfileWithTeam | null> {
+): Promise<Profile | null> {
   const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
   if (authError || !user) {
@@ -146,18 +140,36 @@ export async function getCurrentUserProfile(
     .single();
 
   // Return null if query failed or no profile found
-  if (queryError || !profile) {
+  if (queryError) {
+    console.error("Error fetching user profile:", queryError);
     return null;
   }
 
-  // Transform the response to match ProfileWithTeam interface
+  if (!profile) {
+    return null;
+  }
+
+  // Transform the response to match Profile interface
+  // Supabase returns foreign key relationships as objects (not arrays) for many-to-one relationships
   // If team was fetched, extract it; otherwise set to null
-  const team = includeTeam ? ((profile as any).team || null) : null;
+  let team: Team | null = null;
+  if (includeTeam) {
+    const teamData = (profile as any).team;
+    // Handle both array and object responses (though it should be an object for many-to-one)
+    if (Array.isArray(teamData)) {
+      team = teamData.length > 0 ? (teamData[0] as Team) : null;
+    } else if (teamData && typeof teamData === 'object') {
+      team = teamData as Team;
+    }
+  }
+
+  // Remove the team property from profile if it exists (to avoid duplication)
+  const { team: _, ...profileWithoutTeam } = profile as any;
 
   return {
-    ...profile,
+    ...profileWithoutTeam,
     team,
-  } as ProfileWithTeam;
+  } as Profile;
 }
 
 /**
