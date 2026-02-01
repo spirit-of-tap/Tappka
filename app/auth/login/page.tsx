@@ -55,7 +55,7 @@ export default async function Home({ searchParams }: LoginPageProps) {
               </Button>
             </div>
           ) : (
-            <LoginForm next={validatedNext} />
+            <LoginForm next={validatedNext ?? undefined} />
           )}
 
           {/* Developer Tools */}
