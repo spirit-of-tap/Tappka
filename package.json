@@ -13,10 +13,11 @@
     "docker:wait-and-restart-auth": "run-s wait-and-restart-docker docker:restart-auth",
     "docker:restart-auth": "node scripts/restart-docker-auth.js",
     "setup-env": "node scripts/setup-env.js",
-    "dev:next": "cross-env NODE_OPTIONS='--inspect' next dev",
-    "build": "next build",
+    "dev:next": "cross-env NODE_OPTIONS='--inspect' next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start"
   },
+  "_comment": "Note: --webpack flag required for @ducanh2912/next-pwa compatibility (doesn't support Turbopack yet)",
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -72,6 +73,7 @@
     "node": "^24.13.0"
   },
   "devDependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@eslint/eslintrc": "^3.3.3",
     "@types/node": "^24.10.9",
     "@types/react": "^19.2.9",
