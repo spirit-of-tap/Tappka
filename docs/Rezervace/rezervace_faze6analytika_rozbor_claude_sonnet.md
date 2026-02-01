@@ -69,12 +69,12 @@ reservations table
 
 ### 3.1 TIER 1 - Kritické metriky (Must have)
 
-| Metrika | Úroveň | Metoda | Použití |
-|---------|--------|--------|---------|
-| **Využití místnosti (%)** | Místnost | Trigger counter | Dashboard, capacity planning |
-| **Počet rezervací dnes** | Systém | Real-time count | Dashboard KPI |
-| **Aktivní rezervace nyní** | Místnost | SELECT where NOW() | Room status |
-| **Moje celkové rezervace** | Uživatel | Trigger counter | Profile page |
+| Metrika                    | Úroveň   | Metoda             | Použití                      |
+| -------------------------- | -------- | ------------------ | ---------------------------- |
+| **Využití místnosti (%)**  | Místnost | Trigger counter    | Dashboard, capacity planning |
+| **Počet rezervací dnes**   | Systém   | Real-time count    | Dashboard KPI                |
+| **Aktivní rezervace nyní** | Místnost | SELECT where NOW() | Room status                  |
+| **Moje celkové rezervace** | Uživatel | Trigger counter    | Profile page                 |
 
 **Proč důležité:**
 - Základní přehled o systému
@@ -83,13 +83,13 @@ reservations table
 
 ### 3.2 TIER 2 - Užitečné metriky (Should have)
 
-| Metrika | Úroveň | Metoda | Použití |
-|---------|--------|--------|---------|
-| **Peak hours** | Místnost | Mat. view | Scheduling recommendations |
-| **Oblíbené místnosti** | Uživatel | Aggregated query | Personalization |
-| **Cancel rate** | Místnost/User | Daily snapshot | Quality metrics |
-| **Průměrná délka rezervace** | Místnost | Mat. view | Time slot optimization |
-| **TS vs běžné poměr** | Systém | Weekly report | Policy review |
+| Metrika                      | Úroveň        | Metoda           | Použití                    |
+| ---------------------------- | ------------- | ---------------- | -------------------------- |
+| **Peak hours**               | Místnost      | Mat. view        | Scheduling recommendations |
+| **Oblíbené místnosti**       | Uživatel      | Aggregated query | Personalization            |
+| **Cancel rate**              | Místnost/User | Daily snapshot   | Quality metrics            |
+| **Průměrná délka rezervace** | Místnost      | Mat. view        | Time slot optimization     |
+| **TS vs běžné poměr**        | Systém        | Weekly report    | Policy review              |
 
 **Proč důležité:**
 - Optimalizační insights
@@ -98,12 +98,12 @@ reservations table
 
 ### 3.3 TIER 3 - Nice-to-have metriky
 
-| Metrika | Úroveň | Metoda | Použití |
-|---------|--------|--------|---------|
-| **Cowork participation** | Uživatel | Snapshot | Community engagement |
-| **Advance booking time** | Systém | Snapshot | Behavioral analysis |
-| **Issue frequency** | Místnost | Monthly agg | Maintenance planning |
-| **Seasonality patterns** | Systém | Quarterly report | Long-term planning |
+| Metrika                  | Úroveň   | Metoda           | Použití              |
+| ------------------------ | -------- | ---------------- | -------------------- |
+| **Cowork participation** | Uživatel | Snapshot         | Community engagement |
+| **Advance booking time** | Systém   | Snapshot         | Behavioral analysis  |
+| **Issue frequency**      | Místnost | Monthly agg      | Maintenance planning |
+| **Seasonality patterns** | Systém   | Quarterly report | Long-term planning   |
 
 ---
 
@@ -397,7 +397,7 @@ SELECT cron.schedule(
 ### 7.1 Optimalizovaný endpoint struktura
 
 ```typescript
-// app/api/analytics/dashboard/route.ts
+// app/api/analyticsroute.ts
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -471,7 +471,7 @@ cache.set(cacheKey, data);
 ### 8.1 Minimalistický dashboard layout
 
 ```tsx
-// app/dashboard/analytics/page.tsx
+// appanalytics/page.tsx
 export default async function AnalyticsPage() {
   const data = await fetchAnalytics(); // Server component
   
@@ -554,12 +554,12 @@ export function TrendChart({ data }: { data: any[] }) {
 
 ### 9.1 Denní úkoly (automatizované)
 
-| Úkol | Čas | Metoda |
-|------|-----|--------|
-| Snapshot včerejška | 02:00 | Edge function |
-| Reset denních čítačů | 00:01 | pg_cron |
-| Refresh mat. views | každou hodinu | pg_cron |
-| Cleanup starých counters | 03:00 týdně | pg_cron |
+| Úkol                     | Čas           | Metoda        |
+| ------------------------ | ------------- | ------------- |
+| Snapshot včerejška       | 02:00         | Edge function |
+| Reset denních čítačů     | 00:01         | pg_cron       |
+| Refresh mat. views       | každou hodinu | pg_cron       |
+| Cleanup starých counters | 03:00 týdně   | pg_cron       |
 
 ### 9.2 Cleanup strategie
 
@@ -601,13 +601,13 @@ WHERE entity_type = 'system'
 
 ### 10.1 Kdy přejít na pokročilejší řešení?
 
-| Situace | Akce |
-|---------|------|
-| > 10k rezervací/měsíc | Zvážit TimescaleDB extension |
-| > 100 místností | Partition analytics_daily by room |
-| > 1000 aktivních uživatelů | Redis cache layer |
-| Real-time dashboard potřeba | WebSocket + pub/sub |
-| Advanced BI | Export do external warehouse (BigQuery) |
+| Situace                     | Akce                                    |
+| --------------------------- | --------------------------------------- |
+| > 10k rezervací/měsíc       | Zvážit TimescaleDB extension            |
+| > 100 místností             | Partition analytics_daily by room       |
+| > 1000 aktivních uživatelů  | Redis cache layer                       |
+| Real-time dashboard potřeba | WebSocket + pub/sub                     |
+| Advanced BI                 | Export do external warehouse (BigQuery) |
 
 ### 10.2 Potenciální optimalizace
 
@@ -710,12 +710,12 @@ SELECT * FROM mv_current_stats;
 
 ## 13. Porovnání s alternativami
 
-| Řešení | Pros | Cons | Náklady |
-|--------|------|------|---------|
-| **Navržený systém** | Plná kontrola, optimalizované | Manuální maintenance | Zdarma |
-| **PostHog** | Rich features, dashboards | Vendor lock-in | ~$50/měsíc |
-| **Metabase** | SQL-based, self-hosted | Extra infrastruktura | Zdarma/hosting |
-| **Google Analytics** | Známý nástroj | Ne pro backend events | Zdarma |
+| Řešení               | Pros                          | Cons                  | Náklady        |
+| -------------------- | ----------------------------- | --------------------- | -------------- |
+| **Navržený systém**  | Plná kontrola, optimalizované | Manuální maintenance  | Zdarma         |
+| **PostHog**          | Rich features, dashboards     | Vendor lock-in        | ~$50/měsíc     |
+| **Metabase**         | SQL-based, self-hosted        | Extra infrastruktura  | Zdarma/hosting |
+| **Google Analytics** | Známý nástroj                 | Ne pro backend events | Zdarma         |
 
 **Doporučení pro Tappka:** Navržený custom systém - dostatečně flexibilní, nulové extra náklady, plná kontrola.
 
@@ -736,7 +736,7 @@ SELECT * FROM mv_current_stats;
 - [ ] Schedule edge function
 
 ### Fáze 6c: API & UI (2-3 dny)
-- [ ] Create `/api/analytics/dashboard` endpoint
+- [ ] Create `/api/analytics/` endpoint
 - [ ] Create `/api/analytics/rooms/[id]` endpoint
 - [ ] Create `/api/analytics/users/me` endpoint
 - [ ] Build admin analytics page
@@ -769,12 +769,12 @@ SELECT * FROM mv_current_stats;
 - ✅ **Údržba**: Automatizované daily/hourly úkoly
 
 ### Rizika a mitigace
-| Riziko | Pravděpodobnost | Mitigace |
-|--------|----------------|----------|
-| Trigger overhead | Nízká | Benchmark ukázal < 10ms |
-| Data inconsistency | Střední | Transaction wrapping, monitoring |
-| Storage growth | Vysoká | Cleanup/archivace starých dat |
-| Query performance | Nízká | Proper indexes, mat. views |
+| Riziko             | Pravděpodobnost | Mitigace                         |
+| ------------------ | --------------- | -------------------------------- |
+| Trigger overhead   | Nízká           | Benchmark ukázal < 10ms          |
+| Data inconsistency | Střední         | Transaction wrapping, monitoring |
+| Storage growth     | Vysoká          | Cleanup/archivace starých dat    |
+| Query performance  | Nízká           | Proper indexes, mat. views       |
 
 ---
 

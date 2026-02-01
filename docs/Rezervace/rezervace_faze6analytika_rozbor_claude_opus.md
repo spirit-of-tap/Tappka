@@ -14,46 +14,46 @@ Analytika rezervačního systému musí balancovat mezi:
 
 ### 2.1 Metriky místností
 
-| Metrika | Popis | Využití |
-|---------|-------|---------|
-| **Využití (%)** | Poměr zarezervovaného času k dostupnému času | Identifikace přetížených/nevyužitých místností |
-| **Průměrná délka rezervace** | Jak dlouho trvají typické rezervace | Optimalizace time slotů |
-| **Peak hours** | Nejvytíženější hodiny dne | Plánování údržby, úprava pravidel |
-| **Počet rezervací/den** | Absolutní čísla | Trend využívání |
-| **Cancel rate** | Podíl zrušených rezervací | Identifikace problémových vzorců |
-| **No-show rate** | Rezervace bez skutečného využití | Potenciál pro overbooking pravidla |
-| **Počet nahlášených problémů** | Issues per room | Identifikace problémových místností |
-| **Průměrný počet osob** | Kolik lidí místnost typicky využívá | Kapacitní plánování |
+| Metrika                        | Popis                                        | Využití                                        |
+| ------------------------------ | -------------------------------------------- | ---------------------------------------------- |
+| **Využití (%)**                | Poměr zarezervovaného času k dostupnému času | Identifikace přetížených/nevyužitých místností |
+| **Průměrná délka rezervace**   | Jak dlouho trvají typické rezervace          | Optimalizace time slotů                        |
+| **Peak hours**                 | Nejvytíženější hodiny dne                    | Plánování údržby, úprava pravidel              |
+| **Počet rezervací/den**        | Absolutní čísla                              | Trend využívání                                |
+| **Cancel rate**                | Podíl zrušených rezervací                    | Identifikace problémových vzorců               |
+| **No-show rate**               | Rezervace bez skutečného využití             | Potenciál pro overbooking pravidla             |
+| **Počet nahlášených problémů** | Issues per room                              | Identifikace problémových místností            |
+| **Průměrný počet osob**        | Kolik lidí místnost typicky využívá          | Kapacitní plánování                            |
 
 ### 2.2 Metriky uživatelů
 
-| Metrika | Popis | Využití |
-|---------|-------|---------|
-| **Počet rezervací** | Celkový počet za období | Aktivita uživatele |
-| **Celkový čas** | Suma hodin rezervací | Využití systému |
-| **Oblíbené místnosti** | Nejčastěji rezervované | Personalizace, návrhy |
-| **Oblíbené časy** | Preferované hodiny/dny | Personalizace |
-| **Reliability score** | Poměr dodržených rezervací | Gamifikace, prioritizace |
-| **Cowork účast** | Kolikrát se připojil k cizím rezervacím | Komunitní zapojení |
-| **Cancel rate** | Jak často ruší | Identifikace problémových uživatelů |
+| Metrika                | Popis                                   | Využití                             |
+| ---------------------- | --------------------------------------- | ----------------------------------- |
+| **Počet rezervací**    | Celkový počet za období                 | Aktivita uživatele                  |
+| **Celkový čas**        | Suma hodin rezervací                    | Využití systému                     |
+| **Oblíbené místnosti** | Nejčastěji rezervované                  | Personalizace, návrhy               |
+| **Oblíbené časy**      | Preferované hodiny/dny                  | Personalizace                       |
+| **Reliability score**  | Poměr dodržených rezervací              | Gamifikace, prioritizace            |
+| **Cowork účast**       | Kolikrát se připojil k cizím rezervacím | Komunitní zapojení                  |
+| **Cancel rate**        | Jak často ruší                          | Identifikace problémových uživatelů |
 
 ### 2.3 Metriky časové
 
-| Metrika | Popis | Využití |
-|---------|-------|---------|
-| **Denní vytížení** | Agregace po dnech v týdnu | Identifikace vzorců |
-| **Hodinové vytížení** | Heatmapa hodin | Optimalizace provozní doby |
-| **Sezónní trendy** | Měsíční/semestrální porovnání | Dlouhodobé plánování |
-| **Lead time** | Jak dopředu lidé rezervují | Nastavení max advance booking |
+| Metrika               | Popis                         | Využití                       |
+| --------------------- | ----------------------------- | ----------------------------- |
+| **Denní vytížení**    | Agregace po dnech v týdnu     | Identifikace vzorců           |
+| **Hodinové vytížení** | Heatmapa hodin                | Optimalizace provozní doby    |
+| **Sezónní trendy**    | Měsíční/semestrální porovnání | Dlouhodobé plánování          |
+| **Lead time**         | Jak dopředu lidé rezervují    | Nastavení max advance booking |
 
 ### 2.4 Metriky systémové
 
-| Metrika | Popis | Využití |
-|---------|-------|---------|
-| **Konflikty** | Počet odmítnutých rezervací kvůli kolizi | Kapacitní nedostatek |
-| **Alternativní návrhy** | Jak často jsou využity | Efektivita algoritmu |
-| **TS vs. běžné rezervace** | Poměr typů rezervací | Vliv TS na dostupnost |
-| **Houston Calling využití** | Účast na HC | Hodnota automatických rezervací |
+| Metrika                     | Popis                                    | Využití                         |
+| --------------------------- | ---------------------------------------- | ------------------------------- |
+| **Konflikty**               | Počet odmítnutých rezervací kvůli kolizi | Kapacitní nedostatek            |
+| **Alternativní návrhy**     | Jak často jsou využity                   | Efektivita algoritmu            |
+| **TS vs. běžné rezervace**  | Poměr typů rezervací                     | Vliv TS na dostupnost           |
+| **Houston Calling využití** | Účast na HC                              | Hodnota automatických rezervací |
 
 ---
 
@@ -373,7 +373,7 @@ GET /api/analytics/trends
   ?metric=utilization|reservations|duration
   ?granularity=day|week|month
 
-GET /api/analytics/dashboard
+GET /api/analytics/
   (agregovaný endpoint pro admin dashboard)
 ```
 
@@ -451,11 +451,11 @@ CREATE INDEX idx_heatmap_room ON analytics_hourly_heatmap(room_id);
 
 ### 8.2 Materialized view refresh strategie
 
-| View | Refresh interval | Metoda |
-|------|------------------|--------|
-| `mv_current_week_stats` | 1 hodina | Cron |
-| `mv_current_month_stats` | 6 hodin | Cron |
-| `mv_room_heatmap` | 1x denně | Cron (noční) |
+| View                     | Refresh interval | Metoda       |
+| ------------------------ | ---------------- | ------------ |
+| `mv_current_week_stats`  | 1 hodina         | Cron         |
+| `mv_current_month_stats` | 6 hodin          | Cron         |
+| `mv_room_heatmap`        | 1x denně         | Cron (noční) |
 
 ### 8.3 Doporučené limity
 
@@ -501,12 +501,12 @@ CREATE INDEX idx_heatmap_room ON analytics_hourly_heatmap(room_id);
 
 ## 11. Alternativní technologie
 
-| Technologie | Pro | Proti |
-|-------------|-----|-------|
-| **PostHog** | Event tracking, funnels, dashboards | Další závislost, cena |
-| **Plausible/Umami** | Privacy-focused, jednoduchý setup | Omezené custom metriky |
-| **ClickHouse** | Extrémně rychlé agregace | Složitý setup, overkill |
-| **Supabase native** | Žádná další závislost | Manuální implementace |
+| Technologie         | Pro                                 | Proti                   |
+| ------------------- | ----------------------------------- | ----------------------- |
+| **PostHog**         | Event tracking, funnels, dashboards | Další závislost, cena   |
+| **Plausible/Umami** | Privacy-focused, jednoduchý setup   | Omezené custom metriky  |
+| **ClickHouse**      | Extrémně rychlé agregace            | Složitý setup, overkill |
+| **Supabase native** | Žádná další závislost               | Manuální implementace   |
 
 **Doporučení:** Pro Tappku stačí Supabase native s hybridním přístupem (triggery + cron + views).
 

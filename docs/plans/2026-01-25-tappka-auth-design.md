@@ -10,12 +10,12 @@ Tappka is a student portal for Tiimiakatemia Prague (TAP) students. This design 
 
 ## User Roles
 
-| Role | Description | Team Required |
-|------|-------------|---------------|
-| Student | Regular TAP student | Yes |
-| Team Leader | Leads a team company (tymova firma) | Yes |
-| Coach | Program coach/mentor | No |
-| Admin | Full system access, user management | No |
+| Role        | Description                         | Team Required |
+| ----------- | ----------------------------------- | ------------- |
+| Student     | Regular TAP student                 | Yes           |
+| Team Leader | Leads a team company (tymova firma) | Yes           |
+| Coach       | Program coach/mentor                | No            |
+| Admin       | Full system access, user management | No            |
 
 ## Authentication Flow
 
@@ -36,7 +36,7 @@ Tappka is a student portal for Tiimiakatemia Prague (TAP) students. This design 
                               │ NO               │                  │ YES
                               ▼                  │                  ▼
                      ┌──────────────┐            │         ┌──────────────┐
-                     │   /verify    │            │         │  /dashboard  │
+                     │   /verify    │            │         │  /  │
                      │  Enter school│            │         │              │
                      │    email     │            │         └──────────────┘
                      └──────┬───────┘            │
@@ -79,56 +79,56 @@ Tappka is a student portal for Tiimiakatemia Prague (TAP) students. This design 
 #### `profiles`
 Extended user info linked to Supabase auth.users
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| id | UUID (PK, FK → auth.users.id) | No | Links to Supabase auth |
-| full_name | TEXT | No | User's display name |
-| role | ENUM ('student', 'team_leader', 'coach', 'admin') | No | User role |
-| team_id | UUID (FK → teams.id) | Yes | Assigned team (students/team leaders only) |
-| is_verified | BOOLEAN | No | School email verified? Default: false |
-| school_email | TEXT | Yes | Verified school email |
-| locale | TEXT | No | Preferred language ('cs', 'en'). Default: 'cs' |
-| created_at | TIMESTAMPTZ | No | Registration time |
-| updated_at | TIMESTAMPTZ | No | Last update time |
+| Column       | Type                                              | Nullable | Description                                    |
+| ------------ | ------------------------------------------------- | -------- | ---------------------------------------------- |
+| id           | UUID (PK, FK → auth.users.id)                     | No       | Links to Supabase auth                         |
+| full_name    | TEXT                                              | No       | User's display name                            |
+| role         | ENUM ('student', 'team_leader', 'coach', 'admin') | No       | User role                                      |
+| team_id      | UUID (FK → teams.id)                              | Yes      | Assigned team (students/team leaders only)     |
+| is_verified  | BOOLEAN                                           | No       | School email verified? Default: false          |
+| school_email | TEXT                                              | Yes      | Verified school email                          |
+| locale       | TEXT                                              | No       | Preferred language ('cs', 'en'). Default: 'cs' |
+| created_at   | TIMESTAMPTZ                                       | No       | Registration time                              |
+| updated_at   | TIMESTAMPTZ                                       | No       | Last update time                               |
 
 #### `teams`
 Team companies (tymove firmy)
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| id | UUID (PK) | No | Team identifier |
-| name | TEXT | No | Team name |
-| year | INTEGER | No | Cohort year (1, 2, 3) |
-| is_active | BOOLEAN | No | Still active team? Default: true |
-| created_at | TIMESTAMPTZ | No | Creation time |
+| Column     | Type        | Nullable | Description                      |
+| ---------- | ----------- | -------- | -------------------------------- |
+| id         | UUID (PK)   | No       | Team identifier                  |
+| name       | TEXT        | No       | Team name                        |
+| year       | INTEGER     | No       | Cohort year (1, 2, 3)            |
+| is_active  | BOOLEAN     | No       | Still active team? Default: true |
+| created_at | TIMESTAMPTZ | No       | Creation time                    |
 
 #### `pre_registered_emails`
 Admin-imported student list from Excel
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| id | UUID (PK) | No | Record identifier |
-| email | TEXT (unique) | No | School email from Excel |
-| team_id | UUID (FK → teams.id) | No | Assigned team |
-| role | ENUM | No | Expected role |
-| full_name | TEXT | Yes | Name from Excel (optional) |
-| claimed_by | UUID (FK → profiles.id) | Yes | User who claimed this email |
-| claimed_at | TIMESTAMPTZ | Yes | When claimed |
-| created_at | TIMESTAMPTZ | No | Import time |
+| Column     | Type                    | Nullable | Description                 |
+| ---------- | ----------------------- | -------- | --------------------------- |
+| id         | UUID (PK)               | No       | Record identifier           |
+| email      | TEXT (unique)           | No       | School email from Excel     |
+| team_id    | UUID (FK → teams.id)    | No       | Assigned team               |
+| role       | ENUM                    | No       | Expected role               |
+| full_name  | TEXT                    | Yes      | Name from Excel (optional)  |
+| claimed_by | UUID (FK → profiles.id) | Yes      | User who claimed this email |
+| claimed_at | TIMESTAMPTZ             | Yes      | When claimed                |
+| created_at | TIMESTAMPTZ             | No       | Import time                 |
 
 #### `verification_codes`
 Temporary codes for school email verification
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| id | UUID (PK) | No | Code identifier |
-| user_id | UUID (FK → profiles.id) | No | Who requested |
-| school_email | TEXT | No | Email to verify |
-| code | TEXT | No | 6-digit code |
-| expires_at | TIMESTAMPTZ | No | Code expiration (10-15 min) |
-| attempts | INTEGER | No | Failed attempts count. Default: 0 |
-| used | BOOLEAN | No | Already used? Default: false |
-| created_at | TIMESTAMPTZ | No | Creation time |
+| Column       | Type                    | Nullable | Description                       |
+| ------------ | ----------------------- | -------- | --------------------------------- |
+| id           | UUID (PK)               | No       | Code identifier                   |
+| user_id      | UUID (FK → profiles.id) | No       | Who requested                     |
+| school_email | TEXT                    | No       | Email to verify                   |
+| code         | TEXT                    | No       | 6-digit code                      |
+| expires_at   | TIMESTAMPTZ             | No       | Code expiration (10-15 min)       |
+| attempts     | INTEGER                 | No       | Failed attempts count. Default: 0 |
+| used         | BOOLEAN                 | No       | Already used? Default: false      |
+| created_at   | TIMESTAMPTZ             | No       | Creation time                     |
 
 ### Database Trigger
 
@@ -206,7 +206,7 @@ Form fields:
 - `/verify` - School email verification
 
 ### Protected Routes (auth + verification required)
-- `/dashboard` - Main dashboard
+- `/` - Main dashboard
 - `/admin/*` - Admin-only pages
 
 ## Internationalization (i18n)

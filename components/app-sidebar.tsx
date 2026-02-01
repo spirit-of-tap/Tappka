@@ -48,7 +48,7 @@ const getNavData = (isDevelopment: boolean) => ({
       items: [
         {
           title: "Dashboard",
-          url: "/dashboard",
+          url: "/",
           icon: LayoutDashboard,
         },
       ],
@@ -58,22 +58,22 @@ const getNavData = (isDevelopment: boolean) => ({
       items: [
         {
           title: "Rezervace",
-          url: "/dashboard/reservations",
+          url: "/reservations",
           icon: CalendarDays,
         },
         {
           title: "Eseje",
-          url: "/dashboard/essays",
+          url: "/essays",
           icon: FileText,
         },
         {
           title: "Schůzky",
-          url: "/dashboard/meetings",
+          url: "/meetings",
           icon: Users,
         },
         {
           title: "Knihovna",
-          url: "/dashboard/library",
+          url: "/library",
           icon: BookOpen,
         },
       ],
@@ -83,12 +83,12 @@ const getNavData = (isDevelopment: boolean) => ({
       items: [
         {
           title: "Nastavení",
-          url: "/dashboard/settings",
+          url: "/settings",
           icon: Settings,
         },
         {
           title: "Nápověda",
-          url: "/dashboard/help",
+          url: "/help",
           icon: HelpCircle,
         },
       ],
@@ -128,7 +128,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
-  const isReservationsActive = pathname.startsWith("/dashboard/reservations")
+  const isReservationsActive = pathname.startsWith("/reservations")
   const isDevelopment = process.env.NODE_ENV === "development"
 
   return (
@@ -177,9 +177,9 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                               <SidebarMenuSubItem>
                                 <SidebarMenuSubButton
                                   asChild
-                                  isActive={pathname === "/dashboard/reservations"}
+                                  isActive={(pathname === "/reservations" || pathname.startsWith("/reservations/")) && pathname !== "/reservations/settings"}
                                 >
-                                  <Link href="/dashboard/reservations">
+                                  <Link href="/reservations">
                                     Místnosti
                                   </Link>
                                 </SidebarMenuSubButton>
@@ -187,9 +187,9 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                               <SidebarMenuSubItem>
                                 <SidebarMenuSubButton
                                   asChild
-                                  isActive={pathname === "/dashboard/reservations/settings"}
+                                  isActive={pathname === "/reservations/settings"}
                                 >
-                                  <Link href="/dashboard/reservations/settings">
+                                  <Link href="/reservations/settings">
                                     Nastavení
                                   </Link>
                                 </SidebarMenuSubButton>

@@ -95,12 +95,12 @@ const data = await response.json();
 
 ### Existující databázové tabulky
 
-| Tabulka | Účel |
-|---------|------|
-| `profiles` | Rozšíření auth.users (jméno, role, tým, verified) |
-| `teams` | Týmové firmy (Viento, Tuuli, Aero) |
-| `pre_registered_emails` | Seznam povolených školních emailů |
-| `verification_codes` | Dočasné kódy pro ověření |
+| Tabulka                 | Účel                                              |
+| ----------------------- | ------------------------------------------------- |
+| `profiles`              | Rozšíření auth.users (jméno, role, tým, verified) |
+| `teams`                 | Týmové firmy (Viento, Tuuli, Aero)                |
+| `pre_registered_emails` | Seznam povolených školních emailů                 |
+| `verification_codes`    | Dočasné kódy pro ověření                          |
 
 ### Existující role
 
@@ -114,7 +114,7 @@ Už existuje placeholder pro Rezervace:
 ```tsx
 {
   title: "Rezervace",
-  url: "/dashboard/reservations",
+  url: "reservations",
   icon: CalendarDays,
 }
 ```
@@ -150,8 +150,8 @@ Už existuje placeholder pro Rezervace:
 *(Budeme doplňovat během diskuse)*
 
 | Datum | Rozhodnutí | Důvod |
-|-------|------------|-------|
-| | | |
+| ----- | ---------- | ----- |
+|       |            |       |
 
 ---
 
@@ -178,7 +178,7 @@ Už existuje placeholder pro Rezervace:
 - `supabase/migrations/20260125000000_auth_system.sql` - Příklad migrace
 
 ### Kam přidat nový kód
-- `app/dashboard/reservations/` - Nová routa pro rezervace
+- `appreservations/` - Nová routa pro rezervace
 - `components/` - Nové komponenty
 - `supabase/migrations/` - Nové databázové tabulky
 
@@ -206,8 +206,8 @@ Už existuje placeholder pro Rezervace:
 - `supabase/migrations/20260129000000_reservation_system.sql` - Kompletní databázové schéma
 
 ### Stránky (Fáze 2)
-- `app/dashboard/reservations/page.tsx` - Hlavní stránka se seznamem místností
-- `app/dashboard/reservations/[code]/page.tsx` - Detail místnosti s kalendářem a formulářem
+- `appreservations/page.tsx` - Hlavní stránka se seznamem místností
+- `appreservations/[code]/page.tsx` - Detail místnosti s kalendářem a formulářem
 
 ### API Routes (Fáze 2)
 - `app/api/reservations/route.ts` - GET (seznam), POST (vytvoření)

@@ -8,7 +8,7 @@ interface RouteParams {
 /**
  * GET /r/[code]
  * Short URL redirect for QR codes
- * - If user is logged in -> /dashboard/reservations/[code]/qr
+ * - If user is logged in -> reservations/[code]/qr
  * - If not logged in -> /rezervace/[code]
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   if (user) {
     // Logged in -> redirect to quick status page
-    const url = new URL(`/dashboard/reservations/${code}/quick`, request.url);
+    const url = new URL(`/reservations/${code}/quick`, request.url);
     return NextResponse.redirect(url);
   } else {
     // Not logged in -> redirect to public page

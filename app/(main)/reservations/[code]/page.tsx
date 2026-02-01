@@ -148,7 +148,7 @@ export default async function RoomDetailPage({ params }: RoomDetailPageProps) {
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
-            <Link href="/dashboard/reservations">
+            <Link href="/reservations">
               <ArrowLeft className="size-5" />
             </Link>
           </Button>

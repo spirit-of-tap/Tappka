@@ -116,7 +116,7 @@ export function RoomScheduleView({
   const handleSelectAlternative = (room: Room) => {
     setConflictDialogOpen(false);
     // Navigate to the alternative room's page
-    router.push(`/dashboard/reservations/${room.code}`);
+    router.push(`reservations/${room.code}`);
   };
 
   return (

@@ -7,14 +7,14 @@
 
 ## Místnosti
 
-| Kód | Název | Pravidla |
-|-----|-------|----------|
-| D126 | D126 | Běžná místnost, může mít TS |
-| D132 | D132 | Běžná místnost, může mít TS |
-| D226 | D226 | Běžná místnost, může mít TS |
-| D127 | Tichá místnost | Vždy dostupná, bez TS |
-| D129 | Reprezentační místnost | Vždy dostupná, bez TS |
-| D107 | D107 | Pouze středa, 1. středa = HC 9-12 |
+| Kód  | Název                  | Pravidla                          |
+| ---- | ---------------------- | --------------------------------- |
+| D126 | D126                   | Běžná místnost, může mít TS       |
+| D132 | D132                   | Běžná místnost, může mít TS       |
+| D226 | D226                   | Běžná místnost, může mít TS       |
+| D127 | Tichá místnost         | Vždy dostupná, bez TS             |
+| D129 | Reprezentační místnost | Vždy dostupná, bez TS             |
+| D107 | D107                   | Pouze středa, 1. středa = HC 9-12 |
 
 ---
 
@@ -84,19 +84,19 @@
 
 ## Obrazovky
 
-### 1. Hlavní stránka (`/dashboard/reservations`)
+### 1. Hlavní stránka (`reservations`)
 - Seznam místností s dostupností ("volná od X")
 - Barevné kódování stavu
 - Sekce "Moje rezervace"
 - Filtrování
 
-### 2. Detail místnosti (`/dashboard/reservations/[kod]`)
+### 2. Detail místnosti (`reservations/[kod]`)
 - Kalendář s rezervacemi
 - Formulář pro rezervaci (čas, důvod, počet osob, cowork toggle)
 - Zobrazení TS
 - Report button
 - Alternativní místnosti
 
-### 3. Coach nastavení (`/dashboard/reservations/settings`)
+### 3. Coach nastavení (`reservations/settings`)
 - Pouze pro role coach/admin
 - Nastavení opakovaných TS

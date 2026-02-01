@@ -24,7 +24,7 @@ export default async function ReservationSettingsPage() {
   const profile = await getCurrentUserProfile(supabase)
 
   if (profile?.role !== "coach" && profile?.role !== "admin") {
-    redirect("/dashboard/reservations");
+    redirect("reservations");
   }
 
   const isAdmin = profile?.role === "admin";

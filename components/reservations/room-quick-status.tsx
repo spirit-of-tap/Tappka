@@ -85,7 +85,7 @@ export function RoomQuickStatus({
           className={`${textColor} hover:bg-white/20 rounded-full`}
           asChild
         >
-          <Link href="/dashboard/reservations">
+          <Link href="/reservations">
             <X className="size-5" />
           </Link>
         </Button>
@@ -190,7 +190,7 @@ export function RoomQuickStatus({
                 {alternativeRooms.map((altRoom) => (
                   <Link
                     key={altRoom.id}
-                    href={`/dashboard/reservations/${altRoom.code}/quick`}
+                    href={`reservations/${altRoom.code}/quick`}
                     className="flex items-center justify-between p-4 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all active:scale-[0.98] shadow-lg"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -234,7 +234,7 @@ export function RoomQuickStatus({
             className="w-full h-12 text-sm font-heading font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 bg-white/90 hover:bg-white text-foreground"
             asChild
           >
-            <Link href={`/dashboard/reservations/${room.code}`}>
+            <Link href={`/reservations/${room.code}`}>
               Zobrazit plný rozvrh
             </Link>
           </Button>

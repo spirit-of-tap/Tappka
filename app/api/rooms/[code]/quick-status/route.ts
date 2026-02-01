@@ -186,7 +186,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 /**
  * Sort alternative rooms based on current room type
- * (Same logic as in /app/dashboard/reservations/[code]/page.tsx)
+ * (Same logic as in /appreservations/[code]/page.tsx)
  */
 function sortAlternativeRooms(rooms: Room[], currentRoom: Room): Room[] {
   const tsRoomCodes = ["d126", "d132", "d226"];

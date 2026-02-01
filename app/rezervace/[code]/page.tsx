@@ -34,7 +34,7 @@ export default async function RezerevacePage({ params }: RezervecePageProps) {
 
   // If logged in, redirect to dashboard version
   if (user) {
-    redirect(`/dashboard/reservations/${code}`);
+    redirect(`/reservations/${code}`);
   }
 
   // Fetch room by code

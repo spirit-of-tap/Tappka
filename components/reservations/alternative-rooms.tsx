@@ -26,7 +26,7 @@ export function AlternativeRooms({ rooms, currentRoomId }: AlternativeRoomsProps
         {alternatives.map((room) => (
           <Link
             key={room.id}
-            href={`/dashboard/reservations/${room.code}`}
+            href={`/reservations/${room.code}`}
             className="flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors"
           >
             <span className="font-medium">{room.name}</span>

@@ -106,7 +106,7 @@ export function NavUser({ user }: NavUserProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+              <DropdownMenuItem onClick={() => router.push("settings")}>
                 <UserIcon className="mr-2 h-4 w-4" />
                 Profil
               </DropdownMenuItem>

@@ -23,7 +23,7 @@ export default async function VerifyPage() {
     .single();
 
   if (profile?.is_verified) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   return (

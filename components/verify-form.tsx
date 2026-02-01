@@ -87,7 +87,7 @@ export function VerifyForm() {
       // Refresh auth state and redirect to dashboard
       const supabase = createClient();
       await supabase.auth.refreshSession();
-      router.push("/dashboard");
+      router.push("/");
     } catch (error: unknown) {
       setError(
         error instanceof Error ? error.message : "Ověření se nezdařilo"
@@ -130,8 +130,8 @@ export function VerifyForm() {
       {/* Step indicator */}
       <div className="flex items-center gap-3">
         <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step === "email"
-            ? "bg-primary text-primary-foreground"
-            : "bg-primary/20 text-primary"
+          ? "bg-primary text-primary-foreground"
+          : "bg-primary/20 text-primary"
           }`}>
           1
         </div>
@@ -140,8 +140,8 @@ export function VerifyForm() {
             }`} />
         </div>
         <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step === "code"
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground"
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground"
           }`}>
           2
         </div>

@@ -41,7 +41,7 @@ export function RoomCard({ room }: RoomCardProps) {
 
   return (
     <Link
-      href={`/dashboard/reservations/${room.code}`}
+      href={`reservations/${room.code}`}
       className={cn("block h-full", isFilteredOut && "opacity-70")}
     >
       <Card
