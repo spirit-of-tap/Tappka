@@ -55,10 +55,23 @@ export default async function ProfilePage({ params }: PageProps) {
 
       {/* Profile Header */}
       <div className="flex flex-col items-center gap-4 text-center">
-        <Avatar size="lg" className="size-24">
-          <AvatarImage src={pictureUrl || undefined} alt={profile.name} />
-          <AvatarFallback className="text-2xl">{getInitials(profile.name)}</AvatarFallback>
-        </Avatar>
+        {/* Avatar with team-colored border */}
+        <div
+          className={cn(
+            'rounded-full ring-4 transition-all',
+            profile.team?.color ? '' : 'ring-border'
+          )}
+          style={
+            profile.team?.color
+              ? ({ '--tw-ring-color': profile.team.color } as React.CSSProperties)
+              : undefined
+          }
+        >
+          <Avatar size="2xl">
+            <AvatarImage src={pictureUrl || undefined} alt={profile.name} />
+            <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
+          </Avatar>
+        </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">{profile.name}</h1>
           <Badge

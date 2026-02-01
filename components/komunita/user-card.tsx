@@ -32,11 +32,24 @@ export function UserCard({ profile, pictureUrl }: UserCardProps) {
       <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
         <CardContent className="p-4 space-y-3">
           {/* Avatar and Name */}
-          <div className="flex items-start gap-3">
-            <Avatar size="lg">
-              <AvatarImage src={pictureUrl || undefined} alt={profile.name} />
-              <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
-            </Avatar>
+          <div className="flex items-start gap-4">
+            {/* Avatar with team-colored border */}
+            <div
+              className={cn(
+                'rounded-full ring-4 transition-all',
+                profile.team?.color ? '' : 'ring-border'
+              )}
+              style={
+                profile.team?.color
+                  ? ({ '--tw-ring-color': profile.team.color } as React.CSSProperties)
+                  : undefined
+              }
+            >
+              <Avatar size="xl">
+                <AvatarImage src={pictureUrl || undefined} alt={profile.name} />
+                <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
+              </Avatar>
+            </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-base truncate">{profile.name}</h3>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
