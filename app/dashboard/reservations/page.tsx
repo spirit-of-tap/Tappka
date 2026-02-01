@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { RoomsWithFilter } from "@/components/reservations/rooms-with-filter";
 import { ReservationsTabs } from "@/components/reservations/reservations-tabs";
 import { getNextAvailableTime } from "@/lib/reservations/utils";
@@ -15,34 +14,20 @@ export const metadata = {
  */
 export default async function ReservationsPage() {
   const supabase = await createClient();
-  
+
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/");
-  }
-
-  // Check if verified
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_verified")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.is_verified) {
-    redirect("/verify");
-  }
 
   // Fetch rooms with current reservations and issues
   const now = new Date().toISOString();
-  
+
   const [roomsResult, reservationsResult, issuesResult, myReservationsResult, joinedIdsResult, coworksResult] = await Promise.all([
     // All rooms
     supabase
       .from("rooms")
       .select("*")
       .order("code"),
-    
+
     // Current and upcoming reservations for today
     supabase
       .from("reservations")
@@ -51,13 +36,13 @@ export default async function ReservationsPage() {
       .gte("end_time", now)
       .lte("start_time", new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
       .order("start_time"),
-    
+
     // Open issues
     supabase
       .from("room_issues")
       .select("room_id, issue_type")
       .eq("status", "open"),
-    
+
     // User's own reservations
     supabase
       .from("reservations")
@@ -65,18 +50,18 @@ export default async function ReservationsPage() {
         *,
         room:rooms(id, code, name)
       `)
-      .eq("user_id", user.id)
+      .eq("user_id", user?.id ?? "")
       .eq("status", "active")
       .gte("end_time", now)
       .order("start_time")
       .limit(10),
-    
+
     // Get reservation IDs user has joined
     supabase
       .from("cowork_participants")
       .select("reservation_id")
-      .eq("user_id", user.id),
-    
+      .eq("user_id", user?.id ?? ""),
+
     // Available coworks (open for cowork, active, upcoming - include all, we'll filter later)
     supabase
       .from("reservations")
@@ -104,20 +89,20 @@ export default async function ReservationsPage() {
   const reservations = reservationsResult.data || [];
   const issues = issuesResult.data || [];
   const myReservations = (myReservationsResult.data || []) as ReservationWithDetails[];
-  
+
   // Get IDs of reservations user has joined
   const joinedReservationIds = new Set(
     (joinedIdsResult.data || []).map((jp: any) => jp.reservation_id)
   );
-  
+
   // Split all coworks into joined and available
   const allCoworks = (coworksResult.data || []) as ReservationWithDetails[];
   const joinedCoworks = allCoworks.filter(c => joinedReservationIds.has(c.id));
-  const availableCoworks = allCoworks.filter(c => 
-    !joinedReservationIds.has(c.id) && c.user_id !== user.id // Exclude joined and own reservations
+  const availableCoworks = allCoworks.filter(c =>
+    !joinedReservationIds.has(c.id) && c.user_id !== user?.id // Exclude joined and own reservations
   );
-  
-  console.log("User ID:", user.id);
+
+  console.log("User ID:", user?.id);
   console.log("Joined reservation IDs:", Array.from(joinedReservationIds));
   console.log("All coworks count:", allCoworks.length);
   console.log("Joined coworks:", joinedCoworks.map(c => ({ id: c.id, title: c.title })));
@@ -161,7 +146,7 @@ export default async function ReservationsPage() {
       </div>
 
       {/* Desktop: Side-by-side, Mobile: See ReservationsTabs component */}
-      <ReservationsTabs 
+      <ReservationsTabs
         myReservations={myReservations}
         joinedCoworks={joinedCoworks}
         availableCoworks={availableCoworks}

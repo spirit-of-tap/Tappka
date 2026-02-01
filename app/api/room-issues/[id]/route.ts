@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -19,14 +20,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
-    // Check role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
 
-    if (!profile || !["coach", "admin"].includes(profile.role)) {
+    // Check role
+
+    if (!profile || (profile?.role !== "coach" && profile?.role !== "admin")) {
       return NextResponse.json(
         { error: "Nemáš oprávnění k této akci" },
         { status: 403 }
@@ -59,10 +64,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Update issue
     const updateData: Record<string, unknown> = { status };
-    
+
     if (status === "resolved") {
       updateData.resolved_at = new Date().toISOString();
-      updateData.resolved_by = user.id;
+      updateData.resolved_by = profile?.id;
     } else {
       updateData.resolved_at = null;
       updateData.resolved_by = null;
@@ -111,13 +116,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
-    // Check role - only admin can delete
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
 
+    // Check role - only admin can delete
     if (!profile || profile.role !== "admin") {
       return NextResponse.json(
         { error: "Pouze admin může mazat problémy" },

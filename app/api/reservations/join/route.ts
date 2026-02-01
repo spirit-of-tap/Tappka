@@ -1,3 +1,4 @@
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -56,8 +57,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
+
     // Can't join your own reservation
-    if (reservation.user_id === user.id) {
+    if (reservation.user_id === profile?.id) {
       return NextResponse.json(
         { error: "Nemůžeš se připojit k vlastní rezervaci" },
         { status: 400 }
@@ -78,7 +88,7 @@ export async function POST(request: NextRequest) {
     const { data: conflicts } = await supabase
       .from("reservations")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("user_id", profile?.id)
       .eq("status", "active")
       .lt("start_time", reservation.end_time)
       .gt("end_time", reservation.start_time);
@@ -95,7 +105,7 @@ export async function POST(request: NextRequest) {
       .from("cowork_participants")
       .select("id")
       .eq("reservation_id", reservation_id)
-      .eq("user_id", user.id)
+      .eq("user_id", profile?.id)
       .single();
 
     if (existing) {
@@ -110,7 +120,7 @@ export async function POST(request: NextRequest) {
       .from("cowork_participants")
       .insert({
         reservation_id,
-        user_id: user.id,
+        user_id: profile?.id,
       })
       .select()
       .single();
@@ -150,13 +160,22 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
+
     // Support both query params and JSON body
     let reservationId: string | null = null;
-    
+
     // Try query params first
     const { searchParams } = new URL(request.url);
     reservationId = searchParams.get("reservation_id");
-    
+
     // If not in query params, try JSON body
     if (!reservationId) {
       try {
@@ -178,7 +197,7 @@ export async function DELETE(request: NextRequest) {
       .from("cowork_participants")
       .delete()
       .eq("reservation_id", reservationId)
-      .eq("user_id", user.id);
+      .eq("user_id", profile?.id);
 
     if (error) {
       console.error("Error leaving cowork:", error);

@@ -98,7 +98,7 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // Once linked, email changes are not allowed to maintain profile connection
       const hasProfile = await hasLinkedProfile(supabase);
       if (hasProfile) {
-        setError("Cannot change email address once linked to a profile. Your email is used to maintain your profile connection.");
+        setError("Cannot change email address once linked to a profile?. Your email is used to maintain your profile connection.");
         setIsLoading(false);
         return;
       }

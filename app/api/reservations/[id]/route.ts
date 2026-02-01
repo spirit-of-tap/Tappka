@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import type { UpdateReservationInput } from "@/lib/reservations/types";
+import { getCurrentUserProfileId } from "@/lib/auth-helpers";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -68,6 +69,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
+    // Get current user's profile ID
+    const profileId = await getCurrentUserProfileId(supabase);
+    if (!profileId) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
+
     // Check ownership
     const { data: existing } = await supabase
       .from("reservations")
@@ -82,7 +92,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (existing.user_id !== user.id) {
+    if (existing.user_id !== profileId) {
       return NextResponse.json(
         { error: "Nemáš oprávnění upravovat tuto rezervaci" },
         { status: 403 }
@@ -156,6 +166,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
+    // Get current user's profile ID
+    const profileId = await getCurrentUserProfileId(supabase);
+    if (!profileId) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
+
     // Check ownership
     const { data: existing } = await supabase
       .from("reservations")
@@ -170,7 +189,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (existing.user_id !== user.id) {
+    if (existing.user_id !== profileId) {
       return NextResponse.json(
         { error: "Nemáš oprávnění zrušit tuto rezervaci" },
         { status: 403 }

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import {
   Card,
   CardContent,
@@ -23,36 +23,16 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/");
-  }
-
   // Get profile with team info
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(
-      `
-      *,
-      teams (
-        id,
-        name,
-        year
-      )
-    `
-    )
-    .eq("id", user.id)
-    .single();
+  const profile = await getCurrentUserProfile(supabase)
 
-  // Redirect unverified users to verify page
-  if (!profile?.is_verified) {
-    redirect("/verify");
-  }
+
 
   return (
     <>
       <div className="mb-8">
         <h2 className="text-3xl font-heading font-bold">
-          Vítej, {profile.full_name?.split(" ")[0]}!
+          Vítej, {profile?.name?.split(" ")[0]}!
         </h2>
         <p className="text-muted-foreground mt-1">
           Toto je tvůj dashboard v Tappka.
@@ -68,9 +48,9 @@ export default async function DashboardPage() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{profile.full_name}</div>
+            <div className="text-2xl font-bold">{profile?.name}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {profile.school_email || user.email}
+              {profile?.work_email || user?.email || ""}
             </p>
           </CardContent>
         </Card>
@@ -84,11 +64,11 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-lg px-3 py-1">
-                {ROLE_LABELS[profile.role] || profile.role}
+                {ROLE_LABELS[profile?.role || ""] || profile?.role}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {profile.is_verified ? "Ověřený účet" : "Neověřený účet"}
+              {profile?.role ? "Ověřený účet" : "Neověřený účet"}
             </p>
           </CardContent>
         </Card>
@@ -100,11 +80,11 @@ export default async function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {profile.teams ? (
+            {profile?.team_id ? (
               <>
-                <div className="text-2xl font-bold">{profile.teams.name}</div>
+                <div className="text-2xl font-bold">{profile?.team?.name}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {profile.teams.year}. ročník
+                  {profile?.team?.year}. ročník
                 </p>
               </>
             ) : (

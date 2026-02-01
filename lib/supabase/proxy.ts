@@ -150,11 +150,6 @@ export async function updateSession(request: NextRequest) {
     return redirectWithCookies(url, supabaseResponse);
   }
 
-  // For semi-protected routes, just allow through (verify page handles its own logic)
-  if (isSemiProtectedRoute) {
-    return supabaseResponse;
-  }
-
   // For protected routes (dashboard, etc.), we need to check verification
   // This is done on the page level for better UX with proper error messages
 

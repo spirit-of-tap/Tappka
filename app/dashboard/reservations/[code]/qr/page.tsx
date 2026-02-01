@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { RoomQuickStatus } from "@/components/reservations/room-quick-status";
 import type { Room, Reservation, RoomIssue } from "@/lib/reservations/types";
 
@@ -51,23 +51,6 @@ function sortAlternativeRooms(rooms: Room[], currentRoom: Room): Room[] {
 export default async function QRQuickStatusPage({ params }: QRPageProps) {
   const { code } = await params;
   const supabase = await createClient();
-
-  // Check authentication
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/");
-  }
-
-  // Check if verified
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_verified")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.is_verified) {
-    redirect("/verify");
-  }
 
   // Fetch room by code
   const { data: room, error: roomError } = await supabase
@@ -147,10 +130,10 @@ export default async function QRQuickStatusPage({ params }: QRPageProps) {
   if (currentReservation) {
     const endTime = new Date(currentReservation.end_time);
     const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
-    
-    const occupantName = currentReservation.user?.full_name || 
-                        currentReservation.team?.name || 
-                        "Neznámý";
+
+    const occupantName = currentReservation.user?.full_name ||
+      currentReservation.team?.name ||
+      "Neznámý";
 
     currentReservationData = {
       title: currentReservation.title,

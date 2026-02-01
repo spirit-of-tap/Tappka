@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,28 +20,14 @@ export const metadata = {
 export default async function ReservationSettingsPage() {
   const supabase = await createClient();
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/");
-  }
-
   // Check if user is coach or admin
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_verified, role")
-    .eq("id", user.id)
-    .single();
+  const profile = await getCurrentUserProfile(supabase)
 
-  if (!profile?.is_verified) {
-    redirect("/verify");
-  }
-
-  if (profile.role !== "coach" && profile.role !== "admin") {
+  if (profile?.role !== "coach" && profile?.role !== "admin") {
     redirect("/dashboard/reservations");
   }
 
-  const isAdmin = profile.role === "admin";
+  const isAdmin = profile?.role === "admin";
 
   // Fetch all data
   const [roomsResult, schedulesResult, breaksResult, teamsResult, issuesResult] = await Promise.all([

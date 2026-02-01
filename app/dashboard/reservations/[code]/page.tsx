@@ -32,20 +32,6 @@ export default async function RoomDetailPage({ params }: RoomDetailPageProps) {
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/");
-  }
-
-  // Check if verified
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_verified")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.is_verified) {
-    redirect("/verify");
-  }
 
   // Fetch room by code
   const { data: room, error: roomError } = await supabase
@@ -62,10 +48,10 @@ export default async function RoomDetailPage({ params }: RoomDetailPageProps) {
   // Include past 7 days for navigation + future 14 days
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const oneWeekAgo = new Date(today);
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  
+
   const twoWeeksLater = new Date(today);
   twoWeeksLater.setDate(twoWeeksLater.getDate() + 14);
 
@@ -223,10 +209,10 @@ export default async function RoomDetailPage({ params }: RoomDetailPageProps) {
               <CardTitle className="text-lg">Rozvrh místnosti</CardTitle>
             </CardHeader>
             <CardContent>
-              <RoomScheduleView 
-                reservations={reservations} 
-                scheduleBreaks={scheduleBreaks} 
-                currentUserId={user.id}
+              <RoomScheduleView
+                reservations={reservations}
+                scheduleBreaks={scheduleBreaks}
+                currentUserId={user?.id ?? ""}
                 roomId={room.id}
                 roomName={room.name}
                 alternativeRooms={alternativeRooms}

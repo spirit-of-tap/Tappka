@@ -23,7 +23,7 @@ export const PUBLIC_ROUTE_PREFIXES: readonly string[] = [
  * Default page to redirect users to after successful login
  * This is the main protected area of the application
  */
-export const DEFAULT_LOGGED_IN_PAGE = '/protected';
+export const DEFAULT_LOGGED_IN_PAGE = '/dashboard';
 
 /**
  * Checks if a given pathname is a public route

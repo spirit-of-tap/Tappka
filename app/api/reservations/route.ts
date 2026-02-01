@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { 
-  OPERATING_HOURS, 
+import {
+  OPERATING_HOURS,
   MAX_ADVANCE_BOOKING_DAYS,
   type CreateReservationInput,
 } from "@/lib/reservations/types";
 import { isRoomAvailableOnDay } from "@/lib/reservations/utils";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 /**
  * GET /api/reservations
@@ -184,11 +185,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
+
     // Check: user doesn't have another reservation at the same time
     const { data: existingUserReservations } = await supabase
       .from("reservations")
       .select("id, room:rooms(name)")
-      .eq("user_id", user.id)
+      .eq("user_id", profile?.id)
       .eq("status", "active")
       .lt("start_time", end_time)
       .gt("end_time", start_time);
@@ -205,7 +215,7 @@ export async function POST(request: NextRequest) {
       .from("reservations")
       .insert({
         room_id,
-        user_id: user.id,
+        user_id: profile?.id,
         reservation_type: "personal",
         title: title.trim(),
         person_count,
@@ -218,7 +228,7 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error("Error creating reservation:", insertError);
-      
+
       // Handle unique constraint violation (overlap)
       if (insertError.code === "23P01") {
         return NextResponse.json(
@@ -233,10 +243,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: reservation,
-      message: "Rezervace vytvořena" 
+      message: "Rezervace vytvořena"
     });
   } catch (error) {
     console.error("POST /api/reservations error:", error);

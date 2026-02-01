@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { addDays, format, parseISO, getDay } from "date-fns";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -20,14 +21,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
-    // Check if user is coach or admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
 
-    if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
+    // Check if user is coach or admin
+    if (!profile || (profile?.role !== "coach" && profile?.role !== "admin")) {
       return NextResponse.json({ error: "Nedostatečná oprávnění" }, { status: 403 });
     }
 
@@ -142,12 +146,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
-    // Check if user is coach or admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
 
     if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
       return NextResponse.json({ error: "Nedostatečná oprávnění" }, { status: 403 });

@@ -168,7 +168,7 @@ CREATE INDEX idx_schedule_breaks_type ON schedule_breaks(break_type);
 -- Auto-update updated_at on reservations
 CREATE TRIGGER update_reservations_updated_at
     BEFORE UPDATE ON reservations
-    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 -- ============================================
 -- ROW LEVEL SECURITY
@@ -225,20 +225,50 @@ CREATE POLICY "Authenticated can read active reservations" ON reservations
 CREATE POLICY "Users can create own reservations" ON reservations
     FOR INSERT TO authenticated
     WITH CHECK (
-        user_id = auth.uid() AND 
+        user_id IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        ) AND 
         reservation_type = 'personal'
     );
 
 -- Users can update their own reservations
 CREATE POLICY "Users can update own reservations" ON reservations
     FOR UPDATE TO authenticated
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
+    USING (
+        user_id IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        )
+    )
+    WITH CHECK (
+        user_id IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        )
+    );
 
 -- Users can delete (cancel) their own reservations
 CREATE POLICY "Users can delete own reservations" ON reservations
     FOR DELETE TO authenticated
-    USING (user_id = auth.uid());
+    USING (
+        user_id IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        )
+    );
 
 -- Coaches can manage TS and HC reservations
 CREATE POLICY "Coaches can manage TS reservations" ON reservations
@@ -265,7 +295,13 @@ CREATE POLICY "Authenticated can read cowork_participants" ON cowork_participant
 CREATE POLICY "Users can join cowork" ON cowork_participants
     FOR INSERT TO authenticated
     WITH CHECK (
-        user_id = auth.uid() AND
+        user_id IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        ) AND
         EXISTS (
             SELECT 1 FROM reservations 
             WHERE id = reservation_id 
@@ -277,7 +313,15 @@ CREATE POLICY "Users can join cowork" ON cowork_participants
 -- Users can leave (delete their participation)
 CREATE POLICY "Users can leave cowork" ON cowork_participants
     FOR DELETE TO authenticated
-    USING (user_id = auth.uid());
+    USING (
+        user_id IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        )
+    );
 
 -- ----------------------------------------
 -- ROOM ISSUES POLICIES
@@ -291,13 +335,37 @@ CREATE POLICY "Authenticated can read room_issues" ON room_issues
 -- Users can report issues
 CREATE POLICY "Users can report issues" ON room_issues
     FOR INSERT TO authenticated
-    WITH CHECK (reported_by = auth.uid());
+    WITH CHECK (
+        reported_by IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        )
+    );
 
 -- Users can update their own reports (before resolved)
 CREATE POLICY "Users can update own issues" ON room_issues
     FOR UPDATE TO authenticated
-    USING (reported_by = auth.uid() AND status = 'open')
-    WITH CHECK (reported_by = auth.uid());
+    USING (
+        reported_by IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        ) AND status = 'open'
+    )
+    WITH CHECK (
+        reported_by IN (
+            SELECT id FROM profiles 
+            WHERE user_id IN (
+                SELECT id FROM public.users 
+                WHERE auth_user_id = auth.uid()
+            )
+        )
+    );
 
 -- Coaches and admins can resolve issues
 CREATE POLICY "Coaches can resolve issues" ON room_issues

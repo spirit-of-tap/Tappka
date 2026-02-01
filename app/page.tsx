@@ -1,28 +1,8 @@
 import { LoginForm } from "@/components/login-form";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { DeveloperLinks } from "@/components/developer-links";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // If user is logged in, redirect based on verification status
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_verified")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.is_verified) {
-      redirect("/dashboard");
-    } else {
-      redirect("/verify");
-    }
-  }
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
@@ -46,6 +26,9 @@ export default async function Home() {
 
           {/* Login Form */}
           <LoginForm />
+
+          {/* Developer Tools */}
+          <DeveloperLinks />
         </div>
       </div>
 

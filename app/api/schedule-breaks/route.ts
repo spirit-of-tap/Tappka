@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import type { ScheduleBreakType } from "@/lib/reservations/types";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface CreateBreakInput {
   break_type: ScheduleBreakType;
@@ -22,13 +23,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
-    // Check if user is coach or admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
 
+    // Check if user is coach or admin
     if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
       return NextResponse.json({ error: "Nedostatečná oprávnění" }, { status: 403 });
     }
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         start_date,
         end_date,
-        created_by: user.id,
+        created_by: profile?.id,
       })
       .select()
       .single();
@@ -92,8 +96,8 @@ export async function POST(request: NextRequest) {
       success: true,
       data: breakData,
       reservations_cancelled: cancelledCount,
-      message: cancelledCount > 0 
-        ? `Vytvořeno. Zrušeno ${cancelledCount} TS rezervací.` 
+      message: cancelledCount > 0
+        ? `Vytvořeno. Zrušeno ${cancelledCount} TS rezervací.`
         : "Vytvořeno",
     });
   } catch (error) {

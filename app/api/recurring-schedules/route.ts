@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { addDays, format, getDay, setHours, setMinutes } from "date-fns";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface CreateScheduleInput {
   room_id: string;
@@ -25,14 +26,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
-    // Check if user is coach or admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    // Get current user's profile ID
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Uživatelský profil nenalezen" },
+        { status: 403 }
+      );
+    }
 
-    if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
+    if (!profile || (profile?.role !== "coach" && profile?.role !== "admin")) {
       return NextResponse.json({ error: "Nedostatečná oprávnění" }, { status: 403 });
     }
 
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
       .insert({
         room_id,
         team_id,
-        created_by: user.id,
+        created_by: profile?.id,
         day_of_week,
         start_time,
         end_time,

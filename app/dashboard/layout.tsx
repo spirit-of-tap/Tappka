@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -26,25 +26,12 @@ export default async function DashboardLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/");
-  }
-
   // Get profile for user info in sidebar
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role, school_email, is_verified")
-    .eq("id", user.id)
-    .single();
-
-  // Redirect unverified users to verify page
-  if (!profile?.is_verified) {
-    redirect("/verify");
-  }
+  const profile = await getCurrentUserProfile(supabase)
 
   const sidebarUser = {
-    name: profile?.full_name || "Uživatel",
-    email: profile?.school_email || user.email || "",
+    name: profile?.name || "Uživatel",
+    email: profile?.work_email || user?.email || "",
     role: profile?.role,
   };
 
