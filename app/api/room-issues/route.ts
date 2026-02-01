@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import type { IssueType } from "@/lib/reservations/types";
-import { getCurrentUserProfileId } from "@/lib/auth-helpers";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface CreateIssueInput {
   room_id: string;
@@ -127,8 +127,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user's profile ID
-    const profileId = await getCurrentUserProfileId(supabase);
-    if (!profileId) {
+    const profile = await getCurrentUserProfile(supabase);
+    if (!profile) {
       return NextResponse.json(
         { error: "Uživatelský profil nenalezen" },
         { status: 403 }
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       .from("room_issues")
       .insert({
         room_id,
-        reported_by: profileId,
+        reported_by: profile?.id,
         issue_type,
         description: description || null,
       })
