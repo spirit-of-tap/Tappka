@@ -97,7 +97,8 @@ export function useEmailVerificationRealtime() {
         await supabase.realtime.setAuth();
 
         // Subscribe to channel
-        const subscribePromise = channel.subscribe((status, err) => {
+        // Subscription status is handled via the callback function
+        channel.subscribe((status, err) => {
           if (status === "SUBSCRIBED") {
             isSubscribedRef.current = true;
           } else if (status === "CHANNEL_ERROR") {
@@ -107,9 +108,6 @@ export function useEmailVerificationRealtime() {
             isSubscribedRef.current = false;
           }
         });
-
-        // Wait for subscription to complete
-        await subscribePromise;
       } catch (error) {
         console.error("Error setting up Realtime subscription:", error);
       }
