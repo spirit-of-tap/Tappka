@@ -89,26 +89,36 @@ export async function hasLinkedProfile(
     return false;
   }
 
-  // Query profiles directly - RLS policy ensures user can only see their own profile
-  // The RLS policy checks: user_id in (select id from public.users where auth_user_id = auth.uid())
-  // This is more reliable than nested selects with RLS
-  const { data: profiles, error: queryError } = await supabaseClient
-    .from("profiles")
+  // First check if the user has a linked public.users record
+  // This is required because profiles RLS has a permissive policy that allows
+  // viewing all profiles, so we can't rely on RLS alone
+  const { data: userData, error: userError } = await supabaseClient
+    .from("users")
     .select("id")
-    .limit(1);
+    .eq("auth_user_id", user.id)
+    .limit(1)
+    .maybeSingle();
 
-  // Return false if query failed or no profiles found
-  if (queryError || !profiles) {
+  // If no users record exists for this auth user, they don't have a linked profile
+  if (userError || !userData) {
     return false;
   }
 
-  // Check if at least one profile exists
-  return Array.isArray(profiles) && profiles.length > 0;
+  // Now check if there's a profile linked to this user
+  const { data: profile, error: queryError } = await supabaseClient
+    .from("profiles")
+    .select("id")
+    .eq("user_id", userData.id)
+    .limit(1)
+    .maybeSingle();
+
+  // Return true only if a profile exists for this specific user
+  return !queryError && profile !== null;
 }
 
 /**
  * Gets the current authenticated user's profile, optionally with team data included
- * Uses RLS policy to ensure user can only see their own profile
+ * Explicitly filters by the current user's linked profile
  * @param supabaseClient - Supabase client to use. Must be provided to use existing client.
  * @param includeTeam - Whether to fetch team data along with the profile. Defaults to false.
  * @returns The profile data with team populated (if includeTeam is true) or null if not found
@@ -123,6 +133,21 @@ export async function getCurrentUserProfile(
     return null;
   }
 
+  // First get the user's linked public.users record
+  // This is required because profiles RLS has a permissive policy that allows
+  // viewing all profiles, so we can't rely on RLS alone
+  const { data: userData, error: userError } = await supabaseClient
+    .from("users")
+    .select("id")
+    .eq("auth_user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  // If no users record exists for this auth user, they don't have a linked profile
+  if (userError || !userData) {
+    return null;
+  }
+
   // Build select query conditionally based on includeTeam parameter
   const selectQuery = includeTeam
     ? `
@@ -131,13 +156,13 @@ export async function getCurrentUserProfile(
     `
     : "*";
 
-  // Query profiles - RLS policy ensures user can only see their own profile
-  // The RLS policy checks: user_id in (select id from public.users where auth_user_id = auth.uid())
+  // Query profiles explicitly filtered by the user's user_id
   const { data: profile, error: queryError } = await supabaseClient
     .from("profiles")
     .select(selectQuery)
+    .eq("user_id", userData.id)
     .limit(1)
-    .single();
+    .maybeSingle();
 
   // Return null if query failed or no profile found
   if (queryError) {
