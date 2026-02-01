@@ -11,6 +11,8 @@ import {
   Settings,
   HelpCircle,
   BookOpen,
+  Mail,
+  Database,
 } from "lucide-react"
 
 import { SearchForm } from "@/components/search-form"
@@ -39,7 +41,7 @@ import {
 import { ChevronRight } from "lucide-react"
 
 // Navigation data for Tappka
-const data = {
+const getNavData = (isDevelopment: boolean) => ({
   navMain: [
     {
       title: "Hlavní",
@@ -91,8 +93,29 @@ const data = {
         },
       ],
     },
+    ...(isDevelopment
+      ? [
+        {
+          title: "Dev",
+          items: [
+            {
+              title: "Mailpit",
+              url: "http://127.0.0.1:54324",
+              icon: Mail,
+              external: true,
+            },
+            {
+              title: "Supabase Studio",
+              url: "http://127.0.0.1:54323",
+              icon: Database,
+              external: true,
+            },
+          ],
+        },
+      ]
+      : []),
   ],
-}
+})
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
@@ -106,6 +129,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isReservationsActive = pathname.startsWith("/dashboard/reservations")
+  const isDevelopment = process.env.NODE_ENV === "development"
 
   return (
     <Sidebar {...props}>
@@ -122,7 +146,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         <SearchForm />
       </SidebarHeader>
       <SidebarContent>
-        {data.navMain.map((section) => (
+        {getNavData(isDevelopment).navMain.map((section) => (
           <SidebarGroup key={section.title}>
             <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -139,7 +163,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                       >
                         <SidebarMenuItem>
                           <CollapsibleTrigger asChild>
-                            <SidebarMenuButton 
+                            <SidebarMenuButton
                               isActive={isReservationsActive}
                               tooltip={item.title}
                             >
@@ -151,8 +175,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                           <CollapsibleContent>
                             <SidebarMenuSub>
                               <SidebarMenuSubItem>
-                                <SidebarMenuSubButton 
-                                  asChild 
+                                <SidebarMenuSubButton
+                                  asChild
                                   isActive={pathname === "/dashboard/reservations"}
                                 >
                                   <Link href="/dashboard/reservations">
@@ -161,8 +185,8 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>
                               <SidebarMenuSubItem>
-                                <SidebarMenuSubButton 
-                                  asChild 
+                                <SidebarMenuSubButton
+                                  asChild
                                   isActive={pathname === "/dashboard/reservations/settings"}
                                 >
                                   <Link href="/dashboard/reservations/settings">
@@ -177,10 +201,13 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                     )
                   }
 
-                  // Standard menu item
+                  // Standard menu item (internal or external)
                   return (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={pathname === item.url || pathname.startsWith(item.url + "/")}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
+                      >
                         <Link href={item.url}>
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
