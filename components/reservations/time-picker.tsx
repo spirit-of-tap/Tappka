@@ -37,14 +37,14 @@ export function TimePicker({
   // Generate time slots
   const slots = useMemo(() => {
     const result: string[] = [];
-    let hour = OPERATING_HOURS.start;
+    let hour: number = OPERATING_HOURS.start;
     let minute = 0;
     const increment = hourOnly ? 60 : TIME_SLOT_MINUTES;
 
     while (hour < OPERATING_HOURS.end || (hour === OPERATING_HOURS.end && minute === 0)) {
       const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
       result.push(timeStr);
-      
+
       minute += increment;
       if (minute >= 60) {
         minute = 0;
@@ -89,13 +89,13 @@ export function TimePicker({
           <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-32 p-0" 
-        align="start" 
+      <PopoverContent
+        className="w-32 p-0"
+        align="start"
         sideOffset={4}
         onWheel={handleWheel}
       >
-        <div 
+        <div
           ref={scrollRef}
           className="p-1 max-h-64 overflow-y-auto"
           onWheel={handleWheel}
