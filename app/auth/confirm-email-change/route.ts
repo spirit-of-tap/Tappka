@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const typeParam = searchParams.get("type");
   const next = searchParams.get("next");
+  const startTime = searchParams.get("start_time");
   const type: EmailOtpType | null =
     typeParam === "email_change" ? ("email_change" as EmailOtpType) : null;
 
@@ -62,5 +63,18 @@ export async function GET(request: NextRequest) {
     return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);
   }
 
-  return redirectWithCookies(createSuccessUrl(request, next), supabaseResponse);
+  // Redirect to verification success page with timestamp if available
+  const successUrl = request.nextUrl.clone();
+  successUrl.pathname = "/auth/verification-success";
+  successUrl.search = "";
+  
+  if (startTime) {
+    successUrl.searchParams.set("start_time", startTime);
+  }
+  
+  if (next) {
+    successUrl.searchParams.set("next", next);
+  }
+
+  return redirectWithCookies(successUrl, supabaseResponse);
 }
