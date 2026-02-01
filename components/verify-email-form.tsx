@@ -22,7 +22,6 @@ const STORAGE_KEY = "verify-email-form-state";
 interface StoredState {
   step: "email" | "otp";
   email: string;
-  otpStartTime?: number;
 }
 
 /**
@@ -81,7 +80,6 @@ export function VerifyEmailForm({ next }: { next?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastSubmittedOtp, setLastSubmittedOtp] = useState<string | null>(null);
-  const [otpStartTime, setOtpStartTime] = useState<number | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -124,15 +122,9 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // With enable_manual_linking = true, this will link the email identity
       // Note: This adds the email as a secondary identity, not changing the primary email
 
-      // Construct the redirect URL with next parameter and timestamp if available
+      // Construct the redirect URL with next parameter if available
       // Ensure URL ends with ? or & so Supabase can append token_hash
       const confirmUrl = new URL(`${window.location.origin}/auth/confirm-email-change`);
-      
-      // Store timestamp when OTP is sent (used for both link and OTP code verification)
-      const startTime = Date.now();
-      setOtpStartTime(startTime);
-      confirmUrl.searchParams.set("start_time", startTime.toString());
-      
       if (next) {
         confirmUrl.searchParams.set("next", next);
       }
@@ -185,7 +177,7 @@ export function VerifyEmailForm({ next }: { next?: string }) {
 
       // Move to OTP verification step
       setStep("otp");
-      savePersistedState({ step: "otp", email: email.trim(), otpStartTime: startTime });
+      savePersistedState({ step: "otp", email: email.trim() });
       setIsLoading(false);
     } catch (err) {
       setError("An unexpected error occurred");
@@ -232,22 +224,16 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // Clear persisted state on success
       clearPersistedState();
 
-      // Redirect to verification success page with timestamp
-      const successUrl = new URL("/auth/verification-success", window.location.origin);
-      if (otpStartTime) {
-        successUrl.searchParams.set("start_time", otpStartTime.toString());
-      }
-      if (next) {
-        successUrl.searchParams.set("next", next);
-      }
-      router.push(successUrl.toString());
+      // Success - redirect to next parameter or default page
+      const redirectTo = next ?? DEFAULT_LOGGED_IN_PAGE;
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       setError("An unexpected error occurred");
       setIsLoading(false);
       // Keep lastSubmittedOtp set to prevent re-submission of the same code
     }
-  }, [email, otpCode, next, otpStartTime, supabase, router]);
+  }, [email, otpCode, next, supabase, router]);
 
   /**
    * Handles form submission for OTP verification
@@ -280,9 +266,6 @@ export function VerifyEmailForm({ next }: { next?: string }) {
     if (persisted.step === "email" || persisted.step === "otp") {
       setStep(persisted.step);
     }
-    if (persisted.otpStartTime) {
-      setOtpStartTime(persisted.otpStartTime);
-    }
 
     setIsHydrated(true);
   }, []);
@@ -296,12 +279,12 @@ export function VerifyEmailForm({ next }: { next?: string }) {
     if (!isHydrated) return;
 
     if (email && email.includes("@")) {
-      savePersistedState({ step, email, otpStartTime: otpStartTime ?? undefined });
+      savePersistedState({ step, email });
     } else if (step === "otp" && !email) {
       // If on OTP step but no email, clear invalid state
       clearPersistedState();
     }
-  }, [email, step, otpStartTime, isHydrated]);
+  }, [email, step, isHydrated]);
 
   /**
    * Auto-submits the form when OTP code reaches the expected length
