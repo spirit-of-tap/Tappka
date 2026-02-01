@@ -138,7 +138,7 @@ export async function updateSession(request: NextRequest) {
     return redirectWithCookies(url, supabaseResponse);
   }
 
-  // If no email identity, redirect to verify email page
+  // If no email identity, redirect to onboarding page (wizard for first-time users)
   // Treat errors as "no identity" to preserve graceful redirect behavior
   const emailIdentityCheck = await safeCheck(
     () => hasEmailIdentity(supabase),
@@ -146,7 +146,7 @@ export async function updateSession(request: NextRequest) {
   );
   if (!emailIdentityCheck.ok) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/verify-email";
+    url.pathname = "/auth/onboarding";
     url.search = ""; // Clear existing search params
     url.hash = ""; // Clear existing hash
     url.searchParams.set("next", fullPath);

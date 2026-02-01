@@ -13,12 +13,12 @@ export async function AuthButton() {
 
   return user ? (
     <div className="flex items-center gap-4">
-      Hey, {user.email}!
+      Ahoj, {user.email}!
       <LogoutButton />
     </div>
   ) : (
     <Button asChild size="sm" variant={"default"}>
-      <Link href="/auth/login">Sign in with Google</Link>
+      <Link href="/auth/login">Přihlásit se přes Google</Link>
     </Button>
   );
 }
