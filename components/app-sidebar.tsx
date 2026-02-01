@@ -40,8 +40,24 @@ import {
 } from "@/components/ui/collapsible"
 import { ChevronRight } from "lucide-react"
 
+type NavItem = {
+  title: string
+  url: string
+  icon: React.ComponentType<{ className?: string }>
+  external?: boolean
+}
+
+type NavSection = {
+  title: string
+  items: NavItem[]
+}
+
+type NavData = {
+  navMain: NavSection[]
+}
+
 // Navigation data for Tappka
-const getNavData = (isDevelopment: boolean) => ({
+const getNavData = (isDevelopment: boolean): NavData => ({
   navMain: [
     {
       title: "Hlavní",
@@ -233,7 +249,10 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                         asChild
                         isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
                       >
-                        <Link href={item.url}>
+                        <Link 
+                          href={item.url}
+                          {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                        >
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
                         </Link>
