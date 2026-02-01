@@ -3,10 +3,12 @@
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { validateRedirectUrl } from "@/lib/utils";
 
 /**
  * Google OAuth login button component
  * Handles both sign-in and sign-up flows seamlessly
+ * Validates next parameter to prevent open redirects
  */
 export function GoogleLoginButton({ next }: { next?: string }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,9 +20,12 @@ export function GoogleLoginButton({ next }: { next?: string }) {
     try {
       const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
       if (next) {
-        // Properly encode the next parameter - it may contain query parameters itself
-        // Use encodeURIComponent to ensure it's properly encoded
-        callbackUrl.searchParams.set("next", next);
+        // Validate next parameter to prevent open redirects (defense-in-depth)
+        const validatedNext = validateRedirectUrl(next, window.location.origin);
+        if (validatedNext) {
+          // Properly encode the next parameter - it may contain query parameters itself
+          callbackUrl.searchParams.set("next", validatedNext);
+        }
       }
 
       const { error } = await supabase.auth.signInWithOAuth({

@@ -5,11 +5,25 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
+import { validateRedirectUrl } from "@/lib/utils";
+import { headers } from "next/headers";
 
-export default async function Home() {
+interface LoginPageProps {
+  searchParams: Promise<{ next?: string }>;
+}
+
+export default async function Home({ searchParams }: LoginPageProps) {
+  const { next } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const isLoggedIn = !!user;
+
+  // Validate next parameter to prevent open redirects
+  const headersList = await headers();
+  const host = headersList.get("host");
+  const protocol = headersList.get("x-forwarded-proto") || (process.env.NODE_ENV === "production" ? "https" : "http");
+  const origin = host ? `${protocol}://${host}` : "http://localhost:3000";
+  const validatedNext = next ? validateRedirectUrl(next, origin) : undefined;
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
@@ -41,7 +55,7 @@ export default async function Home() {
               </Button>
             </div>
           ) : (
-            <LoginForm />
+            <LoginForm next={validatedNext} />
           )}
 
           {/* Developer Tools */}
