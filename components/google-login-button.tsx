@@ -52,8 +52,9 @@ export function GoogleLoginButton({ next }: { next?: string }) {
       type="button"
       onClick={handleGoogleLogin}
       disabled={isLoading}
-      className="w-full font-medium"
+      className="w-full font-medium h-12 text-base"
       variant="outline"
+      size="lg"
     >
       {isLoading ? (
         <>
