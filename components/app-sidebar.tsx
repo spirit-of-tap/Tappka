@@ -62,34 +62,9 @@ const getNavData = (isDevelopment: boolean) => ({
           icon: CalendarDays,
         },
         {
-          title: "Eseje",
-          url: "/essays",
-          icon: FileText,
-        },
-        {
-          title: "Schůzky",
-          url: "/meetings",
+          title: "Komunita",
+          url: "/komunita",
           icon: Users,
-        },
-        {
-          title: "Knihovna",
-          url: "/library",
-          icon: BookOpen,
-        },
-      ],
-    },
-    {
-      title: "Ostatní",
-      items: [
-        {
-          title: "Nastavení",
-          url: "/settings",
-          icon: Settings,
-        },
-        {
-          title: "Nápověda",
-          url: "/help",
-          icon: HelpCircle,
         },
       ],
     },
@@ -129,6 +104,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const pathname = usePathname()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isReservationsActive = pathname.startsWith("/reservations")
+  const isKomunitaActive = pathname.startsWith("/komunita")
   const isDevelopment = process.env.NODE_ENV === "development"
 
   return (
@@ -191,6 +167,55 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                 >
                                   <Link href="/reservations/settings">
                                     Nastavení
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </SidebarMenuItem>
+                      </Collapsible>
+                    )
+                  }
+
+                  // Special handling for Komunita with sub-menu
+                  if (item.title === "Komunita") {
+                    return (
+                      <Collapsible
+                        key={item.title}
+                        asChild
+                        defaultOpen={isKomunitaActive}
+                        className="group/collapsible"
+                      >
+                        <SidebarMenuItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                              isActive={isKomunitaActive}
+                              tooltip={item.title}
+                            >
+                              <item.icon className="size-4" />
+                              <span>{item.title}</span>
+                              <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              <SidebarMenuSubItem>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={pathname === "/komunita/lide" || (pathname.startsWith("/komunita/profil/"))}
+                                >
+                                  <Link href="/komunita/lide">
+                                    Lidé
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                              <SidebarMenuSubItem>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={pathname === "/komunita/tymy" || pathname.startsWith("/komunita/tymy/")}
+                                >
+                                  <Link href="/komunita/tymy">
+                                    Týmy
                                   </Link>
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>
