@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
@@ -36,10 +36,10 @@ function formatDuration(durationMs: number): string {
 }
 
 /**
- * Email verification success page
- * Displays how long it took the user to verify their email
+ * Component that uses useSearchParams to display verification time
+ * Must be wrapped in Suspense boundary
  */
-export default function VerificationSuccessPage() {
+function VerificationSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [verificationTime, setVerificationTime] = useState<string | null>(null);
@@ -113,5 +113,27 @@ export default function VerificationSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Email verification success page
+ * Displays how long it took the user to verify their email
+ */
+export default function VerificationSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <div className="text-center">Loading...</div>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <VerificationSuccessContent />
+    </Suspense>
   );
 }

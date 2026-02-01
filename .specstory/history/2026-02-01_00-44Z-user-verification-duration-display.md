@@ -11155,3 +11155,17374 @@ Creating the verification success page:
 
 ---
 
+
+Updating the confirm-email-change route to redirect to the success page with the timestamp:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/app/auth/confirm-email-change/route.ts</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/app/auth/confirm-email-change/route.ts</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Add timestamp parameter to verification link in verify-email-form.tsx
+- [x] Create new verification success page that displays verification time
+- [x] Update confirm-email-change route to redirect to success page with timestamp
+
+</details>
+</tool-use>
+
+---
+
+
+Updating the OTP verification flow to track timestamp and redirect to the success page:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Updating the form to track the timestamp when sending OTP and redirect to the success page after verification:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Updating sessionStorage to persist the timestamp:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+
+Updating the verifyOTP callback dependencies:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "components/verify-email-form.tsx",
+    "app/auth/verification-success/page.tsx",
+    "app/auth/confirm-email-change/route.ts"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "components/verify-email-form.tsx",
+      "errors": [
+        {
+          "message": "Cannot redeclare block-scoped variable 'startTime'.",
+          "range": {
+            "startPosition": {
+              "line": 132,
+              "column": 13
+            },
+            "endPosition": {
+              "line": 132,
+              "column": 22
+            }
+          },
+          "source": "ts",
+          "severity": "DIAGNOSTIC_SEVERITY_ERROR"
+        },
+        {
+          "message": "Cannot redeclare block-scoped variable 'startTime'.",
+          "range": {
+            "startPosition": {
+              "line": 186,
+              "column": 13
+            },
+            "endPosition": {
+              "line": 186,
+              "column": 22
+            }
+          },
+          "source": "ts",
+          "severity": "DIAGNOSTIC_SEVERITY_ERROR"
+        }
+      ]
+    },
+    {
+      "relativeWorkspacePath": "app/auth/verification-success/page.tsx"
+    },
+    {
+      "relativeWorkspacePath": "app/auth/confirm-email-change/route.ts"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Fixing the variable name conflict:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Fixing the variable name conflict by reusing the existing variable:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="generic" data-tool-name="read_lints">
+<details>
+          <summary>Tool use: **read_lints** • Read lints for 1 file</summary>
+      
+Lint paths:
+
+- `components/verify-email-form.tsx`
+
+Lint results
+
+Lint errors for `components/verify-email-form.tsx`
+
+
+| Message | Range | Severity |
+|-------|-------|----------|
+| Cannot redeclare block-scoped variable 'startTime'. | 132:13-132:22 | DIAGNOSTIC_SEVERITY_ERROR |
+| Cannot redeclare block-scoped variable 'startTime'. | 186:13-186:22 | DIAGNOSTIC_SEVERITY_ERROR |
+
+
+</details>
+</tool-use>
+
+---
+
+
+Checking for other `startTime` declarations:
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "startTime",
+  "path": "components/verify-email-form.tsx",
+  "caseInsensitive": false
+}
+```
+Result:
+
+```json
+{
+  "success": {
+    "pattern": "startTime",
+    "path": "components/verify-email-form.tsx",
+    "outputMode": "content",
+    "workspaceResults": {
+      "/Users/tom/programming/tappka": {
+        "content": {
+          "matches": [
+            {
+              "file": "components/verify-email-form.tsx",
+              "matches": [
+                {
+                  "lineNumber": 132,
+                  "content": "      const startTime = Date.now();"
+                },
+                {
+                  "lineNumber": 133,
+                  "content": "      setOtpStartTime(startTime);"
+                },
+                {
+                  "lineNumber": 134,
+                  "content": "      confirmUrl.searchParams.set(\"start_time\", startTime.toString());"
+                },
+                {
+                  "lineNumber": 188,
+                  "content": "      savePersistedState({ step: \"otp\", email: email.trim(), otpStartTime: startTime });"
+                }
+              ]
+            }
+          ],
+          "totalLines": 4,
+          "totalMatchedLines": 4
+        }
+      }
+    }
+  }
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Reading the function to check the scope:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Checking the verifyOTP function for conflicts:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+Command rejected: User chose to skip
+
+---
+
+
+Checking for other `startTime` references in the file:
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "\\bstartTime\\b",
+  "path": "components/verify-email-form.tsx",
+  "caseInsensitive": true
+}
+```
+Result:
+
+```json
+{
+  "success": {
+    "pattern": "\\bstartTime\\b",
+    "path": "components/verify-email-form.tsx",
+    "outputMode": "content",
+    "workspaceResults": {
+      "/Users/tom/programming/tappka": {
+        "content": {
+          "matches": [
+            {
+              "file": "components/verify-email-form.tsx",
+              "matches": [
+                {
+                  "lineNumber": 132,
+                  "content": "      const startTime = Date.now();"
+                },
+                {
+                  "lineNumber": 133,
+                  "content": "      setOtpStartTime(startTime);"
+                },
+                {
+                  "lineNumber": 134,
+                  "content": "      confirmUrl.searchParams.set(\"start_time\", startTime.toString());"
+                },
+                {
+                  "lineNumber": 188,
+                  "content": "      savePersistedState({ step: \"otp\", email: email.trim(), otpStartTime: startTime });"
+                }
+              ]
+            }
+          ],
+          "totalLines": 4,
+          "totalMatchedLines": 4
+        }
+      }
+    }
+  }
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Updating the persistence effect to include the timestamp:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "app/auth/verification-success/page.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "app/auth/verification-success/page.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Verifying the verification success page is set up correctly:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/app/auth/verification-success/page.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+## Summary
+
+1. **Added timestamp to verification link**: When sending the OTP, a `start_time` parameter is added to the verification link URL.
+
+2. **Created verification success page** (`/app/auth/verification-success/page.tsx`):
+   - Displays verification time
+   - Formats duration (seconds, minutes, hours, days)
+   - Shows a success message
+   - Includes a "Continue" button to proceed
+
+3. **Updated confirmation route**: The `/auth/confirm-email-change` route extracts the timestamp and redirects to the success page with it.
+
+4. **Updated OTP code verification**: When users verify via OTP code (not the link), the timestamp is tracked and they're redirected to the success page.
+
+5. **Added persistence**: The timestamp is stored in sessionStorage so it persists across page refreshes.
+
+The verification time is calculated from when the OTP is sent until verification completes, and is displayed on the success page. Works for both:
+- Clicking the verification link in the email
+- Entering the OTP code manually
+
+All changes are complete and the code is ready to use.
+
+---
+
+_**User**_
+
+do the same for when the user enters the otp. You can get the value from the db
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+Checking the database schema for a timestamp field to use when verifying the OTP code:
+
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="semantic_search_full">
+<details>
+<summary>Tool use: **semantic_search_full**</summary>
+
+
+Parameters:
+
+```json
+{
+  "query": "What database fields store OTP sent timestamp or email verification timestamp?",
+  "topK": 10,
+  "explanation": ""
+}
+```
+Result:
+
+```json
+{
+  "codeResults": [
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 50
+          }
+        },
+        "contents": "-- Migration: Initial schema setup\n-- Purpose: Creates complete database schema with tables, triggers, and restrictive RLS policies\n-- Affected tables: users, profiles, teams\n-- Special considerations: All RLS policies are restrictive - admin operations require service_role or application-level checks\n\n-- ============================================================================\n-- ENUM TYPES\n-- ============================================================================\n\ncreate type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');\n\n-- ============================================================================\n-- TABLES\n-- ============================================================================\n\n-- Create users table (custom table, separate from auth.users)\n-- Stores Google OAuth user data and OTP tracking\n-- Linked to auth.users via auth_user_id for authentication checks\ncreate table public.users (\n  id uuid primary key default gen_random_uuid(),\n  auth_user_id uuid unique references auth.users(id) on delete cascade,\n  google_email text not null unique,\n  suggested_work_email text,\n  verified_work_email text,\n  verified_work_email_at timestamptz,\n  google_profile_picture text,\n  google_full_name text,\n  last_otp_sent_at timestamptz,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\ncomment on table public.users is 'Custom users table storing Google OAuth user data and OTP tracking. Separate from auth.users but linked via auth_user_id for authentication.';\n\n-- Create teams table\ncreate table public.teams (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  picture text,\n  color text,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\ncomment on table public.teams is 'Team information for organizing users into groups.';\n\n-- Create profiles table (pre-created by admin, linked to user after verification)\n-- References the new users table instead of auth.users\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Initial schema setup",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Creates complete database schema with tables, triggers, and restrictive RLS policies",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users, profiles, teams",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: All RLS policies are restrictive - admin operations require service_role or application-level checks",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- ENUM TYPES",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 12
+          },
+          {
+            "text": "-- TABLES",
+            "lineNumber": 13
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "-- Create users table (custom table, separate from auth.users)",
+            "lineNumber": 16
+          },
+          {
+            "text": "-- Stores Google OAuth user data and OTP tracking",
+            "lineNumber": 17
+          },
+          {
+            "text": "-- Linked to auth.users via auth_user_id for authentication checks",
+            "lineNumber": 18
+          },
+          {
+            "text": "create table public.users (",
+            "lineNumber": 19
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 20
+          },
+          {
+            "text": "  auth_user_id uuid unique references auth.users(id) on delete cascade,",
+            "lineNumber": 21
+          },
+          {
+            "text": "  google_email text not null unique,",
+            "lineNumber": 22
+          },
+          {
+            "text": "  suggested_work_email text,",
+            "lineNumber": 23
+          },
+          {
+            "text": "  verified_work_email text,",
+            "lineNumber": 24
+          },
+          {
+            "text": "  verified_work_email_at timestamptz,",
+            "lineNumber": 25
+          },
+          {
+            "text": "  google_profile_picture text,",
+            "lineNumber": 26
+          },
+          {
+            "text": "  google_full_name text,",
+            "lineNumber": 27
+          },
+          {
+            "text": "  last_otp_sent_at timestamptz,",
+            "lineNumber": 28
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 29
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 30
+          },
+          {
+            "text": ");",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "comment on table public.users is 'Custom users table storing Google OAuth user data and OTP tracking. Separate from auth.users but linked via auth_user_id for authentication.';",
+            "lineNumber": 33
+          },
+          {
+            "lineNumber": 34
+          },
+          {
+            "text": "-- Create teams table",
+            "lineNumber": 35
+          },
+          {
+            "text": "create table public.teams (",
+            "lineNumber": 36
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 37
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 38
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 39
+          },
+          {
+            "text": "  color text,",
+            "lineNumber": 40
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 41
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 42
+          },
+          {
+            "text": ");",
+            "lineNumber": 43
+          },
+          {
+            "lineNumber": 44
+          },
+          {
+            "text": "comment on table public.teams is 'Team information for organizing users into groups.';",
+            "lineNumber": 45
+          },
+          {
+            "lineNumber": 46
+          },
+          {
+            "text": "-- Create profiles table (pre-created by admin, linked to user after verification)",
+            "lineNumber": 47
+          },
+          {
+            "text": "-- References the new users table instead of auth.users",
+            "lineNumber": 48
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 49
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 50
+          }
+        ]
+      },
+      "score": 0.3648732006549835
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131220000_set_verified_work_email_on_change.sql",
+        "range": {
+          "startPosition": {
+            "line": 22
+          },
+          "endPosition": {
+            "line": 82
+          }
+        },
+        "contents": "  v_domain text;\nbegin\n  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change\n  -- When email_change is verified, Supabase typically:\n  -- 1. Sets email_change to the new email (temporary)\n  -- 2. Verifies OTP\n  -- 3. Moves email_change to email and clears email_change\n  -- So we need to check both fields\n  \n  -- Check if email changed\n  if old.email is distinct from new.email then\n    v_email := new.email;\n  -- Check if email_change was cleared (moved to email)\n  elsif old.email_change is distinct from new.email_change and (new.email_change is null or new.email_change = '') then\n    -- email_change was cleared, use the current email\n    v_email := new.email;\n  else\n    -- No relevant change\n    return new;\n  end if;\n  \n  -- Only proceed if email is not null and not empty\n  if v_email is null or v_email = '' then\n    return new;\n  end if;\n  \n  -- Extract domain from email\n  v_domain := lower(split_part(v_email, '@', 2));\n  \n  -- Only update verified_work_email if domain is a CZU domain\n  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then\n    return new;\n  end if;\n  \n  -- Find the public.users row that matches this auth.users.id\n  select id into v_user_id\n  from public.users\n  where auth_user_id = new.id;\n  \n  -- If no matching public.users row found, return early\n  if v_user_id is null then\n    return new;\n  end if;\n  \n  -- Update verified_work_email and verified_work_email_at\n  -- This happens after OTP verification succeeds, so the email is verified\n  -- Only update if the email is different from what's already stored (or not set)\n  update public.users\n  set verified_work_email = v_email,\n      verified_work_email_at = now()\n  where id = v_user_id\n    and (verified_work_email is null or verified_work_email != v_email);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';\n\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_domain text;",
+            "lineNumber": 23
+          },
+          {
+            "text": "begin",
+            "lineNumber": 24
+          },
+          {
+            "text": "  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change",
+            "lineNumber": 25
+          },
+          {
+            "text": "  -- When email_change is verified, Supabase typically:",
+            "lineNumber": 26
+          },
+          {
+            "text": "  -- 1. Sets email_change to the new email (temporary)",
+            "lineNumber": 27
+          },
+          {
+            "text": "  -- 2. Verifies OTP",
+            "lineNumber": 28
+          },
+          {
+            "text": "  -- 3. Moves email_change to email and clears email_change",
+            "lineNumber": 29
+          },
+          {
+            "text": "  -- So we need to check both fields",
+            "lineNumber": 30
+          },
+          {
+            "text": "  ",
+            "lineNumber": 31
+          },
+          {
+            "text": "  -- Check if email changed",
+            "lineNumber": 32
+          },
+          {
+            "text": "  if old.email is distinct from new.email then",
+            "lineNumber": 33
+          },
+          {
+            "text": "    v_email := new.email;",
+            "lineNumber": 34
+          },
+          {
+            "text": "  -- Check if email_change was cleared (moved to email)",
+            "lineNumber": 35
+          },
+          {
+            "text": "  elsif old.email_change is distinct from new.email_change and (new.email_change is null or new.email_change = '') then",
+            "lineNumber": 36
+          },
+          {
+            "text": "    -- email_change was cleared, use the current email",
+            "lineNumber": 37
+          },
+          {
+            "text": "    v_email := new.email;",
+            "lineNumber": 38
+          },
+          {
+            "text": "  else",
+            "lineNumber": 39
+          },
+          {
+            "text": "    -- No relevant change",
+            "lineNumber": 40
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 41
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 42
+          },
+          {
+            "text": "  ",
+            "lineNumber": 43
+          },
+          {
+            "text": "  -- Only proceed if email is not null and not empty",
+            "lineNumber": 44
+          },
+          {
+            "text": "  if v_email is null or v_email = '' then",
+            "lineNumber": 45
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 46
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 47
+          },
+          {
+            "text": "  ",
+            "lineNumber": 48
+          },
+          {
+            "text": "  -- Extract domain from email",
+            "lineNumber": 49
+          },
+          {
+            "text": "  v_domain := lower(split_part(v_email, '@', 2));",
+            "lineNumber": 50
+          },
+          {
+            "text": "  ",
+            "lineNumber": 51
+          },
+          {
+            "text": "  -- Only update verified_work_email if domain is a CZU domain",
+            "lineNumber": 52
+          },
+          {
+            "text": "  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then",
+            "lineNumber": 53
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 54
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 55
+          },
+          {
+            "text": "  ",
+            "lineNumber": 56
+          },
+          {
+            "text": "  -- Find the public.users row that matches this auth.users.id",
+            "lineNumber": 57
+          },
+          {
+            "text": "  select id into v_user_id",
+            "lineNumber": 58
+          },
+          {
+            "text": "  from public.users",
+            "lineNumber": 59
+          },
+          {
+            "text": "  where auth_user_id = new.id;",
+            "lineNumber": 60
+          },
+          {
+            "text": "  ",
+            "lineNumber": 61
+          },
+          {
+            "text": "  -- If no matching public.users row found, return early",
+            "lineNumber": 62
+          },
+          {
+            "text": "  if v_user_id is null then",
+            "lineNumber": 63
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 64
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 65
+          },
+          {
+            "text": "  ",
+            "lineNumber": 66
+          },
+          {
+            "text": "  -- Update verified_work_email and verified_work_email_at",
+            "lineNumber": 67
+          },
+          {
+            "text": "  -- This happens after OTP verification succeeds, so the email is verified",
+            "lineNumber": 68
+          },
+          {
+            "text": "  -- Only update if the email is different from what's already stored (or not set)",
+            "lineNumber": 69
+          },
+          {
+            "text": "  update public.users",
+            "lineNumber": 70
+          },
+          {
+            "text": "  set verified_work_email = v_email,",
+            "lineNumber": 71
+          },
+          {
+            "text": "      verified_work_email_at = now()",
+            "lineNumber": 72
+          },
+          {
+            "text": "  where id = v_user_id",
+            "lineNumber": 73
+          },
+          {
+            "text": "    and (verified_work_email is null or verified_work_email != v_email);",
+            "lineNumber": 74
+          },
+          {
+            "text": "  ",
+            "lineNumber": 75
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 76
+          },
+          {
+            "text": "end;",
+            "lineNumber": 77
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 78
+          },
+          {
+            "lineNumber": 79
+          },
+          {
+            "text": "comment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';",
+            "lineNumber": 80
+          },
+          {
+            "lineNumber": 81
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 82
+          }
+        ]
+      },
+      "score": 0.3450968861579895
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {
+            "line": 35
+          },
+          "endPosition": {
+            "line": 78
+          }
+        },
+        "contents": "  v_column_name text;\nbegin\n  -- Convert records to jsonb for dynamic manipulation (must be first)\n  v_old_jsonb := to_jsonb(old);\n  v_new_jsonb := to_jsonb(new);\n  \n  -- Start with OLD values (protected state)\n  v_result_jsonb := v_old_jsonb;\n  \n  -- Allow only whitelisted fields from NEW to override OLD values\n  foreach v_column_name in array v_allowed_fields\n  loop\n    if v_new_jsonb ? v_column_name then\n      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);\n    end if;\n  end loop;\n  \n  -- Allow system fields to be updated by trigger functions\n  -- When verified_work_email is being set/changed, this indicates a system trigger update\n  -- Users cannot directly set verified_work_email due to RLS and application logic\n  if v_new_jsonb ? 'verified_work_email' and (v_old_jsonb-&gt;&gt;'verified_work_email') is distinct from (v_new_jsonb-&gt;&gt;'verified_work_email') then\n    -- This is a system update setting verified_work_email, allow both system fields\n    foreach v_column_name in array v_system_fields\n    loop\n      if v_new_jsonb ? v_column_name then\n        v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);\n      end if;\n    end loop;\n  end if;\n  \n  -- Handle special field: last_otp_sent_at\n  -- Automatically update when suggested_work_email changes\n  if (v_old_jsonb-&gt;&gt;'suggested_work_email') is distinct from (v_new_jsonb-&gt;&gt;'suggested_work_email') then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));\n  else\n    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');\n  end if;\n  \n  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)\n  -- But we include it here to ensure it's not reset\n  if v_new_jsonb ? 'updated_at' then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_column_name text;",
+            "lineNumber": 36
+          },
+          {
+            "text": "begin",
+            "lineNumber": 37
+          },
+          {
+            "text": "  -- Convert records to jsonb for dynamic manipulation (must be first)",
+            "lineNumber": 38
+          },
+          {
+            "text": "  v_old_jsonb := to_jsonb(old);",
+            "lineNumber": 39
+          },
+          {
+            "text": "  v_new_jsonb := to_jsonb(new);",
+            "lineNumber": 40
+          },
+          {
+            "text": "  ",
+            "lineNumber": 41
+          },
+          {
+            "text": "  -- Start with OLD values (protected state)",
+            "lineNumber": 42
+          },
+          {
+            "text": "  v_result_jsonb := v_old_jsonb;",
+            "lineNumber": 43
+          },
+          {
+            "text": "  ",
+            "lineNumber": 44
+          },
+          {
+            "text": "  -- Allow only whitelisted fields from NEW to override OLD values",
+            "lineNumber": 45
+          },
+          {
+            "text": "  foreach v_column_name in array v_allowed_fields",
+            "lineNumber": 46
+          },
+          {
+            "text": "  loop",
+            "lineNumber": 47
+          },
+          {
+            "text": "    if v_new_jsonb ? v_column_name then",
+            "lineNumber": 48
+          },
+          {
+            "text": "      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);",
+            "lineNumber": 49
+          },
+          {
+            "text": "    end if;",
+            "lineNumber": 50
+          },
+          {
+            "text": "  end loop;",
+            "lineNumber": 51
+          },
+          {
+            "text": "  ",
+            "lineNumber": 52
+          },
+          {
+            "text": "  -- Allow system fields to be updated by trigger functions",
+            "lineNumber": 53
+          },
+          {
+            "text": "  -- When verified_work_email is being set/changed, this indicates a system trigger update",
+            "lineNumber": 54
+          },
+          {
+            "text": "  -- Users cannot directly set verified_work_email due to RLS and application logic",
+            "lineNumber": 55
+          },
+          {
+            "text": "  if v_new_jsonb ? 'verified_work_email' and (v_old_jsonb-&gt;&gt;'verified_work_email') is distinct from (v_new_jsonb-&gt;&gt;'verified_work_email') then",
+            "lineNumber": 56
+          },
+          {
+            "text": "    -- This is a system update setting verified_work_email, allow both system fields",
+            "lineNumber": 57
+          },
+          {
+            "text": "    foreach v_column_name in array v_system_fields",
+            "lineNumber": 58
+          },
+          {
+            "text": "    loop",
+            "lineNumber": 59
+          },
+          {
+            "text": "      if v_new_jsonb ? v_column_name then",
+            "lineNumber": 60
+          },
+          {
+            "text": "        v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);",
+            "lineNumber": 61
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 62
+          },
+          {
+            "text": "    end loop;",
+            "lineNumber": 63
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 64
+          },
+          {
+            "text": "  ",
+            "lineNumber": 65
+          },
+          {
+            "text": "  -- Handle special field: last_otp_sent_at",
+            "lineNumber": 66
+          },
+          {
+            "text": "  -- Automatically update when suggested_work_email changes",
+            "lineNumber": 67
+          },
+          {
+            "text": "  if (v_old_jsonb-&gt;&gt;'suggested_work_email') is distinct from (v_new_jsonb-&gt;&gt;'suggested_work_email') then",
+            "lineNumber": 68
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));",
+            "lineNumber": 69
+          },
+          {
+            "text": "  else",
+            "lineNumber": 70
+          },
+          {
+            "text": "    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed",
+            "lineNumber": 71
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');",
+            "lineNumber": 72
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 73
+          },
+          {
+            "text": "  ",
+            "lineNumber": 74
+          },
+          {
+            "text": "  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)",
+            "lineNumber": 75
+          },
+          {
+            "text": "  -- But we include it here to ensure it's not reset",
+            "lineNumber": 76
+          },
+          {
+            "text": "  if v_new_jsonb ? 'updated_at' then",
+            "lineNumber": 77
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');",
+            "lineNumber": 78
+          }
+        ]
+      },
+      "score": 0.3402138948440552
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 38
+          }
+        },
+        "contents": "-- Migration: Restrict user updates to suggested_work_email only\n-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at\n-- Affected tables: users\n-- Special considerations: Prevents users from modifying any other fields in the users table\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to restrict updates to suggested_work_email only\n-- Automatically updates last_otp_sent_at when suggested_work_email changes\n-- Prevents users from modifying any other fields in the users table\n-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones\ncreate or replace function public.handle_user_update_restriction()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth, pg_catalog\nas $$\ndeclare\n  -- Whitelist: fields that users are allowed to modify\n  v_allowed_fields text[] := array['suggested_work_email'];\n  \n  -- System fields: can be updated by trigger functions (SECURITY DEFINER), not by users\n  v_system_fields text[] := array['verified_work_email', 'verified_work_email_at'];\n  \n  -- Fields with special handling logic (not reset from OLD)\n  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];\n  \n  -- JSONB representations of OLD and NEW records\n  v_old_jsonb jsonb;\n  v_new_jsonb jsonb;\n  v_result_jsonb jsonb;\n  \n  -- Column name for iteration\n  v_column_name text;\nbegin\n  -- Convert records to jsonb for dynamic manipulation (must be first)",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Restrict user updates to suggested_work_email only",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: Prevents users from modifying any other fields in the users table",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "-- Create trigger function to restrict updates to suggested_work_email only",
+            "lineNumber": 10
+          },
+          {
+            "text": "-- Automatically updates last_otp_sent_at when suggested_work_email changes",
+            "lineNumber": 11
+          },
+          {
+            "text": "-- Prevents users from modifying any other fields in the users table",
+            "lineNumber": 12
+          },
+          {
+            "text": "-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones",
+            "lineNumber": 13
+          },
+          {
+            "text": "create or replace function public.handle_user_update_restriction()",
+            "lineNumber": 14
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 15
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 16
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 17
+          },
+          {
+            "text": "set search_path = public, auth, pg_catalog",
+            "lineNumber": 18
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 19
+          },
+          {
+            "text": "declare",
+            "lineNumber": 20
+          },
+          {
+            "text": "  -- Whitelist: fields that users are allowed to modify",
+            "lineNumber": 21
+          },
+          {
+            "text": "  v_allowed_fields text[] := array['suggested_work_email'];",
+            "lineNumber": 22
+          },
+          {
+            "text": "  ",
+            "lineNumber": 23
+          },
+          {
+            "text": "  -- System fields: can be updated by trigger functions (SECURITY DEFINER), not by users",
+            "lineNumber": 24
+          },
+          {
+            "text": "  v_system_fields text[] := array['verified_work_email', 'verified_work_email_at'];",
+            "lineNumber": 25
+          },
+          {
+            "text": "  ",
+            "lineNumber": 26
+          },
+          {
+            "text": "  -- Fields with special handling logic (not reset from OLD)",
+            "lineNumber": 27
+          },
+          {
+            "text": "  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];",
+            "lineNumber": 28
+          },
+          {
+            "text": "  ",
+            "lineNumber": 29
+          },
+          {
+            "text": "  -- JSONB representations of OLD and NEW records",
+            "lineNumber": 30
+          },
+          {
+            "text": "  v_old_jsonb jsonb;",
+            "lineNumber": 31
+          },
+          {
+            "text": "  v_new_jsonb jsonb;",
+            "lineNumber": 32
+          },
+          {
+            "text": "  v_result_jsonb jsonb;",
+            "lineNumber": 33
+          },
+          {
+            "text": "  ",
+            "lineNumber": 34
+          },
+          {
+            "text": "  -- Column name for iteration",
+            "lineNumber": 35
+          },
+          {
+            "text": "  v_column_name text;",
+            "lineNumber": 36
+          },
+          {
+            "text": "begin",
+            "lineNumber": 37
+          },
+          {
+            "text": "  -- Convert records to jsonb for dynamic manipulation (must be first)",
+            "lineNumber": 38
+          }
+        ]
+      },
+      "score": 0.3369365930557251
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 75
+          },
+          "endPosition": {
+            "line": 419,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\nconst handleSendOTP = async \n);\n      }\n\n      // Move to OTP verification step\n      setStep(\"otp\");\n      savePersistedState({ step: \"otp\", email: email.trim(), otpStartTime: startTime });\n      setIsLoading(false);\n    } catch (err) {\n      setError(\"An unexpected error occurred\");\n      setIsLoading(false);\n    }\n  };\n\n  /**\n   * Verifies the OTP code and links email identity to user\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\n   * With enable_manual_linking = true, this will link the email identity\n   * to the existing authenticated user account\n   */\n  const verifyOTP = useCallback(async () =&gt; {\n    const trimmedOtp = otpCode.trim();\n\n    // Track the OTP being submitted to prevent re-submission\n    setLastSubmittedOtp(trimmedOtp);\n    setError(null);\n    setIsLoading(true);\n\n    try {\n      // Verify OTP code for email change/linking\n      // Use type 'email_change' because we used updateUser() to initiate the flow\n      // With enable_manual_linking = true, this will link the email identity\n      // to the current authenticated user instead of creating a new user\n      const { error: verifyError } = await supabase.auth.verifyOtp({\n        email: email.trim(),\n        token: trimmedOtp,\n        type: \"email_change\",\n      });\n\n      if (verifyError) {\n        setError(verifyError.message || \"Invalid OTP code\");\n        setIsLoading(false);\n        // Keep lastSubmittedOtp set to prevent re-submission of the same code\n        // The code remains in the input so user can see what they entered\n        return;\n      }\n\n      // Refresh session to ensure identities are updated\n      await supabase.auth.refreshSession();\n\n      // Clear persisted state on success\n      clearPersistedState();\n\n      // Redirect to verification success page with timestamp\n      const successUrl = new URL(\"/auth/verification-success\", window.location.origin);\n      if (otpStartTime) {\n        successUrl.searchParams.set(\"start_time\", otpStartTime.toString());\n      }\n      if (next) {\n        successUrl.searchParams.set(\"next\", next);\n      }\n      router.push(successUrl.toString());\n      router.refresh();\n    } catch (err) {\n      setError(\"An unexpected error occurred\");\n  };\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 75,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 75,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 75,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 76,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 76,
+            "isSignature": true
+          },
+          {
+            "text": "const handleSendOTP = async ",
+            "lineNumber": 93
+          },
+          {
+            "text": ");",
+            "lineNumber": 183
+          },
+          {
+            "text": "      }",
+            "lineNumber": 184
+          },
+          {
+            "lineNumber": 185
+          },
+          {
+            "text": "      // Move to OTP verification step",
+            "lineNumber": 186
+          },
+          {
+            "text": "      setStep(\"otp\");",
+            "lineNumber": 187
+          },
+          {
+            "text": "      savePersistedState({ step: \"otp\", email: email.trim(), otpStartTime: startTime });",
+            "lineNumber": 188
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 189
+          },
+          {
+            "text": "    } catch (err) {",
+            "lineNumber": 190
+          },
+          {
+            "text": "      setError(\"An unexpected error occurred\");",
+            "lineNumber": 191
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 192
+          },
+          {
+            "text": "    }",
+            "lineNumber": 193
+          },
+          {
+            "text": "  };",
+            "lineNumber": 194
+          },
+          {
+            "lineNumber": 195
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 196
+          },
+          {
+            "text": "   * Verifies the OTP code and links email identity to user",
+            "lineNumber": 197
+          },
+          {
+            "text": "   * Uses type 'email_change' since we're updating the user's email via updateUser()",
+            "lineNumber": 198
+          },
+          {
+            "text": "   * With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 199
+          },
+          {
+            "text": "   * to the existing authenticated user account",
+            "lineNumber": 200
+          },
+          {
+            "text": "   */",
+            "lineNumber": 201
+          },
+          {
+            "text": "  const verifyOTP = useCallback(async () =&gt; {",
+            "lineNumber": 202
+          },
+          {
+            "text": "    const trimmedOtp = otpCode.trim();",
+            "lineNumber": 203
+          },
+          {
+            "lineNumber": 204
+          },
+          {
+            "text": "    // Track the OTP being submitted to prevent re-submission",
+            "lineNumber": 205
+          },
+          {
+            "text": "    setLastSubmittedOtp(trimmedOtp);",
+            "lineNumber": 206
+          },
+          {
+            "text": "    setError(null);",
+            "lineNumber": 207
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 208
+          },
+          {
+            "lineNumber": 209
+          },
+          {
+            "text": "    try {",
+            "lineNumber": 210
+          },
+          {
+            "text": "      // Verify OTP code for email change/linking",
+            "lineNumber": 211
+          },
+          {
+            "text": "      // Use type 'email_change' because we used updateUser() to initiate the flow",
+            "lineNumber": 212
+          },
+          {
+            "text": "      // With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 213
+          },
+          {
+            "text": "      // to the current authenticated user instead of creating a new user",
+            "lineNumber": 214
+          },
+          {
+            "text": "      const { error: verifyError } = await supabase.auth.verifyOtp({",
+            "lineNumber": 215
+          },
+          {
+            "text": "        email: email.trim(),",
+            "lineNumber": 216
+          },
+          {
+            "text": "        token: trimmedOtp,",
+            "lineNumber": 217
+          },
+          {
+            "text": "        type: \"email_change\",",
+            "lineNumber": 218
+          },
+          {
+            "text": "      });",
+            "lineNumber": 219
+          },
+          {
+            "lineNumber": 220
+          },
+          {
+            "text": "      if (verifyError) {",
+            "lineNumber": 221
+          },
+          {
+            "text": "        setError(verifyError.message || \"Invalid OTP code\");",
+            "lineNumber": 222
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 223
+          },
+          {
+            "text": "        // Keep lastSubmittedOtp set to prevent re-submission of the same code",
+            "lineNumber": 224
+          },
+          {
+            "text": "        // The code remains in the input so user can see what they entered",
+            "lineNumber": 225
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 226
+          },
+          {
+            "text": "      }",
+            "lineNumber": 227
+          },
+          {
+            "lineNumber": 228
+          },
+          {
+            "text": "      // Refresh session to ensure identities are updated",
+            "lineNumber": 229
+          },
+          {
+            "text": "      await supabase.auth.refreshSession();",
+            "lineNumber": 230
+          },
+          {
+            "lineNumber": 231
+          },
+          {
+            "text": "      // Clear persisted state on success",
+            "lineNumber": 232
+          },
+          {
+            "text": "      clearPersistedState();",
+            "lineNumber": 233
+          },
+          {
+            "lineNumber": 234
+          },
+          {
+            "text": "      // Redirect to verification success page with timestamp",
+            "lineNumber": 235
+          },
+          {
+            "text": "      const successUrl = new URL(\"/auth/verification-success\", window.location.origin);",
+            "lineNumber": 236
+          },
+          {
+            "text": "      if (otpStartTime) {",
+            "lineNumber": 237
+          },
+          {
+            "text": "        successUrl.searchParams.set(\"start_time\", otpStartTime.toString());",
+            "lineNumber": 238
+          },
+          {
+            "text": "      }",
+            "lineNumber": 239
+          },
+          {
+            "text": "      if (next) {",
+            "lineNumber": 240
+          },
+          {
+            "text": "        successUrl.searchParams.set(\"next\", next);",
+            "lineNumber": 241
+          },
+          {
+            "text": "      }",
+            "lineNumber": 242
+          },
+          {
+            "text": "      router.push(successUrl.toString());",
+            "lineNumber": 243
+          },
+          {
+            "text": "      router.refresh();",
+            "lineNumber": 244
+          },
+          {
+            "text": "    } catch (err) {",
+            "lineNumber": 245
+          },
+          {
+            "text": "      setError(\"An unexpected error occurred\");",
+            "lineNumber": 246
+          },
+          {
+            "text": "  };",
+            "lineNumber": 250
+          },
+          {
+            "text": "}",
+            "lineNumber": 420,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.32841765880584717
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131230000_broadcast_verified_work_email_changes.sql",
+        "range": {
+          "startPosition": {
+            "line": 22
+          },
+          "endPosition": {
+            "line": 79
+          }
+        },
+        "contents": "begin\n  -- Only proceed if verified_work_email actually changed\n  if old.verified_work_email is not distinct from new.verified_work_email then\n    return new;\n  end if;\n\n  -- Get the auth_user_id for this user record\n  v_user_id := new.auth_user_id;\n\n  -- If no auth_user_id, cannot broadcast\n  if v_user_id is null then\n    return new;\n  end if;\n\n  -- Get old and new email values\n  v_old_email := old.verified_work_email;\n  v_new_email := new.verified_work_email;\n\n  -- Broadcast to user-specific channel: user:{auth_user_id}:verification\n  -- This allows all devices for this user to receive the notification\n  -- Function signature: realtime.send(payload jsonb, event text, topic text, private boolean DEFAULT true)\n  perform realtime.send(\n    jsonb_build_object(\n      'user_id', v_user_id,\n      'old_email', v_old_email,\n      'new_email', v_new_email,\n      'verified_at', new.verified_work_email_at,\n      'timestamp', now()\n    ),\n    'verified_work_email_changed',\n    'user:' || v_user_id::text || ':verification',\n    true -- private channel\n  );\n\n  return new;\nend;\n$$;\n\ncomment on function public.broadcast_verified_work_email_change() is 'Trigger function that broadcasts verified_work_email changes via Realtime to user-specific channel. Enables cross-device synchronization when email verification completes.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create trigger on users table to broadcast verified_work_email changes\n-- Runs AFTER UPDATE to ensure the change is committed\ndrop trigger if exists broadcast_verified_work_email_change_trigger on public.users;\n\ncreate trigger broadcast_verified_work_email_change_trigger\nafter update of verified_work_email on public.users\nfor each row\nwhen (old.verified_work_email is distinct from new.verified_work_email)\nexecute function public.broadcast_verified_work_email_change();\n\ncomment on trigger broadcast_verified_work_email_change_trigger on public.users is 'Broadcasts verified_work_email changes via Realtime to enable cross-device synchronization.';\n\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "begin",
+            "lineNumber": 23
+          },
+          {
+            "text": "  -- Only proceed if verified_work_email actually changed",
+            "lineNumber": 24
+          },
+          {
+            "text": "  if old.verified_work_email is not distinct from new.verified_work_email then",
+            "lineNumber": 25
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 26
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 27
+          },
+          {
+            "lineNumber": 28
+          },
+          {
+            "text": "  -- Get the auth_user_id for this user record",
+            "lineNumber": 29
+          },
+          {
+            "text": "  v_user_id := new.auth_user_id;",
+            "lineNumber": 30
+          },
+          {
+            "lineNumber": 31
+          },
+          {
+            "text": "  -- If no auth_user_id, cannot broadcast",
+            "lineNumber": 32
+          },
+          {
+            "text": "  if v_user_id is null then",
+            "lineNumber": 33
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 34
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "  -- Get old and new email values",
+            "lineNumber": 37
+          },
+          {
+            "text": "  v_old_email := old.verified_work_email;",
+            "lineNumber": 38
+          },
+          {
+            "text": "  v_new_email := new.verified_work_email;",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "  -- Broadcast to user-specific channel: user:{auth_user_id}:verification",
+            "lineNumber": 41
+          },
+          {
+            "text": "  -- This allows all devices for this user to receive the notification",
+            "lineNumber": 42
+          },
+          {
+            "text": "  -- Function signature: realtime.send(payload jsonb, event text, topic text, private boolean DEFAULT true)",
+            "lineNumber": 43
+          },
+          {
+            "text": "  perform realtime.send(",
+            "lineNumber": 44
+          },
+          {
+            "text": "    jsonb_build_object(",
+            "lineNumber": 45
+          },
+          {
+            "text": "      'user_id', v_user_id,",
+            "lineNumber": 46
+          },
+          {
+            "text": "      'old_email', v_old_email,",
+            "lineNumber": 47
+          },
+          {
+            "text": "      'new_email', v_new_email,",
+            "lineNumber": 48
+          },
+          {
+            "text": "      'verified_at', new.verified_work_email_at,",
+            "lineNumber": 49
+          },
+          {
+            "text": "      'timestamp', now()",
+            "lineNumber": 50
+          },
+          {
+            "text": "    ),",
+            "lineNumber": 51
+          },
+          {
+            "text": "    'verified_work_email_changed',",
+            "lineNumber": 52
+          },
+          {
+            "text": "    'user:' || v_user_id::text || ':verification',",
+            "lineNumber": 53
+          },
+          {
+            "text": "    true -- private channel",
+            "lineNumber": 54
+          },
+          {
+            "text": "  );",
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 57
+          },
+          {
+            "text": "end;",
+            "lineNumber": 58
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 59
+          },
+          {
+            "lineNumber": 60
+          },
+          {
+            "text": "comment on function public.broadcast_verified_work_email_change() is 'Trigger function that broadcasts verified_work_email changes via Realtime to user-specific channel. Enables cross-device synchronization when email verification completes.';",
+            "lineNumber": 61
+          },
+          {
+            "lineNumber": 62
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 63
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 64
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 65
+          },
+          {
+            "lineNumber": 66
+          },
+          {
+            "text": "-- Create trigger on users table to broadcast verified_work_email changes",
+            "lineNumber": 67
+          },
+          {
+            "text": "-- Runs AFTER UPDATE to ensure the change is committed",
+            "lineNumber": 68
+          },
+          {
+            "text": "drop trigger if exists broadcast_verified_work_email_change_trigger on public.users;",
+            "lineNumber": 69
+          },
+          {
+            "lineNumber": 70
+          },
+          {
+            "text": "create trigger broadcast_verified_work_email_change_trigger",
+            "lineNumber": 71
+          },
+          {
+            "text": "after update of verified_work_email on public.users",
+            "lineNumber": 72
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 73
+          },
+          {
+            "text": "when (old.verified_work_email is distinct from new.verified_work_email)",
+            "lineNumber": 74
+          },
+          {
+            "text": "execute function public.broadcast_verified_work_email_change();",
+            "lineNumber": 75
+          },
+          {
+            "lineNumber": 76
+          },
+          {
+            "text": "comment on trigger broadcast_verified_work_email_change_trigger on public.users is 'Broadcasts verified_work_email changes via Realtime to enable cross-device synchronization.';",
+            "lineNumber": 77
+          },
+          {
+            "lineNumber": 78
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 79
+          }
+        ]
+      },
+      "score": 0.3265804946422577
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/config.toml",
+        "range": {
+          "startPosition": {
+            "line": 207
+          },
+          "endPosition": {
+            "line": 267
+          }
+        },
+        "contents": "double_confirm_changes = false\n# If enabled, users need to confirm their email address before signing in.\nenable_confirmations = true\n# If enabled, users will need to reauthenticate or have logged in recently to change their password.\nsecure_password_change = false\n# Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.\nmax_frequency = \"1s\"\n# Number of characters used in the email OTP.\notp_length = 8\n# Number of seconds before the email OTP expires (defaults to 1 hour).\notp_expiry = 3600\n\n# Use a production-ready SMTP server\n# [auth.email.smtp]\n# enabled = true\n# host = \"smtp.sendgrid.net\"\n# port = 587\n# user = \"apikey\"\n# pass = \"env(SENDGRID_API_KEY)\"\n# admin_email = \"admin@email.com\"\n# sender_name = \"Admin\"\n\n# Uncomment to customize email template\n# [auth.email.template.invite]\n# subject = \"You have been invited\"\n# content_path = \"./supabase/templates/invite.html\"\n\n# Custom email template for email change confirmation (PKCE flow)\n[auth.email.template.email_change]\nsubject = \"Tappka - potvrďte svůj CZU email\"\ncontent_path = \"supabase/templates/email_change.html\"\n\n# Uncomment to customize notification email template\n# [auth.email.notification.password_changed]\n# enabled = true\n# subject = \"Your password has been changed\"\n# content_path = \"./templates/password_changed_notification.html\"\n\n[auth.sms]\n# Allow/disallow new user signups via SMS to your project.\nenable_signup = false\n# If enabled, users need to confirm their phone number before signing in.\nenable_confirmations = false\n# Template for sending OTP to users\ntemplate = \"Your code is {{ .Code }}\"\n# Controls the minimum amount of time that must pass before sending another sms otp.\nmax_frequency = \"5s\"\n\n# Use pre-defined map of phone number to OTP for testing.\n# [auth.sms.test_otp]\n# 4152127777 = \"123456\"\n\n# Configure logged in session timeouts.\n# [auth.sessions]\n# Force log out after the specified duration.\n# timebox = \"24h\"\n# Force log out if the user has been inactive longer than the specified duration.\n# inactivity_timeout = \"8h\"\n\n# This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "double_confirm_changes = false",
+            "lineNumber": 208
+          },
+          {
+            "text": "# If enabled, users need to confirm their email address before signing in.",
+            "lineNumber": 209
+          },
+          {
+            "text": "enable_confirmations = true",
+            "lineNumber": 210
+          },
+          {
+            "text": "# If enabled, users will need to reauthenticate or have logged in recently to change their password.",
+            "lineNumber": 211
+          },
+          {
+            "text": "secure_password_change = false",
+            "lineNumber": 212
+          },
+          {
+            "text": "# Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.",
+            "lineNumber": 213
+          },
+          {
+            "text": "max_frequency = \"1s\"",
+            "lineNumber": 214
+          },
+          {
+            "text": "# Number of characters used in the email OTP.",
+            "lineNumber": 215
+          },
+          {
+            "text": "otp_length = 8",
+            "lineNumber": 216
+          },
+          {
+            "text": "# Number of seconds before the email OTP expires (defaults to 1 hour).",
+            "lineNumber": 217
+          },
+          {
+            "text": "otp_expiry = 3600",
+            "lineNumber": 218
+          },
+          {
+            "lineNumber": 219
+          },
+          {
+            "text": "# Use a production-ready SMTP server",
+            "lineNumber": 220
+          },
+          {
+            "text": "# [auth.email.smtp]",
+            "lineNumber": 221
+          },
+          {
+            "text": "# enabled = true",
+            "lineNumber": 222
+          },
+          {
+            "text": "# host = \"smtp.sendgrid.net\"",
+            "lineNumber": 223
+          },
+          {
+            "text": "# port = 587",
+            "lineNumber": 224
+          },
+          {
+            "text": "# user = \"apikey\"",
+            "lineNumber": 225
+          },
+          {
+            "text": "# pass = \"env(SENDGRID_API_KEY)\"",
+            "lineNumber": 226
+          },
+          {
+            "text": "# admin_email = \"admin@email.com\"",
+            "lineNumber": 227
+          },
+          {
+            "text": "# sender_name = \"Admin\"",
+            "lineNumber": 228
+          },
+          {
+            "lineNumber": 229
+          },
+          {
+            "text": "# Uncomment to customize email template",
+            "lineNumber": 230
+          },
+          {
+            "text": "# [auth.email.template.invite]",
+            "lineNumber": 231
+          },
+          {
+            "text": "# subject = \"You have been invited\"",
+            "lineNumber": 232
+          },
+          {
+            "text": "# content_path = \"./supabase/templates/invite.html\"",
+            "lineNumber": 233
+          },
+          {
+            "lineNumber": 234
+          },
+          {
+            "text": "# Custom email template for email change confirmation (PKCE flow)",
+            "lineNumber": 235
+          },
+          {
+            "text": "[auth.email.template.email_change]",
+            "lineNumber": 236
+          },
+          {
+            "text": "subject = \"Tappka - potvrďte svůj CZU email\"",
+            "lineNumber": 237
+          },
+          {
+            "text": "content_path = \"supabase/templates/email_change.html\"",
+            "lineNumber": 238
+          },
+          {
+            "lineNumber": 239
+          },
+          {
+            "text": "# Uncomment to customize notification email template",
+            "lineNumber": 240
+          },
+          {
+            "text": "# [auth.email.notification.password_changed]",
+            "lineNumber": 241
+          },
+          {
+            "text": "# enabled = true",
+            "lineNumber": 242
+          },
+          {
+            "text": "# subject = \"Your password has been changed\"",
+            "lineNumber": 243
+          },
+          {
+            "text": "# content_path = \"./templates/password_changed_notification.html\"",
+            "lineNumber": 244
+          },
+          {
+            "lineNumber": 245
+          },
+          {
+            "text": "[auth.sms]",
+            "lineNumber": 246
+          },
+          {
+            "text": "# Allow/disallow new user signups via SMS to your project.",
+            "lineNumber": 247
+          },
+          {
+            "text": "enable_signup = false",
+            "lineNumber": 248
+          },
+          {
+            "text": "# If enabled, users need to confirm their phone number before signing in.",
+            "lineNumber": 249
+          },
+          {
+            "text": "enable_confirmations = false",
+            "lineNumber": 250
+          },
+          {
+            "text": "# Template for sending OTP to users",
+            "lineNumber": 251
+          },
+          {
+            "text": "template = \"Your code is {{ .Code }}\"",
+            "lineNumber": 252
+          },
+          {
+            "text": "# Controls the minimum amount of time that must pass before sending another sms otp.",
+            "lineNumber": 253
+          },
+          {
+            "text": "max_frequency = \"5s\"",
+            "lineNumber": 254
+          },
+          {
+            "lineNumber": 255
+          },
+          {
+            "text": "# Use pre-defined map of phone number to OTP for testing.",
+            "lineNumber": 256
+          },
+          {
+            "text": "# [auth.sms.test_otp]",
+            "lineNumber": 257
+          },
+          {
+            "text": "# 4152127777 = \"123456\"",
+            "lineNumber": 258
+          },
+          {
+            "lineNumber": 259
+          },
+          {
+            "text": "# Configure logged in session timeouts.",
+            "lineNumber": 260
+          },
+          {
+            "text": "# [auth.sessions]",
+            "lineNumber": 261
+          },
+          {
+            "text": "# Force log out after the specified duration.",
+            "lineNumber": 262
+          },
+          {
+            "text": "# timebox = \"24h\"",
+            "lineNumber": 263
+          },
+          {
+            "text": "# Force log out if the user has been inactive longer than the specified duration.",
+            "lineNumber": 264
+          },
+          {
+            "text": "# inactivity_timeout = \"8h\"",
+            "lineNumber": 265
+          },
+          {
+            "lineNumber": 266
+          },
+          {
+            "text": "# This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.",
+            "lineNumber": 267
+          }
+        ]
+      },
+      "score": 0.32326292991638184
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 75
+          },
+          "endPosition": {
+            "line": 419,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\nconst handleSendOTP = async \n\n      if (confirmUrl.search === \"\") {\n        // No query parameters, add ? for token_hash\n        redirectUrl += \"?\";\n      } else {\n        // Has query parameters, ensure it ends with &amp; for token_hash\n        if (!redirectUrl.endsWith(\"&amp;\")) {\n          redirectUrl += \"&amp;\";\n        }\n      }\n\n      const { data: updateData, error: updateError } = await supabase.auth.updateUser(\n        {\n          email: email.trim(),\n        },\n        {\n          emailRedirectTo: redirectUrl,\n        },\n      );\n\n      if (updateError) {\n        // If email already exists, that's actually fine - it means it might already be linked\n        // or we need to handle it differently\n        if (updateError.message?.includes(\"already registered\")) {\n          setError(\"This email is already registered. Please use a different email or sign in with that email.\");\n        } else {\n          setError(updateError.message || \"Failed to send OTP code\");\n        }\n        setIsLoading(false);\n        return;\n      }\n\n      // Update suggested_work_email in public.users table\n      // This enables cross-device synchronization and persistence\n      // The trigger will automatically set last_otp_sent_at\n      const { error: userUpdateError } = await supabase\n        .from(\"users\")\n        .update({ suggested_work_email: email.trim() })\n        .eq(\"auth_user_id\", (await supabase.auth.getUser()).data.user?.id);\n\n      if (userUpdateError) {\n        // Log error but don't block the flow - OTP was sent successfully\n        console.error(\"Failed to update suggested_work_email:\", userUpdateError);\n      }\n\n      // Move to OTP verification step\n      setStep(\"otp\");\n      savePersistedState({ step: \"otp\", email: email.trim(),\n;\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 75,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 75,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 75,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 76,
+                "column": 3
+              }
+            },
+            {
+              "startPosition": {
+                "line": 91,
+                "column": 3
+              },
+              "endPosition": {
+                "line": 91,
+                "column": 9
+              }
+            },
+            {
+              "startPosition": {
+                "line": 91,
+                "column": 9
+              },
+              "endPosition": {
+                "line": 91,
+                "column": 31
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 76,
+            "isSignature": true
+          },
+          {
+            "text": "const handleSendOTP = async ",
+            "lineNumber": 93
+          },
+          {
+            "lineNumber": 141
+          },
+          {
+            "text": "      if (confirmUrl.search === \"\") {",
+            "lineNumber": 142
+          },
+          {
+            "text": "        // No query parameters, add ? for token_hash",
+            "lineNumber": 143
+          },
+          {
+            "text": "        redirectUrl += \"?\";",
+            "lineNumber": 144
+          },
+          {
+            "text": "      } else {",
+            "lineNumber": 145
+          },
+          {
+            "text": "        // Has query parameters, ensure it ends with &amp; for token_hash",
+            "lineNumber": 146
+          },
+          {
+            "text": "        if (!redirectUrl.endsWith(\"&amp;\")) {",
+            "lineNumber": 147
+          },
+          {
+            "text": "          redirectUrl += \"&amp;\";",
+            "lineNumber": 148
+          },
+          {
+            "text": "        }",
+            "lineNumber": 149
+          },
+          {
+            "text": "      }",
+            "lineNumber": 150
+          },
+          {
+            "lineNumber": 151
+          },
+          {
+            "text": "      const { data: updateData, error: updateError } = await supabase.auth.updateUser(",
+            "lineNumber": 152
+          },
+          {
+            "text": "        {",
+            "lineNumber": 153
+          },
+          {
+            "text": "          email: email.trim(),",
+            "lineNumber": 154
+          },
+          {
+            "text": "        },",
+            "lineNumber": 155
+          },
+          {
+            "text": "        {",
+            "lineNumber": 156
+          },
+          {
+            "text": "          emailRedirectTo: redirectUrl,",
+            "lineNumber": 157
+          },
+          {
+            "text": "        },",
+            "lineNumber": 158
+          },
+          {
+            "text": "      );",
+            "lineNumber": 159
+          },
+          {
+            "lineNumber": 160
+          },
+          {
+            "text": "      if (updateError) {",
+            "lineNumber": 161
+          },
+          {
+            "text": "        // If email already exists, that's actually fine - it means it might already be linked",
+            "lineNumber": 162
+          },
+          {
+            "text": "        // or we need to handle it differently",
+            "lineNumber": 163
+          },
+          {
+            "text": "        if (updateError.message?.includes(\"already registered\")) {",
+            "lineNumber": 164
+          },
+          {
+            "text": "          setError(\"This email is already registered. Please use a different email or sign in with that email.\");",
+            "lineNumber": 165
+          },
+          {
+            "text": "        } else {",
+            "lineNumber": 166
+          },
+          {
+            "text": "          setError(updateError.message || \"Failed to send OTP code\");",
+            "lineNumber": 167
+          },
+          {
+            "text": "        }",
+            "lineNumber": 168
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 169
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 170
+          },
+          {
+            "text": "      }",
+            "lineNumber": 171
+          },
+          {
+            "lineNumber": 172
+          },
+          {
+            "text": "      // Update suggested_work_email in public.users table",
+            "lineNumber": 173
+          },
+          {
+            "text": "      // This enables cross-device synchronization and persistence",
+            "lineNumber": 174
+          },
+          {
+            "text": "      // The trigger will automatically set last_otp_sent_at",
+            "lineNumber": 175
+          },
+          {
+            "text": "      const { error: userUpdateError } = await supabase",
+            "lineNumber": 176
+          },
+          {
+            "text": "        .from(\"users\")",
+            "lineNumber": 177
+          },
+          {
+            "text": "        .update({ suggested_work_email: email.trim() })",
+            "lineNumber": 178
+          },
+          {
+            "text": "        .eq(\"auth_user_id\", (await supabase.auth.getUser()).data.user?.id);",
+            "lineNumber": 179
+          },
+          {
+            "lineNumber": 180
+          },
+          {
+            "text": "      if (userUpdateError) {",
+            "lineNumber": 181
+          },
+          {
+            "text": "        // Log error but don't block the flow - OTP was sent successfully",
+            "lineNumber": 182
+          },
+          {
+            "text": "        console.error(\"Failed to update suggested_work_email:\", userUpdateError);",
+            "lineNumber": 183
+          },
+          {
+            "text": "      }",
+            "lineNumber": 184
+          },
+          {
+            "lineNumber": 185
+          },
+          {
+            "text": "      // Move to OTP verification step",
+            "lineNumber": 186
+          },
+          {
+            "text": "      setStep(\"otp\");",
+            "lineNumber": 187
+          },
+          {
+            "text": "      savePersistedState({ step: \"otp\", email: email.trim(),",
+            "lineNumber": 188
+          },
+          {
+            "text": ";",
+            "lineNumber": 194
+          },
+          {
+            "text": "}",
+            "lineNumber": 420,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3226340115070343
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 75
+          },
+          "endPosition": {
+            "line": 419,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\nconst verifyOTP = async () =&gt; {\n\n      router.push(successUrl.toString());\n      router.refresh();\n    } catch (err) {\n      setError(\"An unexpected error occurred\");\n      setIsLoading(false);\n      // Keep lastSubmittedOtp set to prevent re-submission of the same code\n    }\n  }, [email, otpCode, next, otpStartTime, supabase, router]);\n\n  /**\n   * Handles form submission for OTP verification\n   */\n  const handleVerifyOTP = async (e: React.FormEvent) =&gt; {\n    e.preventDefault();\n    await verifyOTP();\n  };\n\n  /**\n   * Loads persisted state from sessionStorage after component mounts (client-side only)\n   * This prevents hydration mismatches between server and client\n   */\n  useEffect(() =&gt; {\n    const persisted = loadPersistedState();\n\n    // Validate persisted state - if on OTP step but no email, reset to email step\n    if (persisted.step === \"otp\" &amp;&amp; (!persisted.email || !persisted.email.includes(\"@\"))) {\n      setStep(\"email\");\n      setEmail(\"\");\n      clearPersistedState();\n      setIsHydrated(true);\n      return;\n    }\n\n    // Restore persisted state if valid\n    if (persisted.email &amp;&amp; persisted.email.includes(\"@\")) {\n      setEmail(persisted.email);\n    }\n    if (persisted.step === \"email\" || persisted.step === \"otp\") {\n      setStep(persisted.step);\n    }\n    if (persisted.otpStartTime) {\n      setOtpStartTime(persisted.otpStartTime);\n    }\n\n    setIsHydrated(true);\n  }, []);\n\n  /**\n   * Persists email changes to sessionStorage\n   * Only saves when we have a valid email address and after hydration\n   */\n  useEffect(() =&gt; {\n    // Don't persist until after hydration to avoid hydration mismatches\n    if (!isHydrated) return;\n\n    if (email &amp;&amp; email.includes(\"@\")) {\n      savePersistedState({ step, email, otpStartTime: otpStartTime ?? undefined });\n    } else if (step === \"otp\" &amp;&amp; !email) {\n      // If on OTP step but no email, clear invalid state\n      clearPersistedState();\n    }\n  }, [email, step, otpStartTime, isHydrated]);\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 75,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 75,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 75,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 76,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 76,
+            "isSignature": true
+          },
+          {
+            "text": "const verifyOTP = async () =&gt; {",
+            "lineNumber": 202
+          },
+          {
+            "lineNumber": 242
+          },
+          {
+            "text": "      router.push(successUrl.toString());",
+            "lineNumber": 243
+          },
+          {
+            "text": "      router.refresh();",
+            "lineNumber": 244
+          },
+          {
+            "text": "    } catch (err) {",
+            "lineNumber": 245
+          },
+          {
+            "text": "      setError(\"An unexpected error occurred\");",
+            "lineNumber": 246
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 247
+          },
+          {
+            "text": "      // Keep lastSubmittedOtp set to prevent re-submission of the same code",
+            "lineNumber": 248
+          },
+          {
+            "text": "    }",
+            "lineNumber": 249
+          },
+          {
+            "text": "  }, [email, otpCode, next, otpStartTime, supabase, router]);",
+            "lineNumber": 250
+          },
+          {
+            "lineNumber": 251
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 252
+          },
+          {
+            "text": "   * Handles form submission for OTP verification",
+            "lineNumber": 253
+          },
+          {
+            "text": "   */",
+            "lineNumber": 254
+          },
+          {
+            "text": "  const handleVerifyOTP = async (e: React.FormEvent) =&gt; {",
+            "lineNumber": 255
+          },
+          {
+            "text": "    e.preventDefault();",
+            "lineNumber": 256
+          },
+          {
+            "text": "    await verifyOTP();",
+            "lineNumber": 257
+          },
+          {
+            "text": "  };",
+            "lineNumber": 258
+          },
+          {
+            "lineNumber": 259
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 260
+          },
+          {
+            "text": "   * Loads persisted state from sessionStorage after component mounts (client-side only)",
+            "lineNumber": 261
+          },
+          {
+            "text": "   * This prevents hydration mismatches between server and client",
+            "lineNumber": 262
+          },
+          {
+            "text": "   */",
+            "lineNumber": 263
+          },
+          {
+            "text": "  useEffect(() =&gt; {",
+            "lineNumber": 264
+          },
+          {
+            "text": "    const persisted = loadPersistedState();",
+            "lineNumber": 265
+          },
+          {
+            "lineNumber": 266
+          },
+          {
+            "text": "    // Validate persisted state - if on OTP step but no email, reset to email step",
+            "lineNumber": 267
+          },
+          {
+            "text": "    if (persisted.step === \"otp\" &amp;&amp; (!persisted.email || !persisted.email.includes(\"@\"))) {",
+            "lineNumber": 268
+          },
+          {
+            "text": "      setStep(\"email\");",
+            "lineNumber": 269
+          },
+          {
+            "text": "      setEmail(\"\");",
+            "lineNumber": 270
+          },
+          {
+            "text": "      clearPersistedState();",
+            "lineNumber": 271
+          },
+          {
+            "text": "      setIsHydrated(true);",
+            "lineNumber": 272
+          },
+          {
+            "text": "      return;",
+            "lineNumber": 273
+          },
+          {
+            "text": "    }",
+            "lineNumber": 274
+          },
+          {
+            "lineNumber": 275
+          },
+          {
+            "text": "    // Restore persisted state if valid",
+            "lineNumber": 276
+          },
+          {
+            "text": "    if (persisted.email &amp;&amp; persisted.email.includes(\"@\")) {",
+            "lineNumber": 277
+          },
+          {
+            "text": "      setEmail(persisted.email);",
+            "lineNumber": 278
+          },
+          {
+            "text": "    }",
+            "lineNumber": 279
+          },
+          {
+            "text": "    if (persisted.step === \"email\" || persisted.step === \"otp\") {",
+            "lineNumber": 280
+          },
+          {
+            "text": "      setStep(persisted.step);",
+            "lineNumber": 281
+          },
+          {
+            "text": "    }",
+            "lineNumber": 282
+          },
+          {
+            "text": "    if (persisted.otpStartTime) {",
+            "lineNumber": 283
+          },
+          {
+            "text": "      setOtpStartTime(persisted.otpStartTime);",
+            "lineNumber": 284
+          },
+          {
+            "text": "    }",
+            "lineNumber": 285
+          },
+          {
+            "lineNumber": 286
+          },
+          {
+            "text": "    setIsHydrated(true);",
+            "lineNumber": 287
+          },
+          {
+            "text": "  }, []);",
+            "lineNumber": 288
+          },
+          {
+            "lineNumber": 289
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 290
+          },
+          {
+            "text": "   * Persists email changes to sessionStorage",
+            "lineNumber": 291
+          },
+          {
+            "text": "   * Only saves when we have a valid email address and after hydration",
+            "lineNumber": 292
+          },
+          {
+            "text": "   */",
+            "lineNumber": 293
+          },
+          {
+            "text": "  useEffect(() =&gt; {",
+            "lineNumber": 294
+          },
+          {
+            "text": "    // Don't persist until after hydration to avoid hydration mismatches",
+            "lineNumber": 295
+          },
+          {
+            "text": "    if (!isHydrated) return;",
+            "lineNumber": 296
+          },
+          {
+            "lineNumber": 297
+          },
+          {
+            "text": "    if (email &amp;&amp; email.includes(\"@\")) {",
+            "lineNumber": 298
+          },
+          {
+            "text": "      savePersistedState({ step, email, otpStartTime: otpStartTime ?? undefined });",
+            "lineNumber": 299
+          },
+          {
+            "text": "    } else if (step === \"otp\" &amp;&amp; !email) {",
+            "lineNumber": 300
+          },
+          {
+            "text": "      // If on OTP step but no email, clear invalid state",
+            "lineNumber": 301
+          },
+          {
+            "text": "      clearPersistedState();",
+            "lineNumber": 302
+          },
+          {
+            "text": "    }",
+            "lineNumber": 303
+          },
+          {
+            "text": "  }, [email, step, otpStartTime, isHydrated]);",
+            "lineNumber": 304
+          },
+          {
+            "text": "}",
+            "lineNumber": 420,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.3149093985557556
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 251
+          },
+          "endPosition": {
+            "line": 326
+          }
+        },
+        "contents": "   - No Row Level Security policies\n   - No database triggers or functions\n   - All access control handled by Next.js\n\n### Next.js (Application Layer - All Business Logic)\n\n1. **Middleware Verification**:\n\n   - Queries &#96;profiles&#96; table for linked user_id\n   - Checks &#96;removed_access&#96; is null for active access\n   - Enforces role-based route protection\n   - Real-time verification (instant access revocation)\n\n2. **Domain Validation** (in server actions):\n\n   - Client-side validation for UX (immediate feedback)\n   - Server-side validation before sending OTP\n   - Validates email format and CZU domain\n\n3. **Access Management** (in server actions):\n\n   - Admin sets &#96;removed_access&#96; timestamp and &#96;removed_access_by&#96; profile\n   - Immediate effect on next request\n   - Audit trail of who revoked access and when\n\n## Authentication Flow Details\n\n### Step 1: Google Login\n\nUser clicks Google login button, Supabase handles OAuth flow.\n\n### Step 2: Work Email Input with Domain Validation\n\n&#96;&#96;&#96;typescript\n// Validate domain before sending OTP\nif (!isValidWorkEmailDomain(workEmail)) {\n  throw new Error('Email must be @studenti.czu.cz or @pef.czu.cz');\n}\n\n// Send OTP to work email (only after domain validation passes)\nconst { error } = await supabase.auth.signInWithOtp({\n  email: workEmail,\n  options: { shouldCreateUser: false }\n});\n&#96;&#96;&#96;\n\n### Step 3: OTP Verification and Profile Linking\n\n&#96;&#96;&#96;typescript\n// After user enters OTP, verify it\nconst { error } = await supabase.auth.verifyOtp({\n  email: workEmail,\n  token: otpCode,\n  type: 'email'\n});\n\n// Check if profile exists for this work email\nconst { data: profile } = await supabase\n  .from('profiles')\n  .select('id')\n  .eq('work_email', workEmail)\n  .single();\n\nif (!profile) {\n  // No profile exists - redirect to pending approval\n  redirect('/auth/pending-approval');\n}\n\n// Link profile to current user\nconst { data: { user } } = await supabase.auth.getUser();\nawait supabase\n  .from('profiles')\n  .update({ \n    user_id: user.id,",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "   - No Row Level Security policies",
+            "lineNumber": 253
+          },
+          {
+            "text": "   - No database triggers or functions",
+            "lineNumber": 254
+          },
+          {
+            "text": "   - All access control handled by Next.js",
+            "lineNumber": 255
+          },
+          {
+            "lineNumber": 256
+          },
+          {
+            "text": "### Next.js (Application Layer - All Business Logic)",
+            "lineNumber": 257
+          },
+          {
+            "lineNumber": 258
+          },
+          {
+            "text": "1. **Middleware Verification**:",
+            "lineNumber": 259
+          },
+          {
+            "lineNumber": 260
+          },
+          {
+            "text": "   - Queries &#96;profiles&#96; table for linked user_id",
+            "lineNumber": 261
+          },
+          {
+            "text": "   - Checks &#96;removed_access&#96; is null for active access",
+            "lineNumber": 262
+          },
+          {
+            "text": "   - Enforces role-based route protection",
+            "lineNumber": 263
+          },
+          {
+            "text": "   - Real-time verification (instant access revocation)",
+            "lineNumber": 264
+          },
+          {
+            "lineNumber": 265
+          },
+          {
+            "text": "2. **Domain Validation** (in server actions):",
+            "lineNumber": 266
+          },
+          {
+            "lineNumber": 267
+          },
+          {
+            "text": "   - Client-side validation for UX (immediate feedback)",
+            "lineNumber": 268
+          },
+          {
+            "text": "   - Server-side validation before sending OTP",
+            "lineNumber": 269
+          },
+          {
+            "text": "   - Validates email format and CZU domain",
+            "lineNumber": 270
+          },
+          {
+            "lineNumber": 271
+          },
+          {
+            "text": "3. **Access Management** (in server actions):",
+            "lineNumber": 272
+          },
+          {
+            "lineNumber": 273
+          },
+          {
+            "text": "   - Admin sets &#96;removed_access&#96; timestamp and &#96;removed_access_by&#96; profile",
+            "lineNumber": 274
+          },
+          {
+            "text": "   - Immediate effect on next request",
+            "lineNumber": 275
+          },
+          {
+            "text": "   - Audit trail of who revoked access and when",
+            "lineNumber": 276
+          },
+          {
+            "lineNumber": 277
+          },
+          {
+            "text": "## Authentication Flow Details",
+            "lineNumber": 278
+          },
+          {
+            "lineNumber": 279
+          },
+          {
+            "text": "### Step 1: Google Login",
+            "lineNumber": 280
+          },
+          {
+            "lineNumber": 281
+          },
+          {
+            "text": "User clicks Google login button, Supabase handles OAuth flow.",
+            "lineNumber": 282
+          },
+          {
+            "lineNumber": 283
+          },
+          {
+            "text": "### Step 2: Work Email Input with Domain Validation",
+            "lineNumber": 284
+          },
+          {
+            "lineNumber": 285
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 286
+          },
+          {
+            "text": "// Validate domain before sending OTP",
+            "lineNumber": 287
+          },
+          {
+            "text": "if (!isValidWorkEmailDomain(workEmail)) {",
+            "lineNumber": 288
+          },
+          {
+            "text": "  throw new Error('Email must be @studenti.czu.cz or @pef.czu.cz');",
+            "lineNumber": 289
+          },
+          {
+            "text": "}",
+            "lineNumber": 290
+          },
+          {
+            "lineNumber": 291
+          },
+          {
+            "text": "// Send OTP to work email (only after domain validation passes)",
+            "lineNumber": 292
+          },
+          {
+            "text": "const { error } = await supabase.auth.signInWithOtp({",
+            "lineNumber": 293
+          },
+          {
+            "text": "  email: workEmail,",
+            "lineNumber": 294
+          },
+          {
+            "text": "  options: { shouldCreateUser: false }",
+            "lineNumber": 295
+          },
+          {
+            "text": "});",
+            "lineNumber": 296
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 297
+          },
+          {
+            "lineNumber": 298
+          },
+          {
+            "text": "### Step 3: OTP Verification and Profile Linking",
+            "lineNumber": 299
+          },
+          {
+            "lineNumber": 300
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 301
+          },
+          {
+            "text": "// After user enters OTP, verify it",
+            "lineNumber": 302
+          },
+          {
+            "text": "const { error } = await supabase.auth.verifyOtp({",
+            "lineNumber": 303
+          },
+          {
+            "text": "  email: workEmail,",
+            "lineNumber": 304
+          },
+          {
+            "text": "  token: otpCode,",
+            "lineNumber": 305
+          },
+          {
+            "text": "  type: 'email'",
+            "lineNumber": 306
+          },
+          {
+            "text": "});",
+            "lineNumber": 307
+          },
+          {
+            "lineNumber": 308
+          },
+          {
+            "text": "// Check if profile exists for this work email",
+            "lineNumber": 309
+          },
+          {
+            "text": "const { data: profile } = await supabase",
+            "lineNumber": 310
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 311
+          },
+          {
+            "text": "  .select('id')",
+            "lineNumber": 312
+          },
+          {
+            "text": "  .eq('work_email', workEmail)",
+            "lineNumber": 313
+          },
+          {
+            "text": "  .single();",
+            "lineNumber": 314
+          },
+          {
+            "lineNumber": 315
+          },
+          {
+            "text": "if (!profile) {",
+            "lineNumber": 316
+          },
+          {
+            "text": "  // No profile exists - redirect to pending approval",
+            "lineNumber": 317
+          },
+          {
+            "text": "  redirect('/auth/pending-approval');",
+            "lineNumber": 318
+          },
+          {
+            "text": "}",
+            "lineNumber": 319
+          },
+          {
+            "lineNumber": 320
+          },
+          {
+            "text": "// Link profile to current user",
+            "lineNumber": 321
+          },
+          {
+            "text": "const { data: { user } } = await supabase.auth.getUser();",
+            "lineNumber": 322
+          },
+          {
+            "text": "await supabase",
+            "lineNumber": 323
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 324
+          },
+          {
+            "text": "  .update({ ",
+            "lineNumber": 325
+          },
+          {
+            "text": "    user_id: user.id,",
+            "lineNumber": 326
+          }
+        ]
+      },
+      "score": 0.3096405863761902
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131220000_set_verified_work_email_on_change.sql",
+        "range": {
+          "startPosition": {
+            "line": 75
+          },
+          "endPosition": {
+            "line": 114
+          }
+        },
+        "contents": "  return new;\nend;\n$$;\n\ncomment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create trigger on auth.users table to set verified work email when email changes\n-- Runs AFTER UPDATE to ensure email change is committed\n-- Watches both email and email_change fields to catch all verification scenarios\ndrop trigger if exists set_verified_work_email_on_change_trigger on auth.users;\n\ncreate trigger set_verified_work_email_on_change_trigger\nafter update of email, email_change on auth.users\nfor each row\nwhen (\n  (old.email is distinct from new.email) or \n  (old.email_change is distinct from new.email_change)\n)\nexecute function public.set_verified_work_email_on_change();\n\n-- ============================================================================\n-- INITIAL DATA UPDATE\n-- ============================================================================\n\n-- Update existing users who already have a CZU email set\n-- This handles any existing data that should have verified_work_email set\nupdate public.users u\nset verified_work_email = au.email,\n    verified_work_email_at = au.updated_at\nfrom auth.users au\nwhere u.auth_user_id = au.id\n  and au.email is not null\n  and au.email != ''\n  and lower(split_part(au.email, '@', 2)) in ('pef.czu.cz', 'studenti.czu.cz')\n  and (u.verified_work_email is null or u.verified_work_email != au.email);",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  return new;",
+            "lineNumber": 76
+          },
+          {
+            "text": "end;",
+            "lineNumber": 77
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 78
+          },
+          {
+            "lineNumber": 79
+          },
+          {
+            "text": "comment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';",
+            "lineNumber": 80
+          },
+          {
+            "lineNumber": 81
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 82
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 83
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 84
+          },
+          {
+            "lineNumber": 85
+          },
+          {
+            "text": "-- Create trigger on auth.users table to set verified work email when email changes",
+            "lineNumber": 86
+          },
+          {
+            "text": "-- Runs AFTER UPDATE to ensure email change is committed",
+            "lineNumber": 87
+          },
+          {
+            "text": "-- Watches both email and email_change fields to catch all verification scenarios",
+            "lineNumber": 88
+          },
+          {
+            "text": "drop trigger if exists set_verified_work_email_on_change_trigger on auth.users;",
+            "lineNumber": 89
+          },
+          {
+            "lineNumber": 90
+          },
+          {
+            "text": "create trigger set_verified_work_email_on_change_trigger",
+            "lineNumber": 91
+          },
+          {
+            "text": "after update of email, email_change on auth.users",
+            "lineNumber": 92
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 93
+          },
+          {
+            "text": "when (",
+            "lineNumber": 94
+          },
+          {
+            "text": "  (old.email is distinct from new.email) or ",
+            "lineNumber": 95
+          },
+          {
+            "text": "  (old.email_change is distinct from new.email_change)",
+            "lineNumber": 96
+          },
+          {
+            "text": ")",
+            "lineNumber": 97
+          },
+          {
+            "text": "execute function public.set_verified_work_email_on_change();",
+            "lineNumber": 98
+          },
+          {
+            "lineNumber": 99
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 100
+          },
+          {
+            "text": "-- INITIAL DATA UPDATE",
+            "lineNumber": 101
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 102
+          },
+          {
+            "lineNumber": 103
+          },
+          {
+            "text": "-- Update existing users who already have a CZU email set",
+            "lineNumber": 104
+          },
+          {
+            "text": "-- This handles any existing data that should have verified_work_email set",
+            "lineNumber": 105
+          },
+          {
+            "text": "update public.users u",
+            "lineNumber": 106
+          },
+          {
+            "text": "set verified_work_email = au.email,",
+            "lineNumber": 107
+          },
+          {
+            "text": "    verified_work_email_at = au.updated_at",
+            "lineNumber": 108
+          },
+          {
+            "text": "from auth.users au",
+            "lineNumber": 109
+          },
+          {
+            "text": "where u.auth_user_id = au.id",
+            "lineNumber": 110
+          },
+          {
+            "text": "  and au.email is not null",
+            "lineNumber": 111
+          },
+          {
+            "text": "  and au.email != ''",
+            "lineNumber": 112
+          },
+          {
+            "text": "  and lower(split_part(au.email, '@', 2)) in ('pef.czu.cz', 'studenti.czu.cz')",
+            "lineNumber": 113
+          },
+          {
+            "text": "  and (u.verified_work_email is null or u.verified_work_email != au.email);",
+            "lineNumber": 114
+          }
+        ]
+      },
+      "score": 0.3067888021469116
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 94
+          },
+          "endPosition": {
+            "line": 144
+          }
+        },
+        "contents": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.\n\n&#96;&#96;&#96;sql\n-- Users table to sync with auth.users (Google OAuth)\n-- Note: Synced via Next.js server actions, not database triggers\ncreate table public.users (\n  id uuid primary key references auth.users(id) on delete cascade,\n  email text not null,\n  name text,\n  picture text,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\n-- Role enum for profiles (authorization)\ncreate type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');\n\n-- Profiles table (pre-created by admin, linked to user after verification)\n-- Focus: Authentication and authorization only\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  user_id uuid unique references public.users(id) on delete set null,  -- linked after OTP verification\n  work_email text unique not null,\n  role public.profile_role not null default 'student',\n  removed_access timestamptz,  -- null = active, set = revoked\n  removed_access_by uuid references public.profiles(id) on delete set null,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null,\n  constraint valid_czu_domain check (\n    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'\n  )\n);\n\n-- Indexes for auth queries\ncreate index profiles_user_id_idx on public.profiles(user_id);\ncreate index profiles_work_email_idx on public.profiles(work_email);\n&#96;&#96;&#96;\n\n### Entity Relationships\n\n&#96;&#96;&#96;\n┌─────────────────┐       ┌─────────────────┐\n│   auth.users    │       │    profiles     │\n│  (Supabase)     │       │  (Auth only)    │\n├─────────────────┤       ├─────────────────┤\n│ id (uuid)       │◄──┐   │ id (uuid)       │\n│ email (google)  │   │   │ name            │\n│ ...auth fields  │   └───│ user_id (1:1)   │",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+            "lineNumber": 96
+          },
+          {
+            "lineNumber": 97
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 98
+          },
+          {
+            "text": "-- Users table to sync with auth.users (Google OAuth)",
+            "lineNumber": 99
+          },
+          {
+            "text": "-- Note: Synced via Next.js server actions, not database triggers",
+            "lineNumber": 100
+          },
+          {
+            "text": "create table public.users (",
+            "lineNumber": 101
+          },
+          {
+            "text": "  id uuid primary key references auth.users(id) on delete cascade,",
+            "lineNumber": 102
+          },
+          {
+            "text": "  email text not null,",
+            "lineNumber": 103
+          },
+          {
+            "text": "  name text,",
+            "lineNumber": 104
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 105
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 106
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 107
+          },
+          {
+            "text": ");",
+            "lineNumber": 108
+          },
+          {
+            "lineNumber": 109
+          },
+          {
+            "text": "-- Role enum for profiles (authorization)",
+            "lineNumber": 110
+          },
+          {
+            "text": "create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');",
+            "lineNumber": 111
+          },
+          {
+            "lineNumber": 112
+          },
+          {
+            "text": "-- Profiles table (pre-created by admin, linked to user after verification)",
+            "lineNumber": 113
+          },
+          {
+            "text": "-- Focus: Authentication and authorization only",
+            "lineNumber": 114
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 115
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 116
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 117
+          },
+          {
+            "text": "  user_id uuid unique references public.users(id) on delete set null,  -- linked after OTP verification",
+            "lineNumber": 118
+          },
+          {
+            "text": "  work_email text unique not null,",
+            "lineNumber": 119
+          },
+          {
+            "text": "  role public.profile_role not null default 'student',",
+            "lineNumber": 120
+          },
+          {
+            "text": "  removed_access timestamptz,  -- null = active, set = revoked",
+            "lineNumber": 121
+          },
+          {
+            "text": "  removed_access_by uuid references public.profiles(id) on delete set null,",
+            "lineNumber": 122
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 123
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null,",
+            "lineNumber": 124
+          },
+          {
+            "text": "  constraint valid_czu_domain check (",
+            "lineNumber": 125
+          },
+          {
+            "text": "    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'",
+            "lineNumber": 126
+          },
+          {
+            "text": "  )",
+            "lineNumber": 127
+          },
+          {
+            "text": ");",
+            "lineNumber": 128
+          },
+          {
+            "lineNumber": 129
+          },
+          {
+            "text": "-- Indexes for auth queries",
+            "lineNumber": 130
+          },
+          {
+            "text": "create index profiles_user_id_idx on public.profiles(user_id);",
+            "lineNumber": 131
+          },
+          {
+            "text": "create index profiles_work_email_idx on public.profiles(work_email);",
+            "lineNumber": 132
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 133
+          },
+          {
+            "lineNumber": 134
+          },
+          {
+            "text": "### Entity Relationships",
+            "lineNumber": 135
+          },
+          {
+            "lineNumber": 136
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 137
+          },
+          {
+            "text": "┌─────────────────┐       ┌─────────────────┐",
+            "lineNumber": 138
+          },
+          {
+            "text": "│   auth.users    │       │    profiles     │",
+            "lineNumber": 139
+          },
+          {
+            "text": "│  (Supabase)     │       │  (Auth only)    │",
+            "lineNumber": 140
+          },
+          {
+            "text": "├─────────────────┤       ├─────────────────┤",
+            "lineNumber": 141
+          },
+          {
+            "text": "│ id (uuid)       │◄──┐   │ id (uuid)       │",
+            "lineNumber": 142
+          },
+          {
+            "text": "│ email (google)  │   │   │ name            │",
+            "lineNumber": 143
+          },
+          {
+            "text": "│ ...auth fields  │   └───│ user_id (1:1)   │",
+            "lineNumber": 144
+          }
+        ]
+      },
+      "score": 0.30368179082870483
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 38
+          },
+          "endPosition": {
+            "line": 97
+          }
+        },
+        "contents": "## Architecture Overview\n\n&#96;&#96;&#96;mermaid\nflowchart TD\n    subgraph auth_flow [Authentication Flow]\n        A[User clicks Google Login] --&gt; B[Google OAuth]\n        B --&gt; C[Redirect back with Google identity]\n        C --&gt; D{Profile linked to user?}\n        D --&gt;|No| E[Prompt for work email]\n        E --&gt; F{Domain is czu.cz?}\n        F --&gt;|No| G[Show domain error]\n        G --&gt; E\n        F --&gt;|Yes| H[Send OTP to work email]\n        H --&gt; I[User enters OTP]\n        I --&gt; J{Profile exists for work email?}\n        J --&gt;|No| K[Pending Approval Page]\n        J --&gt;|Yes| L[Link profile to user]\n        D --&gt;|Yes| M{Access revoked?}\n        L --&gt; M\n        M --&gt;|Yes| N[Show access revoked]\n        M --&gt;|No| O[Grant Full Access]\n    end\n\n    subgraph request_flow [Request Validation]\n        P[Incoming Request] --&gt; Q[Middleware queries database]\n        Q --&gt; R{Profile linked to user?}\n        R --&gt;|No| S[Redirect to verify email]\n        R --&gt;|Yes| T{removed_access is null?}\n        T --&gt;|No| U[Show access revoked]\n        T --&gt;|Yes| V[Allow access]\n    end\n&#96;&#96;&#96;\n\n## Validation Flow\n\n**Two-stage validation:**\n\n1. **Before OTP (Domain Check)**: Validate email ends with &#96;@studenti.czu.cz&#96; or &#96;@pef.czu.cz&#96;\n\n   - Client-side: Immediate feedback\n   - Server-side: Validated before &#96;signInWithOtp&#96; is called\n\n2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email\n\n   - If profile exists with that work_email → link profile to auth.user\n   - If no profile exists → show \"Pending Approval\" (admin must create profile first)\n   - Checked on every request via middleware\n\n## Database Schema (Supabase Migrations)\n\nTwo tables with **no RLS** - all access control is handled in Next.js:\n\n1. **&#96;users&#96;** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions\n2. **&#96;profiles&#96;** - User authentication profile data with role and access control\n\n**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.\n\nUse MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "## Architecture Overview",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "&#96;&#96;&#96;mermaid",
+            "lineNumber": 41
+          },
+          {
+            "text": "flowchart TD",
+            "lineNumber": 42
+          },
+          {
+            "text": "    subgraph auth_flow [Authentication Flow]",
+            "lineNumber": 43
+          },
+          {
+            "text": "        A[User clicks Google Login] --&gt; B[Google OAuth]",
+            "lineNumber": 44
+          },
+          {
+            "text": "        B --&gt; C[Redirect back with Google identity]",
+            "lineNumber": 45
+          },
+          {
+            "text": "        C --&gt; D{Profile linked to user?}",
+            "lineNumber": 46
+          },
+          {
+            "text": "        D --&gt;|No| E[Prompt for work email]",
+            "lineNumber": 47
+          },
+          {
+            "text": "        E --&gt; F{Domain is czu.cz?}",
+            "lineNumber": 48
+          },
+          {
+            "text": "        F --&gt;|No| G[Show domain error]",
+            "lineNumber": 49
+          },
+          {
+            "text": "        G --&gt; E",
+            "lineNumber": 50
+          },
+          {
+            "text": "        F --&gt;|Yes| H[Send OTP to work email]",
+            "lineNumber": 51
+          },
+          {
+            "text": "        H --&gt; I[User enters OTP]",
+            "lineNumber": 52
+          },
+          {
+            "text": "        I --&gt; J{Profile exists for work email?}",
+            "lineNumber": 53
+          },
+          {
+            "text": "        J --&gt;|No| K[Pending Approval Page]",
+            "lineNumber": 54
+          },
+          {
+            "text": "        J --&gt;|Yes| L[Link profile to user]",
+            "lineNumber": 55
+          },
+          {
+            "text": "        D --&gt;|Yes| M{Access revoked?}",
+            "lineNumber": 56
+          },
+          {
+            "text": "        L --&gt; M",
+            "lineNumber": 57
+          },
+          {
+            "text": "        M --&gt;|Yes| N[Show access revoked]",
+            "lineNumber": 58
+          },
+          {
+            "text": "        M --&gt;|No| O[Grant Full Access]",
+            "lineNumber": 59
+          },
+          {
+            "text": "    end",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "    subgraph request_flow [Request Validation]",
+            "lineNumber": 62
+          },
+          {
+            "text": "        P[Incoming Request] --&gt; Q[Middleware queries database]",
+            "lineNumber": 63
+          },
+          {
+            "text": "        Q --&gt; R{Profile linked to user?}",
+            "lineNumber": 64
+          },
+          {
+            "text": "        R --&gt;|No| S[Redirect to verify email]",
+            "lineNumber": 65
+          },
+          {
+            "text": "        R --&gt;|Yes| T{removed_access is null?}",
+            "lineNumber": 66
+          },
+          {
+            "text": "        T --&gt;|No| U[Show access revoked]",
+            "lineNumber": 67
+          },
+          {
+            "text": "        T --&gt;|Yes| V[Allow access]",
+            "lineNumber": 68
+          },
+          {
+            "text": "    end",
+            "lineNumber": 69
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 70
+          },
+          {
+            "lineNumber": 71
+          },
+          {
+            "text": "## Validation Flow",
+            "lineNumber": 72
+          },
+          {
+            "lineNumber": 73
+          },
+          {
+            "text": "**Two-stage validation:**",
+            "lineNumber": 74
+          },
+          {
+            "lineNumber": 75
+          },
+          {
+            "text": "1. **Before OTP (Domain Check)**: Validate email ends with &#96;@studenti.czu.cz&#96; or &#96;@pef.czu.cz&#96;",
+            "lineNumber": 76
+          },
+          {
+            "lineNumber": 77
+          },
+          {
+            "text": "   - Client-side: Immediate feedback",
+            "lineNumber": 78
+          },
+          {
+            "text": "   - Server-side: Validated before &#96;signInWithOtp&#96; is called",
+            "lineNumber": 79
+          },
+          {
+            "lineNumber": 80
+          },
+          {
+            "text": "2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "   - If profile exists with that work_email → link profile to auth.user",
+            "lineNumber": 83
+          },
+          {
+            "text": "   - If no profile exists → show \"Pending Approval\" (admin must create profile first)",
+            "lineNumber": 84
+          },
+          {
+            "text": "   - Checked on every request via middleware",
+            "lineNumber": 85
+          },
+          {
+            "lineNumber": 86
+          },
+          {
+            "text": "## Database Schema (Supabase Migrations)",
+            "lineNumber": 87
+          },
+          {
+            "lineNumber": 88
+          },
+          {
+            "text": "Two tables with **no RLS** - all access control is handled in Next.js:",
+            "lineNumber": 89
+          },
+          {
+            "lineNumber": 90
+          },
+          {
+            "text": "1. **&#96;users&#96;** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions",
+            "lineNumber": 91
+          },
+          {
+            "text": "2. **&#96;profiles&#96;** - User authentication profile data with role and access control",
+            "lineNumber": 92
+          },
+          {
+            "lineNumber": 93
+          },
+          {
+            "text": "**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.",
+            "lineNumber": 94
+          },
+          {
+            "lineNumber": 95
+          },
+          {
+            "text": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+            "lineNumber": 96
+          }
+        ]
+      },
+      "score": 0.3015404939651489
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 47
+          },
+          "endPosition": {
+            "line": 104
+          }
+        },
+        "contents": "-- References the new users table instead of auth.users\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  picture text,\n  user_id uuid unique references public.users(id) on delete set null,\n  work_email text unique not null,\n  role public.profile_role not null default 'student',\n  team_id uuid references public.teams(id) on delete set null,\n  phone_number text,\n  personal_email text,\n  date_of_birth date,\n  removed_access timestamptz,\n  removed_access_by uuid references public.profiles(id) on delete set null,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null,\n  constraint valid_czu_domain check (\n    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'\n  )\n);\n\ncomment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to automatically update updated_at column\ncreate or replace function public.handle_updated_at()\nreturns trigger\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\nbegin\n  new.updated_at := now();\n  return new;\nend;\n$$;\n\ncomment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';\n\n-- Create trigger function to populate public.users on auth.users creation\n-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email\ncreate or replace function public.handle_new_auth_user()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_google_email text;\n  v_google_full_name text;\n  v_google_profile_picture text;\n  v_raw_meta_data jsonb;\nbegin\n  v_raw_meta_data := new.raw_user_meta_data;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- References the new users table instead of auth.users",
+            "lineNumber": 48
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 49
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 50
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 51
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 52
+          },
+          {
+            "text": "  user_id uuid unique references public.users(id) on delete set null,",
+            "lineNumber": 53
+          },
+          {
+            "text": "  work_email text unique not null,",
+            "lineNumber": 54
+          },
+          {
+            "text": "  role public.profile_role not null default 'student',",
+            "lineNumber": 55
+          },
+          {
+            "text": "  team_id uuid references public.teams(id) on delete set null,",
+            "lineNumber": 56
+          },
+          {
+            "text": "  phone_number text,",
+            "lineNumber": 57
+          },
+          {
+            "text": "  personal_email text,",
+            "lineNumber": 58
+          },
+          {
+            "text": "  date_of_birth date,",
+            "lineNumber": 59
+          },
+          {
+            "text": "  removed_access timestamptz,",
+            "lineNumber": 60
+          },
+          {
+            "text": "  removed_access_by uuid references public.profiles(id) on delete set null,",
+            "lineNumber": 61
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 62
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null,",
+            "lineNumber": 63
+          },
+          {
+            "text": "  constraint valid_czu_domain check (",
+            "lineNumber": 64
+          },
+          {
+            "text": "    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'",
+            "lineNumber": 65
+          },
+          {
+            "text": "  )",
+            "lineNumber": 66
+          },
+          {
+            "text": ");",
+            "lineNumber": 67
+          },
+          {
+            "lineNumber": 68
+          },
+          {
+            "text": "comment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';",
+            "lineNumber": 69
+          },
+          {
+            "lineNumber": 70
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 71
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 72
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 73
+          },
+          {
+            "lineNumber": 74
+          },
+          {
+            "text": "-- Create trigger function to automatically update updated_at column",
+            "lineNumber": 75
+          },
+          {
+            "text": "create or replace function public.handle_updated_at()",
+            "lineNumber": 76
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 77
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 78
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 79
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 80
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 81
+          },
+          {
+            "text": "begin",
+            "lineNumber": 82
+          },
+          {
+            "text": "  new.updated_at := now();",
+            "lineNumber": 83
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 84
+          },
+          {
+            "text": "end;",
+            "lineNumber": 85
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 86
+          },
+          {
+            "lineNumber": 87
+          },
+          {
+            "text": "comment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';",
+            "lineNumber": 88
+          },
+          {
+            "lineNumber": 89
+          },
+          {
+            "text": "-- Create trigger function to populate public.users on auth.users creation",
+            "lineNumber": 90
+          },
+          {
+            "text": "-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email",
+            "lineNumber": 91
+          },
+          {
+            "text": "create or replace function public.handle_new_auth_user()",
+            "lineNumber": 92
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 93
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 94
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 95
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 96
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 97
+          },
+          {
+            "text": "declare",
+            "lineNumber": 98
+          },
+          {
+            "text": "  v_google_email text;",
+            "lineNumber": 99
+          },
+          {
+            "text": "  v_google_full_name text;",
+            "lineNumber": 100
+          },
+          {
+            "text": "  v_google_profile_picture text;",
+            "lineNumber": 101
+          },
+          {
+            "text": "  v_raw_meta_data jsonb;",
+            "lineNumber": 102
+          },
+          {
+            "text": "begin",
+            "lineNumber": 103
+          },
+          {
+            "text": "  v_raw_meta_data := new.raw_user_meta_data;",
+            "lineNumber": 104
+          }
+        ]
+      },
+      "score": 0.29391753673553467
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 43,
+            "column": 1
+          }
+        },
+        "contents": "\"use client\";\n\nimport { useState, useEffect, useCallback } from \"react\";\nimport { createClient } from \"@/lib/supabase/client\";\nimport { useRouter } from \"next/navigation\";\nimport {\n  Card,\n  CardContent,\n  CardDescription,\n  CardHeader,\n  CardTitle,\n} from \"@/components/ui/card\";\nimport { Input } from \"@/components/ui/input\";\nimport { Label } from \"@/components/ui/label\";\nimport { Button } from \"@/components/ui/button\";\nimport { cn } from \"@/lib/utils\";\nimport { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";\nimport { hasLinkedProfile } from \"@/lib/auth-helpers\";\n\nconst STORAGE_KEY = \"verify-email-form-state\";\n\ninterface StoredState {\n  step: \"email\" | \"otp\";\n  email: string;\n  otpStartTime?: number;\n}\n\n/**\n * Loads persisted form state from sessionStorage\n */\nconst loadPersistedState = ()\n;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "\"use client\";",
+            "lineNumber": 1
+          },
+          {
+            "lineNumber": 2
+          },
+          {
+            "text": "import { useState, useEffect, useCallback } from \"react\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { createClient } from \"@/lib/supabase/client\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { useRouter } from \"next/navigation\";",
+            "lineNumber": 5
+          },
+          {
+            "text": "import {",
+            "lineNumber": 6
+          },
+          {
+            "text": "  Card,",
+            "lineNumber": 7
+          },
+          {
+            "text": "  CardContent,",
+            "lineNumber": 8
+          },
+          {
+            "text": "  CardDescription,",
+            "lineNumber": 9
+          },
+          {
+            "text": "  CardHeader,",
+            "lineNumber": 10
+          },
+          {
+            "text": "  CardTitle,",
+            "lineNumber": 11
+          },
+          {
+            "text": "} from \"@/components/ui/card\";",
+            "lineNumber": 12
+          },
+          {
+            "text": "import { Input } from \"@/components/ui/input\";",
+            "lineNumber": 13
+          },
+          {
+            "text": "import { Label } from \"@/components/ui/label\";",
+            "lineNumber": 14
+          },
+          {
+            "text": "import { Button } from \"@/components/ui/button\";",
+            "lineNumber": 15
+          },
+          {
+            "text": "import { cn } from \"@/lib/utils\";",
+            "lineNumber": 16
+          },
+          {
+            "text": "import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";",
+            "lineNumber": 17
+          },
+          {
+            "text": "import { hasLinkedProfile } from \"@/lib/auth-helpers\";",
+            "lineNumber": 18
+          },
+          {
+            "lineNumber": 19
+          },
+          {
+            "text": "const STORAGE_KEY = \"verify-email-form-state\";",
+            "lineNumber": 20
+          },
+          {
+            "lineNumber": 21
+          },
+          {
+            "text": "interface StoredState {",
+            "lineNumber": 22,
+            "isSignature": true
+          },
+          {
+            "text": "  step: \"email\" | \"otp\";",
+            "lineNumber": 23
+          },
+          {
+            "text": "  email: string;",
+            "lineNumber": 24
+          },
+          {
+            "text": "  otpStartTime?: number;",
+            "lineNumber": 25,
+            "isSignature": true
+          },
+          {
+            "text": "}",
+            "lineNumber": 26,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 27
+          },
+          {
+            "text": "/**",
+            "lineNumber": 28
+          },
+          {
+            "text": " * Loads persisted form state from sessionStorage",
+            "lineNumber": 29
+          },
+          {
+            "text": " */",
+            "lineNumber": 30
+          },
+          {
+            "text": "const loadPersistedState = ()",
+            "lineNumber": 31
+          },
+          {
+            "text": ";",
+            "lineNumber": 44
+          }
+        ]
+      },
+      "score": 0.2918773889541626
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 61
+          },
+          "endPosition": {
+            "line": 419,
+            "column": 1
+          }
+        },
+        "contents": "const clearPersistedState = \n catch (err) {\n    // Ignore errors clearing storage\n  }\n};\n\n/**\n * Form component for email verification via OTP\n * Allows users to link an email identity to their Google OAuth account\n */\nexport function VerifyEmailForm({ next }: { next?: string }) {\n  const [email, setEmail] = useState(\"\");\n  const [otpCode, setOtpCode] = useState(\"\");\n  const [step, setStep] = useState&lt;\"email\" | \"otp\"&gt;(\"email\");\n  const [isLoading, setIsLoading] = useState(false);\n  const [error, setError] = useState&lt;string | null&gt;(null);\n  const [isHydrated, setIsHydrated] = useState(false);\n  const [lastSubmittedOtp, setLastSubmittedOtp] = useState&lt;string | null&gt;(null);\n  const [otpStartTime, setOtpStartTime] = useState&lt;number | null&gt;(null);\n  const router = useRouter();\n  const supabase = createClient();\n\n  /**\n   * Sends OTP code to the provided email\n   * Uses updateUser to add email identity to the current authenticated user\n   * This is the correct way to link an email identity to an existing OAuth account\n   */\n  const handleSendOTP = async (e: React.FormEvent) =&gt;\n;\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "const clearPersistedState = ",
+            "lineNumber": 62
+          },
+          {
+            "text": " catch (err) {",
+            "lineNumber": 67
+          },
+          {
+            "text": "    // Ignore errors clearing storage",
+            "lineNumber": 68
+          },
+          {
+            "text": "  }",
+            "lineNumber": 69
+          },
+          {
+            "text": "};",
+            "lineNumber": 70
+          },
+          {
+            "lineNumber": 71
+          },
+          {
+            "text": "/**",
+            "lineNumber": 72
+          },
+          {
+            "text": " * Form component for email verification via OTP",
+            "lineNumber": 73
+          },
+          {
+            "text": " * Allows users to link an email identity to their Google OAuth account",
+            "lineNumber": 74
+          },
+          {
+            "text": " */",
+            "lineNumber": 75
+          },
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 76,
+            "isSignature": true
+          },
+          {
+            "text": "  const [email, setEmail] = useState(\"\");",
+            "lineNumber": 77
+          },
+          {
+            "text": "  const [otpCode, setOtpCode] = useState(\"\");",
+            "lineNumber": 78
+          },
+          {
+            "text": "  const [step, setStep] = useState&lt;\"email\" | \"otp\"&gt;(\"email\");",
+            "lineNumber": 79
+          },
+          {
+            "text": "  const [isLoading, setIsLoading] = useState(false);",
+            "lineNumber": 80
+          },
+          {
+            "text": "  const [error, setError] = useState&lt;string | null&gt;(null);",
+            "lineNumber": 81
+          },
+          {
+            "text": "  const [isHydrated, setIsHydrated] = useState(false);",
+            "lineNumber": 82
+          },
+          {
+            "text": "  const [lastSubmittedOtp, setLastSubmittedOtp] = useState&lt;string | null&gt;(null);",
+            "lineNumber": 83
+          },
+          {
+            "text": "  const [otpStartTime, setOtpStartTime] = useState&lt;number | null&gt;(null);",
+            "lineNumber": 84
+          },
+          {
+            "text": "  const router = useRouter();",
+            "lineNumber": 85
+          },
+          {
+            "text": "  const supabase = createClient();",
+            "lineNumber": 86
+          },
+          {
+            "lineNumber": 87
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 88
+          },
+          {
+            "text": "   * Sends OTP code to the provided email",
+            "lineNumber": 89
+          },
+          {
+            "text": "   * Uses updateUser to add email identity to the current authenticated user",
+            "lineNumber": 90
+          },
+          {
+            "text": "   * This is the correct way to link an email identity to an existing OAuth account",
+            "lineNumber": 91
+          },
+          {
+            "text": "   */",
+            "lineNumber": 92
+          },
+          {
+            "text": "  const handleSendOTP = async (e: React.FormEvent) =&gt;",
+            "lineNumber": 93
+          },
+          {
+            "text": ";",
+            "lineNumber": 194
+          },
+          {
+            "text": "}",
+            "lineNumber": 420,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.28297674655914307
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131230000_broadcast_verified_work_email_changes.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 24
+          }
+        },
+        "contents": "-- Migration: Broadcast verified_work_email changes via Realtime\n-- Purpose: Enables cross-device synchronization by broadcasting verified_work_email changes to all user sessions\n-- Affected tables: users, realtime.messages\n-- Special considerations: Uses Realtime broadcast to notify all devices when email verification completes\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to broadcast verified_work_email changes via Realtime\n-- Broadcasts to user-specific channel when verified_work_email changes\n-- Uses realtime.send to broadcast custom event with verification details\ncreate or replace function public.broadcast_verified_work_email_change()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth, pg_catalog\nas $$\ndeclare\n  v_user_id uuid;\n  v_old_email text;\n  v_new_email text;\nbegin\n  -- Only proceed if verified_work_email actually changed",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Broadcast verified_work_email changes via Realtime",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Enables cross-device synchronization by broadcasting verified_work_email changes to all user sessions",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users, realtime.messages",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: Uses Realtime broadcast to notify all devices when email verification completes",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "-- Create trigger function to broadcast verified_work_email changes via Realtime",
+            "lineNumber": 10
+          },
+          {
+            "text": "-- Broadcasts to user-specific channel when verified_work_email changes",
+            "lineNumber": 11
+          },
+          {
+            "text": "-- Uses realtime.send to broadcast custom event with verification details",
+            "lineNumber": 12
+          },
+          {
+            "text": "create or replace function public.broadcast_verified_work_email_change()",
+            "lineNumber": 13
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 14
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 15
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 16
+          },
+          {
+            "text": "set search_path = public, auth, pg_catalog",
+            "lineNumber": 17
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 18
+          },
+          {
+            "text": "declare",
+            "lineNumber": 19
+          },
+          {
+            "text": "  v_user_id uuid;",
+            "lineNumber": 20
+          },
+          {
+            "text": "  v_old_email text;",
+            "lineNumber": 21
+          },
+          {
+            "text": "  v_new_email text;",
+            "lineNumber": 22
+          },
+          {
+            "text": "begin",
+            "lineNumber": 23
+          },
+          {
+            "text": "  -- Only proceed if verified_work_email actually changed",
+            "lineNumber": 24
+          }
+        ]
+      },
+      "score": 0.2768406867980957
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131220000_set_verified_work_email_on_change.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 25
+          }
+        },
+        "contents": "-- Migration: Set verified work email when email change succeeds\n-- Purpose: Automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain\n-- Affected tables: users, auth.users\n-- Special considerations: Runs automatically after email change is committed, only for CZU domains (@pef.czu.cz or @studenti.czu.cz)\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to set verified work email when email change succeeds\n-- Updates public.users.verified_work_email and verified_work_email_at when auth.users.email changes to a CZU domain\n-- Watches both email and email_change fields to catch all verification scenarios\n-- Runs with SECURITY DEFINER to access auth.users table\ncreate or replace function public.set_verified_work_email_on_change()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_user_id uuid;\n  v_email text;\n  v_domain text;\nbegin\n  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Set verified work email when email change succeeds",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users, auth.users",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: Runs automatically after email change is committed, only for CZU domains (@pef.czu.cz or @studenti.czu.cz)",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "-- Create trigger function to set verified work email when email change succeeds",
+            "lineNumber": 10
+          },
+          {
+            "text": "-- Updates public.users.verified_work_email and verified_work_email_at when auth.users.email changes to a CZU domain",
+            "lineNumber": 11
+          },
+          {
+            "text": "-- Watches both email and email_change fields to catch all verification scenarios",
+            "lineNumber": 12
+          },
+          {
+            "text": "-- Runs with SECURITY DEFINER to access auth.users table",
+            "lineNumber": 13
+          },
+          {
+            "text": "create or replace function public.set_verified_work_email_on_change()",
+            "lineNumber": 14
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 15
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 16
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 17
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 18
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 19
+          },
+          {
+            "text": "declare",
+            "lineNumber": 20
+          },
+          {
+            "text": "  v_user_id uuid;",
+            "lineNumber": 21
+          },
+          {
+            "text": "  v_email text;",
+            "lineNumber": 22
+          },
+          {
+            "text": "  v_domain text;",
+            "lineNumber": 23
+          },
+          {
+            "text": "begin",
+            "lineNumber": 24
+          },
+          {
+            "text": "  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change",
+            "lineNumber": 25
+          }
+        ]
+      },
+      "score": 0.266033798456192
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 75
+          },
+          "endPosition": {
+            "line": 419,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\n\n              &lt;Input\n                id=\"email\"\n                type=\"email\"\n                placeholder=\"your.email@pef.czu.cz\"\n                value={email}\n                onChange={(e) =&gt; setEmail(e.target.value)}\n                disabled={isLoading}\n                required\n                autoFocus\n              /&gt;\n              &lt;p className=\"text-xs text-muted-foreground\"&gt;\n                Email must end with @pef.czu.cz or @studenti.czu.cz\n              &lt;/p&gt;\n            &lt;/div&gt;\n            &lt;Button type=\"submit\" disabled={isLoading} className=\"w-full\"&gt;\n              {isLoading ? \"Sending...\" : \"Send OTP Code\"}\n            &lt;/Button&gt;\n          &lt;/form&gt;\n        ) : (\n          &lt;form onSubmit={handleVerifyOTP} className=\"flex flex-col gap-4\"&gt;\n            &lt;div className=\"flex flex-col gap-2\"&gt;\n              &lt;Label htmlFor=\"otp\"&gt;OTP Code&lt;/Label&gt;\n              &lt;Input\n                id=\"otp\"\n                type=\"text\"\n                placeholder={&#96;Enter ${OTP_LENGTH}-digit code&#96;}\n                value={otpCode}\n                onChange={(e) =&gt; {\n                  const newValue = e.target.value.replace(/\\D/g, \"\").slice(0, OTP_LENGTH);\n                  setOtpCode(newValue);\n                  // Clear lastSubmittedOtp when user starts typing a new code\n                  if (lastSubmittedOtp !== null &amp;&amp; newValue !== lastSubmittedOtp) {\n                    setLastSubmittedOtp(null);\n                  }\n                }}\n                onPaste={(e) =&gt; {\n                  e.preventDefault();\n                  const pastedText = e.clipboardData.getData(\"text\").replace(/\\D/g, \"\").slice;\n                }\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 75,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 75,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 75,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 76,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 76,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 341
+          },
+          {
+            "text": "              &lt;Input",
+            "lineNumber": 342
+          },
+          {
+            "text": "                id=\"email\"",
+            "lineNumber": 343
+          },
+          {
+            "text": "                type=\"email\"",
+            "lineNumber": 344
+          },
+          {
+            "text": "                placeholder=\"your.email@pef.czu.cz\"",
+            "lineNumber": 345
+          },
+          {
+            "text": "                value={email}",
+            "lineNumber": 346
+          },
+          {
+            "text": "                onChange={(e) =&gt; setEmail(e.target.value)}",
+            "lineNumber": 347
+          },
+          {
+            "text": "                disabled={isLoading}",
+            "lineNumber": 348
+          },
+          {
+            "text": "                required",
+            "lineNumber": 349
+          },
+          {
+            "text": "                autoFocus",
+            "lineNumber": 350
+          },
+          {
+            "text": "              /&gt;",
+            "lineNumber": 351
+          },
+          {
+            "text": "              &lt;p className=\"text-xs text-muted-foreground\"&gt;",
+            "lineNumber": 352
+          },
+          {
+            "text": "                Email must end with @pef.czu.cz or @studenti.czu.cz",
+            "lineNumber": 353
+          },
+          {
+            "text": "              &lt;/p&gt;",
+            "lineNumber": 354
+          },
+          {
+            "text": "            &lt;/div&gt;",
+            "lineNumber": 355
+          },
+          {
+            "text": "            &lt;Button type=\"submit\" disabled={isLoading} className=\"w-full\"&gt;",
+            "lineNumber": 356
+          },
+          {
+            "text": "              {isLoading ? \"Sending...\" : \"Send OTP Code\"}",
+            "lineNumber": 357
+          },
+          {
+            "text": "            &lt;/Button&gt;",
+            "lineNumber": 358
+          },
+          {
+            "text": "          &lt;/form&gt;",
+            "lineNumber": 359
+          },
+          {
+            "text": "        ) : (",
+            "lineNumber": 360
+          },
+          {
+            "text": "          &lt;form onSubmit={handleVerifyOTP} className=\"flex flex-col gap-4\"&gt;",
+            "lineNumber": 361
+          },
+          {
+            "text": "            &lt;div className=\"flex flex-col gap-2\"&gt;",
+            "lineNumber": 362
+          },
+          {
+            "text": "              &lt;Label htmlFor=\"otp\"&gt;OTP Code&lt;/Label&gt;",
+            "lineNumber": 363
+          },
+          {
+            "text": "              &lt;Input",
+            "lineNumber": 364
+          },
+          {
+            "text": "                id=\"otp\"",
+            "lineNumber": 365
+          },
+          {
+            "text": "                type=\"text\"",
+            "lineNumber": 366
+          },
+          {
+            "text": "                placeholder={&#96;Enter ${OTP_LENGTH}-digit code&#96;}",
+            "lineNumber": 367
+          },
+          {
+            "text": "                value={otpCode}",
+            "lineNumber": 368
+          },
+          {
+            "text": "                onChange={(e) =&gt; {",
+            "lineNumber": 369
+          },
+          {
+            "text": "                  const newValue = e.target.value.replace(/\\D/g, \"\").slice(0, OTP_LENGTH);",
+            "lineNumber": 370
+          },
+          {
+            "text": "                  setOtpCode(newValue);",
+            "lineNumber": 371
+          },
+          {
+            "text": "                  // Clear lastSubmittedOtp when user starts typing a new code",
+            "lineNumber": 372
+          },
+          {
+            "text": "                  if (lastSubmittedOtp !== null &amp;&amp; newValue !== lastSubmittedOtp) {",
+            "lineNumber": 373
+          },
+          {
+            "text": "                    setLastSubmittedOtp(null);",
+            "lineNumber": 374
+          },
+          {
+            "text": "                  }",
+            "lineNumber": 375
+          },
+          {
+            "text": "                }}",
+            "lineNumber": 376
+          },
+          {
+            "text": "                onPaste={(e) =&gt; {",
+            "lineNumber": 377
+          },
+          {
+            "text": "                  e.preventDefault();",
+            "lineNumber": 378
+          },
+          {
+            "text": "                  const pastedText = e.clipboardData.getData(\"text\").replace(/\\D/g, \"\").slice;",
+            "lineNumber": 379
+          },
+          {
+            "text": "                }",
+            "lineNumber": 385
+          },
+          {
+            "text": "}",
+            "lineNumber": 420,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.26400405168533325
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/auth/confirm-email-change/route.ts",
+        "range": {
+          "startPosition": {
+            "column": 61
+          },
+          "endPosition": {
+            "line": 79,
+            "column": 1
+          }
+        },
+        "contents": "import { type EmailOtpType } from \"@supabase/supabase-js\";\nimport { createServerClient } from \"@supabase/ssr\";\nimport {\n  createErrorUrl,\n  createSuccessUrl,\n  redirectWithCookies,\n} from \"@/lib/auth-helpers\";\n\n/**\n * Handles email change confirmation callback using PKCE flow with token_hash\n * Verifies the OTP token and redirects appropriately\n * Ensures cookies are properly set before redirecting\n */\nexport async function GET(request: NextRequest) {\n  const { searchParams } = new URL(request.url);\n  const token_hash = searchParams.get(\"token_hash\");\n  const typeParam = searchParams.get(\"type\");\n  const next = searchParams.get(\"next\");\n  const startTime = searchParams.get(\"start_time\");\n  const type: EmailOtpType | null =\n    typeParam === \"email_change\" ? (\"email_change\" as EmailOtpType) : null;\n\n  if (!type) {\n    return NextResponse.redirect(createErrorUrl(request, \"Invalid type\"));\n  }\n  if (!token_hash) {\n    return NextResponse.redirect(createErrorUrl(request, \"Invalid token hash\"));\n  }\n  let supabaseResponse = NextResponse.next({\n    request,\n  });\n\n  const supabase = createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return request.cookies.getAll();\n        },\n        setAll(cookiesToSet) {\n          cookiesToSet.forEach(({ name, value }) =&gt; {\n            request.cookies.set(name, value);\n          });\n          supabaseResponse = NextResponse.next({\n            request,\n          });\n          cookiesToSet.forEach(({ name, value, options }) =&gt; {\n            supabaseResponse.cookies.set(name, value, options);\n          });\n        },\n      },\n    },\n  );\n\n\n  const { error } = await supabase.auth.verifyOtp({\n    type,\n    token_hash,\n  });\n  if (error) {\n    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);\n  }\n\n  // Redirect to verification success page with timestamp if available\n  const successUrl = request.nextUrl.clone();\n  successUrl.pathname = \"/auth/verification-success\";\n  successUrl.search = \"\";\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { type EmailOtpType } from \"@supabase/supabase-js\";",
+            "lineNumber": 2
+          },
+          {
+            "text": "import { createServerClient } from \"@supabase/ssr\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import {",
+            "lineNumber": 4
+          },
+          {
+            "text": "  createErrorUrl,",
+            "lineNumber": 5
+          },
+          {
+            "text": "  createSuccessUrl,",
+            "lineNumber": 6
+          },
+          {
+            "text": "  redirectWithCookies,",
+            "lineNumber": 7
+          },
+          {
+            "text": "} from \"@/lib/auth-helpers\";",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "/**",
+            "lineNumber": 10
+          },
+          {
+            "text": " * Handles email change confirmation callback using PKCE flow with token_hash",
+            "lineNumber": 11
+          },
+          {
+            "text": " * Verifies the OTP token and redirects appropriately",
+            "lineNumber": 12
+          },
+          {
+            "text": " * Ensures cookies are properly set before redirecting",
+            "lineNumber": 13
+          },
+          {
+            "text": " */",
+            "lineNumber": 14
+          },
+          {
+            "text": "export async function GET(request: NextRequest) {",
+            "lineNumber": 15,
+            "isSignature": true
+          },
+          {
+            "text": "  const { searchParams } = new URL(request.url);",
+            "lineNumber": 16
+          },
+          {
+            "text": "  const token_hash = searchParams.get(\"token_hash\");",
+            "lineNumber": 17
+          },
+          {
+            "text": "  const typeParam = searchParams.get(\"type\");",
+            "lineNumber": 18
+          },
+          {
+            "text": "  const next = searchParams.get(\"next\");",
+            "lineNumber": 19
+          },
+          {
+            "text": "  const startTime = searchParams.get(\"start_time\");",
+            "lineNumber": 20
+          },
+          {
+            "text": "  const type: EmailOtpType | null =",
+            "lineNumber": 21
+          },
+          {
+            "text": "    typeParam === \"email_change\" ? (\"email_change\" as EmailOtpType) : null;",
+            "lineNumber": 22
+          },
+          {
+            "lineNumber": 23
+          },
+          {
+            "text": "  if (!type) {",
+            "lineNumber": 24
+          },
+          {
+            "text": "    return NextResponse.redirect(createErrorUrl(request, \"Invalid type\"));",
+            "lineNumber": 25
+          },
+          {
+            "text": "  }",
+            "lineNumber": 26
+          },
+          {
+            "text": "  if (!token_hash) {",
+            "lineNumber": 27
+          },
+          {
+            "text": "    return NextResponse.redirect(createErrorUrl(request, \"Invalid token hash\"));",
+            "lineNumber": 28
+          },
+          {
+            "text": "  }",
+            "lineNumber": 29
+          },
+          {
+            "text": "  let supabaseResponse = NextResponse.next({",
+            "lineNumber": 30
+          },
+          {
+            "text": "    request,",
+            "lineNumber": 31
+          },
+          {
+            "text": "  });",
+            "lineNumber": 32
+          },
+          {
+            "lineNumber": 33
+          },
+          {
+            "text": "  const supabase = createServerClient(",
+            "lineNumber": 34
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 35
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 36
+          },
+          {
+            "text": "    {",
+            "lineNumber": 37
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 38
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 39
+          },
+          {
+            "text": "          return request.cookies.getAll();",
+            "lineNumber": 40
+          },
+          {
+            "text": "        },",
+            "lineNumber": 41
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 42
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value }) =&gt; {",
+            "lineNumber": 43
+          },
+          {
+            "text": "            request.cookies.set(name, value);",
+            "lineNumber": 44
+          },
+          {
+            "text": "          });",
+            "lineNumber": 45
+          },
+          {
+            "text": "          supabaseResponse = NextResponse.next({",
+            "lineNumber": 46
+          },
+          {
+            "text": "            request,",
+            "lineNumber": 47
+          },
+          {
+            "text": "          });",
+            "lineNumber": 48
+          },
+          {
+            "text": "          cookiesToSet.forEach(({ name, value, options }) =&gt; {",
+            "lineNumber": 49
+          },
+          {
+            "text": "            supabaseResponse.cookies.set(name, value, options);",
+            "lineNumber": 50
+          },
+          {
+            "text": "          });",
+            "lineNumber": 51
+          },
+          {
+            "text": "        },",
+            "lineNumber": 52
+          },
+          {
+            "text": "      },",
+            "lineNumber": 53
+          },
+          {
+            "text": "    },",
+            "lineNumber": 54
+          },
+          {
+            "text": "  );",
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "lineNumber": 57
+          },
+          {
+            "text": "  const { error } = await supabase.auth.verifyOtp({",
+            "lineNumber": 58
+          },
+          {
+            "text": "    type,",
+            "lineNumber": 59
+          },
+          {
+            "text": "    token_hash,",
+            "lineNumber": 60
+          },
+          {
+            "text": "  });",
+            "lineNumber": 61
+          },
+          {
+            "text": "  if (error) {",
+            "lineNumber": 62
+          },
+          {
+            "text": "    return redirectWithCookies(createErrorUrl(request, error.message), supabaseResponse);",
+            "lineNumber": 63
+          },
+          {
+            "text": "  }",
+            "lineNumber": 64
+          },
+          {
+            "lineNumber": 65
+          },
+          {
+            "text": "  // Redirect to verification success page with timestamp if available",
+            "lineNumber": 66
+          },
+          {
+            "text": "  const successUrl = request.nextUrl.clone();",
+            "lineNumber": 67
+          },
+          {
+            "text": "  successUrl.pathname = \"/auth/verification-success\";",
+            "lineNumber": 68
+          },
+          {
+            "text": "  successUrl.search = \"\";",
+            "lineNumber": 69
+          },
+          {
+            "text": "}",
+            "lineNumber": 80,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.26339513063430786
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./docs/prompting-help/feature.md",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 94
+          }
+        },
+        "contents": "Got it — here’s your **agent-optimized PRD template in Markdown (&#96;.md&#96;)** so you can reuse it for any product:\n\n&#96;&#96;&#96;&#96;markdown\n# PRD — [Product Name] MVP\n\n## 1. Overview\n[One-paragraph description of the product. Include key functionality, user interactions, and constraints like onboarding or payment.]\n\n---\n\n## 2. System Goals\n- [Goal 1: core outcome]\n- [Goal 2: workflows to automate or improve]\n- [Goal 3: monetization / business value]\n\n---\n\n## 3. Entities &amp; Schemas\n\n### Example: &#96;users&#96;\n&#96;&#96;&#96;sql\ncreate table users (\n  id uuid primary key default gen_random_uuid(),\n  email text unique not null,\n  phone text unique,\n  created_at timestamptz default now()\n);\n&#96;&#96;&#96;&#96;\n\n### Example: &#96;subscriptions&#96;\n\n&#96;&#96;&#96;sql\ncreate table subscriptions (\n  id uuid primary key default gen_random_uuid(),\n  user_id uuid references users(id),\n  stripe_customer_id text,\n  stripe_subscription_id text,\n  status text check (status in ('active','canceled','past_due')),\n  created_at timestamptz default now()\n);\n&#96;&#96;&#96;\n\n\\[Add more entities as needed: &#96;messages&#96;, &#96;tasks&#96;, &#96;reminders&#96;, etc.]\n\n---\n\n## 4. Features\n\n### 4.1 Onboarding &amp; Payment\n\n* **Signup:** \\[Auth provider]\n* **Phone Verification:**\n\n  * Input: &#96;{ phone_number }&#96;\n  * Output: &#96;{ success: true, otp_sent: true }&#96;\n* **Payment:** Stripe/PayPal/etc → subscription sync\n\n### 4.2 Channels / Interfaces\n\n#### Web Chat\n\n* Input: &#96;{ user_id, message }&#96;\n* Output: &#96;{ status: \"stored\", assistant_reply }&#96;\n* Flow:\n\n  1. Store in DB\n  2. Call LLM agent with context\n  3. Save + return assistant reply\n\n#### SMS (Twilio example)\n\n* Input:\n\n  &#96;&#96;&#96;json\n  { \"From\": \"+12025550123\", \"To\": \"+12025550999\", \"Body\": \"Remind me tomorrow at 9am\" }\n  &#96;&#96;&#96;\n* Output:\n\n  &#96;&#96;&#96;json\n  { \"status\": \"stored\", \"thread_id\": \"thread_123\", \"task_created\": true }\n  &#96;&#96;&#96;\n\n#### Email\n\n* Inbound: \\[Webhook flow]\n* Outbound: \\[Gmail API, SMTP, etc.]\n* Input: &#96;{ from, to, subject, body }&#96;\n* Output: &#96;{ status: \"sent\", message_id }&#96;\n\n### 4.3 Assistant Capabilities\n\n* **Calendar**\n\n  * Input: &#96;{ action, title, time, attendees }&#96;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "Got it — here’s your **agent-optimized PRD template in Markdown (&#96;.md&#96;)** so you can reuse it for any product:",
+            "lineNumber": 1
+          },
+          {
+            "lineNumber": 2
+          },
+          {
+            "text": "&#96;&#96;&#96;&#96;markdown",
+            "lineNumber": 3
+          },
+          {
+            "text": "# PRD — [Product Name] MVP",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "## 1. Overview",
+            "lineNumber": 6
+          },
+          {
+            "text": "[One-paragraph description of the product. Include key functionality, user interactions, and constraints like onboarding or payment.]",
+            "lineNumber": 7
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "---",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "## 2. System Goals",
+            "lineNumber": 11
+          },
+          {
+            "text": "- [Goal 1: core outcome]",
+            "lineNumber": 12
+          },
+          {
+            "text": "- [Goal 2: workflows to automate or improve]",
+            "lineNumber": 13
+          },
+          {
+            "text": "- [Goal 3: monetization / business value]",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "---",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "## 3. Entities &amp; Schemas",
+            "lineNumber": 18
+          },
+          {
+            "lineNumber": 19
+          },
+          {
+            "text": "### Example: &#96;users&#96;",
+            "lineNumber": 20
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 21
+          },
+          {
+            "text": "create table users (",
+            "lineNumber": 22
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 23
+          },
+          {
+            "text": "  email text unique not null,",
+            "lineNumber": 24
+          },
+          {
+            "text": "  phone text unique,",
+            "lineNumber": 25
+          },
+          {
+            "text": "  created_at timestamptz default now()",
+            "lineNumber": 26
+          },
+          {
+            "text": ");",
+            "lineNumber": 27
+          },
+          {
+            "text": "&#96;&#96;&#96;&#96;",
+            "lineNumber": 28
+          },
+          {
+            "lineNumber": 29
+          },
+          {
+            "text": "### Example: &#96;subscriptions&#96;",
+            "lineNumber": 30
+          },
+          {
+            "lineNumber": 31
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 32
+          },
+          {
+            "text": "create table subscriptions (",
+            "lineNumber": 33
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 34
+          },
+          {
+            "text": "  user_id uuid references users(id),",
+            "lineNumber": 35
+          },
+          {
+            "text": "  stripe_customer_id text,",
+            "lineNumber": 36
+          },
+          {
+            "text": "  stripe_subscription_id text,",
+            "lineNumber": 37
+          },
+          {
+            "text": "  status text check (status in ('active','canceled','past_due')),",
+            "lineNumber": 38
+          },
+          {
+            "text": "  created_at timestamptz default now()",
+            "lineNumber": 39
+          },
+          {
+            "text": ");",
+            "lineNumber": 40
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 41
+          },
+          {
+            "lineNumber": 42
+          },
+          {
+            "text": "\\[Add more entities as needed: &#96;messages&#96;, &#96;tasks&#96;, &#96;reminders&#96;, etc.]",
+            "lineNumber": 43
+          },
+          {
+            "lineNumber": 44
+          },
+          {
+            "text": "---",
+            "lineNumber": 45
+          },
+          {
+            "lineNumber": 46
+          },
+          {
+            "text": "## 4. Features",
+            "lineNumber": 47
+          },
+          {
+            "lineNumber": 48
+          },
+          {
+            "text": "### 4.1 Onboarding &amp; Payment",
+            "lineNumber": 49
+          },
+          {
+            "lineNumber": 50
+          },
+          {
+            "text": "* **Signup:** \\[Auth provider]",
+            "lineNumber": 51
+          },
+          {
+            "text": "* **Phone Verification:**",
+            "lineNumber": 52
+          },
+          {
+            "lineNumber": 53
+          },
+          {
+            "text": "  * Input: &#96;{ phone_number }&#96;",
+            "lineNumber": 54
+          },
+          {
+            "text": "  * Output: &#96;{ success: true, otp_sent: true }&#96;",
+            "lineNumber": 55
+          },
+          {
+            "text": "* **Payment:** Stripe/PayPal/etc → subscription sync",
+            "lineNumber": 56
+          },
+          {
+            "lineNumber": 57
+          },
+          {
+            "text": "### 4.2 Channels / Interfaces",
+            "lineNumber": 58
+          },
+          {
+            "lineNumber": 59
+          },
+          {
+            "text": "#### Web Chat",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "* Input: &#96;{ user_id, message }&#96;",
+            "lineNumber": 62
+          },
+          {
+            "text": "* Output: &#96;{ status: \"stored\", assistant_reply }&#96;",
+            "lineNumber": 63
+          },
+          {
+            "text": "* Flow:",
+            "lineNumber": 64
+          },
+          {
+            "lineNumber": 65
+          },
+          {
+            "text": "  1. Store in DB",
+            "lineNumber": 66
+          },
+          {
+            "text": "  2. Call LLM agent with context",
+            "lineNumber": 67
+          },
+          {
+            "text": "  3. Save + return assistant reply",
+            "lineNumber": 68
+          },
+          {
+            "lineNumber": 69
+          },
+          {
+            "text": "#### SMS (Twilio example)",
+            "lineNumber": 70
+          },
+          {
+            "lineNumber": 71
+          },
+          {
+            "text": "* Input:",
+            "lineNumber": 72
+          },
+          {
+            "lineNumber": 73
+          },
+          {
+            "text": "  &#96;&#96;&#96;json",
+            "lineNumber": 74
+          },
+          {
+            "text": "  { \"From\": \"+12025550123\", \"To\": \"+12025550999\", \"Body\": \"Remind me tomorrow at 9am\" }",
+            "lineNumber": 75
+          },
+          {
+            "text": "  &#96;&#96;&#96;",
+            "lineNumber": 76
+          },
+          {
+            "text": "* Output:",
+            "lineNumber": 77
+          },
+          {
+            "lineNumber": 78
+          },
+          {
+            "text": "  &#96;&#96;&#96;json",
+            "lineNumber": 79
+          },
+          {
+            "text": "  { \"status\": \"stored\", \"thread_id\": \"thread_123\", \"task_created\": true }",
+            "lineNumber": 80
+          },
+          {
+            "text": "  &#96;&#96;&#96;",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "#### Email",
+            "lineNumber": 83
+          },
+          {
+            "lineNumber": 84
+          },
+          {
+            "text": "* Inbound: \\[Webhook flow]",
+            "lineNumber": 85
+          },
+          {
+            "text": "* Outbound: \\[Gmail API, SMTP, etc.]",
+            "lineNumber": 86
+          },
+          {
+            "text": "* Input: &#96;{ from, to, subject, body }&#96;",
+            "lineNumber": 87
+          },
+          {
+            "text": "* Output: &#96;{ status: \"sent\", message_id }&#96;",
+            "lineNumber": 88
+          },
+          {
+            "lineNumber": 89
+          },
+          {
+            "text": "### 4.3 Assistant Capabilities",
+            "lineNumber": 90
+          },
+          {
+            "lineNumber": 91
+          },
+          {
+            "text": "* **Calendar**",
+            "lineNumber": 92
+          },
+          {
+            "lineNumber": 93
+          },
+          {
+            "text": "  * Input: &#96;{ action, title, time, attendees }&#96;",
+            "lineNumber": 94
+          }
+        ]
+      },
+      "score": 0.25957465171813965
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/constants/auth.ts",
+        "range": {
+          "startPosition": {
+            "line": 3
+          },
+          "endPosition": {
+            "line": 16,
+            "column": 3
+          }
+        },
+        "contents": "export const ALLOWED_WORK_EMAIL_DOMAINS: readonly string[] = \n as const;\n\n/**\n * Expected length of OTP codes for email verification\n */\nexport const OTP_LENGTH = 8;\n\n/**\n * Public route prefixes that do not require authentication\n * Routes starting with these prefixes are accessible without being logged in\n */",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export const ALLOWED_WORK_EMAIL_DOMAINS: readonly string[] = ",
+            "lineNumber": 4
+          },
+          {
+            "text": " as const;",
+            "lineNumber": 7
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "/**",
+            "lineNumber": 9
+          },
+          {
+            "text": " * Expected length of OTP codes for email verification",
+            "lineNumber": 10
+          },
+          {
+            "text": " */",
+            "lineNumber": 11
+          },
+          {
+            "text": "export const OTP_LENGTH = 8;",
+            "lineNumber": 12
+          },
+          {
+            "lineNumber": 13
+          },
+          {
+            "text": "/**",
+            "lineNumber": 14
+          },
+          {
+            "text": " * Public route prefixes that do not require authentication",
+            "lineNumber": 15
+          },
+          {
+            "text": " * Routes starting with these prefixes are accessible without being logged in",
+            "lineNumber": 16
+          },
+          {
+            "text": " */",
+            "lineNumber": 17
+          }
+        ]
+      },
+      "score": 0.25307703018188477
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/hooks/use-email-verification-realtime.ts",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 130,
+            "column": 1
+          }
+        },
+        "contents": "\"use client\";\n\nimport { useEffect, useRef } from \"react\";\nimport { useRouter } from \"next/navigation\";\nimport { createClient } from \"@/lib/supabase/client\";\nimport { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";\n\n/**\n * Custom hook that listens for verified_work_email changes via Realtime\n * Enables cross-device synchronization when email verification completes\n * \n * When verified_work_email changes on any device:\n * - Refreshes the auth session to get updated user data\n * - Redirects to the default logged-in page (or stays on current page if already there)\n * \n * This allows users to:\n * - Request OTP on one device and verify on another (both devices get logged in)\n * - Request OTP on one device and log in on another (user returns to where they were)\n */\nexport function useEmailVerificationRealtime() {\n  const router = useRouter();\n  const supabase = createClient();\n  const channelRef = useRef&lt;ReturnType&lt;typeof supabase.channel&gt; | null&gt;(null);\n  const isSubscribedRef = useRef(false);\n\n  useEffect(() =&gt; {\n    // Prevent multiple subscriptions\n    if (isSubscribedRef.current) {\n      return;\n    }\n  }\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "\"use client\";",
+            "lineNumber": 1
+          },
+          {
+            "lineNumber": 2
+          },
+          {
+            "text": "import { useEffect, useRef } from \"react\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { useRouter } from \"next/navigation\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { createClient } from \"@/lib/supabase/client\";",
+            "lineNumber": 5
+          },
+          {
+            "text": "import { DEFAULT_LOGGED_IN_PAGE } from \"@/lib/constants/auth\";",
+            "lineNumber": 6
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "/**",
+            "lineNumber": 8
+          },
+          {
+            "text": " * Custom hook that listens for verified_work_email changes via Realtime",
+            "lineNumber": 9
+          },
+          {
+            "text": " * Enables cross-device synchronization when email verification completes",
+            "lineNumber": 10
+          },
+          {
+            "text": " * ",
+            "lineNumber": 11
+          },
+          {
+            "text": " * When verified_work_email changes on any device:",
+            "lineNumber": 12
+          },
+          {
+            "text": " * - Refreshes the auth session to get updated user data",
+            "lineNumber": 13
+          },
+          {
+            "text": " * - Redirects to the default logged-in page (or stays on current page if already there)",
+            "lineNumber": 14
+          },
+          {
+            "text": " * ",
+            "lineNumber": 15
+          },
+          {
+            "text": " * This allows users to:",
+            "lineNumber": 16
+          },
+          {
+            "text": " * - Request OTP on one device and verify on another (both devices get logged in)",
+            "lineNumber": 17
+          },
+          {
+            "text": " * - Request OTP on one device and log in on another (user returns to where they were)",
+            "lineNumber": 18
+          },
+          {
+            "text": " */",
+            "lineNumber": 19
+          },
+          {
+            "text": "export function useEmailVerificationRealtime() {",
+            "lineNumber": 20,
+            "isSignature": true
+          },
+          {
+            "text": "  const router = useRouter();",
+            "lineNumber": 21
+          },
+          {
+            "text": "  const supabase = createClient();",
+            "lineNumber": 22
+          },
+          {
+            "text": "  const channelRef = useRef&lt;ReturnType&lt;typeof supabase.channel&gt; | null&gt;(null);",
+            "lineNumber": 23
+          },
+          {
+            "text": "  const isSubscribedRef = useRef(false);",
+            "lineNumber": 24
+          },
+          {
+            "lineNumber": 25
+          },
+          {
+            "text": "  useEffect(() =&gt; {",
+            "lineNumber": 26
+          },
+          {
+            "text": "    // Prevent multiple subscriptions",
+            "lineNumber": 27
+          },
+          {
+            "text": "    if (isSubscribedRef.current) {",
+            "lineNumber": 28
+          },
+          {
+            "text": "      return;",
+            "lineNumber": 29
+          },
+          {
+            "text": "    }",
+            "lineNumber": 30
+          },
+          {
+            "text": "  }",
+            "lineNumber": 130
+          },
+          {
+            "text": "}",
+            "lineNumber": 131,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.25152549147605896
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 43,
+            "column": 8
+          }
+        },
+        "contents": "---\nname: Work Email Auth System\noverview: Build a robust authentication system using Supabase with Google OAuth, work email verification (@studenti.czu.cz or @pef.czu.cz)\ntodos:\n  - id: db-schema\n    content: Create Supabase migration for users and profiles tables (no RLS - access control in Next.js)\n    status: pending\n  - id: profile-verification\n    content: Implement database-based profile verification (no JWT claims)\n    status: pending\n  - id: supabase-config\n    content: Update supabase/config.toml (manual_linking, Google OAuth, security settings)\n    status: pending\n  - id: auth-constants\n    content: Create lib/constants/auth.ts with domain validation and role constants\n    status: pending\n  - id: server-actions\n    content: Create lib/actions/auth.ts with profile linking, verification, and access revocation\n    status: pending\n  - id: middleware-update\n    content: Update proxy.ts to query profiles table for verified user and access status\n    status: pending\n  - id: google-login\n    content: Create Google login button and rewrite login page\n    status: pending\n  - id: verify-email-flow\n    content: Create work email verification page with OTP and identity linking\n    status: pending\n  - id: pending-approval-page\n    content: Create pending approval page for users without profiles\n    status: pending\n  - id: access-revoked-page\n    content: Create access revoked page for users with revoked access\n    status: pending\n---\n\n# Work Email Authentication System\n\n## Architecture Overview\n\n&#96;&#96;&#96;mermaid\nflowchart TD\n    subgraph auth_flow [Authentication Flow]\n        ",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "---",
+            "lineNumber": 1
+          },
+          {
+            "text": "name: Work Email Auth System",
+            "lineNumber": 2
+          },
+          {
+            "text": "overview: Build a robust authentication system using Supabase with Google OAuth, work email verification (@studenti.czu.cz or @pef.czu.cz)",
+            "lineNumber": 3
+          },
+          {
+            "text": "todos:",
+            "lineNumber": 4
+          },
+          {
+            "text": "  - id: db-schema",
+            "lineNumber": 5
+          },
+          {
+            "text": "    content: Create Supabase migration for users and profiles tables (no RLS - access control in Next.js)",
+            "lineNumber": 6
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 7
+          },
+          {
+            "text": "  - id: profile-verification",
+            "lineNumber": 8
+          },
+          {
+            "text": "    content: Implement database-based profile verification (no JWT claims)",
+            "lineNumber": 9
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 10
+          },
+          {
+            "text": "  - id: supabase-config",
+            "lineNumber": 11
+          },
+          {
+            "text": "    content: Update supabase/config.toml (manual_linking, Google OAuth, security settings)",
+            "lineNumber": 12
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 13
+          },
+          {
+            "text": "  - id: auth-constants",
+            "lineNumber": 14
+          },
+          {
+            "text": "    content: Create lib/constants/auth.ts with domain validation and role constants",
+            "lineNumber": 15
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 16
+          },
+          {
+            "text": "  - id: server-actions",
+            "lineNumber": 17
+          },
+          {
+            "text": "    content: Create lib/actions/auth.ts with profile linking, verification, and access revocation",
+            "lineNumber": 18
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 19
+          },
+          {
+            "text": "  - id: middleware-update",
+            "lineNumber": 20
+          },
+          {
+            "text": "    content: Update proxy.ts to query profiles table for verified user and access status",
+            "lineNumber": 21
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 22
+          },
+          {
+            "text": "  - id: google-login",
+            "lineNumber": 23
+          },
+          {
+            "text": "    content: Create Google login button and rewrite login page",
+            "lineNumber": 24
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 25
+          },
+          {
+            "text": "  - id: verify-email-flow",
+            "lineNumber": 26
+          },
+          {
+            "text": "    content: Create work email verification page with OTP and identity linking",
+            "lineNumber": 27
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 28
+          },
+          {
+            "text": "  - id: pending-approval-page",
+            "lineNumber": 29
+          },
+          {
+            "text": "    content: Create pending approval page for users without profiles",
+            "lineNumber": 30
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 31
+          },
+          {
+            "text": "  - id: access-revoked-page",
+            "lineNumber": 32
+          },
+          {
+            "text": "    content: Create access revoked page for users with revoked access",
+            "lineNumber": 33
+          },
+          {
+            "text": "    status: pending",
+            "lineNumber": 34
+          },
+          {
+            "text": "---",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "# Work Email Authentication System",
+            "lineNumber": 37
+          },
+          {
+            "lineNumber": 38
+          },
+          {
+            "text": "## Architecture Overview",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "&#96;&#96;&#96;mermaid",
+            "lineNumber": 41
+          },
+          {
+            "text": "flowchart TD",
+            "lineNumber": 42
+          },
+          {
+            "text": "    subgraph auth_flow [Authentication Flow]",
+            "lineNumber": 43
+          },
+          {
+            "text": "        ",
+            "lineNumber": 44
+          }
+        ]
+      },
+      "score": 0.2513664960861206
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/config.toml",
+        "range": {
+          "startPosition": {
+            "line": 165
+          },
+          "endPosition": {
+            "line": 211
+          }
+        },
+        "contents": "refresh_token_reuse_interval = 10\n# Allow/disallow new user signups to your project.\nenable_signup = true\n# Allow/disallow anonymous sign-ins to your project.\nenable_anonymous_sign_ins = false\n# Allow/disallow testing manual linking of accounts\n# Required for linking email identities to OAuth accounts\nenable_manual_linking = true\n# Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.\nminimum_password_length = 6\n# Passwords that do not meet the following requirements will be rejected as weak. Supported values\n# are: &#96;letters_digits&#96;, &#96;lower_upper_letters_digits&#96;, &#96;lower_upper_letters_digits_symbols&#96;\npassword_requirements = \"\"\n\n[auth.rate_limit]\n# Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.\nemail_sent = 2\n# Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.\nsms_sent = 30\n# Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.\nanonymous_users = 30\n# Number of sessions that can be refreshed in a 5 minute interval per IP address.\ntoken_refresh = 150\n# Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).\nsign_in_sign_ups = 30\n# Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.\ntoken_verifications = 30\n# Number of Web3 logins that can be made in a 5 minute interval per IP address.\nweb3 = 30\n\n# Configure one of the supported captcha providers: &#96;hcaptcha&#96;, &#96;turnstile&#96;.\n# [auth.captcha]\n# enabled = true\n# provider = \"hcaptcha\"\n# secret = \"\"\n\n[auth.email]\n# Allow/disallow new user signups via email to your project.\n# Disabled to restrict signups to Google OAuth only\nenable_signup = false\n# If enabled, a user will be required to confirm any email change on both the old, and new email\n# addresses. If disabled, only the new email is required to confirm.\ndouble_confirm_changes = false\n# If enabled, users need to confirm their email address before signing in.\nenable_confirmations = true\n# If enabled, users will need to reauthenticate or have logged in recently to change their password.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "refresh_token_reuse_interval = 10",
+            "lineNumber": 166
+          },
+          {
+            "text": "# Allow/disallow new user signups to your project.",
+            "lineNumber": 167
+          },
+          {
+            "text": "enable_signup = true",
+            "lineNumber": 168
+          },
+          {
+            "text": "# Allow/disallow anonymous sign-ins to your project.",
+            "lineNumber": 169
+          },
+          {
+            "text": "enable_anonymous_sign_ins = false",
+            "lineNumber": 170
+          },
+          {
+            "text": "# Allow/disallow testing manual linking of accounts",
+            "lineNumber": 171
+          },
+          {
+            "text": "# Required for linking email identities to OAuth accounts",
+            "lineNumber": 172
+          },
+          {
+            "text": "enable_manual_linking = true",
+            "lineNumber": 173
+          },
+          {
+            "text": "# Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.",
+            "lineNumber": 174
+          },
+          {
+            "text": "minimum_password_length = 6",
+            "lineNumber": 175
+          },
+          {
+            "text": "# Passwords that do not meet the following requirements will be rejected as weak. Supported values",
+            "lineNumber": 176
+          },
+          {
+            "text": "# are: &#96;letters_digits&#96;, &#96;lower_upper_letters_digits&#96;, &#96;lower_upper_letters_digits_symbols&#96;",
+            "lineNumber": 177
+          },
+          {
+            "text": "password_requirements = \"\"",
+            "lineNumber": 178
+          },
+          {
+            "lineNumber": 179
+          },
+          {
+            "text": "[auth.rate_limit]",
+            "lineNumber": 180
+          },
+          {
+            "text": "# Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.",
+            "lineNumber": 181
+          },
+          {
+            "text": "email_sent = 2",
+            "lineNumber": 182
+          },
+          {
+            "text": "# Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.",
+            "lineNumber": 183
+          },
+          {
+            "text": "sms_sent = 30",
+            "lineNumber": 184
+          },
+          {
+            "text": "# Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.",
+            "lineNumber": 185
+          },
+          {
+            "text": "anonymous_users = 30",
+            "lineNumber": 186
+          },
+          {
+            "text": "# Number of sessions that can be refreshed in a 5 minute interval per IP address.",
+            "lineNumber": 187
+          },
+          {
+            "text": "token_refresh = 150",
+            "lineNumber": 188
+          },
+          {
+            "text": "# Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).",
+            "lineNumber": 189
+          },
+          {
+            "text": "sign_in_sign_ups = 30",
+            "lineNumber": 190
+          },
+          {
+            "text": "# Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.",
+            "lineNumber": 191
+          },
+          {
+            "text": "token_verifications = 30",
+            "lineNumber": 192
+          },
+          {
+            "text": "# Number of Web3 logins that can be made in a 5 minute interval per IP address.",
+            "lineNumber": 193
+          },
+          {
+            "text": "web3 = 30",
+            "lineNumber": 194
+          },
+          {
+            "lineNumber": 195
+          },
+          {
+            "text": "# Configure one of the supported captcha providers: &#96;hcaptcha&#96;, &#96;turnstile&#96;.",
+            "lineNumber": 196
+          },
+          {
+            "text": "# [auth.captcha]",
+            "lineNumber": 197
+          },
+          {
+            "text": "# enabled = true",
+            "lineNumber": 198
+          },
+          {
+            "text": "# provider = \"hcaptcha\"",
+            "lineNumber": 199
+          },
+          {
+            "text": "# secret = \"\"",
+            "lineNumber": 200
+          },
+          {
+            "lineNumber": 201
+          },
+          {
+            "text": "[auth.email]",
+            "lineNumber": 202
+          },
+          {
+            "text": "# Allow/disallow new user signups via email to your project.",
+            "lineNumber": 203
+          },
+          {
+            "text": "# Disabled to restrict signups to Google OAuth only",
+            "lineNumber": 204
+          },
+          {
+            "text": "enable_signup = false",
+            "lineNumber": 205
+          },
+          {
+            "text": "# If enabled, a user will be required to confirm any email change on both the old, and new email",
+            "lineNumber": 206
+          },
+          {
+            "text": "# addresses. If disabled, only the new email is required to confirm.",
+            "lineNumber": 207
+          },
+          {
+            "text": "double_confirm_changes = false",
+            "lineNumber": 208
+          },
+          {
+            "text": "# If enabled, users need to confirm their email address before signing in.",
+            "lineNumber": 209
+          },
+          {
+            "text": "enable_confirmations = true",
+            "lineNumber": 210
+          },
+          {
+            "text": "# If enabled, users will need to reauthenticate or have logged in recently to change their password.",
+            "lineNumber": 211
+          }
+        ]
+      },
+      "score": 0.24607239663600922
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/supabase/migrations/20260131220000_set_verified_work_email_on_change.sql</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "last_otp_sent_at|otp_sent_at|created_at",
+  "path": "supabase/migrations",
+  "caseInsensitive": false
+}
+```
+Result:
+
+```json
+{
+  "success": {
+    "pattern": "last_otp_sent_at|otp_sent_at|created_at",
+    "path": "supabase/migrations",
+    "outputMode": "content",
+    "workspaceResults": {
+      "/Users/tom/programming/tappka": {
+        "content": {
+          "matches": [
+            {
+              "file": "supabase/migrations/20260131120000_restrict_user_updates.sql",
+              "matches": [
+                {
+                  "lineNumber": 2,
+                  "content": "-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at"
+                },
+                {
+                  "lineNumber": 11,
+                  "content": "-- Automatically updates last_otp_sent_at when suggested_work_email changes"
+                },
+                {
+                  "lineNumber": 28,
+                  "content": "  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];"
+                },
+                {
+                  "lineNumber": 66,
+                  "content": "  -- Handle special field: last_otp_sent_at"
+                },
+                {
+                  "lineNumber": 69,
+                  "content": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));"
+                },
+                {
+                  "lineNumber": 71,
+                  "content": "    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed"
+                },
+                {
+                  "lineNumber": 72,
+                  "content": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');"
+                },
+                {
+                  "lineNumber": 89,
+                  "content": "comment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only. Allows verified_work_email and verified_work_email_at to be updated by system trigger functions when verified_work_email is being set. Automatically updates last_otp_sent_at when suggested_work_email changes.';"
+                },
+                {
+                  "lineNumber": 119,
+                  "content": "comment on policy \"Users can update only suggested_work_email\" on public.users is 'RLS policy that allows authenticated users to update only their own user record. The handle_user_update_restriction() trigger enforces that only suggested_work_email can be modified, and automatically updates last_otp_sent_at.';"
+                }
+              ]
+            },
+            {
+              "file": "supabase/migrations/20260131000000_initial_schema.sql",
+              "matches": [
+                {
+                  "lineNumber": 28,
+                  "content": "  last_otp_sent_at timestamptz,"
+                },
+                {
+                  "lineNumber": 29,
+                  "content": "  created_at timestamptz default now() not null,"
+                },
+                {
+                  "lineNumber": 41,
+                  "content": "  created_at timestamptz default now() not null,"
+                },
+                {
+                  "lineNumber": 62,
+                  "content": "  created_at timestamptz default now() not null,"
+                }
+              ]
+            }
+          ],
+          "totalLines": 13,
+          "totalMatchedLines": 13
+        }
+      }
+    }
+  }
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Updating the OTP verification to fetch `last_otp_sent_at` from the database instead of using state:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [-] Update verifyOTP to query last_otp_sent_at from database instead of using state
+
+</details>
+</tool-use>
+
+---
+
+
+Updating the OTP verification to fetch `last_otp_sent_at` from the database:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="todo_write">
+<details><summary>Tool use: **todo_write** • Todo List</summary>
+
+- [x] Update verifyOTP to query last_otp_sent_at from database instead of using state
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "components/verify-email-form.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "components/verify-email-form.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Verifying the timestamp conversion and checking for edge cases:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="semantic_search_full">
+<details>
+<summary>Tool use: **semantic_search_full**</summary>
+
+
+Parameters:
+
+```json
+{
+  "query": "How are timestamptz fields from Supabase queries handled and converted to JavaScript Date or numbers?",
+  "topK": 10,
+  "explanation": ""
+}
+```
+Result:
+
+```json
+{
+  "codeResults": [
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/tutorial/fetch-data-steps.tsx",
+        "range": {
+          "startPosition": {
+            "column": 47
+          },
+          "endPosition": {
+            "line": 162,
+            "column": 1
+          }
+        },
+        "contents": "import { CodeBlock } from \"./code-block\";\n\nconst create = &#96;create table notes (\n  id bigserial primary key,\n  title text\n);\n\ninsert into notes(title)\nvalues\n  ('Today I created a Supabase project.'),\n  ('I added some data and queried it from Next.js.'),\n  ('It was awesome!');\n&#96;.trim();\n\nconst rls = &#96;alter table notes enable row level security;\ncreate policy \"Allow public read access\" on notes\nfor select\nusing (true);&#96;.trim();\n\nconst server = &#96;import { createClient } from '@/lib/supabase/server'\n\nexport default async function Page() {\n  const supabase = await createClient()\n  const { data: notes } = await supabase.from('notes').select()\n\n  return &lt;pre&gt;{JSON.stringify(notes, null, 2)}&lt;/pre&gt;\n}\n&#96;.trim();\n\nconst client = &#96;'use client'\n\nimport { createClient } from '@/lib/supabase/client'\nimport { useEffect, useState } from 'react'\n\nexport default function Page() {\n  const [notes, setNotes] = useState&lt;any[] | null&gt;(null)\n  const supabase = createClient()\n\n  useEffect(() =&gt; {\n    const getData = async () =&gt; {\n      const { data } = await supabase.from('notes').select()\n      setNotes(data)\n    }\n    getData()\n  }, [])\n\n  return &lt;pre&gt;{JSON.stringify(notes, null, 2)}&lt;/pre&gt;\n}\n&#96;.trim();\n\nexport function FetchDataSteps() {\n  return\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { CodeBlock } from \"./code-block\";",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "const create = &#96;create table notes (",
+            "lineNumber": 4
+          },
+          {
+            "text": "  id bigserial primary key,",
+            "lineNumber": 5
+          },
+          {
+            "text": "  title text",
+            "lineNumber": 6
+          },
+          {
+            "text": ");",
+            "lineNumber": 7
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "insert into notes(title)",
+            "lineNumber": 9
+          },
+          {
+            "text": "values",
+            "lineNumber": 10
+          },
+          {
+            "text": "  ('Today I created a Supabase project.'),",
+            "lineNumber": 11
+          },
+          {
+            "text": "  ('I added some data and queried it from Next.js.'),",
+            "lineNumber": 12
+          },
+          {
+            "text": "  ('It was awesome!');",
+            "lineNumber": 13
+          },
+          {
+            "text": "&#96;.trim();",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "const rls = &#96;alter table notes enable row level security;",
+            "lineNumber": 16
+          },
+          {
+            "text": "create policy \"Allow public read access\" on notes",
+            "lineNumber": 17
+          },
+          {
+            "text": "for select",
+            "lineNumber": 18
+          },
+          {
+            "text": "using (true);&#96;.trim();",
+            "lineNumber": 19
+          },
+          {
+            "lineNumber": 20
+          },
+          {
+            "text": "const server = &#96;import { createClient } from '@/lib/supabase/server'",
+            "lineNumber": 21
+          },
+          {
+            "lineNumber": 22
+          },
+          {
+            "text": "export default async function Page() {",
+            "lineNumber": 23
+          },
+          {
+            "text": "  const supabase = await createClient()",
+            "lineNumber": 24
+          },
+          {
+            "text": "  const { data: notes } = await supabase.from('notes').select()",
+            "lineNumber": 25
+          },
+          {
+            "lineNumber": 26
+          },
+          {
+            "text": "  return &lt;pre&gt;{JSON.stringify(notes, null, 2)}&lt;/pre&gt;",
+            "lineNumber": 27
+          },
+          {
+            "text": "}",
+            "lineNumber": 28
+          },
+          {
+            "text": "&#96;.trim();",
+            "lineNumber": 29
+          },
+          {
+            "lineNumber": 30
+          },
+          {
+            "text": "const client = &#96;'use client'",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "import { createClient } from '@/lib/supabase/client'",
+            "lineNumber": 33
+          },
+          {
+            "text": "import { useEffect, useState } from 'react'",
+            "lineNumber": 34
+          },
+          {
+            "lineNumber": 35
+          },
+          {
+            "text": "export default function Page() {",
+            "lineNumber": 36
+          },
+          {
+            "text": "  const [notes, setNotes] = useState&lt;any[] | null&gt;(null)",
+            "lineNumber": 37
+          },
+          {
+            "text": "  const supabase = createClient()",
+            "lineNumber": 38
+          },
+          {
+            "lineNumber": 39
+          },
+          {
+            "text": "  useEffect(() =&gt; {",
+            "lineNumber": 40
+          },
+          {
+            "text": "    const getData = async () =&gt; {",
+            "lineNumber": 41
+          },
+          {
+            "text": "      const { data } = await supabase.from('notes').select()",
+            "lineNumber": 42
+          },
+          {
+            "text": "      setNotes(data)",
+            "lineNumber": 43
+          },
+          {
+            "text": "    }",
+            "lineNumber": 44
+          },
+          {
+            "text": "    getData()",
+            "lineNumber": 45
+          },
+          {
+            "text": "  }, [])",
+            "lineNumber": 46
+          },
+          {
+            "lineNumber": 47
+          },
+          {
+            "text": "  return &lt;pre&gt;{JSON.stringify(notes, null, 2)}&lt;/pre&gt;",
+            "lineNumber": 48
+          },
+          {
+            "text": "}",
+            "lineNumber": 49
+          },
+          {
+            "text": "&#96;.trim();",
+            "lineNumber": 50
+          },
+          {
+            "lineNumber": 51
+          },
+          {
+            "text": "export function FetchDataSteps() {",
+            "lineNumber": 52,
+            "isSignature": true
+          },
+          {
+            "text": "  return",
+            "lineNumber": 53
+          },
+          {
+            "text": "}",
+            "lineNumber": 163,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.19503045082092285
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 47
+          },
+          "endPosition": {
+            "line": 104
+          }
+        },
+        "contents": "-- References the new users table instead of auth.users\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  picture text,\n  user_id uuid unique references public.users(id) on delete set null,\n  work_email text unique not null,\n  role public.profile_role not null default 'student',\n  team_id uuid references public.teams(id) on delete set null,\n  phone_number text,\n  personal_email text,\n  date_of_birth date,\n  removed_access timestamptz,\n  removed_access_by uuid references public.profiles(id) on delete set null,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null,\n  constraint valid_czu_domain check (\n    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'\n  )\n);\n\ncomment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to automatically update updated_at column\ncreate or replace function public.handle_updated_at()\nreturns trigger\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\nbegin\n  new.updated_at := now();\n  return new;\nend;\n$$;\n\ncomment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';\n\n-- Create trigger function to populate public.users on auth.users creation\n-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email\ncreate or replace function public.handle_new_auth_user()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_google_email text;\n  v_google_full_name text;\n  v_google_profile_picture text;\n  v_raw_meta_data jsonb;\nbegin\n  v_raw_meta_data := new.raw_user_meta_data;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- References the new users table instead of auth.users",
+            "lineNumber": 48
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 49
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 50
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 51
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 52
+          },
+          {
+            "text": "  user_id uuid unique references public.users(id) on delete set null,",
+            "lineNumber": 53
+          },
+          {
+            "text": "  work_email text unique not null,",
+            "lineNumber": 54
+          },
+          {
+            "text": "  role public.profile_role not null default 'student',",
+            "lineNumber": 55
+          },
+          {
+            "text": "  team_id uuid references public.teams(id) on delete set null,",
+            "lineNumber": 56
+          },
+          {
+            "text": "  phone_number text,",
+            "lineNumber": 57
+          },
+          {
+            "text": "  personal_email text,",
+            "lineNumber": 58
+          },
+          {
+            "text": "  date_of_birth date,",
+            "lineNumber": 59
+          },
+          {
+            "text": "  removed_access timestamptz,",
+            "lineNumber": 60
+          },
+          {
+            "text": "  removed_access_by uuid references public.profiles(id) on delete set null,",
+            "lineNumber": 61
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 62
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null,",
+            "lineNumber": 63
+          },
+          {
+            "text": "  constraint valid_czu_domain check (",
+            "lineNumber": 64
+          },
+          {
+            "text": "    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'",
+            "lineNumber": 65
+          },
+          {
+            "text": "  )",
+            "lineNumber": 66
+          },
+          {
+            "text": ");",
+            "lineNumber": 67
+          },
+          {
+            "lineNumber": 68
+          },
+          {
+            "text": "comment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';",
+            "lineNumber": 69
+          },
+          {
+            "lineNumber": 70
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 71
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 72
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 73
+          },
+          {
+            "lineNumber": 74
+          },
+          {
+            "text": "-- Create trigger function to automatically update updated_at column",
+            "lineNumber": 75
+          },
+          {
+            "text": "create or replace function public.handle_updated_at()",
+            "lineNumber": 76
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 77
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 78
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 79
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 80
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 81
+          },
+          {
+            "text": "begin",
+            "lineNumber": 82
+          },
+          {
+            "text": "  new.updated_at := now();",
+            "lineNumber": 83
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 84
+          },
+          {
+            "text": "end;",
+            "lineNumber": 85
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 86
+          },
+          {
+            "lineNumber": 87
+          },
+          {
+            "text": "comment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';",
+            "lineNumber": 88
+          },
+          {
+            "lineNumber": 89
+          },
+          {
+            "text": "-- Create trigger function to populate public.users on auth.users creation",
+            "lineNumber": 90
+          },
+          {
+            "text": "-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email",
+            "lineNumber": 91
+          },
+          {
+            "text": "create or replace function public.handle_new_auth_user()",
+            "lineNumber": 92
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 93
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 94
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 95
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 96
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 97
+          },
+          {
+            "text": "declare",
+            "lineNumber": 98
+          },
+          {
+            "text": "  v_google_email text;",
+            "lineNumber": 99
+          },
+          {
+            "text": "  v_google_full_name text;",
+            "lineNumber": 100
+          },
+          {
+            "text": "  v_google_profile_picture text;",
+            "lineNumber": 101
+          },
+          {
+            "text": "  v_raw_meta_data jsonb;",
+            "lineNumber": 102
+          },
+          {
+            "text": "begin",
+            "lineNumber": 103
+          },
+          {
+            "text": "  v_raw_meta_data := new.raw_user_meta_data;",
+            "lineNumber": 104
+          }
+        ]
+      },
+      "score": 0.15832950174808502
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {
+            "line": 35
+          },
+          "endPosition": {
+            "line": 78
+          }
+        },
+        "contents": "  v_column_name text;\nbegin\n  -- Convert records to jsonb for dynamic manipulation (must be first)\n  v_old_jsonb := to_jsonb(old);\n  v_new_jsonb := to_jsonb(new);\n  \n  -- Start with OLD values (protected state)\n  v_result_jsonb := v_old_jsonb;\n  \n  -- Allow only whitelisted fields from NEW to override OLD values\n  foreach v_column_name in array v_allowed_fields\n  loop\n    if v_new_jsonb ? v_column_name then\n      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);\n    end if;\n  end loop;\n  \n  -- Allow system fields to be updated by trigger functions\n  -- When verified_work_email is being set/changed, this indicates a system trigger update\n  -- Users cannot directly set verified_work_email due to RLS and application logic\n  if v_new_jsonb ? 'verified_work_email' and (v_old_jsonb-&gt;&gt;'verified_work_email') is distinct from (v_new_jsonb-&gt;&gt;'verified_work_email') then\n    -- This is a system update setting verified_work_email, allow both system fields\n    foreach v_column_name in array v_system_fields\n    loop\n      if v_new_jsonb ? v_column_name then\n        v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);\n      end if;\n    end loop;\n  end if;\n  \n  -- Handle special field: last_otp_sent_at\n  -- Automatically update when suggested_work_email changes\n  if (v_old_jsonb-&gt;&gt;'suggested_work_email') is distinct from (v_new_jsonb-&gt;&gt;'suggested_work_email') then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));\n  else\n    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');\n  end if;\n  \n  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)\n  -- But we include it here to ensure it's not reset\n  if v_new_jsonb ? 'updated_at' then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_column_name text;",
+            "lineNumber": 36
+          },
+          {
+            "text": "begin",
+            "lineNumber": 37
+          },
+          {
+            "text": "  -- Convert records to jsonb for dynamic manipulation (must be first)",
+            "lineNumber": 38
+          },
+          {
+            "text": "  v_old_jsonb := to_jsonb(old);",
+            "lineNumber": 39
+          },
+          {
+            "text": "  v_new_jsonb := to_jsonb(new);",
+            "lineNumber": 40
+          },
+          {
+            "text": "  ",
+            "lineNumber": 41
+          },
+          {
+            "text": "  -- Start with OLD values (protected state)",
+            "lineNumber": 42
+          },
+          {
+            "text": "  v_result_jsonb := v_old_jsonb;",
+            "lineNumber": 43
+          },
+          {
+            "text": "  ",
+            "lineNumber": 44
+          },
+          {
+            "text": "  -- Allow only whitelisted fields from NEW to override OLD values",
+            "lineNumber": 45
+          },
+          {
+            "text": "  foreach v_column_name in array v_allowed_fields",
+            "lineNumber": 46
+          },
+          {
+            "text": "  loop",
+            "lineNumber": 47
+          },
+          {
+            "text": "    if v_new_jsonb ? v_column_name then",
+            "lineNumber": 48
+          },
+          {
+            "text": "      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);",
+            "lineNumber": 49
+          },
+          {
+            "text": "    end if;",
+            "lineNumber": 50
+          },
+          {
+            "text": "  end loop;",
+            "lineNumber": 51
+          },
+          {
+            "text": "  ",
+            "lineNumber": 52
+          },
+          {
+            "text": "  -- Allow system fields to be updated by trigger functions",
+            "lineNumber": 53
+          },
+          {
+            "text": "  -- When verified_work_email is being set/changed, this indicates a system trigger update",
+            "lineNumber": 54
+          },
+          {
+            "text": "  -- Users cannot directly set verified_work_email due to RLS and application logic",
+            "lineNumber": 55
+          },
+          {
+            "text": "  if v_new_jsonb ? 'verified_work_email' and (v_old_jsonb-&gt;&gt;'verified_work_email') is distinct from (v_new_jsonb-&gt;&gt;'verified_work_email') then",
+            "lineNumber": 56
+          },
+          {
+            "text": "    -- This is a system update setting verified_work_email, allow both system fields",
+            "lineNumber": 57
+          },
+          {
+            "text": "    foreach v_column_name in array v_system_fields",
+            "lineNumber": 58
+          },
+          {
+            "text": "    loop",
+            "lineNumber": 59
+          },
+          {
+            "text": "      if v_new_jsonb ? v_column_name then",
+            "lineNumber": 60
+          },
+          {
+            "text": "        v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);",
+            "lineNumber": 61
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 62
+          },
+          {
+            "text": "    end loop;",
+            "lineNumber": 63
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 64
+          },
+          {
+            "text": "  ",
+            "lineNumber": 65
+          },
+          {
+            "text": "  -- Handle special field: last_otp_sent_at",
+            "lineNumber": 66
+          },
+          {
+            "text": "  -- Automatically update when suggested_work_email changes",
+            "lineNumber": 67
+          },
+          {
+            "text": "  if (v_old_jsonb-&gt;&gt;'suggested_work_email') is distinct from (v_new_jsonb-&gt;&gt;'suggested_work_email') then",
+            "lineNumber": 68
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));",
+            "lineNumber": 69
+          },
+          {
+            "text": "  else",
+            "lineNumber": 70
+          },
+          {
+            "text": "    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed",
+            "lineNumber": 71
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');",
+            "lineNumber": 72
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 73
+          },
+          {
+            "text": "  ",
+            "lineNumber": 74
+          },
+          {
+            "text": "  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)",
+            "lineNumber": 75
+          },
+          {
+            "text": "  -- But we include it here to ensure it's not reset",
+            "lineNumber": 76
+          },
+          {
+            "text": "  if v_new_jsonb ? 'updated_at' then",
+            "lineNumber": 77
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');",
+            "lineNumber": 78
+          }
+        ]
+      },
+      "score": 0.1153058409690857
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 50
+          }
+        },
+        "contents": "-- Migration: Initial schema setup\n-- Purpose: Creates complete database schema with tables, triggers, and restrictive RLS policies\n-- Affected tables: users, profiles, teams\n-- Special considerations: All RLS policies are restrictive - admin operations require service_role or application-level checks\n\n-- ============================================================================\n-- ENUM TYPES\n-- ============================================================================\n\ncreate type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');\n\n-- ============================================================================\n-- TABLES\n-- ============================================================================\n\n-- Create users table (custom table, separate from auth.users)\n-- Stores Google OAuth user data and OTP tracking\n-- Linked to auth.users via auth_user_id for authentication checks\ncreate table public.users (\n  id uuid primary key default gen_random_uuid(),\n  auth_user_id uuid unique references auth.users(id) on delete cascade,\n  google_email text not null unique,\n  suggested_work_email text,\n  verified_work_email text,\n  verified_work_email_at timestamptz,\n  google_profile_picture text,\n  google_full_name text,\n  last_otp_sent_at timestamptz,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\ncomment on table public.users is 'Custom users table storing Google OAuth user data and OTP tracking. Separate from auth.users but linked via auth_user_id for authentication.';\n\n-- Create teams table\ncreate table public.teams (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  picture text,\n  color text,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\ncomment on table public.teams is 'Team information for organizing users into groups.';\n\n-- Create profiles table (pre-created by admin, linked to user after verification)\n-- References the new users table instead of auth.users\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Initial schema setup",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Creates complete database schema with tables, triggers, and restrictive RLS policies",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users, profiles, teams",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: All RLS policies are restrictive - admin operations require service_role or application-level checks",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- ENUM TYPES",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 12
+          },
+          {
+            "text": "-- TABLES",
+            "lineNumber": 13
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "-- Create users table (custom table, separate from auth.users)",
+            "lineNumber": 16
+          },
+          {
+            "text": "-- Stores Google OAuth user data and OTP tracking",
+            "lineNumber": 17
+          },
+          {
+            "text": "-- Linked to auth.users via auth_user_id for authentication checks",
+            "lineNumber": 18
+          },
+          {
+            "text": "create table public.users (",
+            "lineNumber": 19
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 20
+          },
+          {
+            "text": "  auth_user_id uuid unique references auth.users(id) on delete cascade,",
+            "lineNumber": 21
+          },
+          {
+            "text": "  google_email text not null unique,",
+            "lineNumber": 22
+          },
+          {
+            "text": "  suggested_work_email text,",
+            "lineNumber": 23
+          },
+          {
+            "text": "  verified_work_email text,",
+            "lineNumber": 24
+          },
+          {
+            "text": "  verified_work_email_at timestamptz,",
+            "lineNumber": 25
+          },
+          {
+            "text": "  google_profile_picture text,",
+            "lineNumber": 26
+          },
+          {
+            "text": "  google_full_name text,",
+            "lineNumber": 27
+          },
+          {
+            "text": "  last_otp_sent_at timestamptz,",
+            "lineNumber": 28
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 29
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 30
+          },
+          {
+            "text": ");",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "comment on table public.users is 'Custom users table storing Google OAuth user data and OTP tracking. Separate from auth.users but linked via auth_user_id for authentication.';",
+            "lineNumber": 33
+          },
+          {
+            "lineNumber": 34
+          },
+          {
+            "text": "-- Create teams table",
+            "lineNumber": 35
+          },
+          {
+            "text": "create table public.teams (",
+            "lineNumber": 36
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 37
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 38
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 39
+          },
+          {
+            "text": "  color text,",
+            "lineNumber": 40
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 41
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 42
+          },
+          {
+            "text": ");",
+            "lineNumber": 43
+          },
+          {
+            "lineNumber": 44
+          },
+          {
+            "text": "comment on table public.teams is 'Team information for organizing users into groups.';",
+            "lineNumber": 45
+          },
+          {
+            "lineNumber": 46
+          },
+          {
+            "text": "-- Create profiles table (pre-created by admin, linked to user after verification)",
+            "lineNumber": 47
+          },
+          {
+            "text": "-- References the new users table instead of auth.users",
+            "lineNumber": 48
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 49
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 50
+          }
+        ]
+      },
+      "score": 0.1136488988995552
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./package.json",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 57
+          }
+        },
+        "contents": "{\n  \"private\": true,\n  \"scripts\": {\n    \"restart\": \"run-s stop dev\",\n    \"stop\": \"pnpm supabase stop\",\n    \"dev\": \"run-s supabase:start wait-and-restart-docker dev:parallel\",\n    \"strip\": \"node scripts/strip-user-responses.js\",\n    \"lint\": \"eslint .\",\n    \"dev:parallel\": \"run-p docker:restart-auth setup-env dev:next\",\n    \"supabase:start\": \"pnpm supabase start\",\n    \"supabase:stop\": \"pnpm supabase stop\",\n    \"wait-and-restart-docker\": \"node scripts/wait-and-restart-docker.js\",\n    \"docker:wait-and-restart-auth\": \"run-s wait-and-restart-docker docker:restart-auth\",\n    \"docker:restart-auth\": \"node scripts/restart-docker-auth.js\",\n    \"setup-env\": \"node scripts/setup-env.js\",\n    \"dev:next\": \"cross-env NODE_OPTIONS='--inspect' next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start\"\n  },\n  \"dependencies\": {\n    \"@radix-ui/react-checkbox\": \"^1.3.3\",\n    \"@radix-ui/react-dropdown-menu\": \"^2.1.16\",\n    \"@radix-ui/react-label\": \"^2.1.8\",\n    \"@radix-ui/react-slot\": \"^1.2.4\",\n    \"@supabase/ssr\": \"^0.8.0\",\n    \"@supabase/supabase-js\": \"^2.91.1\",\n    \"class-variance-authority\": \"^0.7.1\",\n    \"clsx\": \"^2.1.1\",\n    \"lucide-react\": \"^0.511.0\",\n    \"next\": \"^16.1.4\",\n    \"next-themes\": \"^0.4.6\",\n    \"react\": \"^19.2.3\",\n    \"react-dom\": \"^19.2.3\",\n    \"tailwind-merge\": \"^3.4.0\"\n  },\n  \"engines\": {\n    \"node\": \"^24.13.0\"\n  },\n  \"devDependencies\": {\n    \"@eslint/eslintrc\": \"^3.3.3\",\n    \"@types/node\": \"^24.10.9\",\n    \"@types/react\": \"^19.2.9\",\n    \"@types/react-dom\": \"^19.2.3\",\n    \"autoprefixer\": \"^10.4.23\",\n    \"cross-env\": \"^10.1.0\",\n    \"eslint\": \"^9.39.2\",\n    \"eslint-config-next\": \"^16.1.4\",\n    \"npm-run-all\": \"^4.1.5\",\n    \"postcss\": \"^8.5.6\",\n    \"supabase\": \"^2.72.8\",\n    \"tailwindcss\": \"^3.4.19\",\n    \"tailwindcss-animate\": \"^1.0.7\",\n    \"typescript\": \"^5.9.3\"\n  },\n  \"packageManager\": \"pnpm@10.28.1\",\n  \"type\": \"module\"\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "{",
+            "lineNumber": 1
+          },
+          {
+            "text": "  \"private\": true,",
+            "lineNumber": 2
+          },
+          {
+            "text": "  \"scripts\": {",
+            "lineNumber": 3
+          },
+          {
+            "text": "    \"restart\": \"run-s stop dev\",",
+            "lineNumber": 4
+          },
+          {
+            "text": "    \"stop\": \"pnpm supabase stop\",",
+            "lineNumber": 5
+          },
+          {
+            "text": "    \"dev\": \"run-s supabase:start wait-and-restart-docker dev:parallel\",",
+            "lineNumber": 6
+          },
+          {
+            "text": "    \"strip\": \"node scripts/strip-user-responses.js\",",
+            "lineNumber": 7
+          },
+          {
+            "text": "    \"lint\": \"eslint .\",",
+            "lineNumber": 8
+          },
+          {
+            "text": "    \"dev:parallel\": \"run-p docker:restart-auth setup-env dev:next\",",
+            "lineNumber": 9
+          },
+          {
+            "text": "    \"supabase:start\": \"pnpm supabase start\",",
+            "lineNumber": 10
+          },
+          {
+            "text": "    \"supabase:stop\": \"pnpm supabase stop\",",
+            "lineNumber": 11
+          },
+          {
+            "text": "    \"wait-and-restart-docker\": \"node scripts/wait-and-restart-docker.js\",",
+            "lineNumber": 12
+          },
+          {
+            "text": "    \"docker:wait-and-restart-auth\": \"run-s wait-and-restart-docker docker:restart-auth\",",
+            "lineNumber": 13
+          },
+          {
+            "text": "    \"docker:restart-auth\": \"node scripts/restart-docker-auth.js\",",
+            "lineNumber": 14
+          },
+          {
+            "text": "    \"setup-env\": \"node scripts/setup-env.js\",",
+            "lineNumber": 15
+          },
+          {
+            "text": "    \"dev:next\": \"cross-env NODE_OPTIONS='--inspect' next dev\",",
+            "lineNumber": 16
+          },
+          {
+            "text": "    \"build\": \"next build\",",
+            "lineNumber": 17
+          },
+          {
+            "text": "    \"start\": \"next start\"",
+            "lineNumber": 18
+          },
+          {
+            "text": "  },",
+            "lineNumber": 19
+          },
+          {
+            "text": "  \"dependencies\": {",
+            "lineNumber": 20
+          },
+          {
+            "text": "    \"@radix-ui/react-checkbox\": \"^1.3.3\",",
+            "lineNumber": 21
+          },
+          {
+            "text": "    \"@radix-ui/react-dropdown-menu\": \"^2.1.16\",",
+            "lineNumber": 22
+          },
+          {
+            "text": "    \"@radix-ui/react-label\": \"^2.1.8\",",
+            "lineNumber": 23
+          },
+          {
+            "text": "    \"@radix-ui/react-slot\": \"^1.2.4\",",
+            "lineNumber": 24
+          },
+          {
+            "text": "    \"@supabase/ssr\": \"^0.8.0\",",
+            "lineNumber": 25
+          },
+          {
+            "text": "    \"@supabase/supabase-js\": \"^2.91.1\",",
+            "lineNumber": 26
+          },
+          {
+            "text": "    \"class-variance-authority\": \"^0.7.1\",",
+            "lineNumber": 27
+          },
+          {
+            "text": "    \"clsx\": \"^2.1.1\",",
+            "lineNumber": 28
+          },
+          {
+            "text": "    \"lucide-react\": \"^0.511.0\",",
+            "lineNumber": 29
+          },
+          {
+            "text": "    \"next\": \"^16.1.4\",",
+            "lineNumber": 30
+          },
+          {
+            "text": "    \"next-themes\": \"^0.4.6\",",
+            "lineNumber": 31
+          },
+          {
+            "text": "    \"react\": \"^19.2.3\",",
+            "lineNumber": 32
+          },
+          {
+            "text": "    \"react-dom\": \"^19.2.3\",",
+            "lineNumber": 33
+          },
+          {
+            "text": "    \"tailwind-merge\": \"^3.4.0\"",
+            "lineNumber": 34
+          },
+          {
+            "text": "  },",
+            "lineNumber": 35
+          },
+          {
+            "text": "  \"engines\": {",
+            "lineNumber": 36
+          },
+          {
+            "text": "    \"node\": \"^24.13.0\"",
+            "lineNumber": 37
+          },
+          {
+            "text": "  },",
+            "lineNumber": 38
+          },
+          {
+            "text": "  \"devDependencies\": {",
+            "lineNumber": 39
+          },
+          {
+            "text": "    \"@eslint/eslintrc\": \"^3.3.3\",",
+            "lineNumber": 40
+          },
+          {
+            "text": "    \"@types/node\": \"^24.10.9\",",
+            "lineNumber": 41
+          },
+          {
+            "text": "    \"@types/react\": \"^19.2.9\",",
+            "lineNumber": 42
+          },
+          {
+            "text": "    \"@types/react-dom\": \"^19.2.3\",",
+            "lineNumber": 43
+          },
+          {
+            "text": "    \"autoprefixer\": \"^10.4.23\",",
+            "lineNumber": 44
+          },
+          {
+            "text": "    \"cross-env\": \"^10.1.0\",",
+            "lineNumber": 45
+          },
+          {
+            "text": "    \"eslint\": \"^9.39.2\",",
+            "lineNumber": 46
+          },
+          {
+            "text": "    \"eslint-config-next\": \"^16.1.4\",",
+            "lineNumber": 47
+          },
+          {
+            "text": "    \"npm-run-all\": \"^4.1.5\",",
+            "lineNumber": 48
+          },
+          {
+            "text": "    \"postcss\": \"^8.5.6\",",
+            "lineNumber": 49
+          },
+          {
+            "text": "    \"supabase\": \"^2.72.8\",",
+            "lineNumber": 50
+          },
+          {
+            "text": "    \"tailwindcss\": \"^3.4.19\",",
+            "lineNumber": 51
+          },
+          {
+            "text": "    \"tailwindcss-animate\": \"^1.0.7\",",
+            "lineNumber": 52
+          },
+          {
+            "text": "    \"typescript\": \"^5.9.3\"",
+            "lineNumber": 53
+          },
+          {
+            "text": "  },",
+            "lineNumber": 54
+          },
+          {
+            "text": "  \"packageManager\": \"pnpm@10.28.1\",",
+            "lineNumber": 55
+          },
+          {
+            "text": "  \"type\": \"module\"",
+            "lineNumber": 56
+          },
+          {
+            "text": "}",
+            "lineNumber": 57
+          }
+        ]
+      },
+      "score": 0.1132190003991127
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./README.md",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 69
+          }
+        },
+        "contents": "# Tappka\n\nTappka as the app all-in-one web app for Tiimiakatemia Prague.\n\n## Features\n\n- [ ] Authentication\n- [ ] Room booking\n- [ ] Essay Bank\n\n# Links\n\n## Publicly available\n- [Tappka](https://tiimi.cz)\n- [Tappka preview](https://preview.tiimi.cz)\n\n## Locally available when running the project\n- [Tappka locally](http://localhost:3000)\n- [Supabase locally](http://localhost:54323)\n- [Supabase mail locally](http://localhost:54324)\n\n## Other links\n\n- [Blacksmith](https://app.blacksmith.sh/tiimiakatemiapragueit/runs/jobs) - CI/CD for the project\n- [Supabase](https://supabase.com/dashboard/org/zjdqjjekgwwysjkouxpf) - Database for the project\n- [Vercel](https://vercel.com/spirit-of-taps-projects/tappka) - Hosting for the project\n- [Cloudflare DNS](https://dash.cloudflare.com/09d0b565479ef597d4c1bfa2062078b5/tiimi.cz/dns/records) - DNS for the project\n- [Axiom](https://app.axiom.co/spirit-of-tap-9eje) - Logging for the project\n\n# Language\n\nThe project is written in english and will be written in english for better llm compatibility.\nAll czech should be just in localization files.\n\n# Local Development\n\n## Setup\n\n1. Install git if already not installed - https://git-scm.com/install/\n2. Install node.js v24.x with pnpm 10.x if already not installed - https://nodejs.org/en/download/\n3. Install pnpm v10.x if you didn't choose it in the previous step\n\n&#96;&#96;&#96;bash\nnpm install -g pnpm@10.28.1\n&#96;&#96;&#96;\n\n4. Clone the repository \n&#96;&#96;&#96;bash\ngit clone https://github.com/tappka/tappka.git\n&#96;&#96;&#96;\n5. Navigate to the project directory - \n&#96;&#96;&#96;bash\ncd tappka\n&#96;&#96;&#96;\n\n## Running the project after setup\n\n&#96;&#96;&#96;bash\npnpm install &amp;&amp; pnpm dev\n&#96;&#96;&#96;\n\nThe project will be available at [http://localhost:3000](http://localhost:3000)\n\n\n# Supabase\n\nSupabase database is developed locally and synced automatically whenever pushed. See [.github/workflows/deploy-supabase.yml](.github/workflows/deploy-supabase.yml) for more details.\nSupabase Auth needs to be configured both on the project itself and in the local development environment.\nMake sure that the project can run without setting up any environment variables, this is so that we can get new T's to start vibecoding without them giving up.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "# Tappka",
+            "lineNumber": 1
+          },
+          {
+            "lineNumber": 2
+          },
+          {
+            "text": "Tappka as the app all-in-one web app for Tiimiakatemia Prague.",
+            "lineNumber": 3
+          },
+          {
+            "lineNumber": 4
+          },
+          {
+            "text": "## Features",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 6
+          },
+          {
+            "text": "- [ ] Authentication",
+            "lineNumber": 7
+          },
+          {
+            "text": "- [ ] Room booking",
+            "lineNumber": 8
+          },
+          {
+            "text": "- [ ] Essay Bank",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "# Links",
+            "lineNumber": 11
+          },
+          {
+            "lineNumber": 12
+          },
+          {
+            "text": "## Publicly available",
+            "lineNumber": 13
+          },
+          {
+            "text": "- [Tappka](https://tiimi.cz)",
+            "lineNumber": 14
+          },
+          {
+            "text": "- [Tappka preview](https://preview.tiimi.cz)",
+            "lineNumber": 15
+          },
+          {
+            "lineNumber": 16
+          },
+          {
+            "text": "## Locally available when running the project",
+            "lineNumber": 17
+          },
+          {
+            "text": "- [Tappka locally](http://localhost:3000)",
+            "lineNumber": 18
+          },
+          {
+            "text": "- [Supabase locally](http://localhost:54323)",
+            "lineNumber": 19
+          },
+          {
+            "text": "- [Supabase mail locally](http://localhost:54324)",
+            "lineNumber": 20
+          },
+          {
+            "lineNumber": 21
+          },
+          {
+            "text": "## Other links",
+            "lineNumber": 22
+          },
+          {
+            "lineNumber": 23
+          },
+          {
+            "text": "- [Blacksmith](https://app.blacksmith.sh/tiimiakatemiapragueit/runs/jobs) - CI/CD for the project",
+            "lineNumber": 24
+          },
+          {
+            "text": "- [Supabase](https://supabase.com/dashboard/org/zjdqjjekgwwysjkouxpf) - Database for the project",
+            "lineNumber": 25
+          },
+          {
+            "text": "- [Vercel](https://vercel.com/spirit-of-taps-projects/tappka) - Hosting for the project",
+            "lineNumber": 26
+          },
+          {
+            "text": "- [Cloudflare DNS](https://dash.cloudflare.com/09d0b565479ef597d4c1bfa2062078b5/tiimi.cz/dns/records) - DNS for the project",
+            "lineNumber": 27
+          },
+          {
+            "text": "- [Axiom](https://app.axiom.co/spirit-of-tap-9eje) - Logging for the project",
+            "lineNumber": 28
+          },
+          {
+            "lineNumber": 29
+          },
+          {
+            "text": "# Language",
+            "lineNumber": 30
+          },
+          {
+            "lineNumber": 31
+          },
+          {
+            "text": "The project is written in english and will be written in english for better llm compatibility.",
+            "lineNumber": 32
+          },
+          {
+            "text": "All czech should be just in localization files.",
+            "lineNumber": 33
+          },
+          {
+            "lineNumber": 34
+          },
+          {
+            "text": "# Local Development",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "## Setup",
+            "lineNumber": 37
+          },
+          {
+            "lineNumber": 38
+          },
+          {
+            "text": "1. Install git if already not installed - https://git-scm.com/install/",
+            "lineNumber": 39
+          },
+          {
+            "text": "2. Install node.js v24.x with pnpm 10.x if already not installed - https://nodejs.org/en/download/",
+            "lineNumber": 40
+          },
+          {
+            "text": "3. Install pnpm v10.x if you didn't choose it in the previous step",
+            "lineNumber": 41
+          },
+          {
+            "lineNumber": 42
+          },
+          {
+            "text": "&#96;&#96;&#96;bash",
+            "lineNumber": 43
+          },
+          {
+            "text": "npm install -g pnpm@10.28.1",
+            "lineNumber": 44
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 45
+          },
+          {
+            "lineNumber": 46
+          },
+          {
+            "text": "4. Clone the repository ",
+            "lineNumber": 47
+          },
+          {
+            "text": "&#96;&#96;&#96;bash",
+            "lineNumber": 48
+          },
+          {
+            "text": "git clone https://github.com/tappka/tappka.git",
+            "lineNumber": 49
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 50
+          },
+          {
+            "text": "5. Navigate to the project directory - ",
+            "lineNumber": 51
+          },
+          {
+            "text": "&#96;&#96;&#96;bash",
+            "lineNumber": 52
+          },
+          {
+            "text": "cd tappka",
+            "lineNumber": 53
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 54
+          },
+          {
+            "lineNumber": 55
+          },
+          {
+            "text": "## Running the project after setup",
+            "lineNumber": 56
+          },
+          {
+            "lineNumber": 57
+          },
+          {
+            "text": "&#96;&#96;&#96;bash",
+            "lineNumber": 58
+          },
+          {
+            "text": "pnpm install &amp;&amp; pnpm dev",
+            "lineNumber": 59
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "The project will be available at [http://localhost:3000](http://localhost:3000)",
+            "lineNumber": 62
+          },
+          {
+            "lineNumber": 63
+          },
+          {
+            "lineNumber": 64
+          },
+          {
+            "text": "# Supabase",
+            "lineNumber": 65
+          },
+          {
+            "lineNumber": 66
+          },
+          {
+            "text": "Supabase database is developed locally and synced automatically whenever pushed. See [.github/workflows/deploy-supabase.yml](.github/workflows/deploy-supabase.yml) for more details.",
+            "lineNumber": 67
+          },
+          {
+            "text": "Supabase Auth needs to be configured both on the project itself and in the local development environment.",
+            "lineNumber": 68
+          },
+          {
+            "text": "Make sure that the project can run without setting up any environment variables, this is so that we can get new T's to start vibecoding without them giving up.",
+            "lineNumber": 69
+          }
+        ]
+      },
+      "score": 0.11066914349794388
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./app/protected/page.tsx",
+        "range": {
+          "startPosition": {
+            "column": 43
+          },
+          "endPosition": {
+            "line": 42,
+            "column": 1
+          }
+        },
+        "contents": "import { createClient } from \"@/lib/supabase/server\";\nimport { InfoIcon } from \"lucide-react\";\nimport { FetchDataSteps } from \"@/components/tutorial/fetch-data-steps\";\nimport { Suspense } from \"react\";\n\nasync function UserDetails() {\n  const supabase = await createClient();\n  const { data, error } = await supabase.auth.getClaims();\n\n  if (error || !data?.claims) {\n    redirect(\"/auth/login\");\n  }\n\n  return JSON.stringify(data.claims, null, 2);\n}\n\nexport default function ProtectedPage() {\n  return\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { createClient } from \"@/lib/supabase/server\";",
+            "lineNumber": 3
+          },
+          {
+            "text": "import { InfoIcon } from \"lucide-react\";",
+            "lineNumber": 4
+          },
+          {
+            "text": "import { FetchDataSteps } from \"@/components/tutorial/fetch-data-steps\";",
+            "lineNumber": 5
+          },
+          {
+            "text": "import { Suspense } from \"react\";",
+            "lineNumber": 6
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "async function UserDetails() {",
+            "lineNumber": 8,
+            "isSignature": true
+          },
+          {
+            "text": "  const supabase = await createClient();",
+            "lineNumber": 9
+          },
+          {
+            "text": "  const { data, error } = await supabase.auth.getClaims();",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "  if (error || !data?.claims) {",
+            "lineNumber": 12
+          },
+          {
+            "text": "    redirect(\"/auth/login\");",
+            "lineNumber": 13
+          },
+          {
+            "text": "  }",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "  return JSON.stringify(data.claims, null, 2);",
+            "lineNumber": 16
+          },
+          {
+            "text": "}",
+            "lineNumber": 17,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 18
+          },
+          {
+            "text": "export default function ProtectedPage() {",
+            "lineNumber": 19,
+            "isSignature": true
+          },
+          {
+            "text": "  return",
+            "lineNumber": 20
+          },
+          {
+            "text": "}",
+            "lineNumber": 43,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.1092146635055542
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 94
+          },
+          "endPosition": {
+            "line": 144
+          }
+        },
+        "contents": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.\n\n&#96;&#96;&#96;sql\n-- Users table to sync with auth.users (Google OAuth)\n-- Note: Synced via Next.js server actions, not database triggers\ncreate table public.users (\n  id uuid primary key references auth.users(id) on delete cascade,\n  email text not null,\n  name text,\n  picture text,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\n-- Role enum for profiles (authorization)\ncreate type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');\n\n-- Profiles table (pre-created by admin, linked to user after verification)\n-- Focus: Authentication and authorization only\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  user_id uuid unique references public.users(id) on delete set null,  -- linked after OTP verification\n  work_email text unique not null,\n  role public.profile_role not null default 'student',\n  removed_access timestamptz,  -- null = active, set = revoked\n  removed_access_by uuid references public.profiles(id) on delete set null,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null,\n  constraint valid_czu_domain check (\n    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'\n  )\n);\n\n-- Indexes for auth queries\ncreate index profiles_user_id_idx on public.profiles(user_id);\ncreate index profiles_work_email_idx on public.profiles(work_email);\n&#96;&#96;&#96;\n\n### Entity Relationships\n\n&#96;&#96;&#96;\n┌─────────────────┐       ┌─────────────────┐\n│   auth.users    │       │    profiles     │\n│  (Supabase)     │       │  (Auth only)    │\n├─────────────────┤       ├─────────────────┤\n│ id (uuid)       │◄──┐   │ id (uuid)       │\n│ email (google)  │   │   │ name            │\n│ ...auth fields  │   └───│ user_id (1:1)   │",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+            "lineNumber": 96
+          },
+          {
+            "lineNumber": 97
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 98
+          },
+          {
+            "text": "-- Users table to sync with auth.users (Google OAuth)",
+            "lineNumber": 99
+          },
+          {
+            "text": "-- Note: Synced via Next.js server actions, not database triggers",
+            "lineNumber": 100
+          },
+          {
+            "text": "create table public.users (",
+            "lineNumber": 101
+          },
+          {
+            "text": "  id uuid primary key references auth.users(id) on delete cascade,",
+            "lineNumber": 102
+          },
+          {
+            "text": "  email text not null,",
+            "lineNumber": 103
+          },
+          {
+            "text": "  name text,",
+            "lineNumber": 104
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 105
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 106
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 107
+          },
+          {
+            "text": ");",
+            "lineNumber": 108
+          },
+          {
+            "lineNumber": 109
+          },
+          {
+            "text": "-- Role enum for profiles (authorization)",
+            "lineNumber": 110
+          },
+          {
+            "text": "create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');",
+            "lineNumber": 111
+          },
+          {
+            "lineNumber": 112
+          },
+          {
+            "text": "-- Profiles table (pre-created by admin, linked to user after verification)",
+            "lineNumber": 113
+          },
+          {
+            "text": "-- Focus: Authentication and authorization only",
+            "lineNumber": 114
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 115
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 116
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 117
+          },
+          {
+            "text": "  user_id uuid unique references public.users(id) on delete set null,  -- linked after OTP verification",
+            "lineNumber": 118
+          },
+          {
+            "text": "  work_email text unique not null,",
+            "lineNumber": 119
+          },
+          {
+            "text": "  role public.profile_role not null default 'student',",
+            "lineNumber": 120
+          },
+          {
+            "text": "  removed_access timestamptz,  -- null = active, set = revoked",
+            "lineNumber": 121
+          },
+          {
+            "text": "  removed_access_by uuid references public.profiles(id) on delete set null,",
+            "lineNumber": 122
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 123
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null,",
+            "lineNumber": 124
+          },
+          {
+            "text": "  constraint valid_czu_domain check (",
+            "lineNumber": 125
+          },
+          {
+            "text": "    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'",
+            "lineNumber": 126
+          },
+          {
+            "text": "  )",
+            "lineNumber": 127
+          },
+          {
+            "text": ");",
+            "lineNumber": 128
+          },
+          {
+            "lineNumber": 129
+          },
+          {
+            "text": "-- Indexes for auth queries",
+            "lineNumber": 130
+          },
+          {
+            "text": "create index profiles_user_id_idx on public.profiles(user_id);",
+            "lineNumber": 131
+          },
+          {
+            "text": "create index profiles_work_email_idx on public.profiles(work_email);",
+            "lineNumber": 132
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 133
+          },
+          {
+            "lineNumber": 134
+          },
+          {
+            "text": "### Entity Relationships",
+            "lineNumber": 135
+          },
+          {
+            "lineNumber": 136
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 137
+          },
+          {
+            "text": "┌─────────────────┐       ┌─────────────────┐",
+            "lineNumber": 138
+          },
+          {
+            "text": "│   auth.users    │       │    profiles     │",
+            "lineNumber": 139
+          },
+          {
+            "text": "│  (Supabase)     │       │  (Auth only)    │",
+            "lineNumber": 140
+          },
+          {
+            "text": "├─────────────────┤       ├─────────────────┤",
+            "lineNumber": 141
+          },
+          {
+            "text": "│ id (uuid)       │◄──┐   │ id (uuid)       │",
+            "lineNumber": 142
+          },
+          {
+            "text": "│ email (google)  │   │   │ name            │",
+            "lineNumber": 143
+          },
+          {
+            "text": "│ ...auth fields  │   └───│ user_id (1:1)   │",
+            "lineNumber": 144
+          }
+        ]
+      },
+      "score": 0.10360799729824066
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/supabase/server.ts",
+        "range": {
+          "startPosition": {
+            "column": 51
+          },
+          "endPosition": {
+            "line": 33,
+            "column": 1
+          }
+        },
+        "contents": "import { cookies } from \"next/headers\";\n\n/**\n * Especially important if using Fluid compute: Don't put this client in a\n * global variable. Always create a new client within each function when using\n * it.\n */\nexport async function createClient() {\n  const cookieStore = await cookies();\n\n  return createServerClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n    {\n      cookies: {\n        getAll() {\n          return cookieStore.getAll();\n        },\n        setAll(cookiesToSet) {\n          try {\n            cookiesToSet.forEach(({ name, value, options }) =&gt;\n              cookieStore.set(name, value, options),\n            );\n          } catch {\n            // The &#96;setAll&#96; method was called from a Server Component.\n            // This can be ignored if you have proxy refreshing\n            // user sessions.\n          }\n        },\n      },\n    },\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "import { cookies } from \"next/headers\";",
+            "lineNumber": 2
+          },
+          {
+            "lineNumber": 3
+          },
+          {
+            "text": "/**",
+            "lineNumber": 4
+          },
+          {
+            "text": " * Especially important if using Fluid compute: Don't put this client in a",
+            "lineNumber": 5
+          },
+          {
+            "text": " * global variable. Always create a new client within each function when using",
+            "lineNumber": 6
+          },
+          {
+            "text": " * it.",
+            "lineNumber": 7
+          },
+          {
+            "text": " */",
+            "lineNumber": 8
+          },
+          {
+            "text": "export async function createClient() {",
+            "lineNumber": 9,
+            "isSignature": true
+          },
+          {
+            "text": "  const cookieStore = await cookies();",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "  return createServerClient(",
+            "lineNumber": 12
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 13
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 14
+          },
+          {
+            "text": "    {",
+            "lineNumber": 15
+          },
+          {
+            "text": "      cookies: {",
+            "lineNumber": 16
+          },
+          {
+            "text": "        getAll() {",
+            "lineNumber": 17
+          },
+          {
+            "text": "          return cookieStore.getAll();",
+            "lineNumber": 18
+          },
+          {
+            "text": "        },",
+            "lineNumber": 19
+          },
+          {
+            "text": "        setAll(cookiesToSet) {",
+            "lineNumber": 20
+          },
+          {
+            "text": "          try {",
+            "lineNumber": 21
+          },
+          {
+            "text": "            cookiesToSet.forEach(({ name, value, options }) =&gt;",
+            "lineNumber": 22
+          },
+          {
+            "text": "              cookieStore.set(name, value, options),",
+            "lineNumber": 23
+          },
+          {
+            "text": "            );",
+            "lineNumber": 24
+          },
+          {
+            "text": "          } catch {",
+            "lineNumber": 25
+          },
+          {
+            "text": "            // The &#96;setAll&#96; method was called from a Server Component.",
+            "lineNumber": 26
+          },
+          {
+            "text": "            // This can be ignored if you have proxy refreshing",
+            "lineNumber": 27
+          },
+          {
+            "text": "            // user sessions.",
+            "lineNumber": 28
+          },
+          {
+            "text": "          }",
+            "lineNumber": 29
+          },
+          {
+            "text": "        },",
+            "lineNumber": 30
+          },
+          {
+            "text": "      },",
+            "lineNumber": 31
+          },
+          {
+            "text": "    },",
+            "lineNumber": 32
+          },
+          {
+            "text": "  );",
+            "lineNumber": 33
+          },
+          {
+            "text": "}",
+            "lineNumber": 34,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.10358095169067383
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/nextjs-development.mdc",
+        "range": {
+          "startPosition": {
+            "line": 569
+          },
+          "endPosition": {
+            "line": 632
+          }
+        },
+        "contents": "export const formatUserData = (user: User): FormattedUser =&gt; ({\n  id: user.id,\n  name: &#96;${user.firstName} ${user.lastName}&#96;,\n  email: user.email.toLowerCase(),\n  isActive: user.status === 'active'\n});\n\n/**\n * Higher-order function that wraps async functions with error handling\n * @param fn - The async function to wrap\n * @returns A new function with error handling\n */\nexport const withErrorHandling = &lt;T extends any[], R&gt;(\n  fn: (...args: T) =&gt; Promise&lt;R&gt;\n) =&gt; async (...args: T): Promise&lt;R&gt; =&gt; {\n  try {\n    return await fn(...args);\n  } catch (error) {\n    console.error('Function error:', error);\n    throw error;\n  }\n};\n\n/**\n * Composes multiple functions to process user data\n * Applies formatting, error handling, and validation in sequence\n */\nexport const processUserData = pipe(\n  formatUserData,\n  withErrorHandling,\n  validateUserData\n);\n\n/**\n * Updates a user in an array without mutating the original array\n * @param users - Array of users to search\n * @param userId - ID of the user to update\n * @param updates - Partial user data to apply\n * @returns New array with updated user\n */\nexport const updateUser = (users: User[], userId: string, updates: Partial&lt;User&gt;): User[] =&gt;\n  users.map(user =&gt; \n    user.id === userId \n      ? { ...user, ...updates }\n      : user\n  );\n&#96;&#96;&#96;\n\n### API Route Template\n\n&#96;&#96;&#96;typescript\n// app/api/example/route.ts\nimport { NextRequest, NextResponse } from 'next/server';\nimport { z } from 'zod';\nimport { CustomError } from '@/lib/errors';\n\nconst schema = z.object({\n  // validation schema\n});\n\nexport async function POST(request: NextRequest) {\n  try {\n    const body = await request.json();",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export const formatUserData = (user: User): FormattedUser =&gt; ({",
+            "lineNumber": 570
+          },
+          {
+            "text": "  id: user.id,",
+            "lineNumber": 571
+          },
+          {
+            "text": "  name: &#96;${user.firstName} ${user.lastName}&#96;,",
+            "lineNumber": 572
+          },
+          {
+            "text": "  email: user.email.toLowerCase(),",
+            "lineNumber": 573
+          },
+          {
+            "text": "  isActive: user.status === 'active'",
+            "lineNumber": 574
+          },
+          {
+            "text": "});",
+            "lineNumber": 575
+          },
+          {
+            "lineNumber": 576
+          },
+          {
+            "text": "/**",
+            "lineNumber": 577
+          },
+          {
+            "text": " * Higher-order function that wraps async functions with error handling",
+            "lineNumber": 578
+          },
+          {
+            "text": " * @param fn - The async function to wrap",
+            "lineNumber": 579
+          },
+          {
+            "text": " * @returns A new function with error handling",
+            "lineNumber": 580
+          },
+          {
+            "text": " */",
+            "lineNumber": 581
+          },
+          {
+            "text": "export const withErrorHandling = &lt;T extends any[], R&gt;(",
+            "lineNumber": 582
+          },
+          {
+            "text": "  fn: (...args: T) =&gt; Promise&lt;R&gt;",
+            "lineNumber": 583
+          },
+          {
+            "text": ") =&gt; async (...args: T): Promise&lt;R&gt; =&gt; {",
+            "lineNumber": 584
+          },
+          {
+            "text": "  try {",
+            "lineNumber": 585
+          },
+          {
+            "text": "    return await fn(...args);",
+            "lineNumber": 586
+          },
+          {
+            "text": "  } catch (error) {",
+            "lineNumber": 587
+          },
+          {
+            "text": "    console.error('Function error:', error);",
+            "lineNumber": 588
+          },
+          {
+            "text": "    throw error;",
+            "lineNumber": 589
+          },
+          {
+            "text": "  }",
+            "lineNumber": 590
+          },
+          {
+            "text": "};",
+            "lineNumber": 591
+          },
+          {
+            "lineNumber": 592
+          },
+          {
+            "text": "/**",
+            "lineNumber": 593
+          },
+          {
+            "text": " * Composes multiple functions to process user data",
+            "lineNumber": 594
+          },
+          {
+            "text": " * Applies formatting, error handling, and validation in sequence",
+            "lineNumber": 595
+          },
+          {
+            "text": " */",
+            "lineNumber": 596
+          },
+          {
+            "text": "export const processUserData = pipe(",
+            "lineNumber": 597
+          },
+          {
+            "text": "  formatUserData,",
+            "lineNumber": 598
+          },
+          {
+            "text": "  withErrorHandling,",
+            "lineNumber": 599
+          },
+          {
+            "text": "  validateUserData",
+            "lineNumber": 600
+          },
+          {
+            "text": ");",
+            "lineNumber": 601
+          },
+          {
+            "lineNumber": 602
+          },
+          {
+            "text": "/**",
+            "lineNumber": 603
+          },
+          {
+            "text": " * Updates a user in an array without mutating the original array",
+            "lineNumber": 604
+          },
+          {
+            "text": " * @param users - Array of users to search",
+            "lineNumber": 605
+          },
+          {
+            "text": " * @param userId - ID of the user to update",
+            "lineNumber": 606
+          },
+          {
+            "text": " * @param updates - Partial user data to apply",
+            "lineNumber": 607
+          },
+          {
+            "text": " * @returns New array with updated user",
+            "lineNumber": 608
+          },
+          {
+            "text": " */",
+            "lineNumber": 609
+          },
+          {
+            "text": "export const updateUser = (users: User[], userId: string, updates: Partial&lt;User&gt;): User[] =&gt;",
+            "lineNumber": 610
+          },
+          {
+            "text": "  users.map(user =&gt; ",
+            "lineNumber": 611
+          },
+          {
+            "text": "    user.id === userId ",
+            "lineNumber": 612
+          },
+          {
+            "text": "      ? { ...user, ...updates }",
+            "lineNumber": 613
+          },
+          {
+            "text": "      : user",
+            "lineNumber": 614
+          },
+          {
+            "text": "  );",
+            "lineNumber": 615
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 616
+          },
+          {
+            "lineNumber": 617
+          },
+          {
+            "text": "### API Route Template",
+            "lineNumber": 618
+          },
+          {
+            "lineNumber": 619
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 620
+          },
+          {
+            "text": "// app/api/example/route.ts",
+            "lineNumber": 621
+          },
+          {
+            "text": "import { NextRequest, NextResponse } from 'next/server';",
+            "lineNumber": 622
+          },
+          {
+            "text": "import { z } from 'zod';",
+            "lineNumber": 623
+          },
+          {
+            "text": "import { CustomError } from '@/lib/errors';",
+            "lineNumber": 624
+          },
+          {
+            "lineNumber": 625
+          },
+          {
+            "text": "const schema = z.object({",
+            "lineNumber": 626
+          },
+          {
+            "text": "  // validation schema",
+            "lineNumber": 627
+          },
+          {
+            "text": "});",
+            "lineNumber": 628
+          },
+          {
+            "lineNumber": 629
+          },
+          {
+            "text": "export async function POST(request: NextRequest) {",
+            "lineNumber": 630
+          },
+          {
+            "text": "  try {",
+            "lineNumber": 631
+          },
+          {
+            "text": "    const body = await request.json();",
+            "lineNumber": 632
+          }
+        ]
+      },
+      "score": 0.10162659734487534
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/supabase/client.ts",
+        "range": {
+          "startPosition": {
+            "column": 52
+          },
+          "endPosition": {
+            "line": 7,
+            "column": 1
+          }
+        },
+        "contents": "export function createClient() {\n  return createBrowserClient(\n    process.env.NEXT_PUBLIC_SUPABASE_URL!,\n    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,\n  );\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "export function createClient() {",
+            "lineNumber": 3,
+            "isSignature": true
+          },
+          {
+            "text": "  return createBrowserClient(",
+            "lineNumber": 4
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_URL!,",
+            "lineNumber": 5
+          },
+          {
+            "text": "    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,",
+            "lineNumber": 6
+          },
+          {
+            "text": "  );",
+            "lineNumber": 7
+          },
+          {
+            "text": "}",
+            "lineNumber": 8,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.10031735897064209
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131220000_set_verified_work_email_on_change.sql",
+        "range": {
+          "startPosition": {
+            "line": 22
+          },
+          "endPosition": {
+            "line": 82
+          }
+        },
+        "contents": "  v_domain text;\nbegin\n  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change\n  -- When email_change is verified, Supabase typically:\n  -- 1. Sets email_change to the new email (temporary)\n  -- 2. Verifies OTP\n  -- 3. Moves email_change to email and clears email_change\n  -- So we need to check both fields\n  \n  -- Check if email changed\n  if old.email is distinct from new.email then\n    v_email := new.email;\n  -- Check if email_change was cleared (moved to email)\n  elsif old.email_change is distinct from new.email_change and (new.email_change is null or new.email_change = '') then\n    -- email_change was cleared, use the current email\n    v_email := new.email;\n  else\n    -- No relevant change\n    return new;\n  end if;\n  \n  -- Only proceed if email is not null and not empty\n  if v_email is null or v_email = '' then\n    return new;\n  end if;\n  \n  -- Extract domain from email\n  v_domain := lower(split_part(v_email, '@', 2));\n  \n  -- Only update verified_work_email if domain is a CZU domain\n  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then\n    return new;\n  end if;\n  \n  -- Find the public.users row that matches this auth.users.id\n  select id into v_user_id\n  from public.users\n  where auth_user_id = new.id;\n  \n  -- If no matching public.users row found, return early\n  if v_user_id is null then\n    return new;\n  end if;\n  \n  -- Update verified_work_email and verified_work_email_at\n  -- This happens after OTP verification succeeds, so the email is verified\n  -- Only update if the email is different from what's already stored (or not set)\n  update public.users\n  set verified_work_email = v_email,\n      verified_work_email_at = now()\n  where id = v_user_id\n    and (verified_work_email is null or verified_work_email != v_email);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';\n\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_domain text;",
+            "lineNumber": 23
+          },
+          {
+            "text": "begin",
+            "lineNumber": 24
+          },
+          {
+            "text": "  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change",
+            "lineNumber": 25
+          },
+          {
+            "text": "  -- When email_change is verified, Supabase typically:",
+            "lineNumber": 26
+          },
+          {
+            "text": "  -- 1. Sets email_change to the new email (temporary)",
+            "lineNumber": 27
+          },
+          {
+            "text": "  -- 2. Verifies OTP",
+            "lineNumber": 28
+          },
+          {
+            "text": "  -- 3. Moves email_change to email and clears email_change",
+            "lineNumber": 29
+          },
+          {
+            "text": "  -- So we need to check both fields",
+            "lineNumber": 30
+          },
+          {
+            "text": "  ",
+            "lineNumber": 31
+          },
+          {
+            "text": "  -- Check if email changed",
+            "lineNumber": 32
+          },
+          {
+            "text": "  if old.email is distinct from new.email then",
+            "lineNumber": 33
+          },
+          {
+            "text": "    v_email := new.email;",
+            "lineNumber": 34
+          },
+          {
+            "text": "  -- Check if email_change was cleared (moved to email)",
+            "lineNumber": 35
+          },
+          {
+            "text": "  elsif old.email_change is distinct from new.email_change and (new.email_change is null or new.email_change = '') then",
+            "lineNumber": 36
+          },
+          {
+            "text": "    -- email_change was cleared, use the current email",
+            "lineNumber": 37
+          },
+          {
+            "text": "    v_email := new.email;",
+            "lineNumber": 38
+          },
+          {
+            "text": "  else",
+            "lineNumber": 39
+          },
+          {
+            "text": "    -- No relevant change",
+            "lineNumber": 40
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 41
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 42
+          },
+          {
+            "text": "  ",
+            "lineNumber": 43
+          },
+          {
+            "text": "  -- Only proceed if email is not null and not empty",
+            "lineNumber": 44
+          },
+          {
+            "text": "  if v_email is null or v_email = '' then",
+            "lineNumber": 45
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 46
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 47
+          },
+          {
+            "text": "  ",
+            "lineNumber": 48
+          },
+          {
+            "text": "  -- Extract domain from email",
+            "lineNumber": 49
+          },
+          {
+            "text": "  v_domain := lower(split_part(v_email, '@', 2));",
+            "lineNumber": 50
+          },
+          {
+            "text": "  ",
+            "lineNumber": 51
+          },
+          {
+            "text": "  -- Only update verified_work_email if domain is a CZU domain",
+            "lineNumber": 52
+          },
+          {
+            "text": "  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then",
+            "lineNumber": 53
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 54
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 55
+          },
+          {
+            "text": "  ",
+            "lineNumber": 56
+          },
+          {
+            "text": "  -- Find the public.users row that matches this auth.users.id",
+            "lineNumber": 57
+          },
+          {
+            "text": "  select id into v_user_id",
+            "lineNumber": 58
+          },
+          {
+            "text": "  from public.users",
+            "lineNumber": 59
+          },
+          {
+            "text": "  where auth_user_id = new.id;",
+            "lineNumber": 60
+          },
+          {
+            "text": "  ",
+            "lineNumber": 61
+          },
+          {
+            "text": "  -- If no matching public.users row found, return early",
+            "lineNumber": 62
+          },
+          {
+            "text": "  if v_user_id is null then",
+            "lineNumber": 63
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 64
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 65
+          },
+          {
+            "text": "  ",
+            "lineNumber": 66
+          },
+          {
+            "text": "  -- Update verified_work_email and verified_work_email_at",
+            "lineNumber": 67
+          },
+          {
+            "text": "  -- This happens after OTP verification succeeds, so the email is verified",
+            "lineNumber": 68
+          },
+          {
+            "text": "  -- Only update if the email is different from what's already stored (or not set)",
+            "lineNumber": 69
+          },
+          {
+            "text": "  update public.users",
+            "lineNumber": 70
+          },
+          {
+            "text": "  set verified_work_email = v_email,",
+            "lineNumber": 71
+          },
+          {
+            "text": "      verified_work_email_at = now()",
+            "lineNumber": 72
+          },
+          {
+            "text": "  where id = v_user_id",
+            "lineNumber": 73
+          },
+          {
+            "text": "    and (verified_work_email is null or verified_work_email != v_email);",
+            "lineNumber": 74
+          },
+          {
+            "text": "  ",
+            "lineNumber": 75
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 76
+          },
+          {
+            "text": "end;",
+            "lineNumber": 77
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 78
+          },
+          {
+            "lineNumber": 79
+          },
+          {
+            "text": "comment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';",
+            "lineNumber": 80
+          },
+          {
+            "lineNumber": 81
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 82
+          }
+        ]
+      },
+      "score": 0.09951865673065186
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/tutorial/fetch-data-steps.tsx",
+        "range": {
+          "startPosition": {
+            "line": 51
+          },
+          "endPosition": {
+            "line": 162,
+            "column": 1
+          }
+        },
+        "contents": "export function FetchDataSteps() {\n\n\n      &lt;TutorialStep title=\"Enable Row Level Security (RLS)\"&gt;\n        &lt;p&gt;\n          Supabase enables Row Level Security (RLS) by default. To query data\n          from your &lt;code&gt;notes&lt;/code&gt; table, you need to add a policy. You can\n          do this in the{\" \"}\n          &lt;a\n            href=\"https://supabase.com/dashboard/project/_/editor\"\n            className=\"font-bold hover:underline text-foreground/80\"\n            target=\"_blank\"\n            rel=\"noreferrer\"\n          &gt;\n            Table Editor\n          &lt;/a&gt;{\" \"}\n          or via the{\" \"}\n          &lt;a\n            href=\"https://supabase.com/dashboard/project/_/sql/new\"\n            className=\"font-bold hover:underline text-foreground/80\"\n            target=\"_blank\"\n            rel=\"noreferrer\"\n          &gt;\n            SQL Editor\n          &lt;/a&gt;\n          .\n        &lt;/p&gt;\n        &lt;p&gt;\n          For example, you can run the following SQL to allow public read\n          access:\n        &lt;/p&gt;\n        &lt;CodeBlock code={rls} /&gt;\n        &lt;p&gt;\n          You can learn more about RLS in the{\" \"}\n          &lt;a\n            href=\"https://supabase.com/docs/guides/auth/row-level-security\"\n            className=\"font-bold hover:underline text-foreground/80\"\n            target=\"_blank\"\n            rel=\"noreferrer\"\n          &gt;\n            Supabase docs\n          &lt;/a&gt;\n          .\n        &lt;/p&gt;\n      &lt;/TutorialStep&gt;\n\n      &lt;TutorialStep title=\"Query Supabase data from Next.js\"&gt;\n        &lt;p&gt;\n          To create a Supabase client and query data from an Async Server\n          Component, create a new page.tsx file at{\" \"}\n          &lt;span className=\"relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs font-medium text-secondary-foreground border\"&gt;\n            /app/notes/page.tsx\n          &lt;/span&gt;{\" \"}\n          and add the following.\n        &lt;/p&gt;\n        &lt;CodeBlock code={server} /&gt;\n        &lt;p&gt;Alternatively, you can use a Client Component.&lt;/p&gt;\n        &lt;CodeBlock code={client} /&gt;\n      &lt;/TutorialStep&gt;\n\n      &lt;TutorialStep title=\"Explore the Supabase UI Library\"&gt;\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 52,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 52,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 52,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 53,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function FetchDataSteps() {",
+            "lineNumber": 52,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 80
+          },
+          {
+            "lineNumber": 81
+          },
+          {
+            "text": "      &lt;TutorialStep title=\"Enable Row Level Security (RLS)\"&gt;",
+            "lineNumber": 82
+          },
+          {
+            "text": "        &lt;p&gt;",
+            "lineNumber": 83
+          },
+          {
+            "text": "          Supabase enables Row Level Security (RLS) by default. To query data",
+            "lineNumber": 84
+          },
+          {
+            "text": "          from your &lt;code&gt;notes&lt;/code&gt; table, you need to add a policy. You can",
+            "lineNumber": 85
+          },
+          {
+            "text": "          do this in the{\" \"}",
+            "lineNumber": 86
+          },
+          {
+            "text": "          &lt;a",
+            "lineNumber": 87
+          },
+          {
+            "text": "            href=\"https://supabase.com/dashboard/project/_/editor\"",
+            "lineNumber": 88
+          },
+          {
+            "text": "            className=\"font-bold hover:underline text-foreground/80\"",
+            "lineNumber": 89
+          },
+          {
+            "text": "            target=\"_blank\"",
+            "lineNumber": 90
+          },
+          {
+            "text": "            rel=\"noreferrer\"",
+            "lineNumber": 91
+          },
+          {
+            "text": "          &gt;",
+            "lineNumber": 92
+          },
+          {
+            "text": "            Table Editor",
+            "lineNumber": 93
+          },
+          {
+            "text": "          &lt;/a&gt;{\" \"}",
+            "lineNumber": 94
+          },
+          {
+            "text": "          or via the{\" \"}",
+            "lineNumber": 95
+          },
+          {
+            "text": "          &lt;a",
+            "lineNumber": 96
+          },
+          {
+            "text": "            href=\"https://supabase.com/dashboard/project/_/sql/new\"",
+            "lineNumber": 97
+          },
+          {
+            "text": "            className=\"font-bold hover:underline text-foreground/80\"",
+            "lineNumber": 98
+          },
+          {
+            "text": "            target=\"_blank\"",
+            "lineNumber": 99
+          },
+          {
+            "text": "            rel=\"noreferrer\"",
+            "lineNumber": 100
+          },
+          {
+            "text": "          &gt;",
+            "lineNumber": 101
+          },
+          {
+            "text": "            SQL Editor",
+            "lineNumber": 102
+          },
+          {
+            "text": "          &lt;/a&gt;",
+            "lineNumber": 103
+          },
+          {
+            "text": "          .",
+            "lineNumber": 104
+          },
+          {
+            "text": "        &lt;/p&gt;",
+            "lineNumber": 105
+          },
+          {
+            "text": "        &lt;p&gt;",
+            "lineNumber": 106
+          },
+          {
+            "text": "          For example, you can run the following SQL to allow public read",
+            "lineNumber": 107
+          },
+          {
+            "text": "          access:",
+            "lineNumber": 108
+          },
+          {
+            "text": "        &lt;/p&gt;",
+            "lineNumber": 109
+          },
+          {
+            "text": "        &lt;CodeBlock code={rls} /&gt;",
+            "lineNumber": 110
+          },
+          {
+            "text": "        &lt;p&gt;",
+            "lineNumber": 111
+          },
+          {
+            "text": "          You can learn more about RLS in the{\" \"}",
+            "lineNumber": 112
+          },
+          {
+            "text": "          &lt;a",
+            "lineNumber": 113
+          },
+          {
+            "text": "            href=\"https://supabase.com/docs/guides/auth/row-level-security\"",
+            "lineNumber": 114
+          },
+          {
+            "text": "            className=\"font-bold hover:underline text-foreground/80\"",
+            "lineNumber": 115
+          },
+          {
+            "text": "            target=\"_blank\"",
+            "lineNumber": 116
+          },
+          {
+            "text": "            rel=\"noreferrer\"",
+            "lineNumber": 117
+          },
+          {
+            "text": "          &gt;",
+            "lineNumber": 118
+          },
+          {
+            "text": "            Supabase docs",
+            "lineNumber": 119
+          },
+          {
+            "text": "          &lt;/a&gt;",
+            "lineNumber": 120
+          },
+          {
+            "text": "          .",
+            "lineNumber": 121
+          },
+          {
+            "text": "        &lt;/p&gt;",
+            "lineNumber": 122
+          },
+          {
+            "text": "      &lt;/TutorialStep&gt;",
+            "lineNumber": 123
+          },
+          {
+            "lineNumber": 124
+          },
+          {
+            "text": "      &lt;TutorialStep title=\"Query Supabase data from Next.js\"&gt;",
+            "lineNumber": 125
+          },
+          {
+            "text": "        &lt;p&gt;",
+            "lineNumber": 126
+          },
+          {
+            "text": "          To create a Supabase client and query data from an Async Server",
+            "lineNumber": 127
+          },
+          {
+            "text": "          Component, create a new page.tsx file at{\" \"}",
+            "lineNumber": 128
+          },
+          {
+            "text": "          &lt;span className=\"relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs font-medium text-secondary-foreground border\"&gt;",
+            "lineNumber": 129
+          },
+          {
+            "text": "            /app/notes/page.tsx",
+            "lineNumber": 130
+          },
+          {
+            "text": "          &lt;/span&gt;{\" \"}",
+            "lineNumber": 131
+          },
+          {
+            "text": "          and add the following.",
+            "lineNumber": 132
+          },
+          {
+            "text": "        &lt;/p&gt;",
+            "lineNumber": 133
+          },
+          {
+            "text": "        &lt;CodeBlock code={server} /&gt;",
+            "lineNumber": 134
+          },
+          {
+            "text": "        &lt;p&gt;Alternatively, you can use a Client Component.&lt;/p&gt;",
+            "lineNumber": 135
+          },
+          {
+            "text": "        &lt;CodeBlock code={client} /&gt;",
+            "lineNumber": 136
+          },
+          {
+            "text": "      &lt;/TutorialStep&gt;",
+            "lineNumber": 137
+          },
+          {
+            "lineNumber": 138
+          },
+          {
+            "text": "      &lt;TutorialStep title=\"Explore the Supabase UI Library\"&gt;",
+            "lineNumber": 139
+          },
+          {
+            "text": "}",
+            "lineNumber": 163,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.09529154747724533
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/postgres-sql-style-guide.mdc",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 61
+          }
+        },
+        "contents": "---\n# Specify the following for Cursor rules\ndescription: Guidelines for writing Postgres SQL\nalwaysApply: false\n---\n\n# Postgres SQL Style Guide\n\n## General\n\n- Use lowercase for SQL reserved words to maintain consistency and readability.\n- Employ consistent, descriptive identifiers for tables, columns, and other database objects.\n- Use white space and indentation to enhance the readability of your code.\n- Store dates in ISO 8601 format (&#96;yyyy-mm-ddThh:mm:ss.sssss&#96;).\n- Include comments for complex logic, using '/_ ... _/' for block comments and '--' for line comments.\n\n## Naming Conventions\n\n- Avoid SQL reserved words and ensure names are unique and under 63 characters.\n- Use snake_case for tables and columns.\n- Prefer plurals for table names\n- Prefer singular names for columns.\n\n## Tables\n\n- Avoid prefixes like 'tbl\\_' and ensure no table name matches any of its column names.\n- Always add an &#96;id&#96; column of type &#96;identity generated always&#96; unless otherwise specified.\n- Create all tables in the &#96;public&#96; schema unless otherwise specified.\n- Always add the schema to SQL queries for clarity.\n- Always add a comment to describe what the table does. The comment can be up to 1024 characters.\n\n## Columns\n\n- Use singular names and avoid generic names like 'id'.\n- For references to foreign tables, use the singular of the table name with the &#96;_id&#96; suffix. For example &#96;user_id&#96; to reference the &#96;users&#96; table\n- Always use lowercase except in cases involving acronyms or when readability would be enhanced by an exception.\n\n#### Examples:\n\n&#96;&#96;&#96;sql\ncreate table books (\n  id bigint generated always as identity primary key,\n  title text not null,\n  author_id bigint references authors (id)\n);\ncomment on table books is 'A list of all the books in the library.';\n&#96;&#96;&#96;\n\n## Queries\n\n- When the query is shorter keep it on just a few lines. As it gets larger start adding newlines for readability\n- Add spaces for readability.\n\nSmaller queries:\n\n&#96;&#96;&#96;sql\nselect *\nfrom employees\nwhere end_date is null;\n\nupdate employees",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "---",
+            "lineNumber": 1
+          },
+          {
+            "text": "# Specify the following for Cursor rules",
+            "lineNumber": 2
+          },
+          {
+            "text": "description: Guidelines for writing Postgres SQL",
+            "lineNumber": 3
+          },
+          {
+            "text": "alwaysApply: false",
+            "lineNumber": 4
+          },
+          {
+            "text": "---",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 6
+          },
+          {
+            "text": "# Postgres SQL Style Guide",
+            "lineNumber": 7
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "## General",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "- Use lowercase for SQL reserved words to maintain consistency and readability.",
+            "lineNumber": 11
+          },
+          {
+            "text": "- Employ consistent, descriptive identifiers for tables, columns, and other database objects.",
+            "lineNumber": 12
+          },
+          {
+            "text": "- Use white space and indentation to enhance the readability of your code.",
+            "lineNumber": 13
+          },
+          {
+            "text": "- Store dates in ISO 8601 format (&#96;yyyy-mm-ddThh:mm:ss.sssss&#96;).",
+            "lineNumber": 14
+          },
+          {
+            "text": "- Include comments for complex logic, using '/_ ... _/' for block comments and '--' for line comments.",
+            "lineNumber": 15
+          },
+          {
+            "lineNumber": 16
+          },
+          {
+            "text": "## Naming Conventions",
+            "lineNumber": 17
+          },
+          {
+            "lineNumber": 18
+          },
+          {
+            "text": "- Avoid SQL reserved words and ensure names are unique and under 63 characters.",
+            "lineNumber": 19
+          },
+          {
+            "text": "- Use snake_case for tables and columns.",
+            "lineNumber": 20
+          },
+          {
+            "text": "- Prefer plurals for table names",
+            "lineNumber": 21
+          },
+          {
+            "text": "- Prefer singular names for columns.",
+            "lineNumber": 22
+          },
+          {
+            "lineNumber": 23
+          },
+          {
+            "text": "## Tables",
+            "lineNumber": 24
+          },
+          {
+            "lineNumber": 25
+          },
+          {
+            "text": "- Avoid prefixes like 'tbl\\_' and ensure no table name matches any of its column names.",
+            "lineNumber": 26
+          },
+          {
+            "text": "- Always add an &#96;id&#96; column of type &#96;identity generated always&#96; unless otherwise specified.",
+            "lineNumber": 27
+          },
+          {
+            "text": "- Create all tables in the &#96;public&#96; schema unless otherwise specified.",
+            "lineNumber": 28
+          },
+          {
+            "text": "- Always add the schema to SQL queries for clarity.",
+            "lineNumber": 29
+          },
+          {
+            "text": "- Always add a comment to describe what the table does. The comment can be up to 1024 characters.",
+            "lineNumber": 30
+          },
+          {
+            "lineNumber": 31
+          },
+          {
+            "text": "## Columns",
+            "lineNumber": 32
+          },
+          {
+            "lineNumber": 33
+          },
+          {
+            "text": "- Use singular names and avoid generic names like 'id'.",
+            "lineNumber": 34
+          },
+          {
+            "text": "- For references to foreign tables, use the singular of the table name with the &#96;_id&#96; suffix. For example &#96;user_id&#96; to reference the &#96;users&#96; table",
+            "lineNumber": 35
+          },
+          {
+            "text": "- Always use lowercase except in cases involving acronyms or when readability would be enhanced by an exception.",
+            "lineNumber": 36
+          },
+          {
+            "lineNumber": 37
+          },
+          {
+            "text": "#### Examples:",
+            "lineNumber": 38
+          },
+          {
+            "lineNumber": 39
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 40
+          },
+          {
+            "text": "create table books (",
+            "lineNumber": 41
+          },
+          {
+            "text": "  id bigint generated always as identity primary key,",
+            "lineNumber": 42
+          },
+          {
+            "text": "  title text not null,",
+            "lineNumber": 43
+          },
+          {
+            "text": "  author_id bigint references authors (id)",
+            "lineNumber": 44
+          },
+          {
+            "text": ");",
+            "lineNumber": 45
+          },
+          {
+            "text": "comment on table books is 'A list of all the books in the library.';",
+            "lineNumber": 46
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 47
+          },
+          {
+            "lineNumber": 48
+          },
+          {
+            "text": "## Queries",
+            "lineNumber": 49
+          },
+          {
+            "lineNumber": 50
+          },
+          {
+            "text": "- When the query is shorter keep it on just a few lines. As it gets larger start adding newlines for readability",
+            "lineNumber": 51
+          },
+          {
+            "text": "- Add spaces for readability.",
+            "lineNumber": 52
+          },
+          {
+            "lineNumber": 53
+          },
+          {
+            "text": "Smaller queries:",
+            "lineNumber": 54
+          },
+          {
+            "lineNumber": 55
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 56
+          },
+          {
+            "text": "select *",
+            "lineNumber": 57
+          },
+          {
+            "text": "from employees",
+            "lineNumber": 58
+          },
+          {
+            "text": "where end_date is null;",
+            "lineNumber": 59
+          },
+          {
+            "lineNumber": 60
+          },
+          {
+            "text": "update employees",
+            "lineNumber": 61
+          }
+        ]
+      },
+      "score": 0.0907166600227356
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/config.toml",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 56
+          }
+        },
+        "contents": "# For detailed configuration reference documentation, visit:\n# https://supabase.com/docs/guides/local-development/cli/config\n# A string used to distinguish different Supabase projects on the same host. Defaults to the\n# working directory name when running &#96;supabase init&#96;.\nproject_id = \"Tappka\"\n\n[api]\nenabled = true\n# Port to use for the API URL.\nport = 54321\n# Schemas to expose in your API. Tables, views and stored procedures in this schema will get API\n# endpoints. &#96;public&#96; and &#96;graphql_public&#96; schemas are included by default.\nschemas = [\"public\", \"graphql_public\"]\n# Extra schemas to add to the search_path of every request.\nextra_search_path = [\"public\", \"extensions\"]\n# The maximum number of rows returns from a view, table, or stored procedure. Limits payload size\n# for accidental or malicious requests.\nmax_rows = 1000\n\n[api.tls]\n# Enable HTTPS endpoints locally using a self-signed certificate.\nenabled = false\n# Paths to self-signed certificate pair.\n# cert_path = \"../certs/my-cert.pem\"\n# key_path = \"../certs/my-key.pem\"\n\n[db]\n# Port to use for the local database URL.\nport = 54322\n# Port used by db diff command to initialize the shadow database.\nshadow_port = 54320\n# Maximum amount of time to wait for health check when starting the local database.\nhealth_timeout = \"2m\"\n# The database major version to use. This has to be the same as your remote database's. Run &#96;SHOW\n# server_version;&#96; on the remote database to check.\nmajor_version = 17\n\n[db.pooler]\nenabled = false\n# Port to use for the local connection pooler.\nport = 54329\n# Specifies when a server connection can be reused by other clients.\n# Configure one of the supported pooler modes: &#96;transaction&#96;, &#96;session&#96;.\npool_mode = \"transaction\"\n# How many server connections to allow per user/database pair.\ndefault_pool_size = 20\n# Maximum number of client connections allowed.\nmax_client_conn = 100\n\n# [db.vault]\n# secret_key = \"env(SECRET_VALUE)\"\n\n[db.migrations]\n# If disabled, migrations will be skipped during a db push or reset.\nenabled = true\n# Specifies an ordered list of schema files that describe your database.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "# For detailed configuration reference documentation, visit:",
+            "lineNumber": 1
+          },
+          {
+            "text": "# https://supabase.com/docs/guides/local-development/cli/config",
+            "lineNumber": 2
+          },
+          {
+            "text": "# A string used to distinguish different Supabase projects on the same host. Defaults to the",
+            "lineNumber": 3
+          },
+          {
+            "text": "# working directory name when running &#96;supabase init&#96;.",
+            "lineNumber": 4
+          },
+          {
+            "text": "project_id = \"Tappka\"",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 6
+          },
+          {
+            "text": "[api]",
+            "lineNumber": 7
+          },
+          {
+            "text": "enabled = true",
+            "lineNumber": 8
+          },
+          {
+            "text": "# Port to use for the API URL.",
+            "lineNumber": 9
+          },
+          {
+            "text": "port = 54321",
+            "lineNumber": 10
+          },
+          {
+            "text": "# Schemas to expose in your API. Tables, views and stored procedures in this schema will get API",
+            "lineNumber": 11
+          },
+          {
+            "text": "# endpoints. &#96;public&#96; and &#96;graphql_public&#96; schemas are included by default.",
+            "lineNumber": 12
+          },
+          {
+            "text": "schemas = [\"public\", \"graphql_public\"]",
+            "lineNumber": 13
+          },
+          {
+            "text": "# Extra schemas to add to the search_path of every request.",
+            "lineNumber": 14
+          },
+          {
+            "text": "extra_search_path = [\"public\", \"extensions\"]",
+            "lineNumber": 15
+          },
+          {
+            "text": "# The maximum number of rows returns from a view, table, or stored procedure. Limits payload size",
+            "lineNumber": 16
+          },
+          {
+            "text": "# for accidental or malicious requests.",
+            "lineNumber": 17
+          },
+          {
+            "text": "max_rows = 1000",
+            "lineNumber": 18
+          },
+          {
+            "lineNumber": 19
+          },
+          {
+            "text": "[api.tls]",
+            "lineNumber": 20
+          },
+          {
+            "text": "# Enable HTTPS endpoints locally using a self-signed certificate.",
+            "lineNumber": 21
+          },
+          {
+            "text": "enabled = false",
+            "lineNumber": 22
+          },
+          {
+            "text": "# Paths to self-signed certificate pair.",
+            "lineNumber": 23
+          },
+          {
+            "text": "# cert_path = \"../certs/my-cert.pem\"",
+            "lineNumber": 24
+          },
+          {
+            "text": "# key_path = \"../certs/my-key.pem\"",
+            "lineNumber": 25
+          },
+          {
+            "lineNumber": 26
+          },
+          {
+            "text": "[db]",
+            "lineNumber": 27
+          },
+          {
+            "text": "# Port to use for the local database URL.",
+            "lineNumber": 28
+          },
+          {
+            "text": "port = 54322",
+            "lineNumber": 29
+          },
+          {
+            "text": "# Port used by db diff command to initialize the shadow database.",
+            "lineNumber": 30
+          },
+          {
+            "text": "shadow_port = 54320",
+            "lineNumber": 31
+          },
+          {
+            "text": "# Maximum amount of time to wait for health check when starting the local database.",
+            "lineNumber": 32
+          },
+          {
+            "text": "health_timeout = \"2m\"",
+            "lineNumber": 33
+          },
+          {
+            "text": "# The database major version to use. This has to be the same as your remote database's. Run &#96;SHOW",
+            "lineNumber": 34
+          },
+          {
+            "text": "# server_version;&#96; on the remote database to check.",
+            "lineNumber": 35
+          },
+          {
+            "text": "major_version = 17",
+            "lineNumber": 36
+          },
+          {
+            "lineNumber": 37
+          },
+          {
+            "text": "[db.pooler]",
+            "lineNumber": 38
+          },
+          {
+            "text": "enabled = false",
+            "lineNumber": 39
+          },
+          {
+            "text": "# Port to use for the local connection pooler.",
+            "lineNumber": 40
+          },
+          {
+            "text": "port = 54329",
+            "lineNumber": 41
+          },
+          {
+            "text": "# Specifies when a server connection can be reused by other clients.",
+            "lineNumber": 42
+          },
+          {
+            "text": "# Configure one of the supported pooler modes: &#96;transaction&#96;, &#96;session&#96;.",
+            "lineNumber": 43
+          },
+          {
+            "text": "pool_mode = \"transaction\"",
+            "lineNumber": 44
+          },
+          {
+            "text": "# How many server connections to allow per user/database pair.",
+            "lineNumber": 45
+          },
+          {
+            "text": "default_pool_size = 20",
+            "lineNumber": 46
+          },
+          {
+            "text": "# Maximum number of client connections allowed.",
+            "lineNumber": 47
+          },
+          {
+            "text": "max_client_conn = 100",
+            "lineNumber": 48
+          },
+          {
+            "lineNumber": 49
+          },
+          {
+            "text": "# [db.vault]",
+            "lineNumber": 50
+          },
+          {
+            "text": "# secret_key = \"env(SECRET_VALUE)\"",
+            "lineNumber": 51
+          },
+          {
+            "lineNumber": 52
+          },
+          {
+            "text": "[db.migrations]",
+            "lineNumber": 53
+          },
+          {
+            "text": "# If disabled, migrations will be skipped during a db push or reset.",
+            "lineNumber": 54
+          },
+          {
+            "text": "enabled = true",
+            "lineNumber": 55
+          },
+          {
+            "text": "# Specifies an ordered list of schema files that describe your database.",
+            "lineNumber": 56
+          }
+        ]
+      },
+      "score": 0.09028629958629608
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/use-realtime.mdc",
+        "range": {
+          "startPosition": {
+            "line": 126
+          },
+          "endPosition": {
+            "line": 213
+          }
+        },
+        "contents": "const channelRef = useRef(null)\n\nuseEffect(() =&gt; {\n  // Check if already subscribed to prevent multiple subscriptions\n  if (channelRef.current?.state === 'subscribed') return\n  const channel = supabase.channel('room:123:messages', {\n    config: { private: true }\n  })\n  channelRef.current = channel\n\n  // Set auth before subscribing\n  await supabase.realtime.setAuth()\n\n  channel\n    .on('broadcast', { event: 'message_created' }, handleMessage)\n    .on('broadcast', { event: 'user_joined' }, handleUserJoined)\n    .subscribe()\n\n  return () =&gt; {\n    if (channelRef.current) {\n      supabase.removeChannel(channelRef.current)\n      channelRef.current = null\n    }\n  }\n}, [roomId])\n&#96;&#96;&#96;\n\n## Database Triggers\n\n### Using realtime.broadcast_changes (Recommended for database changes)\nThis would be an example of catch all trigger function that would broadcast to topics starting with the table name and the id of the row.\n&#96;&#96;&#96;sql\nCREATE OR REPLACE FUNCTION notify_table_changes()\nRETURNS TRIGGER AS $$\nSECURITY DEFINER\nLANGUAGE plpgsql\nAS $$\nBEGIN\n  PERFORM realtime.broadcast_changes(\n    TG_TABLE_NAME ||':' || COALESCE(NEW.id, OLD.id)::text,\n    TG_OP,\n    TG_OP,\n    TG_TABLE_NAME,\n    TG_TABLE_SCHEMA,\n    NEW,\n    OLD\n  );\n  RETURN COALESCE(NEW, OLD);\nEND;\n$$;\n&#96;&#96;&#96;\nBut you can also create more specific trigger functions for specific tables and events so adapt to your use case:\n\n&#96;&#96;&#96;sql\nCREATE OR REPLACE FUNCTION room_messages_broadcast_trigger()\nRETURNS TRIGGER AS $$\nSECURITY DEFINER\nLANGUAGE plpgsql\nAS $$\nBEGIN\n  PERFORM realtime.broadcast_changes(\n    'room:' || COALESCE(NEW.room_id, OLD.room_id)::text,\n    TG_OP,\n    TG_OP,\n    TG_TABLE_NAME,\n    TG_TABLE_SCHEMA,\n    NEW,\n    OLD\n  );\n  RETURN COALESCE(NEW, OLD);\nEND;\n$$;\n&#96;&#96;&#96;\n\nBy default, &#96;realtime.broadcast_changes&#96; requires you to use private channels as we did this to prevent security incidents.\n\n### Using realtime.send (For custom messages)\n&#96;&#96;&#96;sql\nCREATE OR REPLACE FUNCTION notify_custom_event()\nRETURNS TRIGGER AS $$\nSECURITY DEFINER\nLANGUAGE plpgsql\nAS $$\nBEGIN\n  PERFORM realtime.send(\n    'room:' || NEW.room_id::text,\n    'status_changed',",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "const channelRef = useRef(null)",
+            "lineNumber": 127
+          },
+          {
+            "lineNumber": 128
+          },
+          {
+            "text": "useEffect(() =&gt; {",
+            "lineNumber": 129
+          },
+          {
+            "text": "  // Check if already subscribed to prevent multiple subscriptions",
+            "lineNumber": 130
+          },
+          {
+            "text": "  if (channelRef.current?.state === 'subscribed') return",
+            "lineNumber": 131
+          },
+          {
+            "text": "  const channel = supabase.channel('room:123:messages', {",
+            "lineNumber": 132
+          },
+          {
+            "text": "    config: { private: true }",
+            "lineNumber": 133
+          },
+          {
+            "text": "  })",
+            "lineNumber": 134
+          },
+          {
+            "text": "  channelRef.current = channel",
+            "lineNumber": 135
+          },
+          {
+            "lineNumber": 136
+          },
+          {
+            "text": "  // Set auth before subscribing",
+            "lineNumber": 137
+          },
+          {
+            "text": "  await supabase.realtime.setAuth()",
+            "lineNumber": 138
+          },
+          {
+            "lineNumber": 139
+          },
+          {
+            "text": "  channel",
+            "lineNumber": 140
+          },
+          {
+            "text": "    .on('broadcast', { event: 'message_created' }, handleMessage)",
+            "lineNumber": 141
+          },
+          {
+            "text": "    .on('broadcast', { event: 'user_joined' }, handleUserJoined)",
+            "lineNumber": 142
+          },
+          {
+            "text": "    .subscribe()",
+            "lineNumber": 143
+          },
+          {
+            "lineNumber": 144
+          },
+          {
+            "text": "  return () =&gt; {",
+            "lineNumber": 145
+          },
+          {
+            "text": "    if (channelRef.current) {",
+            "lineNumber": 146
+          },
+          {
+            "text": "      supabase.removeChannel(channelRef.current)",
+            "lineNumber": 147
+          },
+          {
+            "text": "      channelRef.current = null",
+            "lineNumber": 148
+          },
+          {
+            "text": "    }",
+            "lineNumber": 149
+          },
+          {
+            "text": "  }",
+            "lineNumber": 150
+          },
+          {
+            "text": "}, [roomId])",
+            "lineNumber": 151
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 152
+          },
+          {
+            "lineNumber": 153
+          },
+          {
+            "text": "## Database Triggers",
+            "lineNumber": 154
+          },
+          {
+            "lineNumber": 155
+          },
+          {
+            "text": "### Using realtime.broadcast_changes (Recommended for database changes)",
+            "lineNumber": 156
+          },
+          {
+            "text": "This would be an example of catch all trigger function that would broadcast to topics starting with the table name and the id of the row.",
+            "lineNumber": 157
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 158
+          },
+          {
+            "text": "CREATE OR REPLACE FUNCTION notify_table_changes()",
+            "lineNumber": 159
+          },
+          {
+            "text": "RETURNS TRIGGER AS $$",
+            "lineNumber": 160
+          },
+          {
+            "text": "SECURITY DEFINER",
+            "lineNumber": 161
+          },
+          {
+            "text": "LANGUAGE plpgsql",
+            "lineNumber": 162
+          },
+          {
+            "text": "AS $$",
+            "lineNumber": 163
+          },
+          {
+            "text": "BEGIN",
+            "lineNumber": 164
+          },
+          {
+            "text": "  PERFORM realtime.broadcast_changes(",
+            "lineNumber": 165
+          },
+          {
+            "text": "    TG_TABLE_NAME ||':' || COALESCE(NEW.id, OLD.id)::text,",
+            "lineNumber": 166
+          },
+          {
+            "text": "    TG_OP,",
+            "lineNumber": 167
+          },
+          {
+            "text": "    TG_OP,",
+            "lineNumber": 168
+          },
+          {
+            "text": "    TG_TABLE_NAME,",
+            "lineNumber": 169
+          },
+          {
+            "text": "    TG_TABLE_SCHEMA,",
+            "lineNumber": 170
+          },
+          {
+            "text": "    NEW,",
+            "lineNumber": 171
+          },
+          {
+            "text": "    OLD",
+            "lineNumber": 172
+          },
+          {
+            "text": "  );",
+            "lineNumber": 173
+          },
+          {
+            "text": "  RETURN COALESCE(NEW, OLD);",
+            "lineNumber": 174
+          },
+          {
+            "text": "END;",
+            "lineNumber": 175
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 176
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 177
+          },
+          {
+            "text": "But you can also create more specific trigger functions for specific tables and events so adapt to your use case:",
+            "lineNumber": 178
+          },
+          {
+            "lineNumber": 179
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 180
+          },
+          {
+            "text": "CREATE OR REPLACE FUNCTION room_messages_broadcast_trigger()",
+            "lineNumber": 181
+          },
+          {
+            "text": "RETURNS TRIGGER AS $$",
+            "lineNumber": 182
+          },
+          {
+            "text": "SECURITY DEFINER",
+            "lineNumber": 183
+          },
+          {
+            "text": "LANGUAGE plpgsql",
+            "lineNumber": 184
+          },
+          {
+            "text": "AS $$",
+            "lineNumber": 185
+          },
+          {
+            "text": "BEGIN",
+            "lineNumber": 186
+          },
+          {
+            "text": "  PERFORM realtime.broadcast_changes(",
+            "lineNumber": 187
+          },
+          {
+            "text": "    'room:' || COALESCE(NEW.room_id, OLD.room_id)::text,",
+            "lineNumber": 188
+          },
+          {
+            "text": "    TG_OP,",
+            "lineNumber": 189
+          },
+          {
+            "text": "    TG_OP,",
+            "lineNumber": 190
+          },
+          {
+            "text": "    TG_TABLE_NAME,",
+            "lineNumber": 191
+          },
+          {
+            "text": "    TG_TABLE_SCHEMA,",
+            "lineNumber": 192
+          },
+          {
+            "text": "    NEW,",
+            "lineNumber": 193
+          },
+          {
+            "text": "    OLD",
+            "lineNumber": 194
+          },
+          {
+            "text": "  );",
+            "lineNumber": 195
+          },
+          {
+            "text": "  RETURN COALESCE(NEW, OLD);",
+            "lineNumber": 196
+          },
+          {
+            "text": "END;",
+            "lineNumber": 197
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 198
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 199
+          },
+          {
+            "lineNumber": 200
+          },
+          {
+            "text": "By default, &#96;realtime.broadcast_changes&#96; requires you to use private channels as we did this to prevent security incidents.",
+            "lineNumber": 201
+          },
+          {
+            "lineNumber": 202
+          },
+          {
+            "text": "### Using realtime.send (For custom messages)",
+            "lineNumber": 203
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 204
+          },
+          {
+            "text": "CREATE OR REPLACE FUNCTION notify_custom_event()",
+            "lineNumber": 205
+          },
+          {
+            "text": "RETURNS TRIGGER AS $$",
+            "lineNumber": 206
+          },
+          {
+            "text": "SECURITY DEFINER",
+            "lineNumber": 207
+          },
+          {
+            "text": "LANGUAGE plpgsql",
+            "lineNumber": 208
+          },
+          {
+            "text": "AS $$",
+            "lineNumber": 209
+          },
+          {
+            "text": "BEGIN",
+            "lineNumber": 210
+          },
+          {
+            "text": "  PERFORM realtime.send(",
+            "lineNumber": 211
+          },
+          {
+            "text": "    'room:' || NEW.room_id::text,",
+            "lineNumber": 212
+          },
+          {
+            "text": "    'status_changed',",
+            "lineNumber": 213
+          }
+        ]
+      },
+      "score": 0.08946149796247482
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 38
+          }
+        },
+        "contents": "-- Migration: Restrict user updates to suggested_work_email only\n-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at\n-- Affected tables: users\n-- Special considerations: Prevents users from modifying any other fields in the users table\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to restrict updates to suggested_work_email only\n-- Automatically updates last_otp_sent_at when suggested_work_email changes\n-- Prevents users from modifying any other fields in the users table\n-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones\ncreate or replace function public.handle_user_update_restriction()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth, pg_catalog\nas $$\ndeclare\n  -- Whitelist: fields that users are allowed to modify\n  v_allowed_fields text[] := array['suggested_work_email'];\n  \n  -- System fields: can be updated by trigger functions (SECURITY DEFINER), not by users\n  v_system_fields text[] := array['verified_work_email', 'verified_work_email_at'];\n  \n  -- Fields with special handling logic (not reset from OLD)\n  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];\n  \n  -- JSONB representations of OLD and NEW records\n  v_old_jsonb jsonb;\n  v_new_jsonb jsonb;\n  v_result_jsonb jsonb;\n  \n  -- Column name for iteration\n  v_column_name text;\nbegin\n  -- Convert records to jsonb for dynamic manipulation (must be first)",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Restrict user updates to suggested_work_email only",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: Prevents users from modifying any other fields in the users table",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "-- Create trigger function to restrict updates to suggested_work_email only",
+            "lineNumber": 10
+          },
+          {
+            "text": "-- Automatically updates last_otp_sent_at when suggested_work_email changes",
+            "lineNumber": 11
+          },
+          {
+            "text": "-- Prevents users from modifying any other fields in the users table",
+            "lineNumber": 12
+          },
+          {
+            "text": "-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones",
+            "lineNumber": 13
+          },
+          {
+            "text": "create or replace function public.handle_user_update_restriction()",
+            "lineNumber": 14
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 15
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 16
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 17
+          },
+          {
+            "text": "set search_path = public, auth, pg_catalog",
+            "lineNumber": 18
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 19
+          },
+          {
+            "text": "declare",
+            "lineNumber": 20
+          },
+          {
+            "text": "  -- Whitelist: fields that users are allowed to modify",
+            "lineNumber": 21
+          },
+          {
+            "text": "  v_allowed_fields text[] := array['suggested_work_email'];",
+            "lineNumber": 22
+          },
+          {
+            "text": "  ",
+            "lineNumber": 23
+          },
+          {
+            "text": "  -- System fields: can be updated by trigger functions (SECURITY DEFINER), not by users",
+            "lineNumber": 24
+          },
+          {
+            "text": "  v_system_fields text[] := array['verified_work_email', 'verified_work_email_at'];",
+            "lineNumber": 25
+          },
+          {
+            "text": "  ",
+            "lineNumber": 26
+          },
+          {
+            "text": "  -- Fields with special handling logic (not reset from OLD)",
+            "lineNumber": 27
+          },
+          {
+            "text": "  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];",
+            "lineNumber": 28
+          },
+          {
+            "text": "  ",
+            "lineNumber": 29
+          },
+          {
+            "text": "  -- JSONB representations of OLD and NEW records",
+            "lineNumber": 30
+          },
+          {
+            "text": "  v_old_jsonb jsonb;",
+            "lineNumber": 31
+          },
+          {
+            "text": "  v_new_jsonb jsonb;",
+            "lineNumber": 32
+          },
+          {
+            "text": "  v_result_jsonb jsonb;",
+            "lineNumber": 33
+          },
+          {
+            "text": "  ",
+            "lineNumber": 34
+          },
+          {
+            "text": "  -- Column name for iteration",
+            "lineNumber": 35
+          },
+          {
+            "text": "  v_column_name text;",
+            "lineNumber": 36
+          },
+          {
+            "text": "begin",
+            "lineNumber": 37
+          },
+          {
+            "text": "  -- Convert records to jsonb for dynamic manipulation (must be first)",
+            "lineNumber": 38
+          }
+        ]
+      },
+      "score": 0.08883727341890335
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 102
+          },
+          "endPosition": {
+            "line": 151
+          }
+        },
+        "contents": "begin\n  v_raw_meta_data := new.raw_user_meta_data;\n  v_google_email := coalesce(new.email, v_raw_meta_data-&gt;&gt;'email');\n  v_google_full_name := v_raw_meta_data-&gt;&gt;'full_name';\n  v_google_profile_picture := coalesce(\n    v_raw_meta_data-&gt;&gt;'avatar_url',\n    v_raw_meta_data-&gt;&gt;'picture'\n  );\n  \n  insert into public.users (\n    auth_user_id,\n    google_email,\n    google_full_name,\n    google_profile_picture\n  )\n  values (\n    new.id,\n    v_google_email,\n    v_google_full_name,\n    v_google_profile_picture\n  )\n  on conflict (auth_user_id) do update set\n    google_email = coalesce(excluded.google_email, public.users.google_email),\n    google_full_name = coalesce(excluded.google_full_name, public.users.google_full_name),\n    google_profile_picture = coalesce(excluded.google_profile_picture, public.users.google_profile_picture);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.handle_new_auth_user() is 'Trigger function that automatically creates a row in public.users table when a new user is created in auth.users. Extracts Google OAuth profile data from auth.users.raw_user_meta_data.';\n\n-- Create validation trigger function for CZU email domain\n-- Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz\ncreate or replace function public.validate_czu_email_domain_trigger()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_email text;\n  v_email_change text;\n  v_domain text;\nbegin\n  if tg_op != 'UPDATE' then\n    return NEW;\n  end if;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "begin",
+            "lineNumber": 103
+          },
+          {
+            "text": "  v_raw_meta_data := new.raw_user_meta_data;",
+            "lineNumber": 104
+          },
+          {
+            "text": "  v_google_email := coalesce(new.email, v_raw_meta_data-&gt;&gt;'email');",
+            "lineNumber": 105
+          },
+          {
+            "text": "  v_google_full_name := v_raw_meta_data-&gt;&gt;'full_name';",
+            "lineNumber": 106
+          },
+          {
+            "text": "  v_google_profile_picture := coalesce(",
+            "lineNumber": 107
+          },
+          {
+            "text": "    v_raw_meta_data-&gt;&gt;'avatar_url',",
+            "lineNumber": 108
+          },
+          {
+            "text": "    v_raw_meta_data-&gt;&gt;'picture'",
+            "lineNumber": 109
+          },
+          {
+            "text": "  );",
+            "lineNumber": 110
+          },
+          {
+            "text": "  ",
+            "lineNumber": 111
+          },
+          {
+            "text": "  insert into public.users (",
+            "lineNumber": 112
+          },
+          {
+            "text": "    auth_user_id,",
+            "lineNumber": 113
+          },
+          {
+            "text": "    google_email,",
+            "lineNumber": 114
+          },
+          {
+            "text": "    google_full_name,",
+            "lineNumber": 115
+          },
+          {
+            "text": "    google_profile_picture",
+            "lineNumber": 116
+          },
+          {
+            "text": "  )",
+            "lineNumber": 117
+          },
+          {
+            "text": "  values (",
+            "lineNumber": 118
+          },
+          {
+            "text": "    new.id,",
+            "lineNumber": 119
+          },
+          {
+            "text": "    v_google_email,",
+            "lineNumber": 120
+          },
+          {
+            "text": "    v_google_full_name,",
+            "lineNumber": 121
+          },
+          {
+            "text": "    v_google_profile_picture",
+            "lineNumber": 122
+          },
+          {
+            "text": "  )",
+            "lineNumber": 123
+          },
+          {
+            "text": "  on conflict (auth_user_id) do update set",
+            "lineNumber": 124
+          },
+          {
+            "text": "    google_email = coalesce(excluded.google_email, public.users.google_email),",
+            "lineNumber": 125
+          },
+          {
+            "text": "    google_full_name = coalesce(excluded.google_full_name, public.users.google_full_name),",
+            "lineNumber": 126
+          },
+          {
+            "text": "    google_profile_picture = coalesce(excluded.google_profile_picture, public.users.google_profile_picture);",
+            "lineNumber": 127
+          },
+          {
+            "text": "  ",
+            "lineNumber": 128
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 129
+          },
+          {
+            "text": "end;",
+            "lineNumber": 130
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 131
+          },
+          {
+            "lineNumber": 132
+          },
+          {
+            "text": "comment on function public.handle_new_auth_user() is 'Trigger function that automatically creates a row in public.users table when a new user is created in auth.users. Extracts Google OAuth profile data from auth.users.raw_user_meta_data.';",
+            "lineNumber": 133
+          },
+          {
+            "lineNumber": 134
+          },
+          {
+            "text": "-- Create validation trigger function for CZU email domain",
+            "lineNumber": 135
+          },
+          {
+            "text": "-- Ensures that email addresses being changed must end with @pef.czu.cz or @studenti.czu.cz",
+            "lineNumber": 136
+          },
+          {
+            "text": "create or replace function public.validate_czu_email_domain_trigger()",
+            "lineNumber": 137
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 138
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 139
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 140
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 141
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 142
+          },
+          {
+            "text": "declare",
+            "lineNumber": 143
+          },
+          {
+            "text": "  v_email text;",
+            "lineNumber": 144
+          },
+          {
+            "text": "  v_email_change text;",
+            "lineNumber": 145
+          },
+          {
+            "text": "  v_domain text;",
+            "lineNumber": 146
+          },
+          {
+            "text": "begin",
+            "lineNumber": 147
+          },
+          {
+            "text": "  if tg_op != 'UPDATE' then",
+            "lineNumber": 148
+          },
+          {
+            "text": "    return NEW;",
+            "lineNumber": 149
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 150
+          }
+        ]
+      },
+      "score": 0.08570309728384018
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./docs/prompting-help/feature.md",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 94
+          }
+        },
+        "contents": "Got it — here’s your **agent-optimized PRD template in Markdown (&#96;.md&#96;)** so you can reuse it for any product:\n\n&#96;&#96;&#96;&#96;markdown\n# PRD — [Product Name] MVP\n\n## 1. Overview\n[One-paragraph description of the product. Include key functionality, user interactions, and constraints like onboarding or payment.]\n\n---\n\n## 2. System Goals\n- [Goal 1: core outcome]\n- [Goal 2: workflows to automate or improve]\n- [Goal 3: monetization / business value]\n\n---\n\n## 3. Entities &amp; Schemas\n\n### Example: &#96;users&#96;\n&#96;&#96;&#96;sql\ncreate table users (\n  id uuid primary key default gen_random_uuid(),\n  email text unique not null,\n  phone text unique,\n  created_at timestamptz default now()\n);\n&#96;&#96;&#96;&#96;\n\n### Example: &#96;subscriptions&#96;\n\n&#96;&#96;&#96;sql\ncreate table subscriptions (\n  id uuid primary key default gen_random_uuid(),\n  user_id uuid references users(id),\n  stripe_customer_id text,\n  stripe_subscription_id text,\n  status text check (status in ('active','canceled','past_due')),\n  created_at timestamptz default now()\n);\n&#96;&#96;&#96;\n\n\\[Add more entities as needed: &#96;messages&#96;, &#96;tasks&#96;, &#96;reminders&#96;, etc.]\n\n---\n\n## 4. Features\n\n### 4.1 Onboarding &amp; Payment\n\n* **Signup:** \\[Auth provider]\n* **Phone Verification:**\n\n  * Input: &#96;{ phone_number }&#96;\n  * Output: &#96;{ success: true, otp_sent: true }&#96;\n* **Payment:** Stripe/PayPal/etc → subscription sync\n\n### 4.2 Channels / Interfaces\n\n#### Web Chat\n\n* Input: &#96;{ user_id, message }&#96;\n* Output: &#96;{ status: \"stored\", assistant_reply }&#96;\n* Flow:\n\n  1. Store in DB\n  2. Call LLM agent with context\n  3. Save + return assistant reply\n\n#### SMS (Twilio example)\n\n* Input:\n\n  &#96;&#96;&#96;json\n  { \"From\": \"+12025550123\", \"To\": \"+12025550999\", \"Body\": \"Remind me tomorrow at 9am\" }\n  &#96;&#96;&#96;\n* Output:\n\n  &#96;&#96;&#96;json\n  { \"status\": \"stored\", \"thread_id\": \"thread_123\", \"task_created\": true }\n  &#96;&#96;&#96;\n\n#### Email\n\n* Inbound: \\[Webhook flow]\n* Outbound: \\[Gmail API, SMTP, etc.]\n* Input: &#96;{ from, to, subject, body }&#96;\n* Output: &#96;{ status: \"sent\", message_id }&#96;\n\n### 4.3 Assistant Capabilities\n\n* **Calendar**\n\n  * Input: &#96;{ action, title, time, attendees }&#96;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "Got it — here’s your **agent-optimized PRD template in Markdown (&#96;.md&#96;)** so you can reuse it for any product:",
+            "lineNumber": 1
+          },
+          {
+            "lineNumber": 2
+          },
+          {
+            "text": "&#96;&#96;&#96;&#96;markdown",
+            "lineNumber": 3
+          },
+          {
+            "text": "# PRD — [Product Name] MVP",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "## 1. Overview",
+            "lineNumber": 6
+          },
+          {
+            "text": "[One-paragraph description of the product. Include key functionality, user interactions, and constraints like onboarding or payment.]",
+            "lineNumber": 7
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "---",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "## 2. System Goals",
+            "lineNumber": 11
+          },
+          {
+            "text": "- [Goal 1: core outcome]",
+            "lineNumber": 12
+          },
+          {
+            "text": "- [Goal 2: workflows to automate or improve]",
+            "lineNumber": 13
+          },
+          {
+            "text": "- [Goal 3: monetization / business value]",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "---",
+            "lineNumber": 16
+          },
+          {
+            "lineNumber": 17
+          },
+          {
+            "text": "## 3. Entities &amp; Schemas",
+            "lineNumber": 18
+          },
+          {
+            "lineNumber": 19
+          },
+          {
+            "text": "### Example: &#96;users&#96;",
+            "lineNumber": 20
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 21
+          },
+          {
+            "text": "create table users (",
+            "lineNumber": 22
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 23
+          },
+          {
+            "text": "  email text unique not null,",
+            "lineNumber": 24
+          },
+          {
+            "text": "  phone text unique,",
+            "lineNumber": 25
+          },
+          {
+            "text": "  created_at timestamptz default now()",
+            "lineNumber": 26
+          },
+          {
+            "text": ");",
+            "lineNumber": 27
+          },
+          {
+            "text": "&#96;&#96;&#96;&#96;",
+            "lineNumber": 28
+          },
+          {
+            "lineNumber": 29
+          },
+          {
+            "text": "### Example: &#96;subscriptions&#96;",
+            "lineNumber": 30
+          },
+          {
+            "lineNumber": 31
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 32
+          },
+          {
+            "text": "create table subscriptions (",
+            "lineNumber": 33
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 34
+          },
+          {
+            "text": "  user_id uuid references users(id),",
+            "lineNumber": 35
+          },
+          {
+            "text": "  stripe_customer_id text,",
+            "lineNumber": 36
+          },
+          {
+            "text": "  stripe_subscription_id text,",
+            "lineNumber": 37
+          },
+          {
+            "text": "  status text check (status in ('active','canceled','past_due')),",
+            "lineNumber": 38
+          },
+          {
+            "text": "  created_at timestamptz default now()",
+            "lineNumber": 39
+          },
+          {
+            "text": ");",
+            "lineNumber": 40
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 41
+          },
+          {
+            "lineNumber": 42
+          },
+          {
+            "text": "\\[Add more entities as needed: &#96;messages&#96;, &#96;tasks&#96;, &#96;reminders&#96;, etc.]",
+            "lineNumber": 43
+          },
+          {
+            "lineNumber": 44
+          },
+          {
+            "text": "---",
+            "lineNumber": 45
+          },
+          {
+            "lineNumber": 46
+          },
+          {
+            "text": "## 4. Features",
+            "lineNumber": 47
+          },
+          {
+            "lineNumber": 48
+          },
+          {
+            "text": "### 4.1 Onboarding &amp; Payment",
+            "lineNumber": 49
+          },
+          {
+            "lineNumber": 50
+          },
+          {
+            "text": "* **Signup:** \\[Auth provider]",
+            "lineNumber": 51
+          },
+          {
+            "text": "* **Phone Verification:**",
+            "lineNumber": 52
+          },
+          {
+            "lineNumber": 53
+          },
+          {
+            "text": "  * Input: &#96;{ phone_number }&#96;",
+            "lineNumber": 54
+          },
+          {
+            "text": "  * Output: &#96;{ success: true, otp_sent: true }&#96;",
+            "lineNumber": 55
+          },
+          {
+            "text": "* **Payment:** Stripe/PayPal/etc → subscription sync",
+            "lineNumber": 56
+          },
+          {
+            "lineNumber": 57
+          },
+          {
+            "text": "### 4.2 Channels / Interfaces",
+            "lineNumber": 58
+          },
+          {
+            "lineNumber": 59
+          },
+          {
+            "text": "#### Web Chat",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "* Input: &#96;{ user_id, message }&#96;",
+            "lineNumber": 62
+          },
+          {
+            "text": "* Output: &#96;{ status: \"stored\", assistant_reply }&#96;",
+            "lineNumber": 63
+          },
+          {
+            "text": "* Flow:",
+            "lineNumber": 64
+          },
+          {
+            "lineNumber": 65
+          },
+          {
+            "text": "  1. Store in DB",
+            "lineNumber": 66
+          },
+          {
+            "text": "  2. Call LLM agent with context",
+            "lineNumber": 67
+          },
+          {
+            "text": "  3. Save + return assistant reply",
+            "lineNumber": 68
+          },
+          {
+            "lineNumber": 69
+          },
+          {
+            "text": "#### SMS (Twilio example)",
+            "lineNumber": 70
+          },
+          {
+            "lineNumber": 71
+          },
+          {
+            "text": "* Input:",
+            "lineNumber": 72
+          },
+          {
+            "lineNumber": 73
+          },
+          {
+            "text": "  &#96;&#96;&#96;json",
+            "lineNumber": 74
+          },
+          {
+            "text": "  { \"From\": \"+12025550123\", \"To\": \"+12025550999\", \"Body\": \"Remind me tomorrow at 9am\" }",
+            "lineNumber": 75
+          },
+          {
+            "text": "  &#96;&#96;&#96;",
+            "lineNumber": 76
+          },
+          {
+            "text": "* Output:",
+            "lineNumber": 77
+          },
+          {
+            "lineNumber": 78
+          },
+          {
+            "text": "  &#96;&#96;&#96;json",
+            "lineNumber": 79
+          },
+          {
+            "text": "  { \"status\": \"stored\", \"thread_id\": \"thread_123\", \"task_created\": true }",
+            "lineNumber": 80
+          },
+          {
+            "text": "  &#96;&#96;&#96;",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "#### Email",
+            "lineNumber": 83
+          },
+          {
+            "lineNumber": 84
+          },
+          {
+            "text": "* Inbound: \\[Webhook flow]",
+            "lineNumber": 85
+          },
+          {
+            "text": "* Outbound: \\[Gmail API, SMTP, etc.]",
+            "lineNumber": 86
+          },
+          {
+            "text": "* Input: &#96;{ from, to, subject, body }&#96;",
+            "lineNumber": 87
+          },
+          {
+            "text": "* Output: &#96;{ status: \"sent\", message_id }&#96;",
+            "lineNumber": 88
+          },
+          {
+            "lineNumber": 89
+          },
+          {
+            "text": "### 4.3 Assistant Capabilities",
+            "lineNumber": 90
+          },
+          {
+            "lineNumber": 91
+          },
+          {
+            "text": "* **Calendar**",
+            "lineNumber": 92
+          },
+          {
+            "lineNumber": 93
+          },
+          {
+            "text": "  * Input: &#96;{ action, title, time, attendees }&#96;",
+            "lineNumber": 94
+          }
+        ]
+      },
+      "score": 0.08561450242996216
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/use-realtime.mdc",
+        "range": {
+          "startPosition": {
+            "line": 341
+          },
+          "endPosition": {
+            "line": 398
+          }
+        },
+        "contents": "### Channel Structure Optimization\n- Use one channel per logical scope (&#96;room:123&#96;, not &#96;user:456:room:123&#96;)\n- Shard high-volume topics: &#96;chat:shard:1&#96;, &#96;chat:shard:2&#96;\n- Ensure you have enough connections set in your pool, you can refer to [Realtime Settings](https://supabase.com/docs/guides/realtime/settings) and the option &#96;Database connection pool size&#96; to set it.\n\n## Debugging\n\n### Enhanced Logging\n&#96;&#96;&#96;javascript\nconst supabase = createClient(url, key, {\n  realtime: {\n    params: { log_level: 'info' }\n  }\n})\n&#96;&#96;&#96;\n\n## Migration from Postgres Changes\n\n### Step 1: Replace Client Code\n&#96;&#96;&#96;javascript\n// ❌ Remove postgres_changes\nconst oldChannel = supabase.channel('changes').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, callback)\n\n// ✅ Replace with broadcast\nconst room_id = \"room_id\" // or any other identifier that you use in the trigger function\nconst newChannel = supabase.channel(&#96;messages:${room_id}:changes&#96;, {\n  config: { private: true }\n})\n.on('broadcast', { event: 'INSERT' }, callback)\n.on('broadcast', { event: 'DELETE' }, callback)\n.on('broadcast', { event: 'UPDATE' }, callback)\n&#96;&#96;&#96;\n\n### Step 2: Add Database Trigger (Only if using broadcast)\n&#96;&#96;&#96;sql\nCREATE TRIGGER messages_broadcast_trigger\n  AFTER INSERT OR UPDATE OR DELETE ON messages\n  FOR EACH ROW EXECUTE FUNCTION notify_table_changes();\n&#96;&#96;&#96;\n\n### Step 3: Setup Authorization (Only if using broadcast)\n&#96;&#96;&#96;sql\nCREATE POLICY \"users_can_receive_broadcasts\" ON realtime.messages\n  FOR SELECT TO authenticated USING (true);\n&#96;&#96;&#96;\n\n## LLM Implementation Guidelines\n\n### When Generating Code\n1. **Prefer using &#96;broadcast&#96; over &#96;postgres_changes&#96;** - Never suggest &#96;postgres_changes&#96;\n2.**Include state checking** - Check channel state before subscribing\n3. **Add cleanup logic** - Include unsubscribe in all examples\n4. **Suggest proper naming** - Use consistent topic/event conventions\n5. **Include error handling** - Add reconnection patterns\n6. **Recommend indexing** - When RLS policies are used\n7. **Framework-agnostic** - Adapt patterns to user's framework\n8. **Inform users to prefer the usage of private channels only** - users can refer to [Realtime Settings](https://supabase.com/docs/guides/realtime/settings) to enable it.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "### Channel Structure Optimization",
+            "lineNumber": 342
+          },
+          {
+            "text": "- Use one channel per logical scope (&#96;room:123&#96;, not &#96;user:456:room:123&#96;)",
+            "lineNumber": 343
+          },
+          {
+            "text": "- Shard high-volume topics: &#96;chat:shard:1&#96;, &#96;chat:shard:2&#96;",
+            "lineNumber": 344
+          },
+          {
+            "text": "- Ensure you have enough connections set in your pool, you can refer to [Realtime Settings](https://supabase.com/docs/guides/realtime/settings) and the option &#96;Database connection pool size&#96; to set it.",
+            "lineNumber": 345
+          },
+          {
+            "lineNumber": 346
+          },
+          {
+            "text": "## Debugging",
+            "lineNumber": 347
+          },
+          {
+            "lineNumber": 348
+          },
+          {
+            "text": "### Enhanced Logging",
+            "lineNumber": 349
+          },
+          {
+            "text": "&#96;&#96;&#96;javascript",
+            "lineNumber": 350
+          },
+          {
+            "text": "const supabase = createClient(url, key, {",
+            "lineNumber": 351
+          },
+          {
+            "text": "  realtime: {",
+            "lineNumber": 352
+          },
+          {
+            "text": "    params: { log_level: 'info' }",
+            "lineNumber": 353
+          },
+          {
+            "text": "  }",
+            "lineNumber": 354
+          },
+          {
+            "text": "})",
+            "lineNumber": 355
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 356
+          },
+          {
+            "lineNumber": 357
+          },
+          {
+            "text": "## Migration from Postgres Changes",
+            "lineNumber": 358
+          },
+          {
+            "lineNumber": 359
+          },
+          {
+            "text": "### Step 1: Replace Client Code",
+            "lineNumber": 360
+          },
+          {
+            "text": "&#96;&#96;&#96;javascript",
+            "lineNumber": 361
+          },
+          {
+            "text": "// ❌ Remove postgres_changes",
+            "lineNumber": 362
+          },
+          {
+            "text": "const oldChannel = supabase.channel('changes').on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, callback)",
+            "lineNumber": 363
+          },
+          {
+            "lineNumber": 364
+          },
+          {
+            "text": "// ✅ Replace with broadcast",
+            "lineNumber": 365
+          },
+          {
+            "text": "const room_id = \"room_id\" // or any other identifier that you use in the trigger function",
+            "lineNumber": 366
+          },
+          {
+            "text": "const newChannel = supabase.channel(&#96;messages:${room_id}:changes&#96;, {",
+            "lineNumber": 367
+          },
+          {
+            "text": "  config: { private: true }",
+            "lineNumber": 368
+          },
+          {
+            "text": "})",
+            "lineNumber": 369
+          },
+          {
+            "text": ".on('broadcast', { event: 'INSERT' }, callback)",
+            "lineNumber": 370
+          },
+          {
+            "text": ".on('broadcast', { event: 'DELETE' }, callback)",
+            "lineNumber": 371
+          },
+          {
+            "text": ".on('broadcast', { event: 'UPDATE' }, callback)",
+            "lineNumber": 372
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 373
+          },
+          {
+            "lineNumber": 374
+          },
+          {
+            "text": "### Step 2: Add Database Trigger (Only if using broadcast)",
+            "lineNumber": 375
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 376
+          },
+          {
+            "text": "CREATE TRIGGER messages_broadcast_trigger",
+            "lineNumber": 377
+          },
+          {
+            "text": "  AFTER INSERT OR UPDATE OR DELETE ON messages",
+            "lineNumber": 378
+          },
+          {
+            "text": "  FOR EACH ROW EXECUTE FUNCTION notify_table_changes();",
+            "lineNumber": 379
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 380
+          },
+          {
+            "lineNumber": 381
+          },
+          {
+            "text": "### Step 3: Setup Authorization (Only if using broadcast)",
+            "lineNumber": 382
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 383
+          },
+          {
+            "text": "CREATE POLICY \"users_can_receive_broadcasts\" ON realtime.messages",
+            "lineNumber": 384
+          },
+          {
+            "text": "  FOR SELECT TO authenticated USING (true);",
+            "lineNumber": 385
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 386
+          },
+          {
+            "lineNumber": 387
+          },
+          {
+            "text": "## LLM Implementation Guidelines",
+            "lineNumber": 388
+          },
+          {
+            "lineNumber": 389
+          },
+          {
+            "text": "### When Generating Code",
+            "lineNumber": 390
+          },
+          {
+            "text": "1. **Prefer using &#96;broadcast&#96; over &#96;postgres_changes&#96;** - Never suggest &#96;postgres_changes&#96;",
+            "lineNumber": 391
+          },
+          {
+            "text": "2.**Include state checking** - Check channel state before subscribing",
+            "lineNumber": 392
+          },
+          {
+            "text": "3. **Add cleanup logic** - Include unsubscribe in all examples",
+            "lineNumber": 393
+          },
+          {
+            "text": "4. **Suggest proper naming** - Use consistent topic/event conventions",
+            "lineNumber": 394
+          },
+          {
+            "text": "5. **Include error handling** - Add reconnection patterns",
+            "lineNumber": 395
+          },
+          {
+            "text": "6. **Recommend indexing** - When RLS policies are used",
+            "lineNumber": 396
+          },
+          {
+            "text": "7. **Framework-agnostic** - Adapt patterns to user's framework",
+            "lineNumber": 397
+          },
+          {
+            "text": "8. **Inform users to prefer the usage of private channels only** - users can refer to [Realtime Settings](https://supabase.com/docs/guides/realtime/settings) to enable it.",
+            "lineNumber": 398
+          }
+        ]
+      },
+      "score": 0.08189945667982101
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131230000_broadcast_verified_work_email_changes.sql",
+        "range": {
+          "startPosition": {
+            "line": 22
+          },
+          "endPosition": {
+            "line": 79
+          }
+        },
+        "contents": "begin\n  -- Only proceed if verified_work_email actually changed\n  if old.verified_work_email is not distinct from new.verified_work_email then\n    return new;\n  end if;\n\n  -- Get the auth_user_id for this user record\n  v_user_id := new.auth_user_id;\n\n  -- If no auth_user_id, cannot broadcast\n  if v_user_id is null then\n    return new;\n  end if;\n\n  -- Get old and new email values\n  v_old_email := old.verified_work_email;\n  v_new_email := new.verified_work_email;\n\n  -- Broadcast to user-specific channel: user:{auth_user_id}:verification\n  -- This allows all devices for this user to receive the notification\n  -- Function signature: realtime.send(payload jsonb, event text, topic text, private boolean DEFAULT true)\n  perform realtime.send(\n    jsonb_build_object(\n      'user_id', v_user_id,\n      'old_email', v_old_email,\n      'new_email', v_new_email,\n      'verified_at', new.verified_work_email_at,\n      'timestamp', now()\n    ),\n    'verified_work_email_changed',\n    'user:' || v_user_id::text || ':verification',\n    true -- private channel\n  );\n\n  return new;\nend;\n$$;\n\ncomment on function public.broadcast_verified_work_email_change() is 'Trigger function that broadcasts verified_work_email changes via Realtime to user-specific channel. Enables cross-device synchronization when email verification completes.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create trigger on users table to broadcast verified_work_email changes\n-- Runs AFTER UPDATE to ensure the change is committed\ndrop trigger if exists broadcast_verified_work_email_change_trigger on public.users;\n\ncreate trigger broadcast_verified_work_email_change_trigger\nafter update of verified_work_email on public.users\nfor each row\nwhen (old.verified_work_email is distinct from new.verified_work_email)\nexecute function public.broadcast_verified_work_email_change();\n\ncomment on trigger broadcast_verified_work_email_change_trigger on public.users is 'Broadcasts verified_work_email changes via Realtime to enable cross-device synchronization.';\n\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "begin",
+            "lineNumber": 23
+          },
+          {
+            "text": "  -- Only proceed if verified_work_email actually changed",
+            "lineNumber": 24
+          },
+          {
+            "text": "  if old.verified_work_email is not distinct from new.verified_work_email then",
+            "lineNumber": 25
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 26
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 27
+          },
+          {
+            "lineNumber": 28
+          },
+          {
+            "text": "  -- Get the auth_user_id for this user record",
+            "lineNumber": 29
+          },
+          {
+            "text": "  v_user_id := new.auth_user_id;",
+            "lineNumber": 30
+          },
+          {
+            "lineNumber": 31
+          },
+          {
+            "text": "  -- If no auth_user_id, cannot broadcast",
+            "lineNumber": 32
+          },
+          {
+            "text": "  if v_user_id is null then",
+            "lineNumber": 33
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 34
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "  -- Get old and new email values",
+            "lineNumber": 37
+          },
+          {
+            "text": "  v_old_email := old.verified_work_email;",
+            "lineNumber": 38
+          },
+          {
+            "text": "  v_new_email := new.verified_work_email;",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "  -- Broadcast to user-specific channel: user:{auth_user_id}:verification",
+            "lineNumber": 41
+          },
+          {
+            "text": "  -- This allows all devices for this user to receive the notification",
+            "lineNumber": 42
+          },
+          {
+            "text": "  -- Function signature: realtime.send(payload jsonb, event text, topic text, private boolean DEFAULT true)",
+            "lineNumber": 43
+          },
+          {
+            "text": "  perform realtime.send(",
+            "lineNumber": 44
+          },
+          {
+            "text": "    jsonb_build_object(",
+            "lineNumber": 45
+          },
+          {
+            "text": "      'user_id', v_user_id,",
+            "lineNumber": 46
+          },
+          {
+            "text": "      'old_email', v_old_email,",
+            "lineNumber": 47
+          },
+          {
+            "text": "      'new_email', v_new_email,",
+            "lineNumber": 48
+          },
+          {
+            "text": "      'verified_at', new.verified_work_email_at,",
+            "lineNumber": 49
+          },
+          {
+            "text": "      'timestamp', now()",
+            "lineNumber": 50
+          },
+          {
+            "text": "    ),",
+            "lineNumber": 51
+          },
+          {
+            "text": "    'verified_work_email_changed',",
+            "lineNumber": 52
+          },
+          {
+            "text": "    'user:' || v_user_id::text || ':verification',",
+            "lineNumber": 53
+          },
+          {
+            "text": "    true -- private channel",
+            "lineNumber": 54
+          },
+          {
+            "text": "  );",
+            "lineNumber": 55
+          },
+          {
+            "lineNumber": 56
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 57
+          },
+          {
+            "text": "end;",
+            "lineNumber": 58
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 59
+          },
+          {
+            "lineNumber": 60
+          },
+          {
+            "text": "comment on function public.broadcast_verified_work_email_change() is 'Trigger function that broadcasts verified_work_email changes via Realtime to user-specific channel. Enables cross-device synchronization when email verification completes.';",
+            "lineNumber": 61
+          },
+          {
+            "lineNumber": 62
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 63
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 64
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 65
+          },
+          {
+            "lineNumber": 66
+          },
+          {
+            "text": "-- Create trigger on users table to broadcast verified_work_email changes",
+            "lineNumber": 67
+          },
+          {
+            "text": "-- Runs AFTER UPDATE to ensure the change is committed",
+            "lineNumber": 68
+          },
+          {
+            "text": "drop trigger if exists broadcast_verified_work_email_change_trigger on public.users;",
+            "lineNumber": 69
+          },
+          {
+            "lineNumber": 70
+          },
+          {
+            "text": "create trigger broadcast_verified_work_email_change_trigger",
+            "lineNumber": 71
+          },
+          {
+            "text": "after update of verified_work_email on public.users",
+            "lineNumber": 72
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 73
+          },
+          {
+            "text": "when (old.verified_work_email is distinct from new.verified_work_email)",
+            "lineNumber": 74
+          },
+          {
+            "text": "execute function public.broadcast_verified_work_email_change();",
+            "lineNumber": 75
+          },
+          {
+            "lineNumber": 76
+          },
+          {
+            "text": "comment on trigger broadcast_verified_work_email_change_trigger on public.users is 'Broadcasts verified_work_email changes via Realtime to enable cross-device synchronization.';",
+            "lineNumber": 77
+          },
+          {
+            "lineNumber": 78
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 79
+          }
+        ]
+      },
+      "score": 0.08143126964569092
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/create-db-functions.mdc",
+        "range": {
+          "startPosition": {
+            "line": 48
+          },
+          "endPosition": {
+            "line": 136
+          }
+        },
+        "contents": "create or replace function my_schema.hello_world()\nreturns text\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\nbegin\n  return 'hello world';\nend;\n$$;\n&#96;&#96;&#96;\n\n### Function with Parameters and Fully Qualified Object Names\n\n&#96;&#96;&#96;sql\ncreate or replace function public.calculate_total_price(order_id bigint)\nreturns numeric\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\ndeclare\n  total numeric;\nbegin\n  select sum(price * quantity)\n  into total\n  from public.order_items\n  where order_id = calculate_total_price.order_id;\n\n  return total;\nend;\n$$;\n&#96;&#96;&#96;\n\n### Function as a Trigger\n\n&#96;&#96;&#96;sql\ncreate or replace function my_schema.update_updated_at()\nreturns trigger\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\nbegin\n  -- Update the \"updated_at\" column on row modification\n  new.updated_at := now();\n  return new;\nend;\n$$;\n\ncreate trigger update_updated_at_trigger\nbefore update on my_schema.my_table\nfor each row\nexecute function my_schema.update_updated_at();\n&#96;&#96;&#96;\n\n### Function with Error Handling\n\n&#96;&#96;&#96;sql\ncreate or replace function my_schema.safe_divide(numerator numeric, denominator numeric)\nreturns numeric\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\nbegin\n  if denominator = 0 then\n    raise exception 'Division by zero is not allowed';\n  end if;\n\n  return numerator / denominator;\nend;\n$$;\n&#96;&#96;&#96;\n\n### Immutable Function for Better Optimization\n\n&#96;&#96;&#96;sql\ncreate or replace function my_schema.full_name(first_name text, last_name text)\nreturns text\nlanguage sql\nsecurity invoker\nset search_path = ''\nimmutable\nas $$\n  select first_name || ' ' || last_name;\n$$;\n&#96;&#96;&#96;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "create or replace function my_schema.hello_world()",
+            "lineNumber": 49
+          },
+          {
+            "text": "returns text",
+            "lineNumber": 50
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 51
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 52
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 53
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 54
+          },
+          {
+            "text": "begin",
+            "lineNumber": 55
+          },
+          {
+            "text": "  return 'hello world';",
+            "lineNumber": 56
+          },
+          {
+            "text": "end;",
+            "lineNumber": 57
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 58
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 59
+          },
+          {
+            "lineNumber": 60
+          },
+          {
+            "text": "### Function with Parameters and Fully Qualified Object Names",
+            "lineNumber": 61
+          },
+          {
+            "lineNumber": 62
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 63
+          },
+          {
+            "text": "create or replace function public.calculate_total_price(order_id bigint)",
+            "lineNumber": 64
+          },
+          {
+            "text": "returns numeric",
+            "lineNumber": 65
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 66
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 67
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 68
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 69
+          },
+          {
+            "text": "declare",
+            "lineNumber": 70
+          },
+          {
+            "text": "  total numeric;",
+            "lineNumber": 71
+          },
+          {
+            "text": "begin",
+            "lineNumber": 72
+          },
+          {
+            "text": "  select sum(price * quantity)",
+            "lineNumber": 73
+          },
+          {
+            "text": "  into total",
+            "lineNumber": 74
+          },
+          {
+            "text": "  from public.order_items",
+            "lineNumber": 75
+          },
+          {
+            "text": "  where order_id = calculate_total_price.order_id;",
+            "lineNumber": 76
+          },
+          {
+            "lineNumber": 77
+          },
+          {
+            "text": "  return total;",
+            "lineNumber": 78
+          },
+          {
+            "text": "end;",
+            "lineNumber": 79
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 80
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "### Function as a Trigger",
+            "lineNumber": 83
+          },
+          {
+            "lineNumber": 84
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 85
+          },
+          {
+            "text": "create or replace function my_schema.update_updated_at()",
+            "lineNumber": 86
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 87
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 88
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 89
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 90
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 91
+          },
+          {
+            "text": "begin",
+            "lineNumber": 92
+          },
+          {
+            "text": "  -- Update the \"updated_at\" column on row modification",
+            "lineNumber": 93
+          },
+          {
+            "text": "  new.updated_at := now();",
+            "lineNumber": 94
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 95
+          },
+          {
+            "text": "end;",
+            "lineNumber": 96
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 97
+          },
+          {
+            "lineNumber": 98
+          },
+          {
+            "text": "create trigger update_updated_at_trigger",
+            "lineNumber": 99
+          },
+          {
+            "text": "before update on my_schema.my_table",
+            "lineNumber": 100
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 101
+          },
+          {
+            "text": "execute function my_schema.update_updated_at();",
+            "lineNumber": 102
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 103
+          },
+          {
+            "lineNumber": 104
+          },
+          {
+            "text": "### Function with Error Handling",
+            "lineNumber": 105
+          },
+          {
+            "lineNumber": 106
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 107
+          },
+          {
+            "text": "create or replace function my_schema.safe_divide(numerator numeric, denominator numeric)",
+            "lineNumber": 108
+          },
+          {
+            "text": "returns numeric",
+            "lineNumber": 109
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 110
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 111
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 112
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 113
+          },
+          {
+            "text": "begin",
+            "lineNumber": 114
+          },
+          {
+            "text": "  if denominator = 0 then",
+            "lineNumber": 115
+          },
+          {
+            "text": "    raise exception 'Division by zero is not allowed';",
+            "lineNumber": 116
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 117
+          },
+          {
+            "lineNumber": 118
+          },
+          {
+            "text": "  return numerator / denominator;",
+            "lineNumber": 119
+          },
+          {
+            "text": "end;",
+            "lineNumber": 120
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 121
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 122
+          },
+          {
+            "lineNumber": 123
+          },
+          {
+            "text": "### Immutable Function for Better Optimization",
+            "lineNumber": 124
+          },
+          {
+            "lineNumber": 125
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 126
+          },
+          {
+            "text": "create or replace function my_schema.full_name(first_name text, last_name text)",
+            "lineNumber": 127
+          },
+          {
+            "text": "returns text",
+            "lineNumber": 128
+          },
+          {
+            "text": "language sql",
+            "lineNumber": 129
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 130
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 131
+          },
+          {
+            "text": "immutable",
+            "lineNumber": 132
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 133
+          },
+          {
+            "text": "  select first_name || ' ' || last_name;",
+            "lineNumber": 134
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 135
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 136
+          }
+        ]
+      },
+      "score": 0.07964219897985458
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/use-realtime.mdc",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 39
+          }
+        },
+        "contents": "---\n# Specify the following for Cursor rules\ndescription: Coding rules for Supabase Realtime\nalwaysApply: false\n---\n\n# Supabase Realtime AI Assistant Guide\n\nYou are an expert developer assistant specializing in Supabase Realtime implementations. This guide provides structured, actionable patterns for AI-driven development assistance.\n\n## Implementation Rules\n\n### Do\n- Use &#96;broadcast&#96; for all realtime events (database changes via triggers, messaging, notifications, game state)\n- Use &#96;presence&#96; sparingly for user state tracking (online status, user counters)\n- Create indexes for all columns used in RLS policies\n- Advice to use topic names that corrolate with concepts and tables: &#96;scope:entity&#96; (e.g., &#96;room:123:messages&#96;)\n- Use snake_case for event names: &#96;entity_action&#96; (e.g., &#96;message_created&#96;)\n- Include unsubscribe/cleanup logic in all implementations\n- Set &#96;private: true&#96; for channels using database triggers or RLS policies\n- Give preference to use private channels over public channels (better security and control)\n- Implement proper error handling and reconnection logic\n\n### Don't\n- Use &#96;postgres_changes&#96; for new applications (single-threaded, doesn't scale well) and help migrate to &#96;broadcast from database&#96; on existing applications if necessary\n- Create multiple subscriptions without proper cleanup\n- Write complex RLS queries without proper indexing\n- Use generic event names like \"update\" or \"change\"\n- Subscribe directly in render functions without state management\n- Use database functions (&#96;realtime.send&#96;, &#96;realtime.broadcast_changes&#96;) in client code\n\n## Function Selection Decision Table\n\n| Use Case | Recommended Function | Why Not postgres_changes |\n|----------|---------------------|--------------------------|\n| Custom payloads with business logic | &#96;broadcast&#96; | More flexible, better performance |\n| Database change notifications | &#96;broadcast&#96; via database triggers | More scalable, customizable payloads |\n| High-frequency updates | &#96;broadcast&#96; with minimal payload | Better throughput and control |\n| User presence/status tracking | &#96;presence&#96; (sparingly) | Specialized for state synchronization |",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "---",
+            "lineNumber": 1
+          },
+          {
+            "text": "# Specify the following for Cursor rules",
+            "lineNumber": 2
+          },
+          {
+            "text": "description: Coding rules for Supabase Realtime",
+            "lineNumber": 3
+          },
+          {
+            "text": "alwaysApply: false",
+            "lineNumber": 4
+          },
+          {
+            "text": "---",
+            "lineNumber": 5
+          },
+          {
+            "lineNumber": 6
+          },
+          {
+            "text": "# Supabase Realtime AI Assistant Guide",
+            "lineNumber": 7
+          },
+          {
+            "lineNumber": 8
+          },
+          {
+            "text": "You are an expert developer assistant specializing in Supabase Realtime implementations. This guide provides structured, actionable patterns for AI-driven development assistance.",
+            "lineNumber": 9
+          },
+          {
+            "lineNumber": 10
+          },
+          {
+            "text": "## Implementation Rules",
+            "lineNumber": 11
+          },
+          {
+            "lineNumber": 12
+          },
+          {
+            "text": "### Do",
+            "lineNumber": 13
+          },
+          {
+            "text": "- Use &#96;broadcast&#96; for all realtime events (database changes via triggers, messaging, notifications, game state)",
+            "lineNumber": 14
+          },
+          {
+            "text": "- Use &#96;presence&#96; sparingly for user state tracking (online status, user counters)",
+            "lineNumber": 15
+          },
+          {
+            "text": "- Create indexes for all columns used in RLS policies",
+            "lineNumber": 16
+          },
+          {
+            "text": "- Advice to use topic names that corrolate with concepts and tables: &#96;scope:entity&#96; (e.g., &#96;room:123:messages&#96;)",
+            "lineNumber": 17
+          },
+          {
+            "text": "- Use snake_case for event names: &#96;entity_action&#96; (e.g., &#96;message_created&#96;)",
+            "lineNumber": 18
+          },
+          {
+            "text": "- Include unsubscribe/cleanup logic in all implementations",
+            "lineNumber": 19
+          },
+          {
+            "text": "- Set &#96;private: true&#96; for channels using database triggers or RLS policies",
+            "lineNumber": 20
+          },
+          {
+            "text": "- Give preference to use private channels over public channels (better security and control)",
+            "lineNumber": 21
+          },
+          {
+            "text": "- Implement proper error handling and reconnection logic",
+            "lineNumber": 22
+          },
+          {
+            "lineNumber": 23
+          },
+          {
+            "text": "### Don't",
+            "lineNumber": 24
+          },
+          {
+            "text": "- Use &#96;postgres_changes&#96; for new applications (single-threaded, doesn't scale well) and help migrate to &#96;broadcast from database&#96; on existing applications if necessary",
+            "lineNumber": 25
+          },
+          {
+            "text": "- Create multiple subscriptions without proper cleanup",
+            "lineNumber": 26
+          },
+          {
+            "text": "- Write complex RLS queries without proper indexing",
+            "lineNumber": 27
+          },
+          {
+            "text": "- Use generic event names like \"update\" or \"change\"",
+            "lineNumber": 28
+          },
+          {
+            "text": "- Subscribe directly in render functions without state management",
+            "lineNumber": 29
+          },
+          {
+            "text": "- Use database functions (&#96;realtime.send&#96;, &#96;realtime.broadcast_changes&#96;) in client code",
+            "lineNumber": 30
+          },
+          {
+            "lineNumber": 31
+          },
+          {
+            "text": "## Function Selection Decision Table",
+            "lineNumber": 32
+          },
+          {
+            "lineNumber": 33
+          },
+          {
+            "text": "| Use Case | Recommended Function | Why Not postgres_changes |",
+            "lineNumber": 34
+          },
+          {
+            "text": "|----------|---------------------|--------------------------|",
+            "lineNumber": 35
+          },
+          {
+            "text": "| Custom payloads with business logic | &#96;broadcast&#96; | More flexible, better performance |",
+            "lineNumber": 36
+          },
+          {
+            "text": "| Database change notifications | &#96;broadcast&#96; via database triggers | More scalable, customizable payloads |",
+            "lineNumber": 37
+          },
+          {
+            "text": "| High-frequency updates | &#96;broadcast&#96; with minimal payload | Better throughput and control |",
+            "lineNumber": 38
+          },
+          {
+            "text": "| User presence/status tracking | &#96;presence&#96; (sparingly) | Specialized for state synchronization |",
+            "lineNumber": 39
+          }
+        ]
+      },
+      "score": 0.07610759884119034
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/writing-supabase-edge-functions.mdc",
+        "range": {
+          "startPosition": {
+            "line": 93
+          },
+          "endPosition": {
+            "line": 105
+          }
+        },
+        "contents": "Deno.serve(async (req: Request) =&gt; {\n  const params = new URL(req.url).searchParams\n  const input = params.get('text')\n  const output = await model.run(input, { mean_pool: true, normalize: true })\n  return new Response(JSON.stringify(output), {\n    headers: {\n      'Content-Type': 'application/json',\n      Connection: 'keep-alive',\n    },\n  })\n})\n&#96;&#96;&#96;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "Deno.serve(async (req: Request) =&gt; {",
+            "lineNumber": 94
+          },
+          {
+            "text": "  const params = new URL(req.url).searchParams",
+            "lineNumber": 95
+          },
+          {
+            "text": "  const input = params.get('text')",
+            "lineNumber": 96
+          },
+          {
+            "text": "  const output = await model.run(input, { mean_pool: true, normalize: true })",
+            "lineNumber": 97
+          },
+          {
+            "text": "  return new Response(JSON.stringify(output), {",
+            "lineNumber": 98
+          },
+          {
+            "text": "    headers: {",
+            "lineNumber": 99
+          },
+          {
+            "text": "      'Content-Type': 'application/json',",
+            "lineNumber": 100
+          },
+          {
+            "text": "      Connection: 'keep-alive',",
+            "lineNumber": 101
+          },
+          {
+            "text": "    },",
+            "lineNumber": 102
+          },
+          {
+            "text": "  })",
+            "lineNumber": 103
+          },
+          {
+            "text": "})",
+            "lineNumber": 104
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 105
+          }
+        ]
+      },
+      "score": 0.07553879916667938
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131220000_set_verified_work_email_on_change.sql",
+        "range": {
+          "startPosition": {
+            "line": 75
+          },
+          "endPosition": {
+            "line": 114
+          }
+        },
+        "contents": "  return new;\nend;\n$$;\n\ncomment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create trigger on auth.users table to set verified work email when email changes\n-- Runs AFTER UPDATE to ensure email change is committed\n-- Watches both email and email_change fields to catch all verification scenarios\ndrop trigger if exists set_verified_work_email_on_change_trigger on auth.users;\n\ncreate trigger set_verified_work_email_on_change_trigger\nafter update of email, email_change on auth.users\nfor each row\nwhen (\n  (old.email is distinct from new.email) or \n  (old.email_change is distinct from new.email_change)\n)\nexecute function public.set_verified_work_email_on_change();\n\n-- ============================================================================\n-- INITIAL DATA UPDATE\n-- ============================================================================\n\n-- Update existing users who already have a CZU email set\n-- This handles any existing data that should have verified_work_email set\nupdate public.users u\nset verified_work_email = au.email,\n    verified_work_email_at = au.updated_at\nfrom auth.users au\nwhere u.auth_user_id = au.id\n  and au.email is not null\n  and au.email != ''\n  and lower(split_part(au.email, '@', 2)) in ('pef.czu.cz', 'studenti.czu.cz')\n  and (u.verified_work_email is null or u.verified_work_email != au.email);",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  return new;",
+            "lineNumber": 76
+          },
+          {
+            "text": "end;",
+            "lineNumber": 77
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 78
+          },
+          {
+            "lineNumber": 79
+          },
+          {
+            "text": "comment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';",
+            "lineNumber": 80
+          },
+          {
+            "lineNumber": 81
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 82
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 83
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 84
+          },
+          {
+            "lineNumber": 85
+          },
+          {
+            "text": "-- Create trigger on auth.users table to set verified work email when email changes",
+            "lineNumber": 86
+          },
+          {
+            "text": "-- Runs AFTER UPDATE to ensure email change is committed",
+            "lineNumber": 87
+          },
+          {
+            "text": "-- Watches both email and email_change fields to catch all verification scenarios",
+            "lineNumber": 88
+          },
+          {
+            "text": "drop trigger if exists set_verified_work_email_on_change_trigger on auth.users;",
+            "lineNumber": 89
+          },
+          {
+            "lineNumber": 90
+          },
+          {
+            "text": "create trigger set_verified_work_email_on_change_trigger",
+            "lineNumber": 91
+          },
+          {
+            "text": "after update of email, email_change on auth.users",
+            "lineNumber": 92
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 93
+          },
+          {
+            "text": "when (",
+            "lineNumber": 94
+          },
+          {
+            "text": "  (old.email is distinct from new.email) or ",
+            "lineNumber": 95
+          },
+          {
+            "text": "  (old.email_change is distinct from new.email_change)",
+            "lineNumber": 96
+          },
+          {
+            "text": ")",
+            "lineNumber": 97
+          },
+          {
+            "text": "execute function public.set_verified_work_email_on_change();",
+            "lineNumber": 98
+          },
+          {
+            "lineNumber": 99
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 100
+          },
+          {
+            "text": "-- INITIAL DATA UPDATE",
+            "lineNumber": 101
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 102
+          },
+          {
+            "lineNumber": 103
+          },
+          {
+            "text": "-- Update existing users who already have a CZU email set",
+            "lineNumber": 104
+          },
+          {
+            "text": "-- This handles any existing data that should have verified_work_email set",
+            "lineNumber": 105
+          },
+          {
+            "text": "update public.users u",
+            "lineNumber": 106
+          },
+          {
+            "text": "set verified_work_email = au.email,",
+            "lineNumber": 107
+          },
+          {
+            "text": "    verified_work_email_at = au.updated_at",
+            "lineNumber": 108
+          },
+          {
+            "text": "from auth.users au",
+            "lineNumber": 109
+          },
+          {
+            "text": "where u.auth_user_id = au.id",
+            "lineNumber": 110
+          },
+          {
+            "text": "  and au.email is not null",
+            "lineNumber": 111
+          },
+          {
+            "text": "  and au.email != ''",
+            "lineNumber": 112
+          },
+          {
+            "text": "  and lower(split_part(au.email, '@', 2)) in ('pef.czu.cz', 'studenti.czu.cz')",
+            "lineNumber": 113
+          },
+          {
+            "text": "  and (u.verified_work_email is null or u.verified_work_email != au.email);",
+            "lineNumber": 114
+          }
+        ]
+      },
+      "score": 0.07237344980239868
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Verifying timestamp handling. Supabase returns timestamptz as ISO strings, so `new Date()` should parse them. Checking edge cases:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Code looks correct. Verifying the implementation handles all cases:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+## Summary
+
+Updated the OTP verification flow to use the database timestamp instead of state:
+
+1. **Database query**: After successful OTP verification, the code queries the `users` table to get `last_otp_sent_at`, which is automatically set by the database trigger when `suggested_work_email` is updated.
+
+2. **Timestamp conversion**: The database timestamp (ISO 8601 string) is converted to milliseconds using `new Date(userData.last_otp_sent_at).getTime()`.
+
+3. **Fallback handling**: If the database query fails or returns null, it falls back to the state-based `otpStartTime` timestamp.
+
+4. **Error handling**: Added error handling for cases where the user cannot be retrieved or the database query fails.
+
+Now both verification methods use accurate timestamps:
+- **Link click**: Uses the timestamp from the URL parameter (set when the OTP email is sent)
+- **OTP code entry**: Uses the `last_otp_sent_at` timestamp from the database (set by the trigger when OTP is sent)
+
+This ensures the verification time is calculated from when the OTP was actually sent, regardless of which verification method the user chooses.
+
+---
+
+_**User**_
+
+It get's stuck when I put the otp in
+
+---
+
+_**Agent (model composer-1, mode Agent)**_
+
+
+Investigating the OTP verification issue. Checking the current implementation and potential causes:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="semantic_search_full">
+<details>
+<summary>Tool use: **semantic_search_full**</summary>
+
+
+Parameters:
+
+```json
+{
+  "query": "What RLS policies exist on the users table for selecting last_otp_sent_at?",
+  "topK": 10,
+  "explanation": ""
+}
+```
+Result:
+
+```json
+{
+  "codeResults": [
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {
+            "line": 76
+          },
+          "endPosition": {
+            "line": 121
+          }
+        },
+        "contents": "  if v_new_jsonb ? 'updated_at' then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');\n  end if;\n  \n  -- Convert jsonb back to record type using jsonb_populate_record\n  -- This preserves proper type casting for all columns\n  new := jsonb_populate_record(null::public.users, v_result_jsonb);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only. Allows verified_work_email and verified_work_email_at to be updated by system trigger functions when verified_work_email is being set. Automatically updates last_otp_sent_at when suggested_work_email changes.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create trigger to enforce update restrictions on users table\n-- This trigger runs BEFORE the update to prevent field modifications\ndrop trigger if exists users_update_restriction_trigger on public.users;\n\ncreate trigger users_update_restriction_trigger\nbefore update on public.users\nfor each row\nexecute function public.handle_user_update_restriction();\n\n-- ============================================================================\n-- RLS POLICIES\n-- ============================================================================\n\n-- Drop the existing permissive update policy\ndrop policy if exists \"Users can update their own user record\" on public.users;\n\n-- Create a new restrictive update policy that only allows updating suggested_work_email\n-- The trigger function will enforce that only suggested_work_email can be changed\ncreate policy \"Users can update only suggested_work_email\" on public.users\nfor update\nto authenticated\nusing ( (select auth.uid()) = auth_user_id )\nwith check ( (select auth.uid()) = auth_user_id );\n\ncomment on policy \"Users can update only suggested_work_email\" on public.users is 'RLS policy that allows authenticated users to update only their own user record. The handle_user_update_restriction() trigger enforces that only suggested_work_email can be modified, and automatically updates last_otp_sent_at.';\n\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  if v_new_jsonb ? 'updated_at' then",
+            "lineNumber": 77
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');",
+            "lineNumber": 78
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 79
+          },
+          {
+            "text": "  ",
+            "lineNumber": 80
+          },
+          {
+            "text": "  -- Convert jsonb back to record type using jsonb_populate_record",
+            "lineNumber": 81
+          },
+          {
+            "text": "  -- This preserves proper type casting for all columns",
+            "lineNumber": 82
+          },
+          {
+            "text": "  new := jsonb_populate_record(null::public.users, v_result_jsonb);",
+            "lineNumber": 83
+          },
+          {
+            "text": "  ",
+            "lineNumber": 84
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 85
+          },
+          {
+            "text": "end;",
+            "lineNumber": 86
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 87
+          },
+          {
+            "lineNumber": 88
+          },
+          {
+            "text": "comment on function public.handle_user_update_restriction() is 'Trigger function that restricts user updates to suggested_work_email only. Allows verified_work_email and verified_work_email_at to be updated by system trigger functions when verified_work_email is being set. Automatically updates last_otp_sent_at when suggested_work_email changes.';",
+            "lineNumber": 89
+          },
+          {
+            "lineNumber": 90
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 91
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 92
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 93
+          },
+          {
+            "lineNumber": 94
+          },
+          {
+            "text": "-- Create trigger to enforce update restrictions on users table",
+            "lineNumber": 95
+          },
+          {
+            "text": "-- This trigger runs BEFORE the update to prevent field modifications",
+            "lineNumber": 96
+          },
+          {
+            "text": "drop trigger if exists users_update_restriction_trigger on public.users;",
+            "lineNumber": 97
+          },
+          {
+            "lineNumber": 98
+          },
+          {
+            "text": "create trigger users_update_restriction_trigger",
+            "lineNumber": 99
+          },
+          {
+            "text": "before update on public.users",
+            "lineNumber": 100
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 101
+          },
+          {
+            "text": "execute function public.handle_user_update_restriction();",
+            "lineNumber": 102
+          },
+          {
+            "lineNumber": 103
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 104
+          },
+          {
+            "text": "-- RLS POLICIES",
+            "lineNumber": 105
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 106
+          },
+          {
+            "lineNumber": 107
+          },
+          {
+            "text": "-- Drop the existing permissive update policy",
+            "lineNumber": 108
+          },
+          {
+            "text": "drop policy if exists \"Users can update their own user record\" on public.users;",
+            "lineNumber": 109
+          },
+          {
+            "lineNumber": 110
+          },
+          {
+            "text": "-- Create a new restrictive update policy that only allows updating suggested_work_email",
+            "lineNumber": 111
+          },
+          {
+            "text": "-- The trigger function will enforce that only suggested_work_email can be changed",
+            "lineNumber": 112
+          },
+          {
+            "text": "create policy \"Users can update only suggested_work_email\" on public.users",
+            "lineNumber": 113
+          },
+          {
+            "text": "for update",
+            "lineNumber": 114
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 115
+          },
+          {
+            "text": "using ( (select auth.uid()) = auth_user_id )",
+            "lineNumber": 116
+          },
+          {
+            "text": "with check ( (select auth.uid()) = auth_user_id );",
+            "lineNumber": 117
+          },
+          {
+            "lineNumber": 118
+          },
+          {
+            "text": "comment on policy \"Users can update only suggested_work_email\" on public.users is 'RLS policy that allows authenticated users to update only their own user record. The handle_user_update_restriction() trigger enforces that only suggested_work_email can be modified, and automatically updates last_otp_sent_at.';",
+            "lineNumber": 119
+          },
+          {
+            "lineNumber": 120
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 121
+          }
+        ]
+      },
+      "score": 0.4337165355682373
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 50
+          }
+        },
+        "contents": "-- Migration: Initial schema setup\n-- Purpose: Creates complete database schema with tables, triggers, and restrictive RLS policies\n-- Affected tables: users, profiles, teams\n-- Special considerations: All RLS policies are restrictive - admin operations require service_role or application-level checks\n\n-- ============================================================================\n-- ENUM TYPES\n-- ============================================================================\n\ncreate type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');\n\n-- ============================================================================\n-- TABLES\n-- ============================================================================\n\n-- Create users table (custom table, separate from auth.users)\n-- Stores Google OAuth user data and OTP tracking\n-- Linked to auth.users via auth_user_id for authentication checks\ncreate table public.users (\n  id uuid primary key default gen_random_uuid(),\n  auth_user_id uuid unique references auth.users(id) on delete cascade,\n  google_email text not null unique,\n  suggested_work_email text,\n  verified_work_email text,\n  verified_work_email_at timestamptz,\n  google_profile_picture text,\n  google_full_name text,\n  last_otp_sent_at timestamptz,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\ncomment on table public.users is 'Custom users table storing Google OAuth user data and OTP tracking. Separate from auth.users but linked via auth_user_id for authentication.';\n\n-- Create teams table\ncreate table public.teams (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  picture text,\n  color text,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\ncomment on table public.teams is 'Team information for organizing users into groups.';\n\n-- Create profiles table (pre-created by admin, linked to user after verification)\n-- References the new users table instead of auth.users\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Initial schema setup",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Creates complete database schema with tables, triggers, and restrictive RLS policies",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users, profiles, teams",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: All RLS policies are restrictive - admin operations require service_role or application-level checks",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- ENUM TYPES",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 12
+          },
+          {
+            "text": "-- TABLES",
+            "lineNumber": 13
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 14
+          },
+          {
+            "lineNumber": 15
+          },
+          {
+            "text": "-- Create users table (custom table, separate from auth.users)",
+            "lineNumber": 16
+          },
+          {
+            "text": "-- Stores Google OAuth user data and OTP tracking",
+            "lineNumber": 17
+          },
+          {
+            "text": "-- Linked to auth.users via auth_user_id for authentication checks",
+            "lineNumber": 18
+          },
+          {
+            "text": "create table public.users (",
+            "lineNumber": 19
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 20
+          },
+          {
+            "text": "  auth_user_id uuid unique references auth.users(id) on delete cascade,",
+            "lineNumber": 21
+          },
+          {
+            "text": "  google_email text not null unique,",
+            "lineNumber": 22
+          },
+          {
+            "text": "  suggested_work_email text,",
+            "lineNumber": 23
+          },
+          {
+            "text": "  verified_work_email text,",
+            "lineNumber": 24
+          },
+          {
+            "text": "  verified_work_email_at timestamptz,",
+            "lineNumber": 25
+          },
+          {
+            "text": "  google_profile_picture text,",
+            "lineNumber": 26
+          },
+          {
+            "text": "  google_full_name text,",
+            "lineNumber": 27
+          },
+          {
+            "text": "  last_otp_sent_at timestamptz,",
+            "lineNumber": 28
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 29
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 30
+          },
+          {
+            "text": ");",
+            "lineNumber": 31
+          },
+          {
+            "lineNumber": 32
+          },
+          {
+            "text": "comment on table public.users is 'Custom users table storing Google OAuth user data and OTP tracking. Separate from auth.users but linked via auth_user_id for authentication.';",
+            "lineNumber": 33
+          },
+          {
+            "lineNumber": 34
+          },
+          {
+            "text": "-- Create teams table",
+            "lineNumber": 35
+          },
+          {
+            "text": "create table public.teams (",
+            "lineNumber": 36
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 37
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 38
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 39
+          },
+          {
+            "text": "  color text,",
+            "lineNumber": 40
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 41
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 42
+          },
+          {
+            "text": ");",
+            "lineNumber": 43
+          },
+          {
+            "lineNumber": 44
+          },
+          {
+            "text": "comment on table public.teams is 'Team information for organizing users into groups.';",
+            "lineNumber": 45
+          },
+          {
+            "lineNumber": 46
+          },
+          {
+            "text": "-- Create profiles table (pre-created by admin, linked to user after verification)",
+            "lineNumber": 47
+          },
+          {
+            "text": "-- References the new users table instead of auth.users",
+            "lineNumber": 48
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 49
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 50
+          }
+        ]
+      },
+      "score": 0.41652241349220276
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {
+            "line": 118
+          },
+          "endPosition": {
+            "line": 127
+          }
+        },
+        "contents": "comment on policy \"Users can update only suggested_work_email\" on public.users is 'RLS policy that allows authenticated users to update only their own user record. The handle_user_update_restriction() trigger enforces that only suggested_work_email can be modified, and automatically updates last_otp_sent_at.';\n\n-- ============================================================================\n-- GRANTS\n-- ============================================================================\n\n-- Grant execute permissions for the new trigger function\ngrant execute on function public.handle_user_update_restriction() to authenticated;\ngrant execute on function public.handle_user_update_restriction() to anon;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "comment on policy \"Users can update only suggested_work_email\" on public.users is 'RLS policy that allows authenticated users to update only their own user record. The handle_user_update_restriction() trigger enforces that only suggested_work_email can be modified, and automatically updates last_otp_sent_at.';",
+            "lineNumber": 119
+          },
+          {
+            "lineNumber": 120
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 121
+          },
+          {
+            "text": "-- GRANTS",
+            "lineNumber": 122
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 123
+          },
+          {
+            "lineNumber": 124
+          },
+          {
+            "text": "-- Grant execute permissions for the new trigger function",
+            "lineNumber": 125
+          },
+          {
+            "text": "grant execute on function public.handle_user_update_restriction() to authenticated;",
+            "lineNumber": 126
+          },
+          {
+            "text": "grant execute on function public.handle_user_update_restriction() to anon;",
+            "lineNumber": 127
+          }
+        ]
+      },
+      "score": 0.4158802032470703
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 38
+          }
+        },
+        "contents": "-- Migration: Restrict user updates to suggested_work_email only\n-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at\n-- Affected tables: users\n-- Special considerations: Prevents users from modifying any other fields in the users table\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to restrict updates to suggested_work_email only\n-- Automatically updates last_otp_sent_at when suggested_work_email changes\n-- Prevents users from modifying any other fields in the users table\n-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones\ncreate or replace function public.handle_user_update_restriction()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth, pg_catalog\nas $$\ndeclare\n  -- Whitelist: fields that users are allowed to modify\n  v_allowed_fields text[] := array['suggested_work_email'];\n  \n  -- System fields: can be updated by trigger functions (SECURITY DEFINER), not by users\n  v_system_fields text[] := array['verified_work_email', 'verified_work_email_at'];\n  \n  -- Fields with special handling logic (not reset from OLD)\n  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];\n  \n  -- JSONB representations of OLD and NEW records\n  v_old_jsonb jsonb;\n  v_new_jsonb jsonb;\n  v_result_jsonb jsonb;\n  \n  -- Column name for iteration\n  v_column_name text;\nbegin\n  -- Convert records to jsonb for dynamic manipulation (must be first)",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Migration: Restrict user updates to suggested_work_email only",
+            "lineNumber": 1
+          },
+          {
+            "text": "-- Purpose: Allows users to only update suggested_work_email field, automatically updates last_otp_sent_at",
+            "lineNumber": 2
+          },
+          {
+            "text": "-- Affected tables: users",
+            "lineNumber": 3
+          },
+          {
+            "text": "-- Special considerations: Prevents users from modifying any other fields in the users table",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 6
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 7
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "-- Create trigger function to restrict updates to suggested_work_email only",
+            "lineNumber": 10
+          },
+          {
+            "text": "-- Automatically updates last_otp_sent_at when suggested_work_email changes",
+            "lineNumber": 11
+          },
+          {
+            "text": "-- Prevents users from modifying any other fields in the users table",
+            "lineNumber": 12
+          },
+          {
+            "text": "-- Uses dynamic jsonb approach to automatically protect all columns except allowed ones",
+            "lineNumber": 13
+          },
+          {
+            "text": "create or replace function public.handle_user_update_restriction()",
+            "lineNumber": 14
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 15
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 16
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 17
+          },
+          {
+            "text": "set search_path = public, auth, pg_catalog",
+            "lineNumber": 18
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 19
+          },
+          {
+            "text": "declare",
+            "lineNumber": 20
+          },
+          {
+            "text": "  -- Whitelist: fields that users are allowed to modify",
+            "lineNumber": 21
+          },
+          {
+            "text": "  v_allowed_fields text[] := array['suggested_work_email'];",
+            "lineNumber": 22
+          },
+          {
+            "text": "  ",
+            "lineNumber": 23
+          },
+          {
+            "text": "  -- System fields: can be updated by trigger functions (SECURITY DEFINER), not by users",
+            "lineNumber": 24
+          },
+          {
+            "text": "  v_system_fields text[] := array['verified_work_email', 'verified_work_email_at'];",
+            "lineNumber": 25
+          },
+          {
+            "text": "  ",
+            "lineNumber": 26
+          },
+          {
+            "text": "  -- Fields with special handling logic (not reset from OLD)",
+            "lineNumber": 27
+          },
+          {
+            "text": "  v_special_fields text[] := array['last_otp_sent_at', 'updated_at'];",
+            "lineNumber": 28
+          },
+          {
+            "text": "  ",
+            "lineNumber": 29
+          },
+          {
+            "text": "  -- JSONB representations of OLD and NEW records",
+            "lineNumber": 30
+          },
+          {
+            "text": "  v_old_jsonb jsonb;",
+            "lineNumber": 31
+          },
+          {
+            "text": "  v_new_jsonb jsonb;",
+            "lineNumber": 32
+          },
+          {
+            "text": "  v_result_jsonb jsonb;",
+            "lineNumber": 33
+          },
+          {
+            "text": "  ",
+            "lineNumber": 34
+          },
+          {
+            "text": "  -- Column name for iteration",
+            "lineNumber": 35
+          },
+          {
+            "text": "  v_column_name text;",
+            "lineNumber": 36
+          },
+          {
+            "text": "begin",
+            "lineNumber": 37
+          },
+          {
+            "text": "  -- Convert records to jsonb for dynamic manipulation (must be first)",
+            "lineNumber": 38
+          }
+        ]
+      },
+      "score": 0.4047996997833252
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 301
+          },
+          "endPosition": {
+            "line": 357
+          }
+        },
+        "contents": "-- Users can update their own user record\ncreate policy \"Users can update their own user record\" on public.users\nfor update\nto authenticated\nusing ( (select auth.uid()) = auth_user_id )\nwith check ( (select auth.uid()) = auth_user_id );\n\n-- Users can insert their own user record (during signup via trigger)\ncreate policy \"Users can insert their own user record\" on public.users\nfor insert\nto authenticated\nwith check ( (select auth.uid()) = auth_user_id );\n\n-- ============================================================================\n-- RLS POLICIES - PROFILES TABLE\n-- ============================================================================\n\n-- Users can view their own profile\ncreate policy \"Users can view their own profile\" on public.profiles\nfor select\nto authenticated\nusing (\n  user_id in (\n    select id\n    from public.users\n    where auth_user_id = (select auth.uid())\n  )\n);\n\n-- ============================================================================\n-- RLS POLICIES - REALTIME MESSAGES TABLE\n-- ============================================================================\n\n-- Users can receive broadcasts for their own user record\ncreate policy \"Users can receive broadcasts for their own user record\" on realtime.messages\nfor select\nto authenticated\nusing (\n  topic like 'users:%'\n  and exists (\n    select 1\n    from public.users\n    where auth_user_id = (select auth.uid())\n    and topic = 'users:' || id::text\n  )\n);\n\n-- ============================================================================\n-- GRANTS\n-- ============================================================================\n\n-- Grant execute permissions for Supabase Auth hook function\n-- Trigger functions (handle_new_auth_user, validate_czu_email_domain_trigger) are invoked by triggers, not directly, so no EXECUTE grants needed\ngrant execute on function public.before_user_created_hook(jsonb) to supabase_auth_admin;\ngrant usage on schema public to supabase_auth_admin;\nrevoke execute on function public.before_user_created_hook(jsonb) from anon, authenticated, public;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Users can update their own user record",
+            "lineNumber": 302
+          },
+          {
+            "text": "create policy \"Users can update their own user record\" on public.users",
+            "lineNumber": 303
+          },
+          {
+            "text": "for update",
+            "lineNumber": 304
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 305
+          },
+          {
+            "text": "using ( (select auth.uid()) = auth_user_id )",
+            "lineNumber": 306
+          },
+          {
+            "text": "with check ( (select auth.uid()) = auth_user_id );",
+            "lineNumber": 307
+          },
+          {
+            "lineNumber": 308
+          },
+          {
+            "text": "-- Users can insert their own user record (during signup via trigger)",
+            "lineNumber": 309
+          },
+          {
+            "text": "create policy \"Users can insert their own user record\" on public.users",
+            "lineNumber": 310
+          },
+          {
+            "text": "for insert",
+            "lineNumber": 311
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 312
+          },
+          {
+            "text": "with check ( (select auth.uid()) = auth_user_id );",
+            "lineNumber": 313
+          },
+          {
+            "lineNumber": 314
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 315
+          },
+          {
+            "text": "-- RLS POLICIES - PROFILES TABLE",
+            "lineNumber": 316
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 317
+          },
+          {
+            "lineNumber": 318
+          },
+          {
+            "text": "-- Users can view their own profile",
+            "lineNumber": 319
+          },
+          {
+            "text": "create policy \"Users can view their own profile\" on public.profiles",
+            "lineNumber": 320
+          },
+          {
+            "text": "for select",
+            "lineNumber": 321
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 322
+          },
+          {
+            "text": "using (",
+            "lineNumber": 323
+          },
+          {
+            "text": "  user_id in (",
+            "lineNumber": 324
+          },
+          {
+            "text": "    select id",
+            "lineNumber": 325
+          },
+          {
+            "text": "    from public.users",
+            "lineNumber": 326
+          },
+          {
+            "text": "    where auth_user_id = (select auth.uid())",
+            "lineNumber": 327
+          },
+          {
+            "text": "  )",
+            "lineNumber": 328
+          },
+          {
+            "text": ");",
+            "lineNumber": 329
+          },
+          {
+            "lineNumber": 330
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 331
+          },
+          {
+            "text": "-- RLS POLICIES - REALTIME MESSAGES TABLE",
+            "lineNumber": 332
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 333
+          },
+          {
+            "lineNumber": 334
+          },
+          {
+            "text": "-- Users can receive broadcasts for their own user record",
+            "lineNumber": 335
+          },
+          {
+            "text": "create policy \"Users can receive broadcasts for their own user record\" on realtime.messages",
+            "lineNumber": 336
+          },
+          {
+            "text": "for select",
+            "lineNumber": 337
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 338
+          },
+          {
+            "text": "using (",
+            "lineNumber": 339
+          },
+          {
+            "text": "  topic like 'users:%'",
+            "lineNumber": 340
+          },
+          {
+            "text": "  and exists (",
+            "lineNumber": 341
+          },
+          {
+            "text": "    select 1",
+            "lineNumber": 342
+          },
+          {
+            "text": "    from public.users",
+            "lineNumber": 343
+          },
+          {
+            "text": "    where auth_user_id = (select auth.uid())",
+            "lineNumber": 344
+          },
+          {
+            "text": "    and topic = 'users:' || id::text",
+            "lineNumber": 345
+          },
+          {
+            "text": "  )",
+            "lineNumber": 346
+          },
+          {
+            "text": ");",
+            "lineNumber": 347
+          },
+          {
+            "lineNumber": 348
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 349
+          },
+          {
+            "text": "-- GRANTS",
+            "lineNumber": 350
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 351
+          },
+          {
+            "lineNumber": 352
+          },
+          {
+            "text": "-- Grant execute permissions for Supabase Auth hook function",
+            "lineNumber": 353
+          },
+          {
+            "text": "-- Trigger functions (handle_new_auth_user, validate_czu_email_domain_trigger) are invoked by triggers, not directly, so no EXECUTE grants needed",
+            "lineNumber": 354
+          },
+          {
+            "text": "grant execute on function public.before_user_created_hook(jsonb) to supabase_auth_admin;",
+            "lineNumber": 355
+          },
+          {
+            "text": "grant usage on schema public to supabase_auth_admin;",
+            "lineNumber": 356
+          },
+          {
+            "text": "revoke execute on function public.before_user_created_hook(jsonb) from anon, authenticated, public;",
+            "lineNumber": 357
+          }
+        ]
+      },
+      "score": 0.38909101486206055
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 256
+          },
+          "endPosition": {
+            "line": 303
+          }
+        },
+        "contents": "-- Create trigger on auth.users table for email domain validation\ndrop trigger if exists validate_czu_email_domain_trigger on auth.users;\n\ncreate trigger validate_czu_email_domain_trigger\nbefore update of email, email_change on auth.users\nfor each row\nexecute function public.validate_czu_email_domain_trigger();\n\n-- ============================================================================\n-- INDEXES\n-- ============================================================================\n\ncreate index profiles_user_id_idx on public.profiles(user_id);\ncreate index profiles_work_email_idx on public.profiles(work_email);\ncreate index profiles_team_id_idx on public.profiles(team_id);\ncreate index profiles_team_id_user_id_idx on public.profiles(team_id, user_id);\ncreate index users_google_email_idx on public.users(google_email);\ncreate index users_suggested_work_email_idx on public.users(suggested_work_email);\ncreate index if not exists idx_realtime_messages_topic on realtime.messages(topic);\n\n-- ============================================================================\n-- REALTIME\n-- ============================================================================\n\nalter publication supabase_realtime add table public.users;\n\n-- ============================================================================\n-- ROW LEVEL SECURITY\n-- ============================================================================\n\n-- Enable RLS on all tables\nalter table public.users enable row level security;\nalter table public.profiles enable row level security;\nalter table public.teams enable row level security;\n\n-- ============================================================================\n-- RLS POLICIES - USERS TABLE\n-- ============================================================================\n\n-- Users can view their own user record\ncreate policy \"Users can view their own user record\" on public.users\nfor select\nto authenticated\nusing ( (select auth.uid()) = auth_user_id );\n\n-- Users can update their own user record\ncreate policy \"Users can update their own user record\" on public.users",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- Create trigger on auth.users table for email domain validation",
+            "lineNumber": 257
+          },
+          {
+            "text": "drop trigger if exists validate_czu_email_domain_trigger on auth.users;",
+            "lineNumber": 258
+          },
+          {
+            "lineNumber": 259
+          },
+          {
+            "text": "create trigger validate_czu_email_domain_trigger",
+            "lineNumber": 260
+          },
+          {
+            "text": "before update of email, email_change on auth.users",
+            "lineNumber": 261
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 262
+          },
+          {
+            "text": "execute function public.validate_czu_email_domain_trigger();",
+            "lineNumber": 263
+          },
+          {
+            "lineNumber": 264
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 265
+          },
+          {
+            "text": "-- INDEXES",
+            "lineNumber": 266
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 267
+          },
+          {
+            "lineNumber": 268
+          },
+          {
+            "text": "create index profiles_user_id_idx on public.profiles(user_id);",
+            "lineNumber": 269
+          },
+          {
+            "text": "create index profiles_work_email_idx on public.profiles(work_email);",
+            "lineNumber": 270
+          },
+          {
+            "text": "create index profiles_team_id_idx on public.profiles(team_id);",
+            "lineNumber": 271
+          },
+          {
+            "text": "create index profiles_team_id_user_id_idx on public.profiles(team_id, user_id);",
+            "lineNumber": 272
+          },
+          {
+            "text": "create index users_google_email_idx on public.users(google_email);",
+            "lineNumber": 273
+          },
+          {
+            "text": "create index users_suggested_work_email_idx on public.users(suggested_work_email);",
+            "lineNumber": 274
+          },
+          {
+            "text": "create index if not exists idx_realtime_messages_topic on realtime.messages(topic);",
+            "lineNumber": 275
+          },
+          {
+            "lineNumber": 276
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 277
+          },
+          {
+            "text": "-- REALTIME",
+            "lineNumber": 278
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 279
+          },
+          {
+            "lineNumber": 280
+          },
+          {
+            "text": "alter publication supabase_realtime add table public.users;",
+            "lineNumber": 281
+          },
+          {
+            "lineNumber": 282
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 283
+          },
+          {
+            "text": "-- ROW LEVEL SECURITY",
+            "lineNumber": 284
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 285
+          },
+          {
+            "lineNumber": 286
+          },
+          {
+            "text": "-- Enable RLS on all tables",
+            "lineNumber": 287
+          },
+          {
+            "text": "alter table public.users enable row level security;",
+            "lineNumber": 288
+          },
+          {
+            "text": "alter table public.profiles enable row level security;",
+            "lineNumber": 289
+          },
+          {
+            "text": "alter table public.teams enable row level security;",
+            "lineNumber": 290
+          },
+          {
+            "lineNumber": 291
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 292
+          },
+          {
+            "text": "-- RLS POLICIES - USERS TABLE",
+            "lineNumber": 293
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 294
+          },
+          {
+            "lineNumber": 295
+          },
+          {
+            "text": "-- Users can view their own user record",
+            "lineNumber": 296
+          },
+          {
+            "text": "create policy \"Users can view their own user record\" on public.users",
+            "lineNumber": 297
+          },
+          {
+            "text": "for select",
+            "lineNumber": 298
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 299
+          },
+          {
+            "text": "using ( (select auth.uid()) = auth_user_id );",
+            "lineNumber": 300
+          },
+          {
+            "lineNumber": 301
+          },
+          {
+            "text": "-- Users can update their own user record",
+            "lineNumber": 302
+          },
+          {
+            "text": "create policy \"Users can update their own user record\" on public.users",
+            "lineNumber": 303
+          }
+        ]
+      },
+      "score": 0.3843038082122803
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131120000_restrict_user_updates.sql",
+        "range": {
+          "startPosition": {
+            "line": 35
+          },
+          "endPosition": {
+            "line": 78
+          }
+        },
+        "contents": "  v_column_name text;\nbegin\n  -- Convert records to jsonb for dynamic manipulation (must be first)\n  v_old_jsonb := to_jsonb(old);\n  v_new_jsonb := to_jsonb(new);\n  \n  -- Start with OLD values (protected state)\n  v_result_jsonb := v_old_jsonb;\n  \n  -- Allow only whitelisted fields from NEW to override OLD values\n  foreach v_column_name in array v_allowed_fields\n  loop\n    if v_new_jsonb ? v_column_name then\n      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);\n    end if;\n  end loop;\n  \n  -- Allow system fields to be updated by trigger functions\n  -- When verified_work_email is being set/changed, this indicates a system trigger update\n  -- Users cannot directly set verified_work_email due to RLS and application logic\n  if v_new_jsonb ? 'verified_work_email' and (v_old_jsonb-&gt;&gt;'verified_work_email') is distinct from (v_new_jsonb-&gt;&gt;'verified_work_email') then\n    -- This is a system update setting verified_work_email, allow both system fields\n    foreach v_column_name in array v_system_fields\n    loop\n      if v_new_jsonb ? v_column_name then\n        v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);\n      end if;\n    end loop;\n  end if;\n  \n  -- Handle special field: last_otp_sent_at\n  -- Automatically update when suggested_work_email changes\n  if (v_old_jsonb-&gt;&gt;'suggested_work_email') is distinct from (v_new_jsonb-&gt;&gt;'suggested_work_email') then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));\n  else\n    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');\n  end if;\n  \n  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)\n  -- But we include it here to ensure it's not reset\n  if v_new_jsonb ? 'updated_at' then\n    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_column_name text;",
+            "lineNumber": 36
+          },
+          {
+            "text": "begin",
+            "lineNumber": 37
+          },
+          {
+            "text": "  -- Convert records to jsonb for dynamic manipulation (must be first)",
+            "lineNumber": 38
+          },
+          {
+            "text": "  v_old_jsonb := to_jsonb(old);",
+            "lineNumber": 39
+          },
+          {
+            "text": "  v_new_jsonb := to_jsonb(new);",
+            "lineNumber": 40
+          },
+          {
+            "text": "  ",
+            "lineNumber": 41
+          },
+          {
+            "text": "  -- Start with OLD values (protected state)",
+            "lineNumber": 42
+          },
+          {
+            "text": "  v_result_jsonb := v_old_jsonb;",
+            "lineNumber": 43
+          },
+          {
+            "text": "  ",
+            "lineNumber": 44
+          },
+          {
+            "text": "  -- Allow only whitelisted fields from NEW to override OLD values",
+            "lineNumber": 45
+          },
+          {
+            "text": "  foreach v_column_name in array v_allowed_fields",
+            "lineNumber": 46
+          },
+          {
+            "text": "  loop",
+            "lineNumber": 47
+          },
+          {
+            "text": "    if v_new_jsonb ? v_column_name then",
+            "lineNumber": 48
+          },
+          {
+            "text": "      v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);",
+            "lineNumber": 49
+          },
+          {
+            "text": "    end if;",
+            "lineNumber": 50
+          },
+          {
+            "text": "  end loop;",
+            "lineNumber": 51
+          },
+          {
+            "text": "  ",
+            "lineNumber": 52
+          },
+          {
+            "text": "  -- Allow system fields to be updated by trigger functions",
+            "lineNumber": 53
+          },
+          {
+            "text": "  -- When verified_work_email is being set/changed, this indicates a system trigger update",
+            "lineNumber": 54
+          },
+          {
+            "text": "  -- Users cannot directly set verified_work_email due to RLS and application logic",
+            "lineNumber": 55
+          },
+          {
+            "text": "  if v_new_jsonb ? 'verified_work_email' and (v_old_jsonb-&gt;&gt;'verified_work_email') is distinct from (v_new_jsonb-&gt;&gt;'verified_work_email') then",
+            "lineNumber": 56
+          },
+          {
+            "text": "    -- This is a system update setting verified_work_email, allow both system fields",
+            "lineNumber": 57
+          },
+          {
+            "text": "    foreach v_column_name in array v_system_fields",
+            "lineNumber": 58
+          },
+          {
+            "text": "    loop",
+            "lineNumber": 59
+          },
+          {
+            "text": "      if v_new_jsonb ? v_column_name then",
+            "lineNumber": 60
+          },
+          {
+            "text": "        v_result_jsonb := jsonb_set(v_result_jsonb, array[v_column_name], v_new_jsonb-&gt;v_column_name);",
+            "lineNumber": 61
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 62
+          },
+          {
+            "text": "    end loop;",
+            "lineNumber": 63
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 64
+          },
+          {
+            "text": "  ",
+            "lineNumber": 65
+          },
+          {
+            "text": "  -- Handle special field: last_otp_sent_at",
+            "lineNumber": 66
+          },
+          {
+            "text": "  -- Automatically update when suggested_work_email changes",
+            "lineNumber": 67
+          },
+          {
+            "text": "  if (v_old_jsonb-&gt;&gt;'suggested_work_email') is distinct from (v_new_jsonb-&gt;&gt;'suggested_work_email') then",
+            "lineNumber": 68
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], to_jsonb(now()));",
+            "lineNumber": 69
+          },
+          {
+            "text": "  else",
+            "lineNumber": 70
+          },
+          {
+            "text": "    -- Keep existing last_otp_sent_at if suggested_work_email hasn't changed",
+            "lineNumber": 71
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['last_otp_sent_at'], v_old_jsonb-&gt;'last_otp_sent_at');",
+            "lineNumber": 72
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 73
+          },
+          {
+            "text": "  ",
+            "lineNumber": 74
+          },
+          {
+            "text": "  -- Preserve updated_at from NEW (will be set by handle_updated_at() trigger)",
+            "lineNumber": 75
+          },
+          {
+            "text": "  -- But we include it here to ensure it's not reset",
+            "lineNumber": 76
+          },
+          {
+            "text": "  if v_new_jsonb ? 'updated_at' then",
+            "lineNumber": 77
+          },
+          {
+            "text": "    v_result_jsonb := jsonb_set(v_result_jsonb, array['updated_at'], v_new_jsonb-&gt;'updated_at');",
+            "lineNumber": 78
+          }
+        ]
+      },
+      "score": 0.3521476089954376
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 38
+          },
+          "endPosition": {
+            "line": 97
+          }
+        },
+        "contents": "## Architecture Overview\n\n&#96;&#96;&#96;mermaid\nflowchart TD\n    subgraph auth_flow [Authentication Flow]\n        A[User clicks Google Login] --&gt; B[Google OAuth]\n        B --&gt; C[Redirect back with Google identity]\n        C --&gt; D{Profile linked to user?}\n        D --&gt;|No| E[Prompt for work email]\n        E --&gt; F{Domain is czu.cz?}\n        F --&gt;|No| G[Show domain error]\n        G --&gt; E\n        F --&gt;|Yes| H[Send OTP to work email]\n        H --&gt; I[User enters OTP]\n        I --&gt; J{Profile exists for work email?}\n        J --&gt;|No| K[Pending Approval Page]\n        J --&gt;|Yes| L[Link profile to user]\n        D --&gt;|Yes| M{Access revoked?}\n        L --&gt; M\n        M --&gt;|Yes| N[Show access revoked]\n        M --&gt;|No| O[Grant Full Access]\n    end\n\n    subgraph request_flow [Request Validation]\n        P[Incoming Request] --&gt; Q[Middleware queries database]\n        Q --&gt; R{Profile linked to user?}\n        R --&gt;|No| S[Redirect to verify email]\n        R --&gt;|Yes| T{removed_access is null?}\n        T --&gt;|No| U[Show access revoked]\n        T --&gt;|Yes| V[Allow access]\n    end\n&#96;&#96;&#96;\n\n## Validation Flow\n\n**Two-stage validation:**\n\n1. **Before OTP (Domain Check)**: Validate email ends with &#96;@studenti.czu.cz&#96; or &#96;@pef.czu.cz&#96;\n\n   - Client-side: Immediate feedback\n   - Server-side: Validated before &#96;signInWithOtp&#96; is called\n\n2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email\n\n   - If profile exists with that work_email → link profile to auth.user\n   - If no profile exists → show \"Pending Approval\" (admin must create profile first)\n   - Checked on every request via middleware\n\n## Database Schema (Supabase Migrations)\n\nTwo tables with **no RLS** - all access control is handled in Next.js:\n\n1. **&#96;users&#96;** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions\n2. **&#96;profiles&#96;** - User authentication profile data with role and access control\n\n**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.\n\nUse MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "## Architecture Overview",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "&#96;&#96;&#96;mermaid",
+            "lineNumber": 41
+          },
+          {
+            "text": "flowchart TD",
+            "lineNumber": 42
+          },
+          {
+            "text": "    subgraph auth_flow [Authentication Flow]",
+            "lineNumber": 43
+          },
+          {
+            "text": "        A[User clicks Google Login] --&gt; B[Google OAuth]",
+            "lineNumber": 44
+          },
+          {
+            "text": "        B --&gt; C[Redirect back with Google identity]",
+            "lineNumber": 45
+          },
+          {
+            "text": "        C --&gt; D{Profile linked to user?}",
+            "lineNumber": 46
+          },
+          {
+            "text": "        D --&gt;|No| E[Prompt for work email]",
+            "lineNumber": 47
+          },
+          {
+            "text": "        E --&gt; F{Domain is czu.cz?}",
+            "lineNumber": 48
+          },
+          {
+            "text": "        F --&gt;|No| G[Show domain error]",
+            "lineNumber": 49
+          },
+          {
+            "text": "        G --&gt; E",
+            "lineNumber": 50
+          },
+          {
+            "text": "        F --&gt;|Yes| H[Send OTP to work email]",
+            "lineNumber": 51
+          },
+          {
+            "text": "        H --&gt; I[User enters OTP]",
+            "lineNumber": 52
+          },
+          {
+            "text": "        I --&gt; J{Profile exists for work email?}",
+            "lineNumber": 53
+          },
+          {
+            "text": "        J --&gt;|No| K[Pending Approval Page]",
+            "lineNumber": 54
+          },
+          {
+            "text": "        J --&gt;|Yes| L[Link profile to user]",
+            "lineNumber": 55
+          },
+          {
+            "text": "        D --&gt;|Yes| M{Access revoked?}",
+            "lineNumber": 56
+          },
+          {
+            "text": "        L --&gt; M",
+            "lineNumber": 57
+          },
+          {
+            "text": "        M --&gt;|Yes| N[Show access revoked]",
+            "lineNumber": 58
+          },
+          {
+            "text": "        M --&gt;|No| O[Grant Full Access]",
+            "lineNumber": 59
+          },
+          {
+            "text": "    end",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "    subgraph request_flow [Request Validation]",
+            "lineNumber": 62
+          },
+          {
+            "text": "        P[Incoming Request] --&gt; Q[Middleware queries database]",
+            "lineNumber": 63
+          },
+          {
+            "text": "        Q --&gt; R{Profile linked to user?}",
+            "lineNumber": 64
+          },
+          {
+            "text": "        R --&gt;|No| S[Redirect to verify email]",
+            "lineNumber": 65
+          },
+          {
+            "text": "        R --&gt;|Yes| T{removed_access is null?}",
+            "lineNumber": 66
+          },
+          {
+            "text": "        T --&gt;|No| U[Show access revoked]",
+            "lineNumber": 67
+          },
+          {
+            "text": "        T --&gt;|Yes| V[Allow access]",
+            "lineNumber": 68
+          },
+          {
+            "text": "    end",
+            "lineNumber": 69
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 70
+          },
+          {
+            "lineNumber": 71
+          },
+          {
+            "text": "## Validation Flow",
+            "lineNumber": 72
+          },
+          {
+            "lineNumber": 73
+          },
+          {
+            "text": "**Two-stage validation:**",
+            "lineNumber": 74
+          },
+          {
+            "lineNumber": 75
+          },
+          {
+            "text": "1. **Before OTP (Domain Check)**: Validate email ends with &#96;@studenti.czu.cz&#96; or &#96;@pef.czu.cz&#96;",
+            "lineNumber": 76
+          },
+          {
+            "lineNumber": 77
+          },
+          {
+            "text": "   - Client-side: Immediate feedback",
+            "lineNumber": 78
+          },
+          {
+            "text": "   - Server-side: Validated before &#96;signInWithOtp&#96; is called",
+            "lineNumber": 79
+          },
+          {
+            "lineNumber": 80
+          },
+          {
+            "text": "2. **After OTP (Profile Linking)**: Check if a profile exists for the verified work email",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "   - If profile exists with that work_email → link profile to auth.user",
+            "lineNumber": 83
+          },
+          {
+            "text": "   - If no profile exists → show \"Pending Approval\" (admin must create profile first)",
+            "lineNumber": 84
+          },
+          {
+            "text": "   - Checked on every request via middleware",
+            "lineNumber": 85
+          },
+          {
+            "lineNumber": 86
+          },
+          {
+            "text": "## Database Schema (Supabase Migrations)",
+            "lineNumber": 87
+          },
+          {
+            "lineNumber": 88
+          },
+          {
+            "text": "Two tables with **no RLS** - all access control is handled in Next.js:",
+            "lineNumber": 89
+          },
+          {
+            "lineNumber": 90
+          },
+          {
+            "text": "1. **&#96;users&#96;** - Custom table to sync with auth.users (Google OAuth), synced via Next.js server actions",
+            "lineNumber": 91
+          },
+          {
+            "text": "2. **&#96;profiles&#96;** - User authentication profile data with role and access control",
+            "lineNumber": 92
+          },
+          {
+            "lineNumber": 93
+          },
+          {
+            "text": "**Important**: No Supabase functions, triggers, or RLS policies. All business logic lives in Next.js.",
+            "lineNumber": 94
+          },
+          {
+            "lineNumber": 95
+          },
+          {
+            "text": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+            "lineNumber": 96
+          }
+        ]
+      },
+      "score": 0.32257819175720215
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 94
+          },
+          "endPosition": {
+            "line": 144
+          }
+        },
+        "contents": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.\n\n&#96;&#96;&#96;sql\n-- Users table to sync with auth.users (Google OAuth)\n-- Note: Synced via Next.js server actions, not database triggers\ncreate table public.users (\n  id uuid primary key references auth.users(id) on delete cascade,\n  email text not null,\n  name text,\n  picture text,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null\n);\n\n-- Role enum for profiles (authorization)\ncreate type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');\n\n-- Profiles table (pre-created by admin, linked to user after verification)\n-- Focus: Authentication and authorization only\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  user_id uuid unique references public.users(id) on delete set null,  -- linked after OTP verification\n  work_email text unique not null,\n  role public.profile_role not null default 'student',\n  removed_access timestamptz,  -- null = active, set = revoked\n  removed_access_by uuid references public.profiles(id) on delete set null,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null,\n  constraint valid_czu_domain check (\n    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'\n  )\n);\n\n-- Indexes for auth queries\ncreate index profiles_user_id_idx on public.profiles(user_id);\ncreate index profiles_work_email_idx on public.profiles(work_email);\n&#96;&#96;&#96;\n\n### Entity Relationships\n\n&#96;&#96;&#96;\n┌─────────────────┐       ┌─────────────────┐\n│   auth.users    │       │    profiles     │\n│  (Supabase)     │       │  (Auth only)    │\n├─────────────────┤       ├─────────────────┤\n│ id (uuid)       │◄──┐   │ id (uuid)       │\n│ email (google)  │   │   │ name            │\n│ ...auth fields  │   └───│ user_id (1:1)   │",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "Use MODDATETIME extension to set the &#96;updated_at&#96; column on every update.",
+            "lineNumber": 96
+          },
+          {
+            "lineNumber": 97
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 98
+          },
+          {
+            "text": "-- Users table to sync with auth.users (Google OAuth)",
+            "lineNumber": 99
+          },
+          {
+            "text": "-- Note: Synced via Next.js server actions, not database triggers",
+            "lineNumber": 100
+          },
+          {
+            "text": "create table public.users (",
+            "lineNumber": 101
+          },
+          {
+            "text": "  id uuid primary key references auth.users(id) on delete cascade,",
+            "lineNumber": 102
+          },
+          {
+            "text": "  email text not null,",
+            "lineNumber": 103
+          },
+          {
+            "text": "  name text,",
+            "lineNumber": 104
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 105
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 106
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null",
+            "lineNumber": 107
+          },
+          {
+            "text": ");",
+            "lineNumber": 108
+          },
+          {
+            "lineNumber": 109
+          },
+          {
+            "text": "-- Role enum for profiles (authorization)",
+            "lineNumber": 110
+          },
+          {
+            "text": "create type public.profile_role as enum ('student', 'team_leader', 'coach', 'admin');",
+            "lineNumber": 111
+          },
+          {
+            "lineNumber": 112
+          },
+          {
+            "text": "-- Profiles table (pre-created by admin, linked to user after verification)",
+            "lineNumber": 113
+          },
+          {
+            "text": "-- Focus: Authentication and authorization only",
+            "lineNumber": 114
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 115
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 116
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 117
+          },
+          {
+            "text": "  user_id uuid unique references public.users(id) on delete set null,  -- linked after OTP verification",
+            "lineNumber": 118
+          },
+          {
+            "text": "  work_email text unique not null,",
+            "lineNumber": 119
+          },
+          {
+            "text": "  role public.profile_role not null default 'student',",
+            "lineNumber": 120
+          },
+          {
+            "text": "  removed_access timestamptz,  -- null = active, set = revoked",
+            "lineNumber": 121
+          },
+          {
+            "text": "  removed_access_by uuid references public.profiles(id) on delete set null,",
+            "lineNumber": 122
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 123
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null,",
+            "lineNumber": 124
+          },
+          {
+            "text": "  constraint valid_czu_domain check (",
+            "lineNumber": 125
+          },
+          {
+            "text": "    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'",
+            "lineNumber": 126
+          },
+          {
+            "text": "  )",
+            "lineNumber": 127
+          },
+          {
+            "text": ");",
+            "lineNumber": 128
+          },
+          {
+            "lineNumber": 129
+          },
+          {
+            "text": "-- Indexes for auth queries",
+            "lineNumber": 130
+          },
+          {
+            "text": "create index profiles_user_id_idx on public.profiles(user_id);",
+            "lineNumber": 131
+          },
+          {
+            "text": "create index profiles_work_email_idx on public.profiles(work_email);",
+            "lineNumber": 132
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 133
+          },
+          {
+            "lineNumber": 134
+          },
+          {
+            "text": "### Entity Relationships",
+            "lineNumber": 135
+          },
+          {
+            "lineNumber": 136
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 137
+          },
+          {
+            "text": "┌─────────────────┐       ┌─────────────────┐",
+            "lineNumber": 138
+          },
+          {
+            "text": "│   auth.users    │       │    profiles     │",
+            "lineNumber": 139
+          },
+          {
+            "text": "│  (Supabase)     │       │  (Auth only)    │",
+            "lineNumber": 140
+          },
+          {
+            "text": "├─────────────────┤       ├─────────────────┤",
+            "lineNumber": 141
+          },
+          {
+            "text": "│ id (uuid)       │◄──┐   │ id (uuid)       │",
+            "lineNumber": 142
+          },
+          {
+            "text": "│ email (google)  │   │   │ name            │",
+            "lineNumber": 143
+          },
+          {
+            "text": "│ ...auth fields  │   └───│ user_id (1:1)   │",
+            "lineNumber": 144
+          }
+        ]
+      },
+      "score": 0.31625649333000183
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/create-rls-policies.mdc",
+        "range": {
+          "startPosition": {
+            "line": 161
+          },
+          "endPosition": {
+            "line": 225
+          }
+        },
+        "contents": "&#96;&#96;&#96;sql\ncreate policy \"Users can access their own records\" on test_table\nto authenticated\nusing ( (select auth.uid()) = user_id );\n&#96;&#96;&#96;\n\nYou can add an index like:\n\n&#96;&#96;&#96;sql\ncreate index userid\non test_table\nusing btree (user_id);\n&#96;&#96;&#96;\n\n### Call functions with &#96;select&#96;\n\nYou can use &#96;select&#96; statement to improve policies that use functions. For example, instead of this:\n\n&#96;&#96;&#96;sql\ncreate policy \"Users can access their own records\" on test_table\nto authenticated\nusing ( auth.uid() = user_id );\n&#96;&#96;&#96;\n\nYou can do:\n\n&#96;&#96;&#96;sql\ncreate policy \"Users can access their own records\" on test_table\nto authenticated\nusing ( (select auth.uid()) = user_id );\n&#96;&#96;&#96;\n\nThis method works well for JWT functions like &#96;auth.uid()&#96; and &#96;auth.jwt()&#96; as well as &#96;security definer&#96; Functions. Wrapping the function causes an &#96;initPlan&#96; to be run by the Postgres optimizer, which allows it to \"cache\" the results per-statement, rather than calling the function on each row.\n\nCaution: You can only use this technique if the results of the query or function do not change based on the row data.\n\n### Minimize joins\n\nYou can often rewrite your Policies to avoid joins between the source and the target table. Instead, try to organize your policy to fetch all the relevant data from the target table into an array or set, then you can use an &#96;IN&#96; or &#96;ANY&#96; operation in your filter.\n\nFor example, this is an example of a slow policy which joins the source &#96;test_table&#96; to the target &#96;team_user&#96;:\n\n&#96;&#96;&#96;sql\ncreate policy \"Users can access records belonging to their teams\" on test_table\nto authenticated\nusing (\n  (select auth.uid()) in (\n    select user_id\n    from team_user\n    where team_user.team_id = team_id -- joins to the source \"test_table.team_id\"\n  )\n);\n&#96;&#96;&#96;\n\nWe can rewrite this to avoid this join, and instead select the filter criteria into a set:\n\n&#96;&#96;&#96;sql\ncreate policy \"Users can access records belonging to their teams\" on test_table\nto authenticated\nusing (\n  team_id in (\n    select team_id\n    from team_user",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 163
+          },
+          {
+            "text": "create policy \"Users can access their own records\" on test_table",
+            "lineNumber": 164
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 165
+          },
+          {
+            "text": "using ( (select auth.uid()) = user_id );",
+            "lineNumber": 166
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 167
+          },
+          {
+            "lineNumber": 168
+          },
+          {
+            "text": "You can add an index like:",
+            "lineNumber": 169
+          },
+          {
+            "lineNumber": 170
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 171
+          },
+          {
+            "text": "create index userid",
+            "lineNumber": 172
+          },
+          {
+            "text": "on test_table",
+            "lineNumber": 173
+          },
+          {
+            "text": "using btree (user_id);",
+            "lineNumber": 174
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 175
+          },
+          {
+            "lineNumber": 176
+          },
+          {
+            "text": "### Call functions with &#96;select&#96;",
+            "lineNumber": 177
+          },
+          {
+            "lineNumber": 178
+          },
+          {
+            "text": "You can use &#96;select&#96; statement to improve policies that use functions. For example, instead of this:",
+            "lineNumber": 179
+          },
+          {
+            "lineNumber": 180
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 181
+          },
+          {
+            "text": "create policy \"Users can access their own records\" on test_table",
+            "lineNumber": 182
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 183
+          },
+          {
+            "text": "using ( auth.uid() = user_id );",
+            "lineNumber": 184
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 185
+          },
+          {
+            "lineNumber": 186
+          },
+          {
+            "text": "You can do:",
+            "lineNumber": 187
+          },
+          {
+            "lineNumber": 188
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 189
+          },
+          {
+            "text": "create policy \"Users can access their own records\" on test_table",
+            "lineNumber": 190
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 191
+          },
+          {
+            "text": "using ( (select auth.uid()) = user_id );",
+            "lineNumber": 192
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 193
+          },
+          {
+            "lineNumber": 194
+          },
+          {
+            "text": "This method works well for JWT functions like &#96;auth.uid()&#96; and &#96;auth.jwt()&#96; as well as &#96;security definer&#96; Functions. Wrapping the function causes an &#96;initPlan&#96; to be run by the Postgres optimizer, which allows it to \"cache\" the results per-statement, rather than calling the function on each row.",
+            "lineNumber": 195
+          },
+          {
+            "lineNumber": 196
+          },
+          {
+            "text": "Caution: You can only use this technique if the results of the query or function do not change based on the row data.",
+            "lineNumber": 197
+          },
+          {
+            "lineNumber": 198
+          },
+          {
+            "text": "### Minimize joins",
+            "lineNumber": 199
+          },
+          {
+            "lineNumber": 200
+          },
+          {
+            "text": "You can often rewrite your Policies to avoid joins between the source and the target table. Instead, try to organize your policy to fetch all the relevant data from the target table into an array or set, then you can use an &#96;IN&#96; or &#96;ANY&#96; operation in your filter.",
+            "lineNumber": 201
+          },
+          {
+            "lineNumber": 202
+          },
+          {
+            "text": "For example, this is an example of a slow policy which joins the source &#96;test_table&#96; to the target &#96;team_user&#96;:",
+            "lineNumber": 203
+          },
+          {
+            "lineNumber": 204
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 205
+          },
+          {
+            "text": "create policy \"Users can access records belonging to their teams\" on test_table",
+            "lineNumber": 206
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 207
+          },
+          {
+            "text": "using (",
+            "lineNumber": 208
+          },
+          {
+            "text": "  (select auth.uid()) in (",
+            "lineNumber": 209
+          },
+          {
+            "text": "    select user_id",
+            "lineNumber": 210
+          },
+          {
+            "text": "    from team_user",
+            "lineNumber": 211
+          },
+          {
+            "text": "    where team_user.team_id = team_id -- joins to the source \"test_table.team_id\"",
+            "lineNumber": 212
+          },
+          {
+            "text": "  )",
+            "lineNumber": 213
+          },
+          {
+            "text": ");",
+            "lineNumber": 214
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 215
+          },
+          {
+            "lineNumber": 216
+          },
+          {
+            "text": "We can rewrite this to avoid this join, and instead select the filter criteria into a set:",
+            "lineNumber": 217
+          },
+          {
+            "lineNumber": 218
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 219
+          },
+          {
+            "text": "create policy \"Users can access records belonging to their teams\" on test_table",
+            "lineNumber": 220
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 221
+          },
+          {
+            "text": "using (",
+            "lineNumber": 222
+          },
+          {
+            "text": "  team_id in (",
+            "lineNumber": 223
+          },
+          {
+            "text": "    select team_id",
+            "lineNumber": 224
+          },
+          {
+            "text": "    from team_user",
+            "lineNumber": 225
+          }
+        ]
+      },
+      "score": 0.3090403974056244
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/create-rls-policies.mdc",
+        "range": {
+          "startPosition": {
+            "line": 220
+          },
+          "endPosition": {
+            "line": 248
+          }
+        },
+        "contents": "to authenticated\nusing (\n  team_id in (\n    select team_id\n    from team_user\n    where user_id = (select auth.uid()) -- no join\n  )\n);\n&#96;&#96;&#96;\n\n### Specify roles in your policies\n\nAlways use the Role of inside your policies, specified by the &#96;TO&#96; operator. For example, instead of this query:\n\n&#96;&#96;&#96;sql\ncreate policy \"Users can access their own records\" on rls_test\nusing ( auth.uid() = user_id );\n&#96;&#96;&#96;\n\nUse:\n\n&#96;&#96;&#96;sql\ncreate policy \"Users can access their own records\" on rls_test\nto authenticated\nusing ( (select auth.uid()) = user_id );\n&#96;&#96;&#96;\n\nThis prevents the policy &#96;( (select auth.uid()) = user_id )&#96; from running for any &#96;anon&#96; users, since the execution stops at the &#96;to authenticated&#96; step.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "to authenticated",
+            "lineNumber": 221
+          },
+          {
+            "text": "using (",
+            "lineNumber": 222
+          },
+          {
+            "text": "  team_id in (",
+            "lineNumber": 223
+          },
+          {
+            "text": "    select team_id",
+            "lineNumber": 224
+          },
+          {
+            "text": "    from team_user",
+            "lineNumber": 225
+          },
+          {
+            "text": "    where user_id = (select auth.uid()) -- no join",
+            "lineNumber": 226
+          },
+          {
+            "text": "  )",
+            "lineNumber": 227
+          },
+          {
+            "text": ");",
+            "lineNumber": 228
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 229
+          },
+          {
+            "lineNumber": 230
+          },
+          {
+            "text": "### Specify roles in your policies",
+            "lineNumber": 231
+          },
+          {
+            "lineNumber": 232
+          },
+          {
+            "text": "Always use the Role of inside your policies, specified by the &#96;TO&#96; operator. For example, instead of this query:",
+            "lineNumber": 233
+          },
+          {
+            "lineNumber": 234
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 235
+          },
+          {
+            "text": "create policy \"Users can access their own records\" on rls_test",
+            "lineNumber": 236
+          },
+          {
+            "text": "using ( auth.uid() = user_id );",
+            "lineNumber": 237
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 238
+          },
+          {
+            "lineNumber": 239
+          },
+          {
+            "text": "Use:",
+            "lineNumber": 240
+          },
+          {
+            "lineNumber": 241
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 242
+          },
+          {
+            "text": "create policy \"Users can access their own records\" on rls_test",
+            "lineNumber": 243
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 244
+          },
+          {
+            "text": "using ( (select auth.uid()) = user_id );",
+            "lineNumber": 245
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 246
+          },
+          {
+            "lineNumber": 247
+          },
+          {
+            "text": "This prevents the policy &#96;( (select auth.uid()) = user_id )&#96; from running for any &#96;anon&#96; users, since the execution stops at the &#96;to authenticated&#96; step.",
+            "lineNumber": 248
+          }
+        ]
+      },
+      "score": 0.3069944977760315
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 194
+          },
+          "endPosition": {
+            "line": 259
+          }
+        },
+        "contents": "begin\n  v_encrypted_password := event-&gt;'user'-&gt;&gt;'encrypted_password';\n  \n  if v_encrypted_password is not null then\n    raise exception 'Password-based signups are not allowed. Please use Google OAuth to sign in.';\n  end if;\n  \n  v_provider := event-&gt;'user'-&gt;'raw_user_meta_data'-&gt;&gt;'provider';\n  v_app_metadata := event-&gt;'user'-&gt;'app_metadata';\n  if v_provider is null and v_app_metadata is not null then\n    v_provider := v_app_metadata-&gt;&gt;'provider';\n  end if;\n  \n  if event-&gt;'user'-&gt;'identities' is not null then\n    for v_identity in \n      select value from jsonb_array_elements(event-&gt;'user'-&gt;'identities')\n    loop\n      if v_identity-&gt;&gt;'provider' = 'google' then\n        v_has_google_identity := true;\n        exit;\n      end if;\n    end loop;\n  end if;\n  \n  if v_provider = 'google' or v_has_google_identity then\n    return event;\n  end if;\n  \n  raise exception 'Only Google OAuth signups are allowed. Please use Google to sign in.';\nend;\n$$;\n\ncomment on function public.before_user_created_hook(jsonb) is 'Hook function that restricts signups to Google OAuth only. Blocks password-based and OTP signups.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create triggers for updated_at on all tables\ncreate trigger users_updated_at_trigger\nbefore update on public.users\nfor each row\nexecute function public.handle_updated_at();\n\ncreate trigger teams_updated_at_trigger\nbefore update on public.teams\nfor each row\nexecute function public.handle_updated_at();\n\ncreate trigger profiles_updated_at_trigger\nbefore update on public.profiles\nfor each row\nexecute function public.handle_updated_at();\n\n-- Create trigger on auth.users table to populate public.users\ndrop trigger if exists on_auth_user_created on auth.users;\n\ncreate trigger on_auth_user_created\nafter insert on auth.users\nfor each row\nexecute function public.handle_new_auth_user();\n\n-- Create trigger on auth.users table for email domain validation\ndrop trigger if exists validate_czu_email_domain_trigger on auth.users;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "begin",
+            "lineNumber": 195
+          },
+          {
+            "text": "  v_encrypted_password := event-&gt;'user'-&gt;&gt;'encrypted_password';",
+            "lineNumber": 196
+          },
+          {
+            "text": "  ",
+            "lineNumber": 197
+          },
+          {
+            "text": "  if v_encrypted_password is not null then",
+            "lineNumber": 198
+          },
+          {
+            "text": "    raise exception 'Password-based signups are not allowed. Please use Google OAuth to sign in.';",
+            "lineNumber": 199
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 200
+          },
+          {
+            "text": "  ",
+            "lineNumber": 201
+          },
+          {
+            "text": "  v_provider := event-&gt;'user'-&gt;'raw_user_meta_data'-&gt;&gt;'provider';",
+            "lineNumber": 202
+          },
+          {
+            "text": "  v_app_metadata := event-&gt;'user'-&gt;'app_metadata';",
+            "lineNumber": 203
+          },
+          {
+            "text": "  if v_provider is null and v_app_metadata is not null then",
+            "lineNumber": 204
+          },
+          {
+            "text": "    v_provider := v_app_metadata-&gt;&gt;'provider';",
+            "lineNumber": 205
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 206
+          },
+          {
+            "text": "  ",
+            "lineNumber": 207
+          },
+          {
+            "text": "  if event-&gt;'user'-&gt;'identities' is not null then",
+            "lineNumber": 208
+          },
+          {
+            "text": "    for v_identity in ",
+            "lineNumber": 209
+          },
+          {
+            "text": "      select value from jsonb_array_elements(event-&gt;'user'-&gt;'identities')",
+            "lineNumber": 210
+          },
+          {
+            "text": "    loop",
+            "lineNumber": 211
+          },
+          {
+            "text": "      if v_identity-&gt;&gt;'provider' = 'google' then",
+            "lineNumber": 212
+          },
+          {
+            "text": "        v_has_google_identity := true;",
+            "lineNumber": 213
+          },
+          {
+            "text": "        exit;",
+            "lineNumber": 214
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 215
+          },
+          {
+            "text": "    end loop;",
+            "lineNumber": 216
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 217
+          },
+          {
+            "text": "  ",
+            "lineNumber": 218
+          },
+          {
+            "text": "  if v_provider = 'google' or v_has_google_identity then",
+            "lineNumber": 219
+          },
+          {
+            "text": "    return event;",
+            "lineNumber": 220
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 221
+          },
+          {
+            "text": "  ",
+            "lineNumber": 222
+          },
+          {
+            "text": "  raise exception 'Only Google OAuth signups are allowed. Please use Google to sign in.';",
+            "lineNumber": 223
+          },
+          {
+            "text": "end;",
+            "lineNumber": 224
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 225
+          },
+          {
+            "lineNumber": 226
+          },
+          {
+            "text": "comment on function public.before_user_created_hook(jsonb) is 'Hook function that restricts signups to Google OAuth only. Blocks password-based and OTP signups.';",
+            "lineNumber": 227
+          },
+          {
+            "lineNumber": 228
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 229
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 230
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 231
+          },
+          {
+            "lineNumber": 232
+          },
+          {
+            "text": "-- Create triggers for updated_at on all tables",
+            "lineNumber": 233
+          },
+          {
+            "text": "create trigger users_updated_at_trigger",
+            "lineNumber": 234
+          },
+          {
+            "text": "before update on public.users",
+            "lineNumber": 235
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 236
+          },
+          {
+            "text": "execute function public.handle_updated_at();",
+            "lineNumber": 237
+          },
+          {
+            "lineNumber": 238
+          },
+          {
+            "text": "create trigger teams_updated_at_trigger",
+            "lineNumber": 239
+          },
+          {
+            "text": "before update on public.teams",
+            "lineNumber": 240
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 241
+          },
+          {
+            "text": "execute function public.handle_updated_at();",
+            "lineNumber": 242
+          },
+          {
+            "lineNumber": 243
+          },
+          {
+            "text": "create trigger profiles_updated_at_trigger",
+            "lineNumber": 244
+          },
+          {
+            "text": "before update on public.profiles",
+            "lineNumber": 245
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 246
+          },
+          {
+            "text": "execute function public.handle_updated_at();",
+            "lineNumber": 247
+          },
+          {
+            "lineNumber": 248
+          },
+          {
+            "text": "-- Create trigger on auth.users table to populate public.users",
+            "lineNumber": 249
+          },
+          {
+            "text": "drop trigger if exists on_auth_user_created on auth.users;",
+            "lineNumber": 250
+          },
+          {
+            "lineNumber": 251
+          },
+          {
+            "text": "create trigger on_auth_user_created",
+            "lineNumber": 252
+          },
+          {
+            "text": "after insert on auth.users",
+            "lineNumber": 253
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 254
+          },
+          {
+            "text": "execute function public.handle_new_auth_user();",
+            "lineNumber": 255
+          },
+          {
+            "lineNumber": 256
+          },
+          {
+            "text": "-- Create trigger on auth.users table for email domain validation",
+            "lineNumber": 257
+          },
+          {
+            "text": "drop trigger if exists validate_czu_email_domain_trigger on auth.users;",
+            "lineNumber": 258
+          }
+        ]
+      },
+      "score": 0.28316038846969604
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/create-rls-policies.mdc",
+        "range": {
+          "startPosition": {
+            "line": 122
+          },
+          "endPosition": {
+            "line": 164
+          }
+        },
+        "contents": "### &#96;auth.jwt()&#96;\n\nReturns the JWT of the user making the request. Anything that you store in the user's &#96;raw_app_meta_data&#96; column or the &#96;raw_user_meta_data&#96; column will be accessible using this function. It's important to know the distinction between these two:\n\n- &#96;raw_user_meta_data&#96; - can be updated by the authenticated user using the &#96;supabase.auth.update()&#96; function. It is not a good place to store authorization data.\n- &#96;raw_app_meta_data&#96; - cannot be updated by the user, so it's a good place to store authorization data.\n\nThe &#96;auth.jwt()&#96; function is extremely versatile. For example, if you store some team data inside &#96;app_metadata&#96;, you can use it to determine whether a particular user belongs to a team. For example, if this was an array of IDs:\n\n&#96;&#96;&#96;sql\ncreate policy \"User is in team\"\non my_table\nto authenticated\nusing ( team_id in (select auth.jwt() -&gt; 'app_metadata' -&gt; 'teams'));\n&#96;&#96;&#96;\n\n### MFA\n\nThe &#96;auth.jwt()&#96; function can be used to check for [Multi-Factor Authentication](mdc:docs/guides/auth/auth-mfa#enforce-rules-for-mfa-logins). For example, you could restrict a user from updating their profile unless they have at least 2 levels of authentication (Assurance Level 2):\n\n&#96;&#96;&#96;sql\ncreate policy \"Restrict updates.\"\non profiles\nas restrictive\nfor update\nto authenticated using (\n  (select auth.jwt()-&gt;&gt;'aal') = 'aal2'\n);\n&#96;&#96;&#96;\n\n## RLS performance recommendations\n\nEvery authorization system has an impact on performance. While row level security is powerful, the performance impact is important to keep in mind. This is especially true for queries that scan every row in a table - like many &#96;select&#96; operations, including those using limit, offset, and ordering.\n\nBased on a series of [tests](mdc:https:/github.com/GaryAustin1/RLS-Performance), we have a few recommendations for RLS:\n\n### Add indexes\n\nMake sure you've added [indexes](mdc:docs/guides/database/postgres/indexes) on any columns used within the Policies which are not already indexed (or primary keys). For a Policy like this:\n\n&#96;&#96;&#96;sql\ncreate policy \"Users can access their own records\" on test_table",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "### &#96;auth.jwt()&#96;",
+            "lineNumber": 123
+          },
+          {
+            "lineNumber": 124
+          },
+          {
+            "text": "Returns the JWT of the user making the request. Anything that you store in the user's &#96;raw_app_meta_data&#96; column or the &#96;raw_user_meta_data&#96; column will be accessible using this function. It's important to know the distinction between these two:",
+            "lineNumber": 125
+          },
+          {
+            "lineNumber": 126
+          },
+          {
+            "text": "- &#96;raw_user_meta_data&#96; - can be updated by the authenticated user using the &#96;supabase.auth.update()&#96; function. It is not a good place to store authorization data.",
+            "lineNumber": 127
+          },
+          {
+            "text": "- &#96;raw_app_meta_data&#96; - cannot be updated by the user, so it's a good place to store authorization data.",
+            "lineNumber": 128
+          },
+          {
+            "lineNumber": 129
+          },
+          {
+            "text": "The &#96;auth.jwt()&#96; function is extremely versatile. For example, if you store some team data inside &#96;app_metadata&#96;, you can use it to determine whether a particular user belongs to a team. For example, if this was an array of IDs:",
+            "lineNumber": 130
+          },
+          {
+            "lineNumber": 131
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 132
+          },
+          {
+            "text": "create policy \"User is in team\"",
+            "lineNumber": 133
+          },
+          {
+            "text": "on my_table",
+            "lineNumber": 134
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 135
+          },
+          {
+            "text": "using ( team_id in (select auth.jwt() -&gt; 'app_metadata' -&gt; 'teams'));",
+            "lineNumber": 136
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 137
+          },
+          {
+            "lineNumber": 138
+          },
+          {
+            "text": "### MFA",
+            "lineNumber": 139
+          },
+          {
+            "lineNumber": 140
+          },
+          {
+            "text": "The &#96;auth.jwt()&#96; function can be used to check for [Multi-Factor Authentication](mdc:docs/guides/auth/auth-mfa#enforce-rules-for-mfa-logins). For example, you could restrict a user from updating their profile unless they have at least 2 levels of authentication (Assurance Level 2):",
+            "lineNumber": 141
+          },
+          {
+            "lineNumber": 142
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 143
+          },
+          {
+            "text": "create policy \"Restrict updates.\"",
+            "lineNumber": 144
+          },
+          {
+            "text": "on profiles",
+            "lineNumber": 145
+          },
+          {
+            "text": "as restrictive",
+            "lineNumber": 146
+          },
+          {
+            "text": "for update",
+            "lineNumber": 147
+          },
+          {
+            "text": "to authenticated using (",
+            "lineNumber": 148
+          },
+          {
+            "text": "  (select auth.jwt()-&gt;&gt;'aal') = 'aal2'",
+            "lineNumber": 149
+          },
+          {
+            "text": ");",
+            "lineNumber": 150
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 151
+          },
+          {
+            "lineNumber": 152
+          },
+          {
+            "text": "## RLS performance recommendations",
+            "lineNumber": 153
+          },
+          {
+            "lineNumber": 154
+          },
+          {
+            "text": "Every authorization system has an impact on performance. While row level security is powerful, the performance impact is important to keep in mind. This is especially true for queries that scan every row in a table - like many &#96;select&#96; operations, including those using limit, offset, and ordering.",
+            "lineNumber": 155
+          },
+          {
+            "lineNumber": 156
+          },
+          {
+            "text": "Based on a series of [tests](mdc:https:/github.com/GaryAustin1/RLS-Performance), we have a few recommendations for RLS:",
+            "lineNumber": 157
+          },
+          {
+            "lineNumber": 158
+          },
+          {
+            "text": "### Add indexes",
+            "lineNumber": 159
+          },
+          {
+            "lineNumber": 160
+          },
+          {
+            "text": "Make sure you've added [indexes](mdc:docs/guides/database/postgres/indexes) on any columns used within the Policies which are not already indexed (or primary keys). For a Policy like this:",
+            "lineNumber": 161
+          },
+          {
+            "lineNumber": 162
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 163
+          },
+          {
+            "text": "create policy \"Users can access their own records\" on test_table",
+            "lineNumber": 164
+          }
+        ]
+      },
+      "score": 0.27953091263771057
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 47
+          },
+          "endPosition": {
+            "line": 104
+          }
+        },
+        "contents": "-- References the new users table instead of auth.users\ncreate table public.profiles (\n  id uuid primary key default gen_random_uuid(),\n  name text not null,\n  picture text,\n  user_id uuid unique references public.users(id) on delete set null,\n  work_email text unique not null,\n  role public.profile_role not null default 'student',\n  team_id uuid references public.teams(id) on delete set null,\n  phone_number text,\n  personal_email text,\n  date_of_birth date,\n  removed_access timestamptz,\n  removed_access_by uuid references public.profiles(id) on delete set null,\n  created_at timestamptz default now() not null,\n  updated_at timestamptz default now() not null,\n  constraint valid_czu_domain check (\n    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'\n  )\n);\n\ncomment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';\n\n-- ============================================================================\n-- FUNCTIONS\n-- ============================================================================\n\n-- Create trigger function to automatically update updated_at column\ncreate or replace function public.handle_updated_at()\nreturns trigger\nlanguage plpgsql\nsecurity invoker\nset search_path = ''\nas $$\nbegin\n  new.updated_at := now();\n  return new;\nend;\n$$;\n\ncomment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';\n\n-- Create trigger function to populate public.users on auth.users creation\n-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email\ncreate or replace function public.handle_new_auth_user()\nreturns trigger\nlanguage plpgsql\nsecurity definer\nset search_path = public, auth\nas $$\ndeclare\n  v_google_email text;\n  v_google_full_name text;\n  v_google_profile_picture text;\n  v_raw_meta_data jsonb;\nbegin\n  v_raw_meta_data := new.raw_user_meta_data;",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "-- References the new users table instead of auth.users",
+            "lineNumber": 48
+          },
+          {
+            "text": "create table public.profiles (",
+            "lineNumber": 49
+          },
+          {
+            "text": "  id uuid primary key default gen_random_uuid(),",
+            "lineNumber": 50
+          },
+          {
+            "text": "  name text not null,",
+            "lineNumber": 51
+          },
+          {
+            "text": "  picture text,",
+            "lineNumber": 52
+          },
+          {
+            "text": "  user_id uuid unique references public.users(id) on delete set null,",
+            "lineNumber": 53
+          },
+          {
+            "text": "  work_email text unique not null,",
+            "lineNumber": 54
+          },
+          {
+            "text": "  role public.profile_role not null default 'student',",
+            "lineNumber": 55
+          },
+          {
+            "text": "  team_id uuid references public.teams(id) on delete set null,",
+            "lineNumber": 56
+          },
+          {
+            "text": "  phone_number text,",
+            "lineNumber": 57
+          },
+          {
+            "text": "  personal_email text,",
+            "lineNumber": 58
+          },
+          {
+            "text": "  date_of_birth date,",
+            "lineNumber": 59
+          },
+          {
+            "text": "  removed_access timestamptz,",
+            "lineNumber": 60
+          },
+          {
+            "text": "  removed_access_by uuid references public.profiles(id) on delete set null,",
+            "lineNumber": 61
+          },
+          {
+            "text": "  created_at timestamptz default now() not null,",
+            "lineNumber": 62
+          },
+          {
+            "text": "  updated_at timestamptz default now() not null,",
+            "lineNumber": 63
+          },
+          {
+            "text": "  constraint valid_czu_domain check (",
+            "lineNumber": 64
+          },
+          {
+            "text": "    work_email like '%@studenti.czu.cz' or work_email like '%@pef.czu.cz'",
+            "lineNumber": 65
+          },
+          {
+            "text": "  )",
+            "lineNumber": 66
+          },
+          {
+            "text": ");",
+            "lineNumber": 67
+          },
+          {
+            "lineNumber": 68
+          },
+          {
+            "text": "comment on table public.profiles is 'User profile data with role and team membership. Pre-created by admin, linked to user after OTP verification.';",
+            "lineNumber": 69
+          },
+          {
+            "lineNumber": 70
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 71
+          },
+          {
+            "text": "-- FUNCTIONS",
+            "lineNumber": 72
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 73
+          },
+          {
+            "lineNumber": 74
+          },
+          {
+            "text": "-- Create trigger function to automatically update updated_at column",
+            "lineNumber": 75
+          },
+          {
+            "text": "create or replace function public.handle_updated_at()",
+            "lineNumber": 76
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 77
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 78
+          },
+          {
+            "text": "security invoker",
+            "lineNumber": 79
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 80
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 81
+          },
+          {
+            "text": "begin",
+            "lineNumber": 82
+          },
+          {
+            "text": "  new.updated_at := now();",
+            "lineNumber": 83
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 84
+          },
+          {
+            "text": "end;",
+            "lineNumber": 85
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 86
+          },
+          {
+            "lineNumber": 87
+          },
+          {
+            "text": "comment on function public.handle_updated_at() is 'Trigger function that automatically updates the updated_at column to the current timestamp on row updates.';",
+            "lineNumber": 88
+          },
+          {
+            "lineNumber": 89
+          },
+          {
+            "text": "-- Create trigger function to populate public.users on auth.users creation",
+            "lineNumber": 90
+          },
+          {
+            "text": "-- Extracts Google OAuth data from auth.users.raw_user_meta_data and auth.users.email",
+            "lineNumber": 91
+          },
+          {
+            "text": "create or replace function public.handle_new_auth_user()",
+            "lineNumber": 92
+          },
+          {
+            "text": "returns trigger",
+            "lineNumber": 93
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 94
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 95
+          },
+          {
+            "text": "set search_path = public, auth",
+            "lineNumber": 96
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 97
+          },
+          {
+            "text": "declare",
+            "lineNumber": 98
+          },
+          {
+            "text": "  v_google_email text;",
+            "lineNumber": 99
+          },
+          {
+            "text": "  v_google_full_name text;",
+            "lineNumber": 100
+          },
+          {
+            "text": "  v_google_profile_picture text;",
+            "lineNumber": 101
+          },
+          {
+            "text": "  v_raw_meta_data jsonb;",
+            "lineNumber": 102
+          },
+          {
+            "text": "begin",
+            "lineNumber": 103
+          },
+          {
+            "text": "  v_raw_meta_data := new.raw_user_meta_data;",
+            "lineNumber": 104
+          }
+        ]
+      },
+      "score": 0.2794845998287201
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/create-rls-policies.mdc",
+        "range": {
+          "startPosition": {
+            "line": 40
+          },
+          "endPosition": {
+            "line": 127
+          }
+        },
+        "contents": "- &#96;anon&#96;: an unauthenticated request (the user is not logged in)\n- &#96;authenticated&#96;: an authenticated request (the user is logged in)\n\nThese are actually [Postgres Roles](mdc:docs/guides/database/postgres/roles). You can use these roles within your Policies using the &#96;TO&#96; clause:\n\n&#96;&#96;&#96;sql\ncreate policy \"Profiles are viewable by everyone\"\non profiles\nfor select\nto authenticated, anon\nusing ( true );\n\n-- OR\n\ncreate policy \"Public profiles are viewable only by authenticated users\"\non profiles\nfor select\nto authenticated\nusing ( true );\n&#96;&#96;&#96;\n\nNote that &#96;for ...&#96; must be added after the table but before the roles. &#96;to ...&#96; must be added after &#96;for ...&#96;:\n\n### Incorrect\n\n&#96;&#96;&#96;sql\ncreate policy \"Public profiles are viewable only by authenticated users\"\non profiles\nto authenticated\nfor select\nusing ( true );\n&#96;&#96;&#96;\n\n### Correct\n\n&#96;&#96;&#96;sql\ncreate policy \"Public profiles are viewable only by authenticated users\"\non profiles\nfor select\nto authenticated\nusing ( true );\n&#96;&#96;&#96;\n\n## Multiple operations\n\nPostgreSQL policies do not support specifying multiple operations in a single FOR clause. You need to create separate policies for each operation.\n\n### Incorrect\n\n&#96;&#96;&#96;sql\ncreate policy \"Profiles can be created and deleted by any user\"\non profiles\nfor insert, delete -- cannot create a policy on multiple operators\nto authenticated\nwith check ( true )\nusing ( true );\n&#96;&#96;&#96;\n\n### Correct\n\n&#96;&#96;&#96;sql\ncreate policy \"Profiles can be created by any user\"\non profiles\nfor insert\nto authenticated\nwith check ( true );\n\ncreate policy \"Profiles can be deleted by any user\"\non profiles\nfor delete\nto authenticated\nusing ( true );\n&#96;&#96;&#96;\n\n## Helper functions\n\nSupabase provides some helper functions that make it easier to write Policies.\n\n### &#96;auth.uid()&#96;\n\nReturns the ID of the user making the request.\n\n### &#96;auth.jwt()&#96;\n\nReturns the JWT of the user making the request. Anything that you store in the user's &#96;raw_app_meta_data&#96; column or the &#96;raw_user_meta_data&#96; column will be accessible using this function. It's important to know the distinction between these two:\n\n- &#96;raw_user_meta_data&#96; - can be updated by the authenticated user using the &#96;supabase.auth.update()&#96; function. It is not a good place to store authorization data.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "- &#96;anon&#96;: an unauthenticated request (the user is not logged in)",
+            "lineNumber": 41
+          },
+          {
+            "text": "- &#96;authenticated&#96;: an authenticated request (the user is logged in)",
+            "lineNumber": 42
+          },
+          {
+            "lineNumber": 43
+          },
+          {
+            "text": "These are actually [Postgres Roles](mdc:docs/guides/database/postgres/roles). You can use these roles within your Policies using the &#96;TO&#96; clause:",
+            "lineNumber": 44
+          },
+          {
+            "lineNumber": 45
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 46
+          },
+          {
+            "text": "create policy \"Profiles are viewable by everyone\"",
+            "lineNumber": 47
+          },
+          {
+            "text": "on profiles",
+            "lineNumber": 48
+          },
+          {
+            "text": "for select",
+            "lineNumber": 49
+          },
+          {
+            "text": "to authenticated, anon",
+            "lineNumber": 50
+          },
+          {
+            "text": "using ( true );",
+            "lineNumber": 51
+          },
+          {
+            "lineNumber": 52
+          },
+          {
+            "text": "-- OR",
+            "lineNumber": 53
+          },
+          {
+            "lineNumber": 54
+          },
+          {
+            "text": "create policy \"Public profiles are viewable only by authenticated users\"",
+            "lineNumber": 55
+          },
+          {
+            "text": "on profiles",
+            "lineNumber": 56
+          },
+          {
+            "text": "for select",
+            "lineNumber": 57
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 58
+          },
+          {
+            "text": "using ( true );",
+            "lineNumber": 59
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 60
+          },
+          {
+            "lineNumber": 61
+          },
+          {
+            "text": "Note that &#96;for ...&#96; must be added after the table but before the roles. &#96;to ...&#96; must be added after &#96;for ...&#96;:",
+            "lineNumber": 62
+          },
+          {
+            "lineNumber": 63
+          },
+          {
+            "text": "### Incorrect",
+            "lineNumber": 64
+          },
+          {
+            "lineNumber": 65
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 66
+          },
+          {
+            "text": "create policy \"Public profiles are viewable only by authenticated users\"",
+            "lineNumber": 67
+          },
+          {
+            "text": "on profiles",
+            "lineNumber": 68
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 69
+          },
+          {
+            "text": "for select",
+            "lineNumber": 70
+          },
+          {
+            "text": "using ( true );",
+            "lineNumber": 71
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 72
+          },
+          {
+            "lineNumber": 73
+          },
+          {
+            "text": "### Correct",
+            "lineNumber": 74
+          },
+          {
+            "lineNumber": 75
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 76
+          },
+          {
+            "text": "create policy \"Public profiles are viewable only by authenticated users\"",
+            "lineNumber": 77
+          },
+          {
+            "text": "on profiles",
+            "lineNumber": 78
+          },
+          {
+            "text": "for select",
+            "lineNumber": 79
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 80
+          },
+          {
+            "text": "using ( true );",
+            "lineNumber": 81
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 82
+          },
+          {
+            "lineNumber": 83
+          },
+          {
+            "text": "## Multiple operations",
+            "lineNumber": 84
+          },
+          {
+            "lineNumber": 85
+          },
+          {
+            "text": "PostgreSQL policies do not support specifying multiple operations in a single FOR clause. You need to create separate policies for each operation.",
+            "lineNumber": 86
+          },
+          {
+            "lineNumber": 87
+          },
+          {
+            "text": "### Incorrect",
+            "lineNumber": 88
+          },
+          {
+            "lineNumber": 89
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 90
+          },
+          {
+            "text": "create policy \"Profiles can be created and deleted by any user\"",
+            "lineNumber": 91
+          },
+          {
+            "text": "on profiles",
+            "lineNumber": 92
+          },
+          {
+            "text": "for insert, delete -- cannot create a policy on multiple operators",
+            "lineNumber": 93
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 94
+          },
+          {
+            "text": "with check ( true )",
+            "lineNumber": 95
+          },
+          {
+            "text": "using ( true );",
+            "lineNumber": 96
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 97
+          },
+          {
+            "lineNumber": 98
+          },
+          {
+            "text": "### Correct",
+            "lineNumber": 99
+          },
+          {
+            "lineNumber": 100
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 101
+          },
+          {
+            "text": "create policy \"Profiles can be created by any user\"",
+            "lineNumber": 102
+          },
+          {
+            "text": "on profiles",
+            "lineNumber": 103
+          },
+          {
+            "text": "for insert",
+            "lineNumber": 104
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 105
+          },
+          {
+            "text": "with check ( true );",
+            "lineNumber": 106
+          },
+          {
+            "lineNumber": 107
+          },
+          {
+            "text": "create policy \"Profiles can be deleted by any user\"",
+            "lineNumber": 108
+          },
+          {
+            "text": "on profiles",
+            "lineNumber": 109
+          },
+          {
+            "text": "for delete",
+            "lineNumber": 110
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 111
+          },
+          {
+            "text": "using ( true );",
+            "lineNumber": 112
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 113
+          },
+          {
+            "lineNumber": 114
+          },
+          {
+            "text": "## Helper functions",
+            "lineNumber": 115
+          },
+          {
+            "lineNumber": 116
+          },
+          {
+            "text": "Supabase provides some helper functions that make it easier to write Policies.",
+            "lineNumber": 117
+          },
+          {
+            "lineNumber": 118
+          },
+          {
+            "text": "### &#96;auth.uid()&#96;",
+            "lineNumber": 119
+          },
+          {
+            "lineNumber": 120
+          },
+          {
+            "text": "Returns the ID of the user making the request.",
+            "lineNumber": 121
+          },
+          {
+            "lineNumber": 122
+          },
+          {
+            "text": "### &#96;auth.jwt()&#96;",
+            "lineNumber": 123
+          },
+          {
+            "lineNumber": 124
+          },
+          {
+            "text": "Returns the JWT of the user making the request. Anything that you store in the user's &#96;raw_app_meta_data&#96; column or the &#96;raw_user_meta_data&#96; column will be accessible using this function. It's important to know the distinction between these two:",
+            "lineNumber": 125
+          },
+          {
+            "lineNumber": 126
+          },
+          {
+            "text": "- &#96;raw_user_meta_data&#96; - can be updated by the authenticated user using the &#96;supabase.auth.update()&#96; function. It is not a good place to store authorization data.",
+            "lineNumber": 127
+          }
+        ]
+      },
+      "score": 0.2745516896247864
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131230000_broadcast_verified_work_email_changes.sql",
+        "range": {
+          "startPosition": {
+            "line": 76
+          },
+          "endPosition": {
+            "line": 102
+          }
+        },
+        "contents": "comment on trigger broadcast_verified_work_email_change_trigger on public.users is 'Broadcasts verified_work_email changes via Realtime to enable cross-device synchronization.';\n\n-- ============================================================================\n-- RLS POLICIES FOR REALTIME\n-- ============================================================================\n\n-- Drop existing policy if it exists (for idempotency)\ndrop policy if exists \"Users can receive their own verification broadcasts\" on realtime.messages;\n\n-- Create RLS policy for users to receive their own verification broadcasts\n-- Users can only subscribe to their own user:{auth_user_id}:verification channel\ncreate policy \"Users can receive their own verification broadcasts\" on realtime.messages\nfor select\nto authenticated\nusing (\n  topic = 'user:' || (select auth.uid())::text || ':verification'\n);\n\ncomment on policy \"Users can receive their own verification broadcasts\" on realtime.messages is 'Allows authenticated users to receive Realtime broadcasts on their own verification channel. Enables cross-device synchronization when email verification completes.';\n\n-- Note: Index creation on realtime.messages may require special permissions\n-- The RLS policy will work without the index, though performance may be slightly reduced\n-- If needed, create the index manually with appropriate permissions:\n-- create index idx_realtime_messages_topic_user_verification\n-- on realtime.messages(topic)\n-- where topic like 'user:%:verification';",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "comment on trigger broadcast_verified_work_email_change_trigger on public.users is 'Broadcasts verified_work_email changes via Realtime to enable cross-device synchronization.';",
+            "lineNumber": 77
+          },
+          {
+            "lineNumber": 78
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 79
+          },
+          {
+            "text": "-- RLS POLICIES FOR REALTIME",
+            "lineNumber": 80
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 81
+          },
+          {
+            "lineNumber": 82
+          },
+          {
+            "text": "-- Drop existing policy if it exists (for idempotency)",
+            "lineNumber": 83
+          },
+          {
+            "text": "drop policy if exists \"Users can receive their own verification broadcasts\" on realtime.messages;",
+            "lineNumber": 84
+          },
+          {
+            "lineNumber": 85
+          },
+          {
+            "text": "-- Create RLS policy for users to receive their own verification broadcasts",
+            "lineNumber": 86
+          },
+          {
+            "text": "-- Users can only subscribe to their own user:{auth_user_id}:verification channel",
+            "lineNumber": 87
+          },
+          {
+            "text": "create policy \"Users can receive their own verification broadcasts\" on realtime.messages",
+            "lineNumber": 88
+          },
+          {
+            "text": "for select",
+            "lineNumber": 89
+          },
+          {
+            "text": "to authenticated",
+            "lineNumber": 90
+          },
+          {
+            "text": "using (",
+            "lineNumber": 91
+          },
+          {
+            "text": "  topic = 'user:' || (select auth.uid())::text || ':verification'",
+            "lineNumber": 92
+          },
+          {
+            "text": ");",
+            "lineNumber": 93
+          },
+          {
+            "lineNumber": 94
+          },
+          {
+            "text": "comment on policy \"Users can receive their own verification broadcasts\" on realtime.messages is 'Allows authenticated users to receive Realtime broadcasts on their own verification channel. Enables cross-device synchronization when email verification completes.';",
+            "lineNumber": 95
+          },
+          {
+            "lineNumber": 96
+          },
+          {
+            "text": "-- Note: Index creation on realtime.messages may require special permissions",
+            "lineNumber": 97
+          },
+          {
+            "text": "-- The RLS policy will work without the index, though performance may be slightly reduced",
+            "lineNumber": 98
+          },
+          {
+            "text": "-- If needed, create the index manually with appropriate permissions:",
+            "lineNumber": 99
+          },
+          {
+            "text": "-- create index idx_realtime_messages_topic_user_verification",
+            "lineNumber": 100
+          },
+          {
+            "text": "-- on realtime.messages(topic)",
+            "lineNumber": 101
+          },
+          {
+            "text": "-- where topic like 'user:%:verification';",
+            "lineNumber": 102
+          }
+        ]
+      },
+      "score": 0.27275899052619934
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/create-rls-policies.mdc",
+        "range": {
+          "startPosition": {},
+          "endPosition": {
+            "line": 43
+          }
+        },
+        "contents": "---\ndescription: Guidelines for writing Postgres Row Level Security policies\nalwaysApply: false\n---\n\n# Database: Create RLS policies\n\nYou're a Supabase Postgres expert in writing row level security policies. Your purpose is to generate a policy with the constraints given by the user. You should first retrieve schema information to write policies for, usually the 'public' schema.\n\nThe output should use the following instructions:\n\n- The generated SQL must be valid SQL.\n- You can use only CREATE POLICY or ALTER POLICY queries, no other queries are allowed.\n- Always use double apostrophe in SQL strings (eg. 'Night''s watch')\n- You can add short explanations to your messages.\n- The result should be a valid markdown. The SQL code should be wrapped in &#96;&#96;&#96; (including sql language tag).\n- Always use \"auth.uid()\" instead of \"current_user\".\n- SELECT policies should always have USING but not WITH CHECK\n- INSERT policies should always have WITH CHECK but not USING\n- UPDATE policies should always have WITH CHECK and most often have USING\n- DELETE policies should always have USING but not WITH CHECK\n- Don't use &#96;FOR ALL&#96;. Instead separate into 4 separate policies for select, insert, update, and delete.\n- The policy name should be short but detailed text explaining the policy, enclosed in double quotes.\n- Always put explanations as separate text. Never use inline SQL comments.\n- If the user asks for something that's not related to SQL policies, explain to the user\n  that you can only help with policies.\n- Discourage &#96;RESTRICTIVE&#96; policies and encourage &#96;PERMISSIVE&#96; policies, and explain why.\n\nThe output should look like this:\n\n&#96;&#96;&#96;sql\nCREATE POLICY \"My descriptive policy.\" ON books FOR INSERT to authenticated USING ( (select auth.uid()) = author_id ) WITH ( true );\n&#96;&#96;&#96;\n\nSince you are running in a Supabase environment, take note of these Supabase-specific additions below.\n\n## Authenticated and unauthenticated roles\n\nSupabase maps every request to one of the roles:\n\n- &#96;anon&#96;: an unauthenticated request (the user is not logged in)\n- &#96;authenticated&#96;: an authenticated request (the user is logged in)",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "---",
+            "lineNumber": 1
+          },
+          {
+            "text": "description: Guidelines for writing Postgres Row Level Security policies",
+            "lineNumber": 2
+          },
+          {
+            "text": "alwaysApply: false",
+            "lineNumber": 3
+          },
+          {
+            "text": "---",
+            "lineNumber": 4
+          },
+          {
+            "lineNumber": 5
+          },
+          {
+            "text": "# Database: Create RLS policies",
+            "lineNumber": 6
+          },
+          {
+            "lineNumber": 7
+          },
+          {
+            "text": "You're a Supabase Postgres expert in writing row level security policies. Your purpose is to generate a policy with the constraints given by the user. You should first retrieve schema information to write policies for, usually the 'public' schema.",
+            "lineNumber": 8
+          },
+          {
+            "lineNumber": 9
+          },
+          {
+            "text": "The output should use the following instructions:",
+            "lineNumber": 10
+          },
+          {
+            "lineNumber": 11
+          },
+          {
+            "text": "- The generated SQL must be valid SQL.",
+            "lineNumber": 12
+          },
+          {
+            "text": "- You can use only CREATE POLICY or ALTER POLICY queries, no other queries are allowed.",
+            "lineNumber": 13
+          },
+          {
+            "text": "- Always use double apostrophe in SQL strings (eg. 'Night''s watch')",
+            "lineNumber": 14
+          },
+          {
+            "text": "- You can add short explanations to your messages.",
+            "lineNumber": 15
+          },
+          {
+            "text": "- The result should be a valid markdown. The SQL code should be wrapped in &#96;&#96;&#96; (including sql language tag).",
+            "lineNumber": 16
+          },
+          {
+            "text": "- Always use \"auth.uid()\" instead of \"current_user\".",
+            "lineNumber": 17
+          },
+          {
+            "text": "- SELECT policies should always have USING but not WITH CHECK",
+            "lineNumber": 18
+          },
+          {
+            "text": "- INSERT policies should always have WITH CHECK but not USING",
+            "lineNumber": 19
+          },
+          {
+            "text": "- UPDATE policies should always have WITH CHECK and most often have USING",
+            "lineNumber": 20
+          },
+          {
+            "text": "- DELETE policies should always have USING but not WITH CHECK",
+            "lineNumber": 21
+          },
+          {
+            "text": "- Don't use &#96;FOR ALL&#96;. Instead separate into 4 separate policies for select, insert, update, and delete.",
+            "lineNumber": 22
+          },
+          {
+            "text": "- The policy name should be short but detailed text explaining the policy, enclosed in double quotes.",
+            "lineNumber": 23
+          },
+          {
+            "text": "- Always put explanations as separate text. Never use inline SQL comments.",
+            "lineNumber": 24
+          },
+          {
+            "text": "- If the user asks for something that's not related to SQL policies, explain to the user",
+            "lineNumber": 25
+          },
+          {
+            "text": "  that you can only help with policies.",
+            "lineNumber": 26
+          },
+          {
+            "text": "- Discourage &#96;RESTRICTIVE&#96; policies and encourage &#96;PERMISSIVE&#96; policies, and explain why.",
+            "lineNumber": 27
+          },
+          {
+            "lineNumber": 28
+          },
+          {
+            "text": "The output should look like this:",
+            "lineNumber": 29
+          },
+          {
+            "lineNumber": 30
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 31
+          },
+          {
+            "text": "CREATE POLICY \"My descriptive policy.\" ON books FOR INSERT to authenticated USING ( (select auth.uid()) = author_id ) WITH ( true );",
+            "lineNumber": 32
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 33
+          },
+          {
+            "lineNumber": 34
+          },
+          {
+            "text": "Since you are running in a Supabase environment, take note of these Supabase-specific additions below.",
+            "lineNumber": 35
+          },
+          {
+            "lineNumber": 36
+          },
+          {
+            "text": "## Authenticated and unauthenticated roles",
+            "lineNumber": 37
+          },
+          {
+            "lineNumber": 38
+          },
+          {
+            "text": "Supabase maps every request to one of the roles:",
+            "lineNumber": 39
+          },
+          {
+            "lineNumber": 40
+          },
+          {
+            "text": "- &#96;anon&#96;: an unauthenticated request (the user is not logged in)",
+            "lineNumber": 41
+          },
+          {
+            "text": "- &#96;authenticated&#96;: an authenticated request (the user is logged in)",
+            "lineNumber": 42
+          }
+        ]
+      },
+      "score": 0.2704559564590454
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./components/verify-email-form.tsx",
+        "range": {
+          "startPosition": {
+            "line": 75
+          },
+          "endPosition": {
+            "line": 444,
+            "column": 1
+          }
+        },
+        "contents": "export function VerifyEmailForm({ next }: { next?: string }) {\nconst handleSendOTP = async \n\n      setIsLoading(false);\n    }\n  };\n\n  /**\n   * Verifies the OTP code and links email identity to user\n   * Uses type 'email_change' since we're updating the user's email via updateUser()\n   * With enable_manual_linking = true, this will link the email identity\n   * to the existing authenticated user account\n   */\n  const verifyOTP = useCallback(async () =&gt; {\n    const trimmedOtp = otpCode.trim();\n\n    // Track the OTP being submitted to prevent re-submission\n    setLastSubmittedOtp(trimmedOtp);\n    setError(null);\n    setIsLoading(true);\n\n    try {\n      // Verify OTP code for email change/linking\n      // Use type 'email_change' because we used updateUser() to initiate the flow\n      // With enable_manual_linking = true, this will link the email identity\n      // to the current authenticated user instead of creating a new user\n      const { error: verifyError } = await supabase.auth.verifyOtp({\n        email: email.trim(),\n        token: trimmedOtp,\n        type: \"email_change\",\n      });\n\n      if (verifyError) {\n        setError(verifyError.message || \"Invalid OTP code\");\n        setIsLoading(false);\n        // Keep lastSubmittedOtp set to prevent re-submission of the same code\n        // The code remains in the input so user can see what they entered\n        return;\n      }\n\n      // Refresh session to ensure identities are updated\n      await supabase.auth.refreshSession();\n\n      // Get the OTP sent timestamp from the database\n      // Query the users table to get last_otp_sent_at which is set when OTP is sent\n      const { data: { user: authUser } } = await supabase.auth.getUser();\n      if (!authUser) {\n        setError(\"Failed to get user information\");\n        setIsLoading(false);\n        return;\n      }\n\n      const { data: userData, error: userQueryError } = await supabase\n        .from(\"users\")\n        .select(\"last_otp_sent_at\")\n        .eq(\"auth_user_id\", authUser.id)\n        .single();\n\n      if (userQueryError) {\n        console.error\n  };\n}",
+        "signatures": {
+          "ranges": [
+            {
+              "startPosition": {
+                "line": 76,
+                "column": 1
+              },
+              "endPosition": {
+                "line": 76,
+                "column": 8
+              }
+            },
+            {
+              "startPosition": {
+                "line": 76,
+                "column": 8
+              },
+              "endPosition": {
+                "line": 77,
+                "column": 3
+              }
+            }
+          ]
+        },
+        "detailedLines": [
+          {
+            "text": "export function VerifyEmailForm({ next }: { next?: string }) {",
+            "lineNumber": 76,
+            "isSignature": true
+          },
+          {
+            "text": "const handleSendOTP = async ",
+            "lineNumber": 93
+          },
+          {
+            "lineNumber": 191
+          },
+          {
+            "text": "      setIsLoading(false);",
+            "lineNumber": 192
+          },
+          {
+            "text": "    }",
+            "lineNumber": 193
+          },
+          {
+            "text": "  };",
+            "lineNumber": 194
+          },
+          {
+            "lineNumber": 195
+          },
+          {
+            "text": "  /**",
+            "lineNumber": 196
+          },
+          {
+            "text": "   * Verifies the OTP code and links email identity to user",
+            "lineNumber": 197
+          },
+          {
+            "text": "   * Uses type 'email_change' since we're updating the user's email via updateUser()",
+            "lineNumber": 198
+          },
+          {
+            "text": "   * With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 199
+          },
+          {
+            "text": "   * to the existing authenticated user account",
+            "lineNumber": 200
+          },
+          {
+            "text": "   */",
+            "lineNumber": 201
+          },
+          {
+            "text": "  const verifyOTP = useCallback(async () =&gt; {",
+            "lineNumber": 202
+          },
+          {
+            "text": "    const trimmedOtp = otpCode.trim();",
+            "lineNumber": 203
+          },
+          {
+            "lineNumber": 204
+          },
+          {
+            "text": "    // Track the OTP being submitted to prevent re-submission",
+            "lineNumber": 205
+          },
+          {
+            "text": "    setLastSubmittedOtp(trimmedOtp);",
+            "lineNumber": 206
+          },
+          {
+            "text": "    setError(null);",
+            "lineNumber": 207
+          },
+          {
+            "text": "    setIsLoading(true);",
+            "lineNumber": 208
+          },
+          {
+            "lineNumber": 209
+          },
+          {
+            "text": "    try {",
+            "lineNumber": 210
+          },
+          {
+            "text": "      // Verify OTP code for email change/linking",
+            "lineNumber": 211
+          },
+          {
+            "text": "      // Use type 'email_change' because we used updateUser() to initiate the flow",
+            "lineNumber": 212
+          },
+          {
+            "text": "      // With enable_manual_linking = true, this will link the email identity",
+            "lineNumber": 213
+          },
+          {
+            "text": "      // to the current authenticated user instead of creating a new user",
+            "lineNumber": 214
+          },
+          {
+            "text": "      const { error: verifyError } = await supabase.auth.verifyOtp({",
+            "lineNumber": 215
+          },
+          {
+            "text": "        email: email.trim(),",
+            "lineNumber": 216
+          },
+          {
+            "text": "        token: trimmedOtp,",
+            "lineNumber": 217
+          },
+          {
+            "text": "        type: \"email_change\",",
+            "lineNumber": 218
+          },
+          {
+            "text": "      });",
+            "lineNumber": 219
+          },
+          {
+            "lineNumber": 220
+          },
+          {
+            "text": "      if (verifyError) {",
+            "lineNumber": 221
+          },
+          {
+            "text": "        setError(verifyError.message || \"Invalid OTP code\");",
+            "lineNumber": 222
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 223
+          },
+          {
+            "text": "        // Keep lastSubmittedOtp set to prevent re-submission of the same code",
+            "lineNumber": 224
+          },
+          {
+            "text": "        // The code remains in the input so user can see what they entered",
+            "lineNumber": 225
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 226
+          },
+          {
+            "text": "      }",
+            "lineNumber": 227
+          },
+          {
+            "lineNumber": 228
+          },
+          {
+            "text": "      // Refresh session to ensure identities are updated",
+            "lineNumber": 229
+          },
+          {
+            "text": "      await supabase.auth.refreshSession();",
+            "lineNumber": 230
+          },
+          {
+            "lineNumber": 231
+          },
+          {
+            "text": "      // Get the OTP sent timestamp from the database",
+            "lineNumber": 232
+          },
+          {
+            "text": "      // Query the users table to get last_otp_sent_at which is set when OTP is sent",
+            "lineNumber": 233
+          },
+          {
+            "text": "      const { data: { user: authUser } } = await supabase.auth.getUser();",
+            "lineNumber": 234
+          },
+          {
+            "text": "      if (!authUser) {",
+            "lineNumber": 235
+          },
+          {
+            "text": "        setError(\"Failed to get user information\");",
+            "lineNumber": 236
+          },
+          {
+            "text": "        setIsLoading(false);",
+            "lineNumber": 237
+          },
+          {
+            "text": "        return;",
+            "lineNumber": 238
+          },
+          {
+            "text": "      }",
+            "lineNumber": 239
+          },
+          {
+            "lineNumber": 240
+          },
+          {
+            "text": "      const { data: userData, error: userQueryError } = await supabase",
+            "lineNumber": 241
+          },
+          {
+            "text": "        .from(\"users\")",
+            "lineNumber": 242
+          },
+          {
+            "text": "        .select(\"last_otp_sent_at\")",
+            "lineNumber": 243
+          },
+          {
+            "text": "        .eq(\"auth_user_id\", authUser.id)",
+            "lineNumber": 244
+          },
+          {
+            "text": "        .single();",
+            "lineNumber": 245
+          },
+          {
+            "lineNumber": 246
+          },
+          {
+            "text": "      if (userQueryError) {",
+            "lineNumber": 247
+          },
+          {
+            "text": "        console.error",
+            "lineNumber": 248
+          },
+          {
+            "text": "  };",
+            "lineNumber": 275
+          },
+          {
+            "text": "}",
+            "lineNumber": 445,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.26574933528900146
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 251
+          },
+          "endPosition": {
+            "line": 326
+          }
+        },
+        "contents": "   - No Row Level Security policies\n   - No database triggers or functions\n   - All access control handled by Next.js\n\n### Next.js (Application Layer - All Business Logic)\n\n1. **Middleware Verification**:\n\n   - Queries &#96;profiles&#96; table for linked user_id\n   - Checks &#96;removed_access&#96; is null for active access\n   - Enforces role-based route protection\n   - Real-time verification (instant access revocation)\n\n2. **Domain Validation** (in server actions):\n\n   - Client-side validation for UX (immediate feedback)\n   - Server-side validation before sending OTP\n   - Validates email format and CZU domain\n\n3. **Access Management** (in server actions):\n\n   - Admin sets &#96;removed_access&#96; timestamp and &#96;removed_access_by&#96; profile\n   - Immediate effect on next request\n   - Audit trail of who revoked access and when\n\n## Authentication Flow Details\n\n### Step 1: Google Login\n\nUser clicks Google login button, Supabase handles OAuth flow.\n\n### Step 2: Work Email Input with Domain Validation\n\n&#96;&#96;&#96;typescript\n// Validate domain before sending OTP\nif (!isValidWorkEmailDomain(workEmail)) {\n  throw new Error('Email must be @studenti.czu.cz or @pef.czu.cz');\n}\n\n// Send OTP to work email (only after domain validation passes)\nconst { error } = await supabase.auth.signInWithOtp({\n  email: workEmail,\n  options: { shouldCreateUser: false }\n});\n&#96;&#96;&#96;\n\n### Step 3: OTP Verification and Profile Linking\n\n&#96;&#96;&#96;typescript\n// After user enters OTP, verify it\nconst { error } = await supabase.auth.verifyOtp({\n  email: workEmail,\n  token: otpCode,\n  type: 'email'\n});\n\n// Check if profile exists for this work email\nconst { data: profile } = await supabase\n  .from('profiles')\n  .select('id')\n  .eq('work_email', workEmail)\n  .single();\n\nif (!profile) {\n  // No profile exists - redirect to pending approval\n  redirect('/auth/pending-approval');\n}\n\n// Link profile to current user\nconst { data: { user } } = await supabase.auth.getUser();\nawait supabase\n  .from('profiles')\n  .update({ \n    user_id: user.id,",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "   - No Row Level Security policies",
+            "lineNumber": 253
+          },
+          {
+            "text": "   - No database triggers or functions",
+            "lineNumber": 254
+          },
+          {
+            "text": "   - All access control handled by Next.js",
+            "lineNumber": 255
+          },
+          {
+            "lineNumber": 256
+          },
+          {
+            "text": "### Next.js (Application Layer - All Business Logic)",
+            "lineNumber": 257
+          },
+          {
+            "lineNumber": 258
+          },
+          {
+            "text": "1. **Middleware Verification**:",
+            "lineNumber": 259
+          },
+          {
+            "lineNumber": 260
+          },
+          {
+            "text": "   - Queries &#96;profiles&#96; table for linked user_id",
+            "lineNumber": 261
+          },
+          {
+            "text": "   - Checks &#96;removed_access&#96; is null for active access",
+            "lineNumber": 262
+          },
+          {
+            "text": "   - Enforces role-based route protection",
+            "lineNumber": 263
+          },
+          {
+            "text": "   - Real-time verification (instant access revocation)",
+            "lineNumber": 264
+          },
+          {
+            "lineNumber": 265
+          },
+          {
+            "text": "2. **Domain Validation** (in server actions):",
+            "lineNumber": 266
+          },
+          {
+            "lineNumber": 267
+          },
+          {
+            "text": "   - Client-side validation for UX (immediate feedback)",
+            "lineNumber": 268
+          },
+          {
+            "text": "   - Server-side validation before sending OTP",
+            "lineNumber": 269
+          },
+          {
+            "text": "   - Validates email format and CZU domain",
+            "lineNumber": 270
+          },
+          {
+            "lineNumber": 271
+          },
+          {
+            "text": "3. **Access Management** (in server actions):",
+            "lineNumber": 272
+          },
+          {
+            "lineNumber": 273
+          },
+          {
+            "text": "   - Admin sets &#96;removed_access&#96; timestamp and &#96;removed_access_by&#96; profile",
+            "lineNumber": 274
+          },
+          {
+            "text": "   - Immediate effect on next request",
+            "lineNumber": 275
+          },
+          {
+            "text": "   - Audit trail of who revoked access and when",
+            "lineNumber": 276
+          },
+          {
+            "lineNumber": 277
+          },
+          {
+            "text": "## Authentication Flow Details",
+            "lineNumber": 278
+          },
+          {
+            "lineNumber": 279
+          },
+          {
+            "text": "### Step 1: Google Login",
+            "lineNumber": 280
+          },
+          {
+            "lineNumber": 281
+          },
+          {
+            "text": "User clicks Google login button, Supabase handles OAuth flow.",
+            "lineNumber": 282
+          },
+          {
+            "lineNumber": 283
+          },
+          {
+            "text": "### Step 2: Work Email Input with Domain Validation",
+            "lineNumber": 284
+          },
+          {
+            "lineNumber": 285
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 286
+          },
+          {
+            "text": "// Validate domain before sending OTP",
+            "lineNumber": 287
+          },
+          {
+            "text": "if (!isValidWorkEmailDomain(workEmail)) {",
+            "lineNumber": 288
+          },
+          {
+            "text": "  throw new Error('Email must be @studenti.czu.cz or @pef.czu.cz');",
+            "lineNumber": 289
+          },
+          {
+            "text": "}",
+            "lineNumber": 290
+          },
+          {
+            "lineNumber": 291
+          },
+          {
+            "text": "// Send OTP to work email (only after domain validation passes)",
+            "lineNumber": 292
+          },
+          {
+            "text": "const { error } = await supabase.auth.signInWithOtp({",
+            "lineNumber": 293
+          },
+          {
+            "text": "  email: workEmail,",
+            "lineNumber": 294
+          },
+          {
+            "text": "  options: { shouldCreateUser: false }",
+            "lineNumber": 295
+          },
+          {
+            "text": "});",
+            "lineNumber": 296
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 297
+          },
+          {
+            "lineNumber": 298
+          },
+          {
+            "text": "### Step 3: OTP Verification and Profile Linking",
+            "lineNumber": 299
+          },
+          {
+            "lineNumber": 300
+          },
+          {
+            "text": "&#96;&#96;&#96;typescript",
+            "lineNumber": 301
+          },
+          {
+            "text": "// After user enters OTP, verify it",
+            "lineNumber": 302
+          },
+          {
+            "text": "const { error } = await supabase.auth.verifyOtp({",
+            "lineNumber": 303
+          },
+          {
+            "text": "  email: workEmail,",
+            "lineNumber": 304
+          },
+          {
+            "text": "  token: otpCode,",
+            "lineNumber": 305
+          },
+          {
+            "text": "  type: 'email'",
+            "lineNumber": 306
+          },
+          {
+            "text": "});",
+            "lineNumber": 307
+          },
+          {
+            "lineNumber": 308
+          },
+          {
+            "text": "// Check if profile exists for this work email",
+            "lineNumber": 309
+          },
+          {
+            "text": "const { data: profile } = await supabase",
+            "lineNumber": 310
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 311
+          },
+          {
+            "text": "  .select('id')",
+            "lineNumber": 312
+          },
+          {
+            "text": "  .eq('work_email', workEmail)",
+            "lineNumber": 313
+          },
+          {
+            "text": "  .single();",
+            "lineNumber": 314
+          },
+          {
+            "lineNumber": 315
+          },
+          {
+            "text": "if (!profile) {",
+            "lineNumber": 316
+          },
+          {
+            "text": "  // No profile exists - redirect to pending approval",
+            "lineNumber": 317
+          },
+          {
+            "text": "  redirect('/auth/pending-approval');",
+            "lineNumber": 318
+          },
+          {
+            "text": "}",
+            "lineNumber": 319
+          },
+          {
+            "lineNumber": 320
+          },
+          {
+            "text": "// Link profile to current user",
+            "lineNumber": 321
+          },
+          {
+            "text": "const { data: { user } } = await supabase.auth.getUser();",
+            "lineNumber": 322
+          },
+          {
+            "text": "await supabase",
+            "lineNumber": 323
+          },
+          {
+            "text": "  .from('profiles')",
+            "lineNumber": 324
+          },
+          {
+            "text": "  .update({ ",
+            "lineNumber": 325
+          },
+          {
+            "text": "    user_id: user.id,",
+            "lineNumber": 326
+          }
+        ]
+      },
+      "score": 0.26473408937454224
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131220000_set_verified_work_email_on_change.sql",
+        "range": {
+          "startPosition": {
+            "line": 22
+          },
+          "endPosition": {
+            "line": 82
+          }
+        },
+        "contents": "  v_domain text;\nbegin\n  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change\n  -- When email_change is verified, Supabase typically:\n  -- 1. Sets email_change to the new email (temporary)\n  -- 2. Verifies OTP\n  -- 3. Moves email_change to email and clears email_change\n  -- So we need to check both fields\n  \n  -- Check if email changed\n  if old.email is distinct from new.email then\n    v_email := new.email;\n  -- Check if email_change was cleared (moved to email)\n  elsif old.email_change is distinct from new.email_change and (new.email_change is null or new.email_change = '') then\n    -- email_change was cleared, use the current email\n    v_email := new.email;\n  else\n    -- No relevant change\n    return new;\n  end if;\n  \n  -- Only proceed if email is not null and not empty\n  if v_email is null or v_email = '' then\n    return new;\n  end if;\n  \n  -- Extract domain from email\n  v_domain := lower(split_part(v_email, '@', 2));\n  \n  -- Only update verified_work_email if domain is a CZU domain\n  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then\n    return new;\n  end if;\n  \n  -- Find the public.users row that matches this auth.users.id\n  select id into v_user_id\n  from public.users\n  where auth_user_id = new.id;\n  \n  -- If no matching public.users row found, return early\n  if v_user_id is null then\n    return new;\n  end if;\n  \n  -- Update verified_work_email and verified_work_email_at\n  -- This happens after OTP verification succeeds, so the email is verified\n  -- Only update if the email is different from what's already stored (or not set)\n  update public.users\n  set verified_work_email = v_email,\n      verified_work_email_at = now()\n  where id = v_user_id\n    and (verified_work_email is null or verified_work_email != v_email);\n  \n  return new;\nend;\n$$;\n\ncomment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';\n\n-- ============================================================================",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_domain text;",
+            "lineNumber": 23
+          },
+          {
+            "text": "begin",
+            "lineNumber": 24
+          },
+          {
+            "text": "  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change",
+            "lineNumber": 25
+          },
+          {
+            "text": "  -- When email_change is verified, Supabase typically:",
+            "lineNumber": 26
+          },
+          {
+            "text": "  -- 1. Sets email_change to the new email (temporary)",
+            "lineNumber": 27
+          },
+          {
+            "text": "  -- 2. Verifies OTP",
+            "lineNumber": 28
+          },
+          {
+            "text": "  -- 3. Moves email_change to email and clears email_change",
+            "lineNumber": 29
+          },
+          {
+            "text": "  -- So we need to check both fields",
+            "lineNumber": 30
+          },
+          {
+            "text": "  ",
+            "lineNumber": 31
+          },
+          {
+            "text": "  -- Check if email changed",
+            "lineNumber": 32
+          },
+          {
+            "text": "  if old.email is distinct from new.email then",
+            "lineNumber": 33
+          },
+          {
+            "text": "    v_email := new.email;",
+            "lineNumber": 34
+          },
+          {
+            "text": "  -- Check if email_change was cleared (moved to email)",
+            "lineNumber": 35
+          },
+          {
+            "text": "  elsif old.email_change is distinct from new.email_change and (new.email_change is null or new.email_change = '') then",
+            "lineNumber": 36
+          },
+          {
+            "text": "    -- email_change was cleared, use the current email",
+            "lineNumber": 37
+          },
+          {
+            "text": "    v_email := new.email;",
+            "lineNumber": 38
+          },
+          {
+            "text": "  else",
+            "lineNumber": 39
+          },
+          {
+            "text": "    -- No relevant change",
+            "lineNumber": 40
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 41
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 42
+          },
+          {
+            "text": "  ",
+            "lineNumber": 43
+          },
+          {
+            "text": "  -- Only proceed if email is not null and not empty",
+            "lineNumber": 44
+          },
+          {
+            "text": "  if v_email is null or v_email = '' then",
+            "lineNumber": 45
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 46
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 47
+          },
+          {
+            "text": "  ",
+            "lineNumber": 48
+          },
+          {
+            "text": "  -- Extract domain from email",
+            "lineNumber": 49
+          },
+          {
+            "text": "  v_domain := lower(split_part(v_email, '@', 2));",
+            "lineNumber": 50
+          },
+          {
+            "text": "  ",
+            "lineNumber": 51
+          },
+          {
+            "text": "  -- Only update verified_work_email if domain is a CZU domain",
+            "lineNumber": 52
+          },
+          {
+            "text": "  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then",
+            "lineNumber": 53
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 54
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 55
+          },
+          {
+            "text": "  ",
+            "lineNumber": 56
+          },
+          {
+            "text": "  -- Find the public.users row that matches this auth.users.id",
+            "lineNumber": 57
+          },
+          {
+            "text": "  select id into v_user_id",
+            "lineNumber": 58
+          },
+          {
+            "text": "  from public.users",
+            "lineNumber": 59
+          },
+          {
+            "text": "  where auth_user_id = new.id;",
+            "lineNumber": 60
+          },
+          {
+            "text": "  ",
+            "lineNumber": 61
+          },
+          {
+            "text": "  -- If no matching public.users row found, return early",
+            "lineNumber": 62
+          },
+          {
+            "text": "  if v_user_id is null then",
+            "lineNumber": 63
+          },
+          {
+            "text": "    return new;",
+            "lineNumber": 64
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 65
+          },
+          {
+            "text": "  ",
+            "lineNumber": 66
+          },
+          {
+            "text": "  -- Update verified_work_email and verified_work_email_at",
+            "lineNumber": 67
+          },
+          {
+            "text": "  -- This happens after OTP verification succeeds, so the email is verified",
+            "lineNumber": 68
+          },
+          {
+            "text": "  -- Only update if the email is different from what's already stored (or not set)",
+            "lineNumber": 69
+          },
+          {
+            "text": "  update public.users",
+            "lineNumber": 70
+          },
+          {
+            "text": "  set verified_work_email = v_email,",
+            "lineNumber": 71
+          },
+          {
+            "text": "      verified_work_email_at = now()",
+            "lineNumber": 72
+          },
+          {
+            "text": "  where id = v_user_id",
+            "lineNumber": 73
+          },
+          {
+            "text": "    and (verified_work_email is null or verified_work_email != v_email);",
+            "lineNumber": 74
+          },
+          {
+            "text": "  ",
+            "lineNumber": 75
+          },
+          {
+            "text": "  return new;",
+            "lineNumber": 76
+          },
+          {
+            "text": "end;",
+            "lineNumber": 77
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 78
+          },
+          {
+            "lineNumber": 79
+          },
+          {
+            "text": "comment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';",
+            "lineNumber": 80
+          },
+          {
+            "lineNumber": 81
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 82
+          }
+        ]
+      },
+      "score": 0.25776219367980957
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131000000_initial_schema.sql",
+        "range": {
+          "startPosition": {
+            "line": 144
+          },
+          "endPosition": {
+            "line": 197
+          }
+        },
+        "contents": "  v_email_change text;\n  v_domain text;\nbegin\n  if tg_op != 'UPDATE' then\n    return NEW;\n  end if;\n\n  if OLD.email_change is distinct from NEW.email_change then\n    v_email_change := NEW.email_change;\n    \n    if v_email_change is not null and v_email_change != '' then\n      v_domain := lower(split_part(v_email_change, '@', 2));\n      \n      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then\n        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;\n      end if;\n    end if;\n  end if;\n\n  if OLD.email is distinct from NEW.email then\n    v_email := NEW.email;\n    \n    if v_email is not null and v_email != '' then\n      v_domain := lower(split_part(v_email, '@', 2));\n      \n      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then\n        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;\n      end if;\n    end if;\n  end if;\n\n  return NEW;\nend;\n$$;\n\ncomment on function public.validate_czu_email_domain_trigger() is 'Server-side trigger function that validates email domains at the database level. Uses SECURITY DEFINER to access auth.users table. Validates email changes (UPDATE) for all users.';\n\n-- Create before_user_created hook to restrict signups to Google OAuth only\ncreate or replace function public.before_user_created_hook(event jsonb)\nreturns jsonb\nlanguage plpgsql\nsecurity definer\nset search_path = ''\nas $$\ndeclare\n  v_provider text;\n  v_encrypted_password text;\n  v_app_metadata jsonb;\n  v_identity jsonb;\n  v_has_google_identity boolean := false;\nbegin\n  v_encrypted_password := event-&gt;'user'-&gt;&gt;'encrypted_password';\n  ",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  v_email_change text;",
+            "lineNumber": 145
+          },
+          {
+            "text": "  v_domain text;",
+            "lineNumber": 146
+          },
+          {
+            "text": "begin",
+            "lineNumber": 147
+          },
+          {
+            "text": "  if tg_op != 'UPDATE' then",
+            "lineNumber": 148
+          },
+          {
+            "text": "    return NEW;",
+            "lineNumber": 149
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 150
+          },
+          {
+            "lineNumber": 151
+          },
+          {
+            "text": "  if OLD.email_change is distinct from NEW.email_change then",
+            "lineNumber": 152
+          },
+          {
+            "text": "    v_email_change := NEW.email_change;",
+            "lineNumber": 153
+          },
+          {
+            "text": "    ",
+            "lineNumber": 154
+          },
+          {
+            "text": "    if v_email_change is not null and v_email_change != '' then",
+            "lineNumber": 155
+          },
+          {
+            "text": "      v_domain := lower(split_part(v_email_change, '@', 2));",
+            "lineNumber": 156
+          },
+          {
+            "text": "      ",
+            "lineNumber": 157
+          },
+          {
+            "text": "      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then",
+            "lineNumber": 158
+          },
+          {
+            "text": "        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;",
+            "lineNumber": 159
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 160
+          },
+          {
+            "text": "    end if;",
+            "lineNumber": 161
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 162
+          },
+          {
+            "lineNumber": 163
+          },
+          {
+            "text": "  if OLD.email is distinct from NEW.email then",
+            "lineNumber": 164
+          },
+          {
+            "text": "    v_email := NEW.email;",
+            "lineNumber": 165
+          },
+          {
+            "text": "    ",
+            "lineNumber": 166
+          },
+          {
+            "text": "    if v_email is not null and v_email != '' then",
+            "lineNumber": 167
+          },
+          {
+            "text": "      v_domain := lower(split_part(v_email, '@', 2));",
+            "lineNumber": 168
+          },
+          {
+            "text": "      ",
+            "lineNumber": 169
+          },
+          {
+            "text": "      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then",
+            "lineNumber": 170
+          },
+          {
+            "text": "        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;",
+            "lineNumber": 171
+          },
+          {
+            "text": "      end if;",
+            "lineNumber": 172
+          },
+          {
+            "text": "    end if;",
+            "lineNumber": 173
+          },
+          {
+            "text": "  end if;",
+            "lineNumber": 174
+          },
+          {
+            "lineNumber": 175
+          },
+          {
+            "text": "  return NEW;",
+            "lineNumber": 176
+          },
+          {
+            "text": "end;",
+            "lineNumber": 177
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 178
+          },
+          {
+            "lineNumber": 179
+          },
+          {
+            "text": "comment on function public.validate_czu_email_domain_trigger() is 'Server-side trigger function that validates email domains at the database level. Uses SECURITY DEFINER to access auth.users table. Validates email changes (UPDATE) for all users.';",
+            "lineNumber": 180
+          },
+          {
+            "lineNumber": 181
+          },
+          {
+            "text": "-- Create before_user_created hook to restrict signups to Google OAuth only",
+            "lineNumber": 182
+          },
+          {
+            "text": "create or replace function public.before_user_created_hook(event jsonb)",
+            "lineNumber": 183
+          },
+          {
+            "text": "returns jsonb",
+            "lineNumber": 184
+          },
+          {
+            "text": "language plpgsql",
+            "lineNumber": 185
+          },
+          {
+            "text": "security definer",
+            "lineNumber": 186
+          },
+          {
+            "text": "set search_path = ''",
+            "lineNumber": 187
+          },
+          {
+            "text": "as $$",
+            "lineNumber": 188
+          },
+          {
+            "text": "declare",
+            "lineNumber": 189
+          },
+          {
+            "text": "  v_provider text;",
+            "lineNumber": 190
+          },
+          {
+            "text": "  v_encrypted_password text;",
+            "lineNumber": 191
+          },
+          {
+            "text": "  v_app_metadata jsonb;",
+            "lineNumber": 192
+          },
+          {
+            "text": "  v_identity jsonb;",
+            "lineNumber": 193
+          },
+          {
+            "text": "  v_has_google_identity boolean := false;",
+            "lineNumber": 194
+          },
+          {
+            "text": "begin",
+            "lineNumber": 195
+          },
+          {
+            "text": "  v_encrypted_password := event-&gt;'user'-&gt;&gt;'encrypted_password';",
+            "lineNumber": 196
+          },
+          {
+            "text": "  ",
+            "lineNumber": 197
+          }
+        ]
+      },
+      "score": 0.24383753538131714
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./lib/auth-helpers.ts",
+        "range": {
+          "startPosition": {
+            "line": 36,
+            "column": 1
+          },
+          "endPosition": {
+            "line": 77,
+            "column": 1
+          }
+        },
+        "contents": "/**\n * Checks if the authenticated user has a linked profile\n * @param supabaseClient - Supabase client to use. Must be provided to use existing client.\n * @returns true if user has a linked profile, false otherwise\n */\nexport async function hasLinkedProfile(\n  supabaseClient: SupabaseClient\n): Promise&lt;boolean&gt; {\n  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();\n\n  if (authError || !user) {\n    return false;\n  }\n\n  // Query profiles directly - RLS policy ensures user can only see their own profile\n  // The RLS policy checks: user_id in (select id from public.users where auth_user_id = auth.uid())\n  // This is more reliable than nested selects with RLS\n  const { data: profiles, error: queryError } = await supabaseClient\n    .from(\"profiles\")\n    .select(\"id\")\n    .limit(1);\n\n  // Return false if query failed or no profiles found\n  if (queryError || !profiles) {\n    return false;\n  }\n\n  // Check if at least one profile exists\n  return Array.isArray(profiles) &amp;&amp; profiles.length &gt; 0;\n}\n\n/**\n * Creates an error URL with the given error message\n */\nexport function createErrorUrl(request: NextRequest, errorMessage: string): URL {\n  const url = request.nextUrl.clone();\n}",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "/**",
+            "lineNumber": 39
+          },
+          {
+            "text": " * Checks if the authenticated user has a linked profile",
+            "lineNumber": 40
+          },
+          {
+            "text": " * @param supabaseClient - Supabase client to use. Must be provided to use existing client.",
+            "lineNumber": 41
+          },
+          {
+            "text": " * @returns true if user has a linked profile, false otherwise",
+            "lineNumber": 42
+          },
+          {
+            "text": " */",
+            "lineNumber": 43
+          },
+          {
+            "text": "export async function hasLinkedProfile(",
+            "lineNumber": 44,
+            "isSignature": true
+          },
+          {
+            "text": "  supabaseClient: SupabaseClient",
+            "lineNumber": 45,
+            "isSignature": true
+          },
+          {
+            "text": "): Promise&lt;boolean&gt; {",
+            "lineNumber": 46,
+            "isSignature": true
+          },
+          {
+            "text": "  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();",
+            "lineNumber": 47
+          },
+          {
+            "lineNumber": 48
+          },
+          {
+            "text": "  if (authError || !user) {",
+            "lineNumber": 49
+          },
+          {
+            "text": "    return false;",
+            "lineNumber": 50
+          },
+          {
+            "text": "  }",
+            "lineNumber": 51
+          },
+          {
+            "lineNumber": 52
+          },
+          {
+            "text": "  // Query profiles directly - RLS policy ensures user can only see their own profile",
+            "lineNumber": 53
+          },
+          {
+            "text": "  // The RLS policy checks: user_id in (select id from public.users where auth_user_id = auth.uid())",
+            "lineNumber": 54
+          },
+          {
+            "text": "  // This is more reliable than nested selects with RLS",
+            "lineNumber": 55
+          },
+          {
+            "text": "  const { data: profiles, error: queryError } = await supabaseClient",
+            "lineNumber": 56
+          },
+          {
+            "text": "    .from(\"profiles\")",
+            "lineNumber": 57
+          },
+          {
+            "text": "    .select(\"id\")",
+            "lineNumber": 58
+          },
+          {
+            "text": "    .limit(1);",
+            "lineNumber": 59
+          },
+          {
+            "lineNumber": 60
+          },
+          {
+            "text": "  // Return false if query failed or no profiles found",
+            "lineNumber": 61
+          },
+          {
+            "text": "  if (queryError || !profiles) {",
+            "lineNumber": 62
+          },
+          {
+            "text": "    return false;",
+            "lineNumber": 63
+          },
+          {
+            "text": "  }",
+            "lineNumber": 64
+          },
+          {
+            "lineNumber": 65
+          },
+          {
+            "text": "  // Check if at least one profile exists",
+            "lineNumber": 66
+          },
+          {
+            "text": "  return Array.isArray(profiles) &amp;&amp; profiles.length &gt; 0;",
+            "lineNumber": 67
+          },
+          {
+            "text": "}",
+            "lineNumber": 68,
+            "isSignature": true
+          },
+          {
+            "lineNumber": 69
+          },
+          {
+            "text": "/**",
+            "lineNumber": 70
+          },
+          {
+            "text": " * Creates an error URL with the given error message",
+            "lineNumber": 71
+          },
+          {
+            "text": " */",
+            "lineNumber": 72
+          },
+          {
+            "text": "export function createErrorUrl(request: NextRequest, errorMessage: string): URL {",
+            "lineNumber": 73,
+            "isSignature": true
+          },
+          {
+            "text": "  const url = request.nextUrl.clone();",
+            "lineNumber": 74
+          },
+          {
+            "text": "}",
+            "lineNumber": 78,
+            "isSignature": true
+          }
+        ]
+      },
+      "score": 0.24216115474700928
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/rules/use-realtime.mdc",
+        "range": {
+          "startPosition": {
+            "line": 206
+          },
+          "endPosition": {
+            "line": 284
+          }
+        },
+        "contents": "SECURITY DEFINER\nLANGUAGE plpgsql\nAS $$\nBEGIN\n  PERFORM realtime.send(\n    'room:' || NEW.room_id::text,\n    'status_changed',\n    jsonb_build_object('id', NEW.id, 'status', NEW.status),\n    false\n  );\n  RETURN NEW;\nEND;\n$$;\n&#96;&#96;&#96;\nThis allows us to broadcast to a specific room with any content that is not bound to a table or if you need to send data to public channels. It's also a good way to integrate with other services and extensions.\n\n### Conditional Broadcasting\nIf you need to broadcast only significant changes, you can use the following pattern:\n&#96;&#96;&#96;sql\n-- Only broadcast significant changes\nIF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status THEN\n  PERFORM realtime.broadcast_changes(\n    'room:' || NEW.room_id::text,\n    TG_OP,\n    TG_OP,\n    TG_TABLE_NAME,\n    TG_TABLE_SCHEMA,\n    NEW,\n    OLD\n  );\nEND IF;\n&#96;&#96;&#96;\nThis is just an example as you can use any logic you want that is SQL compatible.\n\n## Authorization Setup\n\n### Basic RLS Setup\nTo access a private channel you need to set RLS policies against &#96;realtime.messages&#96; table for SELECT operations.\n&#96;&#96;&#96;sql\n-- Simple policy with indexed columns\nCREATE POLICY \"room_members_can_read\" ON realtime.messages\nFOR SELECT TO authenticated\nUSING (\n  topic LIKE 'room:%' AND\n  EXISTS (\n    SELECT 1 FROM room_members\n    WHERE user_id = auth.uid()\n    AND room_id = SPLIT_PART(topic, ':', 2)::uuid\n  )\n);\n\n-- Required index for performance\nCREATE INDEX idx_room_members_user_room\nON room_members(user_id, room_id);\n&#96;&#96;&#96;\n\nTo write to a private channel you need to set RLS policies against &#96;realtime.messages&#96; table for INSERT operations.\n\n&#96;&#96;&#96;sql\n-- Simple policy with indexed columns\nCREATE POLICY \"room_members_can_write\" ON realtime.messages\nFOR INSERT TO authenticated\nUSING (\n  topic LIKE 'room:%' AND\n  EXISTS (\n    SELECT 1 FROM room_members\n    WHERE user_id = auth.uid()\n    AND room_id = SPLIT_PART(topic, ':', 2)::uuid\n  )\n);\n&#96;&#96;&#96;\n\n### Client Authorization\n&#96;&#96;&#96;javascript\nconst channel = supabase.channel('room:123:messages', {\n  config: { private: true }\n})\n  .on('broadcast', { event: 'message_created' }, handleMessage)",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "SECURITY DEFINER",
+            "lineNumber": 207
+          },
+          {
+            "text": "LANGUAGE plpgsql",
+            "lineNumber": 208
+          },
+          {
+            "text": "AS $$",
+            "lineNumber": 209
+          },
+          {
+            "text": "BEGIN",
+            "lineNumber": 210
+          },
+          {
+            "text": "  PERFORM realtime.send(",
+            "lineNumber": 211
+          },
+          {
+            "text": "    'room:' || NEW.room_id::text,",
+            "lineNumber": 212
+          },
+          {
+            "text": "    'status_changed',",
+            "lineNumber": 213
+          },
+          {
+            "text": "    jsonb_build_object('id', NEW.id, 'status', NEW.status),",
+            "lineNumber": 214
+          },
+          {
+            "text": "    false",
+            "lineNumber": 215
+          },
+          {
+            "text": "  );",
+            "lineNumber": 216
+          },
+          {
+            "text": "  RETURN NEW;",
+            "lineNumber": 217
+          },
+          {
+            "text": "END;",
+            "lineNumber": 218
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 219
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 220
+          },
+          {
+            "text": "This allows us to broadcast to a specific room with any content that is not bound to a table or if you need to send data to public channels. It's also a good way to integrate with other services and extensions.",
+            "lineNumber": 221
+          },
+          {
+            "lineNumber": 222
+          },
+          {
+            "text": "### Conditional Broadcasting",
+            "lineNumber": 223
+          },
+          {
+            "text": "If you need to broadcast only significant changes, you can use the following pattern:",
+            "lineNumber": 224
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 225
+          },
+          {
+            "text": "-- Only broadcast significant changes",
+            "lineNumber": 226
+          },
+          {
+            "text": "IF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status THEN",
+            "lineNumber": 227
+          },
+          {
+            "text": "  PERFORM realtime.broadcast_changes(",
+            "lineNumber": 228
+          },
+          {
+            "text": "    'room:' || NEW.room_id::text,",
+            "lineNumber": 229
+          },
+          {
+            "text": "    TG_OP,",
+            "lineNumber": 230
+          },
+          {
+            "text": "    TG_OP,",
+            "lineNumber": 231
+          },
+          {
+            "text": "    TG_TABLE_NAME,",
+            "lineNumber": 232
+          },
+          {
+            "text": "    TG_TABLE_SCHEMA,",
+            "lineNumber": 233
+          },
+          {
+            "text": "    NEW,",
+            "lineNumber": 234
+          },
+          {
+            "text": "    OLD",
+            "lineNumber": 235
+          },
+          {
+            "text": "  );",
+            "lineNumber": 236
+          },
+          {
+            "text": "END IF;",
+            "lineNumber": 237
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 238
+          },
+          {
+            "text": "This is just an example as you can use any logic you want that is SQL compatible.",
+            "lineNumber": 239
+          },
+          {
+            "lineNumber": 240
+          },
+          {
+            "text": "## Authorization Setup",
+            "lineNumber": 241
+          },
+          {
+            "lineNumber": 242
+          },
+          {
+            "text": "### Basic RLS Setup",
+            "lineNumber": 243
+          },
+          {
+            "text": "To access a private channel you need to set RLS policies against &#96;realtime.messages&#96; table for SELECT operations.",
+            "lineNumber": 244
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 245
+          },
+          {
+            "text": "-- Simple policy with indexed columns",
+            "lineNumber": 246
+          },
+          {
+            "text": "CREATE POLICY \"room_members_can_read\" ON realtime.messages",
+            "lineNumber": 247
+          },
+          {
+            "text": "FOR SELECT TO authenticated",
+            "lineNumber": 248
+          },
+          {
+            "text": "USING (",
+            "lineNumber": 249
+          },
+          {
+            "text": "  topic LIKE 'room:%' AND",
+            "lineNumber": 250
+          },
+          {
+            "text": "  EXISTS (",
+            "lineNumber": 251
+          },
+          {
+            "text": "    SELECT 1 FROM room_members",
+            "lineNumber": 252
+          },
+          {
+            "text": "    WHERE user_id = auth.uid()",
+            "lineNumber": 253
+          },
+          {
+            "text": "    AND room_id = SPLIT_PART(topic, ':', 2)::uuid",
+            "lineNumber": 254
+          },
+          {
+            "text": "  )",
+            "lineNumber": 255
+          },
+          {
+            "text": ");",
+            "lineNumber": 256
+          },
+          {
+            "lineNumber": 257
+          },
+          {
+            "text": "-- Required index for performance",
+            "lineNumber": 258
+          },
+          {
+            "text": "CREATE INDEX idx_room_members_user_room",
+            "lineNumber": 259
+          },
+          {
+            "text": "ON room_members(user_id, room_id);",
+            "lineNumber": 260
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 261
+          },
+          {
+            "lineNumber": 262
+          },
+          {
+            "text": "To write to a private channel you need to set RLS policies against &#96;realtime.messages&#96; table for INSERT operations.",
+            "lineNumber": 263
+          },
+          {
+            "lineNumber": 264
+          },
+          {
+            "text": "&#96;&#96;&#96;sql",
+            "lineNumber": 265
+          },
+          {
+            "text": "-- Simple policy with indexed columns",
+            "lineNumber": 266
+          },
+          {
+            "text": "CREATE POLICY \"room_members_can_write\" ON realtime.messages",
+            "lineNumber": 267
+          },
+          {
+            "text": "FOR INSERT TO authenticated",
+            "lineNumber": 268
+          },
+          {
+            "text": "USING (",
+            "lineNumber": 269
+          },
+          {
+            "text": "  topic LIKE 'room:%' AND",
+            "lineNumber": 270
+          },
+          {
+            "text": "  EXISTS (",
+            "lineNumber": 271
+          },
+          {
+            "text": "    SELECT 1 FROM room_members",
+            "lineNumber": 272
+          },
+          {
+            "text": "    WHERE user_id = auth.uid()",
+            "lineNumber": 273
+          },
+          {
+            "text": "    AND room_id = SPLIT_PART(topic, ':', 2)::uuid",
+            "lineNumber": 274
+          },
+          {
+            "text": "  )",
+            "lineNumber": 275
+          },
+          {
+            "text": ");",
+            "lineNumber": 276
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 277
+          },
+          {
+            "lineNumber": 278
+          },
+          {
+            "text": "### Client Authorization",
+            "lineNumber": 279
+          },
+          {
+            "text": "&#96;&#96;&#96;javascript",
+            "lineNumber": 280
+          },
+          {
+            "text": "const channel = supabase.channel('room:123:messages', {",
+            "lineNumber": 281
+          },
+          {
+            "text": "  config: { private: true }",
+            "lineNumber": 282
+          },
+          {
+            "text": "})",
+            "lineNumber": 283
+          },
+          {
+            "text": "  .on('broadcast', { event: 'message_created' }, handleMessage)",
+            "lineNumber": 284
+          }
+        ]
+      },
+      "score": 0.2350742071866989
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./.cursor/plans/work_email_auth_system_467a2b18.plan.md",
+        "range": {
+          "startPosition": {
+            "line": 407
+          },
+          "endPosition": {
+            "line": 432,
+            "column": 97
+          }
+        },
+        "contents": "└─────────────────────────────────────────────────────────────────┘\n                           │\n                           ▼\n┌─────────────────────────────────────────────────────────────────┐\n│                        Supabase                                  │\n│  ┌─────────────────────┐  ┌─────────────────────────────────┐   │\n│  │   Auth Service      │  │         PostgreSQL              │   │\n│  │  - Google OAuth     │  │  - profiles table               │   │\n│  │  - OTP emails       │  │  - users table                  │   │\n│  │  - Session mgmt     │  │  - No RLS (Next.js handles)     │   │\n│  └─────────────────────┘  └─────────────────────────────────┘   │\n└─────────────────────────────────────────────────────────────────┘\n&#96;&#96;&#96;\n\n\n## Simplicity Principles\n\n1. **Business logic in Next.js** - Server actions and middleware handle all rules\n2. **Supabase for storage only** - No hooks, no custom functions, no RLS, just tables\n3. **Minimal components** - Reuse shadcn/ui, no custom abstractions\n4. **Direct database queries** - Query profiles table for verification and access status\n5. **Admin-first onboarding** - Admin creates profiles, users link via work email verification\n\n# Common Traps to Avoid\n\n1. The auth flow will get stuck once the user is redirected back to the nextjs app from supabase.",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "└─────────────────────────────────────────────────────────────────┘",
+            "lineNumber": 408
+          },
+          {
+            "text": "                           │",
+            "lineNumber": 409
+          },
+          {
+            "text": "                           ▼",
+            "lineNumber": 410
+          },
+          {
+            "text": "┌─────────────────────────────────────────────────────────────────┐",
+            "lineNumber": 411
+          },
+          {
+            "text": "│                        Supabase                                  │",
+            "lineNumber": 412
+          },
+          {
+            "text": "│  ┌─────────────────────┐  ┌─────────────────────────────────┐   │",
+            "lineNumber": 413
+          },
+          {
+            "text": "│  │   Auth Service      │  │         PostgreSQL              │   │",
+            "lineNumber": 414
+          },
+          {
+            "text": "│  │  - Google OAuth     │  │  - profiles table               │   │",
+            "lineNumber": 415
+          },
+          {
+            "text": "│  │  - OTP emails       │  │  - users table                  │   │",
+            "lineNumber": 416
+          },
+          {
+            "text": "│  │  - Session mgmt     │  │  - No RLS (Next.js handles)     │   │",
+            "lineNumber": 417
+          },
+          {
+            "text": "│  └─────────────────────┘  └─────────────────────────────────┘   │",
+            "lineNumber": 418
+          },
+          {
+            "text": "└─────────────────────────────────────────────────────────────────┘",
+            "lineNumber": 419
+          },
+          {
+            "text": "&#96;&#96;&#96;",
+            "lineNumber": 420
+          },
+          {
+            "lineNumber": 421
+          },
+          {
+            "lineNumber": 422
+          },
+          {
+            "text": "## Simplicity Principles",
+            "lineNumber": 423
+          },
+          {
+            "lineNumber": 424
+          },
+          {
+            "text": "1. **Business logic in Next.js** - Server actions and middleware handle all rules",
+            "lineNumber": 425
+          },
+          {
+            "text": "2. **Supabase for storage only** - No hooks, no custom functions, no RLS, just tables",
+            "lineNumber": 426
+          },
+          {
+            "text": "3. **Minimal components** - Reuse shadcn/ui, no custom abstractions",
+            "lineNumber": 427
+          },
+          {
+            "text": "4. **Direct database queries** - Query profiles table for verification and access status",
+            "lineNumber": 428
+          },
+          {
+            "text": "5. **Admin-first onboarding** - Admin creates profiles, users link via work email verification",
+            "lineNumber": 429
+          },
+          {
+            "lineNumber": 430
+          },
+          {
+            "text": "# Common Traps to Avoid",
+            "lineNumber": 431
+          },
+          {
+            "lineNumber": 432
+          },
+          {
+            "text": "1. The auth flow will get stuck once the user is redirected back to the nextjs app from supabase.",
+            "lineNumber": 433
+          }
+        ]
+      },
+      "score": 0.23486000299453735
+    },
+    {
+      "codeBlock": {
+        "relativeWorkspacePath": "./supabase/migrations/20260131220000_set_verified_work_email_on_change.sql",
+        "range": {
+          "startPosition": {
+            "line": 75
+          },
+          "endPosition": {
+            "line": 114
+          }
+        },
+        "contents": "  return new;\nend;\n$$;\n\ncomment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';\n\n-- ============================================================================\n-- TRIGGERS\n-- ============================================================================\n\n-- Create trigger on auth.users table to set verified work email when email changes\n-- Runs AFTER UPDATE to ensure email change is committed\n-- Watches both email and email_change fields to catch all verification scenarios\ndrop trigger if exists set_verified_work_email_on_change_trigger on auth.users;\n\ncreate trigger set_verified_work_email_on_change_trigger\nafter update of email, email_change on auth.users\nfor each row\nwhen (\n  (old.email is distinct from new.email) or \n  (old.email_change is distinct from new.email_change)\n)\nexecute function public.set_verified_work_email_on_change();\n\n-- ============================================================================\n-- INITIAL DATA UPDATE\n-- ============================================================================\n\n-- Update existing users who already have a CZU email set\n-- This handles any existing data that should have verified_work_email set\nupdate public.users u\nset verified_work_email = au.email,\n    verified_work_email_at = au.updated_at\nfrom auth.users au\nwhere u.auth_user_id = au.id\n  and au.email is not null\n  and au.email != ''\n  and lower(split_part(au.email, '@', 2)) in ('pef.czu.cz', 'studenti.czu.cz')\n  and (u.verified_work_email is null or u.verified_work_email != au.email);",
+        "signatures": {},
+        "detailedLines": [
+          {
+            "text": "  return new;",
+            "lineNumber": 76
+          },
+          {
+            "text": "end;",
+            "lineNumber": 77
+          },
+          {
+            "text": "$$;",
+            "lineNumber": 78
+          },
+          {
+            "lineNumber": 79
+          },
+          {
+            "text": "comment on function public.set_verified_work_email_on_change() is 'Trigger function that automatically sets verified_work_email and verified_work_email_at in public.users when auth.users.email is successfully changed to a CZU domain (@pef.czu.cz or @studenti.czu.cz). Watches both email and email_change fields to catch all verification scenarios. Runs after OTP verification succeeds.';",
+            "lineNumber": 80
+          },
+          {
+            "lineNumber": 81
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 82
+          },
+          {
+            "text": "-- TRIGGERS",
+            "lineNumber": 83
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 84
+          },
+          {
+            "lineNumber": 85
+          },
+          {
+            "text": "-- Create trigger on auth.users table to set verified work email when email changes",
+            "lineNumber": 86
+          },
+          {
+            "text": "-- Runs AFTER UPDATE to ensure email change is committed",
+            "lineNumber": 87
+          },
+          {
+            "text": "-- Watches both email and email_change fields to catch all verification scenarios",
+            "lineNumber": 88
+          },
+          {
+            "text": "drop trigger if exists set_verified_work_email_on_change_trigger on auth.users;",
+            "lineNumber": 89
+          },
+          {
+            "lineNumber": 90
+          },
+          {
+            "text": "create trigger set_verified_work_email_on_change_trigger",
+            "lineNumber": 91
+          },
+          {
+            "text": "after update of email, email_change on auth.users",
+            "lineNumber": 92
+          },
+          {
+            "text": "for each row",
+            "lineNumber": 93
+          },
+          {
+            "text": "when (",
+            "lineNumber": 94
+          },
+          {
+            "text": "  (old.email is distinct from new.email) or ",
+            "lineNumber": 95
+          },
+          {
+            "text": "  (old.email_change is distinct from new.email_change)",
+            "lineNumber": 96
+          },
+          {
+            "text": ")",
+            "lineNumber": 97
+          },
+          {
+            "text": "execute function public.set_verified_work_email_on_change();",
+            "lineNumber": 98
+          },
+          {
+            "lineNumber": 99
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 100
+          },
+          {
+            "text": "-- INITIAL DATA UPDATE",
+            "lineNumber": 101
+          },
+          {
+            "text": "-- ============================================================================",
+            "lineNumber": 102
+          },
+          {
+            "lineNumber": 103
+          },
+          {
+            "text": "-- Update existing users who already have a CZU email set",
+            "lineNumber": 104
+          },
+          {
+            "text": "-- This handles any existing data that should have verified_work_email set",
+            "lineNumber": 105
+          },
+          {
+            "text": "update public.users u",
+            "lineNumber": 106
+          },
+          {
+            "text": "set verified_work_email = au.email,",
+            "lineNumber": 107
+          },
+          {
+            "text": "    verified_work_email_at = au.updated_at",
+            "lineNumber": 108
+          },
+          {
+            "text": "from auth.users au",
+            "lineNumber": 109
+          },
+          {
+            "text": "where u.auth_user_id = au.id",
+            "lineNumber": 110
+          },
+          {
+            "text": "  and au.email is not null",
+            "lineNumber": 111
+          },
+          {
+            "text": "  and au.email != ''",
+            "lineNumber": 112
+          },
+          {
+            "text": "  and lower(split_part(au.email, '@', 2)) in ('pef.czu.cz', 'studenti.czu.cz')",
+            "lineNumber": 113
+          },
+          {
+            "text": "  and (u.verified_work_email is null or u.verified_work_email != au.email);",
+            "lineNumber": 114
+          }
+        ]
+      },
+      "score": 0.23064804077148438
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="ripgrep_raw_search">
+<details>
+<summary>Tool use: **ripgrep_raw_search**</summary>
+
+
+Parameters:
+
+```json
+{
+  "pattern": "create policy.*users|policy.*select.*users",
+  "path": "supabase/migrations",
+  "caseInsensitive": true
+}
+```
+Result:
+
+```json
+{
+  "success": {
+    "pattern": "create policy.*users|policy.*select.*users",
+    "path": "supabase/migrations",
+    "outputMode": "content",
+    "workspaceResults": {
+      "/Users/tom/programming/tappka": {
+        "content": {
+          "matches": [
+            {
+              "file": "supabase/migrations/20260131230000_broadcast_verified_work_email_changes.sql",
+              "matches": [
+                {
+                  "lineNumber": 88,
+                  "content": "create policy \"Users can receive their own verification broadcasts\" on realtime.messages"
+                }
+              ]
+            },
+            {
+              "file": "supabase/migrations/20260131120000_restrict_user_updates.sql",
+              "matches": [
+                {
+                  "lineNumber": 113,
+                  "content": "create policy \"Users can update only suggested_work_email\" on public.users"
+                }
+              ]
+            },
+            {
+              "file": "supabase/migrations/20260131000000_initial_schema.sql",
+              "matches": [
+                {
+                  "lineNumber": 297,
+                  "content": "create policy \"Users can view their own user record\" on public.users"
+                },
+                {
+                  "lineNumber": 303,
+                  "content": "create policy \"Users can update their own user record\" on public.users"
+                },
+                {
+                  "lineNumber": 310,
+                  "content": "create policy \"Users can insert their own user record\" on public.users"
+                },
+                {
+                  "lineNumber": 320,
+                  "content": "create policy \"Users can view their own profile\" on public.profiles"
+                },
+                {
+                  "lineNumber": 336,
+                  "content": "create policy \"Users can receive broadcasts for their own user record\" on realtime.messages"
+                }
+              ]
+            }
+          ],
+          "totalLines": 7,
+          "totalMatchedLines": 7
+        }
+      }
+    }
+  }
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Checking RLS policies and improving error handling. The database query may be failing silently. Adding better error handling and ensuring the flow continues even if the query fails:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/supabase/migrations/20260131000000_initial_schema.sql</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "components/verify-email-form.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "components/verify-email-form.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Improving error handling and ensuring the flow always continues. The issue may be that the query fails or returns null. Adding better error handling and logging:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "components/verify-email-form.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "components/verify-email-form.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Making the database query non-blocking so it doesn't stall the flow. Adding a timeout and ensuring we always redirect:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "components/verify-email-form.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "components/verify-email-form.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Checking if the issue is with the database query blocking. Reviewing the code flow and adding a safeguard to ensure it always redirects:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Simplifying the flow: removing `router.refresh()` (may conflict with `router.push()`) and ensuring the redirect always happens:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "components/verify-email-form.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "components/verify-email-form.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Adding a timeout to the database query to prevent it from hanging:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="read_lints">
+<details>
+<summary>Tool use: **read_lints**</summary>
+
+
+Parameters:
+
+```json
+{
+  "paths": [
+    "components/verify-email-form.tsx"
+  ]
+}
+```
+Result:
+
+```json
+{
+  "linterErrorsByFile": [
+    {
+      "relativeWorkspacePath": "components/verify-email-form.tsx"
+    }
+  ]
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+
+Reducing the timeout and ensuring the code handles all cases:
+
+
+---
+
+<tool-use data-tool-type="write" data-tool-name="edit_file_v2">
+
+<details><summary>Tool use: **edit_file_v2** • Edit file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+Fixing the timeout value:
+
+
+---
+
+The string to replace was not found in the file.
+
+---
+
+
+Reading the current state of the file:
+
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="read_file_v2">
+<details><summary>Tool use: **read_file_v2** • Read file: /Users/tom/programming/tappka/components/verify-email-form.tsx</summary>
+
+</details>
+</tool-use>
+
+---
+
+
+The timeout is set correctly. Summary of changes:
+
+## Summary of Fixes
+
+1. **Removed `router.refresh()`**: This was likely causing navigation conflicts. Now only using `router.push()`.
+
+2. **Added timeout to database query**: The database query now has a 1-second timeout using `Promise.race()` to prevent hanging.
+
+3. **Improved error handling**: Added try-catch blocks and fallbacks so the flow continues even if the database query fails.
+
+4. **Better logging**: Added console warnings to help debug issues.
+
+The code should now:
+- Always redirect to the success page, even if the database query fails
+- Use the state-based timestamp (`otpStartTime`) as a fallback if the database query fails or times out
+- Not hang if the database query takes too long
+
+Try entering the OTP again. If it still gets stuck, check the browser console for errors or warnings. The code should redirect within 1 second even if the database query fails.
+
+---
+
