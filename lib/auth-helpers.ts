@@ -83,37 +83,8 @@ export async function hasEmailIdentity(
 export async function hasLinkedProfile(
   supabaseClient: SupabaseClient
 ): Promise<boolean> {
-  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-
-  if (authError || !user) {
-    return false;
-  }
-
-  // First check if the user has a linked public.users record
-  // This is required because profiles RLS has a permissive policy that allows
-  // viewing all profiles, so we can't rely on RLS alone
-  const { data: userData, error: userError } = await supabaseClient
-    .from("users")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .limit(1)
-    .maybeSingle();
-
-  // If no users record exists for this auth user, they don't have a linked profile
-  if (userError || !userData) {
-    return false;
-  }
-
-  // Now check if there's a profile linked to this user
-  const { data: profile, error: queryError } = await supabaseClient
-    .from("profiles")
-    .select("id")
-    .eq("user_id", userData.id)
-    .limit(1)
-    .maybeSingle();
-
-  // Return true only if a profile exists for this specific user
-  return !queryError && profile !== null;
+  const profile = await getCurrentUserProfile(supabaseClient);
+  return profile !== null;
 }
 
 /**
