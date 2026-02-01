@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { validateRedirectUrl } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 /**
  * Google OAuth login button component
@@ -51,29 +52,23 @@ export function GoogleLoginButton({ next }: { next?: string }) {
       type="button"
       onClick={handleGoogleLogin}
       disabled={isLoading}
-      className="w-full"
+      className="w-full font-medium"
       variant="outline"
     >
       {isLoading ? (
-        "Připojování..."
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Připojování...
+        </>
       ) : (
         <>
-          <svg
-            className="mr-2 h-4 w-4"
-            aria-hidden="true"
-            focusable="false"
-            data-prefix="fab"
-            data-icon="google"
-            role="img"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 488 512"
-          >
+          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               fill="currentColor"
-              d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 52.6 94.3 256s164.2 203.4 254.5 203.4c56.5 0 86.9-31.7 98.1-72.5 10.7-38.6 4.1-66.1-3.5-88.3H248v-94.8h240z"
-            ></path>
+              d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .533 5.333.533 12S5.867 24 12.48 24c3.44 0 6.013-1.133 8.027-3.24 2.053-2.053 2.627-4.96 2.627-7.24 0-.52-.053-1.04-.16-1.6H12.48z"
+            />
           </svg>
-          Přihlásit se přes google
+          Přihlásit se přes Google
         </>
       )}
     </Button>
