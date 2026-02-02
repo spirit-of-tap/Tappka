@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { RoomsWithFilter } from "@/components/reservations/rooms-with-filter";
 import { ReservationsTabs } from "@/components/reservations/reservations-tabs";
 import { getNextAvailableTime } from "@/lib/reservations/utils";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import type { RoomWithStatus, ReservationWithDetails } from "@/lib/reservations/types";
 
 export const metadata = {
@@ -15,8 +16,9 @@ export const metadata = {
 export default async function ReservationsPage() {
   const supabase = await createClient();
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  // Get current user's profile (reservations use profile.id, not auth user id)
+  const profile = await getCurrentUserProfile(supabase);
+  const profileId = profile?.id ?? "";
 
   // Fetch rooms with current reservations and issues
   const now = new Date().toISOString();
@@ -43,24 +45,24 @@ export default async function ReservationsPage() {
       .select("room_id, issue_type")
       .eq("status", "open"),
 
-    // User's own reservations
+    // User's own reservations (use profile.id, not auth user id)
     supabase
       .from("reservations")
       .select(`
         *,
         room:rooms(id, code, name)
       `)
-      .eq("user_id", user?.id ?? "")
+      .eq("user_id", profileId)
       .eq("status", "active")
       .gte("end_time", now)
       .order("start_time")
       .limit(10),
 
-    // Get reservation IDs user has joined
+    // Get reservation IDs user has joined (use profile.id)
     supabase
       .from("cowork_participants")
       .select("reservation_id")
-      .eq("user_id", user?.id ?? ""),
+      .eq("user_id", profileId),
 
     // Available coworks (open for cowork, active, upcoming - include all, we'll filter later)
     supabase
@@ -99,14 +101,8 @@ export default async function ReservationsPage() {
   const allCoworks = (coworksResult.data || []) as ReservationWithDetails[];
   const joinedCoworks = allCoworks.filter(c => joinedReservationIds.has(c.id));
   const availableCoworks = allCoworks.filter(c =>
-    !joinedReservationIds.has(c.id) && c.user_id !== user?.id // Exclude joined and own reservations
+    !joinedReservationIds.has(c.id) && c.user_id !== profileId // Exclude joined and own reservations
   );
-
-  console.log("User ID:", user?.id);
-  console.log("Joined reservation IDs:", Array.from(joinedReservationIds));
-  console.log("All coworks count:", allCoworks.length);
-  console.log("Joined coworks:", joinedCoworks.map(c => ({ id: c.id, title: c.title })));
-  console.log("Available coworks:", availableCoworks.map(c => ({ id: c.id, title: c.title })));
 
   const roomsWithStatus: RoomWithStatus[] = rooms.map((room) => {
     // Find current reservation for this room
