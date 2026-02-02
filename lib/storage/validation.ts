@@ -8,7 +8,12 @@ export const ALLOWED_IMAGE_TYPES = [
   "image/webp",
 ] as const;
 
+// Max size for original uploads (before optimization)
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+// Expected size after optimization (512x512 WebP at 85% quality)
+// Typically 50-200KB depending on image complexity
+export const EXPECTED_OPTIMIZED_SIZE = 200 * 1024; // 200KB
 
 export interface ValidationError {
   field: string;

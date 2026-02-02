@@ -3,16 +3,19 @@
  * 
  * Reusable component for uploading profile/team pictures to B2 storage.
  * Uses presigned PUT URLs for direct browser-to-B2 uploads.
+ * Includes professional image cropping with zoom functionality.
  */
 
 'use client';
 
 import { useState, useRef, ChangeEvent } from 'react';
-import { Upload, X, Loader2, Trash2 } from 'lucide-react';
+import { Upload, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { StorageContext } from '@/lib/storage/types';
+import { optimizeImage } from '@/lib/storage/image-optimizer';
+import { ImageCropDialog } from './image-crop-dialog';
 
 interface PictureUploadProps {
   context: StorageContext;
@@ -33,8 +36,11 @@ export function PictureUpload({
 }: PictureUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Crop dialog state
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
 
   const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,26 +60,35 @@ export function PictureUpload({
       return;
     }
 
-    // Show preview
+    // Create data URL for crop dialog
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPreview(e.target?.result as string);
+      const dataUrl = e.target?.result as string;
+      setRawImageSrc(dataUrl);
+      setCropDialogOpen(true);
     };
     reader.readAsDataURL(file);
+  };
 
-    // Start upload process
+  const handleCropComplete = async (croppedFile: File) => {
+    // Close dialog and start upload process
+    setCropDialogOpen(false);
+    setRawImageSrc(null);
     setIsUploading(true);
 
     try {
-      // Step 1: Get presigned upload URL
+      // Step 1: Optimize the cropped image
+      const optimized = await optimizeImage(croppedFile);
+
+      // Step 2: Get presigned upload URL
       const presignResponse = await fetch('/api/storage/presign-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           context,
           entityId,
-          contentType: file.type,
-          fileSize: file.size,
+          contentType: optimized.type,
+          fileSize: optimized.size,
         }),
       });
 
@@ -84,15 +99,12 @@ export function PictureUpload({
 
       const { data: presignData } = await presignResponse.json();
 
-      // Step 2: Upload directly to B2 using PUT
-      console.log('Uploading to:', presignData.url);
-      console.log('File key:', presignData.key);
-
+      // Step 3: Upload directly to B2 using PUT
       const uploadResponse = await fetch(presignData.url, {
         method: 'PUT',
-        body: file,
+        body: optimized,
         headers: {
-          'Content-Type': file.type,
+          'Content-Type': optimized.type,
         },
         mode: 'cors',
       }).catch((err) => {
@@ -106,7 +118,7 @@ export function PictureUpload({
         throw new Error(`Nahrávání selhalo (${uploadResponse.status}): ${errorText}`);
       }
 
-      // Step 3: Confirm upload and update database
+      // Step 4: Confirm upload and update database
       const confirmResponse = await fetch('/api/storage/confirm-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,17 +136,15 @@ export function PictureUpload({
       }
 
       toast.success('Obrázek byl úspěšně nahrán');
-      setPreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
       onUploadComplete?.();
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(error instanceof Error ? error.message : 'Nepodařilo se nahrát obrázek');
-      setPreview(null);
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -170,21 +180,6 @@ export function PictureUpload({
 
   return (
     <div className={cn('space-y-4', className)}>
-      {preview && (
-        <div className="relative w-32 h-32 mx-auto">
-          <img
-            src={preview}
-            alt="Náhled"
-            className="w-full h-full object-cover rounded-full"
-          />
-          {isUploading && (
-            <div className="absolute inset-0 bg-background/80 rounded-full flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin" />
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="flex gap-2 justify-center">
         <Button
           onClick={() => fileInputRef.current?.click()}
@@ -199,7 +194,7 @@ export function PictureUpload({
           ) : (
             <>
               <Upload className="w-4 h-4 mr-2" />
-              {currentPictureKey ? 'Změnit obrázek' : 'Nahrát obrázek'}
+              {currentPictureKey ? 'Změnit obrázek' : 'Vybrat obrázek'}
             </>
           )}
         </Button>
@@ -229,8 +224,26 @@ export function PictureUpload({
       />
 
       <p className="text-xs text-muted-foreground text-center">
-        Povolené formáty: JPEG, PNG, WebP (max 10MB)
+        JPEG, PNG, WebP (max 10MB)
       </p>
+
+      {/* Image Crop Dialog */}
+      {rawImageSrc && (
+        <ImageCropDialog
+          open={cropDialogOpen}
+          onOpenChange={(open) => {
+            setCropDialogOpen(open);
+            if (!open) {
+              setRawImageSrc(null);
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+            }
+          }}
+          imageSrc={rawImageSrc}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   );
 }
