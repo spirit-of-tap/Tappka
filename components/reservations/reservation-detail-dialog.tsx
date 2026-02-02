@@ -256,11 +256,11 @@ export function ReservationDetailDialog({
                         >
                           <Avatar className="size-6">
                             <AvatarFallback className="text-xs">
-                              {getInitials(participant.user?.full_name)}
+                              {getInitials(participant.user?.name)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm">
-                            {participant.user?.full_name || "Neznámý uživatel"}
+                            {participant.user?.name || "Neznámý uživatel"}
                           </span>
                           {participant.user_id === currentUserId && (
                             <Badge variant="secondary" className="text-xs ml-auto">

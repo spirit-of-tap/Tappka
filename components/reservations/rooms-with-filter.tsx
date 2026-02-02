@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { addMinutes } from "date-fns";
 import { RoomList } from "./room-list";
-import { RoomFilter } from "./room-filter";
+import { RoomFilter, type FilterState } from "./room-filter";
+import { QuickReservationDialog } from "./quick-reservation-dialog";
 import type { RoomWithStatus } from "@/lib/reservations/types";
 
 interface RoomsWithFilterProps {
@@ -14,13 +16,43 @@ interface RoomsWithFilterProps {
  */
 export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
   const [filteredRooms, setFilteredRooms] = useState<RoomWithStatus[]>(rooms);
+  const [filterState, setFilterState] = useState<FilterState | null>(null);
+
+  // Dialog state for quick reservation
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<RoomWithStatus | null>(null);
+  const [reservationStartTime, setReservationStartTime] = useState<Date | null>(null);
+  const [reservationEndTime, setReservationEndTime] = useState<Date | null>(null);
 
   const handleFilterChange = (newRooms: RoomWithStatus[]) => {
     setFilteredRooms(newRooms);
   };
 
-  // Check if filter is active (any room has availabilityForFilter set)
-  const hasActiveFilter = filteredRooms.some(r => r.availabilityForFilter !== undefined);
+  const handleFilterStateChange = useCallback((state: FilterState) => {
+    setFilterState(state);
+  }, []);
+
+  // Handle room click - open dialog with prefilled times if filter is active
+  const handleRoomClick = useCallback((room: RoomWithStatus) => {
+    if (filterState?.duration) {
+      // Filter is active - open dialog with prefilled times
+      const [hours, minutes] = filterState.startTime.split(":").map(Number);
+      const startTime = new Date(filterState.date);
+      startTime.setHours(hours, minutes, 0, 0);
+      
+      const durationMinutes = parseInt(filterState.duration, 10);
+      const endTime = addMinutes(startTime, durationMinutes);
+
+      setSelectedRoom(room);
+      setReservationStartTime(startTime);
+      setReservationEndTime(endTime);
+      setDialogOpen(true);
+    }
+    // If no filter active, the room card will navigate normally via Link
+  }, [filterState]);
+
+  // Check if filter is active (duration is selected)
+  const hasActiveFilter = filterState?.duration !== null && filterState?.duration !== undefined;
   
   // Count available rooms when filter is active
   const availableCount = filteredRooms.filter(
@@ -29,7 +61,11 @@ export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
 
   return (
     <div className="space-y-4">
-      <RoomFilter rooms={rooms} onFilterChange={handleFilterChange} />
+      <RoomFilter 
+        rooms={rooms} 
+        onFilterChange={handleFilterChange} 
+        onFilterStateChange={handleFilterStateChange}
+      />
       
       {/* Results Counter */}
       {hasActiveFilter && (
@@ -38,7 +74,24 @@ export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
         </div>
       )}
       
-      <RoomList rooms={filteredRooms} />
+      <RoomList 
+        rooms={filteredRooms} 
+        filterState={hasActiveFilter ? filterState : null}
+        onRoomClick={hasActiveFilter ? handleRoomClick : undefined}
+      />
+
+      {/* Quick Reservation Dialog */}
+      {selectedRoom && (
+        <QuickReservationDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          roomId={selectedRoom.id}
+          roomName={selectedRoom.name}
+          roomCode={selectedRoom.code}
+          startTime={reservationStartTime}
+          endTime={reservationEndTime}
+        />
+      )}
     </div>
   );
 }

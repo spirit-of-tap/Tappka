@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarView } from "./calendar-view";
 import { ReservationDetailDialog } from "./reservation-detail-dialog";
@@ -16,6 +16,7 @@ interface RoomScheduleViewProps {
   roomName: string;
   alternativeRooms?: Room[];
   availableDays?: number[] | null; // 0=Sunday, 1=Monday, etc.
+  initialDate?: string; // ISO date string (YYYY-MM-DD) to start the calendar on
 }
 
 /**
@@ -30,6 +31,7 @@ export function RoomScheduleView({
   roomName,
   alternativeRooms = [],
   availableDays,
+  initialDate,
 }: RoomScheduleViewProps) {
   const router = useRouter();
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
@@ -125,6 +127,7 @@ export function RoomScheduleView({
         reservations={reservations}
         scheduleBreaks={scheduleBreaks}
         availableDays={availableDays}
+        initialDate={initialDate ? new Date(initialDate) : undefined}
         onSlotClick={(startTime) => {
           // Open quick reservation dialog with 1 hour default duration
           const endTime = new Date(startTime);

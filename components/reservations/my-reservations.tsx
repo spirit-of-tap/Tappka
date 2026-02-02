@@ -76,7 +76,7 @@ function ReservationItem({ reservation, isJoined }: ReservationItemProps) {
   
   // Owner name for joined coworks
   const ownerName = isJoined 
-    ? (reservation.user?.full_name || reservation.team?.name || "Neznámý")
+    ? (reservation.user?.name || reservation.team?.name || "Neznámý")
     : null;
 
   const handleDelete = async () => {

@@ -23,6 +23,7 @@ interface CalendarViewProps {
   reservations: Reservation[];
   scheduleBreaks?: ScheduleBreak[];
   availableDays?: number[] | null; // 0=Sunday, 1=Monday, etc.
+  initialDate?: Date; // Date to start the calendar on
   onSlotClick?: (startTime: Date) => void;
   onReservationClick?: (reservation: Reservation) => void;
   onDragCreate?: (startTime: Date, endTime: Date) => void;
@@ -33,10 +34,14 @@ type ViewMode = "day" | "week";
 /**
  * Calendar component with day/week toggle
  */
-export function CalendarView({ reservations, scheduleBreaks = [], availableDays, onSlotClick, onReservationClick, onDragCreate }: CalendarViewProps) {
+export function CalendarView({ reservations, scheduleBreaks = [], availableDays, initialDate, onSlotClick, onReservationClick, onDragCreate }: CalendarViewProps) {
   const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [currentDate, setCurrentDate] = useState(() => {
+    // Use initialDate if provided (from URL param)
+    if (initialDate) {
+      return initialDate;
+    }
     // If room has limited available days, start on the nearest available day
     if (availableDays && availableDays.length > 0) {
       const today = new Date();
@@ -54,6 +59,13 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
     return new Date();
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Update currentDate when initialDate changes (navigation with different date param)
+  useEffect(() => {
+    if (initialDate) {
+      setCurrentDate(initialDate);
+    }
+  }, [initialDate]);
 
   // Auto-switch to day view on mobile
   useEffect(() => {

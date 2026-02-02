@@ -22,9 +22,16 @@ import { TimePicker } from "./time-picker";
 import type { RoomWithStatus } from "@/lib/reservations/types";
 import { isRoomAvailableOnDay } from "@/lib/reservations/utils";
 
+export interface FilterState {
+  date: Date;
+  startTime: string;
+  duration: string | null;
+}
+
 interface RoomFilterProps {
   rooms: RoomWithStatus[];
   onFilterChange: (filteredRooms: RoomWithStatus[]) => void;
+  onFilterStateChange?: (state: FilterState) => void;
 }
 
 // Duration options in minutes
@@ -42,7 +49,7 @@ const DURATION_OPTIONS = [
 /**
  * Inline filter component with instant feedback
  */
-export function RoomFilter({ rooms, onFilterChange }: RoomFilterProps) {
+export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomFilterProps) {
   const [filterDate, setFilterDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState<string>(() => {
     // Default to current time rounded to next 15min slot
@@ -133,6 +140,11 @@ export function RoomFilter({ rooms, onFilterChange }: RoomFilterProps) {
     const debounced = setTimeout(checkAvailability, 300);
     return () => clearTimeout(debounced);
   }, [filterDate, startTime, duration, rooms, onFilterChange]);
+
+  // Notify parent of filter state changes
+  useEffect(() => {
+    onFilterStateChange?.({ date: filterDate, startTime, duration });
+  }, [filterDate, startTime, duration, onFilterStateChange]);
 
   const handleClear = () => {
     setFilterDate(new Date());

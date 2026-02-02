@@ -70,8 +70,8 @@ export default async function ReservationSettingsPage() {
       .select(`
         *,
         room:rooms(id, code, name),
-        reporter:profiles!reported_by(id, full_name),
-        resolver:profiles!resolved_by(id, full_name)
+        reporter:profiles!reported_by(id, name),
+        resolver:profiles!resolved_by(id, name)
       `)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -83,8 +83,8 @@ export default async function ReservationSettingsPage() {
   const teams = teamsResult.data || [];
   const issues = (issuesResult.data || []) as (RoomIssue & {
     room?: { id: string; code: string; name: string };
-    reporter?: { id: string; full_name: string };
-    resolver?: { id: string; full_name: string };
+    reporter?: { id: string; name: string };
+    resolver?: { id: string; name: string };
   })[];
 
   return (

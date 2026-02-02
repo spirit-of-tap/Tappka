@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import type { UpdateReservationInput } from "@/lib/reservations/types";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
@@ -26,13 +27,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .select(`
         *,
         room:rooms(id, code, name),
-        user:profiles(id, full_name),
+        user:profiles(id, name),
         team:teams(id, name),
         cowork_participants(
           id,
           user_id,
           joined_at,
-          user:profiles(id, full_name)
+          user:profiles(id, name)
         )
       `)
       .eq("id", id)
@@ -128,13 +129,26 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .update(updateData)
       .eq("id", id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error updating reservation:", error);
       return NextResponse.json(
         { error: "Nepodařilo se aktualizovat rezervaci" },
         { status: 500 }
+      );
+    }
+
+    // Check if the update actually happened (RLS might silently block it)
+    if (!updated) {
+      console.error("Update blocked by RLS - no rows affected", { 
+        reservationId: id, 
+        profileId: profile?.id,
+        existingUserId: existing.user_id 
+      });
+      return NextResponse.json(
+        { error: "Nepodařilo se aktualizovat rezervaci - chyba oprávnění" },
+        { status: 403 }
       );
     }
 
@@ -204,16 +218,31 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Soft delete - set status to cancelled
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("reservations")
       .update({ status: "cancelled" })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
 
     if (error) {
       console.error("Error cancelling reservation:", error);
       return NextResponse.json(
         { error: "Nepodařilo se zrušit rezervaci" },
         { status: 500 }
+      );
+    }
+
+    // Check if the update actually happened (RLS might silently block it)
+    if (!updated) {
+      console.error("Update blocked by RLS - no rows affected", { 
+        reservationId: id, 
+        profileId: profile?.id,
+        existingUserId: existing.user_id 
+      });
+      return NextResponse.json(
+        { error: "Nepodařilo se zrušit rezervaci - chyba oprávnění" },
+        { status: 403 }
       );
     }
 

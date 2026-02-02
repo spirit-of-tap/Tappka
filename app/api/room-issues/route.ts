@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         room:rooms(id, code, name),
-        reporter:profiles!reported_by(id, full_name),
-        resolver:profiles!resolved_by(id, full_name)
+        reporter:profiles!reported_by(id, name),
+        resolver:profiles!resolved_by(id, name)
       `)
       .order("created_at", { ascending: false });
 

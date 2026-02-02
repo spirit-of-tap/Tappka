@@ -5,7 +5,6 @@ import { ArrowLeft, AlertTriangle, Lock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RoomScheduleView } from "@/components/reservations/room-schedule-view";
 import { AlternativeRooms } from "@/components/reservations/alternative-rooms";
 import { IssueReportButton } from "@/components/reservations/issue-report-button";
@@ -14,6 +13,7 @@ import type { Room, Reservation, RoomIssue, ScheduleBreak } from "@/lib/reservat
 
 interface RoomDetailPageProps {
   params: Promise<{ code: string }>;
+  searchParams: Promise<{ date?: string }>;
 }
 
 export async function generateMetadata({ params }: RoomDetailPageProps) {
@@ -26,8 +26,9 @@ export async function generateMetadata({ params }: RoomDetailPageProps) {
 /**
  * Room detail page with calendar and reservation form
  */
-export default async function RoomDetailPage({ params }: RoomDetailPageProps) {
+export default async function RoomDetailPage({ params, searchParams }: RoomDetailPageProps) {
   const { code } = await params;
+  const { date: dateParam } = await searchParams;
   const supabase = await createClient();
 
   // Get current user
@@ -217,6 +218,7 @@ export default async function RoomDetailPage({ params }: RoomDetailPageProps) {
                 roomName={room.name}
                 alternativeRooms={alternativeRooms}
                 availableDays={room.available_days}
+                initialDate={dateParam}
               />
             </CardContent>
           </Card>

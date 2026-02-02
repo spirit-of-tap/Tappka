@@ -70,13 +70,13 @@ export default async function ReservationsPage() {
       .select(`
         *,
         room:rooms(id, code, name),
-        user:profiles!reservations_user_id_fkey(id, full_name),
+        user:profiles!reservations_user_id_fkey(id, name),
         team:teams(id, name),
         cowork_participants(
           id,
           user_id,
           joined_at,
-          user:profiles(id, full_name)
+          user:profiles(id, name)
         )
       `)
       .eq("is_cowork_open", true)
