@@ -33,8 +33,8 @@ import { ISSUE_TYPE_LABELS, type RoomIssue, type IssueType } from "@/lib/reserva
 interface IssuesManagerProps {
   issues: (RoomIssue & {
     room?: { id: string; code: string; name: string };
-    reporter?: { id: string; full_name: string };
-    resolver?: { id: string; full_name: string };
+    reporter?: { id: string; name: string };
+    resolver?: { id: string; name: string };
   })[];
   isAdmin?: boolean;
 }
@@ -185,8 +185,8 @@ export function IssuesManager({ issues, isAdmin = false }: IssuesManagerProps) {
 interface IssueItemProps {
   issue: RoomIssue & {
     room?: { id: string; code: string; name: string };
-    reporter?: { id: string; full_name: string };
-    resolver?: { id: string; full_name: string };
+    reporter?: { id: string; name: string };
+    resolver?: { id: string; name: string };
   };
   isLoading: boolean;
   onResolve?: () => void;
@@ -219,12 +219,12 @@ function IssueItem({ issue, isLoading, onResolve, onReopen, onDelete }: IssueIte
         <div className="text-xs text-muted-foreground space-y-0.5">
           <p>
             Nahlášeno: {format(new Date(issue.created_at), "d.M.yyyy HH:mm", { locale: cs })}
-            {issue.reporter && ` (${issue.reporter.full_name})`}
+            {issue.reporter && ` (${issue.reporter.name})`}
           </p>
           {issue.resolved_at && (
             <p>
               Vyřešeno: {format(new Date(issue.resolved_at), "d.M.yyyy HH:mm", { locale: cs })}
-              {issue.resolver && ` (${issue.resolver.full_name})`}
+              {issue.resolver && ` (${issue.resolver.name})`}
             </p>
           )}
         </div>

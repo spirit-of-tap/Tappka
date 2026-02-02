@@ -23,6 +23,7 @@ interface QuickReservationDialogProps {
   onOpenChange: (open: boolean) => void;
   roomId: string;
   roomName: string;
+  roomCode?: string; // URL slug for navigation after submission
   startTime: Date | null;
   endTime: Date | null;
 }
@@ -35,6 +36,7 @@ export function QuickReservationDialog({
   onOpenChange,
   roomId,
   roomName,
+  roomCode,
   startTime,
   endTime,
 }: QuickReservationDialogProps) {
@@ -128,7 +130,15 @@ export function QuickReservationDialog({
       // Success
       onOpenChange(false);
       resetForm();
-      router.refresh();
+      
+      // Navigate to room detail page if roomCode is provided, otherwise just refresh
+      if (roomCode) {
+        // Include the date param so the calendar shows the reservation date
+        const dateStr = format(finalStartTime, "yyyy-MM-dd");
+        router.push(`/reservations/${roomCode}?date=${dateStr}`);
+      } else {
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Něco se pokazilo");
     } finally {

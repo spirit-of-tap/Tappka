@@ -59,7 +59,7 @@ export interface ReservationWithDetails extends Reservation {
   room?: Room;
   user?: {
     id: string;
-    full_name: string;
+    name: string;
   };
   team?: {
     id: string;
@@ -76,7 +76,7 @@ export interface CoworkParticipant {
   joined_at: string;
   user?: {
     id: string;
-    full_name: string;
+    name: string;
   };
 }
 

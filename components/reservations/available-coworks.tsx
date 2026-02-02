@@ -63,7 +63,7 @@ function CoworkItem({ cowork, onJoinSuccess }: CoworkItemProps) {
   const participantCount = cowork.cowork_participants?.length || 0;
   
   // Owner name
-  const ownerName = cowork.user?.full_name || cowork.team?.name || "Neznámý";
+  const ownerName = cowork.user?.name || cowork.team?.name || "Neznámý";
 
   const handleJoin = async () => {
     setIsJoining(true);

@@ -3,9 +3,12 @@
 import { useMemo } from "react";
 import { RoomCard } from "./room-card";
 import type { RoomWithStatus } from "@/lib/reservations/types";
+import type { FilterState } from "./room-filter";
 
 interface RoomListProps {
   rooms: RoomWithStatus[];
+  filterState?: FilterState | null;
+  onRoomClick?: (room: RoomWithStatus) => void;
 }
 
 // Custom order: TS rooms first (D126, D132, D226), then quiet/repre (D127, D129), then D107
@@ -22,7 +25,7 @@ const ROOM_ORDER: Record<string, number> = {
  * Grid of room cards showing all available rooms
  * Grouped into 3 columns: TS rooms | Quiet/Repre | D107
  */
-export function RoomList({ rooms }: RoomListProps) {
+export function RoomList({ rooms, filterState, onRoomClick }: RoomListProps) {
   // Sort rooms by custom order
   const sortedRooms = useMemo(() => {
     return [...rooms].sort((a, b) => {
@@ -56,25 +59,25 @@ export function RoomList({ rooms }: RoomListProps) {
       {/* Column 1: TS rooms (D126, D132, D226) */}
       <div className="flex flex-col gap-4">
         {groupedRooms.tsRooms.map((room) => (
-          <RoomCard key={room.id} room={room} />
+          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} />
         ))}
       </div>
       
       {/* Column 2: Quiet & Representational (D127, D129) */}
       <div className="flex flex-col gap-4">
         {groupedRooms.quietRepre.map((room) => (
-          <RoomCard key={room.id} room={room} />
+          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} />
         ))}
       </div>
       
       {/* Column 3: D107 */}
       <div className="flex flex-col gap-4">
         {groupedRooms.d107.map((room) => (
-          <RoomCard key={room.id} room={room} />
+          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} />
         ))}
         {/* Any other rooms */}
         {groupedRooms.other.map((room) => (
-          <RoomCard key={room.id} room={room} />
+          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} />
         ))}
       </div>
     </div>

@@ -30,7 +30,7 @@ export async function GET(
         reservation_id,
         user_id,
         joined_at,
-        user:profiles!cowork_participants_user_id_fkey(id, full_name)
+        user:profiles!cowork_participants_user_id_fkey(id, name)
       `)
       .eq("reservation_id", id)
       .order("joined_at", { ascending: true });

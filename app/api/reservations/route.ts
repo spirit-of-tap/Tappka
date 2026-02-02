@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         room:rooms(id, code, name),
-        user:profiles(id, full_name),
+        user:profiles(id, name),
         team:teams(id, name)
       `)
       .eq("status", "active")

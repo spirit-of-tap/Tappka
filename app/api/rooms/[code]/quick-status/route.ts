@@ -71,7 +71,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from("reservations")
       .select(`
         *,
-        user:profiles(id, full_name),
+        user:profiles(id, name),
         team:teams(id, name)
       `)
       .eq("room_id", room.id)
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       const endTime = new Date(currentReservation.end_time);
       const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
 
-      const occupantName = currentReservation.user?.full_name ||
+      const occupantName = currentReservation.user?.name ||
         currentReservation.team?.name ||
         "Neznámý";
 
