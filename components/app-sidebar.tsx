@@ -6,16 +6,12 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   CalendarDays,
-  FileText,
   Users,
-  Settings,
-  HelpCircle,
-  BookOpen,
   Mail,
   Database,
+  ChevronRight,
 } from "lucide-react"
 
-import { SearchForm } from "@/components/search-form"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -32,13 +28,13 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { ChevronRight } from "lucide-react"
 
 type NavItem = {
   title: string
@@ -116,15 +112,20 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   }
 }
 
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const pathname = usePathname()
+  const { setOpenMobile } = useSidebar()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isReservationsActive = pathname.startsWith("/reservations")
   const isKomunitaActive = pathname.startsWith("/komunita")
   const isDevelopment = process.env.NODE_ENV === "development"
 
+  const closeSidebarOnMobile = () => {
+    setOpenMobile(false)
+  }
+
   return (
-    <Sidebar {...props}>
+    <>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-4 py-2">
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -135,7 +136,6 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
             <span className="text-xs text-muted-foreground">Tiimiakatemia Prague</span>
           </div>
         </div>
-        <SearchForm />
       </SidebarHeader>
       <SidebarContent>
         {getNavData(isDevelopment).navMain.map((section) => (
@@ -171,7 +171,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                   asChild
                                   isActive={(pathname === "/reservations" || pathname.startsWith("/reservations/")) && pathname !== "/reservations/settings"}
                                 >
-                                  <Link href="/reservations">
+                                  <Link href="/reservations" onClick={closeSidebarOnMobile}>
                                     Místnosti
                                   </Link>
                                 </SidebarMenuSubButton>
@@ -181,7 +181,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                   asChild
                                   isActive={pathname === "/reservations/settings"}
                                 >
-                                  <Link href="/reservations/settings">
+                                  <Link href="/reservations/settings" onClick={closeSidebarOnMobile}>
                                     Nastavení
                                   </Link>
                                 </SidebarMenuSubButton>
@@ -220,7 +220,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                   asChild
                                   isActive={pathname === "/komunita/lide" || (pathname.startsWith("/komunita/profil/"))}
                                 >
-                                  <Link href="/komunita/lide">
+                                  <Link href="/komunita/lide" onClick={closeSidebarOnMobile}>
                                     Lidé
                                   </Link>
                                 </SidebarMenuSubButton>
@@ -230,7 +230,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                                   asChild
                                   isActive={pathname === "/komunita/tymy" || pathname.startsWith("/komunita/tymy/")}
                                 >
-                                  <Link href="/komunita/tymy">
+                                  <Link href="/komunita/tymy" onClick={closeSidebarOnMobile}>
                                     Týmy
                                   </Link>
                                 </SidebarMenuSubButton>
@@ -251,6 +251,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
                       >
                         <Link 
                           href={item.url}
+                          onClick={item.external ? undefined : closeSidebarOnMobile}
                           {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                         >
                           <item.icon className="size-4" />
@@ -271,6 +272,14 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
         </SidebarFooter>
       )}
       <SidebarRail />
+    </>
+  )
+}
+
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  return (
+    <Sidebar {...props}>
+      <AppSidebarContent user={user} />
     </Sidebar>
   )
 }
