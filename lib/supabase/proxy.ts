@@ -26,6 +26,25 @@ async function safeCheck(
 }
 
 export async function updateSession(request: NextRequest) {
+  // Allow PWA files to pass through without auth
+  const requestPath = request.nextUrl.pathname;
+  const pwaFiles = [
+    '/manifest.json',
+    '/sw.js',
+    '/apple-touch-icon.png',
+    '/icon.svg',
+    '/favicon.ico'
+  ];
+  
+  if (
+    pwaFiles.includes(requestPath) ||
+    requestPath.startsWith('/icons/') ||
+    requestPath.startsWith('/workbox-') ||
+    requestPath.startsWith('/swe-worker-')
+  ) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -33,8 +52,6 @@ export async function updateSession(request: NextRequest) {
   // If the env vars are not set, skip proxy check. You can remove this
   // once you setup the project.
 
-  // With Fluid compute, don't put this client in a global environment
-  // variable. Always create a new one on each request.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -45,25 +62,19 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
+            request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
+            supabaseResponse.cookies.set(name, value, options)
           );
         },
       },
-    },
+    }
   );
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
@@ -127,7 +138,7 @@ export async function updateSession(request: NextRequest) {
     return redirectWithCookies(url, supabaseResponse);
   }
 
-  // If no email identity, redirect to verify email page
+  // If no email identity, redirect to onboarding page (wizard for first-time users)
   // Treat errors as "no identity" to preserve graceful redirect behavior
   const emailIdentityCheck = await safeCheck(
     () => hasEmailIdentity(supabase),
@@ -135,7 +146,7 @@ export async function updateSession(request: NextRequest) {
   );
   if (!emailIdentityCheck.ok) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/verify-email";
+    url.pathname = "/auth/onboarding";
     url.search = ""; // Clear existing search params
     url.hash = ""; // Clear existing hash
     url.searchParams.set("next", fullPath);
@@ -143,7 +154,6 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Check for linked profile if user is authenticated and not on public routes
-  // Skip this check for verify-email and pending-approval routes
   // Treat errors as "no profile" to preserve graceful redirect behavior
   const linkedProfileCheck = await safeCheck(
     () => hasLinkedProfile(supabase),
@@ -151,25 +161,15 @@ export async function updateSession(request: NextRequest) {
   );
   if (!linkedProfileCheck.ok) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/pending-approval";
+    url.pathname = "/auth/onboarding";
     url.search = ""; // Strip all query parameters (e.g., from email verification or QR code)
     url.hash = ""; // Strip hash as well
     url.searchParams.set("next", fullPath);
     return redirectWithCookies(url, supabaseResponse);
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
+  // For protected routes (dashboard, etc.), we need to check verification
+  // This is done on the page level for better UX with proper error messages
 
   return supabaseResponse;
 }

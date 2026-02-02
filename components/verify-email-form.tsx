@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import {
   Card,
   CardContent,
@@ -13,6 +14,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { cn, validateRedirectUrl } from "@/lib/utils";
 import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { hasLinkedProfile } from "@/lib/auth-helpers";
@@ -68,11 +74,18 @@ const clearPersistedState = () => {
   }
 };
 
+interface VerifyEmailFormProps {
+  next?: string;
+  wizardMode?: boolean;
+  onStepChange?: (step: "email" | "otp") => void;
+}
+
 /**
  * Form component for email verification via OTP
  * Allows users to link an email identity to their Google OAuth account
+ * Supports wizard mode for onboarding flow
  */
-export function VerifyEmailForm({ next }: { next?: string }) {
+export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: VerifyEmailFormProps) {
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -98,21 +111,21 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // Once linked, email changes are not allowed to maintain profile connection
       const hasProfile = await hasLinkedProfile(supabase);
       if (hasProfile) {
-        setError("Cannot change email address once linked to a profile. Your email is used to maintain your profile connection.");
+        setError("Email už nejde změnit, protože je propojený s tvým profilem. Díky němu tě poznáváme!");
         setIsLoading(false);
         return;
       }
 
       // Validate email format
       if (!email || !email.includes("@")) {
-        setError("Please enter a valid email address");
+        setError("Hele, tohle nevypadá jako platný email");
         setIsLoading(false);
         return;
       }
 
       // Validate CZU domain
       if (!isValidWorkEmailDomain(email.trim())) {
-        setError("Email must end with @pef.czu.cz or @studenti.czu.cz");
+        setError("Použij prosím svůj ČZU email");
         setIsLoading(false);
         return;
       }
@@ -158,9 +171,9 @@ export function VerifyEmailForm({ next }: { next?: string }) {
         // If email already exists, that's actually fine - it means it might already be linked
         // or we need to handle it differently
         if (updateError.message?.includes("already registered")) {
-          setError("This email is already registered. Please use a different email or sign in with that email.");
+          setError("Tento email už někdo používá. Zkus jiný, nebo se přihlas pomocí tohoto emailu.");
         } else {
-          setError(updateError.message || "Failed to send OTP code");
+          setError(updateError.message || "Nepodařilo se poslat kód, zkus to znovu");
         }
         setIsLoading(false);
         return;
@@ -169,22 +182,30 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       // Update suggested_work_email in public.users table
       // This enables cross-device synchronization and persistence
       // The trigger will automatically set last_otp_sent_at
-      const { error: userUpdateError } = await supabase
-        .from("users")
-        .update({ suggested_work_email: email.trim() })
-        .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id);
+      const { data: userData, error: getUserError } = await supabase.auth.getUser();
 
-      if (userUpdateError) {
+      if (getUserError || !userData?.user?.id) {
         // Log error but don't block the flow - OTP was sent successfully
-        console.error("Failed to update suggested_work_email:", userUpdateError);
+        console.error("Failed to get user for suggested_work_email update:", getUserError || "User ID is undefined");
+      } else {
+        const { error: userUpdateError } = await supabase
+          .from("users")
+          .update({ suggested_work_email: email.trim() })
+          .eq("auth_user_id", userData.user.id);
+
+        if (userUpdateError) {
+          // Log error but don't block the flow - OTP was sent successfully
+          console.error("Failed to update suggested_work_email:", userUpdateError);
+        }
       }
 
       // Move to OTP verification step
       setStep("otp");
       savePersistedState({ step: "otp", email: email.trim() });
+      onStepChange?.("otp");
       setIsLoading(false);
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError("Ouha, něco se pokazilo. Zkus to prosím znovu");
       setIsLoading(false);
     }
   };
@@ -215,7 +236,7 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       });
 
       if (verifyError) {
-        setError(verifyError.message || "Invalid OTP code");
+        setError(verifyError.message || "Hmm, kód nesedí. Zkus to znovu nebo si nech poslat nový");
         setIsLoading(false);
         // Keep lastSubmittedOtp set to prevent re-submission of the same code
         // The code remains in the input so user can see what they entered
@@ -235,7 +256,7 @@ export function VerifyEmailForm({ next }: { next?: string }) {
       router.push(redirectTo);
       router.refresh();
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError("Ouha, něco se pokazilo. Zkus to prosím znovu");
       setIsLoading(false);
       // Keep lastSubmittedOtp set to prevent re-submission of the same code
     }
@@ -252,8 +273,18 @@ export function VerifyEmailForm({ next }: { next?: string }) {
   /**
    * Loads persisted state from sessionStorage after component mounts (client-side only)
    * This prevents hydration mismatches between server and client
+   * In wizard mode, always start fresh from email step
    */
   useEffect(() => {
+    // In wizard mode, always start from email step (don't restore state)
+    if (wizardMode) {
+      setStep("email");
+      setEmail("");
+      clearPersistedState();
+      setIsHydrated(true);
+      return;
+    }
+
     const persisted = loadPersistedState();
 
     // Validate persisted state - if on OTP step but no email, reset to email step
@@ -274,7 +305,7 @@ export function VerifyEmailForm({ next }: { next?: string }) {
     }
 
     setIsHydrated(true);
-  }, []);
+  }, [wizardMode]);
 
   /**
    * Persists email changes to sessionStorage
@@ -307,17 +338,20 @@ export function VerifyEmailForm({ next }: { next?: string }) {
     }
   }, [otpCode, step, isLoading, lastSubmittedOtp, verifyOTP]);
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl">Verify Email</CardTitle>
-        <CardDescription>
-          {step === "email"
-            ? "Link an email address to your account using OTP verification"
-            : `Enter the OTP code sent to ${email || "your email"}`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+  // In wizard mode, don't render Card wrapper (parent handles it)
+  const content = (
+    <>
+      {!wizardMode && (
+        <CardHeader>
+          <CardTitle className="text-2xl">Ověř si email</CardTitle>
+          <CardDescription>
+            {step === "email"
+              ? "Připoj si k účtu svůj emailík pomocí ověřovacího kódu"
+              : `Zadej kód, který ti přiletěl na ${email || "tvůj email"}`}
+          </CardDescription>
+        </CardHeader>
+      )}
+      <div className={wizardMode ? "" : "p-6"}>
         {error && (
           <div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
             {error}
@@ -327,11 +361,11 @@ export function VerifyEmailForm({ next }: { next?: string }) {
         {step === "email" ? (
           <form onSubmit={handleSendOTP} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Tvůj ČZU email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="your.email@pef.czu.cz"
+                placeholder="jmeno.prijmeni@pef.czu.cz"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -339,51 +373,51 @@ export function VerifyEmailForm({ next }: { next?: string }) {
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                Email must end with @pef.czu.cz or @studenti.czu.cz
+                Použij svůj ČZU email
               </p>
             </div>
             <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Sending..." : "Send OTP Code"}
+              {isLoading ? "Odesílám..." : "Poslat mi kód"}
             </Button>
           </form>
         ) : (
           <form onSubmit={handleVerifyOTP} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="otp">OTP Code</Label>
-              <Input
-                id="otp"
-                type="text"
-                placeholder={`Enter ${OTP_LENGTH}-digit code`}
-                value={otpCode}
-                onChange={(e) => {
-                  const newValue = e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH);
-                  setOtpCode(newValue);
-                  // Clear lastSubmittedOtp when user starts typing a new code
-                  if (lastSubmittedOtp !== null && newValue !== lastSubmittedOtp) {
-                    setLastSubmittedOtp(null);
-                  }
-                }}
-                onPaste={(e) => {
-                  e.preventDefault();
-                  const pastedText = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH);
-                  setOtpCode(pastedText);
-                  // Clear lastSubmittedOtp when user pastes a new code
-                  if (lastSubmittedOtp !== null && pastedText !== lastSubmittedOtp) {
-                    setLastSubmittedOtp(null);
-                  }
-                }}
-                disabled={isLoading}
-                required
-                autoFocus
-                maxLength={OTP_LENGTH}
-              />
-              <p className="text-xs text-muted-foreground">
-                Check your email for the verification code
+              <Label htmlFor="otp">Ověřovací kód (volitelně)</Label>
+              <div className="flex justify-center">
+                <InputOTP
+                  id="otp"
+                  maxLength={OTP_LENGTH}
+                  value={otpCode}
+                  pattern={REGEXP_ONLY_DIGITS}
+                  onChange={(value) => {
+                    setOtpCode(value);
+                    // Clear lastSubmittedOtp when user starts typing a new code
+                    if (lastSubmittedOtp !== null && value !== lastSubmittedOtp) {
+                      setLastSubmittedOtp(null);
+                    }
+                  }}
+                  disabled={isLoading}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                    <InputOTPSlot index={6} />
+                    <InputOTPSlot index={7} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Klikni na tlačítko v emailu nebo zadej kód výše. Koukni i do spamu.
               </p>
             </div>
             <div className="flex flex-col gap-2">
               <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? "Verifying..." : "Verify Code"}
+                {isLoading ? "Ověřuji..." : "Ověřit kód"}
               </Button>
               <Button
                 type="button"
@@ -393,17 +427,21 @@ export function VerifyEmailForm({ next }: { next?: string }) {
                   setOtpCode("");
                   setError(null);
                   setLastSubmittedOtp(null);
+                  onStepChange?.("email");
                   savePersistedState({ step: "email", email });
                 }}
                 disabled={isLoading}
                 className="w-full"
               >
-                Change Email
+                Změnit email
               </Button>
             </div>
           </form>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </>
   );
+
+  // Wrap in Card only if not in wizard mode
+  return wizardMode ? content : <Card>{content}</Card>;
 }

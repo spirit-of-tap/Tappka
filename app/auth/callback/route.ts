@@ -75,9 +75,9 @@ export async function GET(request: NextRequest) {
 
     return redirectWithCookies(url, supabaseResponse);
   } else {
-    // User needs to verify email, preserve next parameter
+    // User needs to verify email, redirect to onboarding for first-time users
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/verify-email";
+    url.pathname = "/auth/onboarding";
     url.search = ""; // Clear existing search params
     if (validatedNext) {
       // Properly encode the next parameter

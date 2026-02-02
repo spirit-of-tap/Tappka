@@ -22,7 +22,7 @@ Tappka as the app all-in-one web app for Tiimiakatemia Prague.
 ## Other links
 
 - [Blacksmith](https://app.blacksmith.sh/tiimiakatemiapragueit/runs/jobs) - CI/CD for the project
-- [Supabase](https://supabase.com/dashboard/org/zjdqjjekgwwysjkouxpf) - Database for the project
+- [Supabase](https://supabase.comorg/zjdqjjekgwwysjkouxpf) - Database for the project
 - [Vercel](https://vercel.com/spirit-of-taps-projects/tappka) - Hosting for the project
 - [Cloudflare DNS](https://dash.cloudflare.com/09d0b565479ef597d4c1bfa2062078b5/tiimi.cz/dns/records) - DNS for the project
 - [Axiom](https://app.axiom.co/spirit-of-tap-9eje) - Logging for the project
@@ -37,6 +37,7 @@ All czech should be just in localization files.
 ## Setup
 
 1. Install git if already not installed - https://git-scm.com/install/
+2. Install docker if already not installed - https://docs.docker.com/get-docker/
 2. Install node.js v24.x with pnpm 10.x if already not installed - https://nodejs.org/en/download/
 3. Install pnpm v10.x if you didn't choose it in the previous step
 
@@ -56,7 +57,8 @@ cd tappka
 ## Running the project after setup
 
 ```bash
-pnpm install && pnpm dev
+pnpm install
+pnpm dev
 ```
 
 The project will be available at [http://localhost:3000](http://localhost:3000)
