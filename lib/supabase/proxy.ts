@@ -26,25 +26,6 @@ async function safeCheck(
 }
 
 export async function updateSession(request: NextRequest) {
-  // Allow PWA files to pass through without auth
-  const requestPath = request.nextUrl.pathname;
-  const pwaFiles = [
-    '/manifest.json',
-    '/sw.js',
-    '/apple-touch-icon.png',
-    '/icon.svg',
-    '/favicon.ico'
-  ];
-  
-  if (
-    pwaFiles.includes(requestPath) ||
-    requestPath.startsWith('/icons/') ||
-    requestPath.startsWith('/workbox-') ||
-    requestPath.startsWith('/swe-worker-')
-  ) {
-    return NextResponse.next();
-  }
-
   let supabaseResponse = NextResponse.next({
     request,
   });
