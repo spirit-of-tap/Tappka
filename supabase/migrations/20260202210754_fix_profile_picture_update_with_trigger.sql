@@ -56,7 +56,7 @@ USING (
   user_id IN (
     SELECT users.id
     FROM users
-    WHERE users.auth_user_id = uid()
+    WHERE users.auth_user_id = auth.uid()
   )
 )
 WITH CHECK (
@@ -64,7 +64,7 @@ WITH CHECK (
   user_id IN (
     SELECT users.id
     FROM users
-    WHERE users.auth_user_id = uid()
+    WHERE users.auth_user_id = auth.uid()
   )
 );
 
