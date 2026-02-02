@@ -179,24 +179,29 @@ export async function getTeamById(
 }
 
 /**
- * Get storage URL for a picture
+ * Get storage URL for a picture from B2 storage key
+ * For private buckets, this returns the key that can be used to fetch a presigned URL
+ * For public buckets or full URLs, returns as-is
  */
 export function getStorageUrl(
-  supabase: SupabaseClient,
-  bucket: string,
+  _supabase: SupabaseClient,
+  _bucket: string,
   path: string | null,
 ): string | null {
   if (!path) return null;
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(bucket).getPublicUrl(path);
+  // If it's already a full URL, return it (legacy or external URLs)
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
 
-  return publicUrl;
+  // Return the key - UI components will fetch presigned URL via API
+  return path;
 }
 
 /**
- * Get profile picture URL
+ * Get profile picture key/URL
+ * Returns the storage key for B2, or the full URL if it's a legacy/external URL
  */
 export function getProfilePictureUrl(
   supabase: SupabaseClient,
@@ -209,7 +214,8 @@ export function getProfilePictureUrl(
 }
 
 /**
- * Get team picture URL
+ * Get team picture key/URL
+ * Returns the storage key for B2, or the full URL if it's a legacy/external URL
  */
 export function getTeamPictureUrl(
   supabase: SupabaseClient,

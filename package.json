@@ -19,6 +19,9 @@
   },
   "_comment": "Note: --webpack flag required for @ducanh2912/next-pwa compatibility (doesn't support Turbopack yet)",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.980.0",
+    "@aws-sdk/s3-presigned-post": "^3.980.0",
+    "@aws-sdk/s3-request-presigner": "^3.980.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

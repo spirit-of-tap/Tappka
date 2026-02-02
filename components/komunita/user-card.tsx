@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Mail, Phone, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { StorageAvatar } from '@/components/storage/storage-avatar';
 import { Badge } from '@/components/ui/badge';
 import type { ProfileWithTeam } from '@/lib/komunita/types';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
@@ -12,18 +12,6 @@ import { cn } from '@/lib/utils';
 interface UserCardProps {
   profile: ProfileWithTeam;
   pictureUrl: string | null;
-}
-
-/**
- * Get user initials from name
- */
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 export function UserCard({ profile, pictureUrl }: UserCardProps) {
@@ -45,10 +33,11 @@ export function UserCard({ profile, pictureUrl }: UserCardProps) {
                   : undefined
               }
             >
-              <Avatar size="xl">
-                <AvatarImage src={pictureUrl || undefined} alt={profile.name} />
-                <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
-              </Avatar>
+              <StorageAvatar
+                storageKey={pictureUrl}
+                name={profile.name}
+                size="xl"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-base truncate">{profile.name}</h3>

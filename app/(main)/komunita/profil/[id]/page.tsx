@@ -3,10 +3,12 @@ import Link from 'next/link';
 import { ArrowLeft, Mail, Phone, Cake, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getProfilePictureUrl, getTeamPictureUrl } from '@/lib/komunita/queries';
+import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ProfilePictureSection } from '@/components/komunita/profile-picture-section';
 import { ROLE_LABELS, ROLE_COLORS, YEAR_LABELS } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -16,18 +18,6 @@ interface PageProps {
   params: Promise<{
     id: string;
   }>;
-}
-
-/**
- * Get user initials from name
- */
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
 }
 
 export default async function ProfilePage({ params }: PageProps) {
@@ -43,6 +33,10 @@ export default async function ProfilePage({ params }: PageProps) {
   const pictureUrl = getProfilePictureUrl(supabase, profile);
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
 
+  // Check if this is the current user's profile
+  const currentUserProfile = await getCurrentUserProfile(supabase);
+  const isOwnProfile = currentUserProfile?.id === profile.id;
+
   return (
     <div className="container mx-auto py-6 max-w-4xl space-y-6">
       {/* Back Button */}
@@ -55,23 +49,15 @@ export default async function ProfilePage({ params }: PageProps) {
 
       {/* Profile Header */}
       <div className="flex flex-col items-center gap-4 text-center">
-        {/* Avatar with team-colored border */}
-        <div
-          className={cn(
-            'rounded-full ring-4 transition-all',
-            profile.team?.color ? '' : 'ring-border'
-          )}
-          style={
-            profile.team?.color
-              ? ({ '--tw-ring-color': profile.team.color } as React.CSSProperties)
-              : undefined
-          }
-        >
-          <Avatar size="2xl">
-            <AvatarImage src={pictureUrl || undefined} alt={profile.name} />
-            <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
-          </Avatar>
-        </div>
+        {/* Profile Picture with Edit Capability */}
+        <ProfilePictureSection
+          profileId={profile.id}
+          profileName={profile.name}
+          pictureKey={profile.picture}
+          isOwnProfile={isOwnProfile}
+          teamColor={profile.team?.color}
+          size="2xl"
+        />
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">{profile.name}</h1>
           <Badge
