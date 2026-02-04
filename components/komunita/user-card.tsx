@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Mail, Phone, Users } from 'lucide-react';
+import { Mail, Phone, Users, UserCheck, UserX } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { StorageAvatar } from '@/components/storage/storage-avatar';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ProfileWithTeam } from '@/lib/komunita/types';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
@@ -40,7 +41,21 @@ export function UserCard({ profile, pictureUrl }: UserCardProps) {
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-base truncate">{profile.name}</h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-semibold text-base truncate">{profile.name}</h3>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {profile.user_id ? (
+                      <UserCheck className="size-4 text-green-500 shrink-0" />
+                    ) : (
+                      <UserX className="size-4 text-muted-foreground shrink-0" />
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {profile.user_id ? 'V portálu' : 'Není v portálu'}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge
                   variant="outline"
