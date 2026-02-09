@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, AlertTriangle, Lock, Calendar } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Lock, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { RoomScheduleView } from "@/components/reservations/room-schedule-view";
 import { AlternativeRooms } from "@/components/reservations/alternative-rooms";
 import { IssueReportButton } from "@/components/reservations/issue-report-button";
@@ -145,32 +145,38 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
 
   return (
     <div className="space-y-6">
+      {/* Back navigation */}
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/reservations">
+          <ArrowLeft className="size-4 mr-2" />
+          Zpět na místnosti
+        </Link>
+      </Button>
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
-            <Link href="/reservations">
-              <ArrowLeft className="size-5" />
-            </Link>
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-2xl md:text-3xl font-heading font-bold break-words">{room.name}</h2>
-            {room.description && (
-              <p className="text-muted-foreground mt-1 text-sm md:text-base">{room.description}</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-heading font-bold tracking-tight">{room.name}</h2>
+            {room.can_have_ts && (
+              <Badge variant="secondary" className="text-xs">TS místnost</Badge>
             )}
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <Badge variant="outline" className="text-xs">
-                <Calendar className="size-3 mr-1 flex-shrink-0" />
-                <span>{availableDaysText}</span>
-              </Badge>
-              {room.can_have_ts && (
-                <Badge variant="secondary" className="text-xs">TS místnost</Badge>
-              )}
+          </div>
+          {room.description && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <MapPin className="size-3.5 flex-shrink-0" />
+              <p className="text-sm md:text-base">{room.description}</p>
             </div>
+          )}
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Calendar className="size-3.5 flex-shrink-0" />
+            <p className="text-sm">{availableDaysText}</p>
           </div>
         </div>
         <IssueReportButton roomId={room.id} />
       </div>
+
+      <Separator />
 
       {/* Issue warnings */}
       {lockedIssue && (
@@ -205,23 +211,16 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Schedule */}
         <div className="lg:col-span-3 space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Rozvrh místnosti</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RoomScheduleView
-                reservations={reservations}
-                scheduleBreaks={scheduleBreaks}
-                currentUserId={user?.id ?? ""}
-                roomId={room.id}
-                roomName={room.name}
-                alternativeRooms={alternativeRooms}
-                availableDays={room.available_days}
-                initialDate={dateParam}
-              />
-            </CardContent>
-          </Card>
+          <RoomScheduleView
+            reservations={reservations}
+            scheduleBreaks={scheduleBreaks}
+            currentUserId={user?.id ?? ""}
+            roomId={room.id}
+            roomName={room.name}
+            alternativeRooms={alternativeRooms}
+            availableDays={room.available_days}
+            initialDate={dateParam}
+          />
 
           {/* Alternative rooms */}
           {alternativeRooms.length > 0 && (
