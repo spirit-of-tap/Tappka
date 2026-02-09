@@ -30,6 +30,7 @@ export default async function DashboardLayout({
   const profile = await getCurrentUserProfile(supabase)
 
   const sidebarUser = {
+    id: profile?.id || "",
     name: profile?.name || "Uživatel",
     email: profile?.work_email || user?.email || "",
     role: profile?.role,
