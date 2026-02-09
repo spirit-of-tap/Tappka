@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { WizardLayout } from "@/components/onboarding/wizard-layout";
 import { WelcomeStep } from "@/components/onboarding/welcome-step";
+import { WaitingForApprovalStep } from "@/components/onboarding/waiting-for-approval-step";
 import { VerifyEmailForm } from "@/components/verify-email-form";
 import { LogoutButton } from "@/components/logout-button";
 import { EmailVerificationRealtimeListener } from "@/components/email-verification-realtime-listener";
@@ -10,13 +11,25 @@ import { ProfileLinkRealtimeListener } from "@/components/profile-link-realtime-
 
 interface OnboardingClientProps {
   next?: string;
+  /** Whether the user already has a verified email identity */
+  hasEmail: boolean;
+  /** The user's verified CZU email (if verified) */
+  verifiedEmail?: string | null;
 }
 
 /**
  * Client-side onboarding wizard
  * Guides first-time users through the verification process
+ *
+ * Two modes:
+ * - hasEmail=false → show the verification wizard (welcome → email → OTP)
+ * - hasEmail=true  → show "waiting for approval" screen (email verified, no profile yet)
  */
-export function OnboardingClient({ next }: OnboardingClientProps) {
+export function OnboardingClient({
+  next,
+  hasEmail,
+  verifiedEmail,
+}: OnboardingClientProps) {
   const [currentScreen, setCurrentScreen] = useState<"welcome" | "verify">("welcome");
   const [verifyStep, setVerifyStep] = useState<"email" | "otp">("email");
 
@@ -41,44 +54,57 @@ export function OnboardingClient({ next }: OnboardingClientProps) {
         <LogoutButton />
       </div>
 
-      {/* Wizard content */}
-      {currentScreen === "welcome" ? (
+      {/* Show waiting screen if email is verified but no profile exists */}
+      {hasEmail ? (
         <WizardLayout
-          currentStep={0}
+          currentStep={totalSteps}
           totalSteps={totalSteps}
           showProgress={false}
         >
-          <WelcomeStep onContinue={() => setCurrentScreen("verify")} />
+          <WaitingForApprovalStep verifiedEmail={verifiedEmail} />
         </WizardLayout>
       ) : (
-        <WizardLayout
-          currentStep={getCurrentStep()}
-          totalSteps={totalSteps}
-          showProgress={true}
-        >
-          <div className="space-y-4">
-            {/* Step indicator */}
-            <div className="text-center">
-              <h2 className="text-xl font-semibold">
-                {verifyStep === "email"
-                  ? "Ověření ČZU emailu"
-                  : "Potvrď svůj email"}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {verifyStep === "email"
-                  ? "Zadej svůj ČZU email, na který ti pošleme ověřovací email."
-                  : "Klikni na tlačítko v emailu. Alternativně můžeš zadat ověřovací kód."}
-              </p>
-            </div>
+        <>
+          {/* Wizard content */}
+          {currentScreen === "welcome" ? (
+            <WizardLayout
+              currentStep={0}
+              totalSteps={totalSteps}
+              showProgress={false}
+            >
+              <WelcomeStep onContinue={() => setCurrentScreen("verify")} />
+            </WizardLayout>
+          ) : (
+            <WizardLayout
+              currentStep={getCurrentStep()}
+              totalSteps={totalSteps}
+              showProgress={true}
+            >
+              <div className="space-y-4">
+                {/* Step indicator */}
+                <div className="text-center">
+                  <h2 className="text-xl font-semibold">
+                    {verifyStep === "email"
+                      ? "Ověření ČZU emailu"
+                      : "Potvrď svůj email"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {verifyStep === "email"
+                      ? "Zadej svůj ČZU email, na který ti pošleme ověřovací email."
+                      : "Klikni na tlačítko v emailu. Alternativně můžeš zadat ověřovací kód."}
+                  </p>
+                </div>
 
-            {/* Email verification form */}
-            <VerifyEmailForm
-              next={next}
-              wizardMode={true}
-              onStepChange={setVerifyStep}
-            />
-          </div>
-        </WizardLayout>
+                {/* Email verification form */}
+                <VerifyEmailForm
+                  next={next}
+                  wizardMode={true}
+                  onStepChange={setVerifyStep}
+                />
+              </div>
+            </WizardLayout>
+          )}
+        </>
       )}
     </div>
   );
