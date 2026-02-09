@@ -34,6 +34,7 @@ import { createClient } from "@/lib/supabase/client"
 
 interface NavUserProps {
   user: {
+    id: string
     name: string
     email: string
     role?: string
@@ -106,7 +107,7 @@ export function NavUser({ user }: NavUserProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push("settings")}>
+              <DropdownMenuItem onClick={() => router.push(`/komunita/profil/${user.id}`)}>
                 <UserIcon className="mr-2 h-4 w-4" />
                 Profil
               </DropdownMenuItem>

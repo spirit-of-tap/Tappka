@@ -106,6 +106,7 @@ const getNavData = (isDevelopment: boolean): NavData => ({
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
+    id: string
     name: string
     email: string
     role?: string
