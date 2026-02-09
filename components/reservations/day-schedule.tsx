@@ -27,13 +27,21 @@ interface DayScheduleProps {
  * Supports drag-to-create for quick reservation creation
  */
 export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, onReservationClick, onDragCreate }: DayScheduleProps) {
-  // Drag state
+  // Drag state - use refs for touch handlers to avoid stale closures
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null); // Start position in pixels
   const [dragEnd, setDragEnd] = useState<number | null>(null); // End position in pixels
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [isLongPress, setIsLongPress] = useState(false);
   const scheduleRef = useRef<HTMLDivElement>(null);
+
+  // Refs to track touch drag state without stale closures
+  const touchStateRef = useRef({
+    longPressTimer: null as NodeJS.Timeout | null,
+    isLongPress: false,
+    isDragging: false,
+    dragStart: null as number | null,
+    dragEnd: null as number | null,
+  });
 
   // Generate hour slots
   const hours = useMemo(() => {
@@ -106,75 +114,176 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     setDragEnd(y);
   }, [getRelativeY]);
 
-  // Touch handlers for mobile
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    // Don't start drag if touching on a reservation
-    if ((e.target as HTMLElement).closest('[data-reservation]')) return;
-    
-    const touch = e.touches[0];
-    const y = getRelativeY(touch.clientY);
-    
-    // Store initial position
-    setDragStart(y);
-    
-    // Start long press timer (400ms)
-    const timer = setTimeout(() => {
-      setIsLongPress(true);
-      setIsDragging(true);
-      setDragEnd(y);
-      // Haptic feedback if available
-      if ('vibrate' in navigator) {
-        navigator.vibrate(50);
-      }
-    }, 400);
-    
-    setLongPressTimer(timer);
-  }, [getRelativeY]);
+  // Keep refs for callbacks that need current values
+  const pixelToTimeRef = useRef(pixelToTime);
+  pixelToTimeRef.current = pixelToTime;
+  const getRelativeYRef = useRef(getRelativeY);
+  getRelativeYRef.current = getRelativeY;
+  const onDragCreateRef = useRef(onDragCreate);
+  onDragCreateRef.current = onDragCreate;
+  const slotHeightRef = useRef(slotHeight);
+  slotHeightRef.current = slotHeight;
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    // If long press timer is still pending, cancel it on any movement
-    if (longPressTimer && !isLongPress) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-      setDragStart(null);
-      // Allow normal scrolling
-      return;
-    }
-    
-    // Only handle drag if we're actively in long-press drag mode
-    if (isLongPress && isDragging) {
-      e.preventDefault(); // Prevent scrolling while dragging
+  // Touch handlers using native event listeners (non-passive) to allow preventDefault
+  useEffect(() => {
+    const el = scheduleRef.current;
+    if (!el) return;
+
+    // Prevent native context menu on long press (Android + iOS)
+    const handleContextMenu = (e: Event) => {
+      e.preventDefault();
+    };
+    el.addEventListener('contextmenu', handleContextMenu);
+
+    // Track touch start position to detect movement threshold
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      // Don't start drag if touching on a reservation
+      if ((e.target as HTMLElement).closest('[data-reservation]')) return;
+
       const touch = e.touches[0];
-      const y = getRelativeY(touch.clientY);
-      setDragEnd(y);
-    }
-  }, [getRelativeY, longPressTimer, isLongPress, isDragging]);
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      const y = getRelativeYRef.current(touch.clientY);
+      const ts = touchStateRef.current;
 
-  const handleTouchEnd = useCallback(() => {
-    // Clear long press timer if it's still pending
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-    
-    // If we were actively dragging after long press, finalize the drag
-    if (isLongPress && isDragging && dragStart !== null && dragEnd !== null) {
-      const startY = Math.min(dragStart, dragEnd);
-      const endY = Math.max(dragStart, dragEnd);
-      
-      const startTime = pixelToTime(startY);
-      const endTime = pixelToTime(endY + slotHeight);
-      onDragCreate?.(startTime, endTime);
-    }
-    // Note: We don't trigger click on short tap in touch mode
-    // Users can tap the hour slots directly for single clicks
-    
-    // Reset all state
-    setIsDragging(false);
-    setIsLongPress(false);
-    setDragStart(null);
-    setDragEnd(null);
-  }, [longPressTimer, isLongPress, isDragging, dragStart, dragEnd, slotHeight, pixelToTime, onDragCreate]);
+      // Clear any previous timer
+      if (ts.longPressTimer) {
+        clearTimeout(ts.longPressTimer);
+      }
+
+      // Store initial position
+      ts.dragStart = y;
+      ts.dragEnd = null;
+      ts.isLongPress = false;
+      ts.isDragging = false;
+
+      // Start long press timer (400ms)
+      ts.longPressTimer = setTimeout(() => {
+        ts.isLongPress = true;
+        ts.isDragging = true;
+        ts.dragEnd = y;
+
+        // Lock scroll on the page body while dragging
+        document.body.style.overflow = 'hidden';
+
+        // Update React state for visual feedback
+        setIsLongPress(true);
+        setIsDragging(true);
+        setDragStart(y);
+        setDragEnd(y);
+
+        // Haptic feedback if available
+        if ('vibrate' in navigator) {
+          navigator.vibrate(50);
+        }
+      }, 400);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const ts = touchStateRef.current;
+
+      // If long press timer is still pending, cancel on movement beyond threshold
+      if (ts.longPressTimer && !ts.isLongPress) {
+        const touch = e.touches[0];
+        const dx = Math.abs(touch.clientX - touchStartX);
+        const dy = Math.abs(touch.clientY - touchStartY);
+        // 10px movement threshold before cancelling long press
+        if (dx > 10 || dy > 10) {
+          clearTimeout(ts.longPressTimer);
+          ts.longPressTimer = null;
+          ts.dragStart = null;
+        }
+        // Allow normal scrolling - don't preventDefault
+        return;
+      }
+
+      // Only handle drag if we're actively in long-press drag mode
+      if (ts.isLongPress && ts.isDragging) {
+        e.preventDefault(); // Prevent scrolling while dragging (works because listener is non-passive)
+        e.stopPropagation();
+        const touch = e.touches[0];
+        const y = getRelativeYRef.current(touch.clientY);
+        ts.dragEnd = y;
+        setDragEnd(y);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      const ts = touchStateRef.current;
+
+      // Clear long press timer if it's still pending
+      if (ts.longPressTimer) {
+        clearTimeout(ts.longPressTimer);
+        ts.longPressTimer = null;
+      }
+
+      // Unlock scroll
+      document.body.style.overflow = '';
+
+      // If we were actively dragging after long press, finalize the drag
+      if (ts.isLongPress && ts.isDragging && ts.dragStart !== null && ts.dragEnd !== null) {
+        const startY = Math.min(ts.dragStart, ts.dragEnd);
+        const endY = Math.max(ts.dragStart, ts.dragEnd);
+
+        const startTime = pixelToTimeRef.current(startY);
+        const endTime = pixelToTimeRef.current(endY + slotHeightRef.current);
+        onDragCreateRef.current?.(startTime, endTime);
+      }
+
+      // Reset ref state
+      ts.isLongPress = false;
+      ts.isDragging = false;
+      ts.dragStart = null;
+      ts.dragEnd = null;
+
+      // Reset React state
+      setIsDragging(false);
+      setIsLongPress(false);
+      setDragStart(null);
+      setDragEnd(null);
+    };
+
+    const handleTouchCancel = () => {
+      const ts = touchStateRef.current;
+      if (ts.longPressTimer) {
+        clearTimeout(ts.longPressTimer);
+        ts.longPressTimer = null;
+      }
+      document.body.style.overflow = '';
+      ts.isLongPress = false;
+      ts.isDragging = false;
+      ts.dragStart = null;
+      ts.dragEnd = null;
+      setIsDragging(false);
+      setIsLongPress(false);
+      setDragStart(null);
+      setDragEnd(null);
+    };
+
+    // touchstart must be non-passive too so we can preventDefault in touchmove for the same gesture
+    el.addEventListener('touchstart', handleTouchStart, { passive: false });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+    el.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+
+    return () => {
+      el.removeEventListener('contextmenu', handleContextMenu);
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
+      el.removeEventListener('touchcancel', handleTouchCancel);
+      document.body.style.overflow = '';
+      // Clean up any pending timer
+      const ts = touchStateRef.current;
+      if (ts.longPressTimer) {
+        clearTimeout(ts.longPressTimer);
+        ts.longPressTimer = null;
+      }
+    };
+  }, []); // Empty deps - refs handle all current values
 
   // Global mouse handlers for drag that continues outside the component
   const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
@@ -223,14 +332,6 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     }
   }, [isDragging, handleGlobalMouseMove, handleGlobalMouseUp]);
 
-  // Clean up long press timer on unmount
-  useEffect(() => {
-    return () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-      }
-    };
-  }, [longPressTimer]);
 
   // Calculate drag selection preview
   const dragSelection = useMemo(() => {
@@ -296,10 +397,8 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
             "flex-1 relative select-none",
             isDragging && "cursor-grabbing"
           )}
+          style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
           onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
         >
           {/* Hour grid lines */}
           {hours.map((hour) => (
