@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Roboto, Pacifico } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { PostHogProvider } from "./posthog-provider";
+import { PostHogPageView } from "./posthog-pageview";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -72,14 +74,17 @@ export default function RootLayout({
       <body
         className={`${roboto.variable} ${poppins.variable} ${pacifico.variable} font-body antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <PostHogProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <PostHogPageView />
+            {children}
+          </ThemeProvider>
+        </PostHogProvider>
       </body>
     </html>
   );
