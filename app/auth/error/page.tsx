@@ -34,7 +34,7 @@ async function ErrorContent({
             </h1>
             <p className="text-muted-foreground">
               {isExpiredLink 
-                ? "Odkaz z emailu už není platný. Možná jsi ho použil už dřív, nebo prostě uplynul čas."
+                ? "Odkaz z emailu už není platný. Nech si poslat nový kód."
                 : "Omlouváme se, ale něco nefunguje jak má."}
             </p>
           </div>
@@ -56,17 +56,32 @@ async function ErrorContent({
 
           {/* Actions */}
           <div className="flex flex-col gap-3 w-full">
-            <Button asChild size="lg" className="w-full">
-              <Link href="/">
-                Zpět na hlavní stránku
-              </Link>
-            </Button>
-            {!isExpiredLink && (
-              <Button asChild variant="outline" size="lg" className="w-full">
-                <Link href="/auth/login">
-                  Přihlásit se
-                </Link>
-              </Button>
+            {isExpiredLink ? (
+              <>
+                <Button asChild size="lg" className="w-full">
+                  <Link href="/auth/onboarding">
+                    Zkusit znovu
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full">
+                  <Link href="/">
+                    Zpět na hlavní stránku
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild size="lg" className="w-full">
+                  <Link href="/">
+                    Zpět na hlavní stránku
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full">
+                  <Link href="/auth/login">
+                    Přihlásit se
+                  </Link>
+                </Button>
+              </>
             )}
           </div>
         </div>
