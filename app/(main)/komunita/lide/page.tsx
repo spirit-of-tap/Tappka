@@ -20,16 +20,16 @@ export default async function KomunitaLidePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const supabase = await createClient();
 
-  // Fetch teams for filter dropdown
-  const teams = await getTeams(supabase);
-
-  // Fetch profiles with filters
-  const profiles = await getProfiles(supabase, {
-    search: params.search,
-    teamId: params.teamId,
-    role: params.role,
-    year: params.year ? parseInt(params.year) : undefined,
-  });
+  // Fetch teams and profiles in parallel
+  const [teams, profiles] = await Promise.all([
+    getTeams(supabase),
+    getProfiles(supabase, {
+      search: params.search,
+      teamId: params.teamId,
+      role: params.role,
+      year: params.year ? parseInt(params.year) : undefined,
+    }),
+  ]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
