@@ -56,6 +56,16 @@
       gap: 0;
     }
 
+    /* Logo */
+    .logo {
+      margin-bottom: 16px;
+    }
+    .logo img {
+      height: 80px;
+      width: auto;
+      display: block;
+    }
+
     /* Room number — big and bold */
     .room-number {
       font-family: 'Poppins', sans-serif;
@@ -99,19 +109,19 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 72px;
-      height: 72px;
+      width: 52px;
+      height: 52px;
       background: #ffffff;
       border-radius: 50%;
       border: 2px solid #2c1a1d;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 0 4px #ffffff;
+      box-shadow: 0 0 0 2px #ffffff;
     }
     .nfc-overlay svg {
-      width: 36px;
-      height: 36px;
+      width: 26px;
+      height: 26px;
       display: block;
     }
 
@@ -202,6 +212,11 @@
     <div class="accent-bar"></div>
 
     <div class="content">
+      <!-- Logo -->
+      <div class="logo">
+        <img src="../../../public/tap_logo.png" alt="Tiimiakatemia Prague">
+      </div>
+
       <!-- Room Number -->
       <div class="room-number">D127</div>
       <div class="room-subtitle">Tichá místnost</div>
