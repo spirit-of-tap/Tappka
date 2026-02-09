@@ -21,7 +21,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get current user's profile ID
-    const profile = await getCurrentUserProfile(supabase);
+    const profile = await getCurrentUserProfile(supabase, { user });
     if (!profile) {
       return NextResponse.json(
         { error: "Uživatelský profil nenalezen" },

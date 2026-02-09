@@ -22,17 +22,14 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  // Get profile for user info in sidebar
-  const profile = await getCurrentUserProfile(supabase)
+  // Get profile for user info in sidebar (no separate getUser() needed)
+  const profile = await getCurrentUserProfile(supabase);
 
   const sidebarUser = {
     id: profile?.id || "",
     name: profile?.name || "Uživatel",
-    email: profile?.work_email || user?.email || "",
+    email: profile?.work_email || "",
     role: profile?.role,
   };
 

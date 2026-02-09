@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user profile
-    const profile = await getCurrentUserProfile(supabase);
+    const profile = await getCurrentUserProfile(supabase, { user });
     if (!profile) {
       return NextResponse.json(
         { error: "Profil nenalezen" },

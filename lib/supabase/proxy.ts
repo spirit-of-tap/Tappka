@@ -122,7 +122,7 @@ export async function updateSession(request: NextRequest) {
   // If no email identity, redirect to onboarding page (wizard for first-time users)
   // Treat errors as "no identity" to preserve graceful redirect behavior
   const emailIdentityCheck = await safeCheck(
-    () => hasEmailIdentity(supabase),
+    () => hasEmailIdentity(supabase, authUser),
     "hasEmailIdentity",
   );
   if (!emailIdentityCheck.ok) {
@@ -137,7 +137,7 @@ export async function updateSession(request: NextRequest) {
   // Check for linked profile if user is authenticated and not on public routes
   // Treat errors as "no profile" to preserve graceful redirect behavior
   const linkedProfileCheck = await safeCheck(
-    () => hasLinkedProfile(supabase),
+    () => hasLinkedProfile(supabase, authUser),
     "hasLinkedProfile",
   );
   if (!linkedProfileCheck.ok) {

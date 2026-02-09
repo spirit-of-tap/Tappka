@@ -24,7 +24,11 @@ export default async function ProfilePage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const profile = await getProfileById(supabase, id);
+  // Fetch viewed profile and current user profile in parallel
+  const [profile, currentUserProfile] = await Promise.all([
+    getProfileById(supabase, id),
+    getCurrentUserProfile(supabase),
+  ]);
 
   if (!profile) {
     notFound();
@@ -32,9 +36,6 @@ export default async function ProfilePage({ params }: PageProps) {
 
   const pictureUrl = getProfilePictureUrl(supabase, profile);
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
-
-  // Check if this is the current user's profile
-  const currentUserProfile = await getCurrentUserProfile(supabase);
   const isOwnProfile = currentUserProfile?.id === profile.id;
 
   return (

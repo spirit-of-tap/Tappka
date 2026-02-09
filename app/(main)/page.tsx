@@ -20,12 +20,9 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  // Get profile with team info
-  const profile = await getCurrentUserProfile(supabase, true)
+  // Get profile with team info (no separate getUser() needed)
+  const profile = await getCurrentUserProfile(supabase, { includeTeam: true });
 
 
 
@@ -54,7 +51,7 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{profile?.name}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {profile?.work_email || user?.email || ""}
+              {profile?.work_email || ""}
             </p>
           </CardContent>
         </Card>

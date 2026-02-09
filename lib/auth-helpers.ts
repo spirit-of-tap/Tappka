@@ -56,11 +56,12 @@ export interface Team {
  * @returns true if user has an email identity, false otherwise
  */
 export async function hasEmailIdentity(
-  supabaseClient: SupabaseClient
+  supabaseClient: SupabaseClient,
+  preloadedUser?: { identities?: Array<{ provider: string }> } | null,
 ): Promise<boolean> {
-  const { data: { user }, error } = await supabaseClient.auth.getUser();
+  const user = preloadedUser ?? (await supabaseClient.auth.getUser()).data?.user;
 
-  if (error || !user) {
+  if (!user) {
     return false;
   }
 
@@ -81,9 +82,10 @@ export async function hasEmailIdentity(
  * @returns true if user has a linked profile, false otherwise
  */
 export async function hasLinkedProfile(
-  supabaseClient: SupabaseClient
+  supabaseClient: SupabaseClient,
+  preloadedUser?: { id: string } | null,
 ): Promise<boolean> {
-  const profile = await getCurrentUserProfile(supabaseClient);
+  const profile = await getCurrentUserProfile(supabaseClient, { user: preloadedUser ?? undefined });
   return profile !== null;
 }
 
@@ -91,17 +93,25 @@ export async function hasLinkedProfile(
  * Gets the current authenticated user's profile, optionally with team data included
  * Explicitly filters by the current user's linked profile
  * @param supabaseClient - Supabase client to use. Must be provided to use existing client.
- * @param includeTeam - Whether to fetch team data along with the profile. Defaults to false.
+ * @param options - Optional config: includeTeam (fetch team data), user (pre-fetched auth user to skip getUser() call)
  * @returns The profile data with team populated (if includeTeam is true) or null if not found
  */
 export async function getCurrentUserProfile(
   supabaseClient: SupabaseClient,
-  includeTeam: boolean = false,
+  options: { includeTeam?: boolean; user?: { id: string } } = {},
 ): Promise<Profile | null> {
-  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+  const { includeTeam = false } = options;
 
-  if (authError || !user) {
-    return null;
+  // Use pre-fetched user if provided, otherwise fetch
+  let authUserId: string;
+  if (options.user) {
+    authUserId = options.user.id;
+  } else {
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      return null;
+    }
+    authUserId = user.id;
   }
 
   // First get the user's linked public.users record
@@ -110,7 +120,7 @@ export async function getCurrentUserProfile(
   const { data: userData, error: userError } = await supabaseClient
     .from("users")
     .select("id")
-    .eq("auth_user_id", user.id)
+    .eq("auth_user_id", authUserId)
     .limit(1)
     .maybeSingle();
 
