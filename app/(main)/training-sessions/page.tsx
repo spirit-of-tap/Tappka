@@ -63,13 +63,7 @@ export default async function TrainingSessionsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-heading font-bold">Training Sessions</h2>
-        <p className="text-muted-foreground mt-1">
-          Vytvoř a spravuj Training Sessions pro svůj tým. Každý TS trvá 4 hodiny.
-        </p>
-      </div>
+      {/* Header is now inside TrainingSessionsList for button positioning */}
 
       <TrainingSessionsList
         rooms={rooms}

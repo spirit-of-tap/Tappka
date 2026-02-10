@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Clock, Users, UserPlus, Edit, MapPin, Calendar } from "lucide-react";
+import { Plus, Trash2, Clock, Users, UserPlus, Edit, MapPin, Sun, Moon } from "lucide-react";
 import { format, parseISO, isPast } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -137,21 +137,24 @@ function SessionCard({
     (p) => p.user_id === currentUserId
   );
 
+  const showJoinButton = !isMyTeam && !isPastSession && session.cross_slots_available > 0;
+  const showEditButtons = isMyTeam && !isPastSession;
+
   return (
     <div
       className={cn(
-        "group relative rounded-xl border bg-card p-5 transition-all hover:shadow-md",
-        isPastSession && "opacity-60 bg-muted/30"
+        "group relative rounded-lg border bg-card px-4 py-3 transition-all hover:shadow-sm",
+        isPastSession && "opacity-50 bg-muted/30"
       )}
     >
-      {/* Top row: Topic + Team badge + Date */}
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="font-semibold text-base">{session.topic}</h3>
-          {session.team && (
+      {/* Row 1: Topic + Team badge + Date */}
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="font-semibold text-sm truncate">{session.topic}</h3>
+          {session.team && !isMyTeam && (
             <Badge
               variant="secondary"
-              className="font-medium"
+              className="text-xs shrink-0"
               style={
                 session.team.color
                   ? {
@@ -167,69 +170,55 @@ function SessionCard({
           )}
         </div>
         {startTime && (
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Calendar className="size-4" />
-            <span className="font-medium">
-              {format(startTime, "d. MMMM yyyy", { locale: cs })}
-            </span>
-          </div>
+          <span className="text-xs text-muted-foreground shrink-0">
+            {format(startTime, "d. MMM yyyy", { locale: cs })}
+          </span>
         )}
       </div>
 
-      {/* Middle row: Room, Time, Cross slots */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground mb-4">
+      {/* Row 2: Room, Time, Cross slots - all inline */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
         {room && (
-          <div className="flex items-center gap-1.5">
-            <MapPin className="size-4 text-primary/70" />
-            <span>{room.name}</span>
-          </div>
+          <span className="flex items-center gap-1">
+            <MapPin className="size-3" />
+            {room.code?.toUpperCase() || room.name}
+          </span>
         )}
         {startTime && endTime && (
-          <div className="flex items-center gap-1.5">
-            <Clock className="size-4 text-primary/70" />
-            <span>
-              {format(startTime, "HH:mm")} - {format(endTime, "HH:mm")}
-            </span>
-          </div>
+          <span className="flex items-center gap-1">
+            <Clock className="size-3" />
+            {format(startTime, "HH:mm")} - {format(endTime, "HH:mm")}
+          </span>
         )}
         {session.cross_slots_available > 0 && (
-          <div
-            className={cn(
-              "flex items-center gap-1.5",
-              availableSlots > 0
-                ? "text-green-600 dark:text-green-400"
-                : "text-orange-600 dark:text-orange-400"
-            )}
-          >
-            <UserPlus className="size-4" />
-            <span>
-              {crossCount}/{session.cross_slots_available} cross
-            </span>
-          </div>
+          <span className="flex items-center gap-1">
+            <UserPlus className="size-3" />
+            {crossCount}/{session.cross_slots_available} cross
+          </span>
         )}
       </div>
 
-      {/* Bottom row: Facilitators + Cross participants + Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-6">
+      {/* Row 3: Facilitators + Cross + Actions - fixed height */}
+      <div className="flex items-center justify-between gap-3 min-h-[28px]">
+        <div className="flex items-center gap-4 text-xs">
           {/* Facilitators */}
           {session.facilitators && session.facilitators.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground uppercase tracking-wide font-medium">
                 Facilitátoři
               </span>
               <TooltipProvider delayDuration={200}>
                 <AvatarGroup>
-                  {session.facilitators.slice(0, 4).map((f) =>
+                  {session.facilitators.slice(0, 3).map((f) =>
                     f.user ? (
                       <UserAvatar key={f.id} user={f.user} size="sm" />
                     ) : null
                   )}
                 </AvatarGroup>
               </TooltipProvider>
-              {session.facilitators.length > 4 && (
-                <span className="text-xs text-muted-foreground">
-                  +{session.facilitators.length - 4}
+              {session.facilitators.length > 3 && (
+                <span className="text-muted-foreground">
+                  +{session.facilitators.length - 3}
                 </span>
               )}
             </div>
@@ -237,58 +226,55 @@ function SessionCard({
 
           {/* Cross participants */}
           {session.cross_participants && session.cross_participants.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground uppercase tracking-wide font-medium">
                 Cross
               </span>
               <TooltipProvider delayDuration={200}>
                 <AvatarGroup>
-                  {session.cross_participants.slice(0, 4).map((p) =>
+                  {session.cross_participants.slice(0, 3).map((p) =>
                     p.user ? (
                       <UserAvatar key={p.id} user={p.user} size="sm" />
                     ) : null
                   )}
                 </AvatarGroup>
               </TooltipProvider>
-              {session.cross_participants.length > 4 && (
-                <span className="text-xs text-muted-foreground">
-                  +{session.cross_participants.length - 4}
+              {session.cross_participants.length > 3 && (
+                <span className="text-muted-foreground">
+                  +{session.cross_participants.length - 3}
                 </span>
               )}
             </div>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Join/Leave cross button */}
-          {!isMyTeam && !isPastSession && session.cross_slots_available > 0 && (
+        {/* Actions - fixed width area */}
+        <div className="flex items-center gap-1 shrink-0">
+          {showJoinButton && (
             <>
               {isJoined ? (
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={() => onLeave?.(session.id)}
-                  className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:text-orange-400 dark:border-orange-900 dark:hover:bg-orange-950"
                 >
                   Odhlásit se
                 </Button>
-              ) : availableSlots > 0 ? (
+              ) : (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => onJoin?.(session.id)}
-                  className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-900 dark:hover:bg-green-950"
+                  disabled={availableSlots <= 0}
                 >
-                  <UserPlus className="size-4 mr-1" />
-                  Přihlásit se
+                  <UserPlus className="size-4" />
+                  {availableSlots > 0 ? "Crossnout" : "Obsazeno"}
                 </Button>
-              ) : null}
+              )}
             </>
           )}
 
-          {/* Edit/Delete for my team */}
-          {isMyTeam && !isPastSession && (
+          {showEditButtons && (
             <>
               <Button
                 variant="ghost"
@@ -338,15 +324,31 @@ export function TrainingSessionsList({
   const [roomId, setRoomId] = useState("");
   const [topic, setTopic] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [startTime, setStartTime] = useState("09:00");
+  const [timeSlot, setTimeSlot] = useState<"morning" | "afternoon">("morning");
+  const [startTime, setStartTime] = useState("08:00");
+  const [endTime, setEndTime] = useState("12:00");
   const [crossSlotsAvailable, setCrossSlotsAvailable] = useState(0);
   const [facilitatorIds, setFacilitatorIds] = useState<string[]>([]);
+
+  // Update time when slot changes
+  const handleTimeSlotChange = (slot: "morning" | "afternoon") => {
+    setTimeSlot(slot);
+    if (slot === "morning") {
+      setStartTime("08:00");
+      setEndTime("12:00");
+    } else {
+      setStartTime("13:00");
+      setEndTime("17:00");
+    }
+  };
 
   const resetForm = () => {
     setRoomId("");
     setTopic("");
     setStartDate(undefined);
-    setStartTime("09:00");
+    setTimeSlot("morning");
+    setStartTime("08:00");
+    setEndTime("12:00");
     setCrossSlotsAvailable(0);
     setFacilitatorIds([]);
     setError(null);
@@ -360,7 +362,13 @@ export function TrainingSessionsList({
     if (session.reservation?.start_time) {
       const start = parseISO(session.reservation.start_time);
       setStartDate(start);
+      const hours = start.getHours();
+      setTimeSlot(hours < 12 ? "morning" : "afternoon");
       setStartTime(format(start, "HH:mm"));
+    }
+    if (session.reservation?.end_time) {
+      const end = parseISO(session.reservation.end_time);
+      setEndTime(format(end, "HH:mm"));
     }
     setCrossSlotsAvailable(session.cross_slots_available);
     setFacilitatorIds(session.facilitators?.map((f) => f.user_id) || []);
@@ -371,7 +379,7 @@ export function TrainingSessionsList({
   const handleSubmit = async () => {
     setError(null);
 
-    if (!roomId || !topic || !startDate || !startTime) {
+    if (!roomId || !topic || !startDate || !startTime || !endTime) {
       setError("Vyplň všechna pole");
       return;
     }
@@ -384,15 +392,20 @@ export function TrainingSessionsList({
     setIsLoading(true);
 
     try {
-      const [hours, minutes] = startTime.split(":").map(Number);
+      const [startHours, startMinutes] = startTime.split(":").map(Number);
       const startDateTime = new Date(startDate);
-      startDateTime.setHours(hours, minutes, 0, 0);
+      startDateTime.setHours(startHours, startMinutes, 0, 0);
+
+      const [endHours, endMinutes] = endTime.split(":").map(Number);
+      const endDateTime = new Date(startDate);
+      endDateTime.setHours(endHours, endMinutes, 0, 0);
 
       const payload = {
         room_id: roomId,
         team_id: currentUserTeamId,
         topic,
         start_time: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
         cross_slots_available: crossSlotsAvailable,
         facilitator_ids: facilitatorIds,
       };
@@ -624,139 +637,179 @@ export function TrainingSessionsList({
 
   return (
     <div className="space-y-6">
-      {/* Add button */}
-      <Dialog
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}
-      >
-        <DialogTrigger asChild>
-          <Button>
-            <Plus className="size-4 mr-2" />
-            Nový Training Session
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>{dialogDescription}</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Room */}
-            <div className="space-y-2">
-              <Label>Místnost</Label>
-              <Select value={roomId} onValueChange={setRoomId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Vyber místnost" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rooms.map((room) => (
-                    <SelectItem key={room.id} value={room.id}>
-                      {room.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Topic */}
-            <div className="space-y-2">
-              <Label>Téma</Label>
-              <Input
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="Např. Marketing Strategy"
-              />
-            </div>
-
-            {/* Date and Time */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Datum</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground"
-                      )}
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      {startDate
-                        ? format(startDate, "PPP", { locale: cs })
-                        : "Vyber datum"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarPicker
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label>Čas (automaticky +4h)</Label>
-                <TimePicker value={startTime} onChange={setStartTime} hourOnly />
-              </div>
-            </div>
-
-            {/* Cross slots */}
-            <div className="space-y-2">
-              <Label>Cross místa (0-3)</Label>
-              <Select
-                value={crossSlotsAvailable.toString()}
-                onValueChange={(v) => setCrossSlotsAvailable(parseInt(v))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[0, 1, 2, 3].map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num} {num === 0 ? "(žádná)" : num === 1 ? "místo" : "místa"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Facilitators */}
-            <div className="space-y-2">
-              <Label>Facilitátoři</Label>
-              <UserTagPicker
-                users={users}
-                selectedIds={facilitatorIds}
-                onChange={setFacilitatorIds}
-                placeholder="Vyhledat facilitátora..."
-                emptyMessage="Žádný uživatel nenalezen"
-              />
-            </div>
-
-            {/* Error */}
-            {error && (
-              <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
-                {error}
-              </p>
-            )}
-
-            {/* Submit */}
-            <Button onClick={handleSubmit} disabled={isLoading} className="w-full">
-              {isLoading
-                ? "Ukládám..."
-                : editingSession
-                ? "Uložit změny"
-                : "Vytvořit"}
+      {/* Header with Add button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-heading font-bold">Training Sessions</h2>
+          <p className="text-muted-foreground mt-1">
+            Vytvoř a spravuj Training Sessions pro svůj tým. Každý TS trvá 4 hodiny.
+          </p>
+        </div>
+        <Dialog
+          open={isDialogOpen}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}
+        >
+          <DialogTrigger asChild>
+            <Button className="shrink-0">
+              <Plus className="size-4 mr-2" />
+              Nový Training Session
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogTrigger>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{dialogTitle}</DialogTitle>
+              <DialogDescription>{dialogDescription}</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-5 pt-2">
+              {/* Topic - most important, first */}
+              <div className="space-y-2">
+                <Label>Téma</Label>
+                <Input
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Např. Marketing Strategy"
+                />
+              </div>
+
+              {/* When: Date + Time slot on one row */}
+              <div className="space-y-2">
+                <Label>Kdy</Label>
+                <div className="flex gap-2">
+                  {/* Date picker */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "flex-1 justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        {startDate
+                          ? format(startDate, "d. MMM yyyy", { locale: cs })
+                          : "Datum"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarPicker
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Time slot toggle */}
+                  <div className="flex border rounded-md">
+                    <Button
+                      type="button"
+                      variant={timeSlot === "morning" ? "default" : "ghost"}
+                      size="sm"
+                      className="rounded-r-none border-0"
+                      onClick={() => handleTimeSlotChange("morning")}
+                    >
+                      <Sun className="size-4 mr-1" />
+                      Dopo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={timeSlot === "afternoon" ? "default" : "ghost"}
+                      size="sm"
+                      className="rounded-l-none border-0"
+                      onClick={() => handleTimeSlotChange("afternoon")}
+                    >
+                      <Moon className="size-4 mr-1" />
+                      Odpo
+                    </Button>
+                  </div>
+                </div>
+                {/* Exact times - small, right-aligned */}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>Přesný čas:</span>
+                  <div className="w-20">
+                    <TimePicker value={startTime} onChange={setStartTime} hourOnly />
+                  </div>
+                  <span>–</span>
+                  <div className="w-20">
+                    <TimePicker value={endTime} onChange={setEndTime} hourOnly />
+                  </div>
+                </div>
+              </div>
+
+              {/* Where: Room */}
+              <div className="space-y-2">
+                <Label>Kde</Label>
+                <Select value={roomId} onValueChange={setRoomId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Vyber místnost" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rooms.map((room) => (
+                      <SelectItem key={room.id} value={room.id}>
+                        {room.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Cross slots */}
+              <div className="space-y-2">
+                <Label>Cross místa</Label>
+                <Select
+                  value={crossSlotsAvailable.toString()}
+                  onValueChange={(v) => setCrossSlotsAvailable(parseInt(v))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[0, 1, 2, 3].map((num) => (
+                      <SelectItem key={num} value={num.toString()}>
+                        {num === 0 ? "Žádná" : `${num} ${num === 1 ? "místo" : "místa"}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Facilitators */}
+              <div className="space-y-2">
+                <Label>Facilitátoři</Label>
+                <UserTagPicker
+                  users={users}
+                  selectedIds={facilitatorIds}
+                  onChange={setFacilitatorIds}
+                  placeholder="Vyhledat facilitátora..."
+                  emptyMessage="Žádný uživatel nenalezen"
+                />
+              </div>
+
+              {/* Error */}
+              {error && (
+                <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
+                  {error}
+                </p>
+              )}
+
+              {/* Submit */}
+              <Button onClick={handleSubmit} disabled={isLoading} className="w-full">
+                {isLoading
+                  ? "Ukládám..."
+                  : editingSession
+                  ? "Uložit změny"
+                  : "Vytvořit"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Tabs */}
       <Tabs defaultValue="my" className="w-full">

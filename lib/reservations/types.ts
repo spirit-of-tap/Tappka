@@ -199,7 +199,8 @@ export interface CreateTrainingSessionInput {
   room_id: string;
   team_id: string;
   topic: string;
-  start_time: string; // Will auto-set end_time to +4 hours
+  start_time: string;
+  end_time?: string; // Optional, defaults to start_time + 4 hours
   cross_slots_available: number;
   facilitator_ids: string[]; // Array of user IDs
 }
@@ -208,6 +209,7 @@ export interface CreateTrainingSessionInput {
 export interface UpdateTrainingSessionInput {
   topic?: string;
   start_time?: string;
+  end_time?: string;
   cross_slots_available?: number;
   facilitator_ids?: string[];
 }

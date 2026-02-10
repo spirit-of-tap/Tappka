@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body: CreateTrainingSessionInput = await request.json();
-    const { room_id, team_id, topic, start_time, cross_slots_available, facilitator_ids } = body;
+    const { room_id, team_id, topic, start_time, end_time, cross_slots_available, facilitator_ids } = body;
 
     // Validation
     if (!room_id || !team_id || !topic || !start_time || cross_slots_available === undefined) {
@@ -63,9 +63,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tým neexistuje" }, { status: 404 });
     }
 
-    // Calculate end_time (start_time + 4 hours)
+    // Calculate end_time (use provided or default to start_time + 4 hours)
     const startDate = new Date(start_time);
-    const endDate = addHours(startDate, 4);
+    const endDate = end_time ? new Date(end_time) : addHours(startDate, 4);
 
     // Create reservation first
     const { data: reservation, error: reservationError } = await supabase

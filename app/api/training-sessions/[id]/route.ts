@@ -92,7 +92,7 @@ export async function PATCH(
     }
 
     const body: UpdateTrainingSessionInput = await request.json();
-    const { topic, start_time, cross_slots_available, facilitator_ids } = body;
+    const { topic, start_time, end_time, cross_slots_available, facilitator_ids } = body;
 
     // Update training session
     const tsUpdates: any = {};
@@ -127,11 +127,16 @@ export async function PATCH(
         .single();
       reservationUpdates.title = `TS - ${team?.name} - ${topic}`;
     }
-    if (start_time !== undefined) {
-      const startDate = new Date(start_time);
-      const endDate = addHours(startDate, 4);
-      reservationUpdates.start_time = startDate.toISOString();
-      reservationUpdates.end_time = endDate.toISOString();
+    if (start_time !== undefined || end_time !== undefined) {
+      const startDate = start_time ? new Date(start_time) : new Date(existingTS.reservation.start_time);
+      const endDate = end_time ? new Date(end_time) : (start_time ? addHours(startDate, 4) : undefined);
+      
+      if (start_time) {
+        reservationUpdates.start_time = startDate.toISOString();
+      }
+      if (endDate) {
+        reservationUpdates.end_time = endDate.toISOString();
+      }
     }
 
     if (Object.keys(reservationUpdates).length > 0) {
