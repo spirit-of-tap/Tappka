@@ -31,6 +31,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { TimePicker } from "./time-picker";
+import { UserTagPicker } from "./user-tag-picker";
 import { cn } from "@/lib/utils";
 import type { Room, TrainingSessionWithDetails } from "@/lib/reservations/types";
 
@@ -176,14 +177,6 @@ export function TrainingSessionsList({
     }
   };
 
-  const toggleFacilitator = (userId: string) => {
-    setFacilitatorIds(prev =>
-      prev.includes(userId)
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
-    );
-  };
-
   // Filter sessions for current user's team
   const myTeamSessions = sessions.filter(s => s.team_id === currentUserTeamId);
   // Sort by start time (newest first)
@@ -192,6 +185,15 @@ export function TrainingSessionsList({
     const bTime = b.reservation?.start_time ? new Date(b.reservation.start_time).getTime() : 0;
     return bTime - aTime;
   });
+
+  // Cross sessions: other teams with available cross slots
+  const crossSessions = sessions
+    .filter(s => s.team_id !== currentUserTeamId && s.cross_slots_available > 0)
+    .sort((a, b) => {
+      const aTime = a.reservation?.start_time ? new Date(a.reservation.start_time).getTime() : 0;
+      const bTime = b.reservation?.start_time ? new Date(b.reservation.start_time).getTime() : 0;
+      return aTime - bTime; // Upcoming first
+    });
 
   const dialogTitle = editingSession ? "Upravit Training Session" : "Nový Training Session";
   const dialogDescription = editingSession
@@ -295,28 +297,13 @@ export function TrainingSessionsList({
             {/* Facilitators */}
             <div className="space-y-2">
               <Label>Facilitátoři</Label>
-              <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
-                {users.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Žádní uživatelé k dispozici</p>
-                ) : (
-                  <div className="space-y-1">
-                    {users.map((user) => (
-                      <label
-                        key={user.id}
-                        className="flex items-center gap-2 p-2 hover:bg-accent rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={facilitatorIds.includes(user.id)}
-                          onChange={() => toggleFacilitator(user.id)}
-                          className="rounded"
-                        />
-                        <span className="text-sm">{user.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <UserTagPicker
+                users={users}
+                selectedIds={facilitatorIds}
+                onChange={setFacilitatorIds}
+                placeholder="Vyhledat facilitátora..."
+                emptyMessage="Žádný uživatel nenalezen"
+              />
             </div>
 
             {/* Error */}
@@ -349,6 +336,9 @@ export function TrainingSessionsList({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary">{session.topic}</Badge>
+                  {session.team && (
+                    <Badge variant="outline">{session.team.name}</Badge>
+                  )}
                   {session.reservation && (
                     <span className="text-sm text-muted-foreground">
                       {format(parseISO(session.reservation.start_time), "PPP", { locale: cs })} • {format(parseISO(session.reservation.start_time), "HH:mm")} - {format(parseISO(session.reservation.end_time), "HH:mm")}
@@ -392,6 +382,71 @@ export function TrainingSessionsList({
           ))
         )}
       </div>
+
+      {/* Cross sessions from other teams */}
+      {crossSessions.length > 0 && (
+        <div className="space-y-3 mt-8">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <UserPlus className="size-5" />
+            Cross příležitosti
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Training Sessions jiných týmů s volnými cross místy
+          </p>
+          <div className="space-y-3">
+            {crossSessions.map((session) => {
+              const currentCrossCount = session.cross_participants?.length || 0;
+              const availableSlots = session.cross_slots_available - currentCrossCount;
+
+              return (
+                <div
+                  key={session.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border bg-card gap-3"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="secondary">{session.topic}</Badge>
+                      {session.team && (
+                        <Badge variant="outline">{session.team.name}</Badge>
+                      )}
+                      {session.reservation && (
+                        <span className="text-sm text-muted-foreground">
+                          {format(parseISO(session.reservation.start_time), "PPP", { locale: cs })} • {format(parseISO(session.reservation.start_time), "HH:mm")} - {format(parseISO(session.reservation.end_time), "HH:mm")}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>📍 {rooms.find(r => r.id === session.reservation?.room_id)?.name}</span>
+                      <span className={availableSlots > 0 ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400"}>
+                        <UserPlus className="inline size-3 mr-1" />
+                        {availableSlots > 0 ? `${availableSlots} volná místa` : "Plně obsazeno"}
+                      </span>
+                    </div>
+                    {session.facilitators && session.facilitators.length > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Users className="size-3" />
+                        {session.facilitators.map(f => f.user?.name).filter(Boolean).join(", ")}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 self-end sm:self-auto">
+                    {availableSlots > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {/* TODO: join as cross */ }}
+                      >
+                        <UserPlus className="size-4 mr-1" />
+                        Přihlásit se
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

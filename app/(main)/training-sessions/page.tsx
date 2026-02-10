@@ -72,47 +72,13 @@ export default async function TrainingSessionsPage() {
         </p>
       </div>
 
-      {/* Main Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Moje Training Sessions</CardTitle>
-          <CardDescription>
-            Vytvoř nový Training Session pro svůj tým, zvol facilitátory a nastav počet cross míst pro účastníky z jiných týmů (0-3).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TrainingSessionsList
-            rooms={rooms}
-            sessions={trainingSessions}
-            teams={teams}
-            users={users}
-            currentUserTeamId={profile.team_id}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Info Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Co jsou Training Sessions?</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>
-            <strong>Training Sessions (TS)</strong> jsou 4hodinové pracovní setkání pro váš tým. 
-            Při vytváření TS můžete:
-          </p>
-          <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>Vybrat téma/agendu setkání</li>
-            <li>Určit facilitátory z jakéhokoliv týmu</li>
-            <li>Nastavit počet "cross" míst (0-3) pro účastníky z jiných týmů</li>
-            <li>Rezervovat si místnost na 4 hodiny</li>
-          </ul>
-          <p className="mt-3">
-            <strong>Cross účast:</strong> Pokud nastavíš cross místa, uživatelé z jiných týmů 
-            se mohou přihlásit na váš TS a učit se společně s vámi.
-          </p>
-        </CardContent>
-      </Card>
+      <TrainingSessionsList
+        rooms={rooms}
+        sessions={trainingSessions}
+        teams={teams}
+        users={users}
+        currentUserTeamId={profile.team_id}
+      />
     </div>
   );
 }
