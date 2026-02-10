@@ -41,7 +41,6 @@ export interface Reservation {
   room_id: string;
   user_id: string | null;
   team_id: string | null;
-  recurring_schedule_id: string | null;
   reservation_type: ReservationType;
   title: string;
   reason: string | null;
@@ -93,18 +92,80 @@ export interface RoomIssue {
   resolved_by: string | null;
 }
 
-// Recurring schedule from database
-export interface RecurringSchedule {
+// Training Session from database
+export interface TrainingSession {
   id: string;
-  room_id: string;
+  reservation_id: string;
   team_id: string;
+  topic: string;
+  cross_slots_available: number;
   created_by: string | null;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  valid_from: string;
-  valid_until: string;
   created_at: string;
+  updated_at: string;
+}
+
+// Training Session with details
+export interface TrainingSessionWithDetails extends TrainingSession {
+  reservation?: Reservation;
+  team?: {
+    id: string;
+    name: string;
+    year: number;
+  };
+  facilitators?: {
+    id: string;
+    user_id: string;
+    user?: {
+      id: string;
+      name: string;
+    };
+  }[];
+  cross_participants?: {
+    id: string;
+    user_id: string;
+    joined_at: string;
+    user?: {
+      id: string;
+      name: string;
+    };
+  }[];
+}
+
+// Houston Calling Event from database
+export interface HoustonCallingEvent {
+  id: string;
+  reservation_id: string;
+  team_id: string;
+  topic: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Houston Calling Event with details
+export interface HoustonCallingEventWithDetails extends HoustonCallingEvent {
+  reservation?: Reservation;
+  team?: {
+    id: string;
+    name: string;
+    year: number;
+  };
+}
+
+// Training Session Facilitator
+export interface TrainingSessionFacilitator {
+  id: string;
+  training_session_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+// Training Session Cross Participant
+export interface TrainingSessionCrossParticipant {
+  id: string;
+  training_session_id: string;
+  user_id: string;
+  joined_at: string;
 }
 
 // Schedule break from database
@@ -126,6 +187,38 @@ export interface CreateReservationInput {
   start_time: string;
   end_time: string;
   is_cowork_open?: boolean;
+}
+
+// Form data for creating a training session
+export interface CreateTrainingSessionInput {
+  room_id: string;
+  team_id: string;
+  topic: string;
+  start_time: string; // Will auto-set end_time to +4 hours
+  cross_slots_available: number;
+  facilitator_ids: string[]; // Array of user IDs
+}
+
+// Form data for updating a training session
+export interface UpdateTrainingSessionInput {
+  topic?: string;
+  start_time?: string;
+  cross_slots_available?: number;
+  facilitator_ids?: string[];
+}
+
+// Form data for creating a Houston Calling event
+export interface CreateHoustonCallingInput {
+  room_id: string;
+  team_id: string;
+  topic: string;
+  start_time: string; // Will auto-set end_time to +4 hours
+}
+
+// Form data for updating a Houston Calling event
+export interface UpdateHoustonCallingInput {
+  topic?: string;
+  start_time?: string;
 }
 
 // Form data for updating a reservation

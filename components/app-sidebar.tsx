@@ -10,6 +10,7 @@ import {
   Mail,
   Database,
   ChevronRight,
+  GraduationCap,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -72,6 +73,11 @@ const getNavData = (isDevelopment: boolean): NavData => ({
           title: "Rezervace",
           url: "/reservations",
           icon: CalendarDays,
+        },
+        {
+          title: "Training Sessions",
+          url: "/training-sessions",
+          icon: GraduationCap,
         },
         {
           title: "Komunita",
