@@ -28,33 +28,32 @@ export default async function TrainingSessionsPage() {
     // Rooms
     supabase.from("rooms").select("*").order("code"),
 
-    // Training sessions with details
+    // Training sessions with details (including past sessions for display)
     supabase
       .from("training_sessions")
       .select(`
         *,
         reservation:reservations(*),
-        team:teams(id, name, year),
+        team:teams(id, name, year, color),
         facilitators:training_session_facilitators(
           id,
           user_id,
-          user:profiles(id, name)
+          user:profiles(id, name, picture)
         ),
         cross_participants:training_session_cross_participants(
           id,
           user_id,
           joined_at,
-          user:profiles(id, name)
+          user:profiles(id, name, picture)
         )
       `)
-      .gte("reservation.start_time", new Date().toISOString())
       .order("created_at", { ascending: false }),
 
     // Teams
-    supabase.from("teams").select("id, name, year").order("year").order("name"),
+    supabase.from("teams").select("id, name, year, color").order("year").order("name"),
 
-    // All users for facilitator selection
-    supabase.from("profiles").select("id, name").order("name"),
+    // All users for facilitator selection (with pictures for avatars)
+    supabase.from("profiles").select("id, name, picture").order("name"),
   ]);
 
   const rooms = (roomsResult.data || []) as Room[];
@@ -78,6 +77,7 @@ export default async function TrainingSessionsPage() {
         teams={teams}
         users={users}
         currentUserTeamId={profile.team_id}
+        currentUserId={profile.id}
       />
     </div>
   );

@@ -63,6 +63,8 @@ export interface ReservationWithDetails extends Reservation {
   team?: {
     id: string;
     name: string;
+    year: number;
+    color: string | null;
   };
   cowork_participants?: CoworkParticipant[];
 }
@@ -111,6 +113,7 @@ export interface TrainingSessionWithDetails extends TrainingSession {
     id: string;
     name: string;
     year: number;
+    color: string | null;
   };
   facilitators?: {
     id: string;
@@ -118,6 +121,7 @@ export interface TrainingSessionWithDetails extends TrainingSession {
     user?: {
       id: string;
       name: string;
+      picture: string | null;
     };
   }[];
   cross_participants?: {
@@ -127,6 +131,7 @@ export interface TrainingSessionWithDetails extends TrainingSession {
     user?: {
       id: string;
       name: string;
+      picture: string | null;
     };
   }[];
 }
