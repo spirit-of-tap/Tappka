@@ -143,9 +143,12 @@ function SessionCard({
   return (
     <div
       className={cn(
-        "group relative rounded-lg border bg-card px-4 py-3 transition-all hover:shadow-sm",
+        "group relative rounded-lg border bg-card px-4 py-3 transition-all hover:shadow-sm border-l-4",
         isPastSession && "opacity-50 bg-muted/30"
       )}
+      style={{
+        borderLeftColor: session.team?.color || undefined,
+      }}
     >
       {/* Row 1: Topic + Team badge + Date */}
       <div className="flex items-center justify-between gap-2 mb-2">
