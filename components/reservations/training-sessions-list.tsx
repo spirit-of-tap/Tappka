@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Plus, Trash2, Clock, Users, UserPlus, Edit, MapPin, Sun, Moon } from "lucide-react";
 import { format, parseISO, isPast } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -141,9 +142,10 @@ function SessionCard({
   const showEditButtons = isMyTeam && !isPastSession;
 
   return (
-    <div
+    <Link
+      href={`/training-sessions/${session.id}`}
       className={cn(
-        "group relative rounded-lg border bg-card px-4 py-3 transition-all hover:shadow-sm border-l-4",
+        "group relative block rounded-lg border bg-card px-4 py-3 transition-all hover:shadow-md border-l-4 cursor-pointer",
         isPastSession && "opacity-50 bg-muted/30"
       )}
       style={{
@@ -252,14 +254,17 @@ function SessionCard({
         </div>
 
         {/* Actions - fixed width area */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.preventDefault()}>
           {showJoinButton && (
             <>
               {isJoined ? (
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => onLeave?.(session.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onLeave?.(session.id);
+                  }}
                 >
                   Odhlásit se
                 </Button>
@@ -267,7 +272,10 @@ function SessionCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onJoin?.(session.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onJoin?.(session.id);
+                  }}
                   disabled={availableSlots <= 0}
                 >
                   <UserPlus className="size-4" />
@@ -282,7 +290,10 @@ function SessionCard({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => onEdit?.(session)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onEdit?.(session);
+                }}
                 title="Upravit"
               >
                 <Edit className="size-4" />
@@ -290,7 +301,10 @@ function SessionCard({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => onDelete?.(session.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onDelete?.(session.id);
+                }}
                 className="text-destructive hover:text-destructive"
                 title="Smazat"
               >
@@ -300,7 +314,7 @@ function SessionCard({
           )}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
