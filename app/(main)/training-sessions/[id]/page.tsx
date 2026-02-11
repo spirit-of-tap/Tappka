@@ -140,7 +140,7 @@ export default async function TrainingSessionDetailPage({
       {/* Main Header */}
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Team label */}
             {session.team && (
               <div className="flex items-center gap-2">
@@ -148,13 +148,13 @@ export default async function TrainingSessionDetailPage({
                   className="size-3 rounded-full" 
                   style={{ backgroundColor: session.team.color || '#888' }}
                 />
-                <span className="text-sm font-medium text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {session.team.name} · Training Session
                 </span>
               </div>
             )}
             
-            {/* Topic */}
+            {/* Topic - H1 style from brand manual */}
             <h1 className="text-3xl font-heading font-bold tracking-tight">
               {session.topic}
             </h1>
@@ -170,18 +170,18 @@ export default async function TrainingSessionDetailPage({
           )}
         </div>
 
-        {/* Info cards */}
+        {/* Info cards - using Card styling from brand manual */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Date */}
           {startTime && (
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
-              <Calendar className="size-5 text-muted-foreground mt-0.5" />
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-card border shadow-sm">
+              <Calendar className="size-5 text-primary mt-0.5" />
               <div>
                 <p className="text-sm text-muted-foreground">Datum</p>
                 <p className="font-medium">
                   {format(startTime, "EEEE", { locale: cs })}
                 </p>
-                <p className="text-sm">
+                <p className="text-sm text-muted-foreground">
                   {format(startTime, "d. MMMM yyyy", { locale: cs })}
                 </p>
               </div>
@@ -190,8 +190,8 @@ export default async function TrainingSessionDetailPage({
 
           {/* Time */}
           {startTime && endTime && (
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
-              <Clock className="size-5 text-muted-foreground mt-0.5" />
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-card border shadow-sm">
+              <Clock className="size-5 text-primary mt-0.5" />
               <div>
                 <p className="text-sm text-muted-foreground">Čas</p>
                 <p className="font-medium">
@@ -206,8 +206,8 @@ export default async function TrainingSessionDetailPage({
 
           {/* Room */}
           {room && (
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/50">
-              <Building2 className="size-5 text-muted-foreground mt-0.5" />
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-card border shadow-sm">
+              <Building2 className="size-5 text-primary mt-0.5" />
               <div>
                 <p className="text-sm text-muted-foreground">Místnost</p>
                 <p className="font-medium">{room.name}</p>
@@ -229,8 +229,8 @@ export default async function TrainingSessionDetailPage({
         {/* Facilitators */}
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <GraduationCap className="size-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">Facilitátoři</h2>
+            <GraduationCap className="size-5 text-primary" />
+            <h2 className="text-xl font-heading font-semibold">Facilitátoři</h2>
           </div>
           
           {session.facilitators && session.facilitators.length > 0 ? (
@@ -239,7 +239,7 @@ export default async function TrainingSessionDetailPage({
                 f.user ? (
                   <div 
                     key={f.id} 
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-card"
+                    className="flex items-center gap-3 p-3 rounded-xl border bg-card shadow-sm"
                   >
                     <Avatar className="size-10">
                       <AvatarImage src={getPictureUrl(f.user.picture)} alt={f.user.name} />
@@ -253,7 +253,7 @@ export default async function TrainingSessionDetailPage({
               )}
             </div>
           ) : (
-            <div className="p-6 rounded-lg border border-dashed text-center">
+            <div className="p-6 rounded-xl border border-dashed text-center">
               <GraduationCap className="size-8 mx-auto text-muted-foreground/50 mb-2" />
               <p className="text-sm text-muted-foreground">
                 Žádní facilitátoři
@@ -266,8 +266,8 @@ export default async function TrainingSessionDetailPage({
         <section>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <UserPlus className="size-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Cross účastníci</h2>
+              <UserPlus className="size-5 text-primary" />
+              <h2 className="text-xl font-heading font-semibold">Cross účastníci</h2>
             </div>
             {session.cross_slots_available > 0 && (
               <Badge variant="outline">
@@ -282,7 +282,7 @@ export default async function TrainingSessionDetailPage({
                 p.user ? (
                   <div 
                     key={p.id} 
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-card"
+                    className="flex items-center gap-3 p-3 rounded-xl border bg-card shadow-sm"
                   >
                     <Avatar className="size-10">
                       <AvatarImage src={getPictureUrl(p.user.picture)} alt={p.user.name} />
@@ -315,7 +315,7 @@ export default async function TrainingSessionDetailPage({
               )}
             </div>
           ) : (
-            <div className="p-6 rounded-lg border border-dashed text-center">
+            <div className="p-6 rounded-xl border border-dashed text-center">
               <UserPlus className="size-8 mx-auto text-muted-foreground/50 mb-2" />
               <p className="text-sm text-muted-foreground">
                 {session.cross_slots_available > 0
