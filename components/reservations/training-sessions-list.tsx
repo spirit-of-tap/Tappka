@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Trash2, Clock, Users, UserPlus, Edit, MapPin, Sun, Moon } from "lucide-react";
+import { Plus, Trash2, Clock, Users, UserPlus, Edit, MapPin, Sun, Moon, FileText } from "lucide-react";
 import { format, parseISO, isPast } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -200,6 +200,21 @@ function SessionCard({
             <UserPlus className="size-3" />
             {crossCount}/{session.cross_slots_available} cross
           </span>
+        )}
+        {session.prep_file_key && (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex items-center gap-1 text-primary">
+                  <FileText className="size-3" />
+                  <span>Příprava</span>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Příprava k dispozici</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
 

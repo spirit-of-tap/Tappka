@@ -8,6 +8,15 @@ export const ALLOWED_IMAGE_TYPES = [
   "image/webp",
 ] as const;
 
+export const ALLOWED_DOCUMENT_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+  "text/plain",
+] as const;
+
+// Max size for document uploads (prep files)
+export const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024; // 20MB
+
 // Max size for original uploads (before optimization)
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -45,6 +54,30 @@ export function validateImageUpload(
 }
 
 /**
+ * Validate document upload constraints (for prep files)
+ */
+export function validateDocumentUpload(
+  contentType: string,
+  fileSize: number
+): ValidationError | null {
+  if (!ALLOWED_DOCUMENT_TYPES.includes(contentType as any)) {
+    return {
+      field: "contentType",
+      message: "Povolené formáty: PDF, DOCX, TXT",
+    };
+  }
+
+  if (fileSize > MAX_DOCUMENT_SIZE) {
+    return {
+      field: "fileSize",
+      message: `Maximální velikost souboru je ${MAX_DOCUMENT_SIZE / 1024 / 1024}MB`,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Get file extension from MIME type
  */
 export function getFileExtension(contentType: string): string {
@@ -54,4 +87,16 @@ export function getFileExtension(contentType: string): string {
     "image/webp": "webp",
   };
   return map[contentType] || "jpg";
+}
+
+/**
+ * Get file extension from MIME type for documents
+ */
+export function getDocumentExtension(contentType: string): string {
+  const map: Record<string, string> = {
+    "application/pdf": "pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "text/plain": "txt",
+  };
+  return map[contentType] || "pdf";
 }

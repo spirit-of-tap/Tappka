@@ -6,8 +6,6 @@ import { cs } from "date-fns/locale";
 import { 
   ArrowLeft, 
   Clock, 
-  MapPin, 
-  Users, 
   UserPlus, 
   Calendar,
   Building2,
@@ -16,13 +14,13 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
 import { CrossParticipantActions } from "./cross-participant-actions";
+import { PrepFileSection } from "./prep-file-section";
 
 // Helper to get initials from name
 function getInitials(name: string): string {
@@ -80,6 +78,8 @@ export default async function TrainingSessionDetailPage({
     .from("training_sessions")
     .select(`
       *,
+      prep_file_key,
+      prep_file_name,
       reservation:reservations(*),
       team:teams(id, name, year, color),
       facilitators:training_session_facilitators(
@@ -118,6 +118,11 @@ export default async function TrainingSessionDetailPage({
     (p: any) => p.user_id === profile.id
   );
   const canJoin = !isMyTeam && !isSessionPast && session.cross_slots_available > 0;
+  
+  // Check if current user is a facilitator of this session
+  const isFacilitator = session.facilitators?.some(
+    (f: any) => f.user_id === profile.id
+  ) || false;
 
   return (
     <div className="max-w-4xl space-y-8">
@@ -170,123 +175,98 @@ export default async function TrainingSessionDetailPage({
           )}
         </div>
 
-        {/* Info cards - using Card styling from brand manual */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Date */}
+        {/* Info row - compact inline display */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
           {startTime && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-card border shadow-sm">
-              <Calendar className="size-5 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm text-muted-foreground">Datum</p>
-                <p className="font-medium">
-                  {format(startTime, "EEEE", { locale: cs })}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {format(startTime, "d. MMMM yyyy", { locale: cs })}
-                </p>
-              </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="size-4 text-muted-foreground" />
+              <span>
+                {format(startTime, "EEEE d. MMMM yyyy", { locale: cs })}
+              </span>
             </div>
           )}
-
-          {/* Time */}
           {startTime && endTime && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-card border shadow-sm">
-              <Clock className="size-5 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm text-muted-foreground">Čas</p>
-                <p className="font-medium">
-                  {format(startTime, "HH:mm")} – {format(endTime, "HH:mm")}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60))} hodiny
-                </p>
-              </div>
+            <div className="flex items-center gap-2">
+              <Clock className="size-4 text-muted-foreground" />
+              <span>
+                {format(startTime, "HH:mm")} – {format(endTime, "HH:mm")}
+              </span>
             </div>
           )}
-
-          {/* Room */}
           {room && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-card border shadow-sm">
-              <Building2 className="size-5 text-primary mt-0.5" />
-              <div>
-                <p className="text-sm text-muted-foreground">Místnost</p>
-                <p className="font-medium">{room.name}</p>
-                {room.code && (
-                  <p className="text-sm text-muted-foreground uppercase">
-                    {room.code}
-                  </p>
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              <Building2 className="size-4 text-muted-foreground" />
+              <span>{room.name}</span>
             </div>
           )}
         </div>
       </div>
 
-      <Separator />
+      {/* Preparation materials section - elevated as second most important */}
+      <PrepFileSection
+        sessionId={session.id}
+        prepFileName={session.prep_file_name}
+        isFacilitator={isFacilitator}
+      />
 
-      {/* People sections */}
-      <div className="grid gap-8 md:grid-cols-2">
+      {/* People sections - simplified without excessive borders */}
+      <div className="grid gap-8 md:grid-cols-2 pt-4">
         {/* Facilitators */}
         <section>
-          <div className="flex items-center gap-2 mb-4">
-            <GraduationCap className="size-5 text-primary" />
-            <h2 className="text-xl font-heading font-semibold">Facilitátoři</h2>
+          <div className="flex items-center gap-2 mb-3">
+            <GraduationCap className="size-4 text-muted-foreground" />
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Facilitátoři</h2>
           </div>
           
           {session.facilitators && session.facilitators.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {session.facilitators.map((f: any) =>
                 f.user ? (
                   <div 
                     key={f.id} 
-                    className="flex items-center gap-3 p-3 rounded-xl border bg-card shadow-sm"
+                    className="flex items-center gap-3 py-2"
                   >
-                    <Avatar className="size-10">
+                    <Avatar className="size-9">
                       <AvatarImage src={getPictureUrl(f.user.picture)} alt={f.user.name} />
-                      <AvatarFallback>{getInitials(f.user.name)}</AvatarFallback>
+                      <AvatarFallback className="text-xs">{getInitials(f.user.name)}</AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="font-medium">{f.user.name}</p>
-                    </div>
+                    <span className="font-medium">{f.user.name}</span>
                   </div>
                 ) : null
               )}
             </div>
           ) : (
-            <div className="p-6 rounded-xl border border-dashed text-center">
-              <GraduationCap className="size-8 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Žádní facilitátoři
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground py-2">
+              Žádní facilitátoři
+            </p>
           )}
         </section>
 
         {/* Cross participants */}
         <section>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <UserPlus className="size-5 text-primary" />
-              <h2 className="text-xl font-heading font-semibold">Cross účastníci</h2>
+              <UserPlus className="size-4 text-muted-foreground" />
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Cross účastníci</h2>
             </div>
             {session.cross_slots_available > 0 && (
-              <Badge variant="outline">
+              <span className="text-xs text-muted-foreground">
                 {crossCount}/{session.cross_slots_available}
-              </Badge>
+              </span>
             )}
           </div>
           
           {session.cross_participants && session.cross_participants.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {session.cross_participants.map((p: any) =>
                 p.user ? (
                   <div 
                     key={p.id} 
-                    className="flex items-center gap-3 p-3 rounded-xl border bg-card shadow-sm"
+                    className="flex items-center gap-3 py-2"
                   >
-                    <Avatar className="size-10">
+                    <Avatar className="size-9">
                       <AvatarImage src={getPictureUrl(p.user.picture)} alt={p.user.name} />
-                      <AvatarFallback>{getInitials(p.user.name)}</AvatarFallback>
+                      <AvatarFallback className="text-xs">{getInitials(p.user.name)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium">{p.user.name}</p>
@@ -300,14 +280,6 @@ export default async function TrainingSessionDetailPage({
                             {p.user.team.name}
                           </span>
                         )}
-                        {p.joined_at && (
-                          <>
-                            <span>·</span>
-                            <span>
-                              Přihlášen {format(parseISO(p.joined_at), "d. MMM", { locale: cs })}
-                            </span>
-                          </>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -315,14 +287,11 @@ export default async function TrainingSessionDetailPage({
               )}
             </div>
           ) : (
-            <div className="p-6 rounded-xl border border-dashed text-center">
-              <UserPlus className="size-8 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground">
-                {session.cross_slots_available > 0
-                  ? `${session.cross_slots_available} míst k dispozici`
-                  : "Cross účast není povolena"}
-              </p>
-            </div>
+            <p className="text-sm text-muted-foreground py-2">
+              {session.cross_slots_available > 0
+                ? `${session.cross_slots_available} míst k dispozici`
+                : "Cross účast není povolena"}
+            </p>
           )}
         </section>
       </div>

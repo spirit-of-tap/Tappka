@@ -101,6 +101,8 @@ export interface TrainingSession {
   team_id: string;
   topic: string;
   cross_slots_available: number;
+  prep_file_key: string | null;
+  prep_file_name: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

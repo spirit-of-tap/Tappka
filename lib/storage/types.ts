@@ -2,7 +2,7 @@
  * Storage Types for Backblaze B2 Integration
  */
 
-export type StorageContext = "profile" | "team";
+export type StorageContext = "profile" | "team" | "training-session-prep";
 
 export interface UploadOptions {
   context: StorageContext;
