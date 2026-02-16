@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Trash2, Clock, Users, UserPlus, Edit, MapPin, Sun, Moon, FileText } from "lucide-react";
+import { Plus, Trash2, Clock, Users, UserPlus, Edit, MapPin, Sun, Moon, FileText, Search, X, RotateCcw } from "lucide-react";
 import { format, parseISO, isPast } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -352,6 +352,10 @@ export function TrainingSessionsList({
   const [editingSession, setEditingSession] =
     useState<TrainingSessionWithDetails | null>(null);
 
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
+
   // Form state
   const [roomId, setRoomId] = useState("");
   const [topic, setTopic] = useState("");
@@ -526,6 +530,28 @@ export function TrainingSessionsList({
     }
   };
 
+  // Filter sessions based on search query and team filter
+  const filterSessions = (sessionsList: TrainingSessionWithDetails[]) => {
+    return sessionsList.filter((session) => {
+      // Team filter
+      if (teamFilter !== "all" && session.team_id !== teamFilter) {
+        return false;
+      }
+
+      // Search filter (search in topic and team name)
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const topicMatch = session.topic.toLowerCase().includes(query);
+        const teamNameMatch = session.team?.name?.toLowerCase().includes(query);
+        if (!topicMatch && !teamNameMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
   // Prepare sessions data
   const { myTeamSessions, myCrossSessions, allSessions } = useMemo(() => {
     const now = new Date();
@@ -588,17 +614,17 @@ export function TrainingSessionsList({
   };
 
   const mySessionsSplit = useMemo(
-    () => splitSessions([...myTeamSessions, ...myCrossSessions].sort((a, b) => {
+    () => splitSessions(filterSessions([...myTeamSessions, ...myCrossSessions]).sort((a, b) => {
       const aTime = a.reservation?.start_time ? new Date(a.reservation.start_time).getTime() : 0;
       const bTime = b.reservation?.start_time ? new Date(b.reservation.start_time).getTime() : 0;
       return aTime - bTime;
     })),
-    [myTeamSessions, myCrossSessions]
+    [myTeamSessions, myCrossSessions, searchQuery, teamFilter]
   );
 
   const allSessionsSplit = useMemo(
-    () => splitSessions(allSessions),
-    [allSessions]
+    () => splitSessions(filterSessions(allSessions)),
+    [allSessions, searchQuery, teamFilter]
   );
 
   const dialogTitle = editingSession
@@ -608,6 +634,8 @@ export function TrainingSessionsList({
     ? "Uprav detaily Training Session pro tvůj tým"
     : "Vytvoř nový Training Session pro tvůj tým (trvá 4 hodiny)";
 
+  const hasActiveFilter = searchQuery || teamFilter !== "all";
+
   const renderSessionsList = (
     upcoming: TrainingSessionWithDetails[],
     past: TrainingSessionWithDetails[],
@@ -616,7 +644,24 @@ export function TrainingSessionsList({
     <div className="space-y-4">
       {upcoming.length === 0 && past.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="text-muted-foreground">Žádné Training Sessions</p>
+          <p className="text-muted-foreground">
+            {hasActiveFilter 
+              ? "Žádné Training Sessions neodpovídají filtru" 
+              : "Žádné Training Sessions"}
+          </p>
+          {hasActiveFilter && (
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setTeamFilter("all");
+              }}
+              className="mt-2"
+            >
+              Zrušit filtr
+            </Button>
+          )}
         </div>
       ) : (
         <>
@@ -855,6 +900,71 @@ export function TrainingSessionsList({
             Komunita
           </TabsTrigger>
         </TabsList>
+
+        {/* Filter Bar */}
+        <div className="flex flex-col sm:flex-row gap-3 mt-4 p-4 bg-muted/30 rounded-lg border">
+          {/* Search */}
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Hledat podle tématu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-9"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 size-7 p-0"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="size-3.5" />
+                <span className="sr-only">Vymazat hledání</span>
+              </Button>
+            )}
+          </div>
+
+          {/* Team Filter */}
+          <Select value={teamFilter} onValueChange={setTeamFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Všechny týmy" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Všechny týmy</SelectItem>
+              {teams.map((team) => (
+                <SelectItem key={team.id} value={team.id}>
+                  <div className="flex items-center gap-2">
+                    {team.color && (
+                      <div
+                        className="size-2 rounded-full"
+                        style={{ backgroundColor: team.color }}
+                      />
+                    )}
+                    {team.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Reset Button */}
+          {(searchQuery || teamFilter !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setTeamFilter("all");
+              }}
+              className="shrink-0"
+            >
+              <RotateCcw className="size-4 mr-1" />
+              Reset
+            </Button>
+          )}
+        </div>
 
         <TabsContent value="my" className="mt-6">
           {renderSessionsList(mySessionsSplit.upcoming, mySessionsSplit.past, true)}
