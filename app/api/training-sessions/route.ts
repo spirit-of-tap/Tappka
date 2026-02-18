@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Místnost neexistuje" }, { status: 404 });
     }
 
-    if (!room.can_have_ts) {
+    if (room.can_have_ts === false) {
       return NextResponse.json(
         { error: "Tato místnost nepodporuje Training Sessions" },
         { status: 400 }
