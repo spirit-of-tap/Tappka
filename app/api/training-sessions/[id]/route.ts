@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
-import { addHours } from "date-fns";
 import type { UpdateTrainingSessionInput } from "@/lib/reservations/types";
 
 /**
@@ -128,21 +127,27 @@ export async function PATCH(
       reservationUpdates.title = `TS - ${team?.name} - ${topic}`;
     }
     if (start_time !== undefined || end_time !== undefined) {
-      const startDate = start_time ? new Date(start_time) : new Date(existingTS.reservation.start_time);
-      const endDate = end_time ? new Date(end_time) : (start_time ? addHours(startDate, 4) : undefined);
-      
-      if (start_time) {
+      if (start_time !== undefined) {
+        const startDate = new Date(start_time);
         reservationUpdates.start_time = startDate.toISOString();
-      }
-      if (endDate) {
-        reservationUpdates.end_time = endDate.toISOString();
+        if (end_time !== undefined) {
+          reservationUpdates.end_time = new Date(end_time).toISOString();
+        } else {
+          // Preserve original duration
+          const originalDuration =
+            new Date(existingTS.reservation.end_time).getTime() -
+            new Date(existingTS.reservation.start_time).getTime();
+          reservationUpdates.end_time = new Date(startDate.getTime() + originalDuration).toISOString();
+        }
+      } else if (end_time !== undefined) {
+        reservationUpdates.end_time = new Date(end_time).toISOString();
       }
 
       // Check for room conflicts (excluding this session's own reservation)
-      const newStartTime = startDate.toISOString();
-      const newEndTime = endDate
-        ? endDate.toISOString()
-        : new Date(existingTS.reservation.end_time).toISOString();
+      const newStartTime = reservationUpdates.start_time
+        ?? new Date(existingTS.reservation.start_time).toISOString();
+      const newEndTime = reservationUpdates.end_time
+        ?? new Date(existingTS.reservation.end_time).toISOString();
 
       const { data: conflicts, error: conflictError } = await supabase
         .from("reservations")
