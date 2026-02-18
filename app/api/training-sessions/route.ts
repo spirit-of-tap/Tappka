@@ -44,12 +44,19 @@ export async function POST(request: NextRequest) {
     // Check room exists
     const { data: room } = await supabase
       .from("rooms")
-      .select("id, name")
+      .select("id, name, can_have_ts")
       .eq("id", room_id)
       .single();
 
     if (!room) {
       return NextResponse.json({ error: "Místnost neexistuje" }, { status: 404 });
+    }
+
+    if (!room.can_have_ts) {
+      return NextResponse.json(
+        { error: "Tato místnost nepodporuje Training Sessions" },
+        { status: 400 }
+      );
     }
 
     // Check team exists
