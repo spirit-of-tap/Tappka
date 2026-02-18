@@ -209,6 +209,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         );
       }
 
+      // Validate that the key belongs to this session's prep folder
+      const expectedPrefix = `training-session-prep/${id}/`;
+      if (!body.key.startsWith(expectedPrefix)) {
+        return NextResponse.json(
+          { error: "Neplatný klíč souboru" },
+          { status: 400 }
+        );
+      }
+
       // Update training session with new file info first (before touching B2)
       const { error: updateError } = await supabase
         .from("training_sessions")
