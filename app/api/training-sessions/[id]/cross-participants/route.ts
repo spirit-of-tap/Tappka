@@ -59,7 +59,7 @@ export async function POST(
       .eq("training_session_id", id);
 
     if (count !== null && count >= ts.cross_slots_available) {
-      return NextResponse.json({ error: "Všechna cross místa jsou obsazená" }, { status: 400 });
+      return NextResponse.json({ error: "Všechna cross místa jsou obsazena" }, { status: 400 });
     }
 
     // Add user as cross participant
@@ -74,6 +74,10 @@ export async function POST(
 
     if (error) {
       console.error("Error adding cross participant:", error);
+      // Trigger raises P0001 with message 'cross_slots_full' when all slots taken
+      if (error.code === "P0001" || error.message?.includes("cross_slots_full")) {
+        return NextResponse.json({ error: "Všechna cross místa jsou obsazena" }, { status: 400 });
+      }
       return NextResponse.json({ error: "Nepodařilo se přihlásit jako cross" }, { status: 500 });
     }
 
