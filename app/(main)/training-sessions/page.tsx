@@ -67,7 +67,7 @@ export default async function TrainingSessionsPage() {
 
       <TrainingSessionsList
         rooms={rooms}
-        sessions={trainingSessions}
+        initialSessions={trainingSessions}
         teams={teams}
         users={users}
         currentUserTeamId={profile.team_id}

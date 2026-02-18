@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTrainingSessionsListRealtime } from "@/lib/hooks/use-training-sessions-list-realtime";
 import { Plus, Trash2, Clock, Users, UserPlus, Edit, MapPin, Sun, Moon, FileText, Search, X, RotateCcw } from "lucide-react";
 import { format, parseISO, isPast } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -51,7 +52,7 @@ import type { Room, TrainingSessionWithDetails } from "@/lib/reservations/types"
 
 interface TrainingSessionsListProps {
   rooms: Room[];
-  sessions: TrainingSessionWithDetails[];
+  initialSessions: TrainingSessionWithDetails[];
   teams: { id: string; name: string; year: number; color: string | null }[];
   users: { id: string; name: string; picture: string | null }[];
   currentUserTeamId: string | null;
@@ -339,13 +340,17 @@ function SessionCard({
  */
 export function TrainingSessionsList({
   rooms,
-  sessions,
+  initialSessions,
   teams,
   users,
   currentUserTeamId,
   currentUserId,
 }: TrainingSessionsListProps) {
   const router = useRouter();
+  
+  // Subscribe to realtime updates for all sessions
+  const { sessions } = useTrainingSessionsListRealtime({ initialSessions });
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
