@@ -720,11 +720,16 @@ export function TrainingSessionsList({
   return (
     <div className="space-y-6">
       {/* Header with Add button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-heading font-bold">Training Sessions</h2>
-          <p className="text-muted-foreground mt-1">
-            Vytvoř a spravuj Training Sessions pro svůj tým. Každý TS trvá 4 hodiny.
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-2xl font-heading font-bold tracking-tight">Training Sessions</h2>
+            <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              4 h
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Vytvoř a spravuj Training Sessions pro svůj tým.
           </p>
         </div>
         <Dialog
@@ -735,8 +740,8 @@ export function TrainingSessionsList({
           }}
         >
           <DialogTrigger asChild>
-            <Button className="shrink-0">
-              <Plus className="size-4 mr-2" />
+            <Button size="sm" className="shrink-0 gap-1.5">
+              <Plus className="size-3.5" />
               Nový Training Session
             </Button>
           </DialogTrigger>
@@ -895,87 +900,87 @@ export function TrainingSessionsList({
 
       {/* Tabs */}
       <Tabs defaultValue="my" className="w-full">
-        <TabsList>
-          <TabsTrigger value="my">
-            <Users className="size-4 mr-2" />
-            Mé crossy
-          </TabsTrigger>
-          <TabsTrigger value="community">
-            <UserPlus className="size-4 mr-2" />
-            Komunita
-          </TabsTrigger>
-        </TabsList>
+        {/* Toolbar: tabs + filters on one line */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <TabsList className="shrink-0">
+            <TabsTrigger value="my">
+              <Users className="size-4 mr-2" />
+              Mé crossy
+            </TabsTrigger>
+            <TabsTrigger value="community">
+              <UserPlus className="size-4 mr-2" />
+              Komunita
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Filter Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 mt-4 p-4 bg-muted/30 rounded-lg border">
-          {/* Search */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Hledat podle tématu..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-9"
-            />
-            {searchQuery && (
+          {/* Search + Team filter */}
+          <div className="flex flex-1 items-center gap-2 min-w-0">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Hledat podle tématu..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-8 h-9 text-sm"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 size-7 p-0"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="size-3.5" />
+                  <span className="sr-only">Vymazat hledání</span>
+                </Button>
+              )}
+            </div>
+
+            <Select value={teamFilter} onValueChange={setTeamFilter}>
+              <SelectTrigger className="w-[160px] h-9 text-sm shrink-0">
+                <SelectValue placeholder="Všechny týmy" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Všechny týmy</SelectItem>
+                {teams.map((team) => (
+                  <SelectItem key={team.id} value={team.id}>
+                    <div className="flex items-center gap-2">
+                      {team.color && (
+                        <div
+                          className="size-2 rounded-full"
+                          style={{ backgroundColor: team.color }}
+                        />
+                      )}
+                      {team.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {hasActiveFilter && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 size-7 p-0"
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  setTeamFilter("all");
+                }}
+                className="h-9 px-2 shrink-0 text-muted-foreground hover:text-foreground"
               >
-                <X className="size-3.5" />
-                <span className="sr-only">Vymazat hledání</span>
+                <RotateCcw className="size-3.5" />
+                <span className="sr-only">Reset</span>
               </Button>
             )}
           </div>
-
-          {/* Team Filter */}
-          <Select value={teamFilter} onValueChange={setTeamFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Všechny týmy" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny týmy</SelectItem>
-              {teams.map((team) => (
-                <SelectItem key={team.id} value={team.id}>
-                  <div className="flex items-center gap-2">
-                    {team.color && (
-                      <div
-                        className="size-2 rounded-full"
-                        style={{ backgroundColor: team.color }}
-                      />
-                    )}
-                    {team.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Reset Button */}
-          {(searchQuery || teamFilter !== "all") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSearchQuery("");
-                setTeamFilter("all");
-              }}
-              className="shrink-0"
-            >
-              <RotateCcw className="size-4 mr-1" />
-              Reset
-            </Button>
-          )}
         </div>
 
-        <TabsContent value="my" className="mt-6">
+        <TabsContent value="my" className="mt-4">
           {renderSessionsList(mySessionsSplit.upcoming, mySessionsSplit.past, true)}
         </TabsContent>
 
-        <TabsContent value="community" className="mt-6">
+        <TabsContent value="community" className="mt-4">
           {renderSessionsList(allSessionsSplit.upcoming, allSessionsSplit.past, true)}
         </TabsContent>
       </Tabs>
