@@ -67,6 +67,22 @@ export async function POST(request: NextRequest) {
     const startDate = new Date(start_time);
     const endDate = end_time ? new Date(end_time) : addHours(startDate, 4);
 
+    // Check: no overlapping active reservations for this room
+    const { data: conflicts } = await supabase
+      .from("reservations")
+      .select("id")
+      .eq("room_id", room_id)
+      .eq("status", "active")
+      .lt("start_time", endDate.toISOString())
+      .gt("end_time", startDate.toISOString());
+
+    if (conflicts && conflicts.length > 0) {
+      return NextResponse.json(
+        { error: "Místnost je v tomto čase již zarezervována" },
+        { status: 409 }
+      );
+    }
+
     // Create reservation first
     const { data: reservation, error: reservationError } = await supabase
       .from("reservations")
