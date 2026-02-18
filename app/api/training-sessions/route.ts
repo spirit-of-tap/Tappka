@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       .from("rooms")
       .select("id, name, can_have_ts")
       .eq("id", room_id)
-      .single();
+      .maybeSingle();
 
     if (!room) {
       return NextResponse.json({ error: "Místnost neexistuje" }, { status: 404 });
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       .from("teams")
       .select("id, name")
       .eq("id", team_id)
-      .single();
+      .maybeSingle();
 
     if (!team) {
       return NextResponse.json({ error: "Tým neexistuje" }, { status: 404 });
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         status: "active",
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (reservationError || !reservation) {
       if (reservationError?.code === "23P01") {
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         created_by: profile.id,
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (tsError || !trainingSession) {
       console.error("Error creating training session:", tsError);

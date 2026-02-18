@@ -41,7 +41,7 @@ async function isFacilitator(
     .select("id")
     .eq("training_session_id", sessionId)
     .eq("user_id", profileId)
-    .single();
+    .maybeSingle();
 
   return !!data;
 }
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from("training_sessions")
       .select("prep_file_key, prep_file_name")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error || !session) {
       return NextResponse.json(
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .from("training_sessions")
       .select("id, prep_file_key")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (sessionError || !session) {
       return NextResponse.json(
@@ -284,7 +284,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .from("training_sessions")
       .select("id, prep_file_key")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (sessionError || !session) {
       return NextResponse.json(

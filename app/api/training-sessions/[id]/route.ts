@@ -39,7 +39,7 @@ export async function GET(
         )
       `)
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       return NextResponse.json({ error: "Training Session nenalezen" }, { status: 404 });
@@ -79,7 +79,7 @@ export async function PATCH(
       .from("training_sessions")
       .select("*, reservation:reservations(*)")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !existingTS) {
       return NextResponse.json({ error: "Training Session nenalezen" }, { status: 404 });
@@ -123,7 +123,7 @@ export async function PATCH(
         .from("teams")
         .select("name")
         .eq("id", existingTS.team_id)
-        .single();
+        .maybeSingle();
       reservationUpdates.title = `TS - ${team?.name} - ${topic}`;
     }
     if (start_time !== undefined || end_time !== undefined) {
@@ -260,7 +260,7 @@ export async function DELETE(
       .from("training_sessions")
       .select("team_id, reservation_id")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (fetchError || !existingTS) {
       return NextResponse.json({ error: "Training Session nenalezen" }, { status: 404 });

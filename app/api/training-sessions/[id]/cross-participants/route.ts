@@ -29,7 +29,7 @@ export async function POST(
       .from("training_sessions")
       .select("id, team_id, cross_slots_available")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (tsError || !ts) {
       return NextResponse.json({ error: "Training Session nenalezen" }, { status: 404 });
@@ -46,7 +46,7 @@ export async function POST(
       .select("id")
       .eq("training_session_id", id)
       .eq("user_id", profile.id)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json({ error: "Už jsi přihlášen jako cross" }, { status: 400 });
@@ -70,7 +70,7 @@ export async function POST(
         user_id: profile.id,
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error adding cross participant:", error);
