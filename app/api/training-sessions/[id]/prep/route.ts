@@ -209,17 +209,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      // Delete old file if exists
-      if (session.prep_file_key) {
-        try {
-          await deleteFile(session.prep_file_key);
-        } catch (error) {
-          console.error("Error deleting old prep file:", error);
-          // Don't fail the request if old file deletion fails
-        }
-      }
-
-      // Update training session with new file info
+      // Update training session with new file info first (before touching B2)
       const { error: updateError } = await supabase
         .from("training_sessions")
         .update({
@@ -234,6 +224,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           { error: "Nepodařilo se uložit informace o souboru" },
           { status: 500 }
         );
+      }
+
+      // Delete old file from B2 only after DB update succeeded
+      if (session.prep_file_key) {
+        try {
+          await deleteFile(session.prep_file_key);
+        } catch (error) {
+          console.warn("Error deleting old prep file from B2 (DB already updated):", error);
+          // Don't fail the request — DB is consistent; orphaned B2 file is recoverable
+        }
       }
 
       return NextResponse.json({
@@ -309,15 +309,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Delete the file from B2
-    try {
-      await deleteFile(session.prep_file_key);
-    } catch (error) {
-      console.error("Error deleting prep file from B2:", error);
-      // Continue to clear DB even if B2 deletion fails
-    }
-
-    // Clear file info from training session
+    // Clear file info from training session first (before touching B2)
     const { error: updateError } = await supabase
       .from("training_sessions")
       .update({
@@ -332,6 +324,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         { error: "Nepodařilo se odstranit informace o souboru" },
         { status: 500 }
       );
+    }
+
+    // Delete the file from B2 only after DB update succeeded
+    try {
+      await deleteFile(session.prep_file_key);
+    } catch (error) {
+      console.warn("Error deleting prep file from B2 (DB already updated):", error);
+      // Don't fail the request — DB is consistent; orphaned B2 file is recoverable
     }
 
     return NextResponse.json({
