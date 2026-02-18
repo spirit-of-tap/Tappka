@@ -137,6 +137,33 @@ export async function PATCH(
       if (endDate) {
         reservationUpdates.end_time = endDate.toISOString();
       }
+
+      // Check for room conflicts (excluding this session's own reservation)
+      const newStartTime = startDate.toISOString();
+      const newEndTime = endDate
+        ? endDate.toISOString()
+        : new Date(existingTS.reservation.end_time).toISOString();
+
+      const { data: conflicts, error: conflictError } = await supabase
+        .from("reservations")
+        .select("id")
+        .eq("room_id", existingTS.reservation.room_id)
+        .eq("status", "active")
+        .neq("id", existingTS.reservation_id)
+        .lt("start_time", newEndTime)
+        .gt("end_time", newStartTime);
+
+      if (conflictError) {
+        console.error("Error checking room conflicts:", conflictError);
+        return NextResponse.json({ error: "Nepodařilo se ověřit dostupnost místnosti" }, { status: 500 });
+      }
+
+      if (conflicts && conflicts.length > 0) {
+        return NextResponse.json(
+          { error: "Místnost je v tomto čase již zarezervována" },
+          { status: 409 }
+        );
+      }
     }
 
     if (Object.keys(reservationUpdates).length > 0) {
@@ -146,6 +173,12 @@ export async function PATCH(
         .eq("id", existingTS.reservation_id);
 
       if (updateReservationError) {
+        if (updateReservationError?.code === "23P01") {
+          return NextResponse.json(
+            { error: "Místnost je v tomto čase již zarezervována" },
+            { status: 409 }
+          );
+        }
         console.error("Error updating reservation:", updateReservationError);
         return NextResponse.json({ error: "Nepodařilo se aktualizovat rezervaci" }, { status: 500 });
       }
