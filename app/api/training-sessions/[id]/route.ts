@@ -124,7 +124,15 @@ export async function PATCH(
         .select("name")
         .eq("id", existingTS.team_id)
         .maybeSingle();
-      reservationUpdates.title = `TS - ${team?.name} - ${topic}`;
+
+      if (!team) {
+        return NextResponse.json(
+          { error: "Nepodařilo se načíst tým pro aktualizaci názvu" },
+          { status: 500 }
+        );
+      }
+
+      reservationUpdates.title = `TS - ${team.name} - ${topic}`;
     }
     if (start_time !== undefined || end_time !== undefined) {
       if (start_time !== undefined) {
