@@ -143,6 +143,15 @@ export async function PATCH(
         reservationUpdates.end_time = new Date(end_time).toISOString();
       }
 
+      if (start_time !== undefined && end_time !== undefined) {
+        if (new Date(end_time) <= new Date(start_time)) {
+          return NextResponse.json(
+            { error: "Čas konce musí být po čase začátku" },
+            { status: 400 }
+          );
+        }
+      }
+
       // Check for room conflicts (excluding this session's own reservation)
       const newStartTime = reservationUpdates.start_time
         ?? new Date(existingTS.reservation.start_time).toISOString();
