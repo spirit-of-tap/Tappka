@@ -68,13 +68,18 @@ export async function POST(request: NextRequest) {
     const endDate = end_time ? new Date(end_time) : addHours(startDate, 4);
 
     // Check: no overlapping active reservations for this room
-    const { data: conflicts } = await supabase
+    const { data: conflicts, error: conflictError } = await supabase
       .from("reservations")
       .select("id")
       .eq("room_id", room_id)
       .eq("status", "active")
       .lt("start_time", endDate.toISOString())
       .gt("end_time", startDate.toISOString());
+
+    if (conflictError) {
+      console.error("Error checking room conflicts:", conflictError);
+      return NextResponse.json({ error: "Nepodařilo se ověřit dostupnost místnosti" }, { status: 500 });
+    }
 
     if (conflicts && conflicts.length > 0) {
       return NextResponse.json(
@@ -100,8 +105,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (reservationError || !reservation) {
+      if (reservationError?.code === "23P01") {
+        return NextResponse.json(
+          { error: "Místnost je v tomto čase již zarezervována" },
+          { status: 409 }
+        );
+      }
       console.error("Error creating reservation:", reservationError);
-      return NextResponse.json({ error: "Nepodařilo se vytvořit rezervaci" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Nepodařilo se vytvořit rezervaci" },
+        { status: 500 }
+      );
     }
 
     // Create training session
