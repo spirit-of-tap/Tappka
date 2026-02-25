@@ -218,31 +218,21 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Soft delete - set status to cancelled
-    const { data: updated, error } = await supabase
+    // Use admin client because the SELECT RLS policy only allows reading active
+    // reservations; after updating to 'cancelled', the regular client can't read
+    // the updated row back, causing a false "RLS blocked" 403.
+    // Ownership has already been verified above via the regular client.
+    const adminSupabase = createAdminClient();
+    const { error } = await adminSupabase
       .from("reservations")
       .update({ status: "cancelled" })
-      .eq("id", id)
-      .select("id")
-      .maybeSingle();
+      .eq("id", id);
 
     if (error) {
       console.error("Error cancelling reservation:", error);
       return NextResponse.json(
         { error: "Nepodařilo se zrušit rezervaci" },
         { status: 500 }
-      );
-    }
-
-    // Check if the update actually happened (RLS might silently block it)
-    if (!updated) {
-      console.error("Update blocked by RLS - no rows affected", { 
-        reservationId: id, 
-        profileId: profile?.id,
-        existingUserId: existing.user_id 
-      });
-      return NextResponse.json(
-        { error: "Nepodařilo se zrušit rezervaci - chyba oprávnění" },
-        { status: 403 }
       );
     }
 
