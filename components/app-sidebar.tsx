@@ -53,6 +53,9 @@ type NavData = {
   navMain: NavSection[]
 }
 
+const HELP_DESK_URL =
+  "https://teams.microsoft.com/l/channel/19%3Aea499f40a2864e03862e5b517fa824a8%40thread.tacv2/HelpDesk%20IT%20House?groupId=c84b63de-1603-4ba8-98a6-9825300c0f22&tenantId=f26a48e1-fc21-461a-b97f-ac5bd535f341"
+
 // Navigation data for Tappka
 const getNavData = (isDevelopment: boolean): NavData => ({
   navMain: [
@@ -274,7 +277,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="HelpDesk">
                 <a
-                  href="https://teams.microsoft.com/l/channel/19%3Aea499f40a2864e03862e5b517fa824a8%40thread.tacv2/HelpDesk%20IT%20House?groupId=c84b63de-1603-4ba8-98a6-9825300c0f22&tenantId=f26a48e1-fc21-461a-b97f-ac5bd535f341"
+                  href={HELP_DESK_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

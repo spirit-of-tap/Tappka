@@ -36,7 +36,14 @@ type ViewMode = "day" | "week";
  */
 export function CalendarView({ reservations, scheduleBreaks = [], availableDays, initialDate, onSlotClick, onReservationClick, onDragCreate }: CalendarViewProps) {
   const isMobile = useIsMobile();
-  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Use a lazy initializer to pick the right default on first render,
+    // avoiding the redundant mount-time flip caused by the useEffect below.
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+      return "day";
+    }
+    return "week";
+  });
   const [currentDate, setCurrentDate] = useState(() => {
     // Use initialDate if provided (from URL param)
     if (initialDate) {
@@ -67,9 +74,9 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
     }
   }, [initialDate]);
 
-  // Auto-switch to day view on mobile
+  // Keep view mode in sync if the viewport changes after mount
   useEffect(() => {
-    if (isMobile && viewMode === "week") {
+    if (isMobile && viewMode !== "day") {
       setViewMode("day");
     }
   }, [isMobile, viewMode]);

@@ -101,7 +101,7 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
       .order("start_date"),
   ]);
 
-  const reservations = (reservationsResult.data || []) as ReservationWithDetails[];
+  const reservations = (reservationsResult.data ?? []) as ReservationWithDetails[];
   const issues = (issuesResult.data || []) as RoomIssue[];
   const allAlternativeRooms = (alternativeRoomsResult.data || []) as Room[];
   const scheduleBreaks = (breaksResult.data || []) as ScheduleBreak[];
@@ -221,7 +221,7 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
           <RoomScheduleView
             reservations={reservations}
             scheduleBreaks={scheduleBreaks}
-            currentUserId={currentUserProfile?.id ?? ""}
+            currentUserId={currentUserProfile?.id}
             roomId={room.id}
             roomName={room.name}
             alternativeRooms={alternativeRooms}

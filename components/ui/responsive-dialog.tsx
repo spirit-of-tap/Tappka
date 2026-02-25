@@ -77,7 +77,7 @@ function ResponsiveDialogContent({
       .filter((c) => !c.startsWith("max-w-"))
       .join(" ")
     return (
-      <DrawerContent className={drawerClassName}>
+      <DrawerContent className={drawerClassName} {...props}>
         <div className="overflow-y-auto px-4 pb-4">
           {children}
         </div>

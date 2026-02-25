@@ -9,6 +9,11 @@ export type IssueStatus = 'open' | 'resolved';
 export type ScheduleBreakType = 'days_of_joy' | 'holiday' | 'other';
 export type ReservationStatus = 'active' | 'cancelled';
 
+export const RESERVATION_STATUS = {
+  ACTIVE: 'active',
+  CANCELLED: 'cancelled',
+} as const satisfies Record<string, ReservationStatus>;
+
 // Room from database
 export interface Room {
   id: string;

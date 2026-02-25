@@ -8,7 +8,8 @@ Next.js 16 + React 19 + Supabase + Tailwind CSS v4 + shadcn/ui. Package manager:
 pnpm dev        # Start dev server + local Supabase
 pnpm build      # Production build
 pnpm lint       # ESLint
-pnpm supabase:start / supabase:stop
+pnpm supabase:start
+pnpm supabase:stop
 ```
 
 ## Code Style

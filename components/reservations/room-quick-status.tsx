@@ -70,7 +70,7 @@ export function RoomQuickStatus({
   };
 
   const formatTimeUntilOccupied = () => {
-    if (!currentReservation?.startsInMinutes) return "";
+    if (currentReservation?.startsInMinutes == null) return "";
     const minutes = currentReservation.startsInMinutes;
     return `za ${minutes} ${minutes === 1 ? 'minutu' : minutes < 5 ? 'minuty' : 'minut'}`;
   };

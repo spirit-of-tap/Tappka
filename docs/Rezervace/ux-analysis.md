@@ -30,13 +30,15 @@
 
 ## Optimistic UI & Error Recovery
 
-### Issue: Failed cowork join silently disappears with no recovery path
+### Issue: Failed cowork join shows no recovery path
 
 **Principle:** Peak-End Rule + Postel's Law
 
-**Severity:** critical
+**Severity:** minor
 
-**Why:** `available-coworks.tsx` optimistically hides a joined cowork item before the server responds. If the request fails, the item vanishes permanently until a full page reload. The user has no way to know the join failed, and no way to retry.
+**Why:** `available-coworks.tsx` hides a joined cowork item only after the server confirms success (after `await` + toast). If the request fails, the item remains visible but the user sees a toast error with no explicit retry affordance — there is no button or prompt to try again.
+
+**Recommendation:** Add a "Retry" action to the error toast, or keep the item in a visually distinct "failed" state with an inline retry button.
 
 ---
 

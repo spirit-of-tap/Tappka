@@ -71,7 +71,7 @@ function ResponsiveAlertDialogContent({
   const { isMobile } = React.useContext(ResponsiveAlertDialogContext)
   if (isMobile) {
     return (
-      <DrawerContent>
+      <DrawerContent className={className} {...props}>
         <div className="overflow-y-auto px-4 pb-4">
           {children}
         </div>

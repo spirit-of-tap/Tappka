@@ -193,7 +193,7 @@ export function QuickReservationDialog({
                   <TimePicker 
                     value={editableStartTime} 
                     onChange={setEditableStartTime}
-                    date={startTime ?? undefined}
+                    date={startTime}
                   />
                 </div>
                 <span className="text-muted-foreground shrink-0">-</span>
@@ -202,7 +202,7 @@ export function QuickReservationDialog({
                     value={editableEndTime} 
                     onChange={setEditableEndTime}
                     minTime={editableStartTime}
-                    date={startTime ?? undefined}
+                    date={startTime}
                   />
                 </div>
               </div>

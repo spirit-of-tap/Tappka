@@ -124,14 +124,20 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
     status = 'occupied';
   }
 
-  // Compute minutes until next upcoming reservation (null if none within 2 hours)
-  const minutesUntilNextReservation = nextReservation
-    ? Math.round((new Date(nextReservation.start_time).getTime() - now.getTime()) / 60000)
+  // Compute milliseconds until next upcoming reservation for the occupancy check
+  // (use raw ms to avoid rounding 14m31s → 15 which would skip the override)
+  const msUntilNextReservation = nextReservation
+    ? new Date(nextReservation.start_time).getTime() - now.getTime()
+    : null;
+
+  // Integer minutes used for display
+  const minutesUntilNextReservation = msUntilNextReservation !== null
+    ? Math.round(msUntilNextReservation / 60000)
     : null;
 
   // If next reservation starts in < 15 min, treat room as occupied so user
   // doesn't attempt to book a slot that will immediately fail at the API.
-  if (status === 'free' && minutesUntilNextReservation !== null && minutesUntilNextReservation < 15) {
+  if (status === 'free' && msUntilNextReservation !== null && msUntilNextReservation < 15 * 60 * 1000) {
     status = 'occupied';
   }
 

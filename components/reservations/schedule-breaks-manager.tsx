@@ -59,6 +59,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
+  /** Resets the add-break form fields back to their initial empty state. */
   const resetForm = () => {
     setBreakType("");
     setName("");
@@ -67,6 +68,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
     setError(null);
   };
 
+  /** Validates and submits a new schedule break via POST /api/schedule-breaks. */
   const handleSubmit = async () => {
     setError(null);
 
@@ -112,6 +114,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
     }
   };
 
+  /** Asks for confirmation and deletes the given schedule break via DELETE /api/schedule-breaks/:id. */
   const handleDelete = async (breakId: string) => {
     if (!confirm("Opravdu chceš smazat tuto výjimku?")) return;
 

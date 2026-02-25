@@ -72,12 +72,12 @@ export function ReservationDetailDialog({
   const [isCancelling, setIsCancelling] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  // Fetch participants when dialog opens
+  // Fetch participants when dialog opens or when cowork status changes
   useEffect(() => {
     if (open && reservation?.is_cowork_open) {
       fetchParticipants();
     }
-  }, [open, reservation?.id]);
+  }, [open, reservation?.id, reservation?.is_cowork_open]);
 
   // Reset edit state when dialog closes or reservation changes
   useEffect(() => {
@@ -155,6 +155,10 @@ export function ReservationDetailDialog({
 
       toast.success("Rezervace upravena");
       setIsEditing(false);
+      // Refresh participants in case cowork toggle changed
+      if (editIsCoworkOpen) {
+        await fetchParticipants();
+      }
       router.refresh();
     } catch {
       setEditError("Něco se pokazilo");

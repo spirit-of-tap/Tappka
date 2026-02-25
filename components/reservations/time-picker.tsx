@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,16 @@ export function TimePicker({
   hourOnly = false,
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Keep currentTime fresh while the popover is open so available slots
+  // don't go stale if the user leaves the picker open across a slot boundary.
+  useEffect(() => {
+    if (!open) return;
+    const id = setInterval(() => setCurrentTime(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, [open]);
 
   // Generate time slots
   const slots = useMemo(() => {
@@ -59,12 +68,11 @@ export function TimePicker({
 
   // Filter slots based on minTime and current time (when date is today)
   const availableSlots = useMemo(() => {
-    const now = new Date();
     const isToday =
       date !== undefined
-        ? date.getFullYear() === now.getFullYear() &&
-          date.getMonth() === now.getMonth() &&
-          date.getDate() === now.getDate()
+        ? date.getFullYear() === currentTime.getFullYear() &&
+          date.getMonth() === currentTime.getMonth() &&
+          date.getDate() === currentTime.getDate()
         : false;
 
     // Compute effective floor: the later of minTime and the current time (when today)
@@ -73,7 +81,7 @@ export function TimePicker({
     if (isToday) {
       // Round current time up to the next slot increment
       const increment = hourOnly ? 60 : TIME_SLOT_MINUTES;
-      const totalMinutes = now.getHours() * 60 + now.getMinutes();
+      const totalMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
       const roundedMinutes = Math.ceil(totalMinutes / increment) * increment;
       const nowHour = Math.floor(roundedMinutes / 60);
       const nowMin = roundedMinutes % 60;
@@ -83,7 +91,7 @@ export function TimePicker({
 
     if (floor === null) return slots;
     return slots.filter((slot) => slot >= floor!);
-  }, [slots, minTime, date, hourOnly]);
+  }, [slots, minTime, date, hourOnly, currentTime]);
 
   const handleSelect = (time: string) => {
     onChange(time);

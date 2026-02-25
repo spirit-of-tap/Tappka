@@ -108,11 +108,16 @@ export function QRQuickReserveDialog({
     onOpenChange(open);
   };
 
-  const getDurationLabel = () => {
-    if (durationMinutes === 15) return "15 minut";
-    if (durationMinutes === 30) return "30 minut";
-    if (durationMinutes === 45) return "45 minut";
-    return `${durationMinutes} minut`;
+  const getDurationLabel = (): string => {
+    switch (durationMinutes) {
+      case 15: return "15 minut";
+      case 30: return "30 minut";
+      case 45: return "45 minut";
+      default: {
+        const _exhaustive: never = durationMinutes;
+        return `${_exhaustive} minut`;
+      }
+    }
   };
 
   return (
