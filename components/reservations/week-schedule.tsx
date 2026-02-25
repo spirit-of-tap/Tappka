@@ -284,7 +284,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                 hours.map((hour) => (
                   <div
                     key={hour}
-                    className="border-b last:border-b-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                    className="border-b last:border-b-0 hover:bg-muted/30 cursor-cell transition-colors"
                     style={{ height: `${hourHeight}px` }}
                   />
                 ))

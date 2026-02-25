@@ -85,12 +85,10 @@ function CoworkItem({ cowork, onJoinSuccess }: CoworkItemProps) {
         throw new Error(result.error || "Nepodařilo se připojit");
       }
 
+      // Refresh server state first, then hide — so a failed refresh leaves the item visible for retry
+      await router.refresh();
       toast.success("Připojeno ke coworku");
-      // Immediately hide from UI
       onJoinSuccess(cowork.id);
-      
-      // Refresh to update server state
-      router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     } finally {

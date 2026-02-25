@@ -413,7 +413,7 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
               key={hour}
               className={cn(
                 "h-[60px] border-b last:border-b-0 transition-colors",
-                !isDragging && "hover:bg-muted/30 cursor-pointer"
+                !isDragging && "hover:bg-muted/30 cursor-cell"
               )}
               onClick={() => handleSlotClick(hour)}
             />
