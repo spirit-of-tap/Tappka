@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Edit, Trash2, Users, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +108,7 @@ export function EditReservationDialog({
         throw new Error(result.error || "Nepodařilo se upravit rezervaci");
       }
 
+      toast.success("Rezervace upravena");
       setOpen(false);
       router.refresh();
       onSuccess?.();
@@ -131,11 +133,12 @@ export function EditReservationDialog({
         throw new Error(result.error || "Nepodařilo se zrušit rezervaci");
       }
 
+      toast.success("Rezervace zrušena");
       setOpen(false);
       router.refresh();
       onSuccess?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     } finally {
       setIsLoading(false);
     }

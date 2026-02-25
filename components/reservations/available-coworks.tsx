@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Users, Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,13 +85,14 @@ function CoworkItem({ cowork, onJoinSuccess }: CoworkItemProps) {
         throw new Error(result.error || "Nepodařilo se připojit");
       }
 
+      toast.success("Připojeno ke coworku");
       // Immediately hide from UI
       onJoinSuccess(cowork.id);
       
       // Refresh to update server state
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     } finally {
       setIsJoining(false);
     }

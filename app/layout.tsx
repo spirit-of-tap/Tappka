@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Roboto, Pacifico } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
 import { PostHogProvider } from "./posthog-provider";
 import { PostHogPageView } from "./posthog-pageview";
 import "./globals.css";
@@ -83,6 +84,7 @@ export default function RootLayout({
           >
             <PostHogPageView />
             {children}
+            <Toaster />
           </ThemeProvider>
         </PostHogProvider>
       </body>

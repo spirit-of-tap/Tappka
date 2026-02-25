@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Clock, Users, Share2, Edit2 } from "lucide-react";
@@ -127,6 +128,7 @@ export function QuickReservationDialog({
         throw new Error(result.error || "Nepodařilo se vytvořit rezervaci");
       }
 
+      toast.success("Rezervace vytvořena");
       // Success
       onOpenChange(false);
       resetForm();

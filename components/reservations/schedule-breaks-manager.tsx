@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Plus, Trash2, Calendar, Palmtree, Gift, HelpCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -100,6 +101,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
         throw new Error(result.error || "Nepodařilo se vytvořit výjimku");
       }
 
+      toast.success("Výjimka vytvořena");
       setIsDialogOpen(false);
       resetForm();
       router.refresh();
@@ -123,9 +125,10 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
         throw new Error(result.error || "Nepodařilo se smazat výjimku");
       }
 
+      toast.success("Výjimka smazána");
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     }
   };
 

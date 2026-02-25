@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Users,
   Share2,
@@ -152,6 +153,7 @@ export function ReservationDetailDialog({
         return;
       }
 
+      toast.success("Rezervace upravena");
       setIsEditing(false);
       router.refresh();
     } catch {
@@ -172,14 +174,15 @@ export function ReservationDetailDialog({
       });
 
       if (response.ok) {
+        toast.success("Rezervace zrušena");
         onOpenChange(false);
         router.refresh();
       } else {
         const data = await response.json();
-        alert(data.error || "Nepodařilo se zrušit rezervaci");
+        toast.error(data.error || "Nepodařilo se zrušit rezervaci");
       }
     } catch {
-      alert("Něco se pokazilo");
+      toast.error("Něco se pokazilo");
     } finally {
       setIsCancelling(false);
     }
@@ -197,14 +200,15 @@ export function ReservationDetailDialog({
       });
 
       if (response.ok) {
+        toast.success("Připojeno ke coworku");
         await fetchParticipants();
         router.refresh();
       } else {
         const data = await response.json();
-        alert(data.error || "Nepodařilo se připojit");
+        toast.error(data.error || "Nepodařilo se připojit");
       }
     } catch {
-      alert("Něco se pokazilo");
+      toast.error("Něco se pokazilo");
     } finally {
       setIsJoining(false);
     }
@@ -222,14 +226,15 @@ export function ReservationDetailDialog({
       });
 
       if (response.ok) {
+        toast.success("Cowork opuštěn");
         await fetchParticipants();
         router.refresh();
       } else {
         const data = await response.json();
-        alert(data.error || "Nepodařilo se opustit");
+        toast.error(data.error || "Nepodařilo se opustit");
       }
     } catch {
-      alert("Něco se pokazilo");
+      toast.error("Něco se pokazilo");
     } finally {
       setIsLeaving(false);
     }

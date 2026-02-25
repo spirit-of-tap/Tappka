@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Users, Loader2, CalendarOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,9 +92,10 @@ function ReservationItem({ reservation, isJoined }: ReservationItemProps) {
         throw new Error(result.error || "Nepodařilo se zrušit rezervaci");
       }
 
+      toast.success("Rezervace zrušena");
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     } finally {
       setIsDeleting(false);
     }
@@ -112,9 +114,10 @@ function ReservationItem({ reservation, isJoined }: ReservationItemProps) {
         throw new Error(result.error || "Nepodařilo se opustit cowork");
       }
 
+      toast.success("Cowork opuštěn");
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     } finally {
       setIsLeaving(false);
     }

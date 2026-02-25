@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Users, Share2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,6 +89,7 @@ export function QRQuickReserveDialog({
         throw new Error(result.error || "Nepodařilo se vytvořit rezervaci");
       }
 
+      toast.success("Rezervace vytvořena");
       // Success
       onOpenChange(false);
       resetForm();

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Plus, Trash2, Calendar, Clock, Users, Copy, Pencil, GripVertical } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -174,6 +175,7 @@ export function TrainingSessionsManager({
         throw new Error(result.error || "Nepodařilo se uložit TS");
       }
 
+      toast.success("Training Session uložen");
       setIsDialogOpen(false);
       resetForm();
       router.refresh();
@@ -197,9 +199,10 @@ export function TrainingSessionsManager({
         throw new Error(result.error || "Nepodařilo se smazat TS");
       }
 
+      toast.success("Training Session smazán");
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     }
   };
 
@@ -219,9 +222,10 @@ export function TrainingSessionsManager({
         throw new Error(result.error || "Nepodařilo se přesunout TS");
       }
 
+      toast.success("Training Session přesunut");
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     }
   };
 

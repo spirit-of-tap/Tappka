@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { AlertTriangle, Lock, Trash2, Wrench, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,6 +86,7 @@ export function IssueReportButton({ roomId }: IssueReportButtonProps) {
         throw new Error(result.error || "Nepodařilo se nahlásit problém");
       }
 
+      toast.success("Problém nahlášen");
       // Success
       setOpen(false);
       setSelectedType(null);
