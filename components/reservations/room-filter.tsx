@@ -226,6 +226,7 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
           <TimePicker
             value={startTime}
             onChange={setStartTime}
+            date={filterDate}
             placeholder="Začátek"
           />
         </div>
