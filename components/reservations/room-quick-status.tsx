@@ -34,6 +34,7 @@ interface RoomQuickStatusProps {
     code: string;
     name: string;
   }>;
+  minutesUntilNextReservation?: number | null;
 }
 
 /**
@@ -45,12 +46,13 @@ export function RoomQuickStatus({
   currentReservation,
   issues,
   alternativeRooms = [],
+  minutesUntilNextReservation,
 }: RoomQuickStatusProps) {
   const router = useRouter();
   const [reserveDialogOpen, setReserveDialogOpen] = useState(false);
-  const [selectedDuration, setSelectedDuration] = useState<30 | 60 | 120>(30);
+  const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 45>(15);
 
-  const handleQuickReserve = (duration: 30 | 60 | 120) => {
+  const handleQuickReserve = (duration: 15 | 30 | 45) => {
     setSelectedDuration(duration);
     setReserveDialogOpen(true);
   };
@@ -150,32 +152,35 @@ export function RoomQuickStatus({
               <>
                 <p className="text-3xl font-heading font-bold tracking-tight">VOLNÁ TEĎ</p>
 
+                {/* How long until next reservation */}
+                {minutesUntilNextReservation != null && (
+                  <p className="text-base font-body opacity-90 -mt-4">
+                    Volná ještě ~{minutesUntilNextReservation} min
+                  </p>
+                )}
+
                 {/* Quick reserve buttons */}
                 <div className="flex flex-col gap-3 max-w-xs mx-auto">
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="w-full text-base h-14 font-heading font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all hover:scale-105"
-                    onClick={() => handleQuickReserve(30)}
-                  >
-                    30 minut
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="w-full text-base h-14 font-heading font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all hover:scale-105"
-                    onClick={() => handleQuickReserve(60)}
-                  >
-                    1 hodina
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="w-full text-base h-14 font-heading font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all hover:scale-105"
-                    onClick={() => handleQuickReserve(120)}
-                  >
-                    2 hodiny
-                  </Button>
+                  {([15, 30, 45] as const).map((duration) => {
+                    // Disable if the slot would overlap the next reservation.
+                    // Subtract 15 min as a conservative buffer for roundToSlot rounding.
+                    const available = minutesUntilNextReservation != null
+                      ? minutesUntilNextReservation - 15
+                      : Infinity;
+                    const disabled = duration > available;
+                    return (
+                      <Button
+                        key={duration}
+                        size="lg"
+                        variant="secondary"
+                        disabled={disabled}
+                        className="w-full text-base h-14 font-heading font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg"
+                        onClick={() => handleQuickReserve(duration)}
+                      >
+                        {duration} minut
+                      </Button>
+                    );
+                  })}
                 </div>
               </>
             )}

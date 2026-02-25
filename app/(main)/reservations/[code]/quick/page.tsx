@@ -65,6 +65,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
 
   const now = new Date();
   const nowIso = now.toISOString();
+  const twoHoursAhead = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
 
   // Fetch current reservation
   const { data: currentReservation } = await supabase
@@ -79,6 +80,18 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
     .lte("start_time", nowIso)
     .gt("end_time", nowIso)
     .single();
+
+  // Fetch the next upcoming reservation within 2 hours (only relevant when room is currently free)
+  const { data: nextReservation } = await supabase
+    .from("reservations")
+    .select("start_time")
+    .eq("room_id", room.id)
+    .eq("status", "active")
+    .gt("start_time", nowIso)
+    .lte("start_time", twoHoursAhead)
+    .order("start_time", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   // Fetch open issues
   const { data: issues } = await supabase
@@ -108,6 +121,17 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
     status = 'occupied';
   }
 
+  // Compute minutes until next upcoming reservation (null if none within 2 hours)
+  const minutesUntilNextReservation = nextReservation
+    ? Math.round((new Date(nextReservation.start_time).getTime() - now.getTime()) / 60000)
+    : null;
+
+  // If next reservation starts in < 15 min, treat room as occupied so user
+  // doesn't attempt to book a slot that will immediately fail at the API.
+  if (status === 'free' && minutesUntilNextReservation !== null && minutesUntilNextReservation < 15) {
+    status = 'occupied';
+  }
+
   // Build response data
   const quickStatusData = {
     room: {
@@ -127,6 +151,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
   let currentReservationData = undefined;
   let alternativeRooms = undefined;
 
+  // Show reservation details when there's an in-progress reservation
   if (currentReservation) {
     const endTime = new Date(currentReservation.end_time);
     const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
@@ -143,7 +168,10 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       endTime: currentReservation.end_time,
       endsInMinutes,
     };
+  }
 
+  // When status is occupied (in-progress OR near-future reservation), show alternative rooms
+  if (status === 'occupied') {
     // Fetch alternative rooms that are currently free
     const { data: allRooms } = await supabase
       .from("rooms")
@@ -183,6 +211,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       {...quickStatusData}
       currentReservation={currentReservationData}
       alternativeRooms={alternativeRooms}
+      minutesUntilNextReservation={minutesUntilNextReservation}
     />
   );
 }

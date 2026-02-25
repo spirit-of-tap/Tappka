@@ -21,7 +21,7 @@ interface QRQuickReserveDialogProps {
   onOpenChange: (open: boolean) => void;
   roomId: string;
   roomName: string;
-  durationMinutes: 30 | 60 | 120;
+  durationMinutes: 15 | 30 | 45;
 }
 
 /**
@@ -109,9 +109,9 @@ export function QRQuickReserveDialog({
   };
 
   const getDurationLabel = () => {
+    if (durationMinutes === 15) return "15 minut";
     if (durationMinutes === 30) return "30 minut";
-    if (durationMinutes === 60) return "1 hodina";
-    if (durationMinutes === 120) return "2 hodiny";
+    if (durationMinutes === 45) return "45 minut";
     return `${durationMinutes} minut`;
   };
 
