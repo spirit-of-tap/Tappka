@@ -84,7 +84,11 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
   // Fetch the next upcoming reservation within 2 hours (only relevant when room is currently free)
   const { data: nextReservation } = await supabase
     .from("reservations")
-    .select("start_time")
+    .select(`
+      *,
+      user:profiles(id, name),
+      team:teams(id, name)
+    `)
     .eq("room_id", room.id)
     .eq("status", "active")
     .gt("start_time", nowIso)
@@ -156,8 +160,8 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
     const endTime = new Date(currentReservation.end_time);
     const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
 
-    const occupantName = currentReservation.user?.name ||
-      currentReservation.team?.name ||
+    const occupantName = currentReservation.user?.name ??
+      currentReservation.team?.name ??
       "Neznámý";
 
     currentReservationData = {
@@ -167,6 +171,24 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       startTime: currentReservation.start_time,
       endTime: currentReservation.end_time,
       endsInMinutes,
+    };
+  } else if (nextReservation && minutesUntilNextReservation !== null && minutesUntilNextReservation < 15) {
+    // Near-future reservation triggered the occupied override — show its details
+    const endTime = new Date(nextReservation.end_time);
+    const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
+
+    const occupantName = nextReservation.user?.name ??
+      nextReservation.team?.name ??
+      "Neznámý";
+
+    currentReservationData = {
+      title: nextReservation.title,
+      occupantName,
+      personCount: nextReservation.person_count,
+      startTime: nextReservation.start_time,
+      endTime: nextReservation.end_time,
+      endsInMinutes,
+      startsInMinutes: minutesUntilNextReservation,
     };
   }
 

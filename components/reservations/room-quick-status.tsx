@@ -24,6 +24,7 @@ interface RoomQuickStatusProps {
     startTime: string;
     endTime: string;
     endsInMinutes: number;
+    startsInMinutes?: number;
   };
   issues: {
     isLocked: boolean;
@@ -66,6 +67,12 @@ export function RoomQuickStatus({
       return `za ${minutes} ${minutes === 1 ? 'minutu' : minutes < 5 ? 'minuty' : 'minut'}`;
     }
     return `v ${formatTime(currentReservation.endTime)}`;
+  };
+
+  const formatTimeUntilOccupied = () => {
+    if (!currentReservation?.startsInMinutes) return "";
+    const minutes = currentReservation.startsInMinutes;
+    return `za ${minutes} ${minutes === 1 ? 'minutu' : minutes < 5 ? 'minuty' : 'minut'}`;
   };
 
   // Determine background color - using TAP brand colors
@@ -142,7 +149,9 @@ export function RoomQuickStatus({
                     {formatTime(currentReservation.startTime)} - {formatTime(currentReservation.endTime)}
                   </p>
                   <p className="text-2xl font-heading font-semibold">
-                    Volná {formatTimeUntilFree()}
+                    {currentReservation.startsInMinutes != null
+                      ? `Obsazuje se ${formatTimeUntilOccupied()}`
+                      : `Volná ${formatTimeUntilFree()}`}
                   </p>
                 </div>
               </>
