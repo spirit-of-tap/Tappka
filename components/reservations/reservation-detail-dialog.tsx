@@ -28,12 +28,12 @@ import {
 } from "@/lib/reservations/utils";
 import {
   RESERVATION_TYPE_LABELS,
-  type Reservation,
+  type ReservationWithDetails,
   type CoworkParticipant,
 } from "@/lib/reservations/types";
 
 interface ReservationDetailDialogProps {
-  reservation: Reservation | null;
+  reservation: ReservationWithDetails | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentUserId?: string;

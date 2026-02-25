@@ -8,17 +8,17 @@ import {
   OPERATING_HOURS, 
   RESERVATION_TYPE_LABELS,
   TIME_SLOT_MINUTES,
-  type Reservation,
+  type ReservationWithDetails,
   type ScheduleBreak,
 } from "@/lib/reservations/types";
 import { formatTime, isReservationActive, getReservationColorClasses } from "@/lib/reservations/utils";
 
 interface DayScheduleProps {
   date: Date;
-  reservations: Reservation[];
+  reservations: ReservationWithDetails[];
   scheduleBreak?: ScheduleBreak | null;
   onSlotClick?: (startTime: Date) => void;
-  onReservationClick?: (reservation: Reservation) => void;
+  onReservationClick?: (reservation: ReservationWithDetails) => void;
   onDragCreate?: (startTime: Date, endTime: Date) => void;
 }
 
@@ -448,7 +448,7 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
 }
 
 interface ReservationBlockProps {
-  reservation: Reservation;
+  reservation: ReservationWithDetails;
   top: number;
   height: number;
   isActive: boolean;
@@ -479,6 +479,11 @@ function ReservationBlock({ reservation, top, height, isActive, onClick }: Reser
           <p className="text-xs text-muted-foreground">
             {formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}
           </p>
+          {(reservation.user?.name ?? reservation.team?.name) && (
+            <p className="text-xs text-muted-foreground truncate">
+              {reservation.user?.name ?? reservation.team?.name}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {reservation.is_cowork_open && (

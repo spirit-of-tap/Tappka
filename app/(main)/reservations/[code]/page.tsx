@@ -9,7 +9,7 @@ import { RoomScheduleView } from "@/components/reservations/room-schedule-view";
 import { AlternativeRooms } from "@/components/reservations/alternative-rooms";
 import { IssueReportButton } from "@/components/reservations/issue-report-button";
 import { DAY_NAMES_CS, ISSUE_TYPE_LABELS } from "@/lib/reservations/types";
-import type { Room, Reservation, RoomIssue, ScheduleBreak } from "@/lib/reservations/types";
+import type { Room, ReservationWithDetails, RoomIssue, ScheduleBreak } from "@/lib/reservations/types";
 
 interface RoomDetailPageProps {
   params: Promise<{ code: string }>;
@@ -63,7 +63,11 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
     // Reservations for this room (past 7 days + next 14 days for calendar navigation)
     supabase
       .from("reservations")
-      .select("*")
+      .select(`
+        *,
+        user:profiles(id, name),
+        team:teams(id, name)
+      `)
       .eq("room_id", room.id)
       .eq("status", "active")
       .gte("start_time", oneWeekAgo.toISOString())
@@ -94,7 +98,7 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
       .order("start_date"),
   ]);
 
-  const reservations = (reservationsResult.data || []) as Reservation[];
+  const reservations = (reservationsResult.data || []) as ReservationWithDetails[];
   const issues = (issuesResult.data || []) as RoomIssue[];
   const allAlternativeRooms = (alternativeRoomsResult.data || []) as Room[];
   const scheduleBreaks = (breaksResult.data || []) as ScheduleBreak[];

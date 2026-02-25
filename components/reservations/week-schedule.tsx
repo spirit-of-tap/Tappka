@@ -7,18 +7,18 @@ import {
   OPERATING_HOURS,
   DAY_NAMES_CS,
   TIME_SLOT_MINUTES,
-  type Reservation,
+  type ReservationWithDetails,
   type ScheduleBreak,
 } from "@/lib/reservations/types";
 import { formatTime, isReservationActive, getReservationColorClasses } from "@/lib/reservations/utils";
 
 interface WeekScheduleProps {
   startDate: Date;
-  reservations: Reservation[];
+  reservations: ReservationWithDetails[];
   scheduleBreaks?: ScheduleBreak[];
   availableDays?: number[] | null; // 0=Sunday, 1=Monday, etc.
   onSlotClick?: (date: Date, hour: number) => void;
-  onReservationClick?: (reservation: Reservation) => void;
+  onReservationClick?: (reservation: ReservationWithDetails) => void;
   onDragCreate?: (startTime: Date, endTime: Date) => void;
 }
 
@@ -43,7 +43,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
 
   // Group reservations by day
   const reservationsByDay = useMemo(() => {
-    const map = new Map<string, Reservation[]>();
+    const map = new Map<string, ReservationWithDetails[]>();
     weekDays.forEach((day) => {
       const dayKey = format(day, "yyyy-MM-dd");
       const dayReservations = reservations.filter((r) => {
@@ -334,7 +334,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
 }
 
 interface WeekReservationBlockProps {
-  reservation: Reservation;
+  reservation: ReservationWithDetails;
   top: number;
   height: number;
   isActive: boolean;
@@ -367,6 +367,11 @@ function WeekReservationBlock({ reservation, top, height, isActive, onClick }: W
       {!isSmall && (
         <div className="text-[10px] opacity-75">
           {formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}
+        </div>
+      )}
+      {!isSmall && (reservation.user?.name ?? reservation.team?.name) && (
+        <div className="text-[10px] opacity-75 truncate">
+          {reservation.user?.name ?? reservation.team?.name}
         </div>
       )}
     </div>

@@ -16,16 +16,16 @@ import { DaySchedule } from "./day-schedule";
 import { WeekSchedule } from "./week-schedule";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { Reservation, ScheduleBreak } from "@/lib/reservations/types";
+import type { ReservationWithDetails, ScheduleBreak } from "@/lib/reservations/types";
 import { DAY_NAMES_CS } from "@/lib/reservations/types";
 
 interface CalendarViewProps {
-  reservations: Reservation[];
+  reservations: ReservationWithDetails[];
   scheduleBreaks?: ScheduleBreak[];
   availableDays?: number[] | null; // 0=Sunday, 1=Monday, etc.
   initialDate?: Date; // Date to start the calendar on
   onSlotClick?: (startTime: Date) => void;
-  onReservationClick?: (reservation: Reservation) => void;
+  onReservationClick?: (reservation: ReservationWithDetails) => void;
   onDragCreate?: (startTime: Date, endTime: Date) => void;
 }
 
