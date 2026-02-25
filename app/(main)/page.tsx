@@ -1,15 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { User, Users, Shield } from "lucide-react";
 import { FirstLoginConfetti } from "@/components/first-login-confetti";
+import {
+  User,
+  Users,
+  Mail,
+  Shield,
+  Sparkles,
+  MessageCircleQuestion,
+  ExternalLink,
+} from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   student: "Student",
@@ -18,106 +18,116 @@ const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
 };
 
+const TEAMS_SUPPORT_URL =
+  "https://teams.microsoft.com/l/channel/19%3Aea499f40a2864e03862e5b517fa824a8%40thread.tacv2/HelpDesk%20IT%20House?groupId=c84b63de-1603-4ba8-98a6-9825300c0f22&tenantId=f26a48e1-fc21-461a-b97f-ac5bd535f341";
+
 export default async function DashboardPage() {
   const supabase = await createClient();
-
-  // Get profile with team info (no separate getUser() needed)
   const profile = await getCurrentUserProfile(supabase, { includeTeam: true });
 
-
+  const firstName = profile?.name?.split(" ")[0];
 
   return (
     <>
-      {/* First login confetti */}
       <FirstLoginConfetti />
-      
-      <div className="mb-8">
-        <h2 className="text-3xl font-heading font-bold">
-          Vítej, {profile?.name?.split(" ")[0]}!
+
+      {/* Hero greeting */}
+      <div className="mb-10">
+        <h2 className="text-3xl font-heading font-bold tracking-tight">
+          Vítej, {firstName}!
         </h2>
-        <p className="text-muted-foreground mt-1">
-          Toto je tvůj dashboard v Tappka.
+        <p className="text-muted-foreground mt-1 text-sm">
+          Toto je tvůj přehled v Tappka.
         </p>
       </div>
 
-      {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Profile card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profil</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{profile?.name}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {profile?.work_email || ""}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Role card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Role</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-lg px-3 py-1">
-                {ROLE_LABELS[profile?.role || ""] || profile?.role}
-              </Badge>
+      {/* Profile section */}
+      <div className="max-w-lg space-y-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+            Tvůj profil
+          </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <User className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium leading-none">{profile?.name}</p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {profile?.role ? "Ověřený účet" : "Neověřený účet"}
-            </p>
-          </CardContent>
-        </Card>
 
-        {/* Team card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tým</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {profile?.team ? (
-              <>
-                <div className="text-2xl font-bold">{profile?.team?.name}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {profile?.team?.year}. ročník
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="text-2xl font-bold text-muted-foreground">
-                  -
+            {profile?.role && (
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Bez týmu
+                <p className="text-sm text-muted-foreground">
+                  {ROLE_LABELS[profile.role] ?? profile.role}
                 </p>
-              </>
+              </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Placeholder content */}
-      <div className="mt-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Další funkce</CardTitle>
-            <CardDescription>
-              Tady budou další funkce aplikace...
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Rezervace místnosti, eseje, schůzky a další funkce budou brzy k
-              dispozici.
+            {profile?.work_email && (
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">{profile.work_email}</p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {profile?.team
+                  ? `${profile.team.name} · ${profile.team.year}. ročník`
+                  : "Bez týmu"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t" />
+
+        {/* Coming soon */}
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted shrink-0">
+            <Sparkles className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground pt-1.5">
+            Do Tappky postupně přibývají další funkce — rezervace místností už
+            fungují, brzy přibudou eseje, schůzky a další.
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t" />
+
+        {/* Support */}
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted shrink-0">
+            <MessageCircleQuestion className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="pt-1">
+            <p className="text-sm font-medium leading-none mb-1">Potřebuješ pomoc?</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              Napiš nám na IT HelpDesk v Microsoft Teams.
             </p>
-          </CardContent>
-        </Card>
+            <a
+              href={TEAMS_SUPPORT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline underline-offset-4"
+            >
+              Otevřít HelpDesk
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </div>
       </div>
     </>
   );
