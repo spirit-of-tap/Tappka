@@ -59,6 +59,13 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
   const slotHeight = hourHeight / (60 / TIME_SLOT_MINUTES); // 12px per 15 min slot
   const today = new Date();
 
+  // Current time indicator — updates every minute
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Drag state
   const [isDragging, setIsDragging] = useState(false);
   const [dragDayIndex, setDragDayIndex] = useState<number | null>(null);
@@ -325,6 +332,22 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                   />
                 );
               })}
+
+              {/* Current time indicator — only in today's column */}
+              {isAvailable && isToday && (() => {
+                const nowHour = now.getHours() + now.getMinutes() / 60;
+                if (nowHour < OPERATING_HOURS.start || nowHour > OPERATING_HOURS.end) return null;
+                const top = (nowHour - OPERATING_HOURS.start) * hourHeight;
+                return (
+                  <div
+                    className="absolute left-0 right-0 pointer-events-none z-20 flex items-center"
+                    style={{ top: `${top}px` }}
+                  >
+                    <div className="size-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                    <div className="flex-1 h-px bg-red-500" />
+                  </div>
+                );
+              })()}
             </div>
           );
         })}

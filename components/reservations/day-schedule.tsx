@@ -43,6 +43,13 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     dragEnd: null as number | null,
   });
 
+  // Current time indicator — updates every minute
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Generate hour slots
   const hours = useMemo(() => {
     const result: number[] = [];
@@ -441,6 +448,27 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
               onClick={() => onReservationClick?.(reservation)}
             />
           ))}
+
+          {/* Current time indicator */}
+          {(() => {
+            const isToday =
+              date.getFullYear() === now.getFullYear() &&
+              date.getMonth() === now.getMonth() &&
+              date.getDate() === now.getDate();
+            if (!isToday) return null;
+            const nowHour = now.getHours() + now.getMinutes() / 60;
+            if (nowHour < OPERATING_HOURS.start || nowHour > OPERATING_HOURS.end) return null;
+            const top = (nowHour - OPERATING_HOURS.start) * hourHeight;
+            return (
+              <div
+                className="absolute left-0 right-0 pointer-events-none z-20 flex items-center"
+                style={{ top: `${top}px` }}
+              >
+                <div className="size-2 rounded-full bg-red-500 -ml-1 flex-shrink-0" />
+                <div className="flex-1 h-px bg-red-500" />
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

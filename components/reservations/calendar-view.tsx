@@ -36,7 +36,7 @@ type ViewMode = "day" | "week";
  */
 export function CalendarView({ reservations, scheduleBreaks = [], availableDays, initialDate, onSlotClick, onReservationClick, onDragCreate }: CalendarViewProps) {
   const isMobile = useIsMobile();
-  const [viewMode, setViewMode] = useState<ViewMode>("day");
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(() => {
     // Use initialDate if provided (from URL param)
     if (initialDate) {
