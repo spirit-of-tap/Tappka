@@ -108,6 +108,20 @@ export function QRQuickReserveDialog({
     onOpenChange(open);
   };
 
+  const handleTitleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter" || !event.metaKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isLoading || !title.trim()) {
+      return;
+    }
+
+    void handleSubmit();
+  };
+
   const getDurationLabel = (): string => {
     switch (durationMinutes) {
       case 15: return "15 minut";
@@ -144,6 +158,7 @@ export function QRQuickReserveDialog({
               placeholder="Např. Meeting, Práce..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
               autoFocus
               className="h-12 font-body rounded-md"
             />

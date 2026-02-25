@@ -135,6 +135,20 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
     }
   };
 
+  const handleNameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter" || !event.metaKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isLoading) {
+      return;
+    }
+
+    void handleSubmit();
+  };
+
   return (
     <div className="space-y-6">
       {/* Add button */}
@@ -184,6 +198,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={handleNameKeyDown}
                 placeholder="např. Days of Joy - Jaro 2026"
               />
             </div>

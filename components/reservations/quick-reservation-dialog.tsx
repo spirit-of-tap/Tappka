@@ -155,6 +155,20 @@ export function QuickReservationDialog({
     onOpenChange(open);
   };
 
+  const handleReasonKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || !event.metaKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isLoading || !reason.trim()) {
+      return;
+    }
+
+    void handleSubmit();
+  };
+
   if (!startTime || !endTime) return null;
 
   const dateLabel = format(startTime, "EEEE, d. MMMM", { locale: cs });
@@ -224,6 +238,7 @@ export function QuickReservationDialog({
               placeholder="Proč potřebuješ místnost?"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
+              onKeyDown={handleReasonKeyDown}
               rows={2}
               autoFocus={!isEditingTime}
             />

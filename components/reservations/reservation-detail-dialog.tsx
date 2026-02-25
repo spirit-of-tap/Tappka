@@ -58,6 +58,8 @@ export function ReservationDetailDialog({
   currentUserId,
 }: ReservationDetailDialogProps) {
   const router = useRouter();
+  const [currentReservation, setCurrentReservation] =
+    useState<ReservationWithDetails | null>(reservation);
   const [participants, setParticipants] = useState<CoworkParticipant[]>([]);
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
@@ -71,13 +73,18 @@ export function ReservationDetailDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const reservationData = currentReservation ?? reservation;
+
+  useEffect(() => {
+    setCurrentReservation(reservation);
+  }, [reservation]);
 
   // Fetch participants when dialog opens or when cowork status changes
   useEffect(() => {
-    if (open && reservation?.is_cowork_open) {
+    if (open && reservationData?.is_cowork_open) {
       fetchParticipants();
     }
-  }, [open, reservation?.id, reservation?.is_cowork_open]);
+  }, [open, reservationData?.id, reservationData?.is_cowork_open]);
 
   // Reset edit state when dialog closes or reservation changes
   useEffect(() => {
@@ -88,10 +95,10 @@ export function ReservationDetailDialog({
   }, [open]);
 
   const startEditing = () => {
-    if (!reservation) return;
-    setEditTitle(reservation.title);
-    setEditPersonCount(reservation.person_count ?? 1);
-    setEditIsCoworkOpen(reservation.is_cowork_open);
+    if (!reservationData) return;
+    setEditTitle(reservationData.title);
+    setEditPersonCount(reservationData.person_count ?? 1);
+    setEditIsCoworkOpen(reservationData.is_cowork_open);
     setEditError(null);
     setIsEditing(true);
   };
@@ -102,12 +109,12 @@ export function ReservationDetailDialog({
   };
 
   const fetchParticipants = async () => {
-    if (!reservation) return;
+    if (!reservationData) return;
 
     setIsLoadingParticipants(true);
     try {
       const response = await fetch(
-        `/api/reservations/${reservation.id}/participants`
+        `/api/reservations/${reservationData.id}/participants`
       );
       if (response.ok) {
         const data = await response.json();
@@ -121,7 +128,7 @@ export function ReservationDetailDialog({
   };
 
   const handleSaveEdit = async () => {
-    if (!reservation) return;
+    if (!reservationData) return;
 
     if (!editTitle.trim()) {
       setEditError("Zadej důvod / název rezervace");
@@ -136,7 +143,7 @@ export function ReservationDetailDialog({
     setEditError(null);
 
     try {
-      const response = await fetch(`/api/reservations/${reservation.id}`, {
+      const response = await fetch(`/api/reservations/${reservationData.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -153,6 +160,14 @@ export function ReservationDetailDialog({
         return;
       }
 
+      if (data.data) {
+        setCurrentReservation((previousReservation) =>
+          previousReservation
+            ? { ...previousReservation, ...data.data }
+            : previousReservation
+        );
+      }
+
       toast.success("Rezervace upravena");
       setIsEditing(false);
       // Refresh participants in case cowork toggle changed
@@ -167,13 +182,29 @@ export function ReservationDetailDialog({
     }
   };
 
+  const handleEditTitleKeyDown = (
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
+    if (event.key !== "Enter" || !event.metaKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isSaving || !editTitle.trim()) {
+      return;
+    }
+
+    void handleSaveEdit();
+  };
+
   const handleCancelReservation = async () => {
-    if (!reservation) return;
+    if (!reservationData) return;
     if (!confirm("Opravdu chceš zrušit tuto rezervaci?")) return;
 
     setIsCancelling(true);
     try {
-      const response = await fetch(`/api/reservations/${reservation.id}`, {
+      const response = await fetch(`/api/reservations/${reservationData.id}`, {
         method: "DELETE",
       });
 
@@ -193,14 +224,14 @@ export function ReservationDetailDialog({
   };
 
   const handleJoin = async () => {
-    if (!reservation) return;
+    if (!reservationData) return;
 
     setIsJoining(true);
     try {
       const response = await fetch("/api/reservations/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservation_id: reservation.id }),
+        body: JSON.stringify({ reservation_id: reservationData.id }),
       });
 
       if (response.ok) {
@@ -219,14 +250,14 @@ export function ReservationDetailDialog({
   };
 
   const handleLeave = async () => {
-    if (!reservation) return;
+    if (!reservationData) return;
 
     setIsLeaving(true);
     try {
       const response = await fetch("/api/reservations/join", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reservation_id: reservation.id }),
+        body: JSON.stringify({ reservation_id: reservationData.id }),
       });
 
       if (response.ok) {
@@ -244,19 +275,19 @@ export function ReservationDetailDialog({
     }
   };
 
-  if (!reservation) return null;
+  if (!reservationData) return null;
 
-  const startDate = new Date(reservation.start_time);
-  const endDate = new Date(reservation.end_time);
-  const isActive = isReservationActive(reservation);
+  const startDate = new Date(reservationData.start_time);
+  const endDate = new Date(reservationData.end_time);
+  const isActive = isReservationActive(reservationData);
   // Owner can edit/cancel as long as the reservation hasn't ended yet
   const isNotEnded = endDate > new Date();
-  const isOwner = !!currentUserId && reservation.user_id === currentUserId;
+  const isOwner = !!currentUserId && reservationData.user_id === currentUserId;
   const hasJoined = participants.some((p) => p.user_id === currentUserId);
   const canJoin =
-    reservation.is_cowork_open && !isOwner && !hasJoined && isActive;
+    reservationData.is_cowork_open && !isOwner && !hasJoined && isActive;
   const canLeave = hasJoined && isActive;
-  const isPersonal = reservation.reservation_type === "personal";
+  const isPersonal = reservationData.reservation_type === "personal";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -267,7 +298,7 @@ export function ReservationDetailDialog({
               <span className="text-base">Upravit rezervaci</span>
             ) : (
               <>
-                {reservation.title}
+                {reservationData.title}
                 {isActive && (
                   <Badge variant="default" className="ml-2">
                     Probíhá
@@ -287,6 +318,7 @@ export function ReservationDetailDialog({
                 id="edit-title"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={handleEditTitleKeyDown}
                 rows={2}
                 autoFocus
               />
@@ -352,14 +384,14 @@ export function ReservationDetailDialog({
 
             {/* Owner info (personal reservations) or type badge (non-personal) */}
             {isPersonal ? (
-              reservation.user && (
+              reservationData.user && (
                 <div className="flex items-center gap-2">
                   <StorageAvatar
-                    storageKey={reservation.user.picture ?? null}
-                    name={reservation.user.name}
+                    storageKey={reservationData.user.picture ?? null}
+                    name={reservationData.user.name}
                     size="sm"
                   />
-                  <span className="text-sm font-medium">{reservation.user.name}</span>
+                  <span className="text-sm font-medium">{reservationData.user.name}</span>
                   {isOwner && (
                     <Badge variant="secondary" className="text-xs ml-1">Ty</Badge>
                   )}
@@ -367,25 +399,25 @@ export function ReservationDetailDialog({
               )
             ) : (
               <Badge variant="outline">
-                {RESERVATION_TYPE_LABELS[reservation.reservation_type]}
+                {RESERVATION_TYPE_LABELS[reservationData.reservation_type]}
               </Badge>
             )}
 
             {/* Reason */}
-            {reservation.reason && (
+            {reservationData.reason && (
               <div>
                 <p className="text-sm font-medium mb-1">Důvod</p>
                 <p className="text-sm text-muted-foreground">
-                  {reservation.reason}
+                  {reservationData.reason}
                 </p>
               </div>
             )}
 
             {/* Person count */}
-            {reservation.person_count != null && (
+            {reservationData.person_count != null && (
               <div className="flex items-center gap-2 text-sm">
                 <Users className="size-4 text-muted-foreground" />
-                <span>{reservation.person_count} osob</span>
+                <span>{reservationData.person_count} osob</span>
               </div>
             )}
 
@@ -421,7 +453,7 @@ export function ReservationDetailDialog({
             )}
 
             {/* Cowork section */}
-            {reservation.is_cowork_open && (
+            {reservationData.is_cowork_open && (
               <>
                 <Separator />
 
