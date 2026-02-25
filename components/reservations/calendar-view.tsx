@@ -16,16 +16,16 @@ import { DaySchedule } from "./day-schedule";
 import { WeekSchedule } from "./week-schedule";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { Reservation, ScheduleBreak } from "@/lib/reservations/types";
+import type { ReservationWithDetails, ScheduleBreak } from "@/lib/reservations/types";
 import { DAY_NAMES_CS } from "@/lib/reservations/types";
 
 interface CalendarViewProps {
-  reservations: Reservation[];
+  reservations: ReservationWithDetails[];
   scheduleBreaks?: ScheduleBreak[];
   availableDays?: number[] | null; // 0=Sunday, 1=Monday, etc.
   initialDate?: Date; // Date to start the calendar on
   onSlotClick?: (startTime: Date) => void;
-  onReservationClick?: (reservation: Reservation) => void;
+  onReservationClick?: (reservation: ReservationWithDetails) => void;
   onDragCreate?: (startTime: Date, endTime: Date) => void;
 }
 
@@ -36,7 +36,14 @@ type ViewMode = "day" | "week";
  */
 export function CalendarView({ reservations, scheduleBreaks = [], availableDays, initialDate, onSlotClick, onReservationClick, onDragCreate }: CalendarViewProps) {
   const isMobile = useIsMobile();
-  const [viewMode, setViewMode] = useState<ViewMode>("day");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Use a lazy initializer to pick the right default on first render,
+    // avoiding the redundant mount-time flip caused by the useEffect below.
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+      return "day";
+    }
+    return "week";
+  });
   const [currentDate, setCurrentDate] = useState(() => {
     // Use initialDate if provided (from URL param)
     if (initialDate) {
@@ -67,9 +74,9 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
     }
   }, [initialDate]);
 
-  // Auto-switch to day view on mobile
+  // Keep view mode in sync if the viewport changes after mount
   useEffect(() => {
-    if (isMobile && viewMode === "week") {
+    if (isMobile && viewMode !== "day") {
       setViewMode("day");
     }
   }, [isMobile, viewMode]);

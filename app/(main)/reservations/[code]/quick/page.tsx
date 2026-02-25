@@ -65,27 +65,43 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
 
   const now = new Date();
   const nowIso = now.toISOString();
+  const twoHoursAhead = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
 
-  // Fetch current reservation
-  const { data: currentReservation } = await supabase
-    .from("reservations")
-    .select(`
-      *,
-      user:profiles(id, name),
-      team:teams(id, name)
-    `)
-    .eq("room_id", room.id)
-    .eq("status", "active")
-    .lte("start_time", nowIso)
-    .gt("end_time", nowIso)
-    .single();
+  // Fire all three independent queries in parallel — eliminates 2 sequential round-trips
+  const [
+    { data: currentReservation },
+    { data: nextReservation },
+    { data: issues },
+  ] = await Promise.all([
+    // Current in-progress reservation
+    supabase
+      .from("reservations")
+      .select(`*, user:profiles(id, name), team:teams(id, name)`)
+      .eq("room_id", room.id)
+      .eq("status", "active")
+      .lte("start_time", nowIso)
+      .gt("end_time", nowIso)
+      .maybeSingle(),
 
-  // Fetch open issues
-  const { data: issues } = await supabase
-    .from("room_issues")
-    .select("*")
-    .eq("room_id", room.id)
-    .eq("status", "open");
+    // Next upcoming reservation within 2 hours
+    supabase
+      .from("reservations")
+      .select(`*, user:profiles(id, name), team:teams(id, name)`)
+      .eq("room_id", room.id)
+      .eq("status", "active")
+      .gt("start_time", nowIso)
+      .lte("start_time", twoHoursAhead)
+      .order("start_time", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+
+    // Open room issues
+    supabase
+      .from("room_issues")
+      .select("*")
+      .eq("room_id", room.id)
+      .eq("status", "open"),
+  ]);
 
   const roomIssues = (issues || []) as RoomIssue[];
   const isLocked = roomIssues.some((i) => i.issue_type === "locked");
@@ -108,6 +124,23 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
     status = 'occupied';
   }
 
+  // Compute milliseconds until next upcoming reservation for the occupancy check
+  // (use raw ms to avoid rounding 14m31s → 15 which would skip the override)
+  const msUntilNextReservation = nextReservation
+    ? new Date(nextReservation.start_time).getTime() - now.getTime()
+    : null;
+
+  // Integer minutes used for display
+  const minutesUntilNextReservation = msUntilNextReservation !== null
+    ? Math.round(msUntilNextReservation / 60000)
+    : null;
+
+  // If next reservation starts in < 15 min, treat room as occupied so user
+  // doesn't attempt to book a slot that will immediately fail at the API.
+  if (status === 'free' && msUntilNextReservation !== null && msUntilNextReservation < 15 * 60 * 1000) {
+    status = 'occupied';
+  }
+
   // Build response data
   const quickStatusData = {
     room: {
@@ -127,12 +160,13 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
   let currentReservationData = undefined;
   let alternativeRooms = undefined;
 
+  // Show reservation details when there's an in-progress reservation
   if (currentReservation) {
     const endTime = new Date(currentReservation.end_time);
     const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
 
-    const occupantName = currentReservation.user?.name ||
-      currentReservation.team?.name ||
+    const occupantName = currentReservation.user?.name ??
+      currentReservation.team?.name ??
       "Neznámý";
 
     currentReservationData = {
@@ -143,33 +177,53 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       endTime: currentReservation.end_time,
       endsInMinutes,
     };
+  } else if (nextReservation && minutesUntilNextReservation !== null && minutesUntilNextReservation < 15) {
+    // Near-future reservation triggered the occupied override — show its details
+    const endTime = new Date(nextReservation.end_time);
+    const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
 
-    // Fetch alternative rooms that are currently free
-    const { data: allRooms } = await supabase
-      .from("rooms")
-      .select("*")
-      .neq("id", room.id)
-      .order("code");
+    const occupantName = nextReservation.user?.name ??
+      nextReservation.team?.name ??
+      "Neznámý";
 
-    if (allRooms && allRooms.length > 0) {
-      // Check which rooms are free
-      const { data: otherCurrentReservations } = await supabase
+    currentReservationData = {
+      title: nextReservation.title,
+      occupantName,
+      personCount: nextReservation.person_count,
+      startTime: nextReservation.start_time,
+      endTime: nextReservation.end_time,
+      endsInMinutes,
+      startsInMinutes: minutesUntilNextReservation,
+    };
+  }
+
+  // When status is occupied (in-progress OR near-future reservation), show alternative rooms
+  if (status === 'occupied') {
+    // Fetch all other rooms and their current reservations in parallel
+    const [{ data: allRooms }, { data: otherCurrentReservations }] = await Promise.all([
+      supabase
+        .from("rooms")
+        .select("*")
+        .neq("id", room.id)
+        .order("code"),
+
+      supabase
         .from("reservations")
         .select("room_id")
         .eq("status", "active")
         .lte("start_time", nowIso)
-        .gt("end_time", nowIso);
+        .gt("end_time", nowIso),
+    ]);
 
+    if (allRooms && allRooms.length > 0) {
       const occupiedRoomIds = new Set(
         (otherCurrentReservations || []).map((r) => r.room_id)
       );
 
       const freeRooms = allRooms.filter((r) => !occupiedRoomIds.has(r.id));
 
-      // Sort by relevance
+      // Sort by relevance and take top 3
       const sortedFreeRooms = sortAlternativeRooms(freeRooms, room);
-
-      // Take top 3
       alternativeRooms = sortedFreeRooms.slice(0, 3).map((r) => ({
         id: r.id,
         code: r.code,
@@ -183,6 +237,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       {...quickStatusData}
       currentReservation={currentReservationData}
       alternativeRooms={alternativeRooms}
+      minutesUntilNextReservation={minutesUntilNextReservation}
     />
   );
 }

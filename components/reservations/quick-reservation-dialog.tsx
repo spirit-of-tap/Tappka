@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Clock, Users, Share2, Edit2 } from "lucide-react";
@@ -11,7 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,6 +128,7 @@ export function QuickReservationDialog({
         throw new Error(result.error || "Nepodařilo se vytvořit rezervaci");
       }
 
+      toast.success("Rezervace vytvořena");
       // Success
       onOpenChange(false);
       resetForm();
@@ -191,6 +193,7 @@ export function QuickReservationDialog({
                   <TimePicker 
                     value={editableStartTime} 
                     onChange={setEditableStartTime}
+                    date={startTime}
                   />
                 </div>
                 <span className="text-muted-foreground shrink-0">-</span>
@@ -199,6 +202,7 @@ export function QuickReservationDialog({
                     value={editableEndTime} 
                     onChange={setEditableEndTime}
                     minTime={editableStartTime}
+                    date={startTime}
                   />
                 </div>
               </div>

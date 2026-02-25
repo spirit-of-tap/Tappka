@@ -10,7 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/responsive-dialog";
 import { formatTime } from "@/lib/reservations/utils";
 import type { Reservation, Room } from "@/lib/reservations/types";
 
@@ -109,6 +109,7 @@ export function ConflictResolutionDialog({
                   <p className="font-medium">Rezervovat před</p>
                   <p className="text-sm text-muted-foreground">
                     {formatTime(requestedStart.toISOString())} - {formatTime(options.beforeEnd.toISOString())}
+                    {" "}({Math.round((options.beforeEnd.getTime() - requestedStart.getTime()) / 60000)} min)
                   </p>
                 </div>
                 <ChevronRight className="size-4" />
@@ -126,6 +127,7 @@ export function ConflictResolutionDialog({
                   <p className="font-medium">Rezervovat po</p>
                   <p className="text-sm text-muted-foreground">
                     {formatTime(options.afterStart.toISOString())} - {formatTime(requestedEnd?.toISOString() || "")}
+                    {requestedEnd && " (" + Math.round((requestedEnd.getTime() - options.afterStart.getTime()) / 60000) + " min)"}
                   </p>
                 </div>
                 <ChevronRight className="size-4" />

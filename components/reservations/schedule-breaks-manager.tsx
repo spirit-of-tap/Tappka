@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Plus, Trash2, Calendar, Palmtree, Gift, HelpCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
@@ -15,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/responsive-dialog";
 import {
   Select,
   SelectContent,
@@ -58,6 +59,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
+  /** Resets the add-break form fields back to their initial empty state. */
   const resetForm = () => {
     setBreakType("");
     setName("");
@@ -66,6 +68,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
     setError(null);
   };
 
+  /** Validates and submits a new schedule break via POST /api/schedule-breaks. */
   const handleSubmit = async () => {
     setError(null);
 
@@ -100,6 +103,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
         throw new Error(result.error || "Nepodařilo se vytvořit výjimku");
       }
 
+      toast.success("Výjimka vytvořena");
       setIsDialogOpen(false);
       resetForm();
       router.refresh();
@@ -110,6 +114,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
     }
   };
 
+  /** Asks for confirmation and deletes the given schedule break via DELETE /api/schedule-breaks/:id. */
   const handleDelete = async (breakId: string) => {
     if (!confirm("Opravdu chceš smazat tuto výjimku?")) return;
 
@@ -123,9 +128,10 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
         throw new Error(result.error || "Nepodařilo se smazat výjimku");
       }
 
+      toast.success("Výjimka smazána");
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     }
   };
 

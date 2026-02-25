@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Users, Share2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -20,7 +21,7 @@ interface QRQuickReserveDialogProps {
   onOpenChange: (open: boolean) => void;
   roomId: string;
   roomName: string;
-  durationMinutes: 30 | 60 | 120;
+  durationMinutes: 15 | 30 | 45;
 }
 
 /**
@@ -88,6 +89,7 @@ export function QRQuickReserveDialog({
         throw new Error(result.error || "Nepodařilo se vytvořit rezervaci");
       }
 
+      toast.success("Rezervace vytvořena");
       // Success
       onOpenChange(false);
       resetForm();
@@ -106,11 +108,16 @@ export function QRQuickReserveDialog({
     onOpenChange(open);
   };
 
-  const getDurationLabel = () => {
-    if (durationMinutes === 30) return "30 minut";
-    if (durationMinutes === 60) return "1 hodina";
-    if (durationMinutes === 120) return "2 hodiny";
-    return `${durationMinutes} minut`;
+  const getDurationLabel = (): string => {
+    switch (durationMinutes) {
+      case 15: return "15 minut";
+      case 30: return "30 minut";
+      case 45: return "45 minut";
+      default: {
+        const _exhaustive: never = durationMinutes;
+        return `${_exhaustive} minut`;
+      }
+    }
   };
 
   return (

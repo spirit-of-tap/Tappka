@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import type { UpdateReservationInput } from "@/lib/reservations/types";
+import { RESERVATION_STATUS } from "@/lib/reservations/types";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface RouteParams {
@@ -218,31 +219,25 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Soft delete - set status to cancelled
-    const { data: updated, error } = await supabase
+    // Use admin client because the SELECT RLS policy only allows reading active
+    // reservations; after updating to 'cancelled', the regular client can't read
+    // the updated row back, causing a false "RLS blocked" 403.
+    // Ownership has already been verified above via the regular client.
+    // Pin user_id and prior status to close the TOCTOU window between the
+    // ownership check above and this update.
+    const adminSupabase = createAdminClient();
+    const { error } = await adminSupabase
       .from("reservations")
-      .update({ status: "cancelled" })
+      .update({ status: RESERVATION_STATUS.CANCELLED })
       .eq("id", id)
-      .select("id")
-      .maybeSingle();
+      .eq("user_id", existing.user_id)
+      .eq("status", existing.status);
 
     if (error) {
       console.error("Error cancelling reservation:", error);
       return NextResponse.json(
         { error: "Nepodařilo se zrušit rezervaci" },
         { status: 500 }
-      );
-    }
-
-    // Check if the update actually happened (RLS might silently block it)
-    if (!updated) {
-      console.error("Update blocked by RLS - no rows affected", { 
-        reservationId: id, 
-        profileId: profile?.id,
-        existingUserId: existing.user_id 
-      });
-      return NextResponse.json(
-        { error: "Nepodařilo se zrušit rezervaci - chyba oprávnění" },
-        { status: 403 }
       );
     }
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import {
@@ -27,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/responsive-alert-dialog";
 import { ISSUE_TYPE_LABELS, type RoomIssue, type IssueType } from "@/lib/reservations/types";
 
 interface IssuesManagerProps {
@@ -64,13 +65,14 @@ export function IssuesManager({ issues, isAdmin = false }: IssuesManagerProps) {
 
       if (!response.ok) {
         const data = await response.json();
-        alert(data.error || "Nepodařilo se vyřešit problém");
+        toast.error(data.error || "Nepodařilo se vyřešit problém");
         return;
       }
 
+      toast.success("Problém vyřešen");
       router.refresh();
     } catch (error) {
-      alert("Něco se pokazilo");
+      toast.error("Něco se pokazilo");
     } finally {
       setLoadingId(null);
     }
@@ -87,13 +89,14 @@ export function IssuesManager({ issues, isAdmin = false }: IssuesManagerProps) {
 
       if (!response.ok) {
         const data = await response.json();
-        alert(data.error || "Nepodařilo se znovu otevřít problém");
+        toast.error(data.error || "Nepodařilo se znovu otevřít problém");
         return;
       }
 
+      toast.success("Problém znovu otevřen");
       router.refresh();
     } catch (error) {
-      alert("Něco se pokazilo");
+      toast.error("Něco se pokazilo");
     } finally {
       setLoadingId(null);
     }
@@ -108,13 +111,14 @@ export function IssuesManager({ issues, isAdmin = false }: IssuesManagerProps) {
 
       if (!response.ok) {
         const data = await response.json();
-        alert(data.error || "Nepodařilo se smazat problém");
+        toast.error(data.error || "Nepodařilo se smazat problém");
         return;
       }
 
+      toast.success("Problém smazán");
       router.refresh();
     } catch (error) {
-      alert("Něco se pokazilo");
+      toast.error("Něco se pokazilo");
     } finally {
       setLoadingId(null);
     }

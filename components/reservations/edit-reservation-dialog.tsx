@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Edit, Trash2, Users, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/components/ui/responsive-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/responsive-alert-dialog";
 import type { ReservationWithDetails } from "@/lib/reservations/types";
 
 interface EditReservationDialogProps {
@@ -54,7 +55,7 @@ export function EditReservationDialog({
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Support both controlled and uncontrolled modes
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -65,7 +66,6 @@ export function EditReservationDialog({
       setInternalOpen(value);
     }
   };
-  const [error, setError] = useState<string | null>(null);
 
   // Form state - simplified: title serves as reason
   const [reason, setReason] = useState(reservation.title || "");
@@ -76,15 +76,13 @@ export function EditReservationDialog({
   const endDate = new Date(reservation.end_time);
 
   const handleSubmit = async () => {
-    setError(null);
-
     if (!reason.trim()) {
-      setError("Zadej důvod rezervace");
+      toast.error("Zadej důvod rezervace");
       return;
     }
 
     if (!personCount || parseInt(personCount) < 1) {
-      setError("Zadej počet osob");
+      toast.error("Zadej počet osob");
       return;
     }
 
@@ -107,17 +105,19 @@ export function EditReservationDialog({
         throw new Error(result.error || "Nepodařilo se upravit rezervaci");
       }
 
+      toast.success("Rezervace upravena");
       setOpen(false);
       router.refresh();
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCancel = async () => {
+    if (isLoading) return;
     setIsLoading(true);
 
     try {
@@ -131,11 +131,12 @@ export function EditReservationDialog({
         throw new Error(result.error || "Nepodařilo se zrušit rezervaci");
       }
 
+      toast.success("Rezervace zrušena");
       setOpen(false);
       router.refresh();
       onSuccess?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Něco se pokazilo");
+      toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     } finally {
       setIsLoading(false);
     }
@@ -199,19 +200,13 @@ export function EditReservationDialog({
             </div>
           </div>
 
-          {/* Error */}
-          {error && (
-            <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
-              {error}
-            </p>
-          )}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           {/* Cancel reservation button */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="w-full sm:w-auto">
+              <Button variant="destructive" className="w-full sm:w-auto" disabled={isLoading}>
                 <Trash2 className="size-4 mr-2" />
                 Zrušit rezervaci
               </Button>
@@ -225,7 +220,7 @@ export function EditReservationDialog({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Ne, ponechat</AlertDialogCancel>
-                <AlertDialogAction onClick={handleCancel}>
+                <AlertDialogAction onClick={handleCancel} disabled={isLoading}>
                   Ano, zrušit
                 </AlertDialogAction>
               </AlertDialogFooter>

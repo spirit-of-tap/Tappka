@@ -8,17 +8,17 @@ import {
   OPERATING_HOURS, 
   RESERVATION_TYPE_LABELS,
   TIME_SLOT_MINUTES,
-  type Reservation,
+  type ReservationWithDetails,
   type ScheduleBreak,
 } from "@/lib/reservations/types";
 import { formatTime, isReservationActive, getReservationColorClasses } from "@/lib/reservations/utils";
 
 interface DayScheduleProps {
   date: Date;
-  reservations: Reservation[];
+  reservations: ReservationWithDetails[];
   scheduleBreak?: ScheduleBreak | null;
   onSlotClick?: (startTime: Date) => void;
-  onReservationClick?: (reservation: Reservation) => void;
+  onReservationClick?: (reservation: ReservationWithDetails) => void;
   onDragCreate?: (startTime: Date, endTime: Date) => void;
 }
 
@@ -42,6 +42,13 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     dragStart: null as number | null,
     dragEnd: null as number | null,
   });
+
+  // Current time indicator — updates every minute
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Generate hour slots
   const hours = useMemo(() => {
@@ -406,7 +413,7 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
               key={hour}
               className={cn(
                 "h-[60px] border-b last:border-b-0 transition-colors",
-                !isDragging && "hover:bg-muted/30 cursor-pointer"
+                !isDragging && "hover:bg-muted/30 cursor-cell"
               )}
               onClick={() => handleSlotClick(hour)}
             />
@@ -441,6 +448,27 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
               onClick={() => onReservationClick?.(reservation)}
             />
           ))}
+
+          {/* Current time indicator */}
+          {(() => {
+            const isToday =
+              date.getFullYear() === now.getFullYear() &&
+              date.getMonth() === now.getMonth() &&
+              date.getDate() === now.getDate();
+            if (!isToday) return null;
+            const nowHour = now.getHours() + now.getMinutes() / 60;
+            if (nowHour < OPERATING_HOURS.start || nowHour > OPERATING_HOURS.end) return null;
+            const top = (nowHour - OPERATING_HOURS.start) * hourHeight;
+            return (
+              <div
+                className="absolute left-0 right-0 pointer-events-none z-20 flex items-center"
+                style={{ top: `${top}px` }}
+              >
+                <div className="size-2 rounded-full bg-red-500 -ml-1 flex-shrink-0" />
+                <div className="flex-1 h-px bg-red-500" />
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -448,7 +476,7 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
 }
 
 interface ReservationBlockProps {
-  reservation: Reservation;
+  reservation: ReservationWithDetails;
   top: number;
   height: number;
   isActive: boolean;
@@ -479,6 +507,11 @@ function ReservationBlock({ reservation, top, height, isActive, onClick }: Reser
           <p className="text-xs text-muted-foreground">
             {formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}
           </p>
+          {(reservation.user?.name ?? reservation.team?.name) && (
+            <p className="text-xs text-muted-foreground truncate">
+              {reservation.user?.name ?? reservation.team?.name}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {reservation.is_cowork_open && (

@@ -7,18 +7,18 @@ import {
   OPERATING_HOURS,
   DAY_NAMES_CS,
   TIME_SLOT_MINUTES,
-  type Reservation,
+  type ReservationWithDetails,
   type ScheduleBreak,
 } from "@/lib/reservations/types";
 import { formatTime, isReservationActive, getReservationColorClasses } from "@/lib/reservations/utils";
 
 interface WeekScheduleProps {
   startDate: Date;
-  reservations: Reservation[];
+  reservations: ReservationWithDetails[];
   scheduleBreaks?: ScheduleBreak[];
   availableDays?: number[] | null; // 0=Sunday, 1=Monday, etc.
   onSlotClick?: (date: Date, hour: number) => void;
-  onReservationClick?: (reservation: Reservation) => void;
+  onReservationClick?: (reservation: ReservationWithDetails) => void;
   onDragCreate?: (startTime: Date, endTime: Date) => void;
 }
 
@@ -43,7 +43,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
 
   // Group reservations by day
   const reservationsByDay = useMemo(() => {
-    const map = new Map<string, Reservation[]>();
+    const map = new Map<string, ReservationWithDetails[]>();
     weekDays.forEach((day) => {
       const dayKey = format(day, "yyyy-MM-dd");
       const dayReservations = reservations.filter((r) => {
@@ -58,6 +58,13 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
   const hourHeight = 48; // px per hour
   const slotHeight = hourHeight / (60 / TIME_SLOT_MINUTES); // 12px per 15 min slot
   const today = new Date();
+
+  // Current time indicator — updates every minute
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Drag state
   const [isDragging, setIsDragging] = useState(false);
@@ -277,7 +284,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                 hours.map((hour) => (
                   <div
                     key={hour}
-                    className="border-b last:border-b-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                    className="border-b last:border-b-0 hover:bg-muted/30 cursor-cell transition-colors"
                     style={{ height: `${hourHeight}px` }}
                   />
                 ))
@@ -325,6 +332,22 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                   />
                 );
               })}
+
+              {/* Current time indicator — only in today's column */}
+              {isAvailable && isToday && (() => {
+                const nowHour = now.getHours() + now.getMinutes() / 60;
+                if (nowHour < OPERATING_HOURS.start || nowHour > OPERATING_HOURS.end) return null;
+                const top = (nowHour - OPERATING_HOURS.start) * hourHeight;
+                return (
+                  <div
+                    className="absolute left-0 right-0 pointer-events-none z-20 flex items-center"
+                    style={{ top: `${top}px` }}
+                  >
+                    <div className="size-1.5 rounded-full bg-red-500 flex-shrink-0" />
+                    <div className="flex-1 h-px bg-red-500" />
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
@@ -334,7 +357,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
 }
 
 interface WeekReservationBlockProps {
-  reservation: Reservation;
+  reservation: ReservationWithDetails;
   top: number;
   height: number;
   isActive: boolean;
@@ -367,6 +390,11 @@ function WeekReservationBlock({ reservation, top, height, isActive, onClick }: W
       {!isSmall && (
         <div className="text-[10px] opacity-75">
           {formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}
+        </div>
+      )}
+      {!isSmall && (reservation.user?.name ?? reservation.team?.name) && (
+        <div className="text-[10px] opacity-75 truncate">
+          {reservation.user?.name ?? reservation.team?.name}
         </div>
       )}
     </div>

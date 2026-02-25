@@ -6,10 +6,10 @@ import { CalendarView } from "./calendar-view";
 import { ReservationDetailDialog } from "./reservation-detail-dialog";
 import { QuickReservationDialog } from "./quick-reservation-dialog";
 import { ConflictResolutionDialog } from "./conflict-resolution-dialog";
-import type { Reservation, ScheduleBreak, Room } from "@/lib/reservations/types";
+import type { ReservationWithDetails, ScheduleBreak, Room } from "@/lib/reservations/types";
 
 interface RoomScheduleViewProps {
-  reservations: Reservation[];
+  reservations: ReservationWithDetails[];
   scheduleBreaks?: ScheduleBreak[];
   currentUserId?: string;
   roomId: string;
@@ -34,7 +34,7 @@ export function RoomScheduleView({
   initialDate,
 }: RoomScheduleViewProps) {
   const router = useRouter();
-  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   // Quick reservation dialog state
@@ -44,7 +44,7 @@ export function RoomScheduleView({
 
   // Conflict resolution dialog state
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
-  const [conflictingReservation, setConflictingReservation] = useState<Reservation | null>(null);
+  const [conflictingReservation, setConflictingReservation] = useState<ReservationWithDetails | null>(null);
 
   // Auto-generate Houston Calling on mount (only once per session)
   const hcGeneratedRef = useRef(false);
@@ -67,7 +67,7 @@ export function RoomScheduleView({
   }, [router]);
 
   // Check for conflicts with existing reservations
-  const findConflict = useCallback((startTime: Date, endTime: Date): Reservation | null => {
+  const findConflict = useCallback((startTime: Date, endTime: Date): ReservationWithDetails | null => {
     return reservations.find((r) => {
       if (r.status !== "active") return false;
       const resStart = new Date(r.start_time);
@@ -77,7 +77,7 @@ export function RoomScheduleView({
     }) || null;
   }, [reservations]);
 
-  const handleReservationClick = (reservation: Reservation) => {
+  const handleReservationClick = (reservation: ReservationWithDetails) => {
     setSelectedReservation(reservation);
     setDetailDialogOpen(true);
   };
