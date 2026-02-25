@@ -75,23 +75,25 @@ export function RoomQuickStatus({
     return `za ${minutes} ${minutes === 1 ? 'minutu' : minutes < 5 ? 'minuty' : 'minut'}`;
   };
 
-  // Determine background color - using TAP brand colors
-  let bgColor = "bg-green-600";
-  let textColor = "text-white";
+  // Distinguish between truly occupied (active reservation) and about-to-be-occupied (near-future)
+  const isNearFutureOccupied = status === 'occupied' && currentReservation?.startsInMinutes != null;
+
+  // Determine background color - using explicit hex values to avoid Tailwind purging dynamic class names
+  let bgHex = "#16a34a"; // green-600
   if (status === 'locked') {
-    bgColor = "bg-orange-600";
+    bgHex = "#ea580c"; // orange-600
   } else if (status === 'occupied') {
-    bgColor = "bg-[#b31b1b]"; // TAP Red
+    bgHex = isNearFutureOccupied ? "#d97706" : "#b31b1b"; // amber-600 for near-future, TAP red for active
   }
 
   return (
-    <div className={`fixed inset-0 ${bgColor} ${textColor} overflow-y-auto`}>
+    <div className="fixed inset-0 text-white overflow-y-auto" style={{ backgroundColor: bgHex }}>
       {/* Close button - fixed top right */}
       <div className="absolute top-4 right-4 z-50">
         <Button
           variant="ghost"
           size="icon"
-          className={`${textColor} hover:bg-white/20 rounded-full`}
+          className="text-white hover:bg-white/20 rounded-full"
           asChild
         >
           <Link href="/reservations">
@@ -106,7 +108,8 @@ export function RoomQuickStatus({
           {/* Large icon */}
           <div className="flex justify-center">
             {status === 'locked' && <AlertTriangle className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
-            {status === 'occupied' && <XCircle className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
+            {status === 'occupied' && !isNearFutureOccupied && <XCircle className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
+            {status === 'occupied' && isNearFutureOccupied && <Clock className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
             {status === 'free' && <CheckCircle2 className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
           </div>
 
@@ -133,9 +136,16 @@ export function RoomQuickStatus({
 
             {status === 'occupied' && currentReservation && (
               <>
-                <p className="text-3xl font-heading font-bold tracking-tight">OBSAZENO</p>
+                {isNearFutureOccupied ? (
+                  /* Single precise statement — no separate heading + subtitle needed */
+                  <p className="text-3xl font-heading font-bold tracking-tight">
+                    Obsazuje se {formatTimeUntilOccupied()}
+                  </p>
+                ) : (
+                  <p className="text-3xl font-heading font-bold tracking-tight">OBSAZENO</p>
+                )}
 
-                {/* Reservation details */}
+                {/* Reservation details — timing is already in the heading/time range, no repeat */}
                 <div className="space-y-4 bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
                   <p className="text-xl font-heading font-semibold">{currentReservation.title}</p>
                   <p className="text-sm opacity-90 font-body">
@@ -148,11 +158,12 @@ export function RoomQuickStatus({
                     <Clock className="size-4" />
                     {formatTime(currentReservation.startTime)} - {formatTime(currentReservation.endTime)}
                   </p>
-                  <p className="text-2xl font-heading font-semibold">
-                    {currentReservation.startsInMinutes != null
-                      ? `Obsazuje se ${formatTimeUntilOccupied()}`
-                      : `Volná ${formatTimeUntilFree()}`}
-                  </p>
+                  {/* Only show the "Volná za X" line for truly occupied rooms (when it ends matters) */}
+                  {!isNearFutureOccupied && (
+                    <p className="text-2xl font-heading font-semibold">
+                      Volná {formatTimeUntilFree()}
+                    </p>
+                  )}
                 </div>
               </>
             )}
@@ -210,9 +221,6 @@ export function RoomQuickStatus({
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="flex-1 min-w-0">
                         <p className="font-heading font-semibold text-sm truncate">{altRoom.name}</p>
-                        <p className="text-xs opacity-80 font-body">
-                          {altRoom.code.toUpperCase()}
-                        </p>
                       </div>
                       <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs shrink-0 font-body">
                         Volná
