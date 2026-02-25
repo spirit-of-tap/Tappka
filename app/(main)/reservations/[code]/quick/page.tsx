@@ -67,42 +67,41 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
   const nowIso = now.toISOString();
   const twoHoursAhead = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
 
-  // Fetch current reservation
-  const { data: currentReservation } = await supabase
-    .from("reservations")
-    .select(`
-      *,
-      user:profiles(id, name),
-      team:teams(id, name)
-    `)
-    .eq("room_id", room.id)
-    .eq("status", "active")
-    .lte("start_time", nowIso)
-    .gt("end_time", nowIso)
-    .single();
+  // Fire all three independent queries in parallel — eliminates 2 sequential round-trips
+  const [
+    { data: currentReservation },
+    { data: nextReservation },
+    { data: issues },
+  ] = await Promise.all([
+    // Current in-progress reservation
+    supabase
+      .from("reservations")
+      .select(`*, user:profiles(id, name), team:teams(id, name)`)
+      .eq("room_id", room.id)
+      .eq("status", "active")
+      .lte("start_time", nowIso)
+      .gt("end_time", nowIso)
+      .maybeSingle(),
 
-  // Fetch the next upcoming reservation within 2 hours (only relevant when room is currently free)
-  const { data: nextReservation } = await supabase
-    .from("reservations")
-    .select(`
-      *,
-      user:profiles(id, name),
-      team:teams(id, name)
-    `)
-    .eq("room_id", room.id)
-    .eq("status", "active")
-    .gt("start_time", nowIso)
-    .lte("start_time", twoHoursAhead)
-    .order("start_time", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    // Next upcoming reservation within 2 hours
+    supabase
+      .from("reservations")
+      .select(`*, user:profiles(id, name), team:teams(id, name)`)
+      .eq("room_id", room.id)
+      .eq("status", "active")
+      .gt("start_time", nowIso)
+      .lte("start_time", twoHoursAhead)
+      .order("start_time", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
 
-  // Fetch open issues
-  const { data: issues } = await supabase
-    .from("room_issues")
-    .select("*")
-    .eq("room_id", room.id)
-    .eq("status", "open");
+    // Open room issues
+    supabase
+      .from("room_issues")
+      .select("*")
+      .eq("room_id", room.id)
+      .eq("status", "open"),
+  ]);
 
   const roomIssues = (issues || []) as RoomIssue[];
   const isLocked = roomIssues.some((i) => i.issue_type === "locked");
@@ -194,32 +193,31 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
 
   // When status is occupied (in-progress OR near-future reservation), show alternative rooms
   if (status === 'occupied') {
-    // Fetch alternative rooms that are currently free
-    const { data: allRooms } = await supabase
-      .from("rooms")
-      .select("*")
-      .neq("id", room.id)
-      .order("code");
+    // Fetch all other rooms and their current reservations in parallel
+    const [{ data: allRooms }, { data: otherCurrentReservations }] = await Promise.all([
+      supabase
+        .from("rooms")
+        .select("*")
+        .neq("id", room.id)
+        .order("code"),
 
-    if (allRooms && allRooms.length > 0) {
-      // Check which rooms are free
-      const { data: otherCurrentReservations } = await supabase
+      supabase
         .from("reservations")
         .select("room_id")
         .eq("status", "active")
         .lte("start_time", nowIso)
-        .gt("end_time", nowIso);
+        .gt("end_time", nowIso),
+    ]);
 
+    if (allRooms && allRooms.length > 0) {
       const occupiedRoomIds = new Set(
         (otherCurrentReservations || []).map((r) => r.room_id)
       );
 
       const freeRooms = allRooms.filter((r) => !occupiedRoomIds.has(r.id));
 
-      // Sort by relevance
+      // Sort by relevance and take top 3
       const sortedFreeRooms = sortAlternativeRooms(freeRooms, room);
-
-      // Take top 3
       alternativeRooms = sortedFreeRooms.slice(0, 3).map((r) => ({
         id: r.id,
         code: r.code,
