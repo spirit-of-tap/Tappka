@@ -1,8 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import type { UpdateReservationInput } from "@/lib/reservations/types";
-import { RESERVATION_STATUS } from "@/lib/reservations/types";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface RouteParams {
@@ -169,7 +167,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 /**
  * DELETE /api/reservations/[id]
- * Cancel a reservation (soft delete)
+ * Delete a reservation
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
@@ -193,7 +191,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Check ownership
     const { data: existing } = await supabase
       .from("reservations")
-      .select("user_id, status")
+      .select("user_id")
       .eq("id", id)
       .single();
 
@@ -206,44 +204,27 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (existing.user_id !== profile?.id) {
       return NextResponse.json(
-        { error: "Nemáš oprávnění zrušit tuto rezervaci" },
+        { error: "Nemáš oprávnění smazat tuto rezervaci" },
         { status: 403 }
       );
     }
 
-    if (existing.status !== "active") {
-      return NextResponse.json(
-        { error: "Rezervace je již zrušena" },
-        { status: 400 }
-      );
-    }
-
-    // Soft delete - set status to cancelled
-    // Use admin client because the SELECT RLS policy only allows reading active
-    // reservations; after updating to 'cancelled', the regular client can't read
-    // the updated row back, causing a false "RLS blocked" 403.
-    // Ownership has already been verified above via the regular client.
-    // Pin user_id and prior status to close the TOCTOU window between the
-    // ownership check above and this update.
-    const adminSupabase = createAdminClient();
-    const { error } = await adminSupabase
+    const { error } = await supabase
       .from("reservations")
-      .update({ status: RESERVATION_STATUS.CANCELLED })
-      .eq("id", id)
-      .eq("user_id", existing.user_id)
-      .eq("status", existing.status);
+      .delete()
+      .eq("id", id);
 
     if (error) {
-      console.error("Error cancelling reservation:", error);
+      console.error("Error deleting reservation:", error);
       return NextResponse.json(
-        { error: "Nepodařilo se zrušit rezervaci" },
+        { error: "Nepodařilo se smazat rezervaci" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Rezervace zrušena",
+      message: "Rezervace smazána",
     });
   } catch (error) {
     console.error("DELETE /api/reservations/[id] error:", error);
