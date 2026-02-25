@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/responsive-alert-dialog";
 import { ISSUE_TYPE_LABELS, type RoomIssue, type IssueType } from "@/lib/reservations/types";
 
 interface IssuesManagerProps {

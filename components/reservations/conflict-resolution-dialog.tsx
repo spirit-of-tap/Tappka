@@ -10,7 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/responsive-dialog";
 import { formatTime } from "@/lib/reservations/utils";
 import type { Reservation, Room } from "@/lib/reservations/types";
 

@@ -26,7 +26,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/responsive-dialog";
 import { Separator } from "@/components/ui/separator";
 import { StorageAvatar } from "@/components/storage/storage-avatar";
 import {
