@@ -60,6 +60,7 @@ export interface ReservationWithDetails extends Reservation {
   user?: {
     id: string;
     name: string;
+    picture?: string | null;
   };
   team?: {
     id: string;

@@ -10,6 +10,7 @@ import { AlternativeRooms } from "@/components/reservations/alternative-rooms";
 import { IssueReportButton } from "@/components/reservations/issue-report-button";
 import { DAY_NAMES_CS, ISSUE_TYPE_LABELS } from "@/lib/reservations/types";
 import type { Room, ReservationWithDetails, RoomIssue, ScheduleBreak } from "@/lib/reservations/types";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface RoomDetailPageProps {
   params: Promise<{ code: string }>;
@@ -33,6 +34,8 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
+  // Fetch the user's profile to get the profile ID (used for ownership checks)
+  const currentUserProfile = user ? await getCurrentUserProfile(supabase, { user }) : null;
 
   // Fetch room by code
   const { data: room, error: roomError } = await supabase
@@ -65,7 +68,7 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
       .from("reservations")
       .select(`
         *,
-        user:profiles(id, name),
+        user:profiles(id, name, picture),
         team:teams(id, name)
       `)
       .eq("room_id", room.id)
@@ -218,7 +221,7 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
           <RoomScheduleView
             reservations={reservations}
             scheduleBreaks={scheduleBreaks}
-            currentUserId={user?.id ?? ""}
+            currentUserId={currentUserProfile?.id ?? ""}
             roomId={room.id}
             roomName={room.name}
             alternativeRooms={alternativeRooms}
