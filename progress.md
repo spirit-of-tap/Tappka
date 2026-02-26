@@ -104,3 +104,11 @@
   - Added a global paste listener on OTP step so `Cmd/Ctrl+V` works even when OTP input is not focused.
   - Kept auto-submit behavior intact (typed/pasted full OTP now triggers verification and redirect reliably).
   - Verified no lint errors in touched files.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 10:24:00 EET
+- **Task:** Remove the 14-day reservation limit in fetch and write flows.
+- **Completed work:**
+  - Removed `MAX_ADVANCE_BOOKING_DAYS` from `lib/reservations/types.ts` and the booking window helper in `lib/reservations/utils.ts`.
+  - Dropped the API reservation create guard that blocked dates beyond 14 days in `app/api/reservations/route.ts`.
+  - Expanded room detail data fetch to include all future reservations and schedule breaks in `app/(main)/reservations/[code]/page.tsx`.

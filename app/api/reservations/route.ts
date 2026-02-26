@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   OPERATING_HOURS,
-  MAX_ADVANCE_BOOKING_DAYS,
   type CreateReservationInput,
 } from "@/lib/reservations/types";
 import { isRoomAvailableOnDay } from "@/lib/reservations/utils";
@@ -113,16 +112,6 @@ export async function POST(request: NextRequest) {
     if (startDate < now) {
       return NextResponse.json(
         { error: "Nelze rezervovat v minulosti" },
-        { status: 400 }
-      );
-    }
-
-    // Check: within booking window (2 weeks)
-    const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + MAX_ADVANCE_BOOKING_DAYS);
-    if (startDate > maxDate) {
-      return NextResponse.json(
-        { error: `Lze rezervovat maximálně ${MAX_ADVANCE_BOOKING_DAYS} dní dopředu` },
         { status: 400 }
       );
     }

@@ -4,7 +4,6 @@
 
 import { 
   OPERATING_HOURS, 
-  MAX_ADVANCE_BOOKING_DAYS, 
   TIME_SLOT_MINUTES,
   type Room,
   type Reservation,
@@ -32,17 +31,6 @@ export function isWithinOperatingHours(date: Date): boolean {
   if (hours === OPERATING_HOURS.end && minutes > 0) return false;
   
   return true;
-}
-
-/**
- * Check if a date is within the allowed booking window
- */
-export function isWithinBookingWindow(date: Date): boolean {
-  const now = new Date();
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + MAX_ADVANCE_BOOKING_DAYS);
-  
-  return date >= now && date <= maxDate;
 }
 
 /**
@@ -260,4 +248,3 @@ export function isRoomFreeNow(reservations: Reservation[]): boolean {
     return now >= start && now < end;
   });
 }
-

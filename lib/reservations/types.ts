@@ -141,7 +141,6 @@ export const OPERATING_HOURS = {
   end: 22,  // 22:00
 } as const;
 
-export const MAX_ADVANCE_BOOKING_DAYS = 14; // 2 weeks
 export const TIME_SLOT_MINUTES = 15;
 
 // Day names in Czech
