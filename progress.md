@@ -37,3 +37,32 @@
   - Updated reservation-related API routes and pages to stop querying/updating reservation `status` and `reason`.
   - Updated recurring schedule and schedule-break flows to delete affected future reservations instead of setting `status = cancelled`.
   - Updated reservation types and UI schedule filtering to rely on time windows only (no reservation status field).
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 02:26:16 EET
+- **Task:** Create script to transform legacy reservations CSV into Supabase import format.
+- **Completed work:**
+  - Added `scripts/prepare-reservations-import.js` to transform `scripts/reservations_input.csv` into `public.reservations` import-ready rows.
+  - Implemented room mapping via `scripts/rooms_rows.csv` (`code` -> `id`), UUID generation, and reservation type mapping (`training_session` when TS column is filled, otherwise `personal`).
+  - Implemented Czech datetime parsing (`DD.MM.YYYY H:mm`) and conversion to UTC `timestamptz` format (`YYYY-MM-DD HH:mm:ss+00`).
+  - Generated `scripts/reservations_import.csv` (77 transformed rows) for manual Supabase CSV import.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 02:31:01 EET
+- **Task:** Fix invalid reservation time ranges in generated import CSV.
+- **Completed work:**
+  - Updated `scripts/prepare-reservations-import.js` to validate transformed time ranges and handle bad legacy end times.
+  - Added fallback duration repair when source `end_time <= start_time`:
+    - `training_session`: `start_time + 4h`
+    - `personal`: `start_time + 1h`
+  - Regenerated `scripts/reservations_import.csv`; script reported 26 adjusted rows.
+  - Verified resulting CSV has zero invalid ranges (`end_time > start_time` for all rows).
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 02:32:55 EET
+- **Task:** Enforce "first reserved wins" overlap behavior in CSV transform.
+- **Completed work:**
+  - Updated `scripts/prepare-reservations-import.js` to filter overlapping reservations per room before export.
+  - Implemented deterministic keep-order for conflicts: earliest `created_at` wins, then source row order as tiebreaker.
+  - Regenerated `scripts/reservations_import.csv`; script reported 1 overlap row removed.
+  - Verified generated CSV has no room-level overlapping intervals.
