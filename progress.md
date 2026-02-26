@@ -85,3 +85,22 @@
   - Updated `public.validate_picture_only_update()` bypass logic to trust `session_user`/`current_user` admin roles in addition to JWT/database role checks.
   - Kept regular user protection in place so only `picture` updates are allowed for non-admin sessions.
   - Applied migration via MCP (`fix_profile_picture_trigger_for_admin_sessions`) to keep local SQL and database state aligned.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 02:58:12 EET
+- **Task:** Show Mailpit shortcut on verify-email screen in developer mode.
+- **Completed work:**
+  - Updated `components/verify-email-form.tsx` to render a Mailpit external-link button when `process.env.NODE_ENV === "development"`.
+  - Added `DEV_MAILPIT_URL` constant and reused shadcn `Button` with `next/link` + `ExternalLink` icon for consistent UI.
+  - Kept production behavior unchanged by gating the button behind developer mode only.
+  - Verified no lint errors in the touched file.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 03:01:44 EET
+- **Task:** Fix verify-email OTP auto-redirect and paste behavior.
+- **Completed work:**
+  - Updated `lib/constants/auth.ts` to set `OTP_LENGTH` to `6` so OTP auto-submit matches Supabase email OTP length.
+  - Updated `components/verify-email-form.tsx` to render OTP slots dynamically from `OTP_LENGTH`, keeping UI and validation in sync.
+  - Added a global paste listener on OTP step so `Cmd/Ctrl+V` works even when OTP input is not focused.
+  - Kept auto-submit behavior intact (typed/pasted full OTP now triggers verification and redirect reliably).
+  - Verified no lint errors in touched files.

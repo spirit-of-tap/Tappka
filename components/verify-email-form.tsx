@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { ExternalLink } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -33,6 +35,8 @@ import { hasLinkedProfile } from "@/lib/auth-helpers";
 const STORAGE_KEY = "verify-email-form-state";
 const EMAIL_DOMAIN_OPTIONS = ["@studenti.czu.cz", "@pef.czu.cz"] as const;
 const DEFAULT_EMAIL_DOMAIN = EMAIL_DOMAIN_OPTIONS[0];
+const DEV_MAILPIT_URL = "http://127.0.0.1:54324";
+const OTP_INPUT_SLOTS = Array.from({ length: OTP_LENGTH }, (_, index) => index);
 
 type EmailDomainOption = (typeof EMAIL_DOMAIN_OPTIONS)[number];
 
@@ -120,6 +124,7 @@ interface VerifyEmailFormProps {
  * Supports wizard mode for onboarding flow
  */
 export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: VerifyEmailFormProps) {
+  const isDevelopment = process.env.NODE_ENV === "development";
   const [email, setEmail] = useState("");
   const [emailLocalPart, setEmailLocalPart] = useState("");
   const [emailDomain, setEmailDomain] = useState<EmailDomainOption>(DEFAULT_EMAIL_DOMAIN);
@@ -391,6 +396,34 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     }
   }, [otpCode, step, isLoading, lastSubmittedOtp, verifyOTP]);
 
+  /**
+   * Supports pasting OTP from anywhere on the page while on OTP step
+   * so users do not need to focus the input before pressing Cmd/Ctrl+V.
+   */
+  useEffect(() => {
+    if (step !== "otp") {
+      return;
+    }
+
+    const handleGlobalPaste = (event: ClipboardEvent) => {
+      const pastedDigits = event.clipboardData?.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH) ?? "";
+      if (pastedDigits.length !== OTP_LENGTH) {
+        return;
+      }
+
+      event.preventDefault();
+      setOtpCode(pastedDigits);
+      setLastSubmittedOtp(null);
+      setError(null);
+    };
+
+    document.addEventListener("paste", handleGlobalPaste);
+
+    return () => {
+      document.removeEventListener("paste", handleGlobalPaste);
+    };
+  }, [step]);
+
   // In wizard mode, don't render Card wrapper (parent handles it)
   const content = (
     <>
@@ -405,6 +438,15 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
         </CardHeader>
       )}
       <div className={wizardMode ? "" : "p-6"}>
+        {isDevelopment && (
+          <Button type="button" variant="outline" className="mb-4 w-full justify-between" asChild>
+            <Link href={DEV_MAILPIT_URL} target="_blank" rel="noopener noreferrer">
+              <span>Otevřít Mailpit</span>
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
+
         {error && (
           <div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
             {error}
@@ -481,14 +523,9 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
                   disabled={isLoading}
                 >
                   <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                    <InputOTPSlot index={6} />
-                    <InputOTPSlot index={7} />
+                    {OTP_INPUT_SLOTS.map((index) => (
+                      <InputOTPSlot key={index} index={index} />
+                    ))}
                   </InputOTPGroup>
                 </InputOTP>
               </div>
