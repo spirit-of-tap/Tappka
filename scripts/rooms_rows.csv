@@ -1,0 +1,7 @@
+id,code,name,description,available_days,can_have_ts,created_at
+7864e331-9fbe-46aa-974f-fb5f14928530,d226,D226,"Horní Koučovačka ""Kaamos"" místnost",,true,2026-02-02 22:02:28.733256+00
+ab5e7ecb-56b2-44d3-9b75-bc718738df22,d126,D126,Přední Koučovačka,,true,2026-02-02 22:02:28.733256+00
+b629f437-3546-4963-867c-e01be6f533ac,d129,D129 - Reprezentační místnost,Zadní pravá malá místnost,,false,2026-02-02 22:02:28.733256+00
+b6de2cb9-1037-4ea1-a73f-5e4b99981a6e,d127,D127 - Tichá místnost,Přední pravá malá místnost se zvedacímy stoly a gaučíkem,,false,2026-02-02 22:02:28.733256+00
+ca0167cb-6263-40fd-9b22-f589aa78058c,d107,D107,Dostupná pouze ve středu. První středa v měsíci: Houston Calling 9-12.,"[""3""]",false,2026-02-02 22:02:28.733256+00
+e8919332-08cc-4d6f-9d07-8ef8867594fe,d132,D132,Zadní Koučovačka,,true,2026-02-02 22:02:28.733256+00

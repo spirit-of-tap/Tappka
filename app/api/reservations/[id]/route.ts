@@ -81,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Check ownership
     const { data: existing } = await supabase
       .from("reservations")
-      .select("user_id, status")
+      .select("user_id")
       .eq("id", id)
       .single();
 
@@ -99,15 +99,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (existing.status !== "active") {
-      return NextResponse.json(
-        { error: "Nelze upravit zrušenou rezervaci" },
-        { status: 400 }
-      );
-    }
-
     const body: UpdateReservationInput = await request.json();
-    const allowedFields = ["title", "reason", "person_count", "is_cowork_open"];
+    const allowedFields = ["title", "person_count", "is_cowork_open"];
     const updateData: Record<string, unknown> = {};
 
     for (const field of allowedFields) {

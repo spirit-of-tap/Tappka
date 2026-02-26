@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { ExternalLink } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -15,6 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
@@ -24,6 +33,35 @@ import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/li
 import { hasLinkedProfile } from "@/lib/auth-helpers";
 
 const STORAGE_KEY = "verify-email-form-state";
+const EMAIL_DOMAIN_OPTIONS = ["@studenti.czu.cz", "@pef.czu.cz"] as const;
+const DEFAULT_EMAIL_DOMAIN = EMAIL_DOMAIN_OPTIONS[0];
+const DEV_MAILPIT_URL = "http://127.0.0.1:54324";
+const OTP_INPUT_SLOTS = Array.from({ length: OTP_LENGTH }, (_, index) => index);
+
+type EmailDomainOption = (typeof EMAIL_DOMAIN_OPTIONS)[number];
+
+/**
+ * Extracts local part and selected domain from a full email
+ */
+const parseEmailParts = (value: string): { localPart: string; domain: EmailDomainOption } => {
+  const trimmedValue = value.trim().toLowerCase();
+  const matchedDomain = EMAIL_DOMAIN_OPTIONS.find((domain) => trimmedValue.endsWith(domain));
+
+  if (!matchedDomain) {
+    const [localPart = ""] = trimmedValue.split("@");
+    return {
+      localPart,
+      domain: DEFAULT_EMAIL_DOMAIN,
+    };
+  }
+
+  const localPart = trimmedValue.slice(0, -matchedDomain.length);
+
+  return {
+    localPart,
+    domain: matchedDomain,
+  };
+};
 
 interface StoredState {
   step: "email" | "otp";
@@ -86,7 +124,10 @@ interface VerifyEmailFormProps {
  * Supports wizard mode for onboarding flow
  */
 export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: VerifyEmailFormProps) {
+  const isDevelopment = process.env.NODE_ENV === "development";
   const [email, setEmail] = useState("");
+  const [emailLocalPart, setEmailLocalPart] = useState("");
+  const [emailDomain, setEmailDomain] = useState<EmailDomainOption>(DEFAULT_EMAIL_DOMAIN);
   const [otpCode, setOtpCode] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
   const [isLoading, setIsLoading] = useState(false);
@@ -276,10 +317,22 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
    * In wizard mode, always start fresh from email step
    */
   useEffect(() => {
+    const trimmedLocalPart = emailLocalPart.trim().toLowerCase();
+    if (!trimmedLocalPart) {
+      setEmail("");
+      return;
+    }
+
+    setEmail(`${trimmedLocalPart}${emailDomain}`);
+  }, [emailLocalPart, emailDomain]);
+
+  useEffect(() => {
     // In wizard mode, always start from email step (don't restore state)
     if (wizardMode) {
       setStep("email");
       setEmail("");
+      setEmailLocalPart("");
+      setEmailDomain(DEFAULT_EMAIL_DOMAIN);
       clearPersistedState();
       setIsHydrated(true);
       return;
@@ -291,6 +344,8 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     if (persisted.step === "otp" && (!persisted.email || !persisted.email.includes("@"))) {
       setStep("email");
       setEmail("");
+      setEmailLocalPart("");
+      setEmailDomain(DEFAULT_EMAIL_DOMAIN);
       clearPersistedState();
       setIsHydrated(true);
       return;
@@ -298,7 +353,10 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
 
     // Restore persisted state if valid
     if (persisted.email && persisted.email.includes("@")) {
-      setEmail(persisted.email);
+      const { localPart, domain } = parseEmailParts(persisted.email);
+      setEmailLocalPart(localPart);
+      setEmailDomain(domain);
+      setEmail(`${localPart}${domain}`);
     }
     if (persisted.step === "email" || persisted.step === "otp") {
       setStep(persisted.step);
@@ -315,13 +373,13 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     // Don't persist until after hydration to avoid hydration mismatches
     if (!isHydrated) return;
 
-    if (email && email.includes("@")) {
+    if (emailLocalPart.trim()) {
       savePersistedState({ step, email });
     } else if (step === "otp" && !email) {
       // If on OTP step but no email, clear invalid state
       clearPersistedState();
     }
-  }, [email, step, isHydrated]);
+  }, [email, emailLocalPart, step, isHydrated]);
 
   /**
    * Auto-submits the form when OTP code reaches the expected length
@@ -338,6 +396,34 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     }
   }, [otpCode, step, isLoading, lastSubmittedOtp, verifyOTP]);
 
+  /**
+   * Supports pasting OTP from anywhere on the page while on OTP step
+   * so users do not need to focus the input before pressing Cmd/Ctrl+V.
+   */
+  useEffect(() => {
+    if (step !== "otp") {
+      return;
+    }
+
+    const handleGlobalPaste = (event: ClipboardEvent) => {
+      const pastedDigits = event.clipboardData?.getData("text").replace(/\D/g, "").slice(0, OTP_LENGTH) ?? "";
+      if (pastedDigits.length !== OTP_LENGTH) {
+        return;
+      }
+
+      event.preventDefault();
+      setOtpCode(pastedDigits);
+      setLastSubmittedOtp(null);
+      setError(null);
+    };
+
+    document.addEventListener("paste", handleGlobalPaste);
+
+    return () => {
+      document.removeEventListener("paste", handleGlobalPaste);
+    };
+  }, [step]);
+
   // In wizard mode, don't render Card wrapper (parent handles it)
   const content = (
     <>
@@ -352,6 +438,15 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
         </CardHeader>
       )}
       <div className={wizardMode ? "" : "p-6"}>
+        {isDevelopment && (
+          <Button type="button" variant="outline" className="mb-4 w-full justify-between" asChild>
+            <Link href={DEV_MAILPIT_URL} target="_blank" rel="noopener noreferrer">
+              <span>Otevřít Mailpit</span>
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
+
         {error && (
           <div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
             {error}
@@ -361,17 +456,45 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
         {step === "email" ? (
           <form onSubmit={handleSendOTP} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Tvůj ČZU email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="jmeno.prijmeni@pef.czu.cz"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                required
-                autoFocus
-              />
+              <Label htmlFor="email-local-part">Tvůj ČZU email</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="email-local-part"
+                  type="text"
+                  placeholder="jmeno.prijmeni"
+                  value={emailLocalPart}
+                  onChange={(e) => {
+                    const inputValue = e.target.value.trim().toLowerCase();
+                    if (!inputValue.includes("@")) {
+                      setEmailLocalPart(inputValue);
+                      return;
+                    }
+
+                    const { localPart, domain } = parseEmailParts(inputValue);
+                    setEmailLocalPart(localPart);
+                    setEmailDomain(domain);
+                  }}
+                  disabled={isLoading}
+                  required
+                  autoFocus
+                />
+                <Select
+                  value={emailDomain}
+                  onValueChange={(value) => setEmailDomain(value as EmailDomainOption)}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Doména" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EMAIL_DOMAIN_OPTIONS.map((domain) => (
+                      <SelectItem key={domain} value={domain}>
+                        {domain}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="text-xs text-muted-foreground">
                 Použij svůj ČZU email
               </p>
@@ -400,14 +523,9 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
                   disabled={isLoading}
                 >
                   <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                    <InputOTPSlot index={6} />
-                    <InputOTPSlot index={7} />
+                    {OTP_INPUT_SLOTS.map((index) => (
+                      <InputOTPSlot key={index} index={index} />
+                    ))}
                   </InputOTPGroup>
                 </InputOTP>
               </div>

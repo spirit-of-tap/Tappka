@@ -48,7 +48,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
       const dayKey = format(day, "yyyy-MM-dd");
       const dayReservations = reservations.filter((r) => {
         const start = new Date(r.start_time);
-        return isSameDay(start, day) && r.status === "active";
+        return isSameDay(start, day);
       });
       map.set(dayKey, dayReservations);
     });

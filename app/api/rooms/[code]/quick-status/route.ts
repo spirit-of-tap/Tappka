@@ -75,7 +75,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         team:teams(id, name)
       `)
       .eq("room_id", room.id)
-      .eq("status", "active")
       .lte("start_time", nowIso)
       .gt("end_time", nowIso)
       .single();
@@ -152,7 +151,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const { data: otherCurrentReservations } = await supabase
           .from("reservations")
           .select("room_id")
-          .eq("status", "active")
           .lte("start_time", nowIso)
           .gt("end_time", nowIso);
 

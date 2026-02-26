@@ -7,12 +7,6 @@ export type ReservationType = 'personal' | 'training_session' | 'houston_calling
 export type IssueType = 'locked' | 'mess' | 'technical' | 'other';
 export type IssueStatus = 'open' | 'resolved';
 export type ScheduleBreakType = 'days_of_joy' | 'holiday' | 'other';
-export type ReservationStatus = 'active' | 'cancelled';
-
-export const RESERVATION_STATUS = {
-  ACTIVE: 'active',
-  CANCELLED: 'cancelled',
-} as const satisfies Record<string, ReservationStatus>;
 
 // Room from database
 export interface Room {
@@ -49,12 +43,10 @@ export interface Reservation {
   recurring_schedule_id: string | null;
   reservation_type: ReservationType;
   title: string;
-  reason: string | null;
   person_count: number | null;
   start_time: string;
   end_time: string;
   is_cowork_open: boolean;
-  status: ReservationStatus;
   created_at: string;
   updated_at: string;
 }
@@ -137,12 +129,10 @@ export interface CreateReservationInput {
 // Form data for updating a reservation
 export interface UpdateReservationInput {
   title?: string;
-  reason?: string;
   person_count?: number;
   start_time?: string;
   end_time?: string;
   is_cowork_open?: boolean;
-  status?: ReservationStatus;
 }
 
 // Constants
@@ -151,7 +141,6 @@ export const OPERATING_HOURS = {
   end: 22,  // 22:00
 } as const;
 
-export const MAX_ADVANCE_BOOKING_DAYS = 14; // 2 weeks
 export const TIME_SLOT_MINUTES = 15;
 
 // Day names in Czech

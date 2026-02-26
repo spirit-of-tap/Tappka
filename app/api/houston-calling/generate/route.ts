@@ -49,7 +49,6 @@ async function createHCForMonth(
     .eq("reservation_type", "houston_calling")
     .gte("start_time", startOfDay.toISOString())
     .lte("start_time", endOfDay.toISOString())
-    .eq("status", "active")
     .single();
 
   if (existingHC) {
@@ -66,7 +65,6 @@ async function createHCForMonth(
     user_id: null, // System reservation
     reservation_type: "houston_calling",
     title: "Houston Calling",
-    reason: "Pravidelná měsíční schůzka první středu v měsíci",
     start_time: startTime.toISOString(),
     end_time: endTime.toISOString(),
   });

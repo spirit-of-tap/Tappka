@@ -68,19 +68,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Nepodařilo se vytvořit výjimku" }, { status: 500 });
     }
 
-    // Cancel existing TS reservations in this period
+    // Delete existing TS reservations in this period
     // We need to find reservations where:
     // - reservation_type = 'training_session'
     // - start_time is within the break period
-    // - status = 'active'
     const startDateTime = `${start_date}T00:00:00`;
     const endDateTime = `${end_date}T23:59:59`;
 
     const { data: cancelledReservations, error: cancelError } = await supabase
       .from("reservations")
-      .update({ status: "cancelled" })
+      .delete()
       .eq("reservation_type", "training_session")
-      .eq("status", "active")
       .gte("start_time", startDateTime)
       .lte("start_time", endDateTime)
       .select("id");

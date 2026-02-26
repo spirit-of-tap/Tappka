@@ -49,21 +49,17 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
   }
 
   // Fetch data in parallel
-  // Include past 7 days for navigation + future 14 days
+  // Include past 7 days and future reservations for navigation
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const oneWeekAgo = new Date(today);
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-  const twoWeeksLater = new Date(today);
-  twoWeeksLater.setDate(twoWeeksLater.getDate() + 14);
-
   const oneWeekAgoStr = oneWeekAgo.toISOString().split("T")[0];
-  const twoWeeksLaterStr = twoWeeksLater.toISOString().split("T")[0];
 
   const [reservationsResult, issuesResult, alternativeRoomsResult, breaksResult] = await Promise.all([
-    // Reservations for this room (past 7 days + next 14 days for calendar navigation)
+    // Reservations for this room (past 7 days + future for calendar navigation)
     supabase
       .from("reservations")
       .select(`
@@ -72,9 +68,7 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
         team:teams(id, name)
       `)
       .eq("room_id", room.id)
-      .eq("status", "active")
       .gte("start_time", oneWeekAgo.toISOString())
-      .lte("start_time", twoWeeksLater.toISOString())
       .order("start_time"),
 
     // Open issues for this room
@@ -92,11 +86,10 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
       .neq("id", room.id)
       .order("code"),
 
-    // Schedule breaks for the date range (past 7 + future 14 days)
+    // Schedule breaks for the date range (past 7 + future)
     supabase
       .from("schedule_breaks")
       .select("*")
-      .lte("start_date", twoWeeksLaterStr)
       .gte("end_date", oneWeekAgoStr)
       .order("start_date"),
   ]);

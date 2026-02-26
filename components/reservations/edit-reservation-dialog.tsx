@@ -142,6 +142,20 @@ export function EditReservationDialog({
     }
   };
 
+  const handleReasonKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || !event.metaKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isLoading || !reason.trim()) {
+      return;
+    }
+
+    void handleSubmit();
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {/* Only render trigger in uncontrolled mode */}
@@ -170,6 +184,7 @@ export function EditReservationDialog({
               id="edit-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
+              onKeyDown={handleReasonKeyDown}
               placeholder="Proč potřebuješ místnost?"
               rows={2}
             />

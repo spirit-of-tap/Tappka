@@ -69,7 +69,6 @@ export function RoomScheduleView({
   // Check for conflicts with existing reservations
   const findConflict = useCallback((startTime: Date, endTime: Date): ReservationWithDetails | null => {
     return reservations.find((r) => {
-      if (r.status !== "active") return false;
       const resStart = new Date(r.start_time);
       const resEnd = new Date(r.end_time);
       // Check overlap

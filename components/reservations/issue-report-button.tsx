@@ -99,6 +99,22 @@ export function IssueReportButton({ roomId }: IssueReportButtonProps) {
     }
   };
 
+  const handleDescriptionKeyDown = (
+    event: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
+    if (event.key !== "Enter" || !event.metaKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (isLoading || !selectedType) {
+      return;
+    }
+
+    void handleSubmit();
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -146,6 +162,7 @@ export function IssueReportButton({ roomId }: IssueReportButtonProps) {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={handleDescriptionKeyDown}
               placeholder="Detaily problému..."
               rows={3}
             />
