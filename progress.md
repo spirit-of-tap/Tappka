@@ -76,3 +76,12 @@
   - Kept OTP/send flow unchanged by composing and persisting the full email from local part + selected domain.
   - Added handling for pasted full emails so domain selection and local part are parsed automatically.
   - Verified no lint errors in the touched file.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 02:50:22 EET
+- **Task:** Fix `validate_picture_only_update()` to allow admin/postgres updates.
+- **Completed work:**
+  - Added migration `supabase/migrations/20260226005022_fix_profile_picture_trigger_for_admin_sessions.sql`.
+  - Updated `public.validate_picture_only_update()` bypass logic to trust `session_user`/`current_user` admin roles in addition to JWT/database role checks.
+  - Kept regular user protection in place so only `picture` updates are allowed for non-admin sessions.
+  - Applied migration via MCP (`fix_profile_picture_trigger_for_admin_sessions`) to keep local SQL and database state aligned.
