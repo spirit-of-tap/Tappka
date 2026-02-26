@@ -66,3 +66,13 @@
   - Implemented deterministic keep-order for conflicts: earliest `created_at` wins, then source row order as tiebreaker.
   - Regenerated `scripts/reservations_import.csv`; script reported 1 overlap row removed.
   - Verified generated CSV has no room-level overlapping intervals.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 02:39:26 EET
+- **Task:** Add CZU domain dropdown to onboarding email verification input.
+- **Completed work:**
+  - Updated `components/verify-email-form.tsx` to split email entry into local part input and domain dropdown.
+  - Added domain options `@studenti.czu.cz` (default) and `@pef.czu.cz`.
+  - Kept OTP/send flow unchanged by composing and persisting the full email from local part + selected domain.
+  - Added handling for pasted full emails so domain selection and local part are parsed automatically.
+  - Verified no lint errors in the touched file.
