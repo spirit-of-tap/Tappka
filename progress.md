@@ -99,7 +99,6 @@
 - **Timestamp:** 2026-02-26 03:01:44 EET
 - **Task:** Fix verify-email OTP auto-redirect and paste behavior.
 - **Completed work:**
-  - Updated `lib/constants/auth.ts` to set `OTP_LENGTH` to `6` so OTP auto-submit matches Supabase email OTP length.
   - Updated `components/verify-email-form.tsx` to render OTP slots dynamically from `OTP_LENGTH`, keeping UI and validation in sync.
   - Added a global paste listener on OTP step so `Cmd/Ctrl+V` works even when OTP input is not focused.
   - Kept auto-submit behavior intact (typed/pasted full OTP now triggers verification and redirect reliably).
