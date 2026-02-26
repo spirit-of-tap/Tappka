@@ -20,3 +20,20 @@
   - Merged successful PATCH response data into local dialog state so updated title/person count/cowork values are shown immediately after submit.
   - Switched dialog internals to render and act on the local reservation state for save/cancel/join/leave actions.
   - Verified no lint errors in the touched file.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 01:27:02 EET
+- **Task:** Make `manifest.json` accessible without auth in proxy matcher.
+- **Completed work:**
+  - Updated `proxy.ts` matcher exclusions to bypass proxy auth/session handling for `manifest.json`.
+  - Preserved existing exclusions for static assets and images.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-02-26 02:16:21 EET
+- **Task:** Remove `status` and `reason` from `reservations` and update all dependent code paths.
+- **Completed work:**
+  - Added and applied migration `supabase/migrations/20260226001550_remove_status_reason_from_reservations.sql`.
+  - Removed `status`/`reason` columns from `public.reservations` and rebuilt dependent exclusion/index/policy objects.
+  - Updated reservation-related API routes and pages to stop querying/updating reservation `status` and `reason`.
+  - Updated recurring schedule and schedule-break flows to delete affected future reservations instead of setting `status = cancelled`.
+  - Updated reservation types and UI schedule filtering to rely on time windows only (no reservation status field).

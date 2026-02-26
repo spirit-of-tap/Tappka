@@ -49,7 +49,7 @@ interface ReservationDetailDialogProps {
 
 /**
  * Dialog showing reservation details including cowork participants.
- * Owners can edit the title/reason, person count, cowork toggle, and cancel the reservation.
+ * Owners can edit the title, person count, cowork toggle, and cancel the reservation.
  */
 export function ReservationDetailDialog({
   reservation,
@@ -401,16 +401,6 @@ export function ReservationDetailDialog({
               <Badge variant="outline">
                 {RESERVATION_TYPE_LABELS[reservationData.reservation_type]}
               </Badge>
-            )}
-
-            {/* Reason */}
-            {reservationData.reason && (
-              <div>
-                <p className="text-sm font-medium mb-1">Důvod</p>
-                <p className="text-sm text-muted-foreground">
-                  {reservationData.reason}
-                </p>
-              </div>
             )}
 
             {/* Person count */}

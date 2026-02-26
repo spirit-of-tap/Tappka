@@ -66,7 +66,6 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
   // Position reservations
   const positionedReservations = useMemo(() => {
     return reservations
-      .filter((r) => r.status === "active")
       .map((reservation) => {
         const start = new Date(reservation.start_time);
         const end = new Date(reservation.end_time);

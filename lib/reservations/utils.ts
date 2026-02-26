@@ -140,7 +140,6 @@ export function getNextAvailableTime(
 
   // Sort by end time
   const sorted = [...reservations]
-    .filter(r => r.status === 'active')
     .sort((a, b) => new Date(a.end_time).getTime() - new Date(b.end_time).getTime());
 
   // Find the first gap or the end of last reservation
@@ -171,7 +170,7 @@ export function isReservationActive(reservation: Reservation): boolean {
   const start = new Date(reservation.start_time);
   const end = new Date(reservation.end_time);
   
-  return now >= start && now < end && reservation.status === 'active';
+  return now >= start && now < end;
 }
 
 /**
@@ -258,7 +257,7 @@ export function isRoomFreeNow(reservations: Reservation[]): boolean {
   return !reservations.some(r => {
     const start = new Date(r.start_time);
     const end = new Date(r.end_time);
-    return now >= start && now < end && r.status === 'active';
+    return now >= start && now < end;
   });
 }
 

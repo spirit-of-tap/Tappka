@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Check reservation exists and is open for cowork
     const { data: reservation } = await supabase
       .from("reservations")
-      .select("id, user_id, is_cowork_open, status, start_time, end_time")
+      .select("id, user_id, is_cowork_open, start_time, end_time")
       .eq("id", reservation_id)
       .single();
 
@@ -40,13 +40,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Rezervace nenalezena" },
         { status: 404 }
-      );
-    }
-
-    if (reservation.status !== "active") {
-      return NextResponse.json(
-        { error: "Rezervace není aktivní" },
-        { status: 400 }
       );
     }
 
@@ -89,7 +82,6 @@ export async function POST(request: NextRequest) {
       .from("reservations")
       .select("id")
       .eq("user_id", profile?.id)
-      .eq("status", "active")
       .lt("start_time", reservation.end_time)
       .gt("end_time", reservation.start_time);
 

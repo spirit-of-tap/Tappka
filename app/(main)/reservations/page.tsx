@@ -34,7 +34,6 @@ export default async function ReservationsPage() {
     supabase
       .from("reservations")
       .select("*")
-      .eq("status", "active")
       .gte("end_time", now)
       .lte("start_time", new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
       .order("start_time"),
@@ -53,7 +52,6 @@ export default async function ReservationsPage() {
         room:rooms(id, code, name)
       `)
       .eq("user_id", profileId)
-      .eq("status", "active")
       .gte("end_time", now)
       .order("start_time")
       .limit(10),
@@ -80,7 +78,6 @@ export default async function ReservationsPage() {
         )
       `)
       .eq("is_cowork_open", true)
-      .eq("status", "active")
       .gte("end_time", now)
       .order("start_time")
       .limit(50), // Increased limit to catch both joined and available

@@ -72,11 +72,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Nepodařilo se upravit rozvrh" }, { status: 500 });
     }
 
-    // Cancel all future reservations linked to this schedule
+    // Delete all future reservations linked to this schedule
     const now = new Date().toISOString();
     await supabase
       .from("reservations")
-      .update({ status: "cancelled" })
+      .delete()
       .eq("recurring_schedule_id", id)
       .gte("start_time", now);
 
@@ -170,15 +170,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Rozvrh nenalezen" }, { status: 404 });
     }
 
-    // Cancel all future reservations linked to this schedule
+    // Delete all future reservations linked to this schedule
     const now = new Date().toISOString();
     await supabase
       .from("reservations")
-      .update({ status: "cancelled" })
+      .delete()
       .eq("recurring_schedule_id", id)
       .gte("start_time", now);
 
-    // Delete the schedule (past reservations will remain with status)
+    // Delete the schedule (past reservations remain unaffected)
     const { error } = await supabase
       .from("recurring_schedules")
       .delete()
@@ -191,7 +191,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      message: "Rozvrh smazán a budoucí rezervace zrušeny",
+      message: "Rozvrh smazán a budoucí rezervace odstraněny",
     });
   } catch (error) {
     console.error("DELETE /api/recurring-schedules/[id] error:", error);

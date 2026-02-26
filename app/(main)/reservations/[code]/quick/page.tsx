@@ -78,7 +78,6 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       .from("reservations")
       .select(`*, user:profiles(id, name), team:teams(id, name)`)
       .eq("room_id", room.id)
-      .eq("status", "active")
       .lte("start_time", nowIso)
       .gt("end_time", nowIso)
       .maybeSingle(),
@@ -88,7 +87,6 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       .from("reservations")
       .select(`*, user:profiles(id, name), team:teams(id, name)`)
       .eq("room_id", room.id)
-      .eq("status", "active")
       .gt("start_time", nowIso)
       .lte("start_time", twoHoursAhead)
       .order("start_time", { ascending: true })
@@ -210,7 +208,6 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       supabase
         .from("reservations")
         .select("room_id")
-        .eq("status", "active")
         .lte("start_time", nowIso)
         .gt("end_time", nowIso),
     ]);

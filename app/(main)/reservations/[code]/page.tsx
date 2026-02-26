@@ -72,7 +72,6 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
         team:teams(id, name)
       `)
       .eq("room_id", room.id)
-      .eq("status", "active")
       .gte("start_time", oneWeekAgo.toISOString())
       .lte("start_time", twoWeeksLater.toISOString())
       .order("start_time"),

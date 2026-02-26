@@ -75,7 +75,6 @@ export async function GET(request: NextRequest) {
       .from("reservations")
       .select("id, start_time, end_time, title, reservation_type")
       .eq("room_id", roomId)
-      .eq("status", "active")
       .gte("start_time", startOfDay.toISOString())
       .lte("start_time", endOfDay.toISOString())
       .order("start_time");

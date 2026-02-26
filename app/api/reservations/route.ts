@@ -35,7 +35,6 @@ export async function GET(request: NextRequest) {
         user:profiles(id, name),
         team:teams(id, name)
       `)
-      .eq("status", "active")
       .order("start_time");
 
     if (roomId) {
@@ -90,7 +89,7 @@ export async function POST(request: NextRequest) {
     const body: CreateReservationInput = await request.json();
     const { room_id, title, person_count, start_time, end_time, is_cowork_open } = body;
 
-    // Validation - title is the reason (simplified)
+    // Validation - title is required
     if (!room_id || !title || !person_count || !start_time || !end_time) {
       return NextResponse.json(
         { error: "Chybí povinné údaje" },
@@ -174,7 +173,6 @@ export async function POST(request: NextRequest) {
       .from("reservations")
       .select("id")
       .eq("room_id", room_id)
-      .eq("status", "active")
       .lt("start_time", end_time)
       .gt("end_time", start_time);
 
@@ -199,7 +197,6 @@ export async function POST(request: NextRequest) {
       .from("reservations")
       .select("id, room:rooms(name)")
       .eq("user_id", profile?.id)
-      .eq("status", "active")
       .lt("start_time", end_time)
       .gt("end_time", start_time);
 
@@ -210,7 +207,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create reservation (title serves as reason - simplified)
+    // Create reservation
     const { data: reservation, error: insertError } = await supabase
       .from("reservations")
       .insert({
