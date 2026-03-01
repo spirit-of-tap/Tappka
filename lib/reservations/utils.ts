@@ -19,17 +19,30 @@ export function isRoomAvailableOnDay(room: Room, date: Date): boolean {
   return room.available_days.includes(date.getDay());
 }
 
+const PRAGUE_TZ = "Europe/Prague";
+
+function getPragueHourAndMinute(date: Date): { hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: PRAGUE_TZ,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(date);
+  const hour = parseInt(parts.find((p) => p.type === "hour")!.value, 10);
+  const minute = parseInt(parts.find((p) => p.type === "minute")!.value, 10);
+  return { hour, minute };
+}
+
 /**
  * Check if a time is within operating hours
  */
 export function isWithinOperatingHours(date: Date): boolean {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  
-  if (hours < OPERATING_HOURS.start) return false;
-  if (hours >= OPERATING_HOURS.end) return false;
-  if (hours === OPERATING_HOURS.end && minutes > 0) return false;
-  
+  const { hour, minute } = getPragueHourAndMinute(date);
+
+  if (hour < OPERATING_HOURS.start) return false;
+  if (hour >= OPERATING_HOURS.end) return false;
+  if (hour === OPERATING_HOURS.end && minute > 0) return false;
+
   return true;
 }
 

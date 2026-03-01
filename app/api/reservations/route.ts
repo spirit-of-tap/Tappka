@@ -7,6 +7,20 @@ import {
 import { isRoomAvailableOnDay } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
+const PRAGUE_TZ = "Europe/Prague";
+
+function getPragueHourAndMinute(date: Date): { hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: PRAGUE_TZ,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(date);
+  const hour = parseInt(parts.find((p) => p.type === "hour")!.value, 10);
+  const minute = parseInt(parts.find((p) => p.type === "minute")!.value, 10);
+  return { hour, minute };
+}
+
 /**
  * GET /api/reservations
  * Fetch reservations with optional filters
@@ -116,10 +130,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check: within operating hours
-    const startHour = startDate.getHours();
-    const endHour = endDate.getHours();
-    const endMinutes = endDate.getMinutes();
+    // Check: within operating hours (always evaluated in Prague timezone)
+    const { hour: startHour } = getPragueHourAndMinute(startDate);
+    const { hour: endHour, minute: endMinutes } = getPragueHourAndMinute(endDate);
 
     if (startHour < OPERATING_HOURS.start || startHour >= OPERATING_HOURS.end) {
       return NextResponse.json(
