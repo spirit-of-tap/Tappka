@@ -19,6 +19,12 @@ export default function GlobalError({
     <html>
       <body>
         <NextError statusCode={0} />
+        <button
+          onClick={reset}
+          style={{ position: "fixed", bottom: "1rem", right: "1rem" }}
+        >
+          Zkusit znovu
+        </button>
       </body>
     </html>
   );

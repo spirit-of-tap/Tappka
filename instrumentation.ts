@@ -34,6 +34,6 @@ export const onRequestError: Instrumentation.onRequestError = async (
       }
     }
 
-    await posthog.captureException(err, distinctId ?? undefined);
+    await posthog.captureExceptionImmediate(err, distinctId ?? undefined);
   }
 };
