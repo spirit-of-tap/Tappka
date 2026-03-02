@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { addDays, format, parseISO, getDay } from "date-fns";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { pragueLocalToUtcISO } from "@/lib/reservations/utils";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -93,8 +94,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     while (currentDate <= endDate) {
       if (getDay(currentDate) === finalSchedule.day_of_week) {
         const dateStr = format(currentDate, "yyyy-MM-dd");
-        const startDateTime = `${dateStr}T${finalSchedule.start_time}`;
-        const endDateTime = `${dateStr}T${finalSchedule.end_time}`;
 
         reservationsToCreate.push({
           room_id: finalSchedule.room_id,
@@ -102,8 +101,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           recurring_schedule_id: id,
           reservation_type: "training_session",
           title: "Training Session",
-          start_time: startDateTime,
-          end_time: endDateTime,
+          start_time: pragueLocalToUtcISO(dateStr, finalSchedule.start_time),
+          end_time: pragueLocalToUtcISO(dateStr, finalSchedule.end_time),
         });
       }
       currentDate = addDays(currentDate, 1);

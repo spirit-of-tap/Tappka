@@ -21,6 +21,75 @@ export function isRoomAvailableOnDay(room: Room, date: Date): boolean {
 
 const PRAGUE_TZ = "Europe/Prague";
 
+/**
+ * Convert a date string (YYYY-MM-DD) and time string (HH:MM or HH:MM:SS)
+ * from Europe/Prague local time to a UTC ISO string.
+ *
+ * This is needed because training session times are user-entered in Prague
+ * time, but reservations.start_time / end_time are TIMESTAMPTZ columns stored
+ * as UTC in the database.
+ */
+export function pragueLocalToUtcISO(dateStr: string, timeStr: string): string {
+  // Normalise time to HH:MM:SS
+  const timePart = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+
+  // Build an ISO-8601 string that Intl can resolve in the Prague zone.
+  // We do this by asking the runtime what UTC instant corresponds to
+  // "YYYY-MM-DDTHH:MM:SS" in Europe/Prague.
+  const naiveISO = `${dateStr}T${timePart}`;
+
+  // Use Intl to get the Prague-zone offset at this instant.
+  // Strategy: create a Date from the naive string (JS treats it as LOCAL
+  // time of the runtime, which may be UTC on the server), then correct
+  // for the difference between Prague offset and the runtime offset.
+  const runtimeDate = new Date(naiveISO);
+
+  // Get the UTC offset for Prague at this instant (in minutes, e.g. +60 or +120)
+  const pragueOffsetMin = getPragueOffsetMinutes(runtimeDate);
+  // Get the runtime (server) UTC offset in minutes (0 on production servers)
+  const runtimeOffsetMin = -runtimeDate.getTimezoneOffset();
+
+  // Adjust: if runtime parsed it as UTC (offset 0) but Prague is +60,
+  // we need to subtract 60 minutes from the UTC time.
+  const correctedDate = new Date(
+    runtimeDate.getTime() - (pragueOffsetMin - runtimeOffsetMin) * 60_000
+  );
+
+  return correctedDate.toISOString();
+}
+
+/**
+ * Get the current UTC offset of Europe/Prague for a given instant, in minutes.
+ * Returns e.g. 60 for CET (+01:00) or 120 for CEST (+02:00).
+ */
+function getPragueOffsetMinutes(date: Date): number {
+  // Format the date twice: once in UTC, once in Prague. The difference is the offset.
+  const utcStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "UTC",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+
+  const pragueStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: PRAGUE_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+
+  const utcMs = new Date(utcStr.replace(", ", "T")).getTime();
+  const pragueMs = new Date(pragueStr.replace(", ", "T")).getTime();
+
+  return (pragueMs - utcMs) / 60_000;
+}
+
 function getPragueHourAndMinute(date: Date): { hour: number; minute: number } {
   const parts = new Intl.DateTimeFormat("cs-CZ", {
     timeZone: PRAGUE_TZ,

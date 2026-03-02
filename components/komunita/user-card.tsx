@@ -13,11 +13,15 @@ import { cn } from '@/lib/utils';
 interface UserCardProps {
   profile: ProfileWithTeam;
   pictureUrl: string | null;
+  from?: string;
 }
 
-export function UserCard({ profile, pictureUrl }: UserCardProps) {
+export function UserCard({ profile, pictureUrl, from }: UserCardProps) {
+  const href = from
+    ? `/komunita/profil/${profile.id}?from=${encodeURIComponent(from)}`
+    : `/komunita/profil/${profile.id}`;
   return (
-    <Link href={`/komunita/profil/${profile.id}`}>
+    <Link href={href}>
       <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
         <CardContent className="p-4 space-y-3">
           {/* Avatar and Name */}

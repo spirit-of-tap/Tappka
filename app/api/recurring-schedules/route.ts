@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { addDays, format, getDay, setHours, setMinutes } from "date-fns";
+import { addDays, format, getDay } from "date-fns";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { pragueLocalToUtcISO } from "@/lib/reservations/utils";
 
 interface CreateScheduleInput {
   room_id: string;
@@ -111,8 +112,6 @@ export async function POST(request: NextRequest) {
     }));
 
     // Generate individual reservations
-    const [startHour, startMin] = start_time.split(":").map(Number);
-    const [endHour, endMin] = end_time.split(":").map(Number);
     const startDate = new Date(valid_from);
     const endDate = new Date(valid_until);
 
@@ -139,8 +138,9 @@ export async function POST(request: NextRequest) {
       );
 
       if (!isInBreak) {
-        const reservationStart = setMinutes(setHours(new Date(currentDate), startHour), startMin);
-        const reservationEnd = setMinutes(setHours(new Date(currentDate), endHour), endMin);
+        const dateStr = format(currentDate, "yyyy-MM-dd");
+        const reservationStart = pragueLocalToUtcISO(dateStr, start_time);
+        const reservationEnd = pragueLocalToUtcISO(dateStr, end_time);
 
         reservations.push({
           room_id,
@@ -148,8 +148,8 @@ export async function POST(request: NextRequest) {
           recurring_schedule_id: schedule.id,
           reservation_type: "training_session",
           title: `TS - ${team.name}`,
-          start_time: reservationStart.toISOString(),
-          end_time: reservationEnd.toISOString(),
+          start_time: reservationStart,
+          end_time: reservationEnd,
         });
       }
 

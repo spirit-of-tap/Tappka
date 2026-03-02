@@ -31,15 +31,17 @@ export default async function TeamPage({ params }: PageProps) {
   // Group profiles by role
   const coaches = team.profiles.filter((p) => p.role === 'coach');
   const teamLeaders = team.profiles.filter((p) => p.role === 'team_leader');
-  const students = team.profiles.filter((p) => p.role === 'student');
+  const students = team.profiles.filter((p) => p.role === 'student' || p.role === 'admin');
+
+  const backHref = `/komunita/tymy/${team.id}`;
 
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Back Button */}
       <Button variant="ghost" size="sm" asChild>
-        <Link href="/komunita/lide">
+        <Link href="/komunita/tymy">
           <ArrowLeft className="size-4 mr-2" />
-          Zpět na komunitu
+          Zpět na týmy
         </Link>
       </Button>
 
@@ -76,6 +78,7 @@ export default async function TeamPage({ params }: PageProps) {
                   key={profile.id}
                   profile={{ ...profile, team }}
                   pictureUrl={pictureUrl}
+                  from={backHref}
                 />
               );
             })}
@@ -95,6 +98,7 @@ export default async function TeamPage({ params }: PageProps) {
                   key={profile.id}
                   profile={{ ...profile, team }}
                   pictureUrl={pictureUrl}
+                  from={backHref}
                 />
               );
             })}
@@ -114,6 +118,7 @@ export default async function TeamPage({ params }: PageProps) {
                   key={profile.id}
                   profile={{ ...profile, team }}
                   pictureUrl={pictureUrl}
+                  from={backHref}
                 />
               );
             })}
