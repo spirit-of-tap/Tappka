@@ -18,10 +18,14 @@ interface PageProps {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{
+    from?: string;
+  }>;
 }
 
-export default async function ProfilePage({ params }: PageProps) {
+export default async function ProfilePage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { from } = await searchParams;
   const supabase = await createClient();
 
   // Fetch viewed profile and current user profile in parallel
@@ -42,9 +46,9 @@ export default async function ProfilePage({ params }: PageProps) {
     <div className="container mx-auto py-6 max-w-4xl space-y-6">
       {/* Back Button */}
       <Button variant="ghost" size="sm" asChild>
-        <Link href="/komunita/lide">
+        <Link href={from ?? '/komunita/lide'}>
           <ArrowLeft className="size-4 mr-2" />
-          Zpět na komunitu
+          Zpět
         </Link>
       </Button>
 
