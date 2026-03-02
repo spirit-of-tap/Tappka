@@ -60,7 +60,6 @@ export default async function ReservationSettingsPage() {
     supabase
       .from("teams")
       .select("id, name, year")
-      .eq("is_active", true)
       .order("year")
       .order("name"),
 
