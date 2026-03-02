@@ -92,8 +92,10 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
         const annotatedRooms = rooms.map((room) => {
           const isDayAvailable = isRoomAvailableOnDay(room, startDateTime);
           const conflictingReservation = reservations.find(
-            (r: { room_id: string; start_time: string; end_time: string; title: string }) => 
-              r.room_id === room.id
+            (r: { room_id: string; start_time: string; end_time: string; title: string }) =>
+              r.room_id === room.id &&
+              new Date(r.start_time) < endDateTime &&
+              new Date(r.end_time) > startDateTime
           );
 
           // Room is available if it's open on this day AND no conflicts

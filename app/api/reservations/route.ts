@@ -55,11 +55,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate) {
-      query = query.gte("end_time", startDate);
+      query = query.gt("end_time", startDate);
     }
 
     if (endDate) {
-      query = query.lte("start_time", endDate);
+      query = query.lt("start_time", endDate);
     }
 
     if (userId) {
