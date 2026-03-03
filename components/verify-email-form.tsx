@@ -461,7 +461,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
                 <Input
                   id="email-local-part"
                   type="text"
-                  placeholder="jmeno.prijmeni"
+                  placeholder="uis login"
                   value={emailLocalPart}
                   onChange={(e) => {
                     const inputValue = e.target.value.trim().toLowerCase();
