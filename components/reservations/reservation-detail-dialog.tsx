@@ -68,7 +68,7 @@ export function ReservationDetailDialog({
   // Edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
-  const [editPersonCount, setEditPersonCount] = useState(1);
+  const [editPersonCount, setEditPersonCount] = useState("1");
   const [editIsCoworkOpen, setEditIsCoworkOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -97,7 +97,7 @@ export function ReservationDetailDialog({
   const startEditing = () => {
     if (!reservationData) return;
     setEditTitle(reservationData.title);
-    setEditPersonCount(reservationData.person_count ?? 1);
+    setEditPersonCount((reservationData.person_count ?? 1).toString());
     setEditIsCoworkOpen(reservationData.is_cowork_open);
     setEditError(null);
     setIsEditing(true);
@@ -134,7 +134,7 @@ export function ReservationDetailDialog({
       setEditError("Zadej důvod / název rezervace");
       return;
     }
-    if (editPersonCount < 1) {
+    if (!editPersonCount || parseInt(editPersonCount) < 1) {
       setEditError("Počet osob musí být alespoň 1");
       return;
     }
@@ -148,7 +148,7 @@ export function ReservationDetailDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: editTitle.trim(),
-          person_count: editPersonCount,
+          person_count: parseInt(editPersonCount),
           is_cowork_open: editIsCoworkOpen,
         }),
       });
@@ -332,7 +332,7 @@ export function ReservationDetailDialog({
                   min={1}
                   max={50}
                   value={editPersonCount}
-                  onChange={(e) => setEditPersonCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  onChange={(e) => setEditPersonCount(e.target.value)}
                   className="w-16 h-9"
                 />
                 <span className="text-sm text-muted-foreground">osob</span>

@@ -47,7 +47,7 @@ export function QuickReservationDialog({
 
   // Form state - simplified: just reason and person count
   const [reason, setReason] = useState("");
-  const [personCount, setPersonCount] = useState(1);
+  const [personCount, setPersonCount] = useState("1");
   const [isCoworkOpen, setIsCoworkOpen] = useState(false);
   
   // Editable time state
@@ -71,7 +71,7 @@ export function QuickReservationDialog({
 
   const resetForm = () => {
     setReason("");
-    setPersonCount(1);
+    setPersonCount("1");
     setIsCoworkOpen(false);
     setError(null);
     setIsEditingTime(false);
@@ -85,7 +85,7 @@ export function QuickReservationDialog({
       return;
     }
 
-    if (personCount < 1) {
+    if (!personCount || parseInt(personCount) < 1) {
       setError("Počet osob musí být alespoň 1");
       return;
     }
@@ -117,7 +117,7 @@ export function QuickReservationDialog({
           title: reason.trim(), // Use reason as title
           start_time: finalStartTime.toISOString(),
           end_time: finalEndTime.toISOString(),
-          person_count: personCount,
+          person_count: parseInt(personCount),
           is_cowork_open: isCoworkOpen,
         }),
       });
@@ -253,7 +253,7 @@ export function QuickReservationDialog({
                 min={1}
                 max={50}
                 value={personCount}
-                onChange={(e) => setPersonCount(parseInt(e.target.value) || 1)}
+                onChange={(e) => setPersonCount(e.target.value)}
                 className="w-16 h-9"
               />
               <span className="text-sm text-muted-foreground">osob</span>
