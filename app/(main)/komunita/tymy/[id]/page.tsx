@@ -30,7 +30,7 @@ export default async function TeamPage({ params }: PageProps) {
 
   // Group profiles by role
   const coaches = team.profiles.filter((p) => p.role === 'coach');
-  const teamLeaders = team.profiles.filter((p) => p.role === 'team_leader');
+  const mentors = team.profiles.filter((p) => p.role === 'mentor');
   const students = team.profiles.filter((p) => p.role === 'student' || p.role === 'admin');
 
   const backHref = `/komunita/tymy/${team.id}`;
@@ -86,12 +86,12 @@ export default async function TeamPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Team Leaders */}
-      {teamLeaders.length > 0 && (
+      {/* Mentors */}
+      {mentors.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">{ROLE_LABELS.team_leader}</h2>
+          <h2 className="text-xl font-semibold">{ROLE_LABELS.mentor}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {teamLeaders.map((profile) => {
+            {mentors.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
                 <UserCard

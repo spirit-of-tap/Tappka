@@ -13,7 +13,7 @@ type SupabaseClient =
 /**
  * Profile role enum matching database profile_role type
  */
-export type ProfileRole = 'student' | 'team_leader' | 'coach' | 'admin';
+export type ProfileRole = 'student' | 'mentor' | 'coach' | 'admin';
 
 /**
  * Profile type matching the profiles table schema
