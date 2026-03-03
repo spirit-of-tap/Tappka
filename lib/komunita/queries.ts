@@ -163,8 +163,8 @@ export async function getTeamById(
     return null;
   }
 
-  // Sort profiles by role (coaches first, then team leaders, then students)
-  const roleOrder = { coach: 0, team_leader: 1, student: 2, admin: 3 };
+  // Sort profiles by role (coaches first, then mentors, then students)
+  const roleOrder = { coach: 0, mentor: 1, student: 2, admin: 3 };
   const sortedProfiles = (data.profiles || []).sort((a: Profile, b: Profile) => {
     const orderA = roleOrder[a.role] ?? 999;
     const orderB = roleOrder[b.role] ?? 999;

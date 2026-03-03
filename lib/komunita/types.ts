@@ -3,7 +3,7 @@
  */
 
 // Database enum types
-export type ProfileRole = 'student' | 'team_leader' | 'coach' | 'admin';
+export type ProfileRole = 'student' | 'mentor' | 'coach' | 'admin';
 
 // Team from database
 export interface Team {
@@ -60,7 +60,7 @@ export interface ProfileFilters {
 // Role labels in Czech
 export const ROLE_LABELS: Record<ProfileRole, string> = {
   student: 'Student',
-  team_leader: 'Team Leader',
+  mentor: 'Mentor',
   coach: 'Kouč',
   admin: 'Admin',
 };
@@ -68,7 +68,7 @@ export const ROLE_LABELS: Record<ProfileRole, string> = {
 // Role badge colors
 export const ROLE_COLORS: Record<ProfileRole, string> = {
   student: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  team_leader: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  mentor: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   coach: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 };
