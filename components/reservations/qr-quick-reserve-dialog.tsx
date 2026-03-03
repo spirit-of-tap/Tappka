@@ -39,12 +39,12 @@ export function QRQuickReserveDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("Rychlá rezervace");
-  const [personCount, setPersonCount] = useState(1);
+  const [personCount, setPersonCount] = useState("1");
   const [isCoworkOpen, setIsCoworkOpen] = useState(false);
 
   const resetForm = () => {
     setTitle("Rychlá rezervace");
-    setPersonCount(1);
+    setPersonCount("1");
     setIsCoworkOpen(false);
     setError(null);
   };
@@ -55,7 +55,7 @@ export function QRQuickReserveDialog({
       return;
     }
 
-    if (personCount < 1) {
+    if (!personCount || parseInt(personCount) < 1) {
       setError("Počet osob musí být alespoň 1");
       return;
     }
@@ -78,7 +78,7 @@ export function QRQuickReserveDialog({
           title: title.trim(),
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
-          person_count: personCount,
+          person_count: parseInt(personCount),
           is_cowork_open: isCoworkOpen,
         }),
       });
@@ -173,7 +173,7 @@ export function QRQuickReserveDialog({
                 min={1}
                 max={50}
                 value={personCount}
-                onChange={(e) => setPersonCount(parseInt(e.target.value) || 1)}
+                onChange={(e) => setPersonCount(e.target.value)}
                 className="w-16 h-9 text-sm font-body"
               />
               <span className="text-sm text-muted-foreground font-body">osob</span>
