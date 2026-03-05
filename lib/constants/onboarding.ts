@@ -22,7 +22,7 @@ export const ONBOARDING_TEXT = {
     title: "Ověř si školní email",
     description: "Zadej svůj školní email, na který ti pošleme ověřovací kód.",
     label: "Tvůj ČZU email",
-    placeholder: "jmeno.prijmeni@pef.czu.cz",
+    placeholder: "xprox040@pef.czu.cz",
     helpText: "Použij svůj ČZU email",
     button: "Poslat ověřovací kód",
     buttonLoading: "Odesílám...",
