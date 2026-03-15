@@ -25,6 +25,7 @@ interface RoomQuickStatusProps {
     endTime: string;
     endsInMinutes: number;
     startsInMinutes?: number;
+    isMyReservation?: boolean;
   };
   issues: {
     isLocked: boolean;
@@ -148,6 +149,11 @@ export function RoomQuickStatus({
                 {/* Reservation details — timing is already in the heading/time range, no repeat */}
                 <div className="space-y-4 bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
                   <p className="text-xl font-heading font-semibold">{currentReservation.title}</p>
+                  {currentReservation.isMyReservation && (
+                    <Badge variant="secondary" className="bg-white/90 text-foreground font-heading font-semibold text-xs">
+                      Moje rezervace
+                    </Badge>
+                  )}
                   <p className="text-sm opacity-90 font-body">
                     {currentReservation.occupantName}
                     {currentReservation.personCount && (

@@ -67,6 +67,9 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
   const nowIso = now.toISOString();
   const twoHoursAhead = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  const currentUserId = user?.id ?? null;
+
   // Fire all three independent queries in parallel — eliminates 2 sequential round-trips
   const [
     { data: currentReservation },
@@ -174,6 +177,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       startTime: currentReservation.start_time,
       endTime: currentReservation.end_time,
       endsInMinutes,
+      isMyReservation: currentReservation.user_id === currentUserId,
     };
   } else if (nextReservation && minutesUntilNextReservation !== null && minutesUntilNextReservation < 15) {
     // Near-future reservation triggered the occupied override — show its details
@@ -192,6 +196,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       endTime: nextReservation.end_time,
       endsInMinutes,
       startsInMinutes: minutesUntilNextReservation,
+      isMyReservation: nextReservation.user_id === currentUserId,
     };
   }
 

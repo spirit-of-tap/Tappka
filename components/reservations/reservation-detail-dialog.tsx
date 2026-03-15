@@ -285,8 +285,8 @@ export function ReservationDetailDialog({
   const isOwner = !!currentUserId && reservationData.user_id === currentUserId;
   const hasJoined = participants.some((p) => p.user_id === currentUserId);
   const canJoin =
-    reservationData.is_cowork_open && !isOwner && !hasJoined && isActive;
-  const canLeave = hasJoined && isActive;
+    reservationData.is_cowork_open && !isOwner && !hasJoined && isNotEnded;
+  const canLeave = hasJoined && isNotEnded;
   const isPersonal = reservationData.reservation_type === "personal";
 
   return (
