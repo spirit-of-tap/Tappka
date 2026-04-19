@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookDeleteButton } from '@/components/books/book-delete-button';
+import { Pencil } from 'lucide-react';
 import { BOOK_STATUS_LABELS, BOOK_STATUS_COLORS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +45,17 @@ export default async function BookDetailPage({ params }: PageProps) {
             Zpět do knihovny
           </Link>
         </Button>
-        {isCoachOrAdmin && <BookDeleteButton bookId={book.id} bookTitle={book.title} />}
+        {isCoachOrAdmin && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild className="gap-2">
+              <Link href={`/knihovna/${book.id}/upravit`}>
+                <Pencil className="size-4" />
+                Upravit
+              </Link>
+            </Button>
+            <BookDeleteButton bookId={book.id} bookTitle={book.title} />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-6">

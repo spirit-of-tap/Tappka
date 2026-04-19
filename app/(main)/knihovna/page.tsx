@@ -1,14 +1,18 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Plus, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getBooks } from '@/lib/books/queries';
 import { BookCard } from '@/components/books/book-card';
+import { LibraryFilters } from '@/components/books/library-filters';
 import { Button } from '@/components/ui/button';
 import type { BookStatus } from '@/lib/books/types';
 
 interface PageProps {
   searchParams: Promise<{
     status?: BookStatus;
+    q?: string;
+    tag?: string | string[];
     page?: string;
   }>;
 }
@@ -17,8 +21,15 @@ export default async function KnihovnaPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const supabase = await createClient();
 
+  const tags = params.tag
+    ? Array.isArray(params.tag) ? params.tag : [params.tag]
+    : undefined;
+
   const books = await getBooks(supabase, {
-    status: params.status,
+    status: params.status ?? 'approved',
+    search: params.q,
+    tags,
+    sortBy: 'popular',
     page: params.page ? Number(params.page) : 1,
   });
 
@@ -37,14 +48,22 @@ export default async function KnihovnaPage({ searchParams }: PageProps) {
         </Button>
       </div>
 
+      <Suspense>
+        <LibraryFilters />
+      </Suspense>
+
       {books.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <BookOpen className="size-12 mx-auto text-muted-foreground" />
           <h3 className="font-semibold text-lg">Žádné knihy</h3>
-          <p className="text-sm text-muted-foreground">Buď první, kdo přidá knihu do katalogu</p>
-          <Button asChild>
-            <Link href="/knihovna/nova">Přidat první knihu</Link>
-          </Button>
+          <p className="text-sm text-muted-foreground">
+            {params.q || params.tag ? 'Žádné výsledky pro zvolené filtry' : 'Buď první, kdo přidá knihu do katalogu'}
+          </p>
+          {!params.q && !params.tag && (
+            <Button asChild>
+              <Link href="/knihovna/nova">Přidat první knihu</Link>
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

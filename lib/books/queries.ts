@@ -22,7 +22,8 @@ export async function getBooks(
     .select(`
       *,
       added_by:profiles!added_by_profile_id(id, name, picture),
-      approved_by:profiles!approved_by_profile_id(id, name)
+      approved_by:profiles!approved_by_profile_id(id, name),
+      essays(count)
     `)
     .order('created_at', { ascending: false })
     .range(from, to);
@@ -35,13 +36,28 @@ export async function getBooks(
     query = query.eq('added_by_profile_id', filters.addedBy);
   }
 
+  if (filters?.search?.trim()) {
+    const q = filters.search.trim();
+    query = query.or(`title.ilike.%${q}%,author.ilike.%${q}%`);
+  }
+
   if (filters?.tags && filters.tags.length > 0) {
     query = query.overlaps('tags', filters.tags);
   }
 
   const { data, error } = await query;
   if (error) throw error;
-  return data as BookWithProfiles[];
+
+  const books = (data as (Omit<BookWithProfiles, 'essay_count'> & { essays: [{ count: number }] })[]).map((b) => ({
+    ...b,
+    essay_count: b.essays?.[0]?.count ?? 0,
+  })) as BookWithProfiles[];
+
+  if (filters?.sortBy === 'popular') {
+    books.sort((a, b) => b.essay_count - a.essay_count);
+  }
+
+  return books;
 }
 
 export async function getBookById(

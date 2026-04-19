@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
+import { CategoryPicker } from './category-picker';
 import type { ExternalBookCandidate } from '@/lib/books/types';
 import type { Book } from '@/lib/books/types';
 
@@ -25,8 +26,9 @@ export function AddBookWizard() {
   const [localResults, setLocalResults] = useState<LocalBook[]>([]);
   const [externalResults, setExternalResults] = useState<ExternalBookCandidate[]>([]);
   const [selectedPoints, setSelectedPoints] = useState<1 | 2 | 3>(1);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [manualForm, setManualForm] = useState({ title: '', author: '', isbn_13: '', description: '', tags: '' });
+  const [manualForm, setManualForm] = useState({ title: '', author: '', isbn_13: '', description: '' });
 
   const searchLocal = async () => {
     if (!query.trim()) return;
@@ -67,7 +69,7 @@ export function AddBookWizard() {
           source: candidate.source ?? 'manual',
           external_id: 'external_id' in candidate ? candidate.external_id : undefined,
           suggested_points: selectedPoints,
-          tags: [],
+          tags: selectedTags,
         }),
       });
       const json = await res.json();
@@ -175,22 +177,28 @@ export function AddBookWizard() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Bodů:</Label>
-                      {([1, 2, 3] as const).map((p) => (
-                        <Button
-                          key={p}
-                          size="sm"
-                          variant={selectedPoints === p ? 'default' : 'outline'}
-                          onClick={() => setSelectedPoints(p)}
-                          className="h-7 w-7 p-0"
-                        >
-                          {p}
+                    <div className="space-y-2">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1 block">Kategorie</Label>
+                        <CategoryPicker selected={selectedTags} onChange={setSelectedTags} />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs">Bodů:</Label>
+                        {([1, 2, 3] as const).map((p) => (
+                          <Button
+                            key={p}
+                            size="sm"
+                            variant={selectedPoints === p ? 'default' : 'outline'}
+                            onClick={() => setSelectedPoints(p)}
+                            className="h-7 w-7 p-0"
+                          >
+                            {p}
+                          </Button>
+                        ))}
+                        <Button size="sm" onClick={() => submitBook(candidate)} disabled={isSubmitting}>
+                          {isSubmitting ? <Spinner className="size-4" /> : 'Přidat'}
                         </Button>
-                      ))}
-                      <Button size="sm" onClick={() => submitBook(candidate)} disabled={isSubmitting}>
-                        {isSubmitting ? <Spinner className="size-4" /> : 'Přidat'}
-                      </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -220,6 +228,10 @@ export function AddBookWizard() {
             <div className="space-y-1">
               <Label htmlFor="desc">Popis</Label>
               <Textarea id="desc" value={manualForm.description} onChange={(e) => setManualForm({ ...manualForm, description: e.target.value })} rows={3} />
+            </div>
+            <div className="space-y-1">
+              <Label>Kategorie</Label>
+              <CategoryPicker selected={selectedTags} onChange={setSelectedTags} />
             </div>
             <div className="flex items-center gap-2">
               <Label>Navrhovaný počet bodů:</Label>

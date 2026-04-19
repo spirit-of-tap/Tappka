@@ -27,6 +27,7 @@ export interface Book {
 export interface BookWithProfiles extends Book {
   added_by: Pick<Profile, 'id' | 'name' | 'picture'> | null;
   approved_by: Pick<Profile, 'id' | 'name'> | null;
+  essay_count: number;
 }
 
 export interface BookComment {
@@ -47,6 +48,7 @@ export interface BookFilters {
   search?: string;
   tags?: string[];
   addedBy?: string;
+  sortBy?: 'popular' | 'recent';
   page?: number;
   pageSize?: number;
 }
@@ -91,6 +93,34 @@ export const BOOK_STATUS_COLORS: Record<BookStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
   approved: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   rejected: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+};
+
+export const BOOK_CATEGORIES = [
+  'podnikani',
+  'uceni',
+  'managment',
+  'duchovni_rust',
+  'vedeni',
+  'spolecnost',
+  'inovace',
+  'koucovani',
+  'marketing',
+  'Leadership',
+  'Finance',
+] as const;
+
+export const BOOK_CATEGORY_LABELS: Record<string, string> = {
+  podnikani: 'Podnikání',
+  uceni: 'Učení',
+  managment: 'Management',
+  duchovni_rust: 'Duchovní růst',
+  vedeni: 'Vedení',
+  spolecnost: 'Společnost',
+  inovace: 'Inovace',
+  koucovani: 'Koučování',
+  marketing: 'Marketing',
+  Leadership: 'Leadership',
+  Finance: 'Finance',
 };
 
 export const BOOK_POINTS_GOAL = 120;

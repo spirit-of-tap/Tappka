@@ -40,7 +40,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Nemáš oprávnění' }, { status: 403 });
     }
 
-    const body: { action: 'approve' | 'reject' } & Partial<ApproveBookInput & RejectBookInput> = await request.json();
+    const body: { action: 'approve' | 'reject' | 'edit' } & Partial<ApproveBookInput & RejectBookInput> & {
+      title?: string; author?: string; description?: string; tags?: string[];
+    } = await request.json();
 
     if (body.action === 'approve') {
       const points = body.book_points;
@@ -90,6 +92,28 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       if (error) throw error;
       if (!data) return NextResponse.json({ error: 'Kniha nenalezena nebo není ve stavu čekání' }, { status: 404 });
 
+      return NextResponse.json({ data });
+    }
+
+    if (body.action === 'edit') {
+      const updates: Record<string, unknown> = {};
+      if (body.title?.trim()) updates.title = body.title.trim();
+      if (body.author?.trim()) updates.author = body.author.trim();
+      if (body.description !== undefined) updates.description = body.description?.trim() || null;
+      if (body.tags !== undefined) updates.tags = body.tags;
+
+      if (Object.keys(updates).length === 0) {
+        return NextResponse.json({ error: 'Žádné změny' }, { status: 400 });
+      }
+
+      const { data, error } = await supabase
+        .from('books')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
       return NextResponse.json({ data });
     }
 
