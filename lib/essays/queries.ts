@@ -34,6 +34,12 @@ export async function getEssays(
     query = query.eq('author_profile_id', filters.authorProfileId);
   }
 
+  if (filters?.search?.trim()) {
+    const q = filters.search.trim();
+    const safe = q.replace(/[%_]/g, '\\$&');
+    query = query.or(`title.ilike.%${safe}%,content_text.plfts(simple).${q}`);
+  }
+
   const { data, error } = await query;
   if (error) throw error;
   return data as EssayWithDetails[];
@@ -42,7 +48,7 @@ export async function getEssays(
 export async function getEssaysByTeam(
   supabase: SupabaseClient,
   teamId: string,
-  filters?: Pick<EssayFilters, 'page' | 'pageSize'>,
+  filters?: Pick<EssayFilters, 'page' | 'pageSize' | 'search'>,
 ): Promise<EssayWithDetails[]> {
   const page = filters?.page ?? 1;
   const pageSize = filters?.pageSize ?? PAGE_SIZE_DEFAULT;
@@ -60,7 +66,7 @@ export async function getEssaysByTeam(
   const profileIds = (teamProfiles ?? []).map((p: { id: string }) => p.id);
   if (profileIds.length === 0) return [];
 
-  const { data, error } = await supabase
+  let teamQuery = supabase
     .from('essays')
     .select(`
       *,
@@ -72,6 +78,13 @@ export async function getEssaysByTeam(
     .order('created_at', { ascending: false })
     .range(from, to);
 
+  if (filters?.search?.trim()) {
+    const q = filters.search.trim();
+    const safe = q.replace(/[%_]/g, '\\$&');
+    teamQuery = teamQuery.or(`title.ilike.%${safe}%,content_text.plfts(simple).${q}`);
+  }
+
+  const { data, error } = await teamQuery;
   if (error) throw error;
   return data as EssayWithDetails[];
 }
@@ -128,6 +141,43 @@ export async function getEssayCoachViewers(
   return ((data ?? []) as EssayViewWithProfile[]).filter(
     (v) => v.viewer?.role === 'coach' || v.viewer?.role === 'admin',
   );
+}
+
+export async function getUserBookPointsStats(
+  supabase: SupabaseClient,
+  profileId: string,
+): Promise<{ approved_points: number; pending_points: number; essay_count: number }> {
+  const { data: essays, error } = await supabase
+    .from('essays')
+    .select('book_id, books!inner(book_points, status)')
+    .eq('author_profile_id', profileId)
+    .not('book_id', 'is', null);
+
+  if (error) throw error;
+
+  type Row = { book_id: string; books: { book_points: number; status: string } };
+
+  const approved = new Map<string, number>();
+  const pending = new Set<string>();
+
+  for (const row of (essays ?? []) as unknown as Row[]) {
+    if (!row.book_id) continue;
+    if (row.books.status === 'approved') {
+      approved.set(row.book_id, row.books.book_points);
+    } else if (row.books.status === 'pending') {
+      pending.add(row.book_id);
+    }
+  }
+
+  const approved_points = Array.from(approved.values()).reduce((s, p) => s + p, 0);
+
+  const { count } = await supabase
+    .from('essays')
+    .select('*', { count: 'exact', head: true })
+    .eq('author_profile_id', profileId)
+    .eq('published', true);
+
+  return { approved_points, pending_points: pending.size, essay_count: count ?? 0 };
 }
 
 export async function getTeamBookPointsStats(

@@ -14,20 +14,21 @@ export async function GET(request: NextRequest) {
     const view = (searchParams.get('view') ?? 'vse') as EssayListView;
     const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
     const teamId = searchParams.get('team_id') ?? undefined;
+    const search = searchParams.get('q') ?? undefined;
 
     if (view === 'moje') {
       const profile = await getCurrentUserProfile(supabase, { user });
       if (!profile) return NextResponse.json({ error: 'Profil nenalezen' }, { status: 403 });
-      const essays = await getEssays(supabase, { authorProfileId: profile.id, page });
+      const essays = await getEssays(supabase, { authorProfileId: profile.id, page, search });
       return NextResponse.json({ data: essays });
     }
 
     if (view === 'tym' && teamId) {
-      const essays = await getEssaysByTeam(supabase, teamId, { page });
+      const essays = await getEssaysByTeam(supabase, teamId, { page, search });
       return NextResponse.json({ data: essays });
     }
 
-    const essays = await getEssays(supabase, { page });
+    const essays = await getEssays(supabase, { page, search });
     return NextResponse.json({ data: essays });
   } catch (error) {
     console.error('GET /api/essays error:', error);

@@ -9,9 +9,10 @@ interface LoadMoreEssaysProps {
   initialPage: number;
   view: 'vse' | 'moje' | 'tym';
   teamId?: string;
+  q?: string;
 }
 
-export function LoadMoreEssays({ initialPage, view, teamId }: LoadMoreEssaysProps) {
+export function LoadMoreEssays({ initialPage, view, teamId, q }: LoadMoreEssaysProps) {
   const [essays, setEssays] = useState<EssayWithDetails[]>([]);
   const [page, setPage] = useState(initialPage + 1);
   const [hasMore, setHasMore] = useState(true);
@@ -21,6 +22,7 @@ export function LoadMoreEssays({ initialPage, view, teamId }: LoadMoreEssaysProp
   const buildUrl = (p: number) => {
     const params = new URLSearchParams({ page: String(p), view });
     if (teamId) params.set('team_id', teamId);
+    if (q) params.set('q', q);
     return `/api/essays?${params}`;
   };
 
@@ -46,7 +48,7 @@ export function LoadMoreEssays({ initialPage, view, teamId }: LoadMoreEssaysProp
     setEssays([]);
     setPage(initialPage + 1);
     setHasMore(true);
-  }, [view, teamId, initialPage]);
+  }, [view, teamId, initialPage, q]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -58,7 +60,7 @@ export function LoadMoreEssays({ initialPage, view, teamId }: LoadMoreEssaysProp
     observer.observe(el);
     return () => observer.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, loading, hasMore, view, teamId]);
+  }, [page, loading, hasMore, view, teamId, q]);
 
   return (
     <>

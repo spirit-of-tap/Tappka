@@ -69,30 +69,30 @@ const getNavData = (isDevelopment: boolean): NavData => ({
           url: "/",
           icon: LayoutDashboard,
         },
-      ],
-    },
-    {
-      title: "Aktivity",
-      items: [
         {
-          title: "Rezervace",
+          title: "Místnosti",
           url: "/reservations",
           icon: CalendarDays,
-        },
-        {
-          title: "Knihovna",
-          url: "/knihovna",
-          icon: BookOpen,
-        },
-        {
-          title: "Eseje",
-          url: "/eseje",
-          icon: FileText,
         },
         {
           title: "Komunita",
           url: "/komunita",
           icon: Users,
+        },
+      ],
+    },
+    {
+      title: "Čtení",
+      items: [
+        {
+          title: "BoB",
+          url: "/knihovna",
+          icon: BookOpen,
+        },
+        {
+          title: "Přehled",
+          url: "/prehled",
+          icon: FileText,
         },
       ],
     },
@@ -138,7 +138,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const isDevelopment = process.env.NODE_ENV === "development"
 
   const isKnihovnaActive = pathname.startsWith("/knihovna")
-  const isEsejeActive = pathname.startsWith("/eseje")
 
   const closeSidebarOnMobile = () => {
     setOpenMobile(false)
@@ -165,7 +164,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
               <SidebarMenu>
                 {section.items.map((item) => {
                   // Special handling for Rezervace with sub-menu for coach/admin
-                  if (item.title === "Rezervace" && isCoachOrAdmin) {
+                  if (item.title === "Místnosti" && isCoachOrAdmin) {
                     return (
                       <Collapsible
                         key={item.title}
@@ -213,8 +212,8 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                     )
                   }
 
-                  // Special handling for Knihovna: coach/admin get sub-menu with Správa
-                  if (item.title === "Knihovna" && isCoachOrAdmin) {
+                  // Special handling for BoB: coach/admin get sub-menu with Správa
+                  if (item.title === "BoB" && isCoachOrAdmin) {
                     return (
                       <Collapsible
                         key={item.title}

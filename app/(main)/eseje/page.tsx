@@ -6,18 +6,20 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import { EssayCard } from '@/components/essays/essay-card';
 import { LoadMoreEssays } from '@/components/essays/load-more-essays';
+import { EssaySearch } from '@/components/essays/essay-search';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ESSAY_LIST_VIEW_LABELS } from '@/lib/essays/types';
 import type { EssayListView } from '@/lib/essays/types';
 
 interface PageProps {
-  searchParams: Promise<{ view?: EssayListView; page?: string }>;
+  searchParams: Promise<{ view?: EssayListView; page?: string; q?: string }>;
 }
 
 export default async function EsejePage({ searchParams }: PageProps) {
   const params = await searchParams;
   const view = params.view ?? 'vse';
+  const search = params.q;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -25,11 +27,11 @@ export default async function EsejePage({ searchParams }: PageProps) {
 
   let essays;
   if (view === 'moje' && profile) {
-    essays = await getEssays(supabase, { authorProfileId: profile.id });
+    essays = await getEssays(supabase, { authorProfileId: profile.id, search });
   } else if (view === 'tym' && profile?.team_id) {
-    essays = await getEssaysByTeam(supabase, profile.team_id);
+    essays = await getEssaysByTeam(supabase, profile.team_id, { search });
   } else {
-    essays = await getEssays(supabase);
+    essays = await getEssays(supabase, { search });
   }
 
   return (
@@ -47,11 +49,15 @@ export default async function EsejePage({ searchParams }: PageProps) {
         </Button>
       </div>
 
+      <Suspense>
+        <EssaySearch />
+      </Suspense>
+
       <Tabs defaultValue={view} className="w-full">
         <TabsList>
           {(['vse', 'moje', 'tym'] as const).map((v) => (
             <TabsTrigger key={v} value={v} asChild>
-              <Link href={`/eseje?view=${v}`}>{ESSAY_LIST_VIEW_LABELS[v]}</Link>
+              <Link href={`/eseje?view=${v}${search ? `&q=${encodeURIComponent(search)}` : ''}`}>{ESSAY_LIST_VIEW_LABELS[v]}</Link>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -60,11 +66,15 @@ export default async function EsejePage({ searchParams }: PageProps) {
           {essays.length === 0 ? (
             <div className="text-center py-16 space-y-3">
               <FileText className="size-12 mx-auto text-muted-foreground" />
-              <h3 className="font-semibold text-lg">Žádné eseje</h3>
-              <p className="text-sm text-muted-foreground">Buď první, kdo napíše esej</p>
-              <Button asChild>
-                <Link href="/eseje/nova">Napsat první esej</Link>
-              </Button>
+              <h3 className="font-semibold text-lg">{search ? 'Žádné výsledky' : 'Žádné eseje'}</h3>
+              <p className="text-sm text-muted-foreground">
+                {search ? `Žádná esej neodpovídá výrazu „${search}"` : 'Buď první, kdo napíše esej'}
+              </p>
+              {!search && (
+                <Button asChild>
+                  <Link href="/eseje/nova">Napsat první esej</Link>
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -76,6 +86,7 @@ export default async function EsejePage({ searchParams }: PageProps) {
                   initialPage={1}
                   view={view}
                   teamId={profile?.team_id ?? undefined}
+                  q={search}
                 />
               </Suspense>
             </div>
