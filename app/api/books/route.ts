@@ -12,8 +12,12 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
+    const tags = searchParams.getAll('tag');
     const filters: BookFilters = {
-      status: (searchParams.get('status') ?? undefined) as BookStatus | undefined,
+      status: (searchParams.get('status') ?? 'approved') as BookStatus,
+      search: searchParams.get('q') ?? undefined,
+      tags: tags.length ? tags : undefined,
+      sortBy: (searchParams.get('sort') === 'popular' ? 'popular' : undefined),
       addedBy: searchParams.get('added_by') ?? undefined,
       page: searchParams.get('page') ? Number(searchParams.get('page')) : undefined,
       pageSize: searchParams.get('page_size') ? Number(searchParams.get('page_size')) : undefined,

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getBooks } from '@/lib/books/queries';
 import { BookCard } from '@/components/books/book-card';
 import { LibraryFilters } from '@/components/books/library-filters';
+import { LoadMoreBooks } from '@/components/books/load-more-books';
 import { Button } from '@/components/ui/button';
 import type { BookStatus } from '@/lib/books/types';
 
@@ -70,6 +71,12 @@ export default async function KnihovnaPage({ searchParams }: PageProps) {
           {books.map((book) => (
             <BookCard key={book.id} book={book} />
           ))}
+          <Suspense>
+            <LoadMoreBooks
+              initialPage={1}
+              searchParams={{ q: params.q, tag: params.tag }}
+            />
+          </Suspense>
         </div>
       )}
     </div>

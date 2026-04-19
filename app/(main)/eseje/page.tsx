@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Plus, FileText } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import { EssayCard } from '@/components/essays/essay-card';
+import { LoadMoreEssays } from '@/components/essays/load-more-essays';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ESSAY_LIST_VIEW_LABELS } from '@/lib/essays/types';
@@ -69,6 +71,13 @@ export default async function EsejePage({ searchParams }: PageProps) {
               {essays.map((essay) => (
                 <EssayCard key={essay.id} essay={essay} />
               ))}
+              <Suspense>
+                <LoadMoreEssays
+                  initialPage={1}
+                  view={view}
+                  teamId={profile?.team_id ?? undefined}
+                />
+              </Suspense>
             </div>
           )}
         </TabsContent>

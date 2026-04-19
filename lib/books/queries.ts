@@ -17,16 +17,23 @@ export async function getBooks(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
+  // Use the view when sorting by popularity so ORDER BY happens in Postgres
+  const table = filters?.sortBy === 'popular' ? 'books_with_essay_count' : 'books';
+
   let query = supabase
-    .from('books')
+    .from(table)
     .select(`
       *,
       added_by:profiles!added_by_profile_id(id, name, picture),
-      approved_by:profiles!approved_by_profile_id(id, name),
-      essays(count)
+      approved_by:profiles!approved_by_profile_id(id, name)
     `)
-    .order('created_at', { ascending: false })
     .range(from, to);
+
+  if (filters?.sortBy === 'popular') {
+    query = query.order('essay_count', { ascending: false }).order('created_at', { ascending: false });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
 
   if (filters?.status) {
     query = query.eq('status', filters.status);
@@ -48,16 +55,10 @@ export async function getBooks(
   const { data, error } = await query;
   if (error) throw error;
 
-  const books = (data as (Omit<BookWithProfiles, 'essay_count'> & { essays: [{ count: number }] })[]).map((b) => ({
+  return (data as BookWithProfiles[]).map((b) => ({
     ...b,
-    essay_count: b.essays?.[0]?.count ?? 0,
-  })) as BookWithProfiles[];
-
-  if (filters?.sortBy === 'popular') {
-    books.sort((a, b) => b.essay_count - a.essay_count);
-  }
-
-  return books;
+    essay_count: (b as BookWithProfiles & { essay_count?: number }).essay_count ?? 0,
+  }));
 }
 
 export async function getBookById(
