@@ -6,8 +6,11 @@ import { getTeamById, getTeamPictureUrl, getProfilePictureUrl } from '@/lib/komu
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserCard } from '@/components/komunita/user-card';
+import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { YEAR_LABELS, ROLE_LABELS } from '@/lib/komunita/types';
+import { getTeamBookPointsStats } from '@/lib/essays/queries';
 import type { Profile } from '@/lib/komunita/types';
 
 interface PageProps {
@@ -20,7 +23,10 @@ export default async function TeamPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const team = await getTeamById(supabase, id);
+  const [team, bookStats] = await Promise.all([
+    getTeamById(supabase, id),
+    getTeamBookPointsStats(supabase, id),
+  ]);
 
   if (!team) {
     notFound();
@@ -66,6 +72,14 @@ export default async function TeamPage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Tabs */}
+      <Tabs defaultValue="clenove">
+        <TabsList>
+          <TabsTrigger value="clenove">Členové</TabsTrigger>
+          <TabsTrigger value="statistiky">Statistiky</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="clenove" className="mt-4 space-y-6">
       {/* Coaches */}
       {coaches.length > 0 && (
         <div className="space-y-4">
@@ -136,6 +150,18 @@ export default async function TeamPage({ params }: PageProps) {
           </p>
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="statistiky" className="mt-4">
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold">BookPoints — přehled týmu</h2>
+              <p className="text-sm text-muted-foreground">Schválené a čekající knihy na cestu k cíli 120 bodů</p>
+            </div>
+            <TeamBookPointsChart stats={bookStats} />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

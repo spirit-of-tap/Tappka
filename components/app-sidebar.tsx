@@ -11,6 +11,8 @@ import {
   Database,
   ChevronRight,
   MessageCircleQuestion,
+  BookOpen,
+  FileText,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -78,6 +80,16 @@ const getNavData = (isDevelopment: boolean): NavData => ({
           icon: CalendarDays,
         },
         {
+          title: "Knihovna",
+          url: "/knihovna",
+          icon: BookOpen,
+        },
+        {
+          title: "Eseje",
+          url: "/eseje",
+          icon: FileText,
+        },
+        {
           title: "Komunita",
           url: "/komunita",
           icon: Users,
@@ -124,6 +136,9 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const isReservationsActive = pathname.startsWith("/reservations")
   const isKomunitaActive = pathname.startsWith("/komunita")
   const isDevelopment = process.env.NODE_ENV === "development"
+
+  const isKnihovnaActive = pathname.startsWith("/knihovna")
+  const isEsejeActive = pathname.startsWith("/eseje")
 
   const closeSidebarOnMobile = () => {
     setOpenMobile(false)
@@ -188,6 +203,55 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                                 >
                                   <Link href="/reservations/settings" onClick={closeSidebarOnMobile}>
                                     Nastavení
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </SidebarMenuItem>
+                      </Collapsible>
+                    )
+                  }
+
+                  // Special handling for Knihovna: coach/admin get sub-menu with Správa
+                  if (item.title === "Knihovna" && isCoachOrAdmin) {
+                    return (
+                      <Collapsible
+                        key={item.title}
+                        asChild
+                        defaultOpen={isKnihovnaActive}
+                        className="group/collapsible"
+                      >
+                        <SidebarMenuItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                              isActive={isKnihovnaActive}
+                              tooltip={item.title}
+                            >
+                              <item.icon className="size-4" />
+                              <span>{item.title}</span>
+                              <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              <SidebarMenuSubItem>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={pathname === "/knihovna" || (pathname.startsWith("/knihovna/") && pathname !== "/settings/kniha-knih")}
+                                >
+                                  <Link href="/knihovna" onClick={closeSidebarOnMobile}>
+                                    Katalog
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                              <SidebarMenuSubItem>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={pathname === "/settings/kniha-knih"}
+                                >
+                                  <Link href="/settings/kniha-knih" onClick={closeSidebarOnMobile}>
+                                    Správa
                                   </Link>
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>
