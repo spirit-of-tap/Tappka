@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ExcelJS from 'exceljs';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getUserBookPointsStats } from '@/lib/essays/queries';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
-import { buildEsejeSheet } from '@/lib/portfolio/generate-eseje-sheet';
+import { patchEsejeSheetXml } from '@/lib/portfolio/generate-eseje-sheet';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -14,24 +12,19 @@ export async function POST(request: NextRequest) {
   const profile = await getCurrentUserProfile(supabase, { user });
   if (!profile) return NextResponse.json({ error: 'Profil nenalezen' }, { status: 403 });
 
-  // Parse uploaded file
   const formData = await request.formData();
   const file = formData.get('file') as File | null;
   if (!file) return NextResponse.json({ error: 'Soubor chybí' }, { status: 400 });
 
   const origin = request.headers.get('origin') ?? `https://${request.headers.get('host')}`;
 
-  // Fetch user data in parallel
-  const [essayData, stats] = await Promise.all([
-    supabase
-      .from('essays')
-      .select(`id, title, book:books!book_id(id, title, author, book_points, tags, source)`)
-      .eq('author_profile_id', profile.id)
-      .eq('published', true)
-      .not('book_id', 'is', null)
-      .order('created_at', { ascending: true }),
-    getUserBookPointsStats(supabase, profile.id),
-  ]);
+  const essayData = await supabase
+    .from('essays')
+    .select(`id, title, book:books!book_id(id, title, author, book_points, tags, source)`)
+    .eq('author_profile_id', profile.id)
+    .eq('published', true)
+    .not('book_id', 'is', null)
+    .order('created_at', { ascending: true });
 
   if (essayData.error) throw essayData.error;
 
@@ -55,23 +48,35 @@ export async function POST(request: NextRequest) {
     };
   });
 
-  const portfolioStats = {
-    approvedPoints: stats.approved_points,
-    pendingPoints: stats.pending_points,
-    essayCount: stats.essay_count,
-  };
-
-  // Load template with ExcelJS
+  // Load the xlsx as a ZIP and surgically patch only the Eseje worksheet XML.
+  // Everything else (styles, drawings, images, formulas, other sheets) stays untouched.
+  const JSZip = (await import('jszip')).default;
   const arrayBuf = await file.arrayBuffer();
-  const wb = new ExcelJS.Workbook();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await wb.xlsx.load(arrayBuf as any);
+  const zip = await JSZip.loadAsync(arrayBuf);
 
-  // Replace Eseje sheet with beautifully styled generated sheet
-  await buildEsejeSheet(wb, rows, portfolioStats);
+  // Resolve Eseje sheet filename from workbook relationships
+  const wbXml = await zip.file('xl/workbook.xml')!.async('string');
+  const wbRelsXml = await zip.file('xl/_rels/workbook.xml.rels')!.async('string');
 
-  // Write to buffer and return
-  const outputBuffer = await wb.xlsx.writeBuffer();
+  const esejeRid =
+    wbXml.match(/name="Eseje"[^>]*r:id="([^"]+)"/)?.[1] ??
+    wbXml.match(/r:id="([^"]+)"[^>]*name="Eseje"/)?.[1];
+  if (!esejeRid) return NextResponse.json({ error: 'List "Eseje" nenalezen v souboru' }, { status: 400 });
+
+  const esejeTarget = wbRelsXml.match(new RegExp(`Id="${esejeRid}"[^>]*Target="([^"]+)"`))?.[1];
+  if (!esejeTarget) return NextResponse.json({ error: 'Soubor listu "Eseje" nenalezen' }, { status: 400 });
+
+  const esejeEntry = zip.file(`xl/${esejeTarget}`);
+  if (!esejeEntry) return NextResponse.json({ error: 'XML listu "Eseje" nenalezeno' }, { status: 400 });
+
+  const esejeXml = await esejeEntry.async('string');
+  zip.file(`xl/${esejeTarget}`, patchEsejeSheetXml(esejeXml, rows));
+
+  const outputBuffer = await zip.generateAsync({
+    type: 'arraybuffer',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+  });
 
   return new NextResponse(outputBuffer, {
     headers: {

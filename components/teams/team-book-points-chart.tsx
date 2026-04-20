@@ -38,11 +38,16 @@ export function TeamBookPointsChart({ stats }: TeamBookPointsChartProps) {
     return <p className="text-sm text-muted-foreground text-center py-8">Tým nemá žádné členy</p>;
   }
 
-  const data = stats.map((s) => ({
-    name: shortName(s.profile.name),
-    Schválené: s.approved_points,
-    Čeká: s.pending_points,
-  }));
+  const data = [...stats]
+    .sort(
+      (a, b) =>
+        b.approved_points + b.pending_points - (a.approved_points + a.pending_points),
+    )
+    .map((s) => ({
+      name: shortName(s.profile.name),
+      Schválené: s.approved_points,
+      Čeká: s.pending_points,
+    }));
 
   return (
     <div className="space-y-4">
