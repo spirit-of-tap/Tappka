@@ -13,6 +13,7 @@ import {
   MessageCircleQuestion,
   BookOpen,
   FileText,
+  BriefcaseBusiness,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -93,6 +94,16 @@ const getNavData = (isDevelopment: boolean): NavData => ({
           title: "Přehled",
           url: "/prehled",
           icon: FileText,
+        },
+      ],
+    },
+    {
+      title: "Portfolio",
+      items: [
+        {
+          title: "Portfolio",
+          url: "/portfolio",
+          icon: BriefcaseBusiness,
         },
       ],
     },
