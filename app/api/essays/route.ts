@@ -76,8 +76,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
-    const raw = data;
-    const { essay_comments, ...rest } = raw as typeof raw & { essay_comments?: { count: number }[] };
+    const { essay_comments, ...rest } = data as typeof data & { essay_comments?: { count: number }[] };
     const normalized = { ...rest, comment_count: Number(essay_comments?.[0]?.count ?? 0) };
     return NextResponse.json({ data: normalized }, { status: 201 });
   } catch (error) {

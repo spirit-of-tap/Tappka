@@ -145,6 +145,7 @@ export async function getEssayById(
     .from('essays')
     .select(`
       *,
+      essay_comments(count),
       author:profiles!author_profile_id(id, name, picture, role),
       book:books!book_id(id, title, author, book_points, status, cover_path)
     `)
@@ -152,7 +153,9 @@ export async function getEssayById(
     .maybeSingle();
 
   if (error) throw error;
-  return data as EssayWithDetails | null;
+  if (!data) return null;
+  const { essay_comments, ...rest } = data as typeof data & { essay_comments?: { count: number }[] };
+  return { ...rest, comment_count: Number(essay_comments?.[0]?.count ?? 0) } as EssayWithDetails;
 }
 
 export async function getEssayComments(
