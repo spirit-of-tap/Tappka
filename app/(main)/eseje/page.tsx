@@ -99,6 +99,11 @@ export default async function EsejePage({ searchParams }: PageProps) {
             initialVoted={votedIds.has(essay.id)}
           />
         ))}
+        {essays.length === 0 && (
+          <div className="col-span-full text-center py-12 text-muted-foreground text-sm">
+            {sort === 'week' ? 'Tento týden zatím žádné eseje.' : tag ? 'Žádné eseje pro toto téma.' : 'Zatím žádné eseje.'}
+          </div>
+        )}
         <Suspense>
           <LoadMoreEssays
             initialPage={1}

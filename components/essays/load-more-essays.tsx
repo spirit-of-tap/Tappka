@@ -5,6 +5,8 @@ import { EssayCard } from './essay-card';
 import { Spinner } from '@/components/ui/spinner';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
+type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
+
 interface LoadMoreEssaysProps {
   initialPage: number;
   view: 'vse' | 'moje' | 'tym';
@@ -16,7 +18,7 @@ interface LoadMoreEssaysProps {
 }
 
 export function LoadMoreEssays({ initialPage, view, teamId, q, sort, tag, showVoteButton = false }: LoadMoreEssaysProps) {
-  const [essays, setEssays] = useState<EssayWithDetails[]>([]);
+  const [essays, setEssays] = useState<EssayWithVoted[]>([]);
   const [page, setPage] = useState(initialPage + 1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -70,7 +72,12 @@ export function LoadMoreEssays({ initialPage, view, teamId, q, sort, tag, showVo
   return (
     <>
       {essays.map((essay) => (
-        <EssayCard key={essay.id} essay={essay} showVoteButton={showVoteButton} />
+        <EssayCard
+          key={essay.id}
+          essay={essay}
+          showVoteButton={showVoteButton}
+          initialVoted={essay.user_has_voted ?? false}
+        />
       ))}
       <div ref={sentinelRef} className="col-span-full flex justify-center py-4">
         {loading && <Spinner className="size-5" />}
