@@ -69,8 +69,6 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
           </div>
         )}
       </TabsContent>
-
-
     </Tabs>
   );
 }

@@ -26,7 +26,7 @@ export default async function PrehledPage({ searchParams }: PageProps) {
 
   const votedEssayIds = new Set<string>((votesResult.data ?? []).map((r) => r.essay_id));
 
-  const defaultTab = tab ?? 'moje';
+  const defaultTab = tab === 'moje' || tab === 'tym' ? tab : 'moje';
 
   return (
     <div className="container mx-auto py-6 space-y-6">
