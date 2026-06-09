@@ -72,7 +72,7 @@ export async function getEssays(
   if (filters?.search?.trim()) {
     const q = filters.search.trim();
     const safe = q.replace(/[%_]/g, '\\$&');
-    query = query.or(`title.ilike.%${safe}%,content_text.plfts(simple).${q}`);
+    query = query.or(`title.ilike.%${safe}%,content_text.phfts(simple).${q}`);
   }
 
   const { data, error } = await query;
@@ -112,6 +112,7 @@ export async function getEssaysByTeam(
     .from('essays')
     .select(`
       *,
+      essay_comments(count),
       author:profiles!author_profile_id(id, name, picture, role),
       book:books!book_id(id, title, author, book_points, status, cover_path)
     `)
@@ -123,12 +124,17 @@ export async function getEssaysByTeam(
   if (filters?.search?.trim()) {
     const q = filters.search.trim();
     const safe = q.replace(/[%_]/g, '\\$&');
-    teamQuery = teamQuery.or(`title.ilike.%${safe}%,content_text.plfts(simple).${q}`);
+    teamQuery = teamQuery.or(`title.ilike.%${safe}%,content_text.phfts(simple).${q}`);
   }
 
   const { data, error } = await teamQuery;
   if (error) throw error;
-  return data as EssayWithDetails[];
+  return (data as (EssayWithDetails & { essay_comments?: { count: number }[] })[]).map(
+    ({ essay_comments, ...rest }) => ({
+      ...rest,
+      comment_count: Number(essay_comments?.[0]?.count ?? 0),
+    }),
+  ) as EssayWithDetails[];
 }
 
 export async function getEssayById(
