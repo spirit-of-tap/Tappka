@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MessageCircle, Eye, BookOpen, FileQuestion } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { StorageImage } from '@/components/storage/storage-image';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 interface EssayCardProps {
@@ -28,13 +29,26 @@ export function EssayCard({ essay }: EssayCardProps) {
             <span className="text-xs text-muted-foreground truncate">{essay.author?.name}</span>
           </div>
 
-          {/* Title + snippet */}
-          <div className="flex-1 space-y-1.5">
-            <h3 className="font-bold text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-              {essay.title}
-            </h3>
-            {snippet && (
-              <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{snippet}</p>
+          {/* Title + snippet + optional cover */}
+          <div className="flex-1 flex gap-3">
+            <div className="flex-1 space-y-1.5 min-w-0">
+              <h3 className="font-bold text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                {essay.title}
+              </h3>
+              {snippet && (
+                <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{snippet}</p>
+              )}
+            </div>
+            {essay.book?.cover_path && (
+              <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted">
+                <StorageImage
+                  storageKey={essay.book.cover_path}
+                  alt={essay.book.title}
+                  width={40}
+                  height={56}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             )}
           </div>
 

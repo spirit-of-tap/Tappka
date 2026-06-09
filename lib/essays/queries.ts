@@ -34,6 +34,10 @@ export async function getEssays(
     query = query.eq('author_profile_id', filters.authorProfileId);
   }
 
+  if (filters?.bookId) {
+    query = query.eq('book_id', filters.bookId);
+  }
+
   if (filters?.search?.trim()) {
     const q = filters.search.trim();
     const safe = q.replace(/[%_]/g, '\\$&');

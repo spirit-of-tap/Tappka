@@ -22,10 +22,10 @@ SUPABASE_KEY = (
     ".1TZszmxyBvP32ShyinCwR17NASNB_uZgo8gNSJGtDP2mkt2wGWdyWSLdObjOD0J6lYIV3ArPXL6CqIXmmEuLqg"
 )
 
-SOURCES_CSV = "data/Sources (1).csv"
-ESSAYS_CSV  = "data/Essays (1).csv"
+BOOKS_CSV  = "data/Books.csv"
+ESSAYS_CSV = "data/Essays (1).csv"
 
-# CategoryID → tag slug mapping (derived from book titles per category)
+# CategoryID → tag slug mapping
 CATEGORY_MAP: dict[str, str] = {
     "4":  "podnikani",
     "5":  "managment",
@@ -42,6 +42,17 @@ CATEGORY_MAP: dict[str, str] = {
     "17": "vedeni",
     "18": "koucovani",
     "19": "Finance",
+}
+
+# SharePoint status string → DB enum value
+STATUS_MAP: dict[str, str] = {
+    "schváleno":            "approved",
+    "schvaleno":            "approved",
+    "zamítnuto":            "rejected",
+    "zamitnuto":            "rejected",
+    "čeká na schválení":    "pending",
+    "ceka na schvaleni":    "pending",
+    "":                     "pending",
 }
 
 
@@ -156,7 +167,7 @@ class TiptapConverter(HTMLParser):
             self._marks = [m for m in self._marks if m["type"] != mark_type]
 
     def handle_data(self, data):
-        text = data.replace("\u00a0", " ")
+        text = data.replace(" ", " ")
         if not text.strip() and not text:
             return
         node: dict = {"type": "text", "text": text}
@@ -183,9 +194,32 @@ def html_to_tiptap(html: str) -> tuple[dict, str]:
     converter = TiptapConverter()
     converter.feed(html)
     doc = converter.result()
-    # Extract plain text
     plain = extract_text(doc)
     return doc, plain
+
+def parse_date(raw: str) -> str | None:
+    """Converts DD.MM.YYYY HH:MM or ISO 8601 strings to ISO 8601."""
+    if not raw or not raw.strip():
+        return None
+    raw = raw.strip()
+    # Already ISO format (e.g. from Essays CSV: 2024-07-30T00:00:00Z)
+    if raw[0].isdigit() and "-" in raw:
+        return raw
+    # DD.MM.YYYY HH:MM
+    try:
+        from datetime import datetime
+        dt = datetime.strptime(raw, "%d.%m.%Y %H:%M")
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        pass
+    # DD.MM.YYYY
+    try:
+        from datetime import datetime
+        dt = datetime.strptime(raw, "%d.%m.%Y")
+        return dt.strftime("%Y-%m-%dT00:00:00Z")
+    except ValueError:
+        return None
+
 
 def extract_text(node: dict) -> str:
     parts = []
@@ -202,7 +236,13 @@ def read_csv(path: str) -> list[dict]:
     """Reads a SharePoint CSV export (row 0 = schema XML, row 1 = headers)."""
     with open(path, encoding="utf-8-sig") as f:
         lines = f.readlines()
-    reader = csv.DictReader(lines[1:])
+    # Books.csv has a plain header on row 0 (no schema XML preamble);
+    # Essays CSV has schema XML on row 0 and headers on row 1.
+    # Detect by checking if row 0 starts with "ListSchema"
+    if lines and lines[0].strip().startswith("ListSchema"):
+        reader = csv.DictReader(lines[1:])
+    else:
+        reader = csv.DictReader(lines)
     return list(reader)
 
 
@@ -231,55 +271,84 @@ def main():
 
     # ── BOOKS ─────────────────────────────────────────────────────────────────
     print("\nImporting books...")
-    sources = read_csv(SOURCES_CSV)
+    book_rows = read_csv(BOOKS_CSV)
     legacy_id_to_book_id: dict[str, str] = {}
     books_ok = books_skip = books_err = 0
 
-    for row in sources:
+    for row in book_rows:
         legacy_id = row.get("ID", "").strip()
-        title     = row.get("Nadpis", "").strip()
-        status    = row.get("status", "").strip()
-        points_s  = row.get("BookPoints", "").strip()
-        desc      = row.get("ShortDescrition", "").strip() or None
-        cat_id    = row.get("CategoryID", "").strip()
-        author_email = row.get("Autor", "").strip().lower()
-        created_at   = row.get("Vytvořeno", "").strip() or None
 
+        # Skip AI-flagged removals
+        if row.get("ai_remove_flag", "").strip().lower() == "yes":
+            books_skip += 1
+            continue
+
+        # Prefer Google Books title, fall back to SharePoint title
+        title = (row.get("gb_title") or row.get("Title") or "").strip()
         if not title:
             books_skip += 1
             continue
 
-        # Only import approved books
-        if status and status.lower() not in ("schváleno", "schvaleno", ""):
-            books_skip += 1
-            continue
+        author = (row.get("gb_authors") or "Neznámý autor").strip() or "Neznámý autor"
 
-        points = int(points_s) if points_s.isdigit() else 1
+        raw_isbn = row.get("gb_isbn_13", "").strip()
+        isbn_13 = raw_isbn if raw_isbn else None
+
+        description = (row.get("gb_description") or row.get("ShortDescrition") or "").strip() or None
+
+        raw_status = row.get("status", "").strip()
+        db_status = STATUS_MAP.get(raw_status.lower(), "pending")
+
+        raw_points = row.get("ai_points", "").strip()
+        points = int(raw_points) if raw_points.isdigit() else 1
         points = max(1, min(3, points))
+        # Only set book_points for approved books; pending/rejected stay at 0
+        book_points = points if db_status == "approved" else 0
 
-        tag = CATEGORY_MAP.get(cat_id)
-        tags = [tag] if tag else []
+        cat_id = row.get("CategoryID", "").strip()
+        tags = []
+        if cat_id in CATEGORY_MAP:
+            tags.append(CATEGORY_MAP[cat_id])
+        thematic = row.get("ai_thematic_area", "").strip()
+        if thematic and thematic not in tags:
+            tags.append(thematic)
 
-        profile_id = profiles.get(author_email) or fallback_profile_id
+        # No per-book email in this CSV; use fallback profile
+        profile_id = fallback_profile_id
         if not profile_id:
-            print(f"  SKIP book '{title}': no profile for {author_email}")
+            print(f"  SKIP book '{title}': no fallback profile available")
             books_skip += 1
             continue
 
-        book_data = {
-            "title":                 title,
-            "author":                "Neznámý autor",
-            "isbn_13":               None,
-            "description":           desc,
-            "tags":                  tags,
-            "suggested_points":      points,
-            "book_points":           points,
-            "status":                "approved",
-            "source":                "manual",
-            "added_by_profile_id":   profile_id,
-            "approved_by_profile_id": profile_id,
-            "approved_at":           created_at or "2024-09-14T00:00:00Z",
+        created_at = parse_date(row.get("Created", ""))
+
+        source = "google_books" if isbn_13 else "manual"
+
+        # Prefer larger thumbnail; force HTTPS so Next.js Image accepts it
+        raw_cover = (row.get("gb_img_thumbnail") or row.get("gb_img_smallThumbnail") or "").strip()
+        cover_path = raw_cover.replace("http://", "https://") if raw_cover else None
+
+        book_data: dict = {
+            "title":                  title,
+            "author":                 author,
+            "isbn_13":                isbn_13,
+            "description":            description,
+            "tags":                   tags,
+            "cover_path":             cover_path,
+            "suggested_points":       points,
+            "book_points":            book_points,
+            "status":                 db_status,
+            "source":                 source,
+            "added_by_profile_id":    profile_id,
         }
+
+        if db_status == "approved":
+            book_data["approved_by_profile_id"] = profile_id
+            book_data["approved_at"] = created_at or "2024-09-14T00:00:00Z"
+
+        if db_status == "rejected":
+            book_data["rejection_reason"] = row.get("ReasonForDeny", "").strip() or None
+
         if created_at:
             book_data["created_at"] = created_at
 
@@ -287,7 +356,7 @@ def main():
         if result and result.get("id") and result["id"] != "dry-run":
             legacy_id_to_book_id[legacy_id] = result["id"]
             books_ok += 1
-        elif result and result["id"] == "dry-run":
+        elif result and result.get("id") == "dry-run":
             legacy_id_to_book_id[legacy_id] = f"dry-{legacy_id}"
             books_ok += 1
         else:
@@ -306,7 +375,7 @@ def main():
         legacy_src   = row.get("SourceID", "").strip()
         deactivated  = row.get("Deactivate", "").strip().lower()
         html_body    = row.get("MainText", "").strip()
-        created_at   = row.get("VytvořenoEditable", "").strip() or None
+        created_at   = parse_date(row.get("VytvořenoEditable", ""))
 
         if not title or deactivated == "pravda":
             essays_skip += 1
@@ -318,7 +387,6 @@ def main():
             continue
 
         book_id = legacy_id_to_book_id.get(legacy_src) if legacy_src else None
-        # Strip "dry-" prefix for actual IDs
         if book_id and book_id.startswith("dry-"):
             book_id = None
 
@@ -327,7 +395,7 @@ def main():
         essay_data = {
             "title":             title,
             "content_json":      content_json,
-            "content_text":      content_text[:10000],  # DB limit guard
+            "content_text":      content_text[:10000],
             "author_profile_id": profile_id,
             "book_id":           book_id,
             "published":         True,

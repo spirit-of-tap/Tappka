@@ -50,6 +50,7 @@ export interface EssayFilters {
   view?: EssayListView;
   authorProfileId?: string;
   teamId?: string;
+  bookId?: string;
   search?: string;
   page?: number;
   pageSize?: number;

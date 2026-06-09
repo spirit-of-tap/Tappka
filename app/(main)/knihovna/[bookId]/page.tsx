@@ -26,15 +26,13 @@ export default async function BookDetailPage({ params }: PageProps) {
   const [book, comments, essays, profile] = await Promise.all([
     getBookById(supabase, bookId),
     getBookComments(supabase, bookId),
-    getEssays(supabase, {}),
+    getEssays(supabase, { bookId, pageSize: 500 }),
     user ? getCurrentUserProfile(supabase, { user }) : null,
   ]);
 
   if (!book) notFound();
 
   const isCoachOrAdmin = profile?.role === 'coach' || profile?.role === 'admin';
-
-  const bookEssays = essays.filter((e) => e.book_id === bookId);
 
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-4xl">
@@ -103,13 +101,13 @@ export default async function BookDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {bookEssays.length > 0 && (
+      {essays.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Eseje o této knize ({bookEssays.length})</CardTitle>
+            <CardTitle className="text-base">Eseje o této knize ({essays.length})</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {bookEssays.map((essay) => (
+            {essays.map((essay) => (
               <Link key={essay.id} href={`/eseje/${essay.id}`} className="block hover:bg-muted p-3 rounded-lg transition-colors">
                 <p className="font-medium text-sm">{essay.title}</p>
                 <p className="text-xs text-muted-foreground mt-1">{essay.author?.name}</p>
