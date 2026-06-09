@@ -54,6 +54,7 @@ export function EssayVoteButton({
     <button
       onClick={toggle}
       disabled={loading}
+      aria-label={voted ? 'Odebrat hlas' : 'Hlasovat'}
       className={cn(
         'flex items-center gap-1 text-xs rounded-full px-2 py-0.5 transition-colors select-none',
         voted
