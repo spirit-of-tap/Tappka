@@ -1,101 +1,61 @@
-import { CheckCircle2 } from 'lucide-react';
-import { BOOK_POINTS_GOAL, BOOK_POINTS_PER_YEAR } from '@/lib/books/types';
+import { cn } from '@/lib/utils';
+import { BOOK_POINTS_GOAL } from '@/lib/books/types';
 
 interface PersonalProgressProps {
   approved_points: number;
   pending_points: number;
 }
 
-const milestones = [
-  { label: 'Rok 1', threshold: BOOK_POINTS_PER_YEAR },
-  { label: 'Rok 2', threshold: BOOK_POINTS_PER_YEAR * 2 },
-  { label: 'Rok 3', threshold: BOOK_POINTS_GOAL },
-];
+const MILESTONES = [20, 40, 60, 80, 100, 120];
+
+const MILESTONE_LABELS: Record<number, string> = {
+  20: 'Rok 1 · 1. pol.',
+  40: 'Rok 1 · 2. pol.',
+  60: 'Rok 2 · 1. pol.',
+  80: 'Rok 2 · 2. pol.',
+  100: 'Rok 3 · 1. pol.',
+  120: 'Rok 3 · 2. pol.',
+};
 
 export function PersonalProgress({ approved_points, pending_points }: PersonalProgressProps) {
-  const next = milestones.find((m) => approved_points < m.threshold);
-  const remaining = next ? next.threshold - approved_points : 0;
   const pct = Math.min(100, (approved_points / BOOK_POINTS_GOAL) * 100);
   const pendingPct = Math.min(100 - pct, (pending_points / BOOK_POINTS_GOAL) * 100);
+  const next = MILESTONES.find((m) => approved_points < m);
 
   return (
-    <div className="rounded-xl border bg-card p-5 space-y-5">
-
-      {/* Top row: points + next checkpoint */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Tvůj pokrok</p>
-          <p className="text-4xl font-bold leading-none">
-            {approved_points}
-            <span className="text-lg font-normal text-muted-foreground ml-1">/ {BOOK_POINTS_GOAL} b.</span>
-          </p>
-          {pending_points > 0 && (
-            <p className="text-xs text-muted-foreground mt-1.5">+ {pending_points} čeká na schválení</p>
-          )}
-        </div>
-        {next && (
-          <div className="text-right shrink-0">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Další cíl</p>
-            <p className="text-2xl font-bold leading-none text-primary">{next.threshold} b.</p>
-            <p className="text-xs text-muted-foreground mt-1.5">ještě {remaining} b. do {next.label}</p>
-          </div>
-        )}
-        {!next && (
-          <div className="text-right shrink-0">
-            <CheckCircle2 className="size-8 text-primary ml-auto" />
-            <p className="text-xs text-muted-foreground mt-1">Cíl splněn!</p>
-          </div>
-        )}
+    <div className="space-y-1.5 py-1">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="font-medium tabular-nums text-foreground">
+          {approved_points}
+          <span className="font-normal text-muted-foreground"> / {BOOK_POINTS_GOAL} b.</span>
+        </span>
+        <span>
+          {next
+            ? `${MILESTONE_LABELS[next]} · ještě ${next - approved_points} b.`
+            : 'Cíl splněn! 🎉'}
+        </span>
       </div>
-
-      {/* Segmented progress bar */}
-      <div className="space-y-1.5">
-        <div className="relative h-3 rounded-full bg-muted overflow-hidden flex">
-          {/* Filled approved */}
+      <div className="relative h-1.5 rounded-full bg-muted overflow-hidden">
+        <div
+          className="absolute inset-y-0 left-0 bg-primary rounded-full transition-all duration-700"
+          style={{ width: `${pct}%` }}
+        />
+        {pendingPct > 0 && (
           <div
-            className="h-full bg-primary transition-all duration-500 rounded-l-full"
-            style={{ width: `${pct}%` }}
+            className="absolute inset-y-0 bg-primary/30 transition-all duration-700"
+            style={{ left: `${pct}%`, width: `${pendingPct}%` }}
           />
-          {/* Pending overlay */}
-          {pendingPct > 0 && (
-            <div
-              className="h-full bg-primary/30 transition-all duration-500"
-              style={{ width: `${pendingPct}%` }}
-            />
-          )}
-          {/* Segment dividers */}
-          {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="absolute top-0 bottom-0 w-px bg-background/60"
-              style={{ left: `${(i / 3) * 100}%` }}
-            />
-          ))}
-        </div>
-
-        {/* Segment labels */}
-        <div className="flex">
-          {milestones.map(({ label, threshold }, i) => {
-            const done = approved_points >= threshold;
-            const isNext = next?.threshold === threshold;
-            return (
-              <div
-                key={label}
-                className="flex-1 flex items-center gap-1 text-xs"
-                style={{ justifyContent: i === 0 ? 'flex-start' : i === milestones.length - 1 ? 'flex-end' : 'center' }}
-              >
-                {done ? (
-                  <CheckCircle2 className="size-3 text-primary shrink-0" />
-                ) : (
-                  <div className={`size-3 rounded-full border-2 shrink-0 ${isNext ? 'border-primary' : 'border-muted-foreground/40'}`} />
-                )}
-                <span className={done ? 'font-medium text-foreground' : isNext ? 'text-primary font-medium' : 'text-muted-foreground'}>
-                  {label} · {threshold} b.
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        )}
+        {MILESTONES.slice(0, -1).map((m) => (
+          <div
+            key={m}
+            className={cn(
+              'absolute top-0 bottom-0 w-px',
+              approved_points >= m ? 'bg-background/40' : 'bg-background/50',
+            )}
+            style={{ left: `${(m / BOOK_POINTS_GOAL) * 100}%` }}
+          />
+        ))}
       </div>
     </div>
   );
