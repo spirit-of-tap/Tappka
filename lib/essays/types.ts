@@ -10,6 +10,7 @@ export interface Essay {
   content_text: string;
   published: boolean;
   view_count: number;
+  vote_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -17,7 +18,7 @@ export interface Essay {
 export interface EssayWithDetails extends Essay {
   author: Pick<Profile, 'id' | 'name' | 'picture' | 'role'> | null;
   book: Pick<Book, 'id' | 'title' | 'author' | 'book_points' | 'status' | 'cover_path'> | null;
-  comment_count?: number;
+  comment_count: number;
 }
 
 export interface EssayComment {
@@ -46,12 +47,16 @@ export interface EssayViewWithProfile extends EssayView {
 
 export type EssayListView = 'moje' | 'tym' | 'vse';
 
+export type EssaySortOrder = 'recent' | 'week' | 'best';
+
 export interface EssayFilters {
   view?: EssayListView;
   authorProfileId?: string;
   teamId?: string;
   bookId?: string;
   search?: string;
+  tag?: string;
+  sort?: EssaySortOrder;
   page?: number;
   pageSize?: number;
 }
