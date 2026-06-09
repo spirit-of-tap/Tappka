@@ -19,16 +19,43 @@ export async function getEssays(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
+  // Tag filter: resolve book IDs first (tags live on books, not essays)
+  let tagBookIds: string[] | null = null;
+  if (filters?.tag) {
+    const { data: taggedBooks, error: tagError } = await supabase
+      .from('books')
+      .select('id')
+      .contains('tags', [filters.tag]);
+    if (tagError) throw tagError;
+    tagBookIds = (taggedBooks ?? []).map((b: { id: string }) => b.id);
+    if (tagBookIds.length === 0) return [];
+  }
+
   let query = supabase
     .from('essays')
     .select(`
       *,
+      essay_comments(count),
       author:profiles!author_profile_id(id, name, picture, role),
       book:books!book_id(id, title, author, book_points, status, cover_path)
     `)
     .eq('published', true)
-    .order('created_at', { ascending: false })
     .range(from, to);
+
+  // Sort
+  if (filters?.sort === 'week') {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    query = query
+      .gte('created_at', oneWeekAgo)
+      .order('vote_count', { ascending: false })
+      .order('created_at', { ascending: false });
+  } else if (filters?.sort === 'best') {
+    query = query
+      .order('vote_count', { ascending: false })
+      .order('created_at', { ascending: false });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
 
   if (filters?.authorProfileId) {
     query = query.eq('author_profile_id', filters.authorProfileId);
@@ -36,6 +63,10 @@ export async function getEssays(
 
   if (filters?.bookId) {
     query = query.eq('book_id', filters.bookId);
+  }
+
+  if (tagBookIds) {
+    query = query.in('book_id', tagBookIds);
   }
 
   if (filters?.search?.trim()) {
@@ -46,7 +77,14 @@ export async function getEssays(
 
   const { data, error } = await query;
   if (error) throw error;
-  return data as EssayWithDetails[];
+
+  // Normalize essay_comments(count) → comment_count
+  return (data as (EssayWithDetails & { essay_comments?: { count: number }[] })[]).map(
+    ({ essay_comments, ...rest }) => ({
+      ...rest,
+      comment_count: Number(essay_comments?.[0]?.count ?? 0),
+    }),
+  ) as EssayWithDetails[];
 }
 
 export async function getEssaysByTeam(
