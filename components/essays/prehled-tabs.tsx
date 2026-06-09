@@ -1,14 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense } from 'react';
 import { Plus, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { PersonalProgress } from './personal-progress';
-import { EssayCard } from './essay-card';
-import { EssaySearch } from './essay-search';
-import { LoadMoreEssays } from './load-more-essays';
+import { MyEssayList } from './my-essay-list';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
@@ -18,15 +15,15 @@ interface PrehledTabsProps {
   myEssays: EssayWithDetails[];
   teamStats: { profile: { id: string; name: string; picture: string | null }; approved_points: number; pending_points: number }[];
   hasTeam: boolean;
+  votedEssayIds: Set<string>;
 }
 
-export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam }: PrehledTabsProps) {
+export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, votedEssayIds }: PrehledTabsProps) {
   return (
     <Tabs defaultValue={defaultTab}>
       <TabsList>
         <TabsTrigger value="moje">Moje</TabsTrigger>
         <TabsTrigger value="tym">Tým</TabsTrigger>
-        <TabsTrigger value="eseje">Eseje</TabsTrigger>
       </TabsList>
 
       {/* Moje tab */}
@@ -52,11 +49,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam }:
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {myEssays.map((essay) => (
-              <EssayCard key={essay.id} essay={essay} />
-            ))}
-          </div>
+          <MyEssayList essays={myEssays} votedEssayIds={votedEssayIds} />
         )}
       </TabsContent>
 
@@ -77,17 +70,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam }:
         )}
       </TabsContent>
 
-      {/* Eseje tab */}
-      <TabsContent value="eseje" className="mt-6 space-y-4">
-        <Suspense>
-          <EssaySearch />
-        </Suspense>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Suspense>
-            <LoadMoreEssays initialPage={0} view="vse" />
-          </Suspense>
-        </div>
-      </TabsContent>
+
     </Tabs>
   );
 }
