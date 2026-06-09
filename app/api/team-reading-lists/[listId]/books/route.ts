@@ -6,8 +6,8 @@ interface RouteParams {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
-  const { listId } = await params;
   try {
+    const { listId } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
@@ -33,8 +33,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  const { listId } = await params;
   try {
+    const { listId } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
