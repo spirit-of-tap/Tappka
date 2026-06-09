@@ -1,14 +1,17 @@
 import Link from 'next/link';
-import { MessageCircle, Eye, BookOpen, FileQuestion } from 'lucide-react';
+import { MessageCircle, Eye, BookOpen, FileQuestion, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { StorageImage } from '@/components/storage/storage-image';
+import { EssayVoteButton } from './essay-vote-button';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 interface EssayCardProps {
   essay: EssayWithDetails;
+  showVoteButton?: boolean;
+  initialVoted?: boolean;
 }
 
-export function EssayCard({ essay }: EssayCardProps) {
+export function EssayCard({ essay, showVoteButton = false, initialVoted = false }: EssayCardProps) {
   const snippet = (essay.content_text ?? '').slice(0, 160).trimEnd();
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
 
@@ -75,11 +78,23 @@ export function EssayCard({ essay }: EssayCardProps) {
 
           {/* Footer */}
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {showVoteButton ? (
+              <EssayVoteButton
+                essayId={essay.id}
+                initialVoteCount={essay.vote_count}
+                initialVoted={initialVoted}
+              />
+            ) : (
+              <span className="flex items-center gap-1">
+                <ChevronUp className="size-3" />
+                {essay.vote_count}
+              </span>
+            )}
             <span className="flex items-center gap-1">
               <Eye className="size-3" />
               {essay.view_count}
             </span>
-            {essay.comment_count !== undefined && essay.comment_count > 0 && (
+            {essay.comment_count > 0 && (
               <span className="flex items-center gap-1">
                 <MessageCircle className="size-3" />
                 {essay.comment_count}

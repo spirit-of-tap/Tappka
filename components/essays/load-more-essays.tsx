@@ -10,9 +10,12 @@ interface LoadMoreEssaysProps {
   view: 'vse' | 'moje' | 'tym';
   teamId?: string;
   q?: string;
+  sort?: 'recent' | 'week' | 'best';
+  tag?: string;
+  showVoteButton?: boolean;
 }
 
-export function LoadMoreEssays({ initialPage, view, teamId, q }: LoadMoreEssaysProps) {
+export function LoadMoreEssays({ initialPage, view, teamId, q, sort, tag, showVoteButton = false }: LoadMoreEssaysProps) {
   const [essays, setEssays] = useState<EssayWithDetails[]>([]);
   const [page, setPage] = useState(initialPage + 1);
   const [hasMore, setHasMore] = useState(true);
@@ -23,6 +26,8 @@ export function LoadMoreEssays({ initialPage, view, teamId, q }: LoadMoreEssaysP
     const params = new URLSearchParams({ page: String(p), view });
     if (teamId) params.set('team_id', teamId);
     if (q) params.set('q', q);
+    if (sort) params.set('sort', sort);
+    if (tag) params.set('tag', tag);
     return `/api/essays?${params}`;
   };
 
@@ -48,7 +53,7 @@ export function LoadMoreEssays({ initialPage, view, teamId, q }: LoadMoreEssaysP
     setEssays([]);
     setPage(initialPage + 1);
     setHasMore(true);
-  }, [view, teamId, initialPage, q]);
+  }, [view, teamId, initialPage, q, sort, tag]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -60,12 +65,12 @@ export function LoadMoreEssays({ initialPage, view, teamId, q }: LoadMoreEssaysP
     observer.observe(el);
     return () => observer.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, loading, hasMore, view, teamId, q]);
+  }, [page, loading, hasMore, view, teamId, q, sort, tag]);
 
   return (
     <>
       {essays.map((essay) => (
-        <EssayCard key={essay.id} essay={essay} />
+        <EssayCard key={essay.id} essay={essay} showVoteButton={showVoteButton} />
       ))}
       <div ref={sentinelRef} className="col-span-full flex justify-center py-4">
         {loading && <Spinner className="size-5" />}

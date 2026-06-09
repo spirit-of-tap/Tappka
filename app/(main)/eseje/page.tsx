@@ -1,50 +1,59 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { Plus, FileText } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
+import { getEssays } from '@/lib/essays/queries';
 import { EssayCard } from '@/components/essays/essay-card';
 import { LoadMoreEssays } from '@/components/essays/load-more-essays';
 import { EssaySearch } from '@/components/essays/essay-search';
+import { TopicPills } from '@/components/essays/topic-pills';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ESSAY_LIST_VIEW_LABELS } from '@/lib/essays/types';
-import type { EssayListView } from '@/lib/essays/types';
+import { cn } from '@/lib/utils';
+import type { EssaySortOrder } from '@/lib/essays/types';
 
 interface PageProps {
-  searchParams: Promise<{ view?: EssayListView; page?: string; q?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string; tag?: string }>;
 }
+
+const SORT_OPTIONS: { value: EssaySortOrder; label: string }[] = [
+  { value: 'recent', label: 'Nejnovější' },
+  { value: 'week',   label: 'Tento týden' },
+  { value: 'best',   label: 'Nejlepší' },
+];
 
 export default async function EsejePage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const view = params.view ?? 'vse';
+  const sort = (params.sort ?? 'recent') as EssaySortOrder;
+  const tag = params.tag;
   const search = params.q;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   const profile = user ? await getCurrentUserProfile(supabase, { user }) : null;
 
-  let essays;
-  if (view === 'moje' && profile) {
-    essays = await getEssays(supabase, { authorProfileId: profile.id, search });
-  } else if (view === 'tym' && profile?.team_id) {
-    essays = await getEssaysByTeam(supabase, profile.team_id, { search });
-  } else {
-    essays = await getEssays(supabase, { search });
-  }
+  const [essays, votesResult] = await Promise.all([
+    getEssays(supabase, { sort, tag, search }),
+    profile
+      ? supabase.from('essay_votes').select('essay_id').eq('voter_profile_id', profile.id)
+      : Promise.resolve({ data: [] as { essay_id: string }[] }),
+  ]);
+
+  const votedIds = new Set(
+    (votesResult.data ?? []).map((v) => v.essay_id),
+  );
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 space-y-5 max-w-5xl">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold">Eseje</h1>
-          <p className="text-muted-foreground">Čti a piš eseje o přečtených knihách</p>
+          <p className="text-muted-foreground">Praktické znalosti z přečtených knih</p>
         </div>
         <Button asChild>
           <Link href="/eseje/nova">
             <Plus className="size-4 mr-2" />
-            Napsat esej
+            Napsat
           </Link>
         </Button>
       </div>
@@ -53,46 +62,54 @@ export default async function EsejePage({ searchParams }: PageProps) {
         <EssaySearch />
       </Suspense>
 
-      <Tabs defaultValue={view} className="w-full">
-        <TabsList>
-          {(['vse', 'moje', 'tym'] as const).map((v) => (
-            <TabsTrigger key={v} value={v} asChild>
-              <Link href={`/eseje?view=${v}${search ? `&q=${encodeURIComponent(search)}` : ''}`}>{ESSAY_LIST_VIEW_LABELS[v]}</Link>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Suspense>
+        <TopicPills />
+      </Suspense>
 
-        <TabsContent value={view} className="mt-4">
-          {essays.length === 0 ? (
-            <div className="text-center py-16 space-y-3">
-              <FileText className="size-12 mx-auto text-muted-foreground" />
-              <h3 className="font-semibold text-lg">{search ? 'Žádné výsledky' : 'Žádné eseje'}</h3>
-              <p className="text-sm text-muted-foreground">
-                {search ? `Žádná esej neodpovídá výrazu „${search}"` : 'Buď první, kdo napíše esej'}
-              </p>
-              {!search && (
-                <Button asChild>
-                  <Link href="/eseje/nova">Napsat první esej</Link>
-                </Button>
+      <div className="flex items-center gap-1">
+        {SORT_OPTIONS.map(({ value, label }) => {
+          const newParams = new URLSearchParams();
+          if (search) newParams.set('q', search);
+          if (tag) newParams.set('tag', tag);
+          if (value !== 'recent') newParams.set('sort', value);
+          const href = `?${newParams.toString()}`;
+          return (
+            <Link
+              key={value}
+              href={href}
+              className={cn(
+                'text-sm px-3 py-1 rounded-full transition-colors',
+                sort === value
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted',
               )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {essays.map((essay) => (
-                <EssayCard key={essay.id} essay={essay} />
-              ))}
-              <Suspense>
-                <LoadMoreEssays
-                  initialPage={1}
-                  view={view}
-                  teamId={profile?.team_id ?? undefined}
-                  q={search}
-                />
-              </Suspense>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {essays.map((essay) => (
+          <EssayCard
+            key={essay.id}
+            essay={essay}
+            showVoteButton={!!profile}
+            initialVoted={votedIds.has(essay.id)}
+          />
+        ))}
+        <Suspense>
+          <LoadMoreEssays
+            initialPage={1}
+            view="vse"
+            q={search}
+            sort={sort}
+            tag={tag}
+            showVoteButton={!!profile}
+          />
+        </Suspense>
+      </div>
     </div>
   );
 }
