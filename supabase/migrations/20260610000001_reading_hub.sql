@@ -36,8 +36,8 @@ create trigger essay_votes_change_trigger
 
 alter table public.essay_votes enable row level security;
 
-create index essay_votes_essay_idx  on public.essay_votes(essay_id);
 create index essay_votes_voter_idx  on public.essay_votes(voter_profile_id);
+create index if not exists essays_vote_count_idx on public.essays(vote_count desc, created_at desc);
 
 create policy "Authenticated users can view votes"
   on public.essay_votes for select to authenticated using (true);
@@ -98,7 +98,8 @@ create policy "Team members can create lists"
 
 create policy "Team members can update their lists"
   on public.team_reading_lists for update to authenticated
-  using (team_id = (select team_id from public.profiles where id = public.current_profile_id()));
+  using (team_id = (select team_id from public.profiles where id = public.current_profile_id()))
+  with check (team_id = (select team_id from public.profiles where id = public.current_profile_id()));
 
 create policy "Team members can delete their lists"
   on public.team_reading_lists for delete to authenticated
