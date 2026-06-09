@@ -87,9 +87,9 @@ const getNavData = (isDevelopment: boolean): NavData => ({
       title: "Čtení",
       items: [
         {
-          title: "BoB",
-          url: "/knihovna",
-          icon: BookOpen,
+          title: "Přehled",
+          url: "/prehled",
+          icon: FileText,
         },
         {
           title: "Eseje",
@@ -97,9 +97,9 @@ const getNavData = (isDevelopment: boolean): NavData => ({
           icon: PenLine,
         },
         {
-          title: "Přehled",
-          url: "/prehled",
-          icon: FileText,
+          title: "BoB",
+          url: "/knihovna",
+          icon: BookOpen,
         },
       ],
     },
