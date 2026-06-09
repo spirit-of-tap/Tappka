@@ -14,6 +14,7 @@ import {
   BookOpen,
   FileText,
   BriefcaseBusiness,
+  PenLine,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -89,6 +90,11 @@ const getNavData = (isDevelopment: boolean): NavData => ({
           title: "BoB",
           url: "/knihovna",
           icon: BookOpen,
+        },
+        {
+          title: "Eseje",
+          url: "/eseje",
+          icon: PenLine,
         },
         {
           title: "Přehled",
