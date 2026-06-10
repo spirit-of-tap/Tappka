@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, FileText } from 'lucide-react';
+import { BookOpen, FileText, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
@@ -14,10 +14,10 @@ export function BookCard({ book }: BookCardProps) {
   const pointsLabel = `${points} ${points === 1 ? 'bod' : points < 5 ? 'body' : 'bodů'}`;
 
   return (
-    <Link href={`/knihovna/${book.id}`} className="group block">
+    <div className="group block">
       <div className="flex gap-3 p-3 rounded-xl border bg-card hover:shadow-sm transition-shadow">
         {/* Portrait cover */}
-        <div className="shrink-0 w-14 h-20 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+        <Link href={`/knihovna/${book.id}`} className="shrink-0 w-14 h-20 rounded-md overflow-hidden bg-muted flex items-center justify-center">
           {book.cover_path ? (
             <StorageImage
               storageKey={book.cover_path}
@@ -29,14 +29,16 @@ export function BookCard({ book }: BookCardProps) {
           ) : (
             <BookOpen className="size-6 text-muted-foreground/40" />
           )}
-        </div>
+        </Link>
 
         {/* Info */}
         <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
           <div className="space-y-0.5">
-            <p className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-              {book.title}
-            </p>
+            <Link href={`/knihovna/${book.id}`} className="block">
+              <p className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                {book.title}
+              </p>
+            </Link>
             <p className="text-xs text-muted-foreground truncate">{book.author}</p>
           </div>
 
@@ -59,10 +61,22 @@ export function BookCard({ book }: BookCardProps) {
                 <span>{book.page_count} str.</span>
               )}
               <span className="font-medium text-foreground tabular-nums">{pointsLabel}</span>
+              {book.preview_link && (
+                <a
+                  href={book.preview_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-primary hover:underline flex items-center gap-0.5"
+                >
+                  <ExternalLink className="size-3" />
+                  Náhled
+                </a>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

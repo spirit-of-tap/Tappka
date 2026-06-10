@@ -8,6 +8,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { TeamReadingListsHero } from '@/components/books/team-reading-lists-hero';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { BookCard } from '@/components/books/book-card';
 import { cn } from '@/lib/utils';
 import type { TeamReadingList } from '@/lib/books/team-lists';
 import type { EssayWithDetails } from '@/lib/essays/types';
@@ -164,9 +165,9 @@ function CategoryBooksView({
   return (
     <section className="space-y-4">
       <p className="text-sm text-muted-foreground">{books.length} knih v kategorii <span className="font-medium text-foreground">{label}</span></p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="space-y-2">
         {books.map((book) => (
-          <CompactBookCard key={book.id} book={book} />
+          <BookCard key={book.id} book={book} />
         ))}
       </div>
     </section>
