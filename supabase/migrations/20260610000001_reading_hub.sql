@@ -15,7 +15,7 @@ alter table public.essays
 create or replace function public.handle_essay_vote_change()
 returns trigger
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 begin
