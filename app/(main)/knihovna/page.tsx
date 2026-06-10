@@ -3,9 +3,12 @@ import { Suspense } from 'react';
 import { Plus, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getBooks } from '@/lib/books/queries';
+import { getTeamReadingLists } from '@/lib/books/team-lists';
+import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { BookCard } from '@/components/books/book-card';
 import { LibraryFilters } from '@/components/books/library-filters';
 import { LoadMoreBooks } from '@/components/books/load-more-books';
+import { TeamReadingListsHero } from '@/components/books/team-reading-lists-hero';
 import { Button } from '@/components/ui/button';
 import type { BookStatus } from '@/lib/books/types';
 
@@ -21,6 +24,12 @@ interface PageProps {
 export default async function KnihovnaPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const [profile, lists] = await Promise.all([
+    user ? getCurrentUserProfile(supabase, { user }) : Promise.resolve(null),
+    getTeamReadingLists(supabase),
+  ]);
 
   const tags = params.tag
     ? Array.isArray(params.tag) ? params.tag : [params.tag]
@@ -52,6 +61,8 @@ export default async function KnihovnaPage({ searchParams }: PageProps) {
       <Suspense>
         <LibraryFilters />
       </Suspense>
+
+      <TeamReadingListsHero lists={lists} hasTeam={!!profile?.team_id} />
 
       {books.length === 0 ? (
         <div className="text-center py-16 space-y-3">
