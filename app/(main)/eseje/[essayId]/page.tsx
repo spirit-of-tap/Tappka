@@ -135,7 +135,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
 
       {/* Vote CTA */}
       {!isAuthor && (
-        <div className="flex flex-col items-center gap-1 py-10 border-y mb-8">
+        <div className="flex items-center gap-4 px-4 py-4 mb-8 rounded-xl bg-muted/40">
           <EssayVoteButton
             essayId={essayId}
             initialVoteCount={essay.vote_count}
@@ -144,7 +144,6 @@ export default async function EssayDetailPage({ params }: PageProps) {
           />
         </div>
       )}
-      {isAuthor && <hr className="mb-8" />}
 
       <EssayCommentThread essayId={essayId} initialComments={comments} />
     </div>

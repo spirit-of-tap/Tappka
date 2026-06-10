@@ -60,7 +60,7 @@ export function EssayVoteButton({
 
   if (size === 'lg') {
     return (
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex items-center gap-4">
         <style>{`
           @keyframes vote-pop {
             0%   { transform: scale(1); }
@@ -131,7 +131,7 @@ export function EssayVoteButton({
           </button>
         </div>
 
-        <span className="text-xs text-muted-foreground text-center max-w-xs">
+        <span className="text-xs text-muted-foreground max-w-[16rem]">
           {voted
             ? 'Díky! Pomáháš ostatním najít nejlepší eseje.'
             : 'Klikni, pokud ti esej přinesla novou perspektivu nebo nápad.'}
