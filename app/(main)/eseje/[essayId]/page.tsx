@@ -3,10 +3,12 @@ import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, BookOpen, Eye, Pencil } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getEssayById, getEssayComments, getEssayCoachViewers } from '@/lib/essays/queries';
+import { getEssayById, getEssayComments, getEssayCoachViewers, getEssayCoachReads } from '@/lib/essays/queries';
 import { TiptapRenderer } from '@/components/essays/tiptap-renderer';
 import { EssayCommentThread } from '@/components/essays/essay-comment-thread';
 import { SeenByCoachBanner } from '@/components/essays/seen-by-coach-banner';
+import { ReadByCoachBanner } from '@/components/essays/read-by-coach-banner';
+import { CoachReadButton } from '@/components/essays/coach-read-button';
 import { ViewTracker } from '@/components/essays/view-tracker';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
@@ -38,7 +40,23 @@ export default async function EssayDetailPage({ params }: PageProps) {
 
   const isAuthor = profile?.id === essay.author_profile_id;
   const hasVoted = !!voteResult.data;
+  const isCoachOrAdmin = profile?.role === 'coach' || profile?.role === 'admin';
+
   const coachViewers = isAuthor ? await getEssayCoachViewers(supabase, essayId) : [];
+
+  let coachReads: Awaited<ReturnType<typeof getEssayCoachReads>> = [];
+  let canReview = false;
+  if (isAuthor) {
+    coachReads = await getEssayCoachReads(supabase, essayId);
+  } else if (isCoachOrAdmin && profile) {
+    const [reads, reviewable] = await Promise.all([
+      getEssayCoachReads(supabase, essayId),
+      supabase.rpc('coach_can_review_essay', { p_essay_id: essayId }),
+    ]);
+    coachReads = reads;
+    canReview = reviewable.data === true;
+  }
+  const alreadyRead = profile ? coachReads.some((r) => r.coach_profile_id === profile.id) : false;
 
   return (
     <div className="container mx-auto py-6 max-w-2xl">
@@ -47,9 +65,9 @@ export default async function EssayDetailPage({ params }: PageProps) {
       {/* Top bar */}
       <div className="flex items-center justify-between mb-8">
         <Button variant="ghost" asChild className="gap-2 -ml-3">
-          <Link href="/eseje">
+          <Link href="/hledat">
             <ArrowLeft className="size-4" />
-            Zpět na eseje
+            Zpět
           </Link>
         </Button>
         {isAuthor && (
@@ -60,11 +78,15 @@ export default async function EssayDetailPage({ params }: PageProps) {
             </Link>
           </Button>
         )}
+        {canReview && (
+          <CoachReadButton essayId={essayId} initialRead={alreadyRead} size="sm" />
+        )}
       </div>
 
-      {isAuthor && coachViewers.length > 0 && (
-        <div className="mb-6">
-          <SeenByCoachBanner coachViewers={coachViewers} />
+      {isAuthor && (coachReads.length > 0 || coachViewers.length > 0) && (
+        <div className="mb-6 space-y-2">
+          {coachReads.length > 0 && <ReadByCoachBanner reads={coachReads} />}
+          {coachViewers.length > 0 && <SeenByCoachBanner coachViewers={coachViewers} />}
         </div>
       )}
 

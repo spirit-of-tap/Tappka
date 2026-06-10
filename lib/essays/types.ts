@@ -45,6 +45,21 @@ export interface EssayViewWithProfile extends EssayView {
   viewer: Pick<Profile, 'id' | 'name' | 'role'> | null;
 }
 
+export interface EssayCoachRead {
+  essay_id: string;
+  coach_profile_id: string;
+  read_at: string;
+}
+
+export interface EssayCoachReadWithProfile extends EssayCoachRead {
+  coach: Pick<Profile, 'id' | 'name' | 'role'> | null;
+}
+
+/** Essay shown in the coach review inbox; `read_at` is set on the "read" tab. */
+export interface CoachReviewEssay extends EssayWithDetails {
+  read_at: string | null;
+}
+
 export type EssayListView = 'moje' | 'tym' | 'vse';
 
 export type EssaySortOrder = 'recent' | 'week' | 'best';

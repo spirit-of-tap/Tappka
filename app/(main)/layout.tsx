@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { getCoachUnreadCount } from "@/lib/essays/queries";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
@@ -33,9 +34,15 @@ export default async function DashboardLayout({
     role: profile?.role,
   };
 
+  const isCoachOrAdmin = profile?.role === "coach" || profile?.role === "admin";
+  const reviewCount =
+    isCoachOrAdmin && profile?.team_id
+      ? await getCoachUnreadCount(supabase, profile.id, profile.team_id)
+      : 0;
+
   return (
     <SidebarProvider>
-      <AppSidebar user={sidebarUser} />
+      <AppSidebar user={sidebarUser} reviewCount={reviewCount} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />

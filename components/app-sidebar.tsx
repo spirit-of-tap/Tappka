@@ -11,12 +11,14 @@ import {
   Database,
   ChevronRight,
   MessageCircleQuestion,
-  BookOpen,
   FileText,
   BriefcaseBusiness,
   Search,
+  Settings,
+  Inbox,
 } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -46,6 +48,7 @@ type NavItem = {
   url: string
   icon: React.ComponentType<{ className?: string }>
   external?: boolean
+  badge?: number
 }
 
 type NavSection = {
@@ -61,7 +64,7 @@ const HELP_DESK_URL =
   "https://teams.microsoft.com/l/channel/19%3Aea499f40a2864e03862e5b517fa824a8%40thread.tacv2/HelpDesk%20IT%20House?groupId=c84b63de-1603-4ba8-98a6-9825300c0f22&tenantId=f26a48e1-fc21-461a-b97f-ac5bd535f341"
 
 // Navigation data for Tappka
-const getNavData = (isDevelopment: boolean): NavData => ({
+const getNavData = (isDevelopment: boolean, isCoachOrAdmin: boolean, reviewCount: number): NavData => ({
   navMain: [
     {
       title: "Hlavní",
@@ -96,11 +99,21 @@ const getNavData = (isDevelopment: boolean): NavData => ({
           url: "/hledat",
           icon: Search,
         },
-        {
-          title: "BoB",
-          url: "/hledat",
-          icon: BookOpen,
-        },
+        ...(isCoachOrAdmin
+          ? [
+            {
+              title: "Ke kontrole",
+              url: "/eseje/ke-kontrole",
+              icon: Inbox,
+              badge: reviewCount,
+            },
+            {
+              title: "Nastavení",
+              url: "/settings/kniha-knih",
+              icon: Settings,
+            },
+          ]
+          : []),
       ],
     },
     {
@@ -144,16 +157,15 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     email: string
     role?: string
   }
+  reviewCount?: number
 }
 
-function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
+function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["user"]; reviewCount?: number }) {
   const pathname = usePathname()
   const { setOpenMobile } = useSidebar()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isReservationsActive = pathname.startsWith("/reservations")
   const isDevelopment = process.env.NODE_ENV === "development"
-
-  const isKnihovnaActive = pathname.startsWith("/knihovna") || pathname.startsWith("/hledat")
 
   const closeSidebarOnMobile = () => {
     setOpenMobile(false)
@@ -173,7 +185,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {getNavData(isDevelopment).navMain.map((section) => (
+        {getNavData(isDevelopment, isCoachOrAdmin, reviewCount).navMain.map((section) => (
           <SidebarGroup key={section.title}>
             <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -228,55 +240,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                     )
                   }
 
-                  // Special handling for BoB: coach/admin get sub-menu with Správa
-                  if (item.title === "BoB" && isCoachOrAdmin) {
-                    return (
-                      <Collapsible
-                        key={item.title}
-                        asChild
-                        defaultOpen={isKnihovnaActive}
-                        className="group/collapsible"
-                      >
-                        <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                              isActive={isKnihovnaActive}
-                              tooltip={item.title}
-                            >
-                              <item.icon className="size-4" />
-                              <span>{item.title}</span>
-                              <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={pathname.startsWith("/hledat") || (pathname.startsWith("/knihovna/") && pathname !== "/settings/kniha-knih")}
-                                >
-                                  <Link href="/hledat" onClick={closeSidebarOnMobile}>
-                                    Katalog
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={pathname === "/settings/kniha-knih"}
-                                >
-                                  <Link href="/settings/kniha-knih" onClick={closeSidebarOnMobile}>
-                                    Správa
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
-                    )
-                  }
-
                   // Standard menu item (internal or external)
                   return (
                     <SidebarMenuItem key={item.title}>
@@ -284,13 +247,21 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                         asChild
                         isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
                       >
-                        <Link 
+                        <Link
                           href={item.url}
                           onClick={item.external ? undefined : closeSidebarOnMobile}
                           {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                         >
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
+                          {item.badge !== undefined && item.badge > 0 && (
+                            <Badge
+                              variant="destructive"
+                              className="ml-auto h-5 min-w-5 p-0 flex items-center justify-center text-xs"
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -325,10 +296,10 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   )
 }
 
-export function AppSidebar({ user, ...props }: AppSidebarProps) {
+export function AppSidebar({ user, reviewCount, ...props }: AppSidebarProps) {
   return (
     <Sidebar {...props}>
-      <AppSidebarContent user={user} />
+      <AppSidebarContent user={user} reviewCount={reviewCount} />
     </Sidebar>
   )
 }
