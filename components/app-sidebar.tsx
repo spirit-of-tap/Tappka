@@ -14,7 +14,7 @@ import {
   BookOpen,
   FileText,
   BriefcaseBusiness,
-  PenLine,
+  Search,
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -92,13 +92,13 @@ const getNavData = (isDevelopment: boolean): NavData => ({
           icon: FileText,
         },
         {
-          title: "Eseje",
-          url: "/eseje",
-          icon: PenLine,
+          title: "Hledat",
+          url: "/hledat",
+          icon: Search,
         },
         {
           title: "BoB",
-          url: "/knihovna",
+          url: "/hledat",
           icon: BookOpen,
         },
       ],
@@ -154,7 +154,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const isKomunitaActive = pathname.startsWith("/komunita")
   const isDevelopment = process.env.NODE_ENV === "development"
 
-  const isKnihovnaActive = pathname.startsWith("/knihovna")
+  const isKnihovnaActive = pathname.startsWith("/knihovna") || pathname.startsWith("/hledat")
 
   const closeSidebarOnMobile = () => {
     setOpenMobile(false)
@@ -254,9 +254,9 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                               <SidebarMenuSubItem>
                                 <SidebarMenuSubButton
                                   asChild
-                                  isActive={pathname === "/knihovna" || (pathname.startsWith("/knihovna/") && pathname !== "/settings/kniha-knih")}
+                                  isActive={pathname.startsWith("/hledat") || (pathname.startsWith("/knihovna/") && pathname !== "/settings/kniha-knih")}
                                 >
-                                  <Link href="/knihovna" onClick={closeSidebarOnMobile}>
+                                  <Link href="/hledat" onClick={closeSidebarOnMobile}>
                                     Katalog
                                   </Link>
                                 </SidebarMenuSubButton>
