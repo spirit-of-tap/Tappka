@@ -17,17 +17,20 @@ import type { BookWithProfiles } from '@/lib/books/types';
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
 type BookResult = { id: string; title: string; author: string; cover_path: string | null };
 type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; tags: string[]; book_points: number; essay_count: number };
+type TeamMember = { profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
+type TeamWithMembers = { id: string; name: string; members: TeamMember[] };
 
 interface SearchPageClientProps {
   teamLists: TeamReadingList[];
   popularEssays: EssayWithVoted[];
   categoryBestBooks: Record<string, CategoryBook[]>;
+  teamsWithMembers: TeamWithMembers[];
   hasTeam: boolean;
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
 
-export function SearchPageClient({ teamLists, popularEssays, categoryBestBooks, hasTeam }: SearchPageClientProps) {
+export function SearchPageClient({ teamLists, popularEssays, categoryBestBooks, teamsWithMembers, hasTeam }: SearchPageClientProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -124,6 +127,7 @@ export function SearchPageClient({ teamLists, popularEssays, categoryBestBooks, 
             teamLists={teamLists}
             popularEssays={popularEssays}
             categoryBestBooks={categoryBestBooks}
+            teamsWithMembers={teamsWithMembers}
             hasTeam={hasTeam}
             onSelectCategory={toggleCategory}
           />
@@ -136,11 +140,12 @@ export function SearchPageClient({ teamLists, popularEssays, categoryBestBooks, 
 // ─── Discovery ────────────────────────────────────────────────────────────────
 
 function DiscoveryView({
-  teamLists, popularEssays, categoryBestBooks, hasTeam, onSelectCategory,
+  teamLists, popularEssays, categoryBestBooks, teamsWithMembers, hasTeam, onSelectCategory,
 }: {
   teamLists: TeamReadingList[];
   popularEssays: EssayWithVoted[];
   categoryBestBooks: Record<string, CategoryBook[]>;
+  teamsWithMembers: TeamWithMembers[];
   hasTeam: boolean;
   onSelectCategory: (key: string) => void;
 }) {
@@ -164,6 +169,10 @@ function DiscoveryView({
             ))}
           </div>
         </section>
+      )}
+
+      {teamsWithMembers.length > 0 && (
+        <TeamsSection teams={teamsWithMembers} />
       )}
 
       {Object.keys(categoryBestBooks).length > 0 && (
@@ -222,6 +231,82 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
         />
       </div>
     </div>
+  );
+}
+
+function TeamsSection({ teams }: { teams: TeamWithMembers[] }) {
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
+  const activeTeam = teams.find((t) => t.id === activeTeamId) ?? null;
+
+  return (
+    <section className="space-y-3">
+      <h2 className="font-semibold text-base">Týmy</h2>
+
+      {/* Team pills */}
+      <div className="flex gap-2 flex-wrap">
+        {teams.map((team) => (
+          <button
+            key={team.id}
+            onClick={() => setActiveTeamId((prev) => (prev === team.id ? null : team.id))}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition-colors',
+              activeTeamId === team.id
+                ? 'bg-primary text-primary-foreground border-primary font-medium'
+                : 'bg-card text-foreground border-border hover:border-primary/40 hover:bg-muted/50',
+            )}
+          >
+            {/* Avatar stack */}
+            <div className="flex -space-x-1.5">
+              {team.members.slice(0, 3).map((m) => (
+                <div key={m.profile_id} className="size-5 rounded-full overflow-hidden border-2 border-background bg-muted shrink-0 flex items-center justify-center text-[8px] font-semibold">
+                  {m.profile_picture
+                    ? <img src={m.profile_picture} alt={m.profile_name} className="w-full h-full object-cover" />
+                    : m.profile_name[0]}
+                </div>
+              ))}
+            </div>
+            <span>{team.name}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Expanded member list */}
+      {activeTeam && (
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="divide-y">
+            {activeTeam.members.map((member) => (
+              <Link
+                key={member.profile_id}
+                href={`/komunita/profil/${member.profile_id}`}
+                className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-muted/50 transition-colors group"
+              >
+                <div className="size-8 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center text-xs font-semibold">
+                  {member.profile_picture
+                    ? <img src={member.profile_picture} alt={member.profile_name} className="w-full h-full object-cover" />
+                    : member.profile_name[0]}
+                </div>
+                <p className="flex-1 text-sm font-medium group-hover:text-primary transition-colors truncate">
+                  {member.profile_name}
+                </p>
+                <div className="flex items-center gap-2 shrink-0 text-xs text-muted-foreground">
+                  {member.essay_count > 0 && (
+                    <span className="flex items-center gap-1">
+                      <PenLine className="size-3" />
+                      {member.essay_count}
+                    </span>
+                  )}
+                  {member.book_points > 0 && (
+                    <span className="font-medium text-foreground">
+                      {member.book_points} b.
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

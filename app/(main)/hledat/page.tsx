@@ -13,10 +13,11 @@ export default async function HledatPage() {
 
   const profile = await getCurrentUserProfile(supabase, { user });
 
-  const [teamLists, popularEssays, categoryRows] = await Promise.all([
+  const [teamLists, popularEssays, categoryRows, teamRows] = await Promise.all([
     getTeamReadingLists(supabase),
     getEssays(supabase, { sort: 'week', pageSize: 8 }),
     supabase.rpc('get_best_books_per_category', { top_n: 3 }),
+    supabase.rpc('get_teams_with_member_stats'),
   ]);
 
   type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; tags: string[]; book_points: number; essay_count: number };
@@ -25,6 +26,15 @@ export default async function HledatPage() {
     if (!(row.tag in BOOK_CATEGORY_LABELS)) continue;
     (categoryBestBooks[row.tag] ??= []).push(row);
   }
+
+  type MemberRow = { team_id: string; team_name: string; profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
+  type TeamWithMembers = { id: string; name: string; members: Omit<MemberRow, 'team_id' | 'team_name'>[] };
+  const teamsMap = new Map<string, TeamWithMembers>();
+  for (const row of (teamRows.data ?? []) as MemberRow[]) {
+    if (!teamsMap.has(row.team_id)) teamsMap.set(row.team_id, { id: row.team_id, name: row.team_name, members: [] });
+    teamsMap.get(row.team_id)!.members.push({ profile_id: row.profile_id, profile_name: row.profile_name, profile_picture: row.profile_picture, essay_count: row.essay_count, book_points: row.book_points });
+  }
+  const teamsWithMembers = Array.from(teamsMap.values());
 
   const votedIds = new Set<string>();
   if (profile && popularEssays.length > 0) {
@@ -43,6 +53,7 @@ export default async function HledatPage() {
       teamLists={teamLists}
       popularEssays={popularWithVoted}
       categoryBestBooks={categoryBestBooks}
+      teamsWithMembers={teamsWithMembers}
       hasTeam={!!profile?.team_id}
     />
   );
