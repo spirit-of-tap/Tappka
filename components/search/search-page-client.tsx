@@ -16,17 +16,18 @@ import type { BookWithProfiles } from '@/lib/books/types';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
 type BookResult = { id: string; title: string; author: string; cover_path: string | null };
+type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; tags: string[]; book_points: number; essay_count: number };
 
 interface SearchPageClientProps {
   teamLists: TeamReadingList[];
   popularEssays: EssayWithVoted[];
-  topBooks: (BookWithProfiles & { essay_count?: number })[];
+  categoryBestBooks: Record<string, CategoryBook[]>;
   hasTeam: boolean;
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
 
-export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }: SearchPageClientProps) {
+export function SearchPageClient({ teamLists, popularEssays, categoryBestBooks, hasTeam }: SearchPageClientProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -122,8 +123,9 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
           <DiscoveryView
             teamLists={teamLists}
             popularEssays={popularEssays}
-            topBooks={topBooks}
+            categoryBestBooks={categoryBestBooks}
             hasTeam={hasTeam}
+            onSelectCategory={toggleCategory}
           />
         )}
       </div>
@@ -134,12 +136,13 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
 // ─── Discovery ────────────────────────────────────────────────────────────────
 
 function DiscoveryView({
-  teamLists, popularEssays, topBooks, hasTeam,
+  teamLists, popularEssays, categoryBestBooks, hasTeam, onSelectCategory,
 }: {
   teamLists: TeamReadingList[];
   popularEssays: EssayWithVoted[];
-  topBooks: (BookWithProfiles & { essay_count?: number })[];
+  categoryBestBooks: Record<string, CategoryBook[]>;
   hasTeam: boolean;
+  onSelectCategory: (key: string) => void;
 }) {
   return (
     <div className="space-y-10">
@@ -163,20 +166,11 @@ function DiscoveryView({
         </section>
       )}
 
-      {topBooks.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-base">Aktivní knihy</h2>
-            <Link href="/hledat" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Katalog →
-            </Link>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {topBooks.map((book) => (
-              <BookshelfCard key={book.id} book={book} />
-            ))}
-          </div>
-        </section>
+      {Object.keys(categoryBestBooks).length > 0 && (
+        <CategoryBestBooksSection
+          categoryBestBooks={categoryBestBooks}
+          onSelectCategory={onSelectCategory}
+        />
       )}
     </div>
   );
@@ -231,32 +225,60 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
   );
 }
 
-// Bookshelf-style book card: prominent cover, minimal text
-function BookshelfCard({ book }: { book: BookWithProfiles & { essay_count?: number } }) {
+function CategoryBestBooksSection({
+  categoryBestBooks, onSelectCategory,
+}: {
+  categoryBestBooks: Record<string, CategoryBook[]>;
+  onSelectCategory: (key: string) => void;
+}) {
+  const entries = Object.entries(BOOK_CATEGORY_LABELS)
+    .filter(([key]) => (categoryBestBooks[key]?.length ?? 0) > 0);
+
+  if (entries.length === 0) return null;
+
   return (
-    <Link href={`/knihovna/${book.id}`} className="shrink-0 w-28 group block">
-      <div className="w-full h-40 rounded-lg overflow-hidden bg-muted flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-        {book.cover_path ? (
-          <StorageImage
-            storageKey={book.cover_path}
-            alt={book.title}
-            width={112}
-            height={160}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <BookOpen className="size-7 text-muted-foreground/30" />
-        )}
+    <section className="space-y-3">
+      <h2 className="font-semibold text-base">Nejlepší v kategoriích</h2>
+      <div className="grid grid-cols-2 gap-2.5">
+        {entries.map(([key, label]) => {
+          const books = categoryBestBooks[key];
+          const topEssayCount = books[0]?.essay_count ?? 0;
+          return (
+            <button
+              key={key}
+              onClick={() => onSelectCategory(key)}
+              className="rounded-xl border bg-card p-3 text-left hover:shadow-md hover:border-primary/30 transition-all group space-y-2.5"
+            >
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-xs font-semibold leading-snug line-clamp-1">{label}</p>
+                {topEssayCount > 0 && (
+                  <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                    {topEssayCount} esejí
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-1.5">
+                {books.slice(0, 3).map((book) => (
+                  <div key={book.id} className="w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                    {book.cover_path ? (
+                      <StorageImage
+                        storageKey={book.cover_path}
+                        alt={book.title}
+                        width={40}
+                        height={56}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <BookOpen className="size-3 text-muted-foreground/30" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </button>
+          );
+        })}
       </div>
-      <div className="mt-2 space-y-0.5">
-        <p className="text-xs font-semibold line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-          {book.title}
-        </p>
-        {(book.essay_count ?? 0) > 0 && (
-          <p className="text-xs text-muted-foreground">{book.essay_count} esejí</p>
-        )}
-      </div>
-    </Link>
+    </section>
   );
 }
 

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getTeamReadingLists } from '@/lib/books/team-lists';
 import { getEssays } from '@/lib/essays/queries';
-import { getBooks } from '@/lib/books/queries';
+import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { SearchPageClient } from '@/components/search/search-page-client';
 
 export default async function HledatPage() {
@@ -13,11 +13,18 @@ export default async function HledatPage() {
 
   const profile = await getCurrentUserProfile(supabase, { user });
 
-  const [teamLists, popularEssays, topBooks] = await Promise.all([
+  const [teamLists, popularEssays, categoryRows] = await Promise.all([
     getTeamReadingLists(supabase),
     getEssays(supabase, { sort: 'week', pageSize: 8 }),
-    getBooks(supabase, { sortBy: 'popular', status: 'approved', pageSize: 10 }),
+    supabase.rpc('get_best_books_per_category', { top_n: 3 }),
   ]);
+
+  type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; tags: string[]; book_points: number; essay_count: number };
+  const categoryBestBooks: Record<string, CategoryBook[]> = {};
+  for (const row of (categoryRows.data ?? []) as CategoryBook[]) {
+    if (!(row.tag in BOOK_CATEGORY_LABELS)) continue;
+    (categoryBestBooks[row.tag] ??= []).push(row);
+  }
 
   const votedIds = new Set<string>();
   if (profile && popularEssays.length > 0) {
@@ -35,7 +42,7 @@ export default async function HledatPage() {
     <SearchPageClient
       teamLists={teamLists}
       popularEssays={popularWithVoted}
-      topBooks={topBooks}
+      categoryBestBooks={categoryBestBooks}
       hasTeam={!!profile?.team_id}
     />
   );
