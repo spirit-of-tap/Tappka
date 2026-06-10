@@ -1,21 +1,82 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import {
+  ArrowLeft,
+  BookOpen,
+  BookText,
+  Hash,
+  User,
+  Pencil,
+  ExternalLink,
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById, getBookComments } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
 import { StorageImage } from '@/components/storage/storage-image';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookDeleteButton } from '@/components/books/book-delete-button';
-import { Pencil } from 'lucide-react';
-import { BOOK_STATUS_LABELS, BOOK_STATUS_COLORS } from '@/lib/books/types';
+import { BookDescription } from '@/components/books/book-description';
+import { BookEssaysList } from '@/components/books/book-essays-list';
+import { BOOK_STATUS_LABELS, BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import type { BookStatus } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
+
+const STATUS_PILL: Record<BookStatus, string> = {
+  approved:
+    'border-emerald-600/20 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-950/40 dark:text-emerald-400',
+  pending:
+    'border-amber-600/20 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-950/40 dark:text-amber-400',
+  rejected:
+    'border-red-600/20 bg-red-50 text-red-700 dark:border-red-400/20 dark:bg-red-950/40 dark:text-red-400',
+};
+
+const STATUS_DOT: Record<BookStatus, string> = {
+  approved: 'bg-emerald-500',
+  pending: 'bg-amber-500',
+  rejected: 'bg-red-500',
+};
 
 interface PageProps {
   params: Promise<{ bookId: string }>;
+}
+
+function pointsLabel(points: number): string {
+  if (points === 1) return 'bod';
+  if (points >= 2 && points <= 4) return 'body';
+  return 'bodů';
+}
+
+function Avatar({ picture, name, size = 28 }: { picture?: string | null; name?: string | null; size?: number }) {
+  const initial = name?.[0]?.toUpperCase() ?? '?';
+  if (picture) {
+    return (
+      <img
+        src={picture}
+        alt={name ?? ''}
+        className="rounded-full object-cover shrink-0"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <div
+      className="rounded-full bg-muted flex items-center justify-center font-semibold text-muted-foreground shrink-0"
+      style={{ width: size, height: size, fontSize: size * 0.4 }}
+    >
+      {initial}
+    </div>
+  );
+}
+
+function MetaItem({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+      <Icon className="size-4 shrink-0 text-muted-foreground/70" />
+      <span>{children}</span>
+    </div>
+  );
 }
 
 export default async function BookDetailPage({ params }: PageProps) {
@@ -26,7 +87,7 @@ export default async function BookDetailPage({ params }: PageProps) {
   const [book, comments, essays, profile] = await Promise.all([
     getBookById(supabase, bookId),
     getBookComments(supabase, bookId),
-    getEssays(supabase, { bookId, pageSize: 500 }),
+    getEssays(supabase, { bookId, pageSize: 500, sort: 'best' }),
     user ? getCurrentUserProfile(supabase, { user }) : null,
   ]);
 
@@ -34,10 +95,14 @@ export default async function BookDetailPage({ params }: PageProps) {
 
   const isCoachOrAdmin = profile?.role === 'coach' || profile?.role === 'admin';
 
+  const previewUrl = book.preview_link ? book.preview_link.replace(/^http:\/\//, 'https://') : null;
+  const goodreadsUrl = `https://www.goodreads.com/search?q=${encodeURIComponent(book.title)}`;
+
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" asChild className="gap-2">
+    <div className="container mx-auto max-w-4xl py-6 space-y-8">
+      {/* Top bar */}
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="ghost" asChild className="gap-2 -ml-2">
           <Link href="/hledat">
             <ArrowLeft className="size-4" />
             Zpět do knihovny
@@ -56,44 +121,94 @@ export default async function BookDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      <div className="flex gap-6">
-        <div className="shrink-0 w-32 h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-          {book.cover_path ? (
-            <StorageImage
-              storageKey={book.cover_path}
-              alt={book.title}
-              className="w-full h-full object-cover"
-              width={128}
-              height={192}
-            />
-          ) : (
-            <BookOpen className="size-12 text-muted-foreground" />
-          )}
-        </div>
-
-        <div className="flex-1 space-y-3">
-          <h1 className="text-2xl font-bold">{book.title}</h1>
-          <p className="text-muted-foreground">{book.author}</p>
-          {book.isbn_13 && (
-            <p className="text-xs text-muted-foreground">ISBN: {book.isbn_13}</p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            <Badge className={cn(BOOK_STATUS_COLORS[book.status])}>
-              {book.status === 'rejected' ? 'Zamítnuto / 0 bodů' : BOOK_STATUS_LABELS[book.status]}
-            </Badge>
-            {book.status === 'approved' && (
-              <Badge variant="secondary">{book.book_points} {book.book_points === 1 ? 'bod' : 'body'}</Badge>
+      {/* Hero */}
+      <div className="flex flex-col gap-6 sm:flex-row sm:gap-8">
+        <div className="mx-auto shrink-0 sm:mx-0">
+          <div className="flex aspect-[2/3] w-44 items-center justify-center overflow-hidden rounded-xl bg-muted shadow-lg ring-1 ring-border/50">
+            {book.cover_path ? (
+              <StorageImage
+                storageKey={book.cover_path}
+                alt={book.title}
+                className="h-full w-full object-cover"
+                width={176}
+                height={264}
+              />
+            ) : (
+              <BookOpen className="size-14 text-muted-foreground/60" />
             )}
           </div>
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold leading-tight tracking-tight">{book.title}</h1>
+            <p className="text-lg text-muted-foreground">{book.author}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
+                STATUS_PILL[book.status],
+              )}
+            >
+              <span className={cn('size-1.5 rounded-full', STATUS_DOT[book.status])} />
+              {BOOK_STATUS_LABELS[book.status]}
+            </span>
+            {book.status === 'approved' ? (
+              <span className="inline-flex items-center rounded-full bg-foreground px-2.5 py-1 text-xs font-semibold text-background">
+                {book.book_points} {pointsLabel(book.book_points)}
+              </span>
+            ) : book.status === 'rejected' ? (
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                0 bodů
+              </span>
+            ) : null}
+          </div>
+
           {book.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {book.tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                <span
+                  key={tag}
+                  className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
+                >
+                  {BOOK_CATEGORY_LABELS[tag] ?? tag}
+                </span>
               ))}
             </div>
           )}
+
+          {/* Metadata strip */}
+          <dl className="flex flex-wrap gap-x-6 gap-y-2 border-t border-border/60 pt-4">
+            {book.page_count != null && <MetaItem icon={BookText}>{book.page_count} stran</MetaItem>}
+            {book.isbn_13 && <MetaItem icon={Hash}>ISBN {book.isbn_13}</MetaItem>}
+            {book.added_by?.name && <MetaItem icon={User}>Přidal/a {book.added_by.name}</MetaItem>}
+          </dl>
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {previewUrl && (
+              <Button asChild className="gap-2">
+                <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                  Náhled na Google Books
+                  <ExternalLink className="size-4" />
+                </a>
+              </Button>
+            )}
+            <Button asChild variant="outline" className="gap-2">
+              <a href={goodreadsUrl} target="_blank" rel="noopener noreferrer">
+                Goodreads
+                <ExternalLink className="size-4" />
+              </a>
+            </Button>
+          </div>
+
+          {/* Description */}
           {book.description && (
-            <p className="text-sm text-muted-foreground leading-relaxed">{book.description}</p>
+            <div className="border-t border-border/60 pt-4">
+              <BookDescription text={book.description} />
+            </div>
           )}
           {book.rejection_reason && (
             <p className="text-sm text-destructive">Důvod zamítnutí: {book.rejection_reason}</p>
@@ -101,22 +216,19 @@ export default async function BookDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Essays */}
       {essays.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Eseje o této knize ({essays.length})</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {essays.map((essay) => (
-              <Link key={essay.id} href={`/eseje/${essay.id}`} className="block hover:bg-muted p-3 rounded-lg transition-colors">
-                <p className="font-medium text-sm">{essay.title}</p>
-                <p className="text-xs text-muted-foreground mt-1">{essay.author?.name}</p>
-              </Link>
-            ))}
+          <CardContent>
+            <BookEssaysList essays={essays} />
           </CardContent>
         </Card>
       )}
 
+      {/* Comments */}
       {comments.length > 0 && (
         <Card>
           <CardHeader>
@@ -124,9 +236,12 @@ export default async function BookDetailPage({ params }: PageProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {comments.map((comment) => (
-              <div key={comment.id} className="space-y-1">
-                <p className="text-xs font-medium">{comment.author?.name}</p>
-                <p className="text-sm">{comment.body}</p>
+              <div key={comment.id} className="flex gap-3">
+                <Avatar picture={comment.author?.picture} name={comment.author?.name} size={32} />
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="text-xs font-medium">{comment.author?.name}</p>
+                  <p className="text-sm leading-relaxed">{comment.body}</p>
+                </div>
               </div>
             ))}
           </CardContent>
