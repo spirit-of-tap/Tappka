@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Users } from 'lucide-react';
+import { ArrowLeft, Mail, Users, Phone, Cake } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getProfilePictureUrl, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -136,6 +136,28 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               </p>
             </div>
           </div>
+
+          {/* Contact details */}
+          {(profile.personal_email || profile.phone_number || profile.date_of_birth) && (
+            <div className="mt-4 pt-4 border-t flex flex-wrap gap-x-5 gap-y-1.5">
+              {profile.personal_email && (
+                <a href={`mailto:${profile.personal_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <Mail className="size-3" />{profile.personal_email}
+                </a>
+              )}
+              {profile.phone_number && (
+                <a href={`tel:${profile.phone_number}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <Phone className="size-3" />{profile.phone_number}
+                </a>
+              )}
+              {profile.date_of_birth && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Cake className="size-3" />
+                  {new Date(profile.date_of_birth).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
