@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronUp } from 'lucide-react';
+import { ChevronUp, ThumbsUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EssayVoteButtonProps {
@@ -114,22 +114,27 @@ export function EssayVoteButton({
           <button
             onClick={toggle}
             disabled={loading}
-            aria-label={voted ? 'Odebrat hlas' : 'Hlasovat'}
+            aria-label={voted ? 'Odebrat hlas' : 'Označit esej jako užitečnou'}
             className={cn(
-              'relative flex flex-col items-center gap-1 rounded-2xl px-6 py-3 transition-colors select-none',
+              'relative flex items-center gap-2.5 rounded-2xl px-6 py-3 transition-colors select-none',
               burst && 'vote-pop',
               voted
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
                 : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
             )}
           >
-            <ChevronUp className={cn('transition-transform', voted ? 'size-6' : 'size-5')} />
-            <span className="tabular-nums text-sm font-semibold">{count}</span>
+            <ThumbsUp className={cn('transition-transform', voted ? 'size-5' : 'size-4')} />
+            <span className="text-sm font-semibold">
+              {voted ? 'Líbilo se mi to' : 'Líbí se mi to'}
+            </span>
+            <span className="tabular-nums text-sm opacity-60">{count}</span>
           </button>
         </div>
 
-        <span className="text-xs text-muted-foreground">
-          {voted ? 'Skvělá esej!' : 'Bylo to užitečné?'}
+        <span className="text-xs text-muted-foreground text-center max-w-xs">
+          {voted
+            ? 'Díky! Pomáháš ostatním najít nejlepší eseje.'
+            : 'Klikni, pokud ti esej přinesla novou perspektivu nebo nápad.'}
         </span>
       </div>
     );
