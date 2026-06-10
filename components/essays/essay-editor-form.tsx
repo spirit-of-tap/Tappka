@@ -10,12 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import type { Book } from '@/lib/books/types';
-import type { Essay } from '@/lib/essays/types';
+import type { EssayWithDetails } from '@/lib/essays/types';
 import { BOOK_STATUS_COLORS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 
 interface EssayEditorFormProps {
-  initialEssay?: Essay;
+  initialEssay?: EssayWithDetails;
 }
 
 export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
@@ -25,7 +25,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     json: initialEssay?.content_json ?? {},
     text: initialEssay?.content_text ?? '',
   });
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(initialEssay?.book as Book | null ?? null);
   const [bookQuery, setBookQuery] = useState('');
   const [bookResults, setBookResults] = useState<Book[]>([]);
   const [isSaving, setIsSaving] = useState(false);
