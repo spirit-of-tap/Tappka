@@ -38,7 +38,7 @@ export default async function BookDetailPage({ params }: PageProps) {
     <div className="container mx-auto py-6 space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <Button variant="ghost" asChild className="gap-2">
-          <Link href="/knihovna">
+          <Link href="/hledat">
             <ArrowLeft className="size-4" />
             Zpět do knihovny
           </Link>

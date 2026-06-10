@@ -7,7 +7,7 @@ export default function NovaKnihaPage() {
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-2xl">
       <Button variant="ghost" asChild className="gap-2">
-        <Link href="/knihovna">
+        <Link href="/hledat">
           <ArrowLeft className="size-4" />
           Zpět do knihovny
         </Link>

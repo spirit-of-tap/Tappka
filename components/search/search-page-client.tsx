@@ -167,7 +167,7 @@ function DiscoveryView({
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-base">Aktivní knihy</h2>
-            <Link href="/knihovna" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="/hledat" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
               Katalog →
             </Link>
           </div>
