@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { TeamReadingListsHero } from '@/components/books/team-reading-lists-hero';
-import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { BookCard } from '@/components/books/book-card';
+import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 import type { TeamReadingList } from '@/lib/books/team-lists';
 import type { EssayWithDetails } from '@/lib/essays/types';
@@ -35,7 +35,6 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
   const [categoryLoading, setCategoryLoading] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Live search
   useEffect(() => {
     if (!query.trim()) { setResults(null); return; }
     if (timer.current) clearTimeout(timer.current);
@@ -56,7 +55,6 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [query]);
 
-  // Category filter
   useEffect(() => {
     if (!selectedCategory) { setCategoryBooks([]); return; }
     setCategoryLoading(true);
@@ -67,10 +65,7 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
   }, [selectedCategory]);
 
   const hasQuery = query.trim().length > 0;
-
-  const toggleCategory = (key: string) => {
-    setSelectedCategory((prev) => (prev === key ? null : key));
-  };
+  const toggleCategory = (key: string) => setSelectedCategory((prev) => (prev === key ? null : key));
 
   return (
     <div className="container mx-auto max-w-2xl py-10 space-y-6">
@@ -89,7 +84,7 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
         )}
       </div>
 
-      {/* Category pills — only when not searching */}
+      {/* Category pills */}
       {!hasQuery && (
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {CATEGORIES.map(([key, label]) => (
@@ -109,7 +104,7 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
         </div>
       )}
 
-      {/* Main content area */}
+      {/* Content */}
       <div className="space-y-10">
         {hasQuery ? (
           results ? (
@@ -136,10 +131,150 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
   );
 }
 
+// ─── Discovery ────────────────────────────────────────────────────────────────
+
+function DiscoveryView({
+  teamLists, popularEssays, topBooks, hasTeam,
+}: {
+  teamLists: TeamReadingList[];
+  popularEssays: EssayWithVoted[];
+  topBooks: (BookWithProfiles & { essay_count?: number })[];
+  hasTeam: boolean;
+}) {
+  return (
+    <div className="space-y-10">
+      {(teamLists.length > 0 || hasTeam) && (
+        <TeamReadingListsHero lists={teamLists} hasTeam={hasTeam} />
+      )}
+
+      {popularEssays.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-base">Populární tento týden</h2>
+            <Link href="/eseje?sort=week" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Zobrazit vše →
+            </Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {popularEssays.map((essay) => (
+              <EssayDiscoveryCard key={essay.id} essay={essay} initialVoted={essay.user_has_voted ?? false} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {topBooks.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-base">Aktivní knihy</h2>
+            <Link href="/knihovna" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Katalog →
+            </Link>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {topBooks.map((book) => (
+              <BookshelfCard key={book.id} book={book} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+// Magazine-style essay card: book cover fills the top, essay info below
+function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; initialVoted: boolean }) {
+  return (
+    <div className="shrink-0 w-52 rounded-xl overflow-hidden border bg-card hover:shadow-md transition-shadow group flex flex-col">
+      {/* Visual top: book cover or gradient */}
+      <Link href={`/eseje/${essay.id}`} className="block relative h-32 bg-muted overflow-hidden flex-none">
+        {essay.book?.cover_path ? (
+          <>
+            <StorageImage
+              storageKey={essay.book.cover_path}
+              alt={essay.book.title}
+              width={208}
+              height={128}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          </>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10 flex items-center justify-center">
+            <BookOpen className="size-8 text-muted-foreground/30" />
+          </div>
+        )}
+        {/* Author avatar in bottom-left corner */}
+        <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
+          <div className="size-5 rounded-full overflow-hidden bg-background/80 shrink-0">
+            {essay.author?.picture ? (
+              <img src={essay.author.picture} alt={essay.author.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-[9px] font-semibold text-foreground">
+                {essay.author?.name?.[0]}
+              </div>
+            )}
+          </div>
+          <span className="text-[11px] text-white/90 font-medium drop-shadow truncate max-w-[120px]">
+            {essay.author?.name}
+          </span>
+        </div>
+      </Link>
+
+      {/* Text body */}
+      <div className="flex flex-col flex-1 p-3 gap-2">
+        <Link href={`/eseje/${essay.id}`} className="flex-1">
+          <p className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+            {essay.title}
+          </p>
+          {essay.book && (
+            <p className="text-xs text-muted-foreground mt-1 truncate">{essay.book.title}</p>
+          )}
+        </Link>
+        <EssayVoteButton
+          essayId={essay.id}
+          initialVoteCount={essay.vote_count}
+          initialVoted={initialVoted}
+          size="sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+// Bookshelf-style book card: prominent cover, minimal text
+function BookshelfCard({ book }: { book: BookWithProfiles & { essay_count?: number } }) {
+  return (
+    <Link href={`/knihovna/${book.id}`} className="shrink-0 w-28 group block">
+      <div className="w-full h-40 rounded-lg overflow-hidden bg-muted flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+        {book.cover_path ? (
+          <StorageImage
+            storageKey={book.cover_path}
+            alt={book.title}
+            width={112}
+            height={160}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <BookOpen className="size-7 text-muted-foreground/30" />
+        )}
+      </div>
+      <div className="mt-2 space-y-0.5">
+        <p className="text-xs font-semibold line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+          {book.title}
+        </p>
+        {(book.essay_count ?? 0) > 0 && (
+          <p className="text-xs text-muted-foreground">{book.essay_count} esejí</p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+// ─── Category view ─────────────────────────────────────────────────────────────
+
 function CategoryBooksView({
-  label,
-  books,
-  loading,
+  label, books, loading,
 }: {
   label: string;
   books: (BookWithProfiles & { essay_count?: number })[];
@@ -164,7 +299,9 @@ function CategoryBooksView({
 
   return (
     <section className="space-y-4">
-      <p className="text-sm text-muted-foreground">{books.length} knih v kategorii <span className="font-medium text-foreground">{label}</span></p>
+      <p className="text-sm text-muted-foreground">
+        {books.length} knih v kategorii <span className="font-medium text-foreground">{label}</span>
+      </p>
       <div className="space-y-2">
         {books.map((book) => (
           <BookCard key={book.id} book={book} />
@@ -174,139 +311,9 @@ function CategoryBooksView({
   );
 }
 
-function DiscoveryView({
-  teamLists,
-  popularEssays,
-  topBooks,
-  hasTeam,
-}: {
-  teamLists: TeamReadingList[];
-  popularEssays: EssayWithVoted[];
-  topBooks: (BookWithProfiles & { essay_count?: number })[];
-  hasTeam: boolean;
-}) {
-  return (
-    <div className="space-y-10">
-      {(teamLists.length > 0 || hasTeam) && (
-        <TeamReadingListsHero lists={teamLists} hasTeam={hasTeam} />
-      )}
+// ─── Search results ─────────────────────────────────────────────────────────────
 
-      {popularEssays.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-base">Populární tento týden</h2>
-            <Link href="/eseje?sort=week" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Zobrazit vše →
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {popularEssays.map((essay) => (
-              <CompactEssayCard key={essay.id} essay={essay} initialVoted={essay.user_has_voted ?? false} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {topBooks.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-base">Aktivní knihy</h2>
-            <Link href="/knihovna" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Katalog →
-            </Link>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {topBooks.map((book) => (
-              <CompactBookCard key={book.id} book={book} />
-            ))}
-          </div>
-        </section>
-      )}
-    </div>
-  );
-}
-
-function CompactEssayCard({ essay, initialVoted }: { essay: EssayWithDetails; initialVoted: boolean }) {
-  return (
-    <div className="shrink-0 w-52 rounded-xl border bg-card p-3 space-y-2 hover:shadow-sm transition-shadow group">
-      {essay.book?.cover_path && (
-        <div className="w-full h-24 rounded-md overflow-hidden bg-muted">
-          <StorageImage
-            storageKey={essay.book.cover_path}
-            alt={essay.book.title}
-            width={208}
-            height={96}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
-      <Link href={`/eseje/${essay.id}`} className="block space-y-0.5">
-        <p className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-          {essay.title}
-        </p>
-        <p className="text-xs text-muted-foreground truncate">{essay.author?.name}</p>
-      </Link>
-      <EssayVoteButton
-        essayId={essay.id}
-        initialVoteCount={essay.vote_count}
-        initialVoted={initialVoted}
-        size="sm"
-      />
-    </div>
-  );
-}
-
-function CompactBookCard({ book }: { book: BookWithProfiles & { essay_count?: number } }) {
-  return (
-    <div className="group flex flex-col">
-      <Link href={`/knihovna/${book.id}`} className="block">
-        <div className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted mb-2 flex items-center justify-center">
-          {book.cover_path ? (
-            <StorageImage
-              storageKey={book.cover_path}
-              alt={book.title}
-              width={160}
-              height={240}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-            />
-          ) : (
-            <BookOpen className="size-7 text-muted-foreground/30" />
-          )}
-        </div>
-        <p className="text-xs font-semibold line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-          {book.title}
-        </p>
-      </Link>
-      <div className="flex items-center gap-2 mt-1 flex-wrap">
-        {(book.essay_count ?? 0) > 0 && (
-          <span className="text-xs text-muted-foreground">{book.essay_count} esejí</span>
-        )}
-        {book.page_count && book.page_count > 0 && (
-          <span className="text-xs text-muted-foreground">{book.page_count} str.</span>
-        )}
-        {book.preview_link && (
-          <a
-            href={book.preview_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-xs text-primary hover:underline"
-          >
-            Náhled
-          </a>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SearchResultsView({
-  essays,
-  books,
-}: {
-  essays: EssayWithVoted[];
-  books: BookResult[];
-}) {
+function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books: BookResult[] }) {
   if (essays.length === 0 && books.length === 0) {
     return (
       <div className="text-center py-16 space-y-2">
@@ -332,13 +339,7 @@ function SearchResultsView({
               >
                 <div className="shrink-0 w-8 h-11 rounded overflow-hidden bg-muted flex items-center justify-center">
                   {book.cover_path ? (
-                    <StorageImage
-                      storageKey={book.cover_path}
-                      alt={book.title}
-                      width={32}
-                      height={44}
-                      className="w-full h-full object-cover"
-                    />
+                    <StorageImage storageKey={book.cover_path} alt={book.title} width={32} height={44} className="w-full h-full object-cover" />
                   ) : (
                     <BookOpen className="size-3.5 text-muted-foreground/40" />
                   )}
@@ -373,9 +374,7 @@ function SearchResultsView({
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">
-                    {essay.title}
-                  </p>
+                  <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{essay.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
                     {essay.author?.name}{essay.book ? ` · ${essay.book.title}` : ''}
                   </p>
