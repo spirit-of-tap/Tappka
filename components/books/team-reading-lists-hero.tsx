@@ -88,7 +88,7 @@ export function TeamReadingListsHero({ lists, hasTeam }: TeamReadingListsHeroPro
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {localLists.map((list) => (
-            <TeamReadingListCard key={list.id} list={list} />
+            <TeamReadingListCard key={list.id} list={list} hasTeam={hasTeam} />
           ))}
         </div>
       )}

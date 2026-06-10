@@ -9,6 +9,7 @@ import { EssayCommentThread } from '@/components/essays/essay-comment-thread';
 import { SeenByCoachBanner } from '@/components/essays/seen-by-coach-banner';
 import { ViewTracker } from '@/components/essays/view-tracker';
 import { StorageImage } from '@/components/storage/storage-image';
+import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -25,14 +26,18 @@ export default async function EssayDetailPage({ params }: PageProps) {
 
   const profile = await getCurrentUserProfile(supabase, { user });
 
-  const [essay, comments] = await Promise.all([
+  const [essay, comments, voteResult] = await Promise.all([
     getEssayById(supabase, essayId),
     getEssayComments(supabase, essayId),
+    profile
+      ? supabase.from('essay_votes').select('essay_id').eq('essay_id', essayId).eq('voter_profile_id', profile.id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   if (!essay) notFound();
 
   const isAuthor = profile?.id === essay.author_profile_id;
+  const hasVoted = !!voteResult.data;
   const coachViewers = isAuthor ? await getEssayCoachViewers(supabase, essayId) : [];
 
   return (
@@ -82,6 +87,13 @@ export default async function EssayDetailPage({ params }: PageProps) {
             <Eye className="size-3.5" />
             {essay.view_count}
           </span>
+          <span className="text-muted-foreground/50">&middot;</span>
+          <EssayVoteButton
+            essayId={essayId}
+            initialVoteCount={essay.vote_count}
+            initialVoted={hasVoted}
+            readOnly={isAuthor}
+          />
         </div>
       </div>
 
