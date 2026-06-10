@@ -87,13 +87,17 @@ export default async function EssayDetailPage({ params }: PageProps) {
             <Eye className="size-3.5" />
             {essay.view_count}
           </span>
-          <span className="text-muted-foreground/50">&middot;</span>
-          <EssayVoteButton
-            essayId={essayId}
-            initialVoteCount={essay.vote_count}
-            initialVoted={hasVoted}
-            readOnly={isAuthor}
-          />
+          {isAuthor && (
+            <>
+              <span className="text-muted-foreground/50">&middot;</span>
+              <EssayVoteButton
+                essayId={essayId}
+                initialVoteCount={essay.vote_count}
+                initialVoted={hasVoted}
+                readOnly
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -129,7 +133,18 @@ export default async function EssayDetailPage({ params }: PageProps) {
       {/* Content */}
       <TiptapRenderer content={essay.content_json} className="mb-12" />
 
-      <hr className="mb-8" />
+      {/* Vote CTA */}
+      {!isAuthor && (
+        <div className="flex flex-col items-center gap-1 py-10 border-y mb-8">
+          <EssayVoteButton
+            essayId={essayId}
+            initialVoteCount={essay.vote_count}
+            initialVoted={hasVoted}
+            size="lg"
+          />
+        </div>
+      )}
+      {isAuthor && <hr className="mb-8" />}
 
       <EssayCommentThread essayId={essayId} initialComments={comments} />
     </div>

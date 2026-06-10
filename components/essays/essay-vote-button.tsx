@@ -9,6 +9,7 @@ interface EssayVoteButtonProps {
   initialVoteCount: number;
   initialVoted: boolean;
   readOnly?: boolean;
+  size?: 'sm' | 'lg';
 }
 
 export function EssayVoteButton({
@@ -16,10 +17,12 @@ export function EssayVoteButton({
   initialVoteCount,
   initialVoted,
   readOnly = false,
+  size = 'sm',
 }: EssayVoteButtonProps) {
   const [voted, setVoted] = useState(initialVoted);
   const [count, setCount] = useState(initialVoteCount);
   const [loading, setLoading] = useState(false);
+  const [burst, setBurst] = useState(false);
 
   const toggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -32,8 +35,13 @@ export function EssayVoteButton({
       });
       if (res.ok || res.status === 409) {
         if (res.ok) {
-          setVoted((v) => !v);
+          const nowVoted = !voted;
+          setVoted(nowVoted);
           setCount((c) => (voted ? c - 1 : c + 1));
+          if (nowVoted) {
+            setBurst(true);
+            setTimeout(() => setBurst(false), 600);
+          }
         }
       }
     } finally {
@@ -47,6 +55,83 @@ export function EssayVoteButton({
         <ChevronUp className="size-3" />
         {count}
       </span>
+    );
+  }
+
+  if (size === 'lg') {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <style>{`
+          @keyframes vote-pop {
+            0%   { transform: scale(1); }
+            30%  { transform: scale(1.35); }
+            60%  { transform: scale(0.92); }
+            80%  { transform: scale(1.1); }
+            100% { transform: scale(1); }
+          }
+          @keyframes count-up {
+            0%   { transform: translateY(0); opacity: 1; }
+            50%  { transform: translateY(-8px); opacity: 1; }
+            100% { transform: translateY(-16px); opacity: 0; }
+          }
+          @keyframes particle {
+            0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: var(--tx, 0) var(--ty, -20px) scale(0); opacity: 0; }
+          }
+          .vote-pop { animation: vote-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+          .count-float { animation: count-up 0.5s ease-out forwards; }
+          .particle { animation: particle 0.5s ease-out forwards; }
+        `}</style>
+
+        <div className="relative">
+          {/* Burst particles */}
+          {burst && (
+            <>
+              {[
+                { tx: 'translateX(-18px)', ty: 'translateY(-18px)' },
+                { tx: 'translateX(0px)',   ty: 'translateY(-24px)' },
+                { tx: 'translateX(18px)',  ty: 'translateY(-18px)' },
+                { tx: 'translateX(22px)',  ty: 'translateY(0px)'   },
+                { tx: 'translateX(18px)',  ty: 'translateY(18px)'  },
+                { tx: 'translateX(-22px)', ty: 'translateY(0px)'   },
+              ].map((p, i) => (
+                <span
+                  key={i}
+                  className="particle absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary pointer-events-none"
+                  style={{ '--tx': p.tx, '--ty': p.ty } as React.CSSProperties}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Floating +1 */}
+          {burst && (
+            <span className="count-float absolute -top-1 left-1/2 -translate-x-1/2 text-xs font-bold text-primary pointer-events-none select-none">
+              +1
+            </span>
+          )}
+
+          <button
+            onClick={toggle}
+            disabled={loading}
+            aria-label={voted ? 'Odebrat hlas' : 'Hlasovat'}
+            className={cn(
+              'relative flex flex-col items-center gap-1 rounded-2xl px-6 py-3 transition-colors select-none',
+              burst && 'vote-pop',
+              voted
+                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+                : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+            )}
+          >
+            <ChevronUp className={cn('transition-transform', voted ? 'size-6' : 'size-5')} />
+            <span className="tabular-nums text-sm font-semibold">{count}</span>
+          </button>
+        </div>
+
+        <span className="text-xs text-muted-foreground">
+          {voted ? 'Skvělá esej!' : 'Bylo to užitečné?'}
+        </span>
+      </div>
     );
   }
 
