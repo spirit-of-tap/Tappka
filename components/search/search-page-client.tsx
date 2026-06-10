@@ -182,55 +182,44 @@ function DiscoveryView({
   );
 }
 
-// Magazine-style essay card: book cover fills the top, essay info below
 function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; initialVoted: boolean }) {
   return (
-    <div className="shrink-0 w-52 rounded-xl overflow-hidden border bg-card hover:shadow-md transition-shadow group flex flex-col">
-      {/* Visual top: book cover or gradient */}
-      <Link href={`/eseje/${essay.id}`} className="block relative h-32 bg-muted overflow-hidden flex-none">
-        {essay.book?.cover_path ? (
-          <>
+    <div className="shrink-0 w-52 rounded-xl border bg-card hover:shadow-md transition-shadow group flex flex-col p-3 gap-2.5">
+      <Link href={`/eseje/${essay.id}`} className="flex gap-2.5">
+        {/* Small portrait cover — at this size low-res thumbnails look fine */}
+        <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+          {essay.book?.cover_path ? (
             <StorageImage
               storageKey={essay.book.cover_path}
-              alt={essay.book.title}
-              width={208}
-              height={128}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              alt={essay.book?.title ?? ''}
+              width={40}
+              height={56}
+              className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          </>
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/10 flex items-center justify-center">
-            <BookOpen className="size-8 text-muted-foreground/30" />
-          </div>
-        )}
-        {/* Author avatar in bottom-left corner */}
-        <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
-          <div className="size-5 rounded-full overflow-hidden bg-background/80 shrink-0">
-            {essay.author?.picture ? (
-              <img src={essay.author.picture} alt={essay.author.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[9px] font-semibold text-foreground">
-                {essay.author?.name?.[0]}
-              </div>
-            )}
-          </div>
-          <span className="text-[11px] text-white/90 font-medium drop-shadow truncate max-w-[120px]">
-            {essay.author?.name}
-          </span>
+          ) : (
+            <BookOpen className="size-4 text-muted-foreground/30" />
+          )}
         </div>
-      </Link>
-
-      {/* Text body */}
-      <div className="flex flex-col flex-1 p-3 gap-2">
-        <Link href={`/eseje/${essay.id}`} className="flex-1">
-          <p className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+        <div className="flex-1 min-w-0 space-y-1 py-0.5">
+          <div className="flex items-center gap-1.5">
+            <div className="size-4 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+              {essay.author?.picture ? (
+                <img src={essay.author.picture} alt={essay.author.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[8px] font-semibold">{essay.author?.name?.[0]}</span>
+              )}
+            </div>
+            <span className="text-xs text-muted-foreground truncate">{essay.author?.name}</span>
+          </div>
+          <p className="font-semibold text-sm leading-snug line-clamp-3 group-hover:text-primary transition-colors">
             {essay.title}
           </p>
           {essay.book && (
-            <p className="text-xs text-muted-foreground mt-1 truncate">{essay.book.title}</p>
+            <p className="text-xs text-muted-foreground truncate">{essay.book.title}</p>
           )}
-        </Link>
+        </div>
+      </Link>
+      <div className="border-t pt-2">
         <EssayVoteButton
           essayId={essay.id}
           initialVoteCount={essay.vote_count}

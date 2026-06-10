@@ -3,6 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 export interface TeamReadingListBook {
   book_id: string;
   position: number;
+  note: string | null;
   book: {
     id: string;
     title: string;
@@ -34,6 +35,7 @@ export async function getTeamReadingLists(
       books:team_reading_list_books(
         book_id,
         position,
+        note,
         book:books!book_id(id, title, cover_path, author)
       )
     `)

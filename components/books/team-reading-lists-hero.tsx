@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { TeamReadingListCard } from './team-reading-list-card';
+import { TeamReadingListPanel } from './team-reading-list-card';
 import type { TeamReadingList } from '@/lib/books/team-lists';
+import { cn } from '@/lib/utils';
 
 interface TeamReadingListsHeroProps {
   lists: TeamReadingList[];
@@ -18,6 +19,7 @@ export function TeamReadingListsHero({ lists, hasTeam }: TeamReadingListsHeroPro
   const [loading, setLoading] = useState(false);
   const [localLists, setLocalLists] = useState(lists);
   const [error, setError] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const create = async () => {
     if (!title.trim() || loading) return;
@@ -34,7 +36,9 @@ export function TeamReadingListsHero({ lists, hasTeam }: TeamReadingListsHeroPro
       });
       if (res.ok) {
         const { data } = await res.json();
-        setLocalLists((prev) => [{ ...data, team: null, books: [] }, ...prev]);
+        const newList = { ...data, team: null, books: [] };
+        setLocalLists((prev) => [newList, ...prev]);
+        setCurrentIndex(0);
         setTitle('');
         setCreating(false);
       } else {
@@ -47,23 +51,49 @@ export function TeamReadingListsHero({ lists, hasTeam }: TeamReadingListsHeroPro
 
   if (localLists.length === 0 && !hasTeam) return null;
 
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < localLists.length - 1;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-base">Doporučené od týmů</h2>
-        {hasTeam && !creating && (
-          <Button variant="ghost" size="sm" onClick={() => setCreating(true)} className="gap-1.5">
-            <Plus className="size-3.5" />
-            Přidat seznam
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {localLists.length > 1 && (
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => setCurrentIndex((i) => i - 1)}
+                disabled={!hasPrev}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-default"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <span className="text-xs text-muted-foreground tabular-nums w-8 text-center">
+                {currentIndex + 1}/{localLists.length}
+              </span>
+              <button
+                onClick={() => setCurrentIndex((i) => i + 1)}
+                disabled={!hasNext}
+                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-default"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          )}
+          {hasTeam && !creating && (
+            <Button variant="ghost" size="sm" onClick={() => setCreating(true)} className="gap-1.5 h-7 text-xs">
+              <Plus className="size-3.5" />
+              Přidat seznam
+            </Button>
+          )}
+        </div>
       </div>
 
       {creating && (
-        <>
+        <div className="space-y-1.5">
           <div className="flex gap-2 items-center">
             <Input
-              placeholder="Název seznamu..."
+              placeholder="Název seznamu…"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && create()}
@@ -78,17 +108,37 @@ export function TeamReadingListsHero({ lists, hasTeam }: TeamReadingListsHeroPro
             </Button>
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
-        </>
+        </div>
       )}
 
       {localLists.length === 0 ? (
         <p className="text-sm text-muted-foreground italic">
           Zatím žádné seznamy — přidej první pro svůj tým
         </p>
-      ) : (
-        <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {localLists.map((list) => (
-            <TeamReadingListCard key={list.id} list={list} hasTeam={hasTeam} />
+      ) : localLists[currentIndex] ? (
+        <TeamReadingListPanel
+          key={localLists[currentIndex].id}
+          list={localLists[currentIndex]}
+          hasTeam={hasTeam}
+          onDeleted={() => {
+            const next = localLists.filter((_, i) => i !== currentIndex);
+            setLocalLists(next);
+            setCurrentIndex(Math.max(0, currentIndex - 1));
+          }}
+        />
+      ) : null}
+
+      {localLists.length > 1 && (
+        <div className="flex justify-center gap-1.5">
+          {localLists.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              className={cn(
+                'size-1.5 rounded-full transition-colors',
+                i === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30 hover:bg-muted-foreground/60',
+              )}
+            />
           ))}
         </div>
       )}
