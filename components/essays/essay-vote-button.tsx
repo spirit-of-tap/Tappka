@@ -116,7 +116,7 @@ export function EssayVoteButton({
             disabled={loading}
             aria-label={voted ? 'Odebrat hlas' : 'Označit esej jako užitečnou'}
             className={cn(
-              'relative flex items-center gap-2.5 rounded-2xl px-6 py-3 transition-colors select-none',
+              'relative flex shrink-0 items-center gap-2.5 rounded-2xl px-6 py-3 transition-colors select-none whitespace-nowrap',
               burst && 'vote-pop',
               voted
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
