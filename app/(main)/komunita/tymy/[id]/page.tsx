@@ -45,9 +45,9 @@ export default async function TeamPage({ params }: PageProps) {
     <div className="container mx-auto py-6 space-y-6">
       {/* Back Button */}
       <Button variant="ghost" size="sm" asChild>
-        <Link href="/komunita/tymy">
+        <Link href="/komunita">
           <ArrowLeft className="size-4 mr-2" />
-          Zpět na týmy
+          Zpět na komunitu
         </Link>
       </Button>
 

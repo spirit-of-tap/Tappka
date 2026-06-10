@@ -151,7 +151,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const { setOpenMobile } = useSidebar()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isReservationsActive = pathname.startsWith("/reservations")
-  const isKomunitaActive = pathname.startsWith("/komunita")
   const isDevelopment = process.env.NODE_ENV === "development"
 
   const isKnihovnaActive = pathname.startsWith("/knihovna") || pathname.startsWith("/hledat")
@@ -268,55 +267,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                                 >
                                   <Link href="/settings/kniha-knih" onClick={closeSidebarOnMobile}>
                                     Správa
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
-                    )
-                  }
-
-                  // Special handling for Komunita with sub-menu
-                  if (item.title === "Komunita") {
-                    return (
-                      <Collapsible
-                        key={item.title}
-                        asChild
-                        defaultOpen={isKomunitaActive}
-                        className="group/collapsible"
-                      >
-                        <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                              isActive={isKomunitaActive}
-                              tooltip={item.title}
-                            >
-                              <item.icon className="size-4" />
-                              <span>{item.title}</span>
-                              <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={pathname === "/komunita/lide" || (pathname.startsWith("/komunita/profil/"))}
-                                >
-                                  <Link href="/komunita/lide" onClick={closeSidebarOnMobile}>
-                                    Lidé
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={pathname === "/komunita/tymy" || pathname.startsWith("/komunita/tymy/")}
-                                >
-                                  <Link href="/komunita/tymy" onClick={closeSidebarOnMobile}>
-                                    Týmy
                                   </Link>
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>

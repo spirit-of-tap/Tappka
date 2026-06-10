@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Mail, Phone, Users, UserCheck, UserX } from 'lucide-react';
+import { Users, UserCheck, UserX } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { StorageAvatar } from '@/components/storage/storage-avatar';
 import { Badge } from '@/components/ui/badge';
@@ -20,75 +20,64 @@ export function UserCard({ profile, pictureUrl, from }: UserCardProps) {
   const href = from
     ? `/komunita/profil/${profile.id}?from=${encodeURIComponent(from)}`
     : `/komunita/profil/${profile.id}`;
+
   return (
-    <Link href={href}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-        <CardContent className="p-4 space-y-3">
-          {/* Avatar and Name */}
-          <div className="flex items-start gap-4">
-            {/* Avatar with team-colored border */}
-            <div
-              className={cn(
-                'rounded-full ring-4 transition-all',
-                profile.team?.color ? '' : 'ring-border'
-              )}
-              style={
-                profile.team?.color
-                  ? ({ '--tw-ring-color': profile.team.color } as React.CSSProperties)
-                  : undefined
-              }
-            >
-              <StorageAvatar
-                storageKey={pictureUrl}
-                name={profile.name}
-                size="xl"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-semibold text-base truncate">{profile.name}</h3>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    {profile.user_id ? (
-                      <UserCheck className="size-4 text-green-500 shrink-0" />
-                    ) : (
-                      <UserX className="size-4 text-muted-foreground shrink-0" />
-                    )}
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {profile.user_id ? 'V portálu' : 'Není v portálu'}
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Badge
-                  variant="outline"
-                  className={cn('text-xs', ROLE_COLORS[profile.role])}
-                >
-                  {ROLE_LABELS[profile.role]}
-                </Badge>
-                {profile.team && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Users className="size-3" />
-                    <span className="truncate">{profile.team.name}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+    <Link href={href} className="group">
+      <Card className="h-full py-0 border-border/60 shadow-none transition-colors group-hover:border-border group-hover:bg-muted/40">
+        <CardContent className="flex items-center gap-3 p-3">
+          {/* Avatar with team-colored ring */}
+          <div
+            className={cn(
+              'rounded-full ring-2 transition-all',
+              profile.team?.color ? '' : 'ring-border'
+            )}
+            style={
+              profile.team?.color
+                ? ({ '--tw-ring-color': profile.team.color } as React.CSSProperties)
+                : undefined
+            }
+          >
+            <StorageAvatar
+              storageKey={pictureUrl}
+              name={profile.name}
+              size="default"
+              className="size-12"
+            />
           </div>
 
-          {/* Contact Info */}
-          <div className="space-y-1.5 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="size-3.5 shrink-0" />
-              <span className="truncate">{profile.work_email}</span>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <h3 className="truncate font-semibold text-sm leading-tight">
+                {profile.name}
+              </h3>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {profile.user_id ? (
+                    <UserCheck className="size-3.5 text-green-500 shrink-0" />
+                  ) : (
+                    <UserX className="size-3.5 text-muted-foreground/60 shrink-0" />
+                  )}
+                </TooltipTrigger>
+                <TooltipContent>
+                  {profile.user_id ? 'V portálu' : 'Není v portálu'}
+                </TooltipContent>
+              </Tooltip>
             </div>
-            {profile.phone_number && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="size-3.5 shrink-0" />
-                <span className="truncate">{profile.phone_number}</span>
-              </div>
-            )}
+
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge
+                variant="outline"
+                className={cn('text-[11px] px-1.5 py-0 font-medium shrink-0', ROLE_COLORS[profile.role])}
+              >
+                {ROLE_LABELS[profile.role]}
+              </Badge>
+              {profile.team && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
+                  <Users className="size-3 shrink-0" />
+                  <span className="truncate">{profile.team.name}</span>
+                </span>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

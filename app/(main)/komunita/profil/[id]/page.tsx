@@ -61,7 +61,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
         style={teamColor ? { background: `linear-gradient(135deg, ${teamColor}55 0%, ${teamColor}20 70%, transparent 100%)` } : undefined}
       >
         <Link
-          href={from ?? '/komunita/lide'}
+          href={from ?? '/komunita'}
           className="absolute top-4 left-5 inline-flex items-center gap-1.5 text-sm bg-background/70 backdrop-blur-sm px-3 py-1.5 rounded-full hover:bg-background/90 transition-colors"
         >
           <ArrowLeft className="size-3.5" />
