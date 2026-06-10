@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, PenLine } from 'lucide-react';
+import { Search, BookOpen, PenLine, ExternalLink } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
@@ -16,7 +16,7 @@ import type { BookWithProfiles } from '@/lib/books/types';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
 type BookResult = { id: string; title: string; author: string; cover_path: string | null };
-type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; tags: string[]; book_points: number; essay_count: number };
+type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
 type TeamMember = { profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
 type TeamWithMembers = { id: string; name: string; members: TeamMember[] };
 
@@ -322,48 +322,78 @@ function CategoryBestBooksSection({
   if (entries.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <h2 className="font-semibold text-base">Nejlepší v kategoriích</h2>
-      <div className="grid grid-cols-2 gap-2.5">
-        {entries.map(([key, label]) => {
-          const books = categoryBestBooks[key];
-          const topEssayCount = books[0]?.essay_count ?? 0;
-          return (
-            <button
-              key={key}
-              onClick={() => onSelectCategory(key)}
-              className="rounded-xl border bg-card p-3 text-left hover:shadow-md hover:border-primary/30 transition-all group space-y-2.5"
-            >
-              <div className="flex items-center justify-between gap-1">
-                <p className="text-xs font-semibold leading-snug line-clamp-1">{label}</p>
-                {topEssayCount > 0 && (
-                  <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
-                    {topEssayCount} esejí
-                  </span>
-                )}
-              </div>
-              <div className="flex gap-1.5">
-                {books.slice(0, 3).map((book) => (
-                  <div key={book.id} className="w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center shrink-0">
+    <div className="space-y-8">
+      {entries.map(([key, label]) => {
+        const books = categoryBestBooks[key];
+        const totalEssays = books.reduce((s, b) => s + b.essay_count, 0);
+        return (
+          <section key={key} className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-base">{label}</h2>
+              {totalEssays > 0 && (
+                <span className="text-xs text-muted-foreground">{totalEssays} esejí</span>
+              )}
+            </div>
+
+            <div className="divide-y rounded-xl border overflow-hidden bg-card">
+              {books.map((book) => (
+                <div key={book.id} className="flex gap-3 px-3 py-2.5 group">
+                  <Link
+                    href={`/knihovna/${book.id}`}
+                    className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5"
+                  >
                     {book.cover_path ? (
-                      <StorageImage
-                        storageKey={book.cover_path}
-                        alt={book.title}
-                        width={40}
-                        height={56}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      <StorageImage storageKey={book.cover_path} alt={book.title} width={40} height={56} className="w-full h-full object-cover" />
                     ) : (
-                      <BookOpen className="size-3 text-muted-foreground/30" />
+                      <BookOpen className="size-3.5 text-muted-foreground/30" />
                     )}
+                  </Link>
+                  <div className="flex-1 min-w-0 py-0.5 space-y-1">
+                    <Link href={`/knihovna/${book.id}`}>
+                      <p className="font-medium text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+                        {book.title}
+                      </p>
+                    </Link>
+                    {book.description && (
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{book.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-medium">{book.book_points} {book.book_points === 1 ? 'bod' : book.book_points < 5 ? 'body' : 'bodů'}</span>
+                      {book.essay_count > 0 && (
+                        <>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-muted-foreground">{book.essay_count} esejí</span>
+                        </>
+                      )}
+                      {book.preview_link && (
+                        <a
+                          href={book.preview_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="ml-auto flex items-center gap-0.5 text-primary hover:underline"
+                        >
+                          <ExternalLink className="size-3" />Náhled
+                        </a>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </section>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => onSelectCategory(key)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Zobrazit vše →
+              </button>
+            </div>
+          </section>
+        );
+      })}
+    </div>
   );
 }
 

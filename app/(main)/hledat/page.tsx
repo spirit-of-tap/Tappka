@@ -20,7 +20,7 @@ export default async function HledatPage() {
     supabase.rpc('get_teams_with_member_stats'),
   ]);
 
-  type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; tags: string[]; book_points: number; essay_count: number };
+  type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
   const categoryBestBooks: Record<string, CategoryBook[]> = {};
   for (const row of (categoryRows.data ?? []) as CategoryBook[]) {
     if (!(row.tag in BOOK_CATEGORY_LABELS)) continue;
