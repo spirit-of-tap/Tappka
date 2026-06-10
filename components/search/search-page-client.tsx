@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { TeamReadingListsHero } from '@/components/books/team-reading-lists-hero';
+import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { cn } from '@/lib/utils';
 import type { TeamReadingList } from '@/lib/books/team-lists';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
-type BookSearchResult = { id: string; title: string; author: string; cover_path: string | null };
+type BookResult = { id: string; title: string; author: string; cover_path: string | null };
 
 interface SearchPageClientProps {
   teamLists: TeamReadingList[];
@@ -21,12 +23,18 @@ interface SearchPageClientProps {
   hasTeam: boolean;
 }
 
+const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
+
 export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }: SearchPageClientProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookSearchResult[] } | null>(null);
+  const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryBooks, setCategoryBooks] = useState<(BookWithProfiles & { essay_count?: number })[]>([]);
+  const [categoryLoading, setCategoryLoading] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Live search
   useEffect(() => {
     if (!query.trim()) { setResults(null); return; }
     if (timer.current) clearTimeout(timer.current);
@@ -47,10 +55,24 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [query]);
 
+  // Category filter
+  useEffect(() => {
+    if (!selectedCategory) { setCategoryBooks([]); return; }
+    setCategoryLoading(true);
+    fetch(`/api/books?tag=${encodeURIComponent(selectedCategory)}&sort=popular&page_size=40`)
+      .then((r) => r.json())
+      .then(({ data }) => setCategoryBooks(data ?? []))
+      .finally(() => setCategoryLoading(false));
+  }, [selectedCategory]);
+
   const hasQuery = query.trim().length > 0;
 
+  const toggleCategory = (key: string) => {
+    setSelectedCategory((prev) => (prev === key ? null : key));
+  };
+
   return (
-    <div className="container mx-auto max-w-2xl py-10 space-y-10">
+    <div className="container mx-auto max-w-2xl py-10 space-y-6">
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
@@ -66,21 +88,88 @@ export function SearchPageClient({ teamLists, popularEssays, topBooks, hasTeam }
         )}
       </div>
 
-      {hasQuery ? (
-        results ? (
-          <SearchResultsView essays={results.essays} books={results.books} />
-        ) : (
-          <p className="text-center text-muted-foreground text-sm py-12">Hledám…</p>
-        )
-      ) : (
-        <DiscoveryView
-          teamLists={teamLists}
-          popularEssays={popularEssays}
-          topBooks={topBooks}
-          hasTeam={hasTeam}
-        />
+      {/* Category pills — only when not searching */}
+      {!hasQuery && (
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {CATEGORIES.map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => toggleCategory(key)}
+              className={cn(
+                'shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors',
+                selectedCategory === key
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       )}
+
+      {/* Main content area */}
+      <div className="space-y-10">
+        {hasQuery ? (
+          results ? (
+            <SearchResultsView essays={results.essays} books={results.books} />
+          ) : (
+            <p className="text-center text-muted-foreground text-sm py-12">Hledám…</p>
+          )
+        ) : selectedCategory ? (
+          <CategoryBooksView
+            label={BOOK_CATEGORY_LABELS[selectedCategory] ?? selectedCategory}
+            books={categoryBooks}
+            loading={categoryLoading}
+          />
+        ) : (
+          <DiscoveryView
+            teamLists={teamLists}
+            popularEssays={popularEssays}
+            topBooks={topBooks}
+            hasTeam={hasTeam}
+          />
+        )}
+      </div>
     </div>
+  );
+}
+
+function CategoryBooksView({
+  label,
+  books,
+  loading,
+}: {
+  label: string;
+  books: (BookWithProfiles & { essay_count?: number })[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (books.length === 0) {
+    return (
+      <div className="text-center py-16 space-y-2">
+        <BookOpen className="size-10 mx-auto text-muted-foreground/40" />
+        <p className="text-muted-foreground text-sm">Žádné knihy v kategorii {label}</p>
+      </div>
+    );
+  }
+
+  return (
+    <section className="space-y-4">
+      <p className="text-sm text-muted-foreground">{books.length} knih v kategorii <span className="font-medium text-foreground">{label}</span></p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        {books.map((book) => (
+          <CompactBookCard key={book.id} book={book} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -168,14 +257,14 @@ function CompactEssayCard({ essay, initialVoted }: { essay: EssayWithDetails; in
 
 function CompactBookCard({ book }: { book: BookWithProfiles & { essay_count?: number } }) {
   return (
-    <Link href={`/knihovna/${book.id}`} className="shrink-0 w-32 group block">
-      <div className="w-full h-44 rounded-lg overflow-hidden bg-muted mb-2 flex items-center justify-center">
+    <Link href={`/knihovna/${book.id}`} className="group block">
+      <div className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted mb-2 flex items-center justify-center">
         {book.cover_path ? (
           <StorageImage
             storageKey={book.cover_path}
             alt={book.title}
-            width={128}
-            height={176}
+            width={160}
+            height={240}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
           />
         ) : (
@@ -197,7 +286,7 @@ function SearchResultsView({
   books,
 }: {
   essays: EssayWithVoted[];
-  books: BookSearchResult[];
+  books: BookResult[];
 }) {
   if (essays.length === 0 && books.length === 0) {
     return (
