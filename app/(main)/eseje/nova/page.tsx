@@ -7,9 +7,9 @@ export default function NovaEsejPage() {
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-3xl">
       <Button variant="ghost" asChild className="gap-2">
-        <Link href="/eseje">
+        <Link href="/hledat">
           <ArrowLeft className="size-4" />
-          Zpět na eseje
+          Zpět
         </Link>
       </Button>
       <div className="space-y-1">

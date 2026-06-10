@@ -54,15 +54,16 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   const hlasy = (n: number) => n === 1 ? 'hlas' : n < 5 ? 'hlasy' : 'hlasů';
 
   return (
-    <div>
+    /* break out of the parent <main>'s p-4 so the banner is full-bleed */
+    <div className="-mt-4 -mx-4">
       {/* ── Banner ── */}
       <div
-        className="relative h-40 bg-muted"
+        className="relative h-32 sm:h-40 bg-muted"
         style={teamColor ? { background: `linear-gradient(135deg, ${teamColor}55 0%, ${teamColor}20 70%, transparent 100%)` } : undefined}
       >
         <Link
           href={from ?? '/komunita'}
-          className="absolute top-4 left-5 inline-flex items-center gap-1.5 text-sm bg-background/70 backdrop-blur-sm px-3 py-1.5 rounded-full hover:bg-background/90 transition-colors"
+          className="absolute top-4 left-4 inline-flex items-center gap-1.5 text-sm bg-background/70 backdrop-blur-sm px-3 py-1.5 rounded-full hover:bg-background/90 transition-colors"
         >
           <ArrowLeft className="size-3.5" />
           Zpět
@@ -70,9 +71,9 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
       </div>
 
       {/* ── Profile header ── */}
-      <div className="px-6 max-w-5xl mx-auto">
+      <div className="px-4 sm:px-6 max-w-5xl mx-auto">
         {/* Avatar row — overlaps banner */}
-        <div className="-mt-10 mb-4 flex items-end gap-5">
+        <div className="-mt-10 mb-4 flex items-end gap-4 sm:gap-5">
           <ProfilePictureSection
             profileId={profile.id}
             profileName={profile.name}
@@ -82,8 +83,8 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
             size="2xl"
           />
           {/* Name + badges float next to avatar, aligned to bottom */}
-          <div className="pb-1 space-y-1.5">
-            <h1 className="text-2xl font-bold leading-tight">{profile.name}</h1>
+          <div className="min-w-0 pb-1 space-y-1.5">
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight">{profile.name}</h1>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className={cn('text-xs', ROLE_COLORS[profile.role])}>
                 {ROLE_LABELS[profile.role]}
@@ -104,7 +105,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
         </div>
 
         {/* Stats + contact row */}
-        <div className="flex flex-wrap items-center gap-6 py-4 border-y">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-4 border-y">
           {/* Stats */}
           <div className="flex items-center gap-6">
             {[
@@ -123,13 +124,13 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           <div className="h-8 w-px bg-border hidden sm:block" />
 
           {/* Contact */}
-          <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-            <a href={`mailto:${profile.work_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <Mail className="size-3.5" />{profile.work_email}
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5 min-w-0">
+            <a href={`mailto:${profile.work_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
+              <Mail className="size-3.5 shrink-0" /><span className="truncate">{profile.work_email}</span>
             </a>
             {profile.personal_email && (
-              <a href={`mailto:${profile.personal_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <Mail className="size-3.5" />{profile.personal_email}
+              <a href={`mailto:${profile.personal_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
+                <Mail className="size-3.5 shrink-0" /><span className="truncate">{profile.personal_email}</span>
               </a>
             )}
             {profile.phone_number && (
@@ -148,7 +149,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
       </div>
 
       {/* ── Essays ── */}
-      <div className="px-6 max-w-5xl mx-auto py-8 space-y-4">
+      <div className="px-4 sm:px-6 max-w-5xl mx-auto py-8 space-y-4">
         <h2 className="font-semibold text-base">
           Eseje
           {essays.length > 0 && <span className="ml-2 font-normal text-muted-foreground text-sm">{essays.length}</span>}

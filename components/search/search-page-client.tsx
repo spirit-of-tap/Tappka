@@ -159,9 +159,6 @@ function DiscoveryView({
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-base">Populární tento týden</h2>
-            <Link href="/eseje?sort=week" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Zobrazit vše →
-            </Link>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {popularEssays.map((essay) => (

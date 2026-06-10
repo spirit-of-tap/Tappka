@@ -9,10 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
+import { StorageImage } from '@/components/storage/storage-image';
 import type { Book } from '@/lib/books/types';
 import type { EssayWithDetails } from '@/lib/essays/types';
-import { BOOK_STATUS_COLORS } from '@/lib/books/types';
-import { cn } from '@/lib/utils';
 
 interface EssayEditorFormProps {
   initialEssay?: EssayWithDetails;
@@ -95,10 +94,34 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       <div className="space-y-2">
         <Label>Kniha (volitelné)</Label>
         {selectedBook ? (
-          <div className={cn('flex items-center gap-2 px-3 py-2 rounded-md text-sm w-fit', BOOK_STATUS_COLORS[selectedBook.status])}>
-            <BookOpen className="size-4" />
-            <span>{selectedBook.title}</span>
-            <button onClick={() => setSelectedBook(null)}>
+          <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+            <div className="flex h-12 w-9 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
+              {selectedBook.cover_path ? (
+                <StorageImage
+                  storageKey={selectedBook.cover_path}
+                  alt={selectedBook.title}
+                  width={36}
+                  height={48}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <BookOpen className="size-4 text-muted-foreground" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="mb-0.5 text-xs text-muted-foreground">Zdroj</p>
+              <p className="truncate text-sm font-medium">{selectedBook.title}</p>
+              <p className="truncate text-xs text-muted-foreground">{selectedBook.author}</p>
+            </div>
+            {selectedBook.status === 'approved' && (
+              <Badge variant="secondary" className="shrink-0">{selectedBook.book_points} b.</Badge>
+            )}
+            <button
+              type="button"
+              onClick={() => setSelectedBook(null)}
+              className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Odebrat knihu"
+            >
               <X className="size-4" />
             </button>
           </div>
@@ -114,13 +137,28 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                 {bookResults.map((book) => (
                   <button
                     key={book.id}
-                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted"
                     onClick={() => { setSelectedBook(book); setBookResults([]); setBookQuery(''); }}
                   >
-                    <span className="font-medium">{book.title}</span>
-                    <span className="text-muted-foreground ml-2">{book.author}</span>
+                    <div className="flex h-12 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
+                      {book.cover_path ? (
+                        <StorageImage
+                          storageKey={book.cover_path}
+                          alt={book.title}
+                          width={32}
+                          height={48}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <BookOpen className="size-4 text-muted-foreground/60" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{book.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{book.author}</p>
+                    </div>
                     {book.status === 'approved' && (
-                      <Badge variant="secondary" className="ml-2 text-xs">{book.book_points} b.</Badge>
+                      <Badge variant="secondary" className="shrink-0 text-xs">{book.book_points} b.</Badge>
                     )}
                   </button>
                 ))}

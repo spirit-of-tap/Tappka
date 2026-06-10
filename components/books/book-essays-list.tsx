@@ -29,14 +29,16 @@ export function BookEssaysList({ essays }: { essays: EssayWithDetails[] }) {
         <Link
           key={essay.id}
           href={`/eseje/${essay.id}`}
-          className="group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted"
+          className="group flex flex-col gap-1.5 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted sm:flex-row sm:items-center sm:gap-3"
         >
-          <Avatar picture={essay.author?.picture} name={essay.author?.name} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium group-hover:text-primary">{essay.title}</p>
-            <p className="truncate text-xs text-muted-foreground">{essay.author?.name}</p>
+          <div className="flex min-w-0 items-center gap-3 sm:flex-1">
+            <Avatar picture={essay.author?.picture} name={essay.author?.name} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium group-hover:text-primary">{essay.title}</p>
+              <p className="truncate text-xs text-muted-foreground">{essay.author?.name}</p>
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-4 text-xs text-muted-foreground tabular-nums">
+          <div className="flex shrink-0 items-center gap-4 pl-10 text-xs text-muted-foreground tabular-nums sm:pl-0">
             <span className="flex w-8 items-center justify-end gap-1" title="Hlasy">
               <ChevronUp className="size-3.5" />
               {essay.vote_count}
