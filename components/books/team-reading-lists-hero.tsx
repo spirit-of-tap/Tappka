@@ -17,9 +17,11 @@ export function TeamReadingListsHero({ lists, hasTeam }: TeamReadingListsHeroPro
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
   const [localLists, setLocalLists] = useState(lists);
+  const [error, setError] = useState<string | null>(null);
 
   const create = async () => {
     if (!title.trim() || loading) return;
+    setError(null);
     setLoading(true);
     try {
       const res = await fetch('/api/team-reading-lists', {
@@ -35,6 +37,8 @@ export function TeamReadingListsHero({ lists, hasTeam }: TeamReadingListsHeroPro
         setLocalLists((prev) => [{ ...data, team: null, books: [] }, ...prev]);
         setTitle('');
         setCreating(false);
+      } else {
+        setError('Nepodařilo se vytvořit seznam');
       }
     } finally {
       setLoading(false);
@@ -56,22 +60,25 @@ export function TeamReadingListsHero({ lists, hasTeam }: TeamReadingListsHeroPro
       </div>
 
       {creating && (
-        <div className="flex gap-2 items-center">
-          <Input
-            placeholder="Název seznamu..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && create()}
-            className="h-8 text-sm"
-            autoFocus
-          />
-          <Button size="sm" onClick={create} disabled={loading || !title.trim()}>
-            Vytvořit
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>
-            <X className="size-4" />
-          </Button>
-        </div>
+        <>
+          <div className="flex gap-2 items-center">
+            <Input
+              placeholder="Název seznamu..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && create()}
+              className="h-8 text-sm"
+              autoFocus
+            />
+            <Button size="sm" onClick={create} disabled={loading || !title.trim()}>
+              Vytvořit
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setCreating(false)}>
+              <X className="size-4" />
+            </Button>
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </>
       )}
 
       {localLists.length === 0 ? (
