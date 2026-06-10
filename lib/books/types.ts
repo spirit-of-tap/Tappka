@@ -20,6 +20,8 @@ export interface Book {
   rejection_reason: string | null;
   source: BookSource;
   external_id: string | null;
+  page_count: number | null;
+  preview_link: string | null;
   created_at: string;
   updated_at: string;
 }

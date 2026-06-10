@@ -257,27 +257,45 @@ function CompactEssayCard({ essay, initialVoted }: { essay: EssayWithDetails; in
 
 function CompactBookCard({ book }: { book: BookWithProfiles & { essay_count?: number } }) {
   return (
-    <Link href={`/knihovna/${book.id}`} className="group block">
-      <div className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted mb-2 flex items-center justify-center">
-        {book.cover_path ? (
-          <StorageImage
-            storageKey={book.cover_path}
-            alt={book.title}
-            width={160}
-            height={240}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-          />
-        ) : (
-          <BookOpen className="size-7 text-muted-foreground/30" />
+    <div className="group flex flex-col">
+      <Link href={`/knihovna/${book.id}`} className="block">
+        <div className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted mb-2 flex items-center justify-center">
+          {book.cover_path ? (
+            <StorageImage
+              storageKey={book.cover_path}
+              alt={book.title}
+              width={160}
+              height={240}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            />
+          ) : (
+            <BookOpen className="size-7 text-muted-foreground/30" />
+          )}
+        </div>
+        <p className="text-xs font-semibold line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+          {book.title}
+        </p>
+      </Link>
+      <div className="flex items-center gap-2 mt-1 flex-wrap">
+        {(book.essay_count ?? 0) > 0 && (
+          <span className="text-xs text-muted-foreground">{book.essay_count} esejí</span>
+        )}
+        {book.page_count && book.page_count > 0 && (
+          <span className="text-xs text-muted-foreground">{book.page_count} str.</span>
+        )}
+        {book.preview_link && (
+          <a
+            href={book.preview_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs text-primary hover:underline"
+          >
+            Náhled
+          </a>
         )}
       </div>
-      <p className="text-xs font-semibold line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-        {book.title}
-      </p>
-      {(book.essay_count ?? 0) > 0 && (
-        <p className="text-xs text-muted-foreground mt-0.5">{book.essay_count} esejí</p>
-      )}
-    </Link>
+    </div>
   );
 }
 

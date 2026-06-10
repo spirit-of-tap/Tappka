@@ -55,6 +55,9 @@ export function BookCard({ book }: BookCardProps) {
                   {book.essay_count}
                 </span>
               )}
+              {book.page_count && book.page_count > 0 && (
+                <span>{book.page_count} str.</span>
+              )}
               <span className="font-medium text-foreground tabular-nums">{pointsLabel}</span>
             </div>
           </div>
