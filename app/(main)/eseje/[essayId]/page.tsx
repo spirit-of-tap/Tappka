@@ -14,6 +14,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatPoints } from '@/lib/books/points';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
@@ -146,7 +147,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
               <p className="text-xs text-muted-foreground truncate">{essay.book.author}</p>
             </div>
             {essay.book.status === 'approved' && (
-              <Badge variant="secondary" className="shrink-0">{essay.book.book_points} b.</Badge>
+              <Badge variant="secondary" className="shrink-0">{formatPoints(essay.book.book_points)} b.</Badge>
             )}
           </div>
         </Link>

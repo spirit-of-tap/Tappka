@@ -3,6 +3,7 @@ import { MessageCircle, Eye, BookOpen, FileQuestion, ChevronUp } from 'lucide-re
 import { Card, CardContent } from '@/components/ui/card';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from './essay-vote-button';
+import { formatPoints, pointsNumber } from '@/lib/books/points';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 interface EssayCardProps {
@@ -61,8 +62,8 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
               <>
                 <BookOpen className="size-3 shrink-0" />
                 <span className="truncate">{essay.book.title}</span>
-                {essay.book.status === 'approved' && essay.book.book_points > 0 && (
-                  <span className="shrink-0 ml-auto font-medium text-foreground">{essay.book.book_points} b.</span>
+                {essay.book.status === 'approved' && pointsNumber(essay.book.book_points) > 0 && (
+                  <span className="shrink-0 ml-auto font-medium text-foreground">{formatPoints(essay.book.book_points)} b.</span>
                 )}
                 {essay.book.status === 'rejected' && (
                   <span className="shrink-0 ml-auto text-destructive">0 b.</span>

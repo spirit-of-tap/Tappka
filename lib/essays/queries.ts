@@ -364,7 +364,8 @@ export async function getUserBookPointsStats(
   for (const row of (essays ?? []) as unknown as Row[]) {
     if (!row.book_id) continue;
     if (row.books.status === 'approved') {
-      approved.set(row.book_id, row.books.book_points);
+      // book_points is numeric → arrives as a string; coerce before summing.
+      approved.set(row.book_id, Number(row.books.book_points));
     } else if (row.books.status === 'pending') {
       pending.add(row.book_id);
     }
@@ -434,7 +435,7 @@ export async function getTeamBookPointsStats(
 
   const pointsMap: Record<string, number> = {};
   for (const book of (approvedBooks ?? []) as { id: string; book_points: number }[]) {
-    pointsMap[book.id] = book.book_points;
+    pointsMap[book.id] = Number(book.book_points);
   }
 
   return teamProfiles.map((profile: { id: string; name: string; picture: string | null }) => {

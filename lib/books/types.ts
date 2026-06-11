@@ -13,6 +13,9 @@ export interface Book {
   tags: string[];
   suggested_points: number;
   book_points: number;
+  ai_book_points: number | null;
+  legacy_book_points: number | null;
+  ai_reason: string | null;
   status: BookStatus;
   added_by_profile_id: string;
   approved_by_profile_id: string | null;

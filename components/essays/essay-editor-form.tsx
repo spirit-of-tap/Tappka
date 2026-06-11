@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
+import { formatPoints } from '@/lib/books/points';
 import type { Book } from '@/lib/books/types';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
@@ -114,7 +115,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
               <p className="truncate text-xs text-muted-foreground">{selectedBook.author}</p>
             </div>
             {selectedBook.status === 'approved' && (
-              <Badge variant="secondary" className="shrink-0">{selectedBook.book_points} b.</Badge>
+              <Badge variant="secondary" className="shrink-0">{formatPoints(selectedBook.book_points)} b.</Badge>
             )}
             <button
               type="button"
@@ -158,7 +159,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                       <p className="truncate text-xs text-muted-foreground">{book.author}</p>
                     </div>
                     {book.status === 'approved' && (
-                      <Badge variant="secondary" className="shrink-0 text-xs">{book.book_points} b.</Badge>
+                      <Badge variant="secondary" className="shrink-0 text-xs">{formatPoints(book.book_points)} b.</Badge>
                     )}
                   </button>
                 ))}

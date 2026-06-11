@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       essayUrl: `${origin}/eseje/${essay.id}`,
       category,
       source: 'Kniha',
-      points: book?.book_points ?? 0,
+      points: Number(book?.book_points ?? 0),
     };
   });
 

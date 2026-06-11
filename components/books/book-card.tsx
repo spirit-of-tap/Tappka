@@ -3,6 +3,7 @@ import { BookOpen, FileText, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { formatPointsWithLabel } from '@/lib/books/points';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 interface BookCardProps {
@@ -10,8 +11,7 @@ interface BookCardProps {
 }
 
 export function BookCard({ book }: BookCardProps) {
-  const points = book.book_points;
-  const pointsLabel = `${points} ${points === 1 ? 'bod' : points < 5 ? 'body' : 'bodů'}`;
+  const pointsLabel = formatPointsWithLabel(book.book_points);
 
   return (
     <div className="flex gap-3 px-3 py-2.5 rounded-xl border bg-card hover:shadow-sm transition-shadow group">

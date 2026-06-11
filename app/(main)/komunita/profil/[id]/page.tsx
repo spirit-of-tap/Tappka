@@ -10,6 +10,7 @@ import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { StorageImage } from '@/components/storage/storage-image';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
+import { formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
@@ -177,7 +178,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                     {essay.book && (
                       <p className="text-xs text-muted-foreground truncate">
                         {essay.book.title}
-                        {essay.book.book_points ? <span className="ml-1 font-medium text-foreground">· {essay.book.book_points} {pts(essay.book.book_points)}</span> : null}
+                        {pointsNumber(essay.book.book_points) > 0 ? <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(essay.book.book_points)}</span> : null}
                       </p>
                     )}
                     {excerpt && excerpt.length > 20 && (

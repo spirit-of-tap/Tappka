@@ -163,7 +163,7 @@ export async function getBooksByProfilePoints(
   for (const row of (data ?? []) as unknown as Array<{ book_id: string; books: { book_points: number; status: string } }>) {
     if (row.book_id && !seen.has(row.book_id) && row.books.status === 'approved') {
       seen.add(row.book_id);
-      result.push({ book_id: row.book_id, book_points: row.books.book_points });
+      result.push({ book_id: row.book_id, book_points: Number(row.books.book_points) });
     }
   }
 

@@ -10,6 +10,7 @@ import { TeamReadingListsHero } from '@/components/books/team-reading-lists-hero
 import { BookCard } from '@/components/books/book-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
+import { formatPoints, formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
 import type { TeamReadingList } from '@/lib/books/team-lists';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookWithProfiles } from '@/lib/books/types';
@@ -292,9 +293,9 @@ function TeamsSection({ teams }: { teams: TeamWithMembers[] }) {
                       {member.essay_count}
                     </span>
                   )}
-                  {member.book_points > 0 && (
+                  {pointsNumber(member.book_points) > 0 && (
                     <span className="font-medium text-foreground">
-                      {member.book_points} b.
+                      {formatPoints(member.book_points)} b.
                     </span>
                   )}
                 </div>
@@ -355,7 +356,7 @@ function CategoryBestBooksSection({
                       <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{book.description}</p>
                     )}
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="font-medium">{book.book_points} {book.book_points === 1 ? 'bod' : book.book_points < 5 ? 'body' : 'bodů'}</span>
+                      <span className="font-medium">{formatPointsWithLabel(book.book_points)}</span>
                       {book.essay_count > 0 && (
                         <>
                           <span className="text-muted-foreground/40">·</span>

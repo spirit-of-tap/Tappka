@@ -40,7 +40,7 @@ export async function GET() {
       essayTitle: essay.title as string,
       category,
       source: 'Kniha',
-      points: book?.book_points ?? 0,
+      points: Number(book?.book_points ?? 0),
     };
   });
 

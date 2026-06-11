@@ -8,6 +8,7 @@ import {
   User,
   Pencil,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -20,6 +21,7 @@ import { BookDeleteButton } from '@/components/books/book-delete-button';
 import { BookDescription } from '@/components/books/book-description';
 import { BookEssaysList } from '@/components/books/book-essays-list';
 import { BOOK_STATUS_LABELS, BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { formatPointsWithLabel } from '@/lib/books/points';
 import type { BookStatus } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 
@@ -42,11 +44,6 @@ interface PageProps {
   params: Promise<{ bookId: string }>;
 }
 
-function pointsLabel(points: number): string {
-  if (points === 1) return 'bod';
-  if (points >= 2 && points <= 4) return 'body';
-  return 'bodů';
-}
 
 function Avatar({ picture, name, size = 28 }: { picture?: string | null; name?: string | null; size?: number }) {
   const initial = name?.[0]?.toUpperCase() ?? '?';
@@ -157,7 +154,7 @@ export default async function BookDetailPage({ params }: PageProps) {
             </span>
             {book.status === 'approved' ? (
               <span className="inline-flex items-center rounded-full bg-foreground px-2.5 py-1 text-xs font-semibold text-background">
-                {book.book_points} {pointsLabel(book.book_points)}
+                {formatPointsWithLabel(book.book_points)}
               </span>
             ) : book.status === 'rejected' ? (
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
@@ -215,6 +212,21 @@ export default async function BookDetailPage({ params }: PageProps) {
           )}
         </div>
       </div>
+
+      {/* AI rating reason */}
+      {book.ai_reason && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="size-4 text-muted-foreground" />
+              Hodnocení knihy
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed text-muted-foreground">{book.ai_reason}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Essays */}
       {essays.length > 0 && (

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Eye, BookOpen, FileQuestion, MessageCircle } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from './essay-vote-button';
+import { formatPoints, pointsNumber } from '@/lib/books/points';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 interface MyEssayListProps {
@@ -21,7 +22,7 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
           month: 'short',
           year: 'numeric',
         });
-        const points = essay.book?.book_points ?? 0;
+        const points = pointsNumber(essay.book?.book_points);
         const hasPoints = essay.book?.status === 'approved' && points > 0;
         const isRejected = essay.book?.status === 'rejected';
 
@@ -59,7 +60,7 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
                 </h3>
                 {hasPoints && (
                   <span className="shrink-0 text-xs font-semibold tabular-nums bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                    {points} b.
+                    {formatPoints(points)} b.
                   </span>
                 )}
                 {isRejected && (
