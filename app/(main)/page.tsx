@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { getSessionProfile } from "@/lib/auth/session";
 import {
   getUserBookPointsStats,
   getUnreadTeamEssaysForCoach,
@@ -48,7 +48,7 @@ async function getNextReservation(
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const profile = await getCurrentUserProfile(supabase, { includeTeam: true });
+  const profile = await getSessionProfile();
   if (!profile) redirect("/auth/login");
 
   const isCoach = profile.role === "coach" || profile.role === "admin";
