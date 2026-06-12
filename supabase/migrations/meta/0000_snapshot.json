@@ -545,7 +545,6 @@
               "expression": "to_tsvector('simple'::regconfig, content_text)",
               "asc": true,
               "nulls": "last",
-              "opclass": "tsvector_ops",
               "isExpression": true
             }
           ],
