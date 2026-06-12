@@ -10,7 +10,13 @@ Replace the placeholder profile page at `app/(main)/page.tsx` with a role-aware
 
 ## Decisions
 
-- Fixed layout, no user-editable widgets in v1 (revisit if requested).
+- User-editable layout (added on request after v1): the dashboard starts
+  **empty**; the user picks widgets from a role-filtered catalog, can reorder
+  them (up/down) and remove them via an edit mode. Layout is stored per user
+  in `dashboard_layouts (profile_id pk, widgets jsonb)` with owner-only RLS
+  (`current_profile_id()`), saved through `PUT /api/dashboard/layout`, which
+  sanitizes ids against the role's catalog. The page fetches data only for
+  widgets present in the layout.
 - Server component, single `Promise.all` of cheap queries.
 - Roles: student & mentor share the student view; coach & admin share the coach
   view (mirrors `/eseje/ke-kontrole` access check).
