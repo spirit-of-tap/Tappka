@@ -1,3 +1,5 @@
+// Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
+// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
 import { pgTable, foreignKey, pgPolicy, uuid, text, smallint, numeric, integer, timestamp, index, unique, check, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
@@ -13,6 +15,7 @@ export const books = pgTable("books", {
 	isbn13: text("isbn_13"),
 	description: text(),
 	coverPath: text("cover_path"),
+	// Introspection quirk: renders as [""] but the actual DB default is '{}' (empty array). Snapshot-equivalent; do not "fix".
 	tags: text().array().default([""]).notNull(),
 	suggestedPoints: smallint("suggested_points").default(1).notNull(),
 	bookPoints: numeric("book_points", { precision: 5, scale:  2 }).default('0').notNull(),

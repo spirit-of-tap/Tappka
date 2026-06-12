@@ -1,3 +1,5 @@
+// Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
+// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
 import { pgTable, foreignKey, pgPolicy, uuid, text, integer, boolean, timestamp, index, unique, check, time, date, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"

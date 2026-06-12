@@ -1,3 +1,6 @@
+// Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
+// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
+// Keep the view body in sync if a migration alters it, or the next generate emits a spurious CREATE OR REPLACE VIEW.
 import { pgView, uuid, text, smallint, numeric, timestamp, integer } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { bookSource, bookStatus } from "./books"
