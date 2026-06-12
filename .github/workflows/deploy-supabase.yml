@@ -39,8 +39,11 @@ jobs:
           supabase link --project-ref $PROJECT_ID
           
       - name: Deploy database migrations
+        # No destructive fallback: a failed push must fail the deploy.
+        # Never add `db reset --linked` here — it wipes the preview database.
+        # If push fails on history drift, reconcile with `supabase migration repair`.
         run: |
-          supabase db push || (supabase db reset --linked --yes && supabase db push --include-all)
+          supabase db push
           
       - name: Deploy Edge Functions
         continue-on-error: true
