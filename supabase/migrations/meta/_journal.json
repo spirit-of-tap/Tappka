@@ -8,6 +8,13 @@
       "when": 1781288789471,
       "tag": "0000_fluffy_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781292607096,
+      "tag": "20260612193007_restore_search_rpc_functions",
+      "breakpoints": true
     }
   ]
 }
