@@ -22,12 +22,12 @@ pnpm supabase:stop
 
 ## Database Migrations
 
-**CRITICAL**: Always write migrations as files AND apply them via MCP.
+See **Database schema changes** below for when and how migrations are created.
+The rules below apply to all migrations regardless of origin.
 
-1. Create the file: `supabase/migrations/YYYYMMDDHHmmss_description.sql`
-2. Apply via MCP tool (`supabase_apply_migration`)
-
-Never only apply via MCP without saving the file — the local migration history will drift.
+**CRITICAL**: Always apply migrations via MCP tool (`supabase_apply_migration`) — and
+never apply a migration without the file already existing in `supabase/migrations/`.
+The local migration history must never drift from what is on disk.
 
 ### Migration rules
 - Always enable RLS on new tables
