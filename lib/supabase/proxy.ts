@@ -1,37 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicRoute, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
-import { hasEmailIdentity, hasLinkedProfile, redirectWithCookies } from "@/lib/auth-helpers";
+import { redirectWithCookies } from "@/lib/auth-helpers";
 import { validateRedirectUrl } from "@/lib/utils";
 
-/**
- * Safely executes an async check function, catching any errors
- * and treating them as a failed check to preserve graceful redirect behavior
- * @param checkFn - The async function to execute
- * @param checkName - Name of the check for logging purposes
- * @returns Object with ok boolean and optional error
- */
-async function safeCheck(
-  checkFn: () => Promise<boolean>,
-  checkName: string,
-): Promise<{ ok: boolean; error?: Error }> {
-  try {
-    const result = await checkFn();
-    return { ok: result };
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    console.error(`Error in ${checkName}:`, err);
-    return { ok: false, error: err };
-  }
-}
-
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  // Expose the requested path to server components (the (main) layout uses it
+  // to preserve ?next= on its onboarding redirect).
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(
+    "x-pathname",
+    request.nextUrl.pathname + request.nextUrl.search,
+  );
 
-  // If the env vars are not set, skip proxy check. You can remove this
-  // once you setup the project.
+  let supabaseResponse = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,23 +25,33 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers?: Headers) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
-            request,
+            request: { headers: requestHeaders },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
+          );
+          // @supabase/ssr 0.8+ passes cache headers (Cache-Control: no-store
+          // etc.) that must reach the response so CDNs never cache a page
+          // that just set auth cookies.
+          headers?.forEach((value, key) =>
+            supabaseResponse.headers.set(key, value)
           );
         },
       },
     }
   );
 
+  // Do not run code between createServerClient and supabase.auth.getClaims().
+  // getClaims() refreshes an expired session and, with asymmetric signing
+  // keys, verifies the JWT locally — no network round trip. Removing it
+  // breaks session refresh ("users may be randomly logged out").
   const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  const claims = data?.claims;
 
   const pathname = request.nextUrl.pathname;
   // Include full path with query parameters and hash for next parameter
@@ -65,27 +59,23 @@ export async function updateSession(request: NextRequest) {
 
   // Allow public routes without authentication
   if (isPublicRoute(pathname)) {
-    // Handle authenticated users visiting login page - redirect them
-    if (pathname === "/auth/login") {
-      // Use getUser() instead of getClaims() to validate the user actually exists
-      // getClaims() can return truthy values even with invalid/deleted users
+    // Handle authenticated users visiting login page - redirect them.
+    // getUser() (a network call) is intentionally kept on this rare path:
+    // getClaims() can be truthy for a deleted user until the token expires,
+    // and redirecting such a user into the app and back here would loop.
+    if (pathname === "/auth/login" && claims) {
       const { data: { user }, error } = await supabase.auth.getUser();
 
-      // Only redirect if we have a valid user (not just claims)
-      // This prevents infinite redirect loops when token is invalid but claims exist
       if (!error && user) {
-        // Get next parameter from query string
         const next = request.nextUrl.searchParams.get("next");
-
-        // Validate next parameter to prevent open redirects
         const origin = request.nextUrl.origin;
         const validatedNext = next ? validateRedirectUrl(next, origin) : null;
         const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;
 
         const url = request.nextUrl.clone();
         url.pathname = redirectTo;
-        url.search = ""; // Clear existing search params
-        url.hash = ""; // Clear existing hash
+        url.search = "";
+        url.hash = "";
         return redirectWithCookies(url, supabaseResponse);
       }
     }
@@ -93,64 +83,34 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect to login if not authenticated
-  if (!user) {
+  if (!claims) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    url.search = ""; // Clear existing search params
-    url.hash = ""; // Clear existing hash
+    url.search = "";
+    url.hash = "";
     url.searchParams.set("next", fullPath);
     return redirectWithCookies(url, supabaseResponse);
   }
 
-  // Check if user has an email identity (not just OAuth providers like Google)
-  const { data: getUserData, error } = await supabase.auth.getUser();
-  const authUser = getUserData?.user;
-
-  if (error) {
-    console.error("supabase.auth.getUser error", error);
-  }
-
-  if (!authUser) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    url.search = ""; // Clear existing search params
-    url.hash = ""; // Clear existing hash
-    url.searchParams.set("next", fullPath);
-    return redirectWithCookies(url, supabaseResponse);
-  }
-
-  // If no email identity, redirect to onboarding page (wizard for first-time users)
-  // Treat errors as "no identity" to preserve graceful redirect behavior
-  const emailIdentityCheck = await safeCheck(
-    () => hasEmailIdentity(supabase, authUser),
-    "hasEmailIdentity",
-  );
-  if (!emailIdentityCheck.ok) {
+  // Users who signed in via OAuth only (no verified CZU email identity) go to
+  // the onboarding wizard. app_metadata.providers is baked into the JWT, so
+  // this needs no getUser() round trip. The claim is refreshed the moment it
+  // matters: verify-email-form calls refreshSession() right after the email
+  // identity is added.
+  const providers: string[] =
+    (claims.app_metadata as { providers?: string[] } | undefined)?.providers ??
+    [];
+  if (!providers.includes("email")) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/onboarding";
-    url.search = ""; // Clear existing search params
-    url.hash = ""; // Clear existing hash
+    url.search = "";
+    url.hash = "";
     url.searchParams.set("next", fullPath);
     return redirectWithCookies(url, supabaseResponse);
   }
 
-  // Check for linked profile if user is authenticated and not on public routes
-  // Treat errors as "no profile" to preserve graceful redirect behavior
-  const linkedProfileCheck = await safeCheck(
-    () => hasLinkedProfile(supabase, authUser),
-    "hasLinkedProfile",
-  );
-  if (!linkedProfileCheck.ok) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/onboarding";
-    url.search = ""; // Strip all query parameters (e.g., from email verification or QR code)
-    url.hash = ""; // Strip hash as well
-    url.searchParams.set("next", fullPath);
-    return redirectWithCookies(url, supabaseResponse);
-  }
-
-  // For protected routes (dashboard, etc.), we need to check verification
-  // This is done on the page level for better UX with proper error messages
+  // The linked-profile gate lives in app/(main)/layout.tsx, which already
+  // fetches the profile for the sidebar — no extra queries here.
 
   return supabaseResponse;
 }
