@@ -44,3 +44,6 @@ next-env.d.ts
 
 # git worktrees
 /.worktrees/
+
+# Production data dumps — personal data, never commit
+data/*_rows.sql
