@@ -36,6 +36,23 @@ Never only apply via MCP without saving the file — the local migration history
 - Use `(select auth.uid())` (not bare `auth.uid()`) in RLS policies for performance
 - Lowercase SQL keywords, snake_case identifiers, fully qualified names (`public.table`)
 
+## Database schema changes
+
+The schema source of truth is `db/schema/*.ts` (Drizzle). Do NOT hand-write
+migrations for tables/columns/enums/indexes/RLS policies.
+
+- **Tables, columns, enums, indexes, RLS policies, views:** edit `db/schema/*.ts`,
+  then `pnpm db:generate`. Review the generated SQL in `supabase/migrations/`
+  (watch for unintended DROPs), then `pnpm supabase migration up`.
+- **Functions & triggers:** Drizzle can't model these. Edit the current-state
+  file in `db/sql/`, run `pnpm db:generate:custom` to create an empty migration,
+  and paste the `CREATE OR REPLACE` statement in.
+- Never edit existing files in `supabase/migrations/` and never run schema
+  commands against production. Deployment applies migrations the same way as
+  before this change.
+- App data access stays on `supabase-js`; never add a runtime Drizzle client
+  (it would bypass RLS).
+
 ## Realtime
 
 - Use `broadcast` — never `postgres_changes`
