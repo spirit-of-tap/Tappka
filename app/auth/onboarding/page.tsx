@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { hasLinkedProfile, hasEmailIdentity } from "@/lib/auth-helpers";
 import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
+import { validateRedirectUrl } from "@/lib/utils";
 import { OnboardingClient } from "./onboarding-client";
 
 interface OnboardingPageProps {
@@ -35,10 +37,19 @@ export default async function OnboardingPage({
   const next = params.next;
 
   // Redirect to protected if already has linked profile
-  // Respect the next parameter if provided, otherwise use default logged in page
+  // Respect the next parameter if provided, otherwise use default logged in page.
+  // Validate next to prevent open redirects: next is a user-controllable query
+  // param, so an unvalidated server redirect() could be pointed off-origin.
   const hasProfile = await hasLinkedProfile(supabase, user);
   if (hasProfile) {
-    redirect(next ?? DEFAULT_LOGGED_IN_PAGE);
+    const headersList = await headers();
+    const host = headersList.get("host");
+    const protocol =
+      headersList.get("x-forwarded-proto") ||
+      (process.env.NODE_ENV === "production" ? "https" : "http");
+    const origin = host ? `${protocol}://${host}` : "http://localhost:3000";
+    const validatedNext = next ? validateRedirectUrl(next, origin) : null;
+    redirect(validatedNext ?? DEFAULT_LOGGED_IN_PAGE);
   }
 
   // Check if user already has a verified email identity
