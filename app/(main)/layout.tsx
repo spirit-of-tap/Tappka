@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { getSessionProfile } from "@/lib/auth/session";
 import { getCoachUnreadCount } from "@/lib/essays/queries";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -22,23 +24,35 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  const profile = await getSessionProfile();
 
-  // Get profile for user info in sidebar (no separate getUser() needed)
-  const profile = await getCurrentUserProfile(supabase);
+  // Linked-profile gate (moved here from the middleware): an authenticated,
+  // email-verified user without an admin-linked profile sees the onboarding
+  // waiting screen. x-pathname is stamped by the proxy so the deep link
+  // survives onboarding.
+  if (!profile) {
+    const headersList = await headers();
+    const fullPath = headersList.get("x-pathname");
+    redirect(
+      fullPath
+        ? `/auth/onboarding?next=${encodeURIComponent(fullPath)}`
+        : "/auth/onboarding",
+    );
+  }
 
   const sidebarUser = {
-    id: profile?.id || "",
-    name: profile?.name || "Uživatel",
-    email: profile?.work_email || "",
-    role: profile?.role,
+    id: profile.id,
+    name: profile.name,
+    email: profile.work_email,
+    role: profile.role,
   };
 
-  const isCoachOrAdmin = profile?.role === "coach" || profile?.role === "admin";
-  const reviewCount =
-    isCoachOrAdmin && profile?.team_id
-      ? await getCoachUnreadCount(supabase, profile.id, profile.team_id)
-      : 0;
+  const isCoachOrAdmin = profile.role === "coach" || profile.role === "admin";
+  let reviewCount = 0;
+  if (isCoachOrAdmin && profile.team_id) {
+    const supabase = await createClient();
+    reviewCount = await getCoachUnreadCount(supabase, profile.id, profile.team_id);
+  }
 
   return (
     <SidebarProvider>

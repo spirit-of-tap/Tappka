@@ -102,46 +102,34 @@ export async function getCurrentUserProfile(
 ): Promise<Profile | null> {
   const { includeTeam = false } = options;
 
-  // Use pre-fetched user if provided, otherwise fetch
+  // Use pre-fetched user if provided, otherwise derive the auth user id from
+  // the JWT claims. getClaims() verifies locally (no network round trip) when
+  // the project uses asymmetric signing keys, unlike getUser().
   let authUserId: string;
   if (options.user) {
     authUserId = options.user.id;
   } else {
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
+    const { data, error: claimsError } = await supabaseClient.auth.getClaims();
+    const sub = data?.claims?.sub;
+    if (claimsError || !sub) {
       return null;
     }
-    authUserId = user.id;
+    authUserId = sub;
   }
 
-  // First get the user's linked public.users record
-  // This is required because profiles RLS has a permissive policy that allows
-  // viewing all profiles, so we can't rely on RLS alone
-  const { data: userData, error: userError } = await supabaseClient
-    .from("users")
-    .select("id")
-    .eq("auth_user_id", authUserId)
-    .limit(1)
-    .maybeSingle();
-
-  // If no users record exists for this auth user, they don't have a linked profile
-  if (userError || !userData) {
-    return null;
-  }
-
-  // Build select query conditionally based on includeTeam parameter
+  // Single query replacing the previous users -> profiles two-step lookup.
+  // The users!inner embed (via profiles_user_id_fkey) enforces the same
+  // "linked users record must exist" semantics, and the explicit filter on
+  // users.auth_user_id is required because profiles RLS has a permissive
+  // policy that allows viewing all profiles.
   const selectQuery = includeTeam
-    ? `
-      *,
-      team:teams(*)
-    `
-    : "*";
+    ? `*, team:teams(*), users!inner(auth_user_id)`
+    : `*, users!inner(auth_user_id)`;
 
-  // Query profiles explicitly filtered by the user's user_id
   const { data: profile, error: queryError } = await supabaseClient
     .from("profiles")
     .select(selectQuery)
-    .eq("user_id", userData.id)
+    .eq("users.auth_user_id", authUserId)
     .limit(1)
     .maybeSingle();
 
@@ -169,11 +157,11 @@ export async function getCurrentUserProfile(
     }
   }
 
-  // Remove the team property from profile if it exists (to avoid duplication)
-  const { team: _, ...profileWithoutTeam } = profile as any;
+  // Strip the embedded users record and team before returning
+  const { team: _, users: __, ...profileFields } = profile as any;
 
   return {
-    ...profileWithoutTeam,
+    ...profileFields,
     team,
   } as Profile;
 }
