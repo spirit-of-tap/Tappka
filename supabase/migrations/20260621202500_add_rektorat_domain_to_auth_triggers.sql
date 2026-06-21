@@ -54,12 +54,6 @@ begin
     into v_has_linked_profile;
 
     if v_has_linked_profile and old.email is distinct from new.email then
-      if old.email is not null then
-        if lower(split_part(old.email, '@', 2)) not in ('pef.czu.cz', 'studenti.czu.cz', 'rektorat.czu.cz') then
-          raise exception 'Current email must belong to an approved domain';
-        end if;
-      end if;
-
       if new.email is not null then
         if lower(split_part(new.email, '@', 2)) not in ('pef.czu.cz', 'studenti.czu.cz', 'rektorat.czu.cz') then
           raise exception 'New email must belong to an approved domain';
