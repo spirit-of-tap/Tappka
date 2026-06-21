@@ -1,6 +1,24 @@
 # Progress
 
 - **Status:** COMPLETED
+- **Timestamp:** 2026-06-21 22:24:00 EET
+- **Task:** Update backend auth email trigger functions and domain checks for `@rektorat.czu.cz`.
+- **Completed work:**
+  - Added migration `supabase/migrations/20260621202500_add_rektorat_domain_to_auth_triggers.sql`.
+  - Updated `public.validate_czu_email_domain_trigger()` to allow `rektorat.czu.cz`, validate old/new direct email changes, and keep `public.profiles.work_email` in sync for linked profiles.
+  - Updated `public.set_verified_work_email_on_change()` to include `rektorat.czu.cz` in verified email updates and backfill query.
+  - Updated `public.profiles` domain check constraint `valid_czu_domain` to include `rektorat.czu.cz`.
+  - Applied migration via Supabase MCP (`apply_migration`) to keep file and database state aligned.
+
+- **Status:** COMPLETED
+- **Timestamp:** 2026-06-21 21:59:00 EET
+- **Task:** Add frontend support for `@rektorat.czu.cz` in work email verification.
+- **Completed work:**
+  - Added `rektorat.czu.cz` to `ALLOWED_WORK_EMAIL_DOMAINS` in `lib/constants/auth.ts`, so frontend domain validation accepts it.
+  - Added `@rektorat.czu.cz` to the domain dropdown options in `components/verify-email-form.tsx`.
+  - Verified no lint errors in touched files.
+
+- **Status:** COMPLETED
 - **Timestamp:** 2026-02-25 19:01:22 EET
 - **Task:** Enable `Cmd + Enter` submit in reservation dialogs when focus is inside text fields.
 - **Completed work:**
