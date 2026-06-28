@@ -1,6 +1,18 @@
-# Tappka
+<div align="center">
+  <img src="public/tap_logo.png" alt="Tappka Logo" width="120" height="120" style="border-radius: 16px;" />
 
-Tappka as the app all-in-one web app for Tiimiakatemia Prague.
+  <h1 style="font-family: Poppins, sans-serif; color: #b31b1b; font-weight: 800; font-size: 2.5rem; margin: 0.5rem 0 0.2rem;">
+    Tappka
+  </h1>
+
+  <p style="font-family: Pacifico, cursive; color: #2c1a1d; font-size: 1.1rem; margin: 0 0 0.5rem;">
+    <em>"We do business to learn, to live fully we earn!"</em>
+  </p>
+
+  <p style="font-family: Roboto, sans-serif; color: #555; font-size: 1rem; max-width: 480px;">
+    All-in-one web app for <strong>Tiimiakatemia Prague</strong> — empowering teams with room booking, essay bank, and authentication.
+  </p>
+</div>
 
 ## Features
 
@@ -45,11 +57,11 @@ All czech should be just in localization files.
 npm install -g pnpm@10.28.1
 ```
 
-4. Clone the repository 
+4. Clone the repository
 ```bash
 git clone https://github.com/tappka/tappka.git
 ```
-5. Navigate to the project directory - 
+5. Navigate to the project directory -
 ```bash
 cd tappka
 ```
