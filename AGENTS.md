@@ -60,6 +60,14 @@ migrations for tables/columns/enums/indexes/RLS policies.
 - Event naming: `entity_action` snake_case (e.g. `message_created`)
 - Set `private: true` on all channels; always include cleanup/unsubscribe
 
+## GitHub
+
+- Use `gh` (GitHub CLI) for all GitHub operations — issues, PRs, reviews, and checks
+- Use `gh issue` for issue operations: `gh issue list`, `gh issue view`, `gh issue create`, `gh issue close`
+- Use `gh pr` for pull request operations: `gh pr list`, `gh pr view`, `gh pr create`, `gh pr checkout`, `gh pr review`, `gh pr merge`
+- Always check current context with `gh status` before starting work
+- Use `gh browse` to open the repo in a browser when needed
+
 ## Environment
 
 - Copy `.env.local.example` → `.env.local` for local dev
