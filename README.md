@@ -1,24 +1,24 @@
-<div align="center">
-  <img src="public/tap_logo.png" alt="Tappka Logo" width="120" height="120" style="border-radius: 16px;" />
+<div align="center" style="background: #fcfff7; padding: 2rem 1rem; border-radius: 16px;">
+  <div style="display: flex; justify-content: center; align-items: center; gap: 2rem; margin-bottom: 1rem;">
+    <img src="public/tap_logo.png" alt="Tiimiakatemia Prague" width="100" height="100" style="border-radius: 12px;" />
+    <img src="public/pef_logo/CZU_PEF_barva_RGB.png" alt="ČZU PEF" height="80" />
+  </div>
 
-  <h1 style="font-family: Poppins, sans-serif; color: #b31b1b; font-weight: 800; font-size: 2.5rem; margin: 0.5rem 0 0.2rem;">
+  <h1 style="font-family: Poppins, sans-serif; color: #b31b1b; font-weight: 800; font-size: 2.5rem; margin: 0.5rem 0;">
     Tappka
   </h1>
 
-  <p style="font-family: Pacifico, cursive; color: #2c1a1d; font-size: 1.1rem; margin: 0 0 0.5rem;">
-    <em>"We do business to learn, to live fully we earn!"</em>
-  </p>
-
-  <p style="font-family: Roboto, sans-serif; color: #555; font-size: 1rem; max-width: 480px;">
+  <p style="font-family: Roboto, sans-serif; color: #555; font-size: 1rem; max-width: 480px; margin: 0.5rem auto;">
     All-in-one web app for <strong>Tiimiakatemia Prague</strong> — empowering teams with room booking, essay bank, and authentication.
   </p>
+
+  <p style="font-family: Roboto, sans-serif; color: #2c1a1d; font-size: 0.85rem; margin-top: 1.5rem;">
+    Made with ❤️ by
+    <a href="https://www.linkedin.com/in/ond%C5%99ej-schlossar/" style="color: #b31b1b; text-decoration: none;">Ondřej Schlossar</a>,
+    <a href="https://www.linkedin.com/in/ondrejkulhavy/" style="color: #b31b1b; text-decoration: none;">Ondřej Kulhavý</a>,
+    <a href="https://www.linkedin.com/in/tomprotiva/" style="color: #b31b1b; text-decoration: none;">Tomáš Protiva</a>
+  </p>
 </div>
-
-## Features
-
-- [ ] Authentication
-- [ ] Room booking
-- [ ] Essay Bank
 
 # Links
 
