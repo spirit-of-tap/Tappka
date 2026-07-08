@@ -1,7 +1,9 @@
 # Runbook: Migration-history drift (malformed version `20260419`)
 
-**Status:** Local fixed 2026-07-08. **Preview AND production fixes still pending** — the
-CI deploy (`db push`) will fail on each until repaired. See "Fix on each deployed environment" below.
+**Status:** Local fixed 2026-07-08. The malformed `20260419` was a **local-only** problem —
+**production never had it**, so production needs NO `20260419` repair. A *separate*
+production divergence does need attention before deploying `esejbanka` — see
+"Production reality (verified 2026-07-08)" below.
 
 ## Symptom
 
@@ -53,41 +55,60 @@ docker exec supabase_db_Tappka psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
 supabase migration up   # should now apply pending migrations cleanly
 ```
 
-### Fix on each deployed environment: PREVIEW and PRODUCTION (PENDING)
+### If a `20260419` (8-digit) version ever appears in a remote history
 
-**Both** the `preview` and `production` Supabase projects have their own
-`schema_migrations` table, and both almost certainly contain the malformed `20260419`
-version. The CI workflow `.github/workflows/deploy-supabase.yml` runs `supabase db push`
-on pushes to the `preview` and `production` branches and **fails hard on history drift
-by design** (it has no destructive fallback — see the comment in that file). So the next
-deploy to *either* branch will fail until this repair is run against *that* project.
-
-Run the repair **once per project**, **before** the next `supabase db push` to it. It
-only rewrites a version string in `schema_migrations`; it does not run DDL, touch data,
-or reset anything.
+Production's history (verified 2026-07-08 via dashboard) does **not** contain `20260419`,
+so no repair is needed there. Only if `supabase migration list` against some environment
+shows a bare 8-digit `20260419` do you repair it:
 
 ```bash
-# For EACH environment — do this for preview, then production.
-# Point the CLI at the target project first:
-supabase link --project-ref <PREVIEW_or_PRODUCTION_PROJECT_ID>
-
-# Mark the malformed version as reverted (removes the 20260419 marker) ...
+supabase link --project-ref <PROJECT_ID>
 supabase migration repair --status reverted 20260419
-
-# ... and mark the normalized version as applied (adds 20260419000000).
 supabase migration repair --status applied 20260419000000
-
-# Confirm the CLI now sees a clean history:
-supabase migration list         # local and remote columns should line up
+supabase migration list   # local and remote columns should line up
 ```
 
-After the repair, `supabase db push` (and the CI workflow) will apply any pending
-migrations (function `search_path` fix, RLS optimization, and anything future) normally.
+The CI workflow `.github/workflows/deploy-supabase.yml` needs **no change** — it already
+uses `supabase db push` and documents `migration repair` as the drift remedy. Never add
+auto-repair to CI (it would rewrite history unconditionally every run).
 
-> The CI workflow itself needs **no change** — it already uses `supabase db push` and
-> already documents `migration repair` as the drift remedy. This repair is a one-time
-> manual step per environment; do not add auto-repair to CI (it would rewrite history
-> unconditionally on every run).
+## Production reality (verified 2026-07-08) — reconcile before deploying `esejbanka`
+
+The production `schema_migrations` list currently ends:
+`… 20260303000000_update_profile_role_enum… → 20260621202500_add_rektorat_domain_to_auth_triggers`.
+
+Two facts follow:
+
+1. **The books/essays/reading-hub feature is not on production yet.** The repo has 15
+   migrations after `20260303000000` (from `20260419000000_essays_title_trgm_idx` through
+   `20260708203841_optimize_rls_auth_initplan`); production has none of them. Deploying
+   `esejbanka` is that feature's first prod migration wave. The local `20260419` rename is
+   irrelevant to prod — that file applies fresh under its normalized name.
+
+2. **Production has a hotfix the repo does not:**
+   `20260621202500_add_rektorat_domain_to_auth_triggers.sql`. It was applied directly to
+   prod and never committed. On the next `supabase db push`, the CLI will see a remote
+   migration missing from local files and **fail** (the "Remote migration versions not
+   found in local migrations directory" error — same class as the local `20260419` issue,
+   different cause).
+
+**Fix before deploying:** commit the prod hotfix into the repo so the branch's history is
+a superset of prod's.
+
+```bash
+# Copy the hotfix SQL from the prod dashboard (Database → Migrations → 20260621202500)
+# into a file of the SAME name, then commit it:
+supabase/migrations/20260621202500_add_rektorat_domain_to_auth_triggers.sql
+```
+
+Then verify with `supabase migration list` (linked to prod) that local ⊇ remote before
+`db push`. Because the pending feature migrations (`20260419…`–`20260708…`) are timestamped
+*earlier* than the already-applied `20260621202500`, expect out-of-order-apply warnings;
+confirm the rektorat auth-trigger change doesn't depend on anything the feature migrations
+also touch (it shouldn't — different subsystems — but verify on preview first).
+
+> Verified only from the dashboard list pasted 2026-07-08; re-check `supabase migration list`
+> against the live prod project at deploy time before acting.
 
 > **Verification note:** the `20260419000000_essays_title_trgm_idx.sql` migration itself
 > is NOT re-run by this — it is already recorded as applied on prod (under the old version)
