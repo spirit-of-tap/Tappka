@@ -199,6 +199,7 @@ CREATE OR REPLACE FUNCTION public.get_best_books_per_category(top_n integer DEFA
  RETURNS TABLE(tag text, id uuid, title text, author text, cover_path text, description text, preview_link text, tags text[], book_points integer, essay_count integer)
  LANGUAGE sql
  STABLE SECURITY DEFINER
+ SET search_path = ''
 AS $function$
   WITH ranked AS (
     SELECT
@@ -224,6 +225,7 @@ CREATE OR REPLACE FUNCTION public.get_teams_with_member_stats()
  RETURNS TABLE(team_id uuid, team_name text, profile_id uuid, profile_name text, profile_picture text, essay_count bigint, book_points bigint)
  LANGUAGE sql
  STABLE SECURITY DEFINER
+ SET search_path = ''
 AS $function$
   WITH member_essays AS (
     SELECT author_profile_id, COUNT(id) AS essay_count
