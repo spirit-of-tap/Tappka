@@ -552,64 +552,47 @@ CREATE OR REPLACE FUNCTION public.set_verified_work_email_on_change()
  RETURNS trigger
  LANGUAGE plpgsql
  SECURITY DEFINER
- SET search_path TO 'public', 'auth'
+ SET search_path = ''
 AS $function$
 declare
   v_user_id uuid;
   v_email text;
   v_domain text;
 begin
-  -- Determine which email to use: prefer new.email, fall back to email_change if email didn't change
-  -- When email_change is verified, Supabase typically:
-  -- 1. Sets email_change to the new email (temporary)
-  -- 2. Verifies OTP
-  -- 3. Moves email_change to email and clears email_change
-  -- So we need to check both fields
-  
-  -- Check if email changed
+  -- Determine which email should be treated as verified after this update.
   if old.email is distinct from new.email then
     v_email := new.email;
-  -- Check if email_change was cleared (moved to email)
   elsif old.email_change is distinct from new.email_change and (new.email_change is null or new.email_change = '') then
-    -- email_change was cleared, use the current email
     v_email := new.email;
   else
-    -- No relevant change
     return new;
   end if;
-  
-  -- Only proceed if email is not null and not empty
+
   if v_email is null or v_email = '' then
     return new;
   end if;
-  
-  -- Extract domain from email
+
   v_domain := lower(split_part(v_email, '@', 2));
-  
-  -- Only update verified_work_email if domain is a CZU domain
-  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then
+
+  if v_domain not in ('pef.czu.cz', 'studenti.czu.cz', 'rektorat.czu.cz') then
     return new;
   end if;
-  
-  -- Find the public.users row that matches this auth.users.id
-  select id into v_user_id
+
+  select public.users.id
+  into v_user_id
   from public.users
-  where auth_user_id = new.id;
-  
-  -- If no matching public.users row found, return early
+  where public.users.auth_user_id = new.id;
+
   if v_user_id is null then
     return new;
   end if;
-  
-  -- Update verified_work_email and verified_work_email_at
-  -- This happens after OTP verification succeeds, so the email is verified
-  -- Only update if the email is different from what's already stored (or not set)
+
   update public.users
   set verified_work_email = v_email,
       verified_work_email_at = now()
-  where id = v_user_id
-    and (verified_work_email is null or verified_work_email != v_email);
-  
+  where public.users.id = v_user_id
+    and (public.users.verified_work_email is null or public.users.verified_work_email != v_email);
+
   return new;
 end;
 $function$
@@ -619,7 +602,7 @@ CREATE OR REPLACE FUNCTION public.validate_czu_email_domain_trigger()
  RETURNS trigger
  LANGUAGE plpgsql
  SECURITY DEFINER
- SET search_path TO 'public', 'auth'
+ SET search_path = ''
 AS $function$
 declare
   v_email text;
@@ -629,62 +612,64 @@ declare
   v_has_linked_profile boolean;
 begin
   if tg_op != 'UPDATE' then
-    return NEW;
+    return new;
   end if;
 
-  -- Check if user has a linked profile before allowing email changes
-  -- Find the public.users row that matches this auth.users.id
-  select id into v_user_id
+  -- Find the public.users row linked to this auth.users row.
+  select public.users.id
+  into v_user_id
   from public.users
-  where auth_user_id = new.id;
+  where public.users.auth_user_id = new.id;
 
-  -- If user exists, check if they have a linked profile
+  -- If the user has a linked profile, sync profile work_email on direct email changes.
   if v_user_id is not null then
     select exists (
       select 1
       from public.profiles
-      where user_id = v_user_id
-    ) into v_has_linked_profile;
+      where public.profiles.user_id = v_user_id
+    )
+    into v_has_linked_profile;
 
-    -- If user has a linked profile, prevent email changes
-    if v_has_linked_profile then
-      if OLD.email is distinct from NEW.email then
-        raise exception 'Cannot change email address once linked to a profile. Your email is used to maintain your profile connection.';
+    if v_has_linked_profile and old.email is distinct from new.email then
+      if new.email is not null then
+        if lower(split_part(new.email, '@', 2)) not in ('pef.czu.cz', 'studenti.czu.cz', 'rektorat.czu.cz') then
+          raise exception 'New email must belong to an approved domain';
+        end if;
       end if;
-      
-      if OLD.email_change is distinct from NEW.email_change then
-        raise exception 'Cannot change email address once linked to a profile. Your email is used to maintain your profile connection.';
-      end if;
+
+      update public.profiles
+      set work_email = new.email
+      where public.profiles.user_id = v_user_id;
     end if;
   end if;
 
-  -- Continue with existing domain validation for email_change
-  if OLD.email_change is distinct from NEW.email_change then
-    v_email_change := NEW.email_change;
-    
+  -- Validate pending email_change value.
+  if old.email_change is distinct from new.email_change then
+    v_email_change := new.email_change;
+
     if v_email_change is not null and v_email_change != '' then
       v_domain := lower(split_part(v_email_change, '@', 2));
-      
-      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then
-        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;
+
+      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz', 'rektorat.czu.cz') then
+        raise exception 'Email must end with @pef.czu.cz, @rektorat.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;
       end if;
     end if;
   end if;
 
-  -- Continue with existing domain validation for email
-  if OLD.email is distinct from NEW.email then
-    v_email := NEW.email;
-    
+  -- Validate current auth.users.email value.
+  if old.email is distinct from new.email then
+    v_email := new.email;
+
     if v_email is not null and v_email != '' then
       v_domain := lower(split_part(v_email, '@', 2));
-      
-      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz') then
-        raise exception 'Email must end with @pef.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;
+
+      if v_domain not in ('pef.czu.cz', 'studenti.czu.cz', 'rektorat.czu.cz') then
+        raise exception 'Email must end with @pef.czu.cz, @rektorat.czu.cz or @studenti.czu.cz. Provided domain: %', v_domain;
       end if;
     end if;
   end if;
 
-  return NEW;
+  return new;
 end;
 $function$
 ;

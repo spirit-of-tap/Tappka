@@ -3064,7 +3064,7 @@
       "checkConstraints": {
         "valid_czu_domain": {
           "name": "valid_czu_domain",
-          "value": "(work_email ~~ '%@studenti.czu.cz'::text) OR (work_email ~~ '%@pef.czu.cz'::text)"
+          "value": "(lower(split_part(work_email, '@'::text, 2)) = ANY (ARRAY['pef.czu.cz'::text, 'studenti.czu.cz'::text, 'rektorat.czu.cz'::text]))"
         }
       },
       "isRLSEnabled": true

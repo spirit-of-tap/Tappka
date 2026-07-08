@@ -75,5 +75,5 @@ export const profiles = pgTable("profiles", {
    FROM users
   WHERE ((users.auth_user_id = ( SELECT auth.uid() AS uid)) AND (users.verified_work_email IS NOT NULL)))))` }),
 	pgPolicy("Users can update their own profile picture", { as: "permissive", for: "update", to: ["authenticated"] }),
-	check("valid_czu_domain", sql`(work_email ~~ '%@studenti.czu.cz'::text) OR (work_email ~~ '%@pef.czu.cz'::text)`),
+	check("valid_czu_domain", sql`(lower(split_part(work_email, '@'::text, 2)) = ANY (ARRAY['pef.czu.cz'::text, 'studenti.czu.cz'::text, 'rektorat.czu.cz'::text]))`),
 ]);
