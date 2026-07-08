@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, BookOpen, Eye, Pencil } from 'lucide-react';
+import { BookOpen, Eye, Pencil } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById, getEssayComments, getEssayCoachViewers, getEssayCoachReads } from '@/lib/essays/queries';
@@ -14,6 +14,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/essays/back-button';
 import { formatPoints } from '@/lib/books/points';
 import { cn } from '@/lib/utils';
 
@@ -65,12 +66,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
 
       {/* Top bar */}
       <div className="flex items-center justify-between mb-8">
-        <Button variant="ghost" asChild className="gap-2 -ml-3">
-          <Link href="/hledat">
-            <ArrowLeft className="size-4" />
-            Zpět
-          </Link>
-        </Button>
+        <BackButton />
         {isAuthor && (
           <Button variant="outline" asChild size="sm">
             <Link href={`/eseje/${essayId}/upravit`}>
