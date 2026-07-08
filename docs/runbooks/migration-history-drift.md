@@ -1,6 +1,7 @@
 # Runbook: Migration-history drift (malformed version `20260419`)
 
-**Status:** Local fixed 2026-07-08. **Production fix still pending** — see "Fix on production" below.
+**Status:** Local fixed 2026-07-08. **Preview AND production fixes still pending** — the
+CI deploy (`db push`) will fail on each until repaired. See "Fix on each deployed environment" below.
 
 ## Symptom
 
@@ -52,13 +53,24 @@ docker exec supabase_db_Tappka psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
 supabase migration up   # should now apply pending migrations cleanly
 ```
 
-### Fix on production (PENDING — run when next deploying)
+### Fix on each deployed environment: PREVIEW and PRODUCTION (PENDING)
 
-Do this **before** the first `supabase db push` after this change. It only rewrites a
-version string in `schema_migrations`; it does not run DDL, touch data, or reset anything.
+**Both** the `preview` and `production` Supabase projects have their own
+`schema_migrations` table, and both almost certainly contain the malformed `20260419`
+version. The CI workflow `.github/workflows/deploy-supabase.yml` runs `supabase db push`
+on pushes to the `preview` and `production` branches and **fails hard on history drift
+by design** (it has no destructive fallback — see the comment in that file). So the next
+deploy to *either* branch will fail until this repair is run against *that* project.
+
+Run the repair **once per project**, **before** the next `supabase db push` to it. It
+only rewrites a version string in `schema_migrations`; it does not run DDL, touch data,
+or reset anything.
 
 ```bash
-# Target the linked production project (ensure `supabase link` points at prod).
+# For EACH environment — do this for preview, then production.
+# Point the CLI at the target project first:
+supabase link --project-ref <PREVIEW_or_PRODUCTION_PROJECT_ID>
+
 # Mark the malformed version as reverted (removes the 20260419 marker) ...
 supabase migration repair --status reverted 20260419
 
@@ -69,8 +81,13 @@ supabase migration repair --status applied 20260419000000
 supabase migration list         # local and remote columns should line up
 ```
 
-After the repair, `supabase db push` will apply any pending migrations (function
-`search_path` fix, RLS optimization, and anything future) normally.
+After the repair, `supabase db push` (and the CI workflow) will apply any pending
+migrations (function `search_path` fix, RLS optimization, and anything future) normally.
+
+> The CI workflow itself needs **no change** — it already uses `supabase db push` and
+> already documents `migration repair` as the drift remedy. This repair is a one-time
+> manual step per environment; do not add auto-repair to CI (it would rewrite history
+> unconditionally on every run).
 
 > **Verification note:** the `20260419000000_essays_title_trgm_idx.sql` migration itself
 > is NOT re-run by this — it is already recorded as applied on prod (under the old version)
