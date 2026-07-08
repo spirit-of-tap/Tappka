@@ -33,7 +33,7 @@ import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/li
 import { hasLinkedProfile } from "@/lib/auth-helpers";
 
 const STORAGE_KEY = "verify-email-form-state";
-const EMAIL_DOMAIN_OPTIONS = ["@studenti.czu.cz", "@pef.czu.cz"] as const;
+const EMAIL_DOMAIN_OPTIONS = ["@studenti.czu.cz", "@pef.czu.cz", "@rektorat.czu.cz"] as const;
 const DEFAULT_EMAIL_DOMAIN = EMAIL_DOMAIN_OPTIONS[0];
 const DEV_MAILPIT_URL = "http://127.0.0.1:54324";
 const OTP_INPUT_SLOTS = Array.from({ length: OTP_LENGTH }, (_, index) => index);

@@ -4,6 +4,7 @@
 export const ALLOWED_WORK_EMAIL_DOMAINS: readonly string[] = [
   'studenti.czu.cz',
   'pef.czu.cz',
+  'rektorat.czu.cz',
 ] as const;
 
 /**
@@ -39,7 +40,7 @@ export const isPublicRoute = (pathname: string): boolean => {
 /**
  * Validates that an email address ends with an allowed CZU domain
  * @param email - The email address to validate
- * @returns True if the email ends with @studenti.czu.cz or @pef.czu.cz, false otherwise
+ * @returns True if the email ends with an allowed CZU domain, false otherwise
  */
 export const isValidWorkEmailDomain = (email: string): boolean => {
   if (!email || !email.includes('@')) {
