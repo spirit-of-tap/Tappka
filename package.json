@@ -18,7 +18,8 @@
     "start": "next start",
     "db:generate": "drizzle-kit generate",
     "db:generate:custom": "drizzle-kit generate --custom",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "db:types": "supabase gen types typescript --local --schema public > lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.980.0",
