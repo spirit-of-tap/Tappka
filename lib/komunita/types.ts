@@ -2,37 +2,17 @@
  * Type definitions for the komunita (community) system
  */
 
+import type { Database } from '@/lib/supabase/database.types';
+import type { Tables } from '@/lib/supabase/tables';
+
 // Database enum types
-export type ProfileRole = 'student' | 'mentor' | 'coach' | 'admin';
+export type ProfileRole = Database['public']['Enums']['profile_role'];
 
 // Team from database
-export interface Team {
-  id: string;
-  name: string;
-  picture: string | null;
-  color: string | null;
-  year: number | null;
-  created_at: string;
-  updated_at: string;
-}
+export type Team = Tables<'teams'>;
 
 // Profile from database
-export interface Profile {
-  id: string;
-  name: string;
-  picture: string | null;
-  user_id: string | null;
-  work_email: string;
-  role: ProfileRole;
-  team_id: string | null;
-  phone_number: string | null;
-  personal_email: string | null;
-  date_of_birth: string | null;
-  removed_access: string | null;
-  removed_access_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type Profile = Tables<'profiles'>;
 
 // Profile with team information
 export interface ProfileWithTeam extends Profile {

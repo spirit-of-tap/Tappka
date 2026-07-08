@@ -2,22 +2,17 @@
  * Type definitions for the reservation system
  */
 
+import type { Database } from '@/lib/supabase/database.types';
+import type { Tables } from '@/lib/supabase/tables';
+
 // Database enum types
-export type ReservationType = 'personal' | 'training_session' | 'houston_calling';
-export type IssueType = 'locked' | 'mess' | 'technical' | 'other';
-export type IssueStatus = 'open' | 'resolved';
-export type ScheduleBreakType = 'days_of_joy' | 'holiday' | 'other';
+export type ReservationType = Database['public']['Enums']['reservation_type'];
+export type IssueType = Database['public']['Enums']['issue_type'];
+export type IssueStatus = Database['public']['Enums']['issue_status'];
+export type ScheduleBreakType = Database['public']['Enums']['schedule_break_type'];
 
 // Room from database
-export interface Room {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  available_days: number[] | null;
-  can_have_ts: boolean;
-  created_at: string;
-}
+export type Room = Tables<'rooms'>;
 
 // Room with current status for display
 export interface RoomWithStatus extends Room {
@@ -35,21 +30,7 @@ export interface RoomWithStatus extends Room {
 }
 
 // Reservation from database
-export interface Reservation {
-  id: string;
-  room_id: string;
-  user_id: string | null;
-  team_id: string | null;
-  recurring_schedule_id: string | null;
-  reservation_type: ReservationType;
-  title: string;
-  person_count: number | null;
-  start_time: string;
-  end_time: string;
-  is_cowork_open: boolean;
-  created_at: string;
-  updated_at: string;
-}
+export type Reservation = Tables<'reservations'>;
 
 // Reservation with joined data for display
 export interface ReservationWithDetails extends Reservation {
@@ -66,55 +47,22 @@ export interface ReservationWithDetails extends Reservation {
   cowork_participants?: CoworkParticipant[];
 }
 
-// Cowork participant
-export interface CoworkParticipant {
-  id: string;
-  reservation_id: string;
-  user_id: string;
-  joined_at: string;
+// Cowork participant (row + optional joined user)
+export type CoworkParticipant = Tables<'cowork_participants'> & {
   user?: {
     id: string;
     name: string;
   };
-}
+};
 
 // Room issue from database
-export interface RoomIssue {
-  id: string;
-  room_id: string;
-  reported_by: string | null;
-  issue_type: IssueType;
-  description: string | null;
-  status: IssueStatus;
-  created_at: string;
-  resolved_at: string | null;
-  resolved_by: string | null;
-}
+export type RoomIssue = Tables<'room_issues'>;
 
 // Recurring schedule from database
-export interface RecurringSchedule {
-  id: string;
-  room_id: string;
-  team_id: string;
-  created_by: string | null;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  valid_from: string;
-  valid_until: string;
-  created_at: string;
-}
+export type RecurringSchedule = Tables<'recurring_schedules'>;
 
 // Schedule break from database
-export interface ScheduleBreak {
-  id: string;
-  break_type: ScheduleBreakType;
-  name: string;
-  start_date: string;
-  end_date: string;
-  created_by: string | null;
-  created_at: string;
-}
+export type ScheduleBreak = Tables<'schedule_breaks'>;
 
 // Form data for creating a reservation
 export interface CreateReservationInput {

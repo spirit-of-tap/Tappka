@@ -1,33 +1,11 @@
 import type { Profile } from '@/lib/auth-helpers';
+import type { Database } from '@/lib/supabase/database.types';
+import type { Tables } from '@/lib/supabase/tables';
 
-export type BookStatus = 'pending' | 'approved' | 'rejected';
-export type BookSource = 'manual' | 'google_books' | 'open_library';
+export type BookStatus = Database['public']['Enums']['book_status'];
+export type BookSource = Database['public']['Enums']['book_source'];
 
-export interface Book {
-  id: string;
-  title: string;
-  author: string;
-  isbn_13: string | null;
-  description: string | null;
-  cover_path: string | null;
-  tags: string[];
-  suggested_points: number;
-  book_points: number;
-  ai_book_points: number | null;
-  legacy_book_points: number | null;
-  ai_reason: string | null;
-  status: BookStatus;
-  added_by_profile_id: string;
-  approved_by_profile_id: string | null;
-  approved_at: string | null;
-  rejection_reason: string | null;
-  source: BookSource;
-  external_id: string | null;
-  page_count: number | null;
-  preview_link: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type Book = Tables<'books'>;
 
 export interface BookWithProfiles extends Book {
   added_by: Pick<Profile, 'id' | 'name' | 'picture'> | null;
@@ -35,14 +13,7 @@ export interface BookWithProfiles extends Book {
   essay_count: number;
 }
 
-export interface BookComment {
-  id: string;
-  book_id: string;
-  author_profile_id: string;
-  body: string;
-  created_at: string;
-  updated_at: string;
-}
+export type BookComment = Tables<'book_comments'>;
 
 export interface BookCommentWithAuthor extends BookComment {
   author: Pick<Profile, 'id' | 'name' | 'picture' | 'role'> | null;

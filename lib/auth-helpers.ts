@@ -4,6 +4,8 @@ import type { createServerClient } from "@supabase/ssr";
 import type { createBrowserClient } from "@supabase/ssr";
 import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { validateRedirectUrl } from "@/lib/utils";
+import type { Database } from "@/lib/supabase/database.types";
+import type { Tables } from "@/lib/supabase/tables";
 
 type SupabaseClient =
   | Awaited<ReturnType<typeof createClient>>
@@ -13,41 +15,19 @@ type SupabaseClient =
 /**
  * Profile role enum matching database profile_role type
  */
-export type ProfileRole = 'student' | 'mentor' | 'coach' | 'admin';
+export type ProfileRole = Database['public']['Enums']['profile_role'];
 
 /**
- * Profile type matching the profiles table schema
+ * Profile type matching the profiles table schema, plus the joined team.
  */
-export interface Profile {
-  id: string;
-  name: string;
-  picture: string | null;
-  user_id: string | null;
-  work_email: string;
-  role: ProfileRole;
-  team_id: string | null;
+export type Profile = Tables<'profiles'> & {
   team: Team | null;
-  phone_number: string | null;
-  personal_email: string | null;
-  date_of_birth: string | null;
-  removed_access: string | null;
-  removed_access_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+};
 
 /**
  * Team type matching the teams table schema
  */
-export interface Team {
-  id: string;
-  name: string;
-  picture: string | null;
-  color: string | null;
-  year: number | null;
-  created_at: string;
-  updated_at: string;
-}
+export type Team = Tables<'teams'>;
 
 /**
  * Checks if the authenticated user has an email identity linked
