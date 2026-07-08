@@ -72,43 +72,52 @@ The CI workflow `.github/workflows/deploy-supabase.yml` needs **no change** — 
 uses `supabase db push` and documents `migration repair` as the drift remedy. Never add
 auto-repair to CI (it would rewrite history unconditionally every run).
 
-## Production reality (verified 2026-07-08) — reconcile before deploying `esejbanka`
+## Deploying `esejbanka` to production — the out-of-order `--include-all` requirement
 
-The production `schema_migrations` list currently ends:
+Background (verified 2026-07-08): production's history ends
 `… 20260303000000_update_profile_role_enum… → 20260621202500_add_rektorat_domain_to_auth_triggers`.
+The books/essays/reading-hub feature (15 migrations from `20260419000000` through
+`20260708203841`) has **never been deployed to prod** — deploying `esejbanka` is that
+feature's first prod wave.
 
-Two facts follow:
+**Resolved:** `origin/production` was merged into `esejbanka` (2026-07-08), which brought
+`20260621202500_add_rektorat_domain_to_auth_triggers.sql` into the branch. The branch
+history is now a superset of prod's — so there is NO remote-only migration to trip
+`db push`. (Earlier drafts of this runbook said to copy the hotfix from the dashboard;
+the merge did it instead.)
 
-1. **The books/essays/reading-hub feature is not on production yet.** The repo has 15
-   migrations after `20260303000000` (from `20260419000000_essays_title_trgm_idx` through
-   `20260708203841_optimize_rls_auth_initplan`); production has none of them. Deploying
-   `esejbanka` is that feature's first prod migration wave. The local `20260419` rename is
-   irrelevant to prod — that file applies fresh under its normalized name.
+**The real remaining gotcha — out-of-order timestamps:** most feature migrations
+(`20260419…`–`20260612…`) are timestamped *earlier* than production's already-applied
+`20260621202500`. So `supabase db push` will report:
 
-2. **Production has a hotfix the repo does not:**
-   `20260621202500_add_rektorat_domain_to_auth_triggers.sql`. It was applied directly to
-   prod and never committed. On the next `supabase db push`, the CLI will see a remote
-   migration missing from local files and **fail** (the "Remote migration versions not
-   found in local migrations directory" error — same class as the local `20260419` issue,
-   different cause).
-
-**Fix before deploying:** commit the prod hotfix into the repo so the branch's history is
-a superset of prod's.
-
-```bash
-# Copy the hotfix SQL from the prod dashboard (Database → Migrations → 20260621202500)
-# into a file of the SAME name, then commit it:
-supabase/migrations/20260621202500_add_rektorat_domain_to_auth_triggers.sql
+```
+Found local migration files to be inserted before the last migration on remote database.
+Rerun the command with --include-all flag to apply these migrations
 ```
 
-Then verify with `supabase migration list` (linked to prod) that local ⊇ remote before
-`db push`. Because the pending feature migrations (`20260419…`–`20260708…`) are timestamped
-*earlier* than the already-applied `20260621202500`, expect out-of-order-apply warnings;
-confirm the rektorat auth-trigger change doesn't depend on anything the feature migrations
-also touch (it shouldn't — different subsystems — but verify on preview first).
+This is a **one-time** requirement for this deploy (once the backlog is applied, future
+migrations are newer and this won't recur). Two ways to handle it:
 
-> Verified only from the dashboard list pasted 2026-07-08; re-check `supabase migration list`
-> against the live prod project at deploy time before acting.
+- **Recommended — one-time manual push, outside CI:**
+  ```bash
+  supabase link --project-ref <PRODUCTION_PROJECT_ID>
+  supabase migration list          # confirm local ⊇ remote
+  supabase db push --include-all    # applies the earlier-timestamped backlog
+  ```
+  Do the same against the preview project first if you want a dry run.
+
+- **Or temporarily** add `--include-all` to the `db push` step in
+  `.github/workflows/deploy-supabase.yml`, deploy, then revert it. (The default workflow
+  runs plain `supabase db push`, which will **fail** on this deploy without the flag.)
+
+Verify on preview before production. The rektorat auth-trigger change and the feature
+migrations touch different subsystems, so out-of-order apply is safe — but confirm on
+preview first. Re-check `supabase migration list` against the live project at deploy time.
+
+> Correction history: this section previously (a) claimed prod needed a `20260419` repair
+> (false — that was local-only) and (b) claimed the rektorat file must be copied from the
+> dashboard (superseded — the `origin/production` merge brought it). The accurate remaining
+> action is the one-time `--include-all` push above.
 
 > **Verification note:** the `20260419000000_essays_title_trgm_idx.sql` migration itself
 > is NOT re-run by this — it is already recorded as applied on prod (under the old version)
