@@ -10,11 +10,17 @@ pnpm build      # Production build
 pnpm lint       # ESLint
 pnpm supabase:start
 pnpm supabase:stop
+
+# Data layer (see docs/data-layer.md)
+pnpm db:generate         # Drizzle: schema edits -> SQL migration
+pnpm db:generate:custom  # Empty custom migration (functions/triggers/RLS)
+pnpm db:types            # Regenerate lib/supabase/database.types.ts from local DB
+pnpm supabase migration up   # Apply pending migrations locally
 ```
 
 ## Code Style
 
-- **TypeScript strict mode** - no `any`, use `interface` over `type`, prefer `??` over `||`
+- **TypeScript strict mode** - no `any`, use `interface` over `type` (except derived DB types, which must be `type` — see `docs/data-layer.md`), prefer `??` over `||`
 - **Naming**: PascalCase components/types, camelCase vars/functions, UPPER_SNAKE_CASE constants, kebab-case files
 - **Imports**: external → `@/` internal → styles. One blank line between groups.
 - **React**: default to Server Components; use `"use client"` only for interactivity, browser APIs, or third-party init
@@ -22,12 +28,15 @@ pnpm supabase:stop
 
 ## Database Migrations
 
-See **Database schema changes** below for when and how migrations are created.
-The rules below apply to all migrations regardless of origin.
+Full guide: **`docs/data-layer.md`**. See **Database schema changes** below for when
+and how migrations are created. The rules below apply to all migrations regardless of origin.
 
-**CRITICAL**: Always apply migrations via MCP tool (`supabase_apply_migration`) — and
-never apply a migration without the file already existing in `supabase/migrations/`.
-The local migration history must never drift from what is on disk.
+**CRITICAL**: Apply migrations with the **Supabase CLI only** — `supabase migration up`
+locally, `supabase db push` to production. **Never** use the MCP `apply_migration` tool:
+it records history out-of-band from the CLI and is the root cause of migration-history
+drift (see `docs/runbooks/migration-history-drift.md`). A migration must always exist as
+a file in `supabase/migrations/` before it is applied; the history table must never
+drift from what is on disk.
 
 ### Migration rules
 - Always enable RLS on new tables
@@ -39,19 +48,26 @@ The local migration history must never drift from what is on disk.
 ## Database schema changes
 
 The schema source of truth is `db/schema/*.ts` (Drizzle). Do NOT hand-write
-migrations for tables/columns/enums/indexes/RLS policies.
+migrations for tables/columns/enums/indexes.
 
-- **Tables, columns, enums, indexes, RLS policies, views:** edit `db/schema/*.ts`,
-  then `pnpm db:generate`. Review the generated SQL in `supabase/migrations/`
-  (watch for unintended DROPs), then `pnpm supabase migration up`.
-- **Functions & triggers:** Drizzle can't model these. Edit the current-state
-  file in `db/sql/`, run `pnpm db:generate:custom` to create an empty migration,
-  and paste the `CREATE OR REPLACE` statement in.
-- Never edit existing files in `supabase/migrations/` and never run schema
-  commands against production. Deployment applies migrations the same way as
-  before this change.
-- App data access stays on `supabase-js`; never add a runtime Drizzle client
-  (it would bypass RLS).
+- **Tables, columns, enums, indexes, views:** edit `db/schema/*.ts`, then
+  `pnpm db:generate`. Review the generated SQL in `supabase/migrations/` (watch for
+  unintended DROPs), then `pnpm db:types` to regenerate types, then
+  `pnpm supabase migration up`. Commit the schema edit, migration, and types together.
+- **Functions & triggers:** Drizzle can't model these. Edit the current-state file in
+  `db/sql/`, run `pnpm db:generate:custom` to create an empty migration, paste the
+  `CREATE OR REPLACE` statement in, then run `pnpm db:generate` once (reports "No schema
+  changes") so the Drizzle journal records it; commit the `meta/` changes.
+- **RLS policies:** author a custom SQL migration from the live `pg_policies` definition
+  (DROP + CREATE). Do NOT backfill policy bodies into `db/schema/*.ts` — the schema files
+  don't carry expressions and doing so creates false drift.
+- **Types:** never hand-write DB row/enum types. Derive them via `Tables<'x'>` /
+  `Database['public']['Enums']['x']` (this is why derived DB types use `type`, not
+  `interface`). Query with `supabase-js`; helper signatures take `SupabaseClient<Database>`.
+- Never edit existing files in `supabase/migrations/` and never run schema commands
+  against production casually.
+- App data access stays on `supabase-js`; never add a runtime Drizzle client (it would
+  bypass RLS). Rationale in `docs/data-layer.md`.
 
 ## Realtime
 
