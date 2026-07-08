@@ -15,6 +15,20 @@
       "when": 1781292607096,
       "tag": "20260612193007_restore_search_rpc_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783542432640,
+      "tag": "20260708202712_fix_function_search_path",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783543121159,
+      "tag": "20260708203841_optimize_rls_auth_initplan",
+      "breakpoints": true
     }
   ]
 }
