@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
 
 export interface TeamReadingListBook {
   book_id: string;
@@ -25,7 +26,7 @@ export interface TeamReadingList {
 }
 
 export async function getTeamReadingLists(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
 ): Promise<TeamReadingList[]> {
   const { data, error } = await supabase
     .from('team_reading_lists')

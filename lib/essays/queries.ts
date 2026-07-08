@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
 import type {
   Essay,
   EssayWithDetails,
@@ -30,7 +31,7 @@ function mapEssayCommentCount(
 
 /** Active student profile ids in a team, excluding the given profile. */
 async function getTeamStudentIds(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   teamId: string,
   excludeProfileId: string,
 ): Promise<string[]> {
@@ -47,7 +48,7 @@ async function getTeamStudentIds(
 }
 
 export async function getEssays(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   filters?: EssayFilters,
 ): Promise<EssayWithDetails[]> {
   const page = filters?.page ?? 1;
@@ -120,7 +121,7 @@ export async function getEssays(
 }
 
 export async function getEssaysByTeam(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   teamId: string,
   filters?: Pick<EssayFilters, 'page' | 'pageSize' | 'search'>,
 ): Promise<EssayWithDetails[]> {
@@ -167,7 +168,7 @@ export async function getEssaysByTeam(
 }
 
 export async function getEssayById(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   essayId: string,
 ): Promise<EssayWithDetails | null> {
   const { data, error } = await supabase
@@ -188,7 +189,7 @@ export async function getEssayById(
 }
 
 export async function getEssayComments(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   essayId: string,
 ): Promise<EssayCommentWithAuthor[]> {
   const { data, error } = await supabase
@@ -205,7 +206,7 @@ export async function getEssayComments(
 }
 
 export async function getEssayCoachViewers(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   essayId: string,
 ): Promise<EssayViewWithProfile[]> {
   const { data, error } = await supabase
@@ -224,7 +225,7 @@ export async function getEssayCoachViewers(
 }
 
 export async function getUnreadTeamEssaysForCoach(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   coachProfileId: string,
   teamId: string,
 ): Promise<CoachReviewEssay[]> {
@@ -257,7 +258,7 @@ export async function getUnreadTeamEssaysForCoach(
 }
 
 export async function getReadTeamEssaysForCoach(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   coachProfileId: string,
   teamId: string,
 ): Promise<CoachReviewEssay[]> {
@@ -291,7 +292,7 @@ export async function getReadTeamEssaysForCoach(
 }
 
 export async function getCoachUnreadCount(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   coachProfileId: string,
   teamId: string,
 ): Promise<number> {
@@ -321,7 +322,7 @@ export async function getCoachUnreadCount(
 }
 
 export async function getEssayCoachReads(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   essayId: string,
 ): Promise<EssayCoachReadWithProfile[]> {
   const { data, error } = await supabase
@@ -338,7 +339,7 @@ export async function getEssayCoachReads(
 }
 
 export async function getUserBookPointsStats(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   profileId: string,
 ): Promise<{ approved_points: number; pending_points: number; essay_count: number }> {
   const { data: essays, error } = await supabase
@@ -376,7 +377,7 @@ export async function getUserBookPointsStats(
 }
 
 export async function getTeamBookPointsStats(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   teamId: string,
 ): Promise<{ profile: { id: string; name: string; picture: string | null }; approved_points: number; pending_points: number }[]> {
   const { data: teamProfiles, error: teamError } = await supabase

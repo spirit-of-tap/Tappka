@@ -3,6 +3,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
 import type {
   Profile,
   ProfileWithTeam,
@@ -16,7 +17,7 @@ import type {
  * Get all profiles with optional filtering
  */
 export async function getProfiles(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   filters?: ProfileFilters,
 ): Promise<ProfileWithTeam[]> {
   let query = supabase
@@ -76,7 +77,7 @@ export async function getProfiles(
  * Get a single profile by ID with team information
  */
 export async function getProfileById(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   profileId: string,
 ): Promise<ProfileWithTeam | null> {
   const { data, error } = await supabase
@@ -101,7 +102,7 @@ export async function getProfileById(
  * Get all teams with member counts
  */
 export async function getTeamsWithCount(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
 ): Promise<TeamWithCount[]> {
   const { data, error } = await supabase
     .from('teams')
@@ -127,7 +128,7 @@ export async function getTeamsWithCount(
 /**
  * Get all teams (simple list)
  */
-export async function getTeams(supabase: SupabaseClient): Promise<Team[]> {
+export async function getTeams(supabase: SupabaseClient<Database>): Promise<Team[]> {
   const { data, error } = await supabase
     .from('teams')
     .select('*')
@@ -145,7 +146,7 @@ export async function getTeams(supabase: SupabaseClient): Promise<Team[]> {
  * Get a single team by ID with all members
  */
 export async function getTeamById(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   teamId: string,
 ): Promise<TeamWithMembers | null> {
   const { data, error } = await supabase
@@ -184,7 +185,7 @@ export async function getTeamById(
  * For public buckets or full URLs, returns as-is
  */
 export function getStorageUrl(
-  _supabase: SupabaseClient,
+  _supabase: SupabaseClient<Database>,
   _bucket: string,
   path: string | null,
 ): string | null {
@@ -204,7 +205,7 @@ export function getStorageUrl(
  * Returns the storage key for B2, or the full URL if it's a legacy/external URL
  */
 export function getProfilePictureUrl(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   profile: Profile,
 ): string | null {
   if (profile.picture) {
@@ -218,7 +219,7 @@ export function getProfilePictureUrl(
  * Returns the storage key for B2, or the full URL if it's a legacy/external URL
  */
 export function getTeamPictureUrl(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   team: Team,
 ): string | null {
   if (team.picture) {

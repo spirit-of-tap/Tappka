@@ -4,9 +4,10 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import type { EssayListView, EssaySortOrder } from '@/lib/essays/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
 
 async function annotateWithVoted<T extends { id: string }>(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   essays: T[],
   profileId: string | undefined,
 ): Promise<(T & { user_has_voted: boolean })[]> {

@@ -37,7 +37,7 @@ import { DAY_NAMES_CS, type Room, type RecurringSchedule } from "@/lib/reservati
 interface TrainingSessionsManagerProps {
   rooms: Room[];
   schedules: (RecurringSchedule & { room: Room; team: { id: string; name: string } })[];
-  teams: { id: string; name: string; year: number }[];
+  teams: { id: string; name: string; year: number | null }[];
 }
 
 type ScheduleWithRelations = RecurringSchedule & { room: Room; team: { id: string; name: string } };

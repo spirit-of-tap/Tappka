@@ -128,7 +128,7 @@ export async function getCurrentUserProfile(
   // If team was fetched, extract it; otherwise set to null
   let team: Team | null = null;
   if (includeTeam) {
-    const teamData = (profile as any).team;
+    const teamData = (profile as { team?: unknown }).team;
     // Handle both array and object responses (though it should be an object for many-to-one)
     if (Array.isArray(teamData)) {
       team = teamData.length > 0 ? (teamData[0] as Team) : null;
@@ -138,7 +138,7 @@ export async function getCurrentUserProfile(
   }
 
   // Strip the embedded users record and team before returning
-  const { team: _, users: __, ...profileFields } = profile as any;
+  const { team: _, users: __, ...profileFields } = profile as Record<string, unknown>;
 
   return {
     ...profileFields,

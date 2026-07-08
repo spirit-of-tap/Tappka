@@ -101,15 +101,9 @@ export async function POST(request: NextRequest) {
         }
       }
     } else if (context === "team") {
-      // Check if user is team admin
-      const { data: teamMember } = await supabase
-        .from("team_members")
-        .select("role")
-        .eq("team_id", entityId)
-        .eq("profile_id", profile.id)
-        .single();
-
-      if (!teamMember || teamMember.role !== "admin") {
+      // Team pictures can only be managed by an admin of that team.
+      // Membership lives on profiles.team_id (there is no team_members table).
+      if (profile.team_id !== entityId || profile.role !== "admin") {
         return NextResponse.json(
           { error: "Nemáš oprávnění upravit tento tým" },
           { status: 403 }

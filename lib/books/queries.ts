@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
 import type {
   Book,
   BookWithProfiles,
@@ -9,7 +10,7 @@ import type {
 const PAGE_SIZE_DEFAULT = 20;
 
 export async function getBooks(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   filters?: BookFilters,
 ): Promise<BookWithProfiles[]> {
   const page = filters?.page ?? 1;
@@ -17,8 +18,13 @@ export async function getBooks(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  // Use the view when sorting by popularity so ORDER BY happens in Postgres
-  const table = filters?.sortBy === 'popular' ? 'books_with_essay_count' : 'books';
+  // Use the view when sorting by popularity so ORDER BY happens in Postgres.
+  // The view is a superset of `books` (adds essay_count); supabase-js can't
+  // type a table|view union for .from(), so pin to the `books` literal — the
+  // result is reshaped to BookWithProfiles below regardless.
+  const table = (filters?.sortBy === 'popular'
+    ? 'books_with_essay_count'
+    : 'books') as 'books';
 
   let query = supabase
     .from(table)
@@ -62,7 +68,7 @@ export async function getBooks(
 }
 
 export async function getBookById(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   bookId: string,
 ): Promise<BookWithProfiles | null> {
   const { data, error } = await supabase
@@ -80,7 +86,7 @@ export async function getBookById(
 }
 
 export async function getBookComments(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   bookId: string,
 ): Promise<BookCommentWithAuthor[]> {
   const { data, error } = await supabase
@@ -97,7 +103,7 @@ export async function getBookComments(
 }
 
 export async function getPendingBooks(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
 ): Promise<BookWithProfiles[]> {
   const { data, error } = await supabase
     .from('books')
@@ -114,7 +120,7 @@ export async function getPendingBooks(
 }
 
 export async function getRejectedBooks(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
 ): Promise<BookWithProfiles[]> {
   const { data, error } = await supabase
     .from('books')
@@ -131,7 +137,7 @@ export async function getRejectedBooks(
 }
 
 export async function searchBooksLocally(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   query: string,
   limit = 10,
 ): Promise<Book[]> {
@@ -146,7 +152,7 @@ export async function searchBooksLocally(
 }
 
 export async function getBooksByProfilePoints(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   profileId: string,
 ): Promise<{ book_id: string; book_points: number }[]> {
   const { data, error } = await supabase

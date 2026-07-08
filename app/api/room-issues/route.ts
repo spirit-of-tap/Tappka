@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import type { IssueType } from "@/lib/reservations/types";
+import type { IssueType, IssueStatus } from "@/lib/reservations/types";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface CreateIssueInput {
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (status) {
-      query = query.eq("status", status);
+      query = query.eq("status", status as IssueStatus);
     }
 
     const { data, error } = await query;

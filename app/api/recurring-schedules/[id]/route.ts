@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { addDays, format, parseISO, getDay } from "date-fns";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { pragueLocalToUtcISO } from "@/lib/reservations/utils";
+import type { Insertable } from "@/lib/supabase/tables";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -89,7 +90,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     today.setHours(0, 0, 0, 0);
 
     let currentDate = startDate < today ? today : startDate;
-    const reservationsToCreate = [];
+    const reservationsToCreate: Insertable<'reservations'>[] = [];
 
     while (currentDate <= endDate) {
       if (getDay(currentDate) === finalSchedule.day_of_week) {

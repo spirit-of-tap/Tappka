@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import { addMonths, getDay, setHours, setMinutes, startOfMonth, addDays } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 
 /**
  * Helper function to find first Wednesday of a month
@@ -21,7 +22,7 @@ function getFirstWednesday(date: Date): Date {
  * Uses admin client to bypass RLS for system operations
  */
 async function createHCForMonth(
-  adminClient: SupabaseClient,
+  adminClient: SupabaseClient<Database>,
   roomId: string,
   targetDate: Date,
   scheduleBreaks: Array<{ start_date: string; end_date: string }>

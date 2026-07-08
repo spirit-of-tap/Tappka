@@ -27,7 +27,7 @@ export function validateImageUpload(
   contentType: string,
   fileSize: number
 ): ValidationError | null {
-  if (!ALLOWED_IMAGE_TYPES.includes(contentType as any)) {
+  if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(contentType)) {
     return {
       field: "contentType",
       message: "Povolené formáty: JPEG, PNG, WebP",
