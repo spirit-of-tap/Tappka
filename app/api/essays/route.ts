@@ -77,6 +77,12 @@ export async function POST(request: NextRequest) {
     if (!content_json) {
       return NextResponse.json({ error: 'Obsah eseje je povinný' }, { status: 400 });
     }
+    if (title.trim().length > 500) {
+      return NextResponse.json({ error: 'Název eseje je příliš dlouhý' }, { status: 400 });
+    }
+    if ((content_text?.length ?? 0) > 100_000) {
+      return NextResponse.json({ error: 'Esej je příliš dlouhá' }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from('essays')

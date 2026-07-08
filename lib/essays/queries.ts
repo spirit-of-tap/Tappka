@@ -114,13 +114,9 @@ export async function getEssays(
   const { data, error } = await query;
   if (error) throw error;
 
-  // Normalize essay_comments(count) → comment_count
-  return (data as (EssayWithDetails & { essay_comments?: { count: number }[] })[]).map(
-    ({ essay_comments, ...rest }) => ({
-      ...rest,
-      comment_count: Number(essay_comments?.[0]?.count ?? 0),
-    }),
-  ) as EssayWithDetails[];
+  return mapEssayCommentCount(
+    data as (EssayWithDetails & { essay_comments?: { count: number }[] })[],
+  );
 }
 
 export async function getEssaysByTeam(
@@ -165,12 +161,9 @@ export async function getEssaysByTeam(
 
   const { data, error } = await teamQuery;
   if (error) throw error;
-  return (data as (EssayWithDetails & { essay_comments?: { count: number }[] })[]).map(
-    ({ essay_comments, ...rest }) => ({
-      ...rest,
-      comment_count: Number(essay_comments?.[0]?.count ?? 0),
-    }),
-  ) as EssayWithDetails[];
+  return mapEssayCommentCount(
+    data as (EssayWithDetails & { essay_comments?: { count: number }[] })[],
+  );
 }
 
 export async function getEssayById(
@@ -190,8 +183,8 @@ export async function getEssayById(
 
   if (error) throw error;
   if (!data) return null;
-  const { essay_comments, ...rest } = data as typeof data & { essay_comments?: { count: number }[] };
-  return { ...rest, comment_count: Number(essay_comments?.[0]?.count ?? 0) } as EssayWithDetails;
+  const rows = mapEssayCommentCount([data as EssayWithDetails & { essay_comments?: { count: number }[] }]);
+  return rows[0] ?? null;
 }
 
 export async function getEssayComments(

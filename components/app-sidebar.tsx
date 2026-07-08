@@ -16,6 +16,7 @@ import {
   Search,
   Settings,
   Inbox,
+  BookOpen,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -84,36 +85,11 @@ const getNavData = (isDevelopment: boolean, isCoachOrAdmin: boolean, reviewCount
           url: "/komunita",
           icon: Users,
         },
-      ],
-    },
-    {
-      title: "Čtení",
-      items: [
         {
-          title: "Přehled",
+          title: "Čtení",
           url: "/prehled",
-          icon: FileText,
+          icon: BookOpen,
         },
-        {
-          title: "Hledat",
-          url: "/hledat",
-          icon: Search,
-        },
-        ...(isCoachOrAdmin
-          ? [
-            {
-              title: "Ke kontrole",
-              url: "/eseje/ke-kontrole",
-              icon: Inbox,
-              badge: reviewCount,
-            },
-            {
-              title: "Nastavení",
-              url: "/settings/kniha-knih",
-              icon: Settings,
-            },
-          ]
-          : []),
       ],
     },
     {
@@ -165,6 +141,17 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const { setOpenMobile } = useSidebar()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isReservationsActive = pathname.startsWith("/reservations")
+  const isCteniActive = pathname === "/prehled" || pathname === "/hledat" || pathname.startsWith("/eseje") || pathname.startsWith("/knihovna") || pathname.startsWith("/settings/kniha-knih")
+  const cteniSubItems = [
+    { title: "Přehled", url: "/prehled" },
+    { title: "Hledat", url: "/hledat" },
+    ...(isCoachOrAdmin
+      ? [
+        { title: "Ke kontrole", url: "/eseje/ke-kontrole", badge: reviewCount },
+        { title: "Nastavení", url: "/settings/kniha-knih" },
+      ]
+      : []),
+  ]
   const isDevelopment = process.env.NODE_ENV === "development"
 
   const closeSidebarOnMobile = () => {
@@ -233,6 +220,55 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                                   </Link>
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </SidebarMenuItem>
+                      </Collapsible>
+                    )
+                  }
+
+                  // Special handling for Čtení with sub-menu
+                  if (item.title === "Čtení") {
+                    return (
+                      <Collapsible
+                        key={item.title}
+                        asChild
+                        defaultOpen={isCteniActive}
+                        className="group/collapsible"
+                      >
+                        <SidebarMenuItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                              isActive={isCteniActive}
+                              tooltip={item.title}
+                            >
+                              <item.icon className="size-4" />
+                              <span>{item.title}</span>
+                              <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {cteniSubItems.map((sub) => (
+                                <SidebarMenuSubItem key={sub.title}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={pathname === sub.url || (sub.url !== "/" && pathname.startsWith(sub.url + "/"))}
+                                  >
+                                    <Link href={sub.url} onClick={closeSidebarOnMobile}>
+                                      {sub.title}
+                                      {"badge" in sub && sub.badge !== undefined && sub.badge > 0 && (
+                                        <Badge
+                                          variant="destructive"
+                                          className="ml-auto h-5 min-w-5 p-0 flex items-center justify-center text-xs"
+                                        >
+                                          {sub.badge}
+                                        </Badge>
+                                      )}
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
                             </SidebarMenuSub>
                           </CollapsibleContent>
                         </SidebarMenuItem>

@@ -25,6 +25,8 @@ import { formatPointsWithLabel } from '@/lib/books/points';
 import type { BookStatus } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 
+const ALL_ESSAYS_PAGE_SIZE = 500;
+
 const STATUS_PILL: Record<BookStatus, string> = {
   approved:
     'border-emerald-600/20 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-950/40 dark:text-emerald-400',
@@ -47,20 +49,19 @@ interface PageProps {
 
 function Avatar({ picture, name, size = 28 }: { picture?: string | null; name?: string | null; size?: number }) {
   const initial = name?.[0]?.toUpperCase() ?? '?';
+  const dimClass = size <= 28 ? 'size-7' : size <= 32 ? 'size-8' : 'size-10';
   if (picture) {
     return (
       <img
         src={picture}
         alt={name ?? ''}
-        className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size }}
+        className={`rounded-full object-cover shrink-0 ${dimClass}`}
       />
     );
   }
   return (
     <div
-      className="rounded-full bg-muted flex items-center justify-center font-semibold text-muted-foreground shrink-0"
-      style={{ width: size, height: size, fontSize: size * 0.4 }}
+      className={`rounded-full bg-muted flex items-center justify-center font-semibold text-muted-foreground shrink-0 ${dimClass} text-xs`}
     >
       {initial}
     </div>
@@ -84,7 +85,7 @@ export default async function BookDetailPage({ params }: PageProps) {
   const [book, comments, essays, profile] = await Promise.all([
     getBookById(supabase, bookId),
     getBookComments(supabase, bookId),
-    getEssays(supabase, { bookId, pageSize: 500, sort: 'best' }),
+    getEssays(supabase, { bookId, pageSize: ALL_ESSAYS_PAGE_SIZE, sort: 'best' }),
     user ? getCurrentUserProfile(supabase, { user }) : null,
   ]);
 

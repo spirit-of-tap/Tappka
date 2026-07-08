@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tato kniha již existuje v katalogu', existingId: existing.id }, { status: 409 });
     }
 
+    const cleanTags = (body.tags ?? []).filter((t) => t.trim().length > 0);
+
     // Insert book first to get the ID for cover storage
     const { data: inserted, error: insertError } = await supabase
       .from('books')
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
         author: body.author.trim(),
         isbn_13: body.isbn_13 ?? null,
         description: body.description ?? null,
-        tags: body.tags ?? [],
+        tags: cleanTags,
         suggested_points: body.suggested_points,
         source: body.source ?? 'manual',
         external_id: body.external_id ?? null,

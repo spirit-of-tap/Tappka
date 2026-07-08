@@ -4,7 +4,7 @@
 
 export function pointsNumber(p: number | string | null | undefined): number {
   const n = Number(p ?? 0);
-  return Number.isFinite(n) ? n : 0;
+  return Number.isFinite(n) ? Math.max(0, n) : 0;
 }
 
 /** Render points with a Czech decimal comma; whole numbers stay without decimals. */

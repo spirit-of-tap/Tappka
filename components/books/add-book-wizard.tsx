@@ -11,19 +11,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { CategoryPicker } from './category-picker';
-import type { ExternalBookCandidate } from '@/lib/books/types';
-import type { Book } from '@/lib/books/types';
+import type { ExternalBookCandidate, Book } from '@/lib/books/types';
 
 type Step = 'local-search' | 'external-search' | 'manual';
-
-interface LocalBook extends Book {}
 
 export function AddBookWizard() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('local-search');
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [localResults, setLocalResults] = useState<LocalBook[]>([]);
+  const [localResults, setLocalResults] = useState<Book[]>([]);
   const [externalResults, setExternalResults] = useState<ExternalBookCandidate[]>([]);
   const [selectedPoints, setSelectedPoints] = useState<1 | 2 | 3>(1);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);

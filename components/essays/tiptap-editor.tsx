@@ -141,6 +141,7 @@ export function TiptapEditor({
     });
     editor.registerPlugin(plugin);
     return () => { editor.unregisterPlugin('bubbleMenu'); };
+  // Re-creating BubbleMenuPlugin on every render would flash the menu; only re-attach when editor or editable changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, editable]);
 
@@ -175,6 +176,7 @@ export function TiptapEditor({
       dom.removeEventListener('mouseout', onMouseout);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };
+  // Link hover popover only depends on the editor instance, not on DOM event handler closures.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, editable]);
 
