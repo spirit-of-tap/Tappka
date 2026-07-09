@@ -427,6 +427,57 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          admin_response: string | null
+          admin_response_at: string | null
+          admin_response_by: string | null
+          archived_at: string | null
+          author_profile_id: string
+          body: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_response?: string | null
+          admin_response_at?: string | null
+          admin_response_by?: string | null
+          archived_at?: string | null
+          author_profile_id: string
+          body: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_response?: string | null
+          admin_response_at?: string | null
+          admin_response_by?: string | null
+          archived_at?: string | null
+          author_profile_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_admin_response_by_fkey"
+            columns: ["admin_response_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           beta_access: boolean
