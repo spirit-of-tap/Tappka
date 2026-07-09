@@ -30,7 +30,7 @@ create table public.books (
   author text not null,
   isbn_13 text unique,
   description text,
-  cover_path text, -- B2 key under book/<book_id>/...
+  cover_path text, -- storage key under book/<book_id>/...
   tags text[] not null default '{}',
   suggested_points smallint not null default 1 check (suggested_points between 0 and 3),
   book_points smallint not null default 0 check (book_points between 0 and 3),

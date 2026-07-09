@@ -12,6 +12,7 @@ import type {
   TeamWithCount,
   ProfileFilters,
 } from './types';
+import { getPublicStorageUrl } from '@/lib/storage/public-url';
 
 /**
  * Get all profiles with optional filtering
@@ -179,31 +180,18 @@ export async function getTeamById(
   } as TeamWithMembers;
 }
 
-/**
- * Get storage URL for a picture from B2 storage key
- * For private buckets, this returns the key that can be used to fetch a presigned URL
- * For public buckets or full URLs, returns as-is
- */
 export function getStorageUrl(
   _supabase: SupabaseClient<Database>,
   _bucket: string,
   path: string | null,
 ): string | null {
   if (!path) return null;
-
-  // If it's already a full URL, return it (legacy or external URLs)
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
   }
-
-  // Return the key - UI components will fetch presigned URL via API
-  return path;
+  return getPublicStorageUrl(path);
 }
 
-/**
- * Get profile picture key/URL
- * Returns the storage key for B2, or the full URL if it's a legacy/external URL
- */
 export function getProfilePictureUrl(
   supabase: SupabaseClient<Database>,
   profile: Profile,
@@ -214,10 +202,6 @@ export function getProfilePictureUrl(
   return null;
 }
 
-/**
- * Get team picture key/URL
- * Returns the storage key for B2, or the full URL if it's a legacy/external URL
- */
 export function getTeamPictureUrl(
   supabase: SupabaseClient<Database>,
   team: Team,

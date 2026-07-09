@@ -12,7 +12,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 's3.eu-central-003.backblazeb2.com',
+        hostname: '*.supabase.co',
+      },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
       },
       {
         protocol: 'https',

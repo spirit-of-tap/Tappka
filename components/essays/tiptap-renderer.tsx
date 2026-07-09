@@ -5,8 +5,8 @@ import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
-import Image from '@tiptap/extension-image';
 import { cn } from '@/lib/utils';
+import Image from '@tiptap/extension-image';
 
 const MultiHighlight = Highlight.extend({
   addAttributes() {
@@ -27,7 +27,10 @@ interface TiptapRendererProps {
 
 export function TiptapRenderer({ content, className }: TiptapRendererProps) {
   const html = generateHTML(content, [
-    StarterKit,
+    StarterKit.configure({
+      link: false,
+      underline: false,
+    }),
     MultiHighlight.configure({ multicolor: true }),
     Underline,
     Link.configure({ HTMLAttributes: { rel: 'noopener noreferrer' } }),

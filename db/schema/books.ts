@@ -87,7 +87,7 @@ export const bookComments = pgTable("book_comments", {
 ]);
 
 export const teamReadingLists = pgTable("team_reading_lists", {
-	id: uuid().defaultRandom().notNull(),
+	id: uuid().defaultRandom().primaryKey().notNull(),
 	teamId: uuid("team_id").notNull(),
 	title: text().notNull(),
 	month: text(),

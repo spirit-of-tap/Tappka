@@ -42,7 +42,7 @@ All tables live in `public`, RLS enabled, policies split per operation, `(select
 - `author` text not null _(free text; no authors table)_
 - `isbn_13` text unique nullable
 - `description` text nullable
-- `cover_path` text nullable — B2 key under `book/<book_id>/<timestamp>-<uuid>.jpg`
+- `cover_path` text nullable — storage key under `book/<book_id>/<timestamp>-<uuid>.jpg`
 - `tags` text[] not null default '{}'
 - `suggested_points` smallint not null check (between 0 and 3) — what the student proposed
 - `book_points` smallint not null default 0 check (between 0 and 3) — final, 0 if pending/rejected
@@ -140,7 +140,7 @@ Sidebar
 
 1. **Local search**: debounced input → client calls `GET /api/books/search?q=...` which runs a Postgres fuzzy query (`similarity()` on title + author). Results appear as picker cards. If the user picks one, they are redirected to write an essay about it (or back to catalog).
 2. **External search fallback**: if no local match or user clicks "Nenašel jsem, hledej jinde" → `GET /api/books/external-search?q=...&isbn=...` fans out to Google Books + Open Library in parallel, normalizes results (title, author, isbn_13, description, cover URL, external_id, source). Results shown as picker.
-3. **Pick external → create**: `POST /api/books` with normalized payload + `suggested_points` (student picks 1–3). Server downloads the cover to B2 (same pattern as profile pictures: presigned URL flow via `lib/storage/service.ts`), inserts the book with `status='pending'`.
+3. **Pick external → create**: `POST /api/books` with normalized payload + `suggested_points` (student picks 1–3). Server downloads the cover to Supabase Storage (same pattern as profile pictures: presigned URL flow via `lib/storage/service.ts`), inserts the book with `status='pending'`.
 4. **Manual fallback**: if external also fails, show a manual form (title, author, optional isbn, description, tags, suggested_points, optional cover upload). Submit → same `POST /api/books` but with `source='manual'`.
 5. After submit, the student can immediately write an essay about the pending book; they just won't earn points until a coach approves.
 
@@ -182,7 +182,7 @@ Sidebar
 ## Cover image storage
 
 - Extend `lib/storage/service.ts` context types to include `'book'`. Path: `book/<book_id>/<timestamp>-<uuid>.<ext>`.
-- Server-side helper `downloadAndStoreCover(url, bookId)` fetches the external cover, validates content-type (`image/jpeg|png|webp`) and size (<2 MB), uploads via existing B2 client, returns `cover_path`.
+- Server-side helper `downloadAndStoreCover(url, bookId)` fetches the external cover, validates content-type (`image/jpeg|png|webp`) and size (<2 MB), uploads via Supabase Storage, returns `cover_path`.
 - Public download URLs generated via existing `/api/storage/presign-download`.
 
 ---
@@ -227,7 +227,7 @@ Each phase is independently shippable and testable.
 ### Modify
 
 - `lib/storage/service.ts` — add `'book'` context, path helper.
-- `lib/storage/b2-client.ts` — no change expected; extend MIME allow-list if needed.
+- `lib/storage/supabase-s3-client.ts` — no change expected; extend MIME allow-list if needed.
 - Sidebar component (wherever `Rezervace` / `Komunita` are registered) — add two entries.
 - `app/(main)/komunita/tymy/[id]/page.tsx` — new "Statistiky" tab.
 - `.env.local.example` — document optional `GOOGLE_BOOKS_API_KEY`.

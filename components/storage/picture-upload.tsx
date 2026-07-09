@@ -1,8 +1,8 @@
 /**
  * Picture Upload Component
- * 
- * Reusable component for uploading profile/team pictures to B2 storage.
- * Uses presigned PUT URLs for direct browser-to-B2 uploads.
+ *
+ * Reusable component for uploading profile/team pictures to Supabase Storage.
+ * Uses presigned PUT URLs for direct browser uploads.
  * Includes professional image cropping with zoom functionality.
  */
 
@@ -99,7 +99,7 @@ export function PictureUpload({
 
       const { data: presignData } = await presignResponse.json();
 
-      // Step 3: Upload directly to B2 using PUT
+      // Step 3: Upload directly to Supabase Storage using PUT
       const uploadResponse = await fetch(presignData.url, {
         method: 'PUT',
         body: optimized,

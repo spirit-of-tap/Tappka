@@ -1,7 +1,7 @@
 /**
  * Storage Components
- * 
- * Exports for B2 storage-related components
+ *
+ * Exports for Supabase Storage-related components
  */
 
 export { StorageImage } from './storage-image';

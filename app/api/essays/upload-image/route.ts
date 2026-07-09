@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { uploadFile, generateFileKey } from '@/lib/storage/service';
+import { getPublicStorageUrl } from '@/lib/storage/public-url';
 
 const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     const key = generateFileKey('essay-images', profile.id, ext);
     await uploadFile(key, buffer, file.type);
 
-    const src = `/api/storage/image?key=${encodeURIComponent(key)}`;
+    const src = getPublicStorageUrl(key);
     return NextResponse.json({ src }, { status: 201 });
   } catch (error) {
     console.error('POST /api/essays/upload-image error:', error);

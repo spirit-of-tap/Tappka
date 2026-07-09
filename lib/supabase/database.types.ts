@@ -429,6 +429,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          beta_access: boolean
           created_at: string
           date_of_birth: string | null
           id: string
@@ -445,6 +446,7 @@ export type Database = {
           work_email: string
         }
         Insert: {
+          beta_access?: boolean
           created_at?: string
           date_of_birth?: string | null
           id?: string
@@ -461,6 +463,7 @@ export type Database = {
           work_email: string
         }
         Update: {
+          beta_access?: boolean
           created_at?: string
           date_of_birth?: string | null
           id?: string

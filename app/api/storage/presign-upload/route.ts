@@ -1,8 +1,8 @@
 /**
  * API Route: Generate Presigned Upload URL
  * POST /api/storage/presign-upload
- * 
- * Generates a presigned POST URL for direct browser upload to B2.
+ *
+ * Generates a presigned PUT URL for direct browser upload to Supabase Storage.
  * Validates user permissions and file constraints.
  */
 
@@ -103,12 +103,6 @@ export async function POST(request: NextRequest) {
       entityId,
       contentType,
       fileExtension,
-    });
-
-    console.log('Generated presigned upload:', {
-      url: presignedData.url,
-      fields: presignedData.fields,
-      key: presignedData.key,
     });
 
     return NextResponse.json({

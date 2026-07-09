@@ -706,6 +706,7 @@ begin
       and old.phone_number is not distinct from new.phone_number
       and old.personal_email is not distinct from new.personal_email
       and old.date_of_birth is not distinct from new.date_of_birth
+      and old.beta_access is not distinct from new.beta_access
       and old.removed_access is not distinct from new.removed_access
       and old.removed_access_by is not distinct from new.removed_access_by
       and old.created_at is not distinct from new.created_at
@@ -714,7 +715,7 @@ begin
     end if;
   end if;
 
-  -- for regular users, block changes to every field except picture (and updated_at handled elsewhere)
+  -- for regular users, block changes to every field except picture and beta_access (and updated_at handled elsewhere)
   if (
     old.id is distinct from new.id
     or old.name is distinct from new.name
@@ -729,7 +730,7 @@ begin
     or old.removed_access_by is distinct from new.removed_access_by
     or old.created_at is distinct from new.created_at
   ) then
-    raise exception 'Only picture column can be updated by users';
+    raise exception 'Only picture and beta_access can be updated by users';
   end if;
 
   return new;

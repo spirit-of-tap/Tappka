@@ -45,6 +45,7 @@ export default async function DashboardLayout({
     name: profile.name,
     email: profile.work_email,
     role: profile.role,
+    beta_access: profile.beta_access ?? false,
   };
 
   const isCoachOrAdmin = profile.role === "coach" || profile.role === "admin";

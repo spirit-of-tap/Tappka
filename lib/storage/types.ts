@@ -1,5 +1,5 @@
 /**
- * Storage Types for Backblaze B2 Integration
+ * Storage Types for Supabase Storage S3 Integration
  */
 
 export type StorageContext = "profile" | "team" | "book";
@@ -18,10 +18,7 @@ export interface PresignedUploadData {
   expiresAt: Date;
 }
 
-export interface PresignedDownloadData {
-  url: string;
-  expiresAt: Date;
-}
+
 
 export interface FileMetadata {
   key: string;

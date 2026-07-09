@@ -132,6 +132,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     name: string
     email: string
     role?: string
+    beta_access?: boolean
   }
   reviewCount?: number
 }
@@ -140,6 +141,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const pathname = usePathname()
   const { setOpenMobile } = useSidebar()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
+  const isBeta = user?.beta_access ?? false
   const isReservationsActive = pathname.startsWith("/reservations")
   const isCteniActive = pathname === "/prehled" || pathname === "/hledat" || pathname.startsWith("/eseje") || pathname.startsWith("/knihovna") || pathname.startsWith("/settings/kniha-knih")
   const cteniSubItems = [
@@ -227,8 +229,10 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                     )
                   }
 
-                  // Special handling for Čtení with sub-menu
+                  // Special handling for Čtení with sub-menu (beta-only)
                   if (item.title === "Čtení") {
+                    if (!isBeta) return null
+
                     return (
                       <Collapsible
                         key={item.title}
@@ -244,7 +248,13 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                             >
                               <item.icon className="size-4" />
                               <span>{item.title}</span>
-                              <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                              <Badge
+                                variant="secondary"
+                                className="ml-auto h-5 text-[10px] px-1.5"
+                              >
+                                Beta
+                              </Badge>
+                              <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                             </SidebarMenuButton>
                           </CollapsibleTrigger>
                           <CollapsibleContent>

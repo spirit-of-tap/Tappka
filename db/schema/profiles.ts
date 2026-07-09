@@ -1,6 +1,6 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
 // To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
-import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, index, unique, check, date, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, boolean, index, unique, check, date, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { authUsers } from "drizzle-orm/supabase"
 import { teams } from "./teams"
@@ -45,6 +45,7 @@ export const profiles = pgTable("profiles", {
 	phoneNumber: text("phone_number"),
 	personalEmail: text("personal_email"),
 	dateOfBirth: date("date_of_birth"),
+	betaAccess: boolean("beta_access").default(false).notNull(),
 	removedAccess: timestamp("removed_access", { withTimezone: true, mode: 'string' }),
 	removedAccessBy: uuid("removed_access_by"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),

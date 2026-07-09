@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import {
   ChevronsUpDown,
   LogOut,
@@ -7,6 +8,7 @@ import {
   Sun,
   Laptop,
   User as UserIcon,
+  FlaskConical,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -31,6 +33,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { createClient } from "@/lib/supabase/client"
+import { BetaAccessModal } from "@/components/beta-access-modal"
 
 interface NavUserProps {
   user: {
@@ -38,6 +41,7 @@ interface NavUserProps {
     name: string
     email: string
     role?: string
+    beta_access?: boolean
   }
 }
 
@@ -45,6 +49,7 @@ export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const [betaOpen, setBetaOpen] = useState(false)
 
   const logout = async () => {
     const supabase = createClient()
@@ -139,11 +144,21 @@ export function NavUser({ user }: NavUserProps) {
               </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setBetaOpen(true)}>
+              <FlaskConical className="mr-2 h-4 w-4" />
+              Beta přístup
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
               Odhlásit se
             </DropdownMenuItem>
           </DropdownMenuContent>
+          <BetaAccessModal
+            open={betaOpen}
+            onOpenChange={setBetaOpen}
+            initialBetaAccess={user.beta_access ?? false}
+          />
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>

@@ -1,14 +1,7 @@
-/**
- * Storage Image Component
- * 
- * Wrapper for displaying images from B2 storage.
- * Handles fetching presigned URLs for private buckets.
- */
-
 'use client';
 
-import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { getPublicStorageUrl, isExternalUrl } from '@/lib/storage/public-url';
 
 interface StorageImageProps {
   storageKey: string | null;
@@ -27,51 +20,14 @@ export function StorageImage({
   height,
   fill,
 }: StorageImageProps) {
-  const [presignedUrl, setPresignedUrl] = useState<string | null>(null);
-  const [error, setError] = useState(false);
+  if (!storageKey) return null;
 
-  useEffect(() => {
-    if (!storageKey) {
-      setPresignedUrl(null);
-      return;
-    }
-
-    // If it's already a full URL (external or legacy), use it directly
-    if (storageKey.startsWith('http://') || storageKey.startsWith('https://')) {
-      setPresignedUrl(storageKey);
-      return;
-    }
-
-    // Fetch presigned URL for B2 storage key
-    const fetchPresignedUrl = async () => {
-      try {
-        const response = await fetch(
-          `/api/storage/presign-download?key=${encodeURIComponent(storageKey)}`
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch presigned URL');
-        }
-
-        const data = await response.json();
-        setPresignedUrl(data.data.url);
-      } catch (err) {
-        console.error('Error fetching presigned URL:', err);
-        setError(true);
-      }
-    };
-
-    fetchPresignedUrl();
-  }, [storageKey]);
-
-  if (!storageKey || error || !presignedUrl) {
-    return null;
-  }
+  const src = isExternalUrl(storageKey) ? storageKey : getPublicStorageUrl(storageKey);
 
   if (fill) {
     return (
       <Image
-        src={presignedUrl}
+        src={src}
         alt={alt}
         fill
         className={className}
@@ -82,7 +38,7 @@ export function StorageImage({
 
   return (
     <Image
-      src={presignedUrl}
+      src={src}
       alt={alt}
       width={width}
       height={height}

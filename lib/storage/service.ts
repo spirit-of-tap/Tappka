@@ -1,143 +1,65 @@
-/**
- * Storage Service for Backblaze B2
- * 
- * Provides high-level operations for file storage using B2's S3-compatible API.
- * Supports private buckets with presigned URLs for secure access.
- */
-
-import {
-  PutObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getB2Client } from "./b2-client";
-import type {
-  UploadOptions,
-  PresignedUploadData,
-  PresignedDownloadData,
-} from "./types";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { UploadOptions, PresignedUploadData } from "./types";
 import { randomUUID } from "crypto";
 
-const BUCKET_NAME = process.env.B2_BUCKET_NAME!;
-const PRESIGN_EXPIRY_SECONDS = 900; // 15 minutes for uploads
-const DOWNLOAD_EXPIRY_SECONDS = 3600; // 1 hour for downloads
+const BUCKET_NAME = process.env.SUPABASE_S3_BUCKET ?? 'images';
+const PRESIGN_EXPIRY_SECONDS = 900;
 
-/**
- * Generate a presigned PUT URL for direct browser upload to B2
- * 
- * Note: B2's S3-compatible API may have issues with POST presigned URLs.
- * Using PUT is more reliable across S3-compatible providers.
- * 
- * @param options Upload configuration
- * @returns Presigned PUT URL and file key
- */
 export async function generatePresignedUpload(
   options: UploadOptions
 ): Promise<PresignedUploadData> {
-  const client = getB2Client();
+  const supabase = createAdminClient();
 
-  // Generate unique file key
   const timestamp = Date.now();
   const uuid = randomUUID();
   const key = `${options.context}/${options.entityId}/${timestamp}-${uuid}.${options.fileExtension}`;
 
-  // Use presigned PUT instead of POST (more reliable for B2)
-  const command = new PutObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: key,
-    ContentType: options.contentType,
-  });
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .createSignedUploadUrl(key);
 
-  const url = await getSignedUrl(client, command, {
-    expiresIn: PRESIGN_EXPIRY_SECONDS,
-  });
+  if (error || !data) {
+    throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  }
 
   return {
-    url,
-    fields: {}, // No fields needed for PUT
+    url: data.signedUrl,
+    fields: {},
     key,
     expiresAt: new Date(Date.now() + PRESIGN_EXPIRY_SECONDS * 1000),
   };
 }
 
-/**
- * Generate a presigned GET URL for secure download from private bucket
- * 
- * @param key File key in B2
- * @returns Presigned download URL
- */
-export async function generatePresignedDownload(
-  key: string
-): Promise<PresignedDownloadData> {
-  const client = getB2Client();
-
-  const command = new GetObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: key,
-  });
-
-  const url = await getSignedUrl(client, command, {
-    expiresIn: DOWNLOAD_EXPIRY_SECONDS,
-  });
-
-  return {
-    url,
-    expiresAt: new Date(Date.now() + DOWNLOAD_EXPIRY_SECONDS * 1000),
-  };
-}
-
-/**
- * Upload a file buffer directly (for server-side processing)
- * 
- * @param key File key in B2
- * @param buffer File data
- * @param contentType MIME type
- * @returns File key
- */
 export async function uploadFile(
   key: string,
   buffer: Buffer,
   contentType: string
 ): Promise<string> {
-  const client = getB2Client();
+  const supabase = createAdminClient();
 
-  const command = new PutObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: key,
-    Body: buffer,
-    ContentType: contentType,
-  });
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(key, buffer, { contentType, upsert: true });
 
-  await client.send(command);
+  if (error) {
+    throw new Error(`Failed to upload file: ${error.message}`);
+  }
 
   return key;
 }
 
-/**
- * Delete a file from B2
- * 
- * @param key File key in B2
- */
 export async function deleteFile(key: string): Promise<void> {
-  const client = getB2Client();
+  const supabase = createAdminClient();
 
-  const command = new DeleteObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: key,
-  });
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove([key]);
 
-  await client.send(command);
+  if (error) {
+    throw new Error(`Failed to delete file: ${error.message}`);
+  }
 }
 
-/**
- * Generate file key for new upload
- *
- * @param context Storage context (profile/team/book)
- * @param entityId Profile, team, or book ID
- * @param fileExtension File extension
- * @returns Generated file key
- */
 export function generateFileKey(
   context: string,
   entityId: string,
@@ -154,12 +76,8 @@ const ALLOWED_COVER_TYPES: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
 };
-const MAX_COVER_BYTES = 2 * 1024 * 1024; // 2 MB
+const MAX_COVER_BYTES = 2 * 1024 * 1024;
 
-/**
- * Download an external cover URL and store it in B2 under book/<bookId>/...
- * Returns the stored file key (cover_path), or null if download/validation fails.
- */
 export async function downloadAndStoreCover(
   coverUrl: string,
   bookId: string,

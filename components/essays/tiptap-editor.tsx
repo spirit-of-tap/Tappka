@@ -100,7 +100,10 @@ export function TiptapEditor({
     immediatelyRender: false,
     editable,
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        link: false,
+        underline: false,
+      }),
       MultiHighlight.configure({ multicolor: true }),
       Underline,
       Placeholder.configure({ placeholder }),
