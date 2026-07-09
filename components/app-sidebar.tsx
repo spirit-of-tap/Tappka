@@ -10,8 +10,8 @@ import {
   Mail,
   Database,
   ChevronRight,
+  Heart,
   MessageCircleQuestion,
-  MessageSquareHeart,
   FileText,
   BriefcaseBusiness,
   Search,
@@ -20,6 +20,7 @@ import {
   BookOpen,
 } from "lucide-react"
 
+import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -91,10 +92,15 @@ const getNavData = (isDevelopment: boolean, isCoachOrAdmin: boolean, reviewCount
           url: "/prehled",
           icon: BookOpen,
         },
+      ],
+    },
+    {
+      title: "Podpora",
+      items: [
         {
           title: "Zpětná vazba",
           url: "/zpetna-vazba",
-          icon: MessageSquareHeart,
+          icon: Heart,
         },
       ],
     },
@@ -289,6 +295,30 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                           </CollapsibleContent>
                         </SidebarMenuItem>
                       </Collapsible>
+                    )
+                  }
+
+                  // Special handling for Zpětná vazba — inviting highlight
+                  if (item.title === "Zpětná vazba") {
+                    const isActive = pathname === item.url
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive}
+                          className={cn(
+                            "group/menu-button",
+                            "data-[active=true]:bg-rose-100 data-[active=true]:text-rose-700",
+                            "data-[active=true]:dark:bg-rose-950 data-[active=true]:dark:text-rose-200",
+                            "hover:text-rose-600 dark:hover:text-rose-300",
+                          )}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4 transition-transform group-data-[active=true]/menu-button:scale-110" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
                     )
                   }
 
