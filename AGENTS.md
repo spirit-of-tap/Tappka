@@ -11,6 +11,14 @@ pnpm lint       # ESLint
 pnpm supabase:start
 pnpm supabase:stop
 
+# Tests (see docs/runbooks/testing.md)
+pnpm test              # Unit + component (fast, no Docker)
+pnpm test:unit         # Pure logic in lib/* (*.test.ts, co-located)
+pnpm test:component    # React components, jsdom + Testing Library (*.test.tsx)
+pnpm test:integration  # DB schema/triggers/RLS on a throwaway Postgres (needs Docker)
+pnpm test:e2e          # Playwright flows (needs pnpm build + local Supabase)
+pnpm test:watch        # Watch unit tests
+
 # Data layer (see docs/data-layer.md)
 pnpm db:generate         # Drizzle: schema edits -> SQL migration
 pnpm db:generate:custom  # Empty custom migration (functions/triggers/RLS)
@@ -75,6 +83,37 @@ migrations for tables/columns/enums/indexes.
 - Topic naming: `scope:entity:id` (e.g. `user:123:notifications`)
 - Event naming: `entity_action` snake_case (e.g. `message_created`)
 - Set `private: true` on all channels; always include cleanup/unsubscribe
+
+## Testing
+
+Full guide: **`docs/runbooks/testing.md`**. Four layers; `pnpm test` (unit +
+component) is the fast default. CI (`.github/workflows/test.yml`) runs all layers
+on PRs and pushes to `preview`/`production`.
+
+- **Where tests live:** unit `*.test.ts` co-located next to `lib/*` source;
+  component `*.test.tsx` next to the component; integration in
+  `tests/integration/*.int.test.ts`; E2E in `tests/e2e/*.spec.ts`. Shared setup
+  in `tests/setup/`.
+- **What goes where:** pure logic (no DB) → unit; React rendering → component;
+  DB schema/constraints/triggers/RLS → integration; real user flows through the
+  app → E2E. The app talks to the DB only via `supabase-js` (PostgREST over
+  HTTP), which can't run against the bare test container — so query-code/route
+  coverage belongs to E2E, not integration.
+- **Integration DB is throwaway.** `pnpm test:integration` boots a `postgres:16`
+  Testcontainer, runs `tests/setup/bootstrap.sql` (recreates the minimal
+  `auth`/`realtime`/`storage` surface), then applies `supabase/migrations`.
+  **Your local dev DB is never touched, and `supabase db reset` is never run.**
+  Each test runs in `withRollback()` (always rolls back); use
+  `asClaims(client, { sub })` / `asAnon(client)` to exercise RLS and the
+  `tests/setup/factories.ts` helpers to create rows.
+- **When a migration adds a new Supabase-managed object** the shim lacks,
+  integration setup fails with `Migration failed: <file>` — add the minimal
+  missing object to `tests/setup/bootstrap.sql`. Never edit `supabase/migrations/`
+  for tests.
+- **New feature = new test** in the matching layer. Run the relevant layer before
+  committing; `pnpm test` and typecheck must pass.
+- **Known issue:** `pnpm lint` currently crashes on a pre-existing ESLint/ajv
+  toolchain error (unrelated to tests) — it will fail the CI lint step until fixed.
 
 ## GitHub
 
