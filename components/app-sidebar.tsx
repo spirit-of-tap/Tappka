@@ -82,11 +82,11 @@ const getNavData = (isDevelopment: boolean, isCoachOrAdmin: boolean, reviewCount
           url: "/komunita",
           icon: Users,
         },
-        {
-          title: "Čtení",
-          url: "/prehled",
-          icon: BookOpen,
-        },
+{
+  title: "Čtení",
+  url: "/prehled",
+  icon: BookOpen,
+},
       ],
     },
     ...(isDevelopment
