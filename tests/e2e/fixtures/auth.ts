@@ -1,0 +1,276 @@
+import { createPrivateKey, createSign, randomUUID } from "crypto";
+import { readFileSync } from "fs";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+import type { BrowserContext } from "@playwright/test";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const envPath = resolve(__dirname, "../../../.env.local");
+const envRaw = readFileSync(envPath, "utf-8");
+for (const line of envRaw.split("\n")) {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) continue;
+  const eqIdx = trimmed.indexOf("=");
+  if (eqIdx === -1) continue;
+  const key = trimmed.slice(0, eqIdx).trim();
+  const val = trimmed.slice(eqIdx + 1).trim().replace(/^"(.*)"$/, "$1");
+  process.env[key] ??= val;
+}
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const GOTRUE_URL = `${SUPABASE_URL}/auth/v1`;
+const STORAGE_KEY = "sb-127-auth-token";
+const REST_URL = `${SUPABASE_URL}/rest/v1`;
+
+const EC_JWK = {
+  kty: "EC",
+  kid: "b81269f1-21d8-4f2e-b719-c2240a840d90",
+  crv: "P-256",
+  x: "M5Sjqn5zwC9Kl1zVfUUGvv9boQjCGd45G8sdopBExB4",
+  y: "P6IXMvA2WYXSHSOMTBH2jsw_9rrzGy89FjPf6oOsIxQ",
+  d: "dIhR8wywJlqlua4y_yMq2SLhlFXDZJBCvFrY1DCHyVU",
+};
+
+const ecKey = createPrivateKey({ key: EC_JWK, format: "jwk" });
+
+function base64url(buf: Uint8Array): string {
+  return Buffer.from(buf).toString("base64url");
+}
+
+function encodeES256Sig(derSig: Buffer): string {
+  let off = 2;
+  off++;
+  let rLen = derSig[off]; off++;
+  if (derSig[off] === 0) { off++; rLen--; }
+  const r = derSig.subarray(off, off + Math.min(rLen, 32));
+  off += rLen;
+  off++;
+  let sLen = derSig[off]; off++;
+  if (derSig[off] === 0) { off++; sLen--; }
+  const s = derSig.subarray(off, off + Math.min(sLen, 32));
+  const rPadded = Buffer.alloc(32);
+  r.copy(rPadded, 32 - r.length);
+  const sPadded = Buffer.alloc(32);
+  s.copy(sPadded, 32 - s.length);
+  return base64url(Buffer.concat([rPadded, sPadded]));
+}
+
+function createJWT(payload: Record<string, unknown>): string {
+  const header = { alg: "ES256", kid: EC_JWK.kid, typ: "JWT" };
+  const headerB64 = base64url(Buffer.from(JSON.stringify(header)));
+  const payloadB64 = base64url(Buffer.from(JSON.stringify(payload)));
+  const signer = createSign("sha256");
+  signer.update(`${headerB64}.${payloadB64}`);
+  const derSig = signer.sign(ecKey);
+  const sigB64 = encodeES256Sig(derSig);
+  return `${headerB64}.${payloadB64}.${sigB64}`;
+}
+
+async function gotrueAdminFetch(
+  path: string,
+  body?: Record<string, unknown>,
+) {
+  const res = await fetch(`${GOTRUE_URL}${path}`, {
+    method: body ? "POST" : "GET",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    throw new Error(
+      `GoTrue admin ${path} failed: ${res.status} ${await res.text()}`,
+    );
+  }
+  return res.json();
+}
+
+async function restFetch(
+  path: string,
+  method: string,
+  body?: Record<string, unknown>,
+) {
+  const res = await fetch(`${REST_URL}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "Prefer": "return=representation",
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    throw new Error(
+      `REST ${method} ${path} failed: ${res.status} ${await res.text()}`,
+    );
+  }
+  return res.json();
+}
+
+function makeSessionCookie(
+  userId: string,
+  email: string,
+): string {
+  const now = Math.floor(Date.now() / 1000);
+  const accessToken = createJWT({
+    sub: userId,
+    aud: "authenticated",
+    role: "authenticated",
+    email,
+    app_metadata: {
+      provider: "email",
+      providers: ["email"],
+    },
+    exp: now + 3600,
+    iat: now,
+  });
+
+  const session = {
+    access_token: accessToken,
+    refresh_token: "",
+    expires_in: 3600,
+    expires_at: now + 3600,
+    token_type: "bearer",
+    user: null,
+  };
+
+  const encoded = Buffer.from(JSON.stringify(session)).toString("base64url");
+  return `base64-${encoded}`;
+}
+
+export async function getSessionCookie(): Promise<string> {
+  const email = `e2e-test-${randomUUID().slice(0, 8)}@studenti.czu.cz`;
+
+  const userData = (await gotrueAdminFetch("/admin/users", {
+    email,
+    password: "test-password-123",
+    email_confirm: true,
+  })) as { id: string };
+
+  return makeSessionCookie(userData.id, email);
+}
+
+/**
+ * Creates a complete user with team + profile and returns a session cookie.
+ * Needed for pages that check current_profile_id().
+ */
+export async function getSetupSessionCookie(): Promise<{
+  cookie: string;
+  userId: string;
+  email: string;
+  profileId: string;
+}> {
+  const email = `e2e-test-${randomUUID().slice(0, 8)}@studenti.czu.cz`;
+
+  const userData = (await gotrueAdminFetch("/admin/users", {
+    email,
+    password: "test-password-123",
+    email_confirm: true,
+  })) as { id: string };
+
+  const userId = userData.id;
+
+  // Get public.users row (created by trigger)
+  const usersRows = (await restFetch(
+    `/users?auth_user_id=eq.${userId}&select=id`,
+    "GET",
+  )) as { id: string }[];
+  const internalUserId = usersRows[0]?.id;
+
+  if (!internalUserId) {
+    throw new Error(`public.users not created for auth_user_id=${userId}`);
+  }
+
+  // Set verified_work_email so profiles SELECT RLS allows access
+  await restFetch(
+    `/users?id=eq.${internalUserId}`,
+    "PATCH",
+    { verified_work_email: email },
+  );
+
+  // Ensure a team exists
+  let teams = (await restFetch(
+    `/teams?select=id&limit=1`,
+    "GET",
+  )) as { id: string }[];
+
+  let teamId: string;
+  if (teams.length > 0) {
+    teamId = teams[0].id;
+  } else {
+    const newTeams = (await restFetch(
+      "/teams",
+      "POST",
+      { name: "E2E Test Team" },
+    )) as { id: string }[];
+    teamId = newTeams[0].id;
+  }
+
+  // Create profile
+  const profiles = (await restFetch("/profiles", "POST", {
+    name: "E2E Test User",
+    work_email: email,
+    user_id: internalUserId,
+    team_id: teamId,
+    role: "student",
+  })) as { id: string }[];
+
+  const profileId = profiles[0]?.id;
+  if (!profileId) {
+    throw new Error("Failed to create profile");
+  }
+
+  return { cookie: makeSessionCookie(userId, email), userId, email, profileId };
+}
+
+/** Create a seeded book for E2E tests. */
+export async function seedBook(profileId: string): Promise<{ bookId: string }> {
+  const books = (await restFetch("/books", "POST", {
+    title: "E2E Test Book",
+    author: "E2E Test Author",
+    tags: ["fiction"],
+    suggested_points: 1,
+    book_points: 1,
+    status: "approved",
+    source: "manual",
+    added_by_profile_id: profileId,
+  })) as { id: string }[];
+  return { bookId: books[0].id };
+}
+
+/** Create a seeded essay for E2E tests. */
+export async function seedEssay(
+  profileId: string,
+  bookId?: string,
+): Promise<{ essayId: string }> {
+  const essays = (await restFetch("/essays", "POST", {
+    author_profile_id: profileId,
+    book_id: bookId ?? null,
+    title: "E2E Test Essay",
+    content_json: { type: "doc", content: [] },
+    content_text: "E2E test essay content for navigation testing.",
+    published: true,
+  })) as { id: string }[];
+  return { essayId: essays[0].id };
+}
+
+export async function setAuthCookie(
+  context: BrowserContext,
+  cookieValue: string,
+): Promise<void> {
+  await context.addCookies([
+    {
+      name: STORAGE_KEY,
+      value: cookieValue,
+      domain: "127.0.0.1",
+      path: "/",
+      httpOnly: false,
+      sameSite: "Lax",
+    },
+  ]);
+}
