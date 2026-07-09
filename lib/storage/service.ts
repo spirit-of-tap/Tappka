@@ -1,21 +1,23 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { UploadOptions, PresignedUploadData } from "./types";
+import { BUCKETS, type BucketId, contextToBucket } from "./buckets";
 import { randomUUID } from "crypto";
 
-const BUCKET_NAME = process.env.SUPABASE_S3_BUCKET ?? 'images';
 const PRESIGN_EXPIRY_SECONDS = 900;
+const SIGNED_DOWNLOAD_EXPIRY_SECONDS = 3600;
 
 export async function generatePresignedUpload(
   options: UploadOptions
 ): Promise<PresignedUploadData> {
   const supabase = createAdminClient();
+  const bucket = contextToBucket(options.context);
 
   const timestamp = Date.now();
   const uuid = randomUUID();
   const key = `${options.context}/${options.entityId}/${timestamp}-${uuid}.${options.fileExtension}`;
 
   const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
+    .from(BUCKETS[bucket].name)
     .createSignedUploadUrl(key);
 
   if (error || !data) {
@@ -31,6 +33,7 @@ export async function generatePresignedUpload(
 }
 
 export async function uploadFile(
+  bucket: BucketId,
   key: string,
   buffer: Buffer,
   contentType: string
@@ -38,7 +41,7 @@ export async function uploadFile(
   const supabase = createAdminClient();
 
   const { error } = await supabase.storage
-    .from(BUCKET_NAME)
+    .from(BUCKETS[bucket].name)
     .upload(key, buffer, { contentType, upsert: true });
 
   if (error) {
@@ -48,16 +51,38 @@ export async function uploadFile(
   return key;
 }
 
-export async function deleteFile(key: string): Promise<void> {
+export async function deleteFile(bucket: BucketId, key: string): Promise<void> {
   const supabase = createAdminClient();
 
   const { error } = await supabase.storage
-    .from(BUCKET_NAME)
+    .from(BUCKETS[bucket].name)
     .remove([key]);
 
   if (error) {
     throw new Error(`Failed to delete file: ${error.message}`);
   }
+}
+
+/**
+ * Time-limited signed download URL for objects in a private bucket
+ * (e.g. documents). Must be generated server-side (uses the service role).
+ */
+export async function getSignedStorageUrl(
+  bucket: BucketId,
+  key: string,
+  expiresIn: number = SIGNED_DOWNLOAD_EXPIRY_SECONDS
+): Promise<string> {
+  const supabase = createAdminClient();
+
+  const { data, error } = await supabase.storage
+    .from(BUCKETS[bucket].name)
+    .createSignedUrl(key, expiresIn);
+
+  if (error || !data) {
+    throw new Error(`Failed to create signed URL: ${error?.message}`);
+  }
+
+  return data.signedUrl;
 }
 
 export function generateFileKey(
@@ -94,7 +119,7 @@ export async function downloadAndStoreCover(
     if (buffer.byteLength > MAX_COVER_BYTES) return null;
 
     const key = generateFileKey('book', bookId, ext);
-    await uploadFile(key, buffer, contentType);
+    await uploadFile('images', key, buffer, contentType);
     return key;
   } catch {
     return null;

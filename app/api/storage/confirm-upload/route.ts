@@ -7,6 +7,7 @@ import {
   getCurrentPictureKey,
   setPictureRef,
 } from "@/lib/storage/authorization";
+import { contextToBucket } from "@/lib/storage/buckets";
 import { isExternalUrl } from "@/lib/storage/public-url";
 import type { StorageContext } from "@/lib/storage/types";
 
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     const oldKey = deleteOldKey ?? existingKey;
     if (oldKey && !isExternalUrl(oldKey)) {
       try {
-        await deleteFile(oldKey);
+        await deleteFile(contextToBucket(context), oldKey);
       } catch (error) {
         console.error("Error deleting old picture:", error);
       }

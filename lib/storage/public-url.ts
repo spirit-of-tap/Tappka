@@ -1,13 +1,16 @@
-const BUCKET = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? process.env.SUPABASE_S3_BUCKET ?? 'images'
-  : 'images';
+import { BUCKETS, type BucketId } from './buckets';
 
 function baseUrl(): string {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '')}`;
+  return process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
 }
 
-export function getPublicStorageUrl(key: string): string {
-  return `${baseUrl()}/storage/v1/object/public/${BUCKET}/${key}`;
+/**
+ * Public object URL for a key in a public bucket.
+ * Only valid for buckets with `public: true`; private buckets must be read
+ * via server-generated signed URLs (see getSignedStorageUrl in service.ts).
+ */
+export function getPublicStorageUrl(bucket: BucketId, key: string): string {
+  return `${baseUrl()}/storage/v1/object/public/${BUCKETS[bucket].name}/${key}`;
 }
 
 export interface TransformOptions {
@@ -19,6 +22,7 @@ export interface TransformOptions {
 }
 
 export function getTransformedImageUrl(
+  bucket: BucketId,
   key: string,
   opts: TransformOptions,
 ): string {
@@ -29,7 +33,7 @@ export function getTransformedImageUrl(
   if (opts.format) params.set('format', opts.format);
   if (opts.resize) params.set('resize', opts.resize);
   const qs = params.toString();
-  return `${baseUrl()}/storage/v1/render/image/public/${BUCKET}/${key}${qs ? '?' + qs : ''}`;
+  return `${baseUrl()}/storage/v1/render/image/public/${BUCKETS[bucket].name}/${key}${qs ? '?' + qs : ''}`;
 }
 
 export function isExternalUrl(path: string): boolean {

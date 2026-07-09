@@ -33,9 +33,9 @@ export async function POST(request: NextRequest) {
     if (buffer.byteLength > MAX_BYTES) return NextResponse.json({ error: 'Soubor je příliš velký (max 5 MB)' }, { status: 400 });
 
     const key = generateFileKey('essay-images', profile.id, ext);
-    await uploadFile(key, buffer, file.type);
+    await uploadFile('images', key, buffer, file.type);
 
-    const src = getPublicStorageUrl(key);
+    const src = getPublicStorageUrl('images', key);
     return NextResponse.json({ src }, { status: 201 });
   } catch (error) {
     console.error('POST /api/essays/upload-image error:', error);

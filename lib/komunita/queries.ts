@@ -13,6 +13,7 @@ import type {
   ProfileFilters,
 } from './types';
 import { getPublicStorageUrl } from '@/lib/storage/public-url';
+import type { BucketId } from '@/lib/storage/buckets';
 
 /**
  * Get all profiles with optional filtering
@@ -182,14 +183,14 @@ export async function getTeamById(
 
 export function getStorageUrl(
   _supabase: SupabaseClient<Database>,
-  _bucket: string,
+  bucket: BucketId,
   path: string | null,
 ): string | null {
   if (!path) return null;
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
   }
-  return getPublicStorageUrl(path);
+  return getPublicStorageUrl(bucket, path);
 }
 
 export function getProfilePictureUrl(
@@ -197,7 +198,7 @@ export function getProfilePictureUrl(
   profile: Profile,
 ): string | null {
   if (profile.picture) {
-    return getStorageUrl(supabase, 'profile-pictures', profile.picture);
+    return getStorageUrl(supabase, 'avatars', profile.picture);
   }
   return null;
 }
@@ -207,7 +208,7 @@ export function getTeamPictureUrl(
   team: Team,
 ): string | null {
   if (team.picture) {
-    return getStorageUrl(supabase, 'team-pictures', team.picture);
+    return getStorageUrl(supabase, 'avatars', team.picture);
   }
   return null;
 }

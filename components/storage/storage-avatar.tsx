@@ -26,7 +26,7 @@ export function StorageAvatar({
   className,
 }: StorageAvatarProps) {
   const src = storageKey
-    ? (isExternalUrl(storageKey) ? storageKey : getPublicStorageUrl(storageKey))
+    ? (isExternalUrl(storageKey) ? storageKey : getPublicStorageUrl('avatars', storageKey))
     : null;
 
   return (

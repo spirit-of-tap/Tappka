@@ -7,6 +7,7 @@ import {
   getCurrentPictureKey,
   clearPictureRef,
 } from "@/lib/storage/authorization";
+import { contextToBucket } from "@/lib/storage/buckets";
 import { isExternalUrl } from "@/lib/storage/public-url";
 import type { StorageContext } from "@/lib/storage/types";
 
@@ -52,7 +53,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!isExternalUrl(existingKey)) {
       try {
-        await deleteFile(existingKey);
+        await deleteFile(contextToBucket(context), existingKey);
       } catch (error) {
         console.error("Error deleting file from storage:", error);
       }

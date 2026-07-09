@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { getPublicStorageUrl, isExternalUrl } from '@/lib/storage/public-url';
+import type { BucketId } from '@/lib/storage/buckets';
 
 interface StorageImageProps {
   storageKey: string | null;
@@ -10,6 +11,8 @@ interface StorageImageProps {
   width?: number;
   height?: number;
   fill?: boolean;
+  /** Public bucket the key lives in. Defaults to 'images' (book covers, essay images). */
+  bucket?: BucketId;
 }
 
 export function StorageImage({
@@ -19,10 +22,11 @@ export function StorageImage({
   width,
   height,
   fill,
+  bucket = 'images',
 }: StorageImageProps) {
   if (!storageKey) return null;
 
-  const src = isExternalUrl(storageKey) ? storageKey : getPublicStorageUrl(storageKey);
+  const src = isExternalUrl(storageKey) ? storageKey : getPublicStorageUrl(bucket, storageKey);
 
   if (fill) {
     return (
