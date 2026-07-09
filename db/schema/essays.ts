@@ -17,6 +17,8 @@ export const essays = pgTable("essays", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	voteCount: integer("vote_count").default(0).notNull(),
+	isPinned: boolean("is_pinned").default(false).notNull(),
+	pinnedAt: timestamp("pinned_at", { withTimezone: true, mode: 'string' }),
 }, (table) => [
 	index("essays_author_idx").using("btree", table.authorProfileId.asc().nullsLast().op("uuid_ops")),
 	index("essays_book_idx").using("btree", table.bookId.asc().nullsLast().op("uuid_ops")),

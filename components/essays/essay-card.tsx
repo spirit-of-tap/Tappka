@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MessageCircle, Eye, BookOpen, FileQuestion, ChevronUp } from 'lucide-react';
+import { MessageCircle, Eye, BookOpen, ChevronUp, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from './essay-vote-button';
@@ -71,8 +71,8 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
               </>
             ) : (
               <>
-                <FileQuestion className="size-3 shrink-0" />
-                <span className="italic">Bez zdroje</span>
+                <Sparkles className="size-3 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span className="text-amber-700 dark:text-amber-300">Nad rámec četby</span>
               </>
             )}
           </div>

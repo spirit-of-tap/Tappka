@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { BookOpen, Eye, Pencil } from 'lucide-react';
+import { BookOpen, Eye, Pencil, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById, getEssayComments, getEssayCoachViewers, getEssayCoachReads } from '@/lib/essays/queries';
@@ -12,6 +12,7 @@ import { CoachReadButton } from '@/components/essays/coach-read-button';
 import { ViewTracker } from '@/components/essays/view-tracker';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
+import { EssayPinButton } from '@/components/essays/essay-pin-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BackButton } from '@/components/essays/back-button';
@@ -68,12 +69,15 @@ export default async function EssayDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between mb-8">
         <BackButton />
         {isAuthor && (
-          <Button variant="outline" asChild size="sm">
-            <Link href={`/eseje/${essayId}/upravit`}>
-              <Pencil className="size-4 mr-2" />
-              Upravit
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <EssayPinButton essayId={essayId} isPinned={essay.is_pinned} />
+            <Button variant="outline" asChild size="sm">
+              <Link href={`/eseje/${essayId}/upravit`}>
+                <Pencil className="size-4 mr-2" />
+                Upravit
+              </Link>
+            </Button>
+          </div>
         )}
         {canReview && (
           <CoachReadButton essayId={essayId} initialRead={alreadyRead} size="sm" />

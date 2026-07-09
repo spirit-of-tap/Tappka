@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, PenLine, ExternalLink } from 'lucide-react';
+import { Search, BookOpen, PenLine, ExternalLink, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
@@ -197,8 +197,10 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
               height={56}
               className="w-full h-full object-cover"
             />
-          ) : (
+          ) : essay.book ? (
             <BookOpen className="size-4 text-muted-foreground/30" />
+          ) : (
+            <Sparkles className="size-4 text-amber-500/40" />
           )}
         </div>
         <div className="flex-1 min-w-0 space-y-1 py-0.5">
@@ -215,8 +217,13 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
           <p className="font-semibold text-sm leading-snug line-clamp-3 group-hover:text-primary transition-colors">
             {essay.title}
           </p>
-          {essay.book && (
+          {essay.book ? (
             <p className="text-xs text-muted-foreground truncate">{essay.book.title}</p>
+          ) : (
+            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <Sparkles className="size-3" />
+              Nad rámec četby
+            </p>
           )}
         </div>
       </Link>

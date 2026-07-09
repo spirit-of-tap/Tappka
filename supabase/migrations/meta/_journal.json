@@ -57,6 +57,13 @@
       "when": 1783627992540,
       "tag": "20260709201312_sticky_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783633748057,
+      "tag": "20260709214908_smart_korath",
+      "breakpoints": true
     }
   ]
 }

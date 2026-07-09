@@ -13,6 +13,8 @@ export interface Essay {
   vote_count: number;
   created_at: string;
   updated_at: string;
+  is_pinned: boolean;
+  pinned_at: string | null;
 }
 
 export interface EssayWithDetails extends Essay {

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Users, Phone, Cake, BookOpen } from 'lucide-react';
+import { ArrowLeft, Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getProfilePictureUrl, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -46,6 +46,8 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   }
 
   const totalVotes = essays.reduce((s, e) => s + (e.vote_count ?? 0), 0);
+  const bookEssays = essays.filter((e) => e.book);
+  const topicEssays = essays.filter((e) => !e.book);
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
   const isOwnProfile = currentUserProfile?.id === profile.id;
   const teamColor = profile.team?.color ?? null;
@@ -159,37 +161,92 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
         {essays.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">Zatím žádné eseje</p>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-3">
-            {essays.map((essay) => {
-              const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
-              return (
-                <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
-                  <Link href={`/eseje/${essay.id}`} className="shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5" style={{ height: '60px' }}>
-                    {essay.book?.cover_path ? (
-                      <StorageImage storageKey={essay.book.cover_path} alt={essay.book.title} width={44} height={60} className="w-full h-full object-cover" />
-                    ) : (
-                      <BookOpen className="size-4 text-muted-foreground/30" />
-                    )}
-                  </Link>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <Link href={`/eseje/${essay.id}`}>
-                      <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">{essay.title}</p>
-                    </Link>
-                    {essay.book && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {essay.book.title}
-                        {pointsNumber(essay.book.book_points) > 0 ? <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(essay.book.book_points)}</span> : null}
-                      </p>
-                    )}
-                    {excerpt && excerpt.length > 20 && (
-                      <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{excerpt}…</p>
-                    )}
-                    <EssayVoteButton essayId={essay.id} initialVoteCount={essay.vote_count} initialVoted={votedIds.has(essay.id)} size="sm" />
-                  </div>
+          <>
+            {bookEssays.length > 0 && (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {[...bookEssays].sort((a, b) => {
+                  if (a.is_pinned && !b.is_pinned) return -1;
+                  if (!a.is_pinned && b.is_pinned) return 1;
+                  return 0;
+                }).map((essay) => {
+                  const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
+                  return (
+                    <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
+                      <Link href={`/eseje/${essay.id}`} className="shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5" style={{ height: '60px' }}>
+                        {essay.book!.cover_path ? (
+                          <StorageImage storageKey={essay.book!.cover_path} alt={essay.book!.title} width={44} height={60} className="w-full h-full object-cover" />
+                        ) : (
+                          <BookOpen className="size-4 text-muted-foreground/30" />
+                        )}
+                      </Link>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <Link href={`/eseje/${essay.id}`}>
+                          <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors inline-flex items-center gap-1.5">
+                            {essay.is_pinned && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
+                            {essay.title}
+                          </p>
+                        </Link>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {essay.book!.title}
+                          {pointsNumber(essay.book!.book_points) > 0 && <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(essay.book!.book_points)}</span>}
+                        </p>
+                        {excerpt && excerpt.length > 20 && (
+                          <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{excerpt}…</p>
+                        )}
+                        <EssayVoteButton essayId={essay.id} initialVoteCount={essay.vote_count} initialVoted={votedIds.has(essay.id)} size="sm" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {topicEssays.length > 0 && (
+              <section className="space-y-3">
+                <div className="flex items-center gap-2 pt-2">
+                  <Sparkles className="size-4 text-amber-500" />
+                  <h3 className="font-semibold text-sm text-amber-700 dark:text-amber-300">
+                    Nad rámec četby
+                  </h3>
                 </div>
-              );
-            })}
-          </div>
+                <p className="text-xs text-muted-foreground/60 leading-relaxed -mt-1">
+                  Myšlenky, postřehy a záznamy, které nevznikly z přečtené knihy, ale z vlastní potřeby sdílet — bez nároku na body.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {[...topicEssays].sort((a, b) => {
+                    if (a.is_pinned && !b.is_pinned) return -1;
+                    if (!a.is_pinned && b.is_pinned) return 1;
+                    return 0;
+                  }).map((essay) => {
+                    const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
+                    return (
+                      <div key={essay.id} className="flex gap-3 rounded-xl border border-amber-200/50 dark:border-amber-800/30 bg-amber-50/30 dark:bg-amber-950/20 px-3.5 py-3 group hover:shadow-sm transition-shadow">
+                        <Link href={`/eseje/${essay.id}`} className="shrink-0 w-11 h-15 rounded-md overflow-hidden bg-amber-100/50 dark:bg-amber-900/20 flex items-center justify-center mt-0.5" style={{ height: '60px' }}>
+                          <Sparkles className="size-4 text-amber-500/40" />
+                        </Link>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <Link href={`/eseje/${essay.id}`}>
+                            <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors inline-flex items-center gap-1.5">
+                              {essay.is_pinned && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
+                              {essay.title}
+                            </p>
+                          </Link>
+                          <p className="text-xs text-amber-600/70 dark:text-amber-400/70 flex items-center gap-1">
+                            <Sparkles className="size-3" />
+                            Nad rámec četby
+                          </p>
+                          {excerpt && excerpt.length > 20 && (
+                            <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{excerpt}…</p>
+                          )}
+                          <EssayVoteButton essayId={essay.id} initialVoteCount={essay.vote_count} initialVoted={votedIds.has(essay.id)} size="sm" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
     </div>
