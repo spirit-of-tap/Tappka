@@ -315,14 +315,18 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                 isActive={pathname === "/zpetna-vazba"}
                 className={cn(
                   "group/menu-button",
-                  "data-[active=true]:bg-rose-100 data-[active=true]:text-rose-700",
-                  "data-[active=true]:dark:bg-rose-950 data-[active=true]:dark:text-rose-200",
-                  "hover:text-rose-600 dark:hover:text-rose-300",
+                  "bg-rose-50/60 text-rose-700",
+                  "dark:bg-rose-950/40 dark:text-rose-300",
+                  "data-[active=true]:bg-rose-100 data-[active=true]:text-rose-800",
+                  "data-[active=true]:dark:bg-rose-900/60 data-[active=true]:dark:text-rose-200",
+                  "hover:bg-rose-100 hover:text-rose-800",
+                  "dark:hover:bg-rose-900/60 dark:hover:text-rose-200",
+                  "border border-rose-200/50 dark:border-rose-800/40",
                 )}
               >
                 <Link href="/zpetna-vazba" onClick={closeSidebarOnMobile}>
-                  <Heart className="size-4 transition-transform group-data-[active=true]/menu-button:scale-110" />
-                  <span>Zpětná vazba</span>
+                  <Heart className="size-4 animate-pulse transition-transform group-data-[active=true]/menu-button:scale-110" />
+                  <span className="font-medium">Zpětná vazba</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
