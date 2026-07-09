@@ -8,6 +8,7 @@ import {
   Sun,
   Laptop,
   User as UserIcon,
+  BriefcaseBusiness,
   FlaskConical,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -116,6 +117,12 @@ export function NavUser({ user }: NavUserProps) {
                 <UserIcon className="mr-2 h-4 w-4" />
                 Profil
               </DropdownMenuItem>
+              {user.beta_access && (
+                <DropdownMenuItem onClick={() => router.push("/portfolio")}>
+                  <BriefcaseBusiness className="mr-2 h-4 w-4" />
+                  Portfolio
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   {theme === "light" ? (

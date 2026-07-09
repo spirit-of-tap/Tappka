@@ -12,7 +12,6 @@ import {
   ChevronRight,
   Heart,
   FileText,
-  BriefcaseBusiness,
   Search,
   Settings,
   Inbox,
@@ -87,16 +86,6 @@ const getNavData = (isDevelopment: boolean, isCoachOrAdmin: boolean, reviewCount
           title: "Čtení",
           url: "/prehled",
           icon: BookOpen,
-        },
-      ],
-    },
-    {
-      title: "Portfolio",
-      items: [
-        {
-          title: "Portfolio",
-          url: "/portfolio",
-          icon: BriefcaseBusiness,
         },
       ],
     },
