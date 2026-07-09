@@ -32,16 +32,21 @@ Pure logic extracted from `lib/*`: availability/date math (reservations), Zod va
 
 ### Integration (real Postgres, throwaway)
 
-Covers code that builds/runs Drizzle + Supabase queries, and API route handlers.
+Covers the **database contract**: that `supabase/migrations` apply cleanly, and that the resulting schema behaves correctly — key constraints, trigger functions (e.g. `on_auth_user_created` populating `public.users`), and RLS policies. This is the layer that catches a migration silently breaking the schema or a policy.
 
-- A test-setup module boots **one Testcontainers Postgres per run**, applies `supabase/migrations` (the exact migration files that ship to production), and exposes a Drizzle/pg client pointed at that container.
+> **Scope note:** the app talks to the DB exclusively through `@supabase/supabase-js` (PostgREST + Auth over HTTP), which cannot run against a bare Postgres container. So integration tests exercise the schema/RLS directly via a `pg` client — not the app's supabase-js query calls. Full coverage of the app's actual query code and API route handlers lives in the **E2E layer**, which runs against the real local Supabase stack.
+
+- A test-setup module boots **one Testcontainers Postgres per run** (the `supabase/postgres` image so Supabase roles/extensions are present), runs a checked-in **`bootstrap.sql`** to create the minimal Supabase `auth` layer the migrations depend on (`auth` schema, `auth.users`, `auth.uid()`/`auth.jwt()`/`auth.role()` shims that read `request.jwt.claims`), then applies `supabase/migrations` (the exact migration files that ship to production), and exposes a `pg` client pointed at that container.
+- **Why `bootstrap.sql` is needed:** the migrations reference `auth.users`, `auth.uid()`, and the `authenticated`/`anon`/`service_role` roles, and place triggers on `auth.users`. These come from Supabase's Auth service (not the base Postgres image), so the test environment must recreate the minimal subset before app migrations apply. This bootstrap is load-bearing and is built/validated empirically until all migrations apply cleanly.
 - **Isolation:** each test runs inside a transaction that is **rolled back** at teardown. Nothing persists between tests; nothing is ever reset. The dev DB is never in the connection string.
 - **RLS:** policies arrive via migrations. Tests set `role` and `request.jwt.claims` within the transaction to exercise policies as a given user. (Supabase's Auth *service* is not present in the container; setting JWT claims directly is the standard way to test RLS.)
 - **Why this proves merges are safe:** the test DB in every environment is built by replaying `supabase/migrations` — the same files the deploy workflow pushes to preview/production. A passing integration test validates queries against the real, current schema about to ship.
 
 ### E2E (Playwright)
 
-A thin layer over critical flows only: auth/login, make a reservation, submit an essay. Runs against `next build && next start` + local Supabase, seeded with known fixture data. **Seed only — never a reset of dev data.**
+A thin layer over critical flows. Runs against `next build && next start` + local Supabase, seeded with known fixture data. **Seed only — never a reset of dev data.**
+
+> **First deliverable vs. growth:** the app authenticates via Google OAuth / OTP, which can't be driven through a real third-party login in CI. The worked E2E example is therefore a **public-route smoke test** (app boots and serves), plus a documented pattern for authenticated flows: mint a session for a seeded test user via the `service_role` key / Supabase admin API and inject it, then drive reservation/essay flows. Authed flows are added incrementally on that pattern.
 
 ## Directory layout
 
