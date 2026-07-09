@@ -11,7 +11,6 @@ import {
   Database,
   ChevronRight,
   Heart,
-  MessageCircleQuestion,
   FileText,
   BriefcaseBusiness,
   Search,
@@ -63,9 +62,6 @@ type NavData = {
   navMain: NavSection[]
 }
 
-const HELP_DESK_URL =
-  "https://teams.microsoft.com/l/channel/19%3Aea499f40a2864e03862e5b517fa824a8%40thread.tacv2/HelpDesk%20IT%20House?groupId=c84b63de-1603-4ba8-98a6-9825300c0f22&tenantId=f26a48e1-fc21-461a-b97f-ac5bd535f341"
-
 // Navigation data for Tappka
 const getNavData = (isDevelopment: boolean, isCoachOrAdmin: boolean, reviewCount: number): NavData => ({
   navMain: [
@@ -91,16 +87,6 @@ const getNavData = (isDevelopment: boolean, isCoachOrAdmin: boolean, reviewCount
           title: "Čtení",
           url: "/prehled",
           icon: BookOpen,
-        },
-      ],
-    },
-    {
-      title: "Podpora",
-      items: [
-        {
-          title: "Zpětná vazba",
-          url: "/zpetna-vazba",
-          icon: Heart,
         },
       ],
     },
@@ -298,30 +284,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                     )
                   }
 
-                  // Special handling for Zpětná vazba — inviting highlight
-                  if (item.title === "Zpětná vazba") {
-                    const isActive = pathname === item.url
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive}
-                          className={cn(
-                            "group/menu-button",
-                            "data-[active=true]:bg-rose-100 data-[active=true]:text-rose-700",
-                            "data-[active=true]:dark:bg-rose-950 data-[active=true]:dark:text-rose-200",
-                            "hover:text-rose-600 dark:hover:text-rose-300",
-                          )}
-                        >
-                          <Link href={item.url} onClick={closeSidebarOnMobile}>
-                            <item.icon className="size-4 transition-transform group-data-[active=true]/menu-button:scale-110" />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  }
-
                   // Standard menu item (internal or external)
                   return (
                     <SidebarMenuItem key={item.title}>
@@ -358,15 +320,21 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="HelpDesk">
-                <a
-                  href={HELP_DESK_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MessageCircleQuestion className="size-4" />
-                  <span>HelpDesk</span>
-                </a>
+              <SidebarMenuButton
+                asChild
+                tooltip="Zpětná vazba"
+                isActive={pathname === "/zpetna-vazba"}
+                className={cn(
+                  "group/menu-button",
+                  "data-[active=true]:bg-rose-100 data-[active=true]:text-rose-700",
+                  "data-[active=true]:dark:bg-rose-950 data-[active=true]:dark:text-rose-200",
+                  "hover:text-rose-600 dark:hover:text-rose-300",
+                )}
+              >
+                <Link href="/zpetna-vazba" onClick={closeSidebarOnMobile}>
+                  <Heart className="size-4 transition-transform group-data-[active=true]/menu-button:scale-110" />
+                  <span>Zpětná vazba</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
