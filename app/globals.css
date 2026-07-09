@@ -3,11 +3,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* 
+/*
  * TAP Brand Colors
  * Primary Red: #b31b1b
  * White: #fcfff7
  * Brown: #2c1a1d
+ *
+ * Theme tokens hold raw OKLCH values and are exposed to Tailwind via the
+ * direct `@theme inline` mapping (current shadcn / Tailwind v4 convention),
+ * so `npx shadcn add <component>` stays in sync.
  */
 
 @theme inline {
@@ -21,192 +25,175 @@
   --radius-4xl: calc(var(--radius) + 16px);
 
   /* Color Mappings */
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-chart-1: hsl(var(--chart-1));
-  --color-chart-2: hsl(var(--chart-2));
-  --color-chart-3: hsl(var(--chart-3));
-  --color-chart-4: hsl(var(--chart-4));
-  --color-chart-5: hsl(var(--chart-5));
-  --color-sidebar: hsl(var(--sidebar-background));
-  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
-  --color-sidebar-primary: hsl(var(--sidebar-primary));
-  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
-  --color-sidebar-accent: hsl(var(--sidebar-accent));
-  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
-  --color-sidebar-border: hsl(var(--sidebar-border));
-  --color-sidebar-ring: hsl(var(--sidebar-ring));
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
   /* TAP Brand Colors (direct access) */
-  --color-tap-red: #b31b1b;
-  --color-tap-white: #fcfff7;
-  --color-tap-brown: #2c1a1d;
+  --color-tap-red: oklch(0.493 0.186 27.5); /* #b31b1b */
+  --color-tap-white: oklch(0.996 0.011 123.5); /* #fcfff7 */
+  --color-tap-brown: oklch(0.243 0.029 8.5); /* #2c1a1d */
 
-  /* TAP Brand Typography */
-  --font-heading: "Poppins", sans-serif;
-  --font-body: "Roboto", sans-serif;
-  --font-quote: "Pacifico", cursive;
-  --font-sans: "Roboto", system-ui, sans-serif;
+  /* TAP Brand Typography (wired to next/font variables from app/layout.tsx) */
+  --font-sans: var(--font-roboto), system-ui, sans-serif;
+  --font-heading: var(--font-poppins), system-ui, sans-serif;
+  --font-body: var(--font-roboto), system-ui, sans-serif;
+  --font-quote: var(--font-pacifico), cursive;
 }
 
 /* TAP Brand Colors - Light Theme */
 :root {
   --radius: 0.5rem;
 
-  /* Core Colors */
-  --background: 80 100% 98%; /* TAP White #fcfff7 */
-  --foreground: 350 26% 14%; /* TAP Brown #2c1a1d */
+  --background: oklch(0.995 0.014 121.7); /* TAP White #fcfff7 */
+  --foreground: oklch(0.245 0.03 8.6); /* TAP Brown #2c1a1d */
 
-  --card: 80 100% 98%; /* TAP White */
-  --card-foreground: 350 26% 14%; /* TAP Brown */
+  --card: oklch(0.995 0.014 121.7); /* TAP White */
+  --card-foreground: oklch(0.245 0.03 8.6); /* TAP Brown */
 
-  --popover: 0 0% 100%; /* Pure White */
-  --popover-foreground: 350 26% 14%; /* TAP Brown */
+  --popover: oklch(1 0 0); /* Pure White */
+  --popover-foreground: oklch(0.245 0.03 8.6); /* TAP Brown */
 
-  --primary: 0 76% 39%; /* TAP Red #b31b1b */
-  --primary-foreground: 0 0% 100%; /* White */
+  --primary: oklch(0.484 0.184 27.7); /* TAP Red #b31b1b */
+  --primary-foreground: oklch(1 0 0); /* White */
 
-  --secondary: 350 26% 20%; /* Lighter TAP Brown */
-  --secondary-foreground: 80 100% 98%; /* TAP White */
+  --secondary: oklch(0.303 0.041 8.9); /* Lighter TAP Brown */
+  --secondary-foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --muted: 80 20% 95%; /* Very light warm gray */
-  --muted-foreground: 350 26% 30%; /* Medium TAP Brown */
+  --muted: oklch(0.967 0.007 121.6); /* Very light warm gray */
+  --muted-foreground: oklch(0.393 0.057 9.2); /* Medium TAP Brown */
 
-  --accent: 0 76% 45%; /* Slightly brighter TAP Red */
-  --accent-foreground: 0 0% 100%;
+  --accent: oklch(0.946 0.015 76.6); /* Soft warm tint (subtle hover/highlight) */
+  --accent-foreground: oklch(0.245 0.03 8.6); /* TAP Brown */
 
-  --destructive: 0 76% 50%; /* Destructive red based on TAP Red */
-  --destructive-foreground: 0 0% 100%;
+  --destructive: oklch(0.581 0.223 27.9); /* Destructive red */
+  --destructive-foreground: oklch(1 0 0);
 
-  --border: 350 15% 85%; /* Light warm border */
-  --input: 350 15% 90%; /* Light input background */
-  --ring: 0 76% 39%; /* TAP Red for focus rings */
+  --border: oklch(0.877 0.013 5.8); /* Light warm border */
+  --input: oklch(0.918 0.008 5.7); /* Light input background */
+  --ring: oklch(0.484 0.184 27.7); /* TAP Red for focus rings */
 
-  /* Chart Colors */
-  --chart-1: 0 76% 39%; /* TAP Red */
-  --chart-2: 350 26% 14%; /* TAP Brown */
-  --chart-3: 0 76% 60%; /* Light TAP Red */
-  --chart-4: 350 26% 40%; /* Light TAP Brown */
-  --chart-5: 20 30% 50%; /* Warm neutral */
+  /* Chart Colors - distinct hues for categorical data */
+  --chart-1: oklch(0.537 0.206 27.8); /* TAP Red */
+  --chart-2: oklch(0.758 0.152 69.3); /* Amber */
+  --chart-3: oklch(0.635 0.089 195.1); /* Teal */
+  --chart-4: oklch(0.628 0.183 327.5); /* Magenta */
+  --chart-5: oklch(0.554 0.16 287.7); /* Violet */
 
   /* Sidebar */
-  --sidebar-background: 80 50% 97%;
-  --sidebar-foreground: 350 26% 14%;
-  --sidebar-primary: 0 76% 39%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 80 20% 95%;
-  --sidebar-accent-foreground: 350 26% 14%;
-  --sidebar-border: 350 15% 85%;
-  --sidebar-ring: 0 76% 39%;
-  --sidebar: hsl(0 0% 98%);
+  --sidebar: oklch(0.985 0.01 121.7);
+  --sidebar-foreground: oklch(0.245 0.03 8.6);
+  --sidebar-primary: oklch(0.484 0.184 27.7);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.946 0.015 76.6);
+  --sidebar-accent-foreground: oklch(0.245 0.03 8.6);
+  --sidebar-border: oklch(0.877 0.013 5.8);
+  --sidebar-ring: oklch(0.484 0.184 27.7);
 }
 
 /* TAP Brand Colors - Dark Theme */
 .dark {
-  /* Core Colors */
-  --background: 350 26% 8%; /* Darker TAP Brown */
-  --foreground: 80 100% 98%; /* TAP White */
+  --background: oklch(0.184 0.018 8); /* Darker TAP Brown */
+  --foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --card: 350 26% 12%; /* Dark TAP Brown card */
-  --card-foreground: 80 100% 98%; /* TAP White */
+  --card: oklch(0.225 0.026 8.4); /* Dark TAP Brown card */
+  --card-foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --popover: 350 26% 10%; /* Dark popover */
-  --popover-foreground: 80 100% 98%; /* TAP White */
+  --popover: oklch(0.205 0.022 8.2); /* Dark popover */
+  --popover-foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --primary: 0 76% 39%; /* TAP Red (consistent) */
-  --primary-foreground: 0 0% 100%;
+  --primary: oklch(0.537 0.206 27.8); /* TAP Red (brightened for dark) */
+  --primary-foreground: oklch(1 0 0);
 
-  --secondary: 350 26% 18%; /* Medium dark TAP Brown */
-  --secondary-foreground: 80 100% 98%; /* TAP White */
+  --secondary: oklch(0.284 0.037 8.8); /* Medium dark TAP Brown */
+  --secondary-foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --muted: 350 26% 15%; /* Muted dark brown */
-  --muted-foreground: 350 15% 70%; /* Light brown text */
+  --muted: oklch(0.255 0.032 8.7); /* Muted dark brown */
+  --muted-foreground: oklch(0.749 0.027 6.4); /* Light brown text */
 
-  --accent: 0 76% 45%; /* Slightly brighter TAP Red */
-  --accent-foreground: 0 0% 100%;
+  --accent: oklch(0.325 0.034 8.1); /* Subtle elevated brown (hover/highlight) */
+  --accent-foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --destructive: 0 76% 50%; /* Destructive red */
-  --destructive-foreground: 0 0% 100%;
+  --destructive: oklch(0.602 0.21 26.3); /* Destructive red */
+  --destructive-foreground: oklch(1 0 0);
 
-  --border: 350 26% 20%; /* Dark border */
-  --input: 350 26% 16%; /* Dark input */
-  --ring: 0 76% 39%; /* TAP Red for focus rings */
+  --border: oklch(0.303 0.041 8.9); /* Dark border */
+  --input: oklch(0.265 0.034 8.7); /* Dark input */
+  --ring: oklch(0.537 0.206 27.8); /* TAP Red for focus rings */
 
-  /* Chart Colors */
-  --chart-1: 0 76% 39%; /* TAP Red */
-  --chart-2: 80 100% 98%; /* TAP White */
-  --chart-3: 0 76% 60%; /* Light TAP Red */
-  --chart-4: 350 15% 60%; /* Light TAP Brown */
-  --chart-5: 20 30% 60%; /* Warm neutral */
+  /* Chart Colors - distinct hues for categorical data */
+  --chart-1: oklch(0.631 0.192 24.5); /* TAP Red */
+  --chart-2: oklch(0.792 0.137 72.4); /* Amber */
+  --chart-3: oklch(0.761 0.103 195.2); /* Teal */
+  --chart-4: oklch(0.704 0.158 327.1); /* Magenta */
+  --chart-5: oklch(0.653 0.132 289.9); /* Violet */
 
   /* Sidebar */
-  --sidebar-background: 350 26% 10%;
-  --sidebar-foreground: 80 100% 98%;
-  --sidebar-primary: 0 76% 39%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 350 26% 15%;
-  --sidebar-accent-foreground: 80 100% 98%;
-  --sidebar-border: 350 26% 20%;
-  --sidebar-ring: 0 76% 39%;
-  --sidebar: hsl(240 5.9% 10%);
+  --sidebar: oklch(0.205 0.022 8.2);
+  --sidebar-foreground: oklch(0.995 0.014 121.7);
+  --sidebar-primary: oklch(0.537 0.206 27.8);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.325 0.034 8.1);
+  --sidebar-accent-foreground: oklch(0.995 0.014 121.7);
+  --sidebar-border: oklch(0.303 0.041 8.9);
+  --sidebar-ring: oklch(0.537 0.206 27.8);
 }
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-roboto), system-ui, sans-serif;
-  }
-
-  /* TAP Brand Typography Classes */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-poppins), system-ui, sans-serif;
-    font-weight: 700; /* Bold as per brand guidelines */
-  }
-
-  .font-heading {
-    font-family: var(--font-poppins), system-ui, sans-serif;
-  }
-
-  .font-body {
-    font-family: var(--font-roboto), system-ui, sans-serif;
-  }
-
-  .font-quote {
-    font-family: var(--font-pacifico), cursive;
-  }
-}
-
-/* 
- ---break---
- */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  /* TAP Brand Typography Classes */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 700; /* Bold as per brand guidelines */
+  }
+
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  .font-quote {
+    font-family: var(--font-quote);
   }
 }
 
@@ -239,13 +226,13 @@
 .tiptap p, .tiptap-content p { margin: 0.6em 0; }
 
 .tiptap blockquote, .tiptap-content blockquote {
-  border-left: 3px solid hsl(var(--primary));
+  border-left: 3px solid var(--primary);
   margin: 1em 0;
   padding: 0.4em 1em;
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   font-style: italic;
   border-radius: 0 4px 4px 0;
-  background: hsl(var(--muted) / 0.4);
+  background: color-mix(in oklch, var(--muted) 40%, transparent);
 }
 
 .tiptap ul, .tiptap-content ul { list-style: disc; padding-left: 1.5em; margin: 0.6em 0; }
@@ -255,12 +242,12 @@
 .tiptap code, .tiptap-content code {
   font-family: ui-monospace, monospace;
   font-size: 0.875em;
-  background: hsl(var(--muted));
+  background: var(--muted);
   padding: 0.15em 0.4em;
   border-radius: 4px;
 }
 .tiptap pre, .tiptap-content pre {
-  background: hsl(var(--muted));
+  background: var(--muted);
   padding: 1em;
   border-radius: 6px;
   overflow-x: auto;
@@ -274,7 +261,7 @@
 
 .tiptap hr, .tiptap-content hr {
   border: none;
-  border-top: 1px solid hsl(var(--border));
+  border-top: 1px solid var(--border);
   margin: 1.5em 0;
 }
 
@@ -284,7 +271,7 @@
 .tiptap u, .tiptap-content u { text-decoration: underline; }
 
 .tiptap a, .tiptap-content a {
-  color: hsl(var(--primary));
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
