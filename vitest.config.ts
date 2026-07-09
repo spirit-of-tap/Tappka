@@ -20,6 +20,16 @@ export default defineConfig({
           globals: true,
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "component",
+          environment: "jsdom",
+          setupFiles: ["tests/setup/component.setup.ts"],
+          include: ["components/**/*.test.tsx", "tests/component/**/*.test.tsx"],
+          globals: true,
+        },
+      },
     ],
   },
 });
