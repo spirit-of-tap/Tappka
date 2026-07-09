@@ -163,3 +163,28 @@ describe("feedback RLS", () => {
     });
   });
 });
+
+describe("feedback active/archived split", () => {
+  it("active excludes archived; archived includes only archived", async () => {
+    await withRollback(async (client) => {
+      const author = await seedProfile(client, { name: "A", email: "split@studenti.czu.cz", role: "student" });
+      await client.query(
+        "insert into public.feedback (author_profile_id, body) values ($1, 'active-one')",
+        [author.profileId],
+      );
+      await client.query(
+        "insert into public.feedback (author_profile_id, body, archived_at) values ($1, 'archived-one', now())",
+        [author.profileId],
+      );
+
+      const active = await client.query(
+        "select body from public.feedback where archived_at is null",
+      );
+      const archived = await client.query(
+        "select body from public.feedback where archived_at is not null",
+      );
+      expect(active.rows.map((r) => r.body)).toEqual(["active-one"]);
+      expect(archived.rows.map((r) => r.body)).toEqual(["archived-one"]);
+    });
+  });
+});
