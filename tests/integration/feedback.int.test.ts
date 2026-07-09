@@ -138,6 +138,28 @@ describe("feedback RLS", () => {
           [author.profileId, ""],
         ),
       ).rejects.toThrow();
+
+      const overLengthBody = "a".repeat(4001);
+      await expect(
+        client.query(
+          "insert into public.feedback (author_profile_id, body) values ($1, $2)",
+          [author.profileId, overLengthBody],
+        ),
+      ).rejects.toThrow();
+    });
+  });
+
+  it("has an updated_at refresh trigger registered on public.feedback", async () => {
+    await withRollback(async (client) => {
+      const { rows } = await client.query(
+        `select t.tgname
+         from pg_trigger t
+         join pg_class c on c.oid = t.tgrelid
+         where c.relname = 'feedback'
+           and t.tgname = 'feedback_updated_at_trigger'
+           and not t.tgisinternal`,
+      );
+      expect(rows).toHaveLength(1);
     });
   });
 });

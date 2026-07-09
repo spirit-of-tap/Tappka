@@ -27,6 +27,8 @@ CREATE TRIGGER essay_votes_change_trigger AFTER INSERT OR DELETE ON public.essay
 
 CREATE TRIGGER essays_updated_at_trigger BEFORE UPDATE ON public.essays FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
 
+CREATE TRIGGER feedback_updated_at_trigger BEFORE UPDATE ON public.feedback FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
 CREATE TRIGGER broadcast_profile_link_change_trigger AFTER UPDATE OF user_id ON public.profiles FOR EACH ROW WHEN (((old.user_id IS NULL) AND (new.user_id IS NOT NULL))) EXECUTE FUNCTION broadcast_profile_link_change();
 
 CREATE TRIGGER enforce_picture_only_update BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION validate_picture_only_update();

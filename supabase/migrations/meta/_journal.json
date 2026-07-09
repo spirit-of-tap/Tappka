@@ -50,6 +50,13 @@
       "when": 1783626992340,
       "tag": "20260709195632_cool_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783627992540,
+      "tag": "20260709201312_sticky_sentinel",
+      "breakpoints": true
     }
   ]
 }
