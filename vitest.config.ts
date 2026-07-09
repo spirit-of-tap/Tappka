@@ -30,6 +30,19 @@ export default defineConfig({
           globals: true,
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          environment: "node",
+          globalSetup: ["tests/setup/testdb.ts"],
+          include: ["tests/integration/**/*.int.test.ts"],
+          fileParallelism: false,
+          testTimeout: 30_000,
+          hookTimeout: 120_000,
+          globals: true,
+        },
+      },
     ],
   },
 });
