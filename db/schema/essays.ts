@@ -49,12 +49,9 @@ export const essayComments = pgTable("essay_comments", {
 	body: text().notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	isLindaNudge: boolean("is_linda_nudge").default(false).notNull(),
-	nudgeStatus: text("nudge_status"),
 }, (table) => [
 	index("essay_comments_author_idx").using("btree", table.authorProfileId.asc().nullsLast().op("uuid_ops")),
 	index("essay_comments_essay_idx").using("btree", table.essayId.asc().nullsLast().op("uuid_ops")),
-	index("essay_comments_open_linda_nudge_idx").using("btree", table.essayId.asc().nullsLast().op("uuid_ops")).where(sql`(is_linda_nudge AND (nudge_status = 'open'::text))`),
 	foreignKey({
 			columns: [table.essayId],
 			foreignColumns: [essays.id],
@@ -70,7 +67,6 @@ export const essayComments = pgTable("essay_comments", {
 	pgPolicy("Authenticated users can add essay comments", { as: "permissive", for: "insert", to: ["authenticated"] }),
 	pgPolicy("Authenticated users can view essay comments", { as: "permissive", for: "select", to: ["authenticated"] }),
 	check("essay_comments_body_check", sql`(char_length(body) >= 1) AND (char_length(body) <= 4000)`),
-	check("essay_comments_nudge_status_check", sql`(nudge_status IS NULL) OR (nudge_status = ANY (ARRAY['open'::text, 'resolved'::text]))`),
 ]);
 
 export const essayVotes = pgTable("essay_votes", {
