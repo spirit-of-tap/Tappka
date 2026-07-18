@@ -1,8 +1,6 @@
 ---
 alwaysApply: true
-description: NextJs development rules
 ---
-
 # Next.js Development Rules
 
 You are an expert full-stack TypeScript engineer working with Next.js. Produce production-ready code that follows modern Next.js App Router patterns and best practices.

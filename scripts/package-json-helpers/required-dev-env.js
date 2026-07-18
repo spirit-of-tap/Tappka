@@ -12,27 +12,40 @@ export const ENV_WHEN = {
   AFTER_SUPABASE: 'after-supabase',
 };
 
+/** Google Cloud OAuth client creation URL (also documented in CONTRIBUTING.md). */
+export const GOOGLE_OAUTH_CLIENT_CREATE_URL =
+  'https://console.cloud.google.com/auth/clients/create';
+
 /**
  * @typedef {object} RequiredDevEnvVar
  * @property {string} key - Environment variable name
  * @property {'before-supabase' | 'after-supabase'} when - Validation phase
  * @property {boolean} prompt - Whether ensure-env should interactively ask for a value
  * @property {string} [description] - Prompt / error context shown to the developer
+ * @property {boolean} [keepOnEmpty] - Empty input keeps the current or .env.example value
+ * @property {string} [helpUrl] - URL to open when the developer asks for more info
+ * @property {string} [helpDocPath] - Repo-relative path to open for more info (e.g. CONTRIBUTING.md)
  */
 
 /** @type {RequiredDevEnvVar[]} */
 export const REQUIRED_DEV_ENV = [
   {
-    key: 'GOOGLE_CLIENT_ID',
-    when: ENV_WHEN.BEFORE_SUPABASE,
-    prompt: false,
-    description: 'Google OAuth client ID (shipped in .env.example)',
-  },
-  {
     key: 'GOOGLE_CLIENT_SECRET',
     when: ENV_WHEN.BEFORE_SUPABASE,
     prompt: true,
-    description: 'OAuth client secret — ask a teammate',
+    description:
+      'Create your own OAuth client at:\n' +
+      `${GOOGLE_OAUTH_CLIENT_CREATE_URL}\n` +
+      'or ask Tom for his dev credentials. See CONTRIBUTING.md for details.',
+    helpUrl: GOOGLE_OAUTH_CLIENT_CREATE_URL,
+    helpDocPath: 'CONTRIBUTING.md',
+  },
+  {
+    key: 'GOOGLE_CLIENT_ID',
+    when: ENV_WHEN.BEFORE_SUPABASE,
+    prompt: true,
+    keepOnEmpty: true,
+    description: 'Press Enter to keep the default from .env.example.',
   },
   {
     key: 'NEXT_PUBLIC_SUPABASE_URL',

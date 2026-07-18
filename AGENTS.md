@@ -6,10 +6,7 @@ Next.js 16 + React 19 + Supabase + Tailwind CSS v4 + shadcn/ui. Package manager:
 
 ```bash
 pnpm dev        # Start dev server + local Supabase
-pnpm build      # Production build
 pnpm lint       # ESLint
-pnpm supabase:start
-pnpm supabase:stop
 
 # Tests (see docs/runbooks/testing.md)
 pnpm test              # Unit + component (fast, no Docker)
@@ -20,10 +17,9 @@ pnpm test:e2e          # Playwright flows (needs pnpm build + local Supabase)
 pnpm test:watch        # Watch unit tests
 
 # Data layer (see docs/data-layer.md)
-pnpm db:generate         # Drizzle: schema edits -> SQL migration
 pnpm db:generate:custom  # Empty custom migration (functions/triggers/RLS)
-pnpm db:types            # Regenerate lib/supabase/database.types.ts from local DB
-pnpm supabase migration up   # Apply pending migrations locally
+pnpm db:up               # Apply custom migrations locally
+pnpm db:migrate          # Do not run yourself. Prompt the user to run it whenever you make a change to the database schema.
 ```
 
 ## Code Style
@@ -39,15 +35,10 @@ pnpm supabase migration up   # Apply pending migrations locally
 Full guide: **`docs/data-layer.md`**. See **Database schema changes** below for when
 and how migrations are created. The rules below apply to all migrations regardless of origin.
 
-**CRITICAL**: Apply migrations with the **Supabase CLI only** — `supabase migration up`
-locally, `supabase db push` to production. **Never** use the MCP `apply_migration` tool:
-it records history out-of-band from the CLI and is the root cause of migration-history
-drift (see `docs/runbooks/migration-history-drift.md`). A migration must always exist as
-a file in `supabase/migrations/` before it is applied; the history table must never
-drift from what is on disk.
+**CRITICAL**: Apply migrations with the **Supabase CLI through pnpm only** — `pnpm db:up`
+locally. **Never** use the MCP `apply_migration` tool
 
-### Migration rules
-- Always enable RLS on new tables
+### 
 - Separate policies per operation: one `select`, one `insert`, one `update`, one `delete`
 - Use `SECURITY INVOKER` and `set search_path = ''` in all functions
 - Use `(select auth.uid())` (not bare `auth.uid()`) in RLS policies for performance
@@ -56,19 +47,17 @@ drift from what is on disk.
 ## Database schema changes
 
 The schema source of truth is `db/schema/*.ts` (Drizzle). Do NOT hand-write
-migrations for tables/columns/enums/indexes.
+migrations for tables/columns/enums/indexes/RLS policies.
 
-- **Tables, columns, enums, indexes, views:** edit `db/schema/*.ts`, then
+- **Always enable RLS on new tables**
+- **Tables, columns, enums, indexes, views:** edit `db/schema/*.ts`, then prompt the user for
   `pnpm db:generate`. Review the generated SQL in `supabase/migrations/` (watch for
-  unintended DROPs), then `pnpm db:types` to regenerate types, then
-  `pnpm supabase migration up`. Commit the schema edit, migration, and types together.
-- **Functions & triggers:** Drizzle can't model these. Edit the current-state file in
-  `db/sql/`, run `pnpm db:generate:custom` to create an empty migration, paste the
-  `CREATE OR REPLACE` statement in, then run `pnpm db:generate` once (reports "No schema
-  changes") so the Drizzle journal records it; commit the `meta/` changes.
-- **RLS policies:** author a custom SQL migration from the live `pg_policies` definition
-  (DROP + CREATE). Do NOT backfill policy bodies into `db/schema/*.ts` — the schema files
-  don't carry expressions and doing so creates false drift.
+  unintended DROPs), then `pnpm db:up` to apply the migration. Finally verify with `pnpm db:up` that the migration applied successfully. Commit the schema edit and migration together.
+- **Functions & triggers:** Drizzle can't model these. run `pnpm db:generate:custom` to create an empty migration, paste the `CREATE OR REPLACE` statement in, upload to supabase via `pnpm db:up` then run `pnpm db:generate` once (reports "No schema changes") so the Drizzle journal records it; commit the `meta/` changes.
+- **RLS policies:** keep full `using` / `withCheck` on every `pgPolicy(...)` in
+  `db/schema/*.ts` so `db:generate` can `DROP POLICY` before `DROP COLUMN`. Prefer
+  schema edits + generate; custom SQL (DROP + CREATE from live `pg_policies`) is OK
+  if you then update the matching `pgPolicy(...)` so the next generate is empty.
 - **Types:** never hand-write DB row/enum types. Derive them via `Tables<'x'>` /
   `Database['public']['Enums']['x']` (this is why derived DB types use `type`, not
   `interface`). Query with `supabase-js`; helper signatures take `SupabaseClient<Database>`.
@@ -112,18 +101,11 @@ on PRs and pushes to `preview`/`production`.
   for tests.
 - **New feature = new test** in the matching layer. Run the relevant layer before
   committing; `pnpm test` and typecheck must pass.
-- **Known issue:** `pnpm lint` currently crashes on a pre-existing ESLint/ajv
-  toolchain error (unrelated to tests) — it will fail the CI lint step until fixed.
 
 ## GitHub
 
-- Use `gh` (GitHub CLI) for all GitHub operations — issues, PRs, reviews, and checks
-- Use `gh issue` for issue operations: `gh issue list`, `gh issue view`, `gh issue create`, `gh issue close`
-- Use `gh pr` for pull request operations: `gh pr list`, `gh pr view`, `gh pr create`, `gh pr checkout`, `gh pr review`, `gh pr merge`
-- Always check current context with `gh status` before starting work
-- Use `gh browse` to open the repo in a browser when needed
+- Use `gh` (GitHub CLI) for all GitHub operations if available.
 
 ## Environment
 
-- Copy `.env.local.example` → `.env.local` for local dev
 - Never commit `.env.local` or secrets

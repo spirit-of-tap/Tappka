@@ -70,6 +70,18 @@ export const readEnvLocal = () => {
 };
 
 /**
+ * Reads and parses .env.example when present.
+ * @returns {Record<string, string>} Parsed environment variables
+ */
+export const readEnvExample = () => {
+  if (!fs.existsSync(ENV_EXAMPLE_PATH)) {
+    return {};
+  }
+
+  return parseEnvContent(fs.readFileSync(ENV_EXAMPLE_PATH, 'utf-8'));
+};
+
+/**
  * Writes environment variables to .env.local.
  * @param {Record<string, string>} envVars - Object mapping keys to values
  */

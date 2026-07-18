@@ -145,12 +145,9 @@ Two facts about this repo that are easy to get wrong:
    If the journal falls behind the migration files, a later `drizzle-kit generate`
    will do it for you — but keep them in sync deliberately.
 
-2. **RLS policy *bodies* are managed by SQL migrations, not the Drizzle schema.**
-   The `pgPolicy(...)` entries in `db/schema/*.ts` were introspected without their
-   `using`/`with_check` expressions, and Drizzle's snapshot matches that
-   (expression-less) state — so `drizzle-kit generate` is clean. Do **not** backfill
-   real policy expressions into `db/schema/*.ts`: doing so creates a diff against the
-   snapshot and makes `generate` emit a DROP/CREATE POLICY migration that conflicts
-   with the hand-authored SQL migration that already applied the change. To change a
-   policy, write a SQL migration (see `20260708203841_optimize_rls_auth_initplan.sql`
-   for the DROP + CREATE pattern, authored from the live `pg_policies` definition).
+2. **RLS policy bodies belong in the Drizzle schema.** Keep full `using` /
+   `withCheck` on every `pgPolicy(...)` so `db:generate` can order `DROP POLICY`
+   before `DROP COLUMN` when a policy depends on that column. Expression-less
+   snapshot policies are a known cause of apply failures. After any hand-authored
+   policy SQL migration, update the matching `pgPolicy(...)` strings so the next
+   generate is empty.

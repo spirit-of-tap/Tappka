@@ -111,19 +111,22 @@ Drizzle can't model these — use a hand-authored custom migration:
 
 ### Change an RLS policy
 
-**Do not** backfill policy expressions into `db/schema/*.ts` — the schema files don't
-carry policy bodies and Drizzle's snapshot matches that, so editing them creates false
-drift and makes `db:generate` emit a conflicting migration. Instead, write a custom SQL
-migration authored from the **live** definition:
+**Always keep full `using` / `withCheck` expressions in `db/schema/*.ts` `pgPolicy(...)`
+calls**, matching the live policy bodies. Expression-less policies in the Drizzle
+snapshot are what caused `DROP COLUMN` to fail when a live policy still referenced the
+column (`reservation_type` / `Users can create own reservations`).
 
-```sql
--- dump the current definition first: select qual, with_check from pg_policies where ...
-DROP POLICY "..." ON public.<table>;
-CREATE POLICY "..." ON public.<table> FOR <cmd> TO authenticated
-  USING (...) WITH CHECK (...);
-```
+Workflow:
 
-See `supabase/migrations/20260708203841_optimize_rls_auth_initplan.sql` for the pattern.
+1. Edit the `pgPolicy(...)` in `db/schema/*.ts` (name, roles, command, and expressions).
+2. `pnpm db:generate` — review the SQL. It should `DROP POLICY` / `CREATE POLICY` (or
+   `ALTER POLICY`) **before** any `DROP COLUMN` those policies depend on.
+3. `pnpm supabase migration up`, then `pnpm db:types`.
+
+For a one-off body-only tweak when you prefer hand-authored SQL, you can still use
+`pnpm db:generate:custom` with `DROP POLICY` + `CREATE POLICY` from live `pg_policies`,
+then update the matching `pgPolicy(...)` strings so the next `db:generate` is empty.
+See `supabase/migrations/20260708203841_optimize_rls_auth_initplan.sql` for that pattern.
 
 ## Hard rules
 

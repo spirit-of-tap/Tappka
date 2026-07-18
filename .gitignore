@@ -11,6 +11,9 @@
 !.yarn/versions
 .tmp
 
+.claude
+.agents
+
 # testing
 /coverage
 

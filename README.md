@@ -116,7 +116,7 @@ pnpm stop # Stops the supabase docker instance
 pnpm restart # Stops the supabase docker instance and runs dev again
 ```
 
-For guidelines on how to develop the project see [CONTRIBUTING.md](CONTRIBUTING.md).
+To see how to develop the project see [CONTRIBUTING.md](CONTRIBUTING.md). Will make it easier to do stuff like add new migrations, add new features, etc.
 
 # Supabase
 
