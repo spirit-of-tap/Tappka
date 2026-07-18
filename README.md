@@ -135,7 +135,3 @@ There are cursor rules made for this nextjs project.
 
 You can simply **push to the preview branch** and it will be deployed to the preview environment.
 For production you will need to make a **pull request to the production branch** and it will be deployed to the production environment. You can approve it yourself, it's just for protection so that you don't accidentally deploy something to production.
-
-```
-
-```
