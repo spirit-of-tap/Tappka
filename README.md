@@ -23,10 +23,12 @@
 # Links
 
 ## Publicly available
+
 - [Tappka](https://tiimi.cz)
 - [Tappka preview](https://preview.tiimi.cz)
 
 ## Locally available when running the project
+
 - [Tappka locally](http://localhost:3000)
 - [Supabase locally](http://localhost:54323)
 - [Supabase mail locally](http://localhost:54324)
@@ -49,19 +51,50 @@ All czech should be just in localization files.
 ## Setup
 
 1. Install git if already not installed - https://git-scm.com/install/
-2. Install docker if already not installed - https://docs.docker.com/get-docker/
-2. Install node.js v24.x with pnpm 10.x if already not installed - https://nodejs.org/en/download/
-3. Install pnpm v10.x if you didn't choose it in the previous step
 
-```bash
-npm install -g pnpm@10.28.1
+```powershell
+winget install -e --id Git.Git
 ```
 
-4. Clone the repository
+```bash
+brew install git
+```
+
+2. Install mise if already not installed - https://mise.jdx.dev/installing-mise.html
+
+MACOS
+
+```bash
+curl https://mise.run/zsh | sh
+```
+
+WINDOWS
+
+```powershell
+winget install jdx.mise
+```
+
+3. Setup mise - https://mise.jdx.dev/getting-started.html
+
+```bash
+mise install
+mise doctor
+```
+
+4. On MACOS docker gets installed automatically by mise. On Windows you need to install it manually - https://docs.docker.com/get-docker/
+
+```powershell
+winget install -e --id Docker.DockerDesktop
+```
+
+5. Clone the repository
+
 ```bash
 git clone https://github.com/tappka/tappka.git
 ```
-5. Navigate to the project directory -
+
+6. Navigate to the project directory -
+
 ```bash
 cd tappka
 ```
@@ -75,6 +108,15 @@ pnpm dev
 
 The project will be available at [http://localhost:3000](http://localhost:3000)
 
+Other commands:
+
+```bash
+pnpm dev # Runs the project in development mode. Starts the supabase docker instance (which will not turn off even when you ctrl+c)
+pnpm stop # Stops the supabase docker instance
+pnpm restart # Stops the supabase docker instance and runs dev again
+```
+
+For guidelines on how to develop the project see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 # Supabase
 
@@ -93,3 +135,7 @@ There are cursor rules made for this nextjs project.
 
 You can simply **push to the preview branch** and it will be deployed to the preview environment.
 For production you will need to make a **pull request to the production branch** and it will be deployed to the production environment. You can approve it yourself, it's just for protection so that you don't accidentally deploy something to production.
+
+```
+
+```

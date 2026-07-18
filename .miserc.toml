@@ -1,0 +1,7 @@
+# Early-init (must live here, not in mise.toml).
+# Loads mise.unix.toml on macOS/Linux and mise.windows.toml on Windows.
+{% if os() != "windows" %}
+env = ["unix"]
+{% else %}
+env = ["windows"]
+{% endif %}

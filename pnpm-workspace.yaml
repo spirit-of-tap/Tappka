@@ -1,7 +1,10 @@
 onlyBuiltDependencies:
   - core-js
+  - cpu-features
+  - esbuild
   - protobufjs
   - sharp
+  - ssh2
   - supabase
   - unrs-resolver
 

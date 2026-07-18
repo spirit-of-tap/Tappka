@@ -1,0 +1,8 @@
+# Windows: no Colima. Install a Docker engine separately, then use
+# docker-cli / docker-compose from mise.toml:
+#   - Docker Desktop, or
+#   - Docker Engine inside WSL2, or
+#   - Rancher Desktop
+#
+# No extra mise tools required here.
+[tools]
