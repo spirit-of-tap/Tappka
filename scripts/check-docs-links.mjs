@@ -2,18 +2,31 @@
 /**
  * Crawls the VitePress docs site and reports broken local links.
  *
- * Usage: node scripts/check-docs-links.mjs [baseUrl]
- * Default baseUrl: http://localhost:5173
+ * Usage:
+ *   pnpm wiki:check-links
+ *   pnpm wiki:check-links http://localhost:5175
+ *
+ * Requires `pnpm wiki` to be running. Auto-detects a healthy local port when
+ * no baseUrl is passed (stale processes on 5173 often return SPA shell for every path).
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
-const BASE = (process.argv[2] ?? "http://localhost:5173").replace(/\/$/, "");
 const DOCS_ROOT = join(process.cwd(), "docs");
 const PUBLIC_DIR = join(DOCS_ROOT, "public");
 
 const EXTERNAL = /^(https?:|mailto:|tel:|data:|javascript:)/i;
 const SKIP_PATH = /^\/(@|__|node_modules)/;
+const CANDIDATE_BASES = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:5176",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:5175",
+  "http://127.0.0.1:5176",
+];
 
 /**
  * Lists markdown routes served by VitePress.
@@ -167,13 +180,72 @@ function extractLinks(content, isMarkdown) {
 /**
  * Fetches a URL and returns status + body text (binary-safe for PDFs).
  */
-async function fetchPage(pathname) {
-  const res = await fetch(`${BASE}${pathname}`);
+async function fetchPage(base, pathname) {
+  const res = await fetch(`${base}${pathname}`, {
+    signal: AbortSignal.timeout(3000),
+  });
   const buf = Buffer.from(await res.arrayBuffer());
-  const isBinary = pathname.endsWith(".pdf") || buf.slice(0, 4).toString() === "%PDF";
+  const isBinary =
+    pathname.endsWith(".pdf") ||
+    pathname.endsWith(".png") ||
+    buf.slice(0, 4).toString() === "%PDF" ||
+    buf.slice(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   const text = isBinary ? "" : buf.toString("utf8");
 
-  return { status: res.status, text, len: buf.length, isBinary };
+  return { status: res.status, text, len: buf.length, isBinary, buf };
+}
+
+/**
+ * True when the server serves docs/public assets (not a stale SPA-only process).
+ */
+async function isHealthyDocsServer(base) {
+  try {
+    const probe = await fetchPage(base, "/portfolio-sheets.html");
+
+    if (probe.status !== 200 || probe.isBinary) {
+      return false;
+    }
+
+    if (isSpaShell(probe.text, probe.len)) {
+      return false;
+    }
+
+    return probe.text.includes("Portfolio") || probe.text.includes("sheet");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Picks an explicit baseUrl, or the first healthy local VitePress instance.
+ */
+async function resolveBaseUrl() {
+  const explicit = process.argv[2]?.replace(/\/$/, "");
+
+  if (explicit) {
+    if (!(await isHealthyDocsServer(explicit))) {
+      console.error(
+        `Docs server at ${explicit} is not serving static HTML from docs/public/.`,
+      );
+      console.error(
+        "Stop stale VitePress processes and run `pnpm wiki`, then re-check against that port.",
+      );
+      process.exit(1);
+    }
+
+    return explicit;
+  }
+
+  for (const candidate of CANDIDATE_BASES) {
+    if (await isHealthyDocsServer(candidate)) {
+      return candidate;
+    }
+  }
+
+  console.error("No healthy VitePress docs server found on ports 5173–5176.");
+  console.error("Run `pnpm wiki` in another terminal, note the Local URL, then:");
+  console.error("  pnpm wiki:check-links http://localhost:<port>");
+  process.exit(1);
 }
 
 /**
@@ -208,6 +280,7 @@ async function main() {
     process.exit(1);
   }
 
+  const base = await resolveBaseUrl();
   const mdRoutes = markdownRoutes();
   const pubRoutes = publicRoutes();
   const seed = [...mdRoutes, ...[...pubRoutes].filter((p) => !p.endsWith(".pdf"))];
@@ -219,7 +292,7 @@ async function main() {
   /** @type {Set<string>} */
   const checked = new Set();
 
-  console.log(`Checking docs links against ${BASE}`);
+  console.log(`Checking docs links against ${base}`);
   console.log(`Seeds: ${seed.length} routes (${mdRoutes.size} md, ${pubRoutes.size} public aliases)\n`);
 
   for (const pathname of seed) {
@@ -232,7 +305,7 @@ async function main() {
     let page;
 
     try {
-      page = await fetchPage(pathname);
+      page = await fetchPage(base, pathname);
       fetched.set(pathname, page);
     } catch (error) {
       failures.push({
@@ -337,7 +410,7 @@ async function main() {
       checked.add(resolved);
 
       try {
-        const target = await fetchPage(resolved);
+        const target = await fetchPage(base, resolved);
         fetched.set(resolved, target);
 
         const targetStatic =
