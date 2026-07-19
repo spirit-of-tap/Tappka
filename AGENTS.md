@@ -1,6 +1,6 @@
 ## Code Style
 
-- **TypeScript strict mode** - no `any`, use `interface` over `type` (except derived DB types, which must be `type` — see `docs/data-layer.md`), prefer `??` over `||`
+- **TypeScript strict mode** - no `any`, use `interface` over `type` (except derived DB types, which must be `type`), prefer `??` over `||`
 - **Naming**: PascalCase components/types, camelCase vars/functions, UPPER_SNAKE_CASE constants, kebab-case files
 - **Imports**: external → `@/` internal → styles. One blank line between groups.
 - **React**: default to Server Components; use `"use client"` only for interactivity, browser APIs, or third-party init
@@ -8,17 +8,9 @@
 
 ## Database Migrations
 
-Full guide: **`docs/data-layer.md`**. See **Database schema changes** below for when
-and how migrations are created. The rules below apply to all migrations regardless of origin.
+**CRITICAL**: Whenever a user asks you to edit the schema prompt the user to run `pnpm db:migrate` to apply the changes to the database and then make sure to ask the user to check the migrations for any drops.
 
-**CRITICAL**: Apply migrations with the **Supabase CLI through pnpm only** — `pnpm db:up`
-locally. **Never** use the MCP `apply_migration` tool
-
-### 
-- Separate policies per operation: one `select`, one `insert`, one `update`, one `delete`
-- Use `SECURITY INVOKER` and `set search_path = ''` in all functions
-- Use `(select auth.uid())` (not bare `auth.uid()`) in RLS policies for performance
-- Lowercase SQL keywords, snake_case identifiers, fully qualified names (`public.table`)
+IF the user insists on you running the migrations manually, run the migrations with the **Supabase CLI through pnpm only** — `pnpm db:up`.
 
 ## Database schema changes
 
@@ -27,9 +19,8 @@ migrations for tables/columns/enums/indexes/RLS policies.
 
 - **Always enable RLS on new tables**
 - **Tables, columns, enums, indexes, views:** edit `db/schema/*.ts`, then prompt the user for
-  `pnpm db:generate`. Review the generated SQL in `supabase/migrations/` (watch for
-  unintended DROPs), then `pnpm db:up` to apply the migration. Finally verify with `pnpm db:up` that the migration applied successfully. Commit the schema edit and migration together.
-- **Functions & triggers:** Drizzle can't model these. run `pnpm db:generate:custom` to create an empty migration, paste the `CREATE OR REPLACE` statement in, upload to supabase via `pnpm db:up` then run `pnpm db:generate` once (reports "No schema changes") so the Drizzle journal records it; commit the `meta/` changes.
+  `pnpm db:migrate`. Prompt the user to either let you check the changes or make sure to ask the user to check the migrations for any drops. Commit the schema edit and migration together.
+- **Functions & triggers:** Drizzle can't model these. run `pnpm db:generate:custom` to create an empty migration, create the `CREATE OR REPLACE` statement in the migration, upload to supabase via `pnpm db:up` along with `pnpm db:export` then run `pnpm db:generate` once (reports "No schema changes") so the Drizzle journal records it; commit the `meta/` changes.
 - **RLS policies:** keep full `using` / `withCheck` on every `pgPolicy(...)` in
   `db/schema/*.ts` so `db:generate` can `DROP POLICY` before `DROP COLUMN`. Prefer
   schema edits + generate; custom SQL (DROP + CREATE from live `pg_policies`) is OK
@@ -37,10 +28,8 @@ migrations for tables/columns/enums/indexes/RLS policies.
 - **Types:** never hand-write DB row/enum types. Derive them via `Tables<'x'>` /
   `Database['public']['Enums']['x']` (this is why derived DB types use `type`, not
   `interface`). Query with `supabase-js`; helper signatures take `SupabaseClient<Database>`.
-- Never edit existing files in `supabase/migrations/` and never run schema commands
-  against production casually.
-- App data access stays on `supabase-js`; never add a runtime Drizzle client (it would
-  bypass RLS). Rationale in `docs/data-layer.md`.
+- Never edit existing files in `supabase/migrations/` and never run schema commands using mcp without being specifically asked to do so. Require confirmation if the target is remote.
+- App data access stays on `supabase-js`; never add a runtime Drizzle client (it would bypass RLS).
 
 ## Realtime
 
