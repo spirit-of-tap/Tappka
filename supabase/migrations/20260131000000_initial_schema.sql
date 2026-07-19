@@ -272,7 +272,11 @@ create index profiles_team_id_idx on public.profiles(team_id);
 create index profiles_team_id_user_id_idx on public.profiles(team_id, user_id);
 create index users_google_email_idx on public.users(google_email);
 create index users_suggested_work_email_idx on public.users(suggested_work_email);
-create index if not exists idx_realtime_messages_topic on realtime.messages(topic);
+
+-- Index creation on realtime.messages requires table ownership (supabase_realtime_admin).
+-- Migrations run as a non-owner role and fail with SQLSTATE 42501. Supabase already
+-- provides messages_inserted_at_topic_index; RLS policies work without this index.
+-- create index if not exists idx_realtime_messages_topic on realtime.messages(topic);
 
 -- ============================================================================
 -- REALTIME
