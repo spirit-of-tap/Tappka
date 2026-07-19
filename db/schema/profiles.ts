@@ -34,7 +34,7 @@ export const users = pgTable("users", {
 
 export const profiles = pgTable("profiles", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
-	name: text().notNull(),
+	name: text(),
 	picture: text(),
 	userId: uuid("user_id"),
 	workEmail: text("work_email").notNull(),

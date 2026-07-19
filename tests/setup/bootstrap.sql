@@ -4,6 +4,9 @@
 
 -- ---- Roles (cluster-global; created if absent) -------------------------
 do $$ begin
+  -- migrations reference role postgres (e.g. alter default privileges); the
+  -- Testcontainers image logs in as "test", so create a stub when missing
+  if not exists (select from pg_roles where rolname = 'postgres') then create role postgres nologin; end if;
   if not exists (select from pg_roles where rolname = 'anon') then create role anon nologin noinherit; end if;
   if not exists (select from pg_roles where rolname = 'authenticated') then create role authenticated nologin noinherit; end if;
   if not exists (select from pg_roles where rolname = 'service_role') then create role service_role nologin noinherit bypassrls; end if;

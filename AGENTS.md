@@ -10,7 +10,7 @@
 
 **CRITICAL**: Whenever a user asks you to edit the schema prompt the user to run `pnpm db:migrate` to apply the changes to the database and then make sure to ask the user to check the migrations for any drops.
 
-IF the user insists on you running the migrations manually, run the migrations with the **Supabase CLI through pnpm only** — `pnpm db:up`.
+IF the user insists on you running the migrations manually, run the migrations with the **Supabase CLI through pnpm only** — `pnpm db:up`. Do not tell the user to run `pnpm db:up` recommend running `pnpm db:migrate` instead.
 
 ## Database schema changes
 

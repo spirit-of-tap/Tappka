@@ -730,7 +730,7 @@ export type Database = {
           created_by_profile_id: string | null
           date_of_birth: string | null
           id: string
-          name: string
+          name: string | null
           personal_email: string | null
           phone_number: string | null
           picture: string | null
@@ -749,7 +749,7 @@ export type Database = {
           created_by_profile_id?: string | null
           date_of_birth?: string | null
           id?: string
-          name: string
+          name?: string | null
           personal_email?: string | null
           phone_number?: string | null
           picture?: string | null
@@ -768,7 +768,7 @@ export type Database = {
           created_by_profile_id?: string | null
           date_of_birth?: string | null
           id?: string
-          name?: string
+          name?: string | null
           personal_email?: string | null
           phone_number?: string | null
           picture?: string | null
