@@ -119,17 +119,6 @@ export const reservations = pgTable("reservations", {
 	index("idx_reservations_room_time").using("btree", table.roomId.asc().nullsLast().op("uuid_ops"), table.startAt.asc().nullsLast().op("timestamptz_ops"), table.endAt.asc().nullsLast().op("timestamptz_ops")),
 	index("idx_reservations_start").using("btree", table.startAt.asc().nullsLast().op("timestamptz_ops")),
 	index("idx_reservations_owner").using("btree", table.ownerProfileId.asc().nullsLast().op("uuid_ops")),
-	// Drizzle cannot express EXCLUDE constraints. This GiST index is the
-	// schema-level stand-in for:
-	//   CONSTRAINT no_overlap EXCLUDE USING gist (
-	//     room_id WITH =, tstzrange(start_at, end_at) WITH &&
-	//   )
-	// Migrations must create the EXCLUDE constraint (not a plain index).
-	index("no_overlap").using(
-		"gist",
-		table.roomId.asc().nullsLast().op("uuid_ops"),
-		sql`tstzrange(${table.startAt}, ${table.endAt})`,
-	),
 	foreignKey({
 			columns: [table.roomId],
 			foreignColumns: [rooms.id],
