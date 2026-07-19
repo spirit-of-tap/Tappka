@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, MessageSquareHeart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 

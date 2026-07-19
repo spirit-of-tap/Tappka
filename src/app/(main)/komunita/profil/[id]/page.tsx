@@ -2,10 +2,11 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getProfileById, getProfilePictureUrl, getTeamPictureUrl } from '@/lib/komunita/queries';
+import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getUserBookPointsStats } from '@/lib/essays/queries';
 import { ProfilePictureSection } from '@/components/komunita/profile-picture-section';
+import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { StorageImage } from '@/components/storage/storage-image';
 import { Badge } from '@/components/ui/badge';
@@ -98,7 +99,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                   className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border rounded-full px-2.5 py-0.5"
                 >
                   {teamPictureUrl
-                    ? <img src={teamPictureUrl} alt={profile.team.name} className="size-3.5 rounded-full object-cover" />
+                    ? <ProfilePicture src={teamPictureUrl} alt={profile.team.name} size={14} className="size-3.5 rounded-full object-cover" />
                     : <Users className="size-3" />}
                   {profile.team.name}
                 </Link>

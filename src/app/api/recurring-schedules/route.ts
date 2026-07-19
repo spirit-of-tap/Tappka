@@ -215,7 +215,7 @@ const TRAINING_FALLBACK_NAME = "Tým";
  * GET /api/recurring-schedules
  * List recurring schedules
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

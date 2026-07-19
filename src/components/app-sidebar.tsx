@@ -11,10 +11,6 @@ import {
   Database,
   ChevronRight,
   Heart,
-  FileText,
-  Search,
-  Settings,
-  Inbox,
   BookOpen,
 } from "lucide-react"
 
@@ -62,7 +58,7 @@ type NavData = {
 }
 
 // Navigation data for Tappka
-const getNavData = (isDevelopment: boolean, isCoachOrAdmin: boolean, reviewCount: number): NavData => ({
+const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCount: number): NavData => ({
   navMain: [
     {
       title: "Hlavní",

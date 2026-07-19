@@ -5,8 +5,6 @@
 //
 // Mirrors the book field logic in scripts/migrate-legacy.py.
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-const require = createRequire(process.cwd() + "/x.js");
 
 // --- env ---------------------------------------------------------------------
 function loadEnv(path) {

@@ -6,8 +6,8 @@ import { BookOpen, FileQuestion, Inbox, MessageCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { StorageImage } from '@/components/storage/storage-image';
 import { CoachReadButton } from './coach-read-button';
+import { ProfilePicture } from '@/components/profile-picture';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
 interface CoachReviewListProps {
@@ -99,7 +99,7 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
         <Link href={`/eseje/${essay.id}`} className="group flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2">
             {essay.author?.picture ? (
-              <img src={essay.author.picture} alt={essay.author.name ?? ''} className="size-6 rounded-full object-cover shrink-0" />
+              <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover shrink-0" />
             ) : (
               <div className="size-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold shrink-0">
                 {authorInitial}

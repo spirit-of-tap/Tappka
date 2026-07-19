@@ -114,7 +114,11 @@ export function PortfolioUploader() {
       setPhase((prev) => {
         if (prev.name !== 'selecting') return prev;
         const next = new Set(prev.selected);
-        next.has(name) ? next.delete(name) : next.add(name);
+        if (next.has(name)) {
+          next.delete(name);
+        } else {
+          next.add(name);
+        }
         return { ...prev, selected: next };
       });
     };

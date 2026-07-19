@@ -143,6 +143,8 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     const el = scheduleRef.current;
     if (!el) return;
 
+    const touchState = touchStateRef.current;
+
     // Prevent native context menu on long press (Android + iOS)
     const handleContextMenu = (e: Event) => {
       e.preventDefault();
@@ -291,10 +293,9 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
       el.removeEventListener('touchcancel', handleTouchCancel);
       document.body.style.overflow = '';
       // Clean up any pending timer
-      const ts = touchStateRef.current;
-      if (ts.longPressTimer) {
-        clearTimeout(ts.longPressTimer);
-        ts.longPressTimer = null;
+      if (touchState.longPressTimer) {
+        clearTimeout(touchState.longPressTimer);
+        touchState.longPressTimer = null;
       }
     };
   }, []); // Empty deps - refs handle all current values

@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { format } from "date-fns";
-import { cs } from "date-fns/locale";
-import { AlertTriangle, ChevronRight, Clock, MapPin, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,7 +35,7 @@ export function ConflictResolutionDialog({
   conflictingReservation,
   requestedStart,
   requestedEnd,
-  currentRoomName,
+  currentRoomName: _currentRoomName,
   alternativeRooms = [],
   onSelectBefore,
   onSelectAfter,
@@ -67,7 +65,6 @@ export function ConflictResolutionDialog({
 
   const conflictStart = new Date(conflictingReservation.start_at);
   const conflictEnd = new Date(conflictingReservation.end_at);
-  const dateLabel = format(requestedStart, "EEEE, d. MMMM", { locale: cs });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

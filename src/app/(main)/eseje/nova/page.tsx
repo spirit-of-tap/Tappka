@@ -1,5 +1,3 @@
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/essays/back-button';
 import { EssayEditorForm } from '@/components/essays/essay-editor-form';
 

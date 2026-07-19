@@ -9,7 +9,7 @@
  * Requires `pnpm wiki` to be running. Auto-detects a healthy local port when
  * no baseUrl is passed (stale processes on 5173 often return SPA shell for every path).
  */
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 const DOCS_ROOT = join(process.cwd(), "docs");

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { BookOpen, Eye, Pencil, Sparkles } from 'lucide-react';
+import { BookOpen, Eye, Pencil } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById, getEssayComments, getEssayCoachViewers, getEssayCoachReads } from '@/lib/essays/queries';
@@ -16,8 +16,8 @@ import { EssayPinButton } from '@/components/essays/essay-pin-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BackButton } from '@/components/essays/back-button';
+import { ProfilePicture } from '@/components/profile-picture';
 import { formatPoints } from '@/lib/books/points';
-import { cn } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ essayId: string }>;
@@ -96,7 +96,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
         <h1 className="text-3xl font-bold leading-tight">{essay.title}</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
           {essay.author?.picture ? (
-            <img src={essay.author.picture} alt={essay.author.name ?? ''} className="size-6 rounded-full object-cover" />
+            <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover" />
           ) : (
             <div className="size-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
               {essay.author?.name?.[0]}

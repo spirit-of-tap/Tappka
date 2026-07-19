@@ -14,6 +14,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById, getBookComments } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
 import { StorageImage } from '@/components/storage/storage-image';
+import { ProfilePicture } from '@/components/profile-picture';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookDeleteButton } from '@/components/books/book-delete-button';
@@ -49,11 +50,13 @@ interface PageProps {
 function Avatar({ picture, name, size = 28 }: { picture?: string | null; name?: string | null; size?: number }) {
   const initial = name?.[0]?.toUpperCase() ?? '?';
   const dimClass = size <= 28 ? 'size-7' : size <= 32 ? 'size-8' : 'size-10';
+  const imageSize = size <= 28 ? 28 : size <= 32 ? 32 : 40;
   if (picture) {
     return (
-      <img
+      <ProfilePicture
         src={picture}
         alt={name ?? ''}
+        size={imageSize}
         className={`rounded-full object-cover shrink-0 ${dimClass}`}
       />
     );

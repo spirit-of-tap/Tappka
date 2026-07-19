@@ -71,7 +71,6 @@ test.describe("reading feature - authenticated", () => {
 
 test.describe("reading navigation - arrow back", () => {
   let cookieValue: string;
-  let profileId: string;
   let bookId: string;
   let essayId: string;
 
@@ -81,7 +80,6 @@ test.describe("reading navigation - arrow back", () => {
       profileId: pid,
     } = await getSetupSessionCookie();
     cookieValue = cookie;
-    profileId = pid;
 
     const { bookId: bid } = await seedBook(pid);
     bookId = bid;

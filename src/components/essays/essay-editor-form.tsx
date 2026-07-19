@@ -29,7 +29,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const [bookQuery, setBookQuery] = useState('');
   const [bookResults, setBookResults] = useState<Book[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [essayId, setEssayId] = useState<string | null>(initialEssay?.id ?? null);
+  const [essayId] = useState<string | null>(initialEssay?.id ?? null);
 
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

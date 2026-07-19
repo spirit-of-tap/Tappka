@@ -8,7 +8,6 @@ import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ExternalLink } from "lucide-react";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -28,7 +27,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { cn, validateRedirectUrl } from "@/lib/utils";
+import { validateRedirectUrl } from "@/lib/utils";
 import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { hasLinkedProfile } from "@/lib/auth-helpers";
 
@@ -79,7 +78,7 @@ const loadPersistedState = (): Partial<StoredState> => {
     if (stored) {
       return JSON.parse(stored) as StoredState;
     }
-  } catch (err) {
+  } catch {
     // Ignore errors reading from storage
   }
 
@@ -94,7 +93,7 @@ const savePersistedState = (state: StoredState) => {
 
   try {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (err) {
+  } catch {
     // Ignore errors writing to storage
   }
 };
@@ -107,7 +106,7 @@ const clearPersistedState = () => {
 
   try {
     sessionStorage.removeItem(STORAGE_KEY);
-  } catch (err) {
+  } catch {
     // Ignore errors clearing storage
   }
 };
@@ -125,7 +124,6 @@ interface VerifyEmailFormProps {
  */
 export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: VerifyEmailFormProps) {
   const isDevelopment = process.env.NODE_ENV === "development";
-  const [email, setEmail] = useState("");
   const [emailLocalPart, setEmailLocalPart] = useState("");
   const [emailDomain, setEmailDomain] = useState<EmailDomainOption>(DEFAULT_EMAIL_DOMAIN);
   const [otpCode, setOtpCode] = useState("");
@@ -136,6 +134,9 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
   const [lastSubmittedOtp, setLastSubmittedOtp] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  const trimmedLocalPart = emailLocalPart.trim().toLowerCase();
+  const email = trimmedLocalPart ? `${trimmedLocalPart}${emailDomain}` : "";
 
   /**
    * Sends OTP code to the provided email
@@ -199,7 +200,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
         }
       }
 
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser(
+      const { error: updateError } = await supabase.auth.updateUser(
         {
           email: email.trim(),
         },
@@ -245,7 +246,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
       savePersistedState({ step: "otp", email: email.trim() });
       onStepChange?.("otp");
       setIsLoading(false);
-    } catch (err) {
+    } catch {
       setError("Ouha, něco se pokazilo. Zkus to prosím znovu");
       setIsLoading(false);
     }
@@ -257,8 +258,8 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
    * With enable_manual_linking = true, this will link the email identity
    * to the existing authenticated user account
    */
-  const verifyOTP = useCallback(async () => {
-    const trimmedOtp = otpCode.trim();
+  const verifyOTP = useCallback(async (code?: string) => {
+    const trimmedOtp = (code ?? otpCode).trim();
 
     // Track the OTP being submitted to prevent re-submission
     setLastSubmittedOtp(trimmedOtp);
@@ -296,7 +297,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
       const redirectTo = validatedNext ?? DEFAULT_LOGGED_IN_PAGE;
       router.push(redirectTo);
       router.refresh();
-    } catch (err) {
+    } catch {
       setError("Ouha, něco se pokazilo. Zkus to prosím znovu");
       setIsLoading(false);
       // Keep lastSubmittedOtp set to prevent re-submission of the same code
@@ -317,20 +318,10 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
    * In wizard mode, always start fresh from email step
    */
   useEffect(() => {
-    const trimmedLocalPart = emailLocalPart.trim().toLowerCase();
-    if (!trimmedLocalPart) {
-      setEmail("");
-      return;
-    }
-
-    setEmail(`${trimmedLocalPart}${emailDomain}`);
-  }, [emailLocalPart, emailDomain]);
-
-  useEffect(() => {
-    // In wizard mode, always start from email step (don't restore state)
+    // Syncing React state from sessionStorage after mount is intentional.
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrate from sessionStorage once on mount */
     if (wizardMode) {
       setStep("email");
-      setEmail("");
       setEmailLocalPart("");
       setEmailDomain(DEFAULT_EMAIL_DOMAIN);
       clearPersistedState();
@@ -343,7 +334,6 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     // Validate persisted state - if on OTP step but no email, reset to email step
     if (persisted.step === "otp" && (!persisted.email || !persisted.email.includes("@"))) {
       setStep("email");
-      setEmail("");
       setEmailLocalPart("");
       setEmailDomain(DEFAULT_EMAIL_DOMAIN);
       clearPersistedState();
@@ -356,13 +346,13 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
       const { localPart, domain } = parseEmailParts(persisted.email);
       setEmailLocalPart(localPart);
       setEmailDomain(domain);
-      setEmail(`${localPart}${domain}`);
     }
     if (persisted.step === "email" || persisted.step === "otp") {
       setStep(persisted.step);
     }
 
     setIsHydrated(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [wizardMode]);
 
   /**
@@ -380,21 +370,6 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
       clearPersistedState();
     }
   }, [email, emailLocalPart, step, isHydrated]);
-
-  /**
-   * Auto-submits the form when OTP code reaches the expected length
-   * This handles paste events and manual entry
-   * Prevents re-submission of the same OTP code after a failed verification
-   */
-  useEffect(() => {
-    const trimmedOtp = otpCode.trim();
-    const isOtpComplete = trimmedOtp.length === OTP_LENGTH;
-    const isNewOtp = trimmedOtp !== lastSubmittedOtp;
-
-    if (step === "otp" && isOtpComplete && !isLoading && isNewOtp) {
-      verifyOTP();
-    }
-  }, [otpCode, step, isLoading, lastSubmittedOtp, verifyOTP]);
 
   /**
    * Supports pasting OTP from anywhere on the page while on OTP step
@@ -415,6 +390,10 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
       setOtpCode(pastedDigits);
       setLastSubmittedOtp(null);
       setError(null);
+
+      if (!isLoading) {
+        void verifyOTP(pastedDigits);
+      }
     };
 
     document.addEventListener("paste", handleGlobalPaste);
@@ -422,7 +401,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     return () => {
       document.removeEventListener("paste", handleGlobalPaste);
     };
-  }, [step]);
+  }, [step, isLoading, verifyOTP]);
 
   // In wizard mode, don't render Card wrapper (parent handles it)
   const content = (
@@ -515,9 +494,20 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
                   pattern={REGEXP_ONLY_DIGITS}
                   onChange={(value) => {
                     setOtpCode(value);
-                    // Clear lastSubmittedOtp when user starts typing a new code
-                    if (lastSubmittedOtp !== null && value !== lastSubmittedOtp) {
+                    const trimmed = value.trim();
+                    const isNewOtp = trimmed !== lastSubmittedOtp;
+
+                    if (lastSubmittedOtp !== null && isNewOtp) {
                       setLastSubmittedOtp(null);
+                    }
+
+                    if (
+                      step === "otp" &&
+                      trimmed.length === OTP_LENGTH &&
+                      !isLoading &&
+                      isNewOtp
+                    ) {
+                      void verifyOTP(trimmed);
                     }
                   }}
                   disabled={isLoading}

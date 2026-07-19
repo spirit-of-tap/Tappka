@@ -11,7 +11,6 @@ import { UserCard } from '@/components/komunita/user-card';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { YEAR_LABELS, ROLE_LABELS } from '@/lib/komunita/types';
 import { getTeamBookPointsStats } from '@/lib/essays/queries';
-import type { Profile } from '@/lib/komunita/types';
 
 interface PageProps {
   params: Promise<{

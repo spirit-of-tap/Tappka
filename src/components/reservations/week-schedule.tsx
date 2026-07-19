@@ -87,7 +87,6 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
 
   // Convert pixel position to time
   const pixelToTime = useCallback((day: Date, pixelY: number): Date => {
-    const totalOperatingMinutes = (OPERATING_HOURS.end - OPERATING_HOURS.start) * 60;
     const totalHeight = (OPERATING_HOURS.end - OPERATING_HOURS.start) * hourHeight;
     
     // Clamp pixelY

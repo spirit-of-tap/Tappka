@@ -18,7 +18,7 @@ interface RoomCardProps {
 /**
  * Card component displaying a room's current status and availability
  */
-export function RoomCard({ room, filterState, onRoomClick }: RoomCardProps) {
+export function RoomCard({ room, filterState: _filterState, onRoomClick }: RoomCardProps) {
   const isOccupied = room.currentReservation !== null;
   const filterAvailability = room.availabilityForFilter;
   const isFilteredOut = filterAvailability && !filterAvailability.isAvailable;

@@ -208,7 +208,7 @@ export function TrainingSessionsManager({
   };
 
   // Move schedule to different room
-  const handleMoveToRoom = async (schedule: ScheduleWithRelations, newRoomId: string) => {
+  const handleMoveToRoom = useCallback(async (schedule: ScheduleWithRelations, newRoomId: string) => {
     if (schedule.room_id === newRoomId) return;
 
     try {
@@ -228,7 +228,7 @@ export function TrainingSessionsManager({
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
     }
-  };
+  }, [router]);
 
   // Drag handlers
   const handleDragStart = useCallback((e: React.DragEvent, schedule: ScheduleWithRelations) => {
@@ -259,7 +259,7 @@ export function TrainingSessionsManager({
     }
     setDraggedSchedule(null);
     setDragOverRoomId(null);
-  }, [draggedSchedule]);
+  }, [draggedSchedule, handleMoveToRoom]);
 
   // Click vs drag detection
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
