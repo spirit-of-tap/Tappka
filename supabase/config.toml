@@ -236,6 +236,30 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Resend SMTP is enabled only for the persistent preview branch. Local development
+# continues to use the Mailpit configuration above.
+[remotes.preview]
+project_id = "wykcqwmrxvgoomltrrlo"
+
+[remotes.preview.auth]
+site_url = "https://preview.tiimi.cz"
+additional_redirect_urls = [
+  "https://preview.tiimi.cz/auth/callback",
+  "https://preview.tiimi.cz/auth/confirm-email-change",
+]
+
+[remotes.preview.auth.email]
+max_frequency = "1s"
+
+[remotes.preview.auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_SMTP_PASSWORD)"
+admin_email = "tappka-preview@tiimi.cz"
+sender_name = "Tappka"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
