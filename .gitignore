@@ -43,6 +43,10 @@ yarn-error.log*
 .env
 .env**
 !.env.example
+!
+# supabase
+# This file is encrypted it is safe to commit
+!supabase/.env.preview  
 
 # vercel
 .vercel
