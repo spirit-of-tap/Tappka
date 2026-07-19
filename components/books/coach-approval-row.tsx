@@ -47,6 +47,7 @@ export function CoachApprovalRow({ book, onApprove, onReject, onRemove }: CoachA
   const openLibraryUrl = book.source === 'open_library' && book.external_id
     ? `https://openlibrary.org${book.external_id}`
     : null;
+  const externalUrl = googleBooksUrl ?? openLibraryUrl;
 
   return (
     <div className="flex gap-4 py-4 border-b last:border-0">
@@ -69,9 +70,9 @@ export function CoachApprovalRow({ book, onApprove, onReject, onRemove }: CoachA
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">
-          {(googleBooksUrl ?? openLibraryUrl) && (
+          {externalUrl && (
             <a
-              href={(googleBooksUrl ?? openLibraryUrl)!}
+              href={externalUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-primary flex items-center gap-1 hover:underline"

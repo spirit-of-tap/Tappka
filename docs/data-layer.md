@@ -21,16 +21,11 @@ This is a deliberate split. There is no single "ORM" — three tools each own on
 | Concern | Tool | Where | Runs |
 |---|---|---|---|
 | Schema definition (tables, columns, indexes, RLS policies) | **Drizzle** | `db/schema/*.ts` | dev-time only |
-| Functions & triggers (Drizzle can't model these) | raw SQL reference | `db/sql/*.sql` | dev-time only |
+| Functions & triggers (Drizzle can't model these) | raw SQL reference in migrations | `supabase/migrations/*.sql` | dev-time only |
 | Migration generation | **drizzle-kit** | `pnpm db:generate` | dev-time only |
-| Migration application | **Supabase CLI** | `supabase migration up` / `db push` | deploy-time |
+| Migration application | **Supabase CLI** | `pnpm db:up` | deploy-time |
 | Runtime queries | **supabase-js** | `lib/**`, `app/**` | runtime |
-| TypeScript types | **generated** | `lib/supabase/database.types.ts` | dev-time (`pnpm db:types`) |
-
-Why this shape: the app is RLS-first. `supabase-js` forwards the logged-in user's
-JWT on every request, so Postgres runs each query as the `authenticated` role with
-`auth.uid()` populated and RLS is enforced automatically. Drizzle gives us schema and
-migrations as reviewable TypeScript without putting an ORM in the request path.
+| TypeScript types | **generated** | `lib/supabase/database.types.ts` | dev-time |
 
 ## How queries work
 

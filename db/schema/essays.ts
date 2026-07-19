@@ -1,5 +1,5 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
-// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
+// Please look at CONTRIBUTING.md for more information on how to change the schema.
 import { pgTable, foreignKey, pgPolicy, uuid, text, jsonb, integer, timestamp, index, check, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
@@ -46,10 +46,10 @@ export const essays = pgTable("essays", {
 			foreignColumns: [profiles.id],
 			name: "essays_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
-	pgPolicy("Authors can create their own essays", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(author_profile_id = current_profile_id())`  }),
-	pgPolicy("Authenticated users can view all essays", { as: "permissive", for: "select", to: ["authenticated"] }),
-	pgPolicy("Authors and admins can delete essays", { as: "permissive", for: "delete", to: ["authenticated"] }),
-	pgPolicy("Authors can update their own essays", { as: "permissive", for: "update", to: ["authenticated"] }),
+	pgPolicy("Authors can create their own essays", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(author_profile_id = current_profile_id())` }),
+	pgPolicy("Authenticated users can view all essays", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Authors and admins can delete essays", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((author_profile_id = current_profile_id()) OR is_admin())` }),
+	pgPolicy("Authors can update their own essays", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(author_profile_id = current_profile_id())`, withCheck: sql`(author_profile_id = current_profile_id())` }),
 ]).enableRLS();
 
 export const essayRevisions = pgTable("essay_revisions", {
@@ -119,9 +119,9 @@ export const essayComments = pgTable("essay_comments", {
 			name: "essay_comments_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	pgPolicy("Authors and admins can delete essay comments", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((author_profile_id = current_profile_id()) OR is_admin())` }),
-	pgPolicy("Authors can update their own essay comments", { as: "permissive", for: "update", to: ["authenticated"] }),
-	pgPolicy("Authenticated users can add essay comments", { as: "permissive", for: "insert", to: ["authenticated"] }),
-	pgPolicy("Authenticated users can view essay comments", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Authors can update their own essay comments", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(author_profile_id = current_profile_id())`, withCheck: sql`(author_profile_id = current_profile_id())` }),
+	pgPolicy("Authenticated users can add essay comments", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(author_profile_id = current_profile_id())` }),
+	pgPolicy("Authenticated users can view essay comments", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	check("essay_comments_body_check", sql`(char_length(body) >= 1) AND (char_length(body) <= 4000)`),
 ]).enableRLS();
 
@@ -157,9 +157,9 @@ export const essayVotes = pgTable("essay_votes", {
 	primaryKey({ columns: [table.essayId, table.voterProfileId], name: "essay_votes_pkey"}),
 	pgPolicy("Users can vote (not own essays)", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`((voter_profile_id = current_profile_id()) AND (NOT (essay_id IN ( SELECT essays.id
    FROM essays
-  WHERE (essays.author_profile_id = current_profile_id())))))`  }),
-	pgPolicy("Authenticated users can view votes", { as: "permissive", for: "select", to: ["authenticated"] }),
-	pgPolicy("Users can remove own votes", { as: "permissive", for: "delete", to: ["authenticated"] }),
+  WHERE (essays.author_profile_id = current_profile_id())))))` }),
+	pgPolicy("Authenticated users can view votes", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Users can remove own votes", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`(voter_profile_id = current_profile_id())` }),
 ]).enableRLS();
 
 export const essayCoachReads = pgTable("essay_coach_reads", {
@@ -194,8 +194,10 @@ export const essayCoachReads = pgTable("essay_coach_reads", {
 		}).onDelete("restrict"),
 	primaryKey({ columns: [table.essayId, table.coachProfileId], name: "essay_coach_reads_pkey"}),
 	pgPolicy("Coaches remove own reads", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`(coach_profile_id = current_profile_id())` }),
-	pgPolicy("Coaches mark own reads within their team", { as: "permissive", for: "insert", to: ["authenticated"] }),
-	pgPolicy("Coach sees own reads; author sees reads of own essays", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Coaches mark own reads within their team", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`((coach_profile_id = current_profile_id()) AND coach_can_review_essay(essay_id))` }),
+	pgPolicy("Coach sees own reads; author sees reads of own essays", { as: "permissive", for: "select", to: ["authenticated"], using: sql`((coach_profile_id = current_profile_id()) OR (EXISTS ( SELECT 1
+   FROM essays e
+  WHERE ((e.id = essay_coach_reads.essay_id) AND (e.author_profile_id = current_profile_id())))))` }),
 ]).enableRLS();
 
 export const essayViews = pgTable("essay_views", {
@@ -230,6 +232,8 @@ export const essayViews = pgTable("essay_views", {
 			name: "essay_views_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	primaryKey({ columns: [table.essayId, table.viewerProfileId], name: "essay_views_pkey"}),
-	pgPolicy("No direct inserts to essay_views", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`false`  }),
-	pgPolicy("Authors see all viewers; others see own row", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("No direct inserts to essay_views", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`false` }),
+	pgPolicy("Authors see all viewers; others see own row", { as: "permissive", for: "select", to: ["authenticated"], using: sql`((viewer_profile_id = current_profile_id()) OR (EXISTS ( SELECT 1
+   FROM essays e
+  WHERE ((e.id = essay_views.essay_id) AND (e.author_profile_id = current_profile_id())))))` }),
 ]).enableRLS();

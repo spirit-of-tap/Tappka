@@ -1,5 +1,5 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
-// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
+// Please look at CONTRIBUTING.md for more information on how to change the schema.
 import { pgTable, foreignKey, pgPolicy, uuid, text, integer, smallint, timestamp, index, unique, check, time, date, pgEnum, boolean } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
@@ -41,7 +41,7 @@ export const rooms = pgTable("rooms", {
   WHERE ((profiles.user_id IN ( SELECT users.id
            FROM users
           WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid)))) AND (profiles.role = 'admin'::profile_role))))`  }),
-	pgPolicy("Authenticated can read rooms", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Authenticated can read rooms", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 ]).enableRLS();
 
 export const recurringSchedules = pgTable("recurring_schedules", {
@@ -94,7 +94,7 @@ export const recurringSchedules = pgTable("recurring_schedules", {
   WHERE ((profiles.user_id IN ( SELECT users.id
            FROM users
           WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid)))) AND (profiles.role = ANY (ARRAY['coach'::profile_role, 'admin'::profile_role])))))`  }),
-	pgPolicy("Authenticated can read recurring_schedules", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Authenticated can read recurring_schedules", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	check("recurring_schedules_day_of_week_check", sql`(day_of_week >= 0) AND (day_of_week <= 6)`),
 	check("valid_time_range", sql`end_time > start_time`),
 	check("valid_schedule_dates", sql`(valid_until IS NULL) OR (valid_until >= valid_from)`),
@@ -144,10 +144,26 @@ export const reservations = pgTable("reservations", {
 			foreignColumns: [profiles.id],
 			name: "reservations_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
-	pgPolicy("Authenticated can read reservations", { as: "permissive", for: "select", to: ["authenticated"] }),
-	pgPolicy("Users can delete own reservations", { as: "permissive", for: "delete", to: ["authenticated"] }),
-	pgPolicy("Users can update own reservations", { as: "permissive", for: "update", to: ["authenticated"] }),
-	pgPolicy("Users can create own reservations", { as: "permissive", for: "insert", to: ["authenticated"] }),
+	pgPolicy("Authenticated can read reservations", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Users can delete own reservations", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`(owner_profile_id IN ( SELECT profiles.id
+   FROM profiles
+  WHERE (profiles.user_id IN ( SELECT users.id
+           FROM users
+          WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))))` }),
+	pgPolicy("Users can update own reservations", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(owner_profile_id IN ( SELECT profiles.id
+   FROM profiles
+  WHERE (profiles.user_id IN ( SELECT users.id
+           FROM users
+          WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))))`, withCheck: sql`(owner_profile_id IN ( SELECT profiles.id
+   FROM profiles
+  WHERE (profiles.user_id IN ( SELECT users.id
+           FROM users
+          WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))))` }),
+	pgPolicy("Users can create own reservations", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(owner_profile_id IN ( SELECT profiles.id
+   FROM profiles
+  WHERE (profiles.user_id IN ( SELECT users.id
+           FROM users
+          WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))))` }),
 	check("valid_reservation_time", sql`end_at > start_at`),
 ]).enableRLS();
 
@@ -181,6 +197,6 @@ export const scheduleBreaks = pgTable("schedule_breaks", {
   WHERE ((profiles.user_id IN ( SELECT users.id
            FROM users
           WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid)))) AND (profiles.role = ANY (ARRAY['coach'::profile_role, 'admin'::profile_role])))))`  }),
-	pgPolicy("Authenticated can read schedule_breaks", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Authenticated can read schedule_breaks", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	check("valid_break_date_range", sql`end_date >= start_date`),
 ]).enableRLS();

@@ -93,7 +93,7 @@ export async function setPictureRef(
   select?: boolean,
 ): Promise<{ data?: unknown; error?: string }> {
   if (context === "profile") {
-    let query = supabase.from("profiles").update({ picture: key }).eq("id", entityId);
+    const query = supabase.from("profiles").update({ picture: key }).eq("id", entityId);
     if (select) {
       const { data, error } = await query.select();
       if (error) return { error: "Nepodařilo se aktualizovat profilový obrázek" };

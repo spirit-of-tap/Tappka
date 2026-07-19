@@ -1,5 +1,5 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
-// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
+// Please look at CONTRIBUTING.md for more information on how to change the schema.
 import { pgTable, foreignKey, pgPolicy, uuid, jsonb, timestamp } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
@@ -28,7 +28,7 @@ export const dashboardLayouts = pgTable("dashboard_layouts", {
 			name: "dashboard_layouts_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	pgPolicy("Users can delete their own dashboard layout", { as: "permissive", for: "delete", to: ["public"], using: sql`(profile_id = current_profile_id())` }),
-	pgPolicy("Users can update their own dashboard layout", { as: "permissive", for: "update", to: ["public"] }),
-	pgPolicy("Users can insert their own dashboard layout", { as: "permissive", for: "insert", to: ["public"] }),
-	pgPolicy("Users can view their own dashboard layout", { as: "permissive", for: "select", to: ["public"] }),
+	pgPolicy("Users can update their own dashboard layout", { as: "permissive", for: "update", to: ["public"], using: sql`(profile_id = current_profile_id())`, withCheck: sql`(profile_id = current_profile_id())` }),
+	pgPolicy("Users can insert their own dashboard layout", { as: "permissive", for: "insert", to: ["public"], withCheck: sql`(profile_id = current_profile_id())` }),
+	pgPolicy("Users can view their own dashboard layout", { as: "permissive", for: "select", to: ["public"], using: sql`(profile_id = current_profile_id())` }),
 ]).enableRLS();

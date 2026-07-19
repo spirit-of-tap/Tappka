@@ -1,5 +1,5 @@
 {
-  "id": "86292421-9349-4b27-9e47-c448563f98c0",
+  "id": "00bf90ad-e4c8-4fd1-8e46-3ac5a15457af",
   "prevId": "3e0eb592-e88e-48e9-a0cb-3ff08870ca33",
   "version": "7",
   "dialect": "postgresql",
@@ -172,7 +172,9 @@
           "for": "UPDATE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "(author_profile_id = current_profile_id())",
+          "withCheck": "(author_profile_id = current_profile_id())"
         },
         "Authenticated users can add book comments": {
           "name": "Authenticated users can add book comments",
@@ -180,7 +182,8 @@
           "for": "INSERT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "withCheck": "(author_profile_id = current_profile_id())"
         },
         "Authenticated users can view book comments": {
           "name": "Authenticated users can view book comments",
@@ -188,7 +191,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         }
       },
       "checkConstraints": {
@@ -331,7 +335,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         },
         "Authenticated users can assign book tags": {
           "name": "Authenticated users can assign book tags",
@@ -339,7 +344,8 @@
           "for": "INSERT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "withCheck": "(created_by_profile_id = current_profile_id())"
         },
         "Coaches and admins can update book tags": {
           "name": "Coaches and admins can update book tags",
@@ -347,7 +353,9 @@
           "for": "UPDATE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "is_coach_or_admin()",
+          "withCheck": "is_coach_or_admin()"
         },
         "Coaches and admins can remove book tags": {
           "name": "Coaches and admins can remove book tags",
@@ -654,7 +662,9 @@
           "for": "UPDATE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "is_coach_or_admin()",
+          "withCheck": "is_coach_or_admin()"
         },
         "Authenticated users can add books": {
           "name": "Authenticated users can add books",
@@ -662,7 +672,8 @@
           "for": "INSERT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "withCheck": "(created_by_profile_id = current_profile_id())"
         },
         "Authenticated users can view all books": {
           "name": "Authenticated users can view all books",
@@ -670,7 +681,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         }
       },
       "checkConstraints": {
@@ -771,7 +783,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         },
         "Coaches and admins can add tags": {
           "name": "Coaches and admins can add tags",
@@ -788,7 +801,9 @@
           "for": "UPDATE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "is_coach_or_admin()",
+          "withCheck": "is_coach_or_admin()"
         },
         "Coaches and admins can delete tags": {
           "name": "Coaches and admins can delete tags",
@@ -907,7 +922,9 @@
           "for": "UPDATE",
           "to": [
             "public"
-          ]
+          ],
+          "using": "(profile_id = current_profile_id())",
+          "withCheck": "(profile_id = current_profile_id())"
         },
         "Users can insert their own dashboard layout": {
           "name": "Users can insert their own dashboard layout",
@@ -915,7 +932,8 @@
           "for": "INSERT",
           "to": [
             "public"
-          ]
+          ],
+          "withCheck": "(profile_id = current_profile_id())"
         },
         "Users can view their own dashboard layout": {
           "name": "Users can view their own dashboard layout",
@@ -923,7 +941,8 @@
           "for": "SELECT",
           "to": [
             "public"
-          ]
+          ],
+          "using": "(profile_id = current_profile_id())"
         }
       },
       "checkConstraints": {},
@@ -1077,7 +1096,8 @@
           "for": "INSERT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "withCheck": "((coach_profile_id = current_profile_id()) AND coach_can_review_essay(essay_id))"
         },
         "Coach sees own reads; author sees reads of own essays": {
           "name": "Coach sees own reads; author sees reads of own essays",
@@ -1085,7 +1105,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "((coach_profile_id = current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM essays e\n  WHERE ((e.id = essay_coach_reads.essay_id) AND (e.author_profile_id = current_profile_id())))))"
         }
       },
       "checkConstraints": {},
@@ -1259,7 +1280,9 @@
           "for": "UPDATE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "(author_profile_id = current_profile_id())",
+          "withCheck": "(author_profile_id = current_profile_id())"
         },
         "Authenticated users can add essay comments": {
           "name": "Authenticated users can add essay comments",
@@ -1267,7 +1290,8 @@
           "for": "INSERT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "withCheck": "(author_profile_id = current_profile_id())"
         },
         "Authenticated users can view essay comments": {
           "name": "Authenticated users can view essay comments",
@@ -1275,7 +1299,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         }
       },
       "checkConstraints": {
@@ -1595,7 +1620,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "((viewer_profile_id = current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM essays e\n  WHERE ((e.id = essay_views.essay_id) AND (e.author_profile_id = current_profile_id())))))"
         }
       },
       "checkConstraints": {},
@@ -1742,7 +1768,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         },
         "Users can remove own votes": {
           "name": "Users can remove own votes",
@@ -1750,7 +1777,8 @@
           "for": "DELETE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "(voter_profile_id = current_profile_id())"
         }
       },
       "checkConstraints": {},
@@ -1965,7 +1993,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         },
         "Authors and admins can delete essays": {
           "name": "Authors and admins can delete essays",
@@ -1973,7 +2002,8 @@
           "for": "DELETE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "((author_profile_id = current_profile_id()) OR is_admin())"
         },
         "Authors can update their own essays": {
           "name": "Authors can update their own essays",
@@ -1981,7 +2011,9 @@
           "for": "UPDATE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "(author_profile_id = current_profile_id())",
+          "withCheck": "(author_profile_id = current_profile_id())"
         }
       },
       "checkConstraints": {},
@@ -2459,7 +2491,9 @@
           "for": "UPDATE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "(user_id IN ( SELECT users.id\n   FROM users\n  WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))",
+          "withCheck": "(user_id IN ( SELECT users.id\n   FROM users\n  WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))"
         }
       },
       "checkConstraints": {
@@ -2616,7 +2650,8 @@
           "for": "INSERT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "withCheck": "(( SELECT auth.uid() AS uid) = auth_user_id)"
         },
         "Users can view their own user record": {
           "name": "Users can view their own user record",
@@ -2624,7 +2659,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "(( SELECT auth.uid() AS uid) = auth_user_id)"
         }
       },
       "checkConstraints": {},
@@ -2885,7 +2921,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         }
       },
       "checkConstraints": {
@@ -3134,7 +3171,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         },
         "Users can delete own reservations": {
           "name": "Users can delete own reservations",
@@ -3142,7 +3180,8 @@
           "for": "DELETE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "(owner_profile_id IN ( SELECT profiles.id\n   FROM profiles\n  WHERE (profiles.user_id IN ( SELECT users.id\n           FROM users\n          WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))))"
         },
         "Users can update own reservations": {
           "name": "Users can update own reservations",
@@ -3150,7 +3189,9 @@
           "for": "UPDATE",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "(owner_profile_id IN ( SELECT profiles.id\n   FROM profiles\n  WHERE (profiles.user_id IN ( SELECT users.id\n           FROM users\n          WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))))",
+          "withCheck": "(owner_profile_id IN ( SELECT profiles.id\n   FROM profiles\n  WHERE (profiles.user_id IN ( SELECT users.id\n           FROM users\n          WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))))"
         },
         "Users can create own reservations": {
           "name": "Users can create own reservations",
@@ -3158,7 +3199,8 @@
           "for": "INSERT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "withCheck": "(owner_profile_id IN ( SELECT profiles.id\n   FROM profiles\n  WHERE (profiles.user_id IN ( SELECT users.id\n           FROM users\n          WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))))"
         }
       },
       "checkConstraints": {
@@ -3317,7 +3359,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         }
       },
       "checkConstraints": {},
@@ -3451,7 +3494,8 @@
           "for": "SELECT",
           "to": [
             "authenticated"
-          ]
+          ],
+          "using": "true"
         }
       },
       "checkConstraints": {

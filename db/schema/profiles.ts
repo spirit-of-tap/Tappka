@@ -1,5 +1,5 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
-// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
+// Please look at CONTRIBUTING.md for more information on how to change the schema.
 import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, index, unique, check, date, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { authUsers } from "drizzle-orm/supabase"
@@ -27,9 +27,9 @@ export const users = pgTable("users", {
 		}).onDelete("cascade"),
 	unique("users_auth_user_id_key").on(table.authUserId),
 	unique("users_google_email_key").on(table.googleEmail),
-	pgPolicy("Users can update only suggested_work_email", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(( SELECT auth.uid() AS uid) = auth_user_id)`, withCheck: sql`(( SELECT auth.uid() AS uid) = auth_user_id)`  }),
-	pgPolicy("Users can insert their own user record", { as: "permissive", for: "insert", to: ["authenticated"] }),
-	pgPolicy("Users can view their own user record", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Users can update only suggested_work_email", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(( SELECT auth.uid() AS uid) = auth_user_id)`, withCheck: sql`(( SELECT auth.uid() AS uid) = auth_user_id)` }),
+	pgPolicy("Users can insert their own user record", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(( SELECT auth.uid() AS uid) = auth_user_id)` }),
+	pgPolicy("Users can view their own user record", { as: "permissive", for: "select", to: ["authenticated"], using: sql`(( SELECT auth.uid() AS uid) = auth_user_id)` }),
 ]).enableRLS();
 
 export const profiles = pgTable("profiles", {
@@ -85,6 +85,10 @@ export const profiles = pgTable("profiles", {
 	pgPolicy("Verified users can view all profiles", { as: "permissive", for: "select", to: ["authenticated"], using: sql`((access_removed_at IS NULL) AND (EXISTS ( SELECT 1
    FROM users
   WHERE ((users.auth_user_id = ( SELECT auth.uid() AS uid)) AND (users.verified_work_email IS NOT NULL)))))` }),
-	pgPolicy("Users can update their own profile picture", { as: "permissive", for: "update", to: ["authenticated"] }),
+	pgPolicy("Users can update their own profile picture", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(user_id IN ( SELECT users.id
+   FROM users
+  WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))`, withCheck: sql`(user_id IN ( SELECT users.id
+   FROM users
+  WHERE (users.auth_user_id = ( SELECT auth.uid() AS uid))))` }),
 	check("valid_czu_domain", sql`(lower(split_part(work_email, '@'::text, 2)) = ANY (ARRAY['pef.czu.cz'::text, 'studenti.czu.cz'::text, 'rektorat.czu.cz'::text]))`),
 ]).enableRLS();

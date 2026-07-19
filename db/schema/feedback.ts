@@ -1,5 +1,5 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
-// To change the schema: edit here, then `pnpm db:generate` and apply the migration.
+// Please look at CONTRIBUTING.md for more information on how to change the schema.
 import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, index, check } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"

@@ -244,6 +244,8 @@ ALTER TABLE "feedback" DROP COLUMN "admin_response_at";--> statement-breakpoint
 ALTER TABLE "users" DROP COLUMN "google_profile_picture";--> statement-breakpoint
 ALTER TABLE "users" DROP COLUMN "google_full_name";--> statement-breakpoint
 ALTER TABLE "recurring_schedules" DROP COLUMN "created_by";--> statement-breakpoint
+DROP POLICY "Coaches can manage TS reservations" ON "reservations" CASCADE;--> statement-breakpoint
+DROP POLICY "Users can create own reservations" ON "reservations" CASCADE;--> statement-breakpoint
 ALTER TABLE "reservations" DROP COLUMN "team_id";--> statement-breakpoint
 ALTER TABLE "reservations" DROP COLUMN "recurring_schedule_id";--> statement-breakpoint
 ALTER TABLE "reservations" DROP COLUMN "reservation_type";--> statement-breakpoint

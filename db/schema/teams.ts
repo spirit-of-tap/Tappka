@@ -1,5 +1,5 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
-// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
+// Please look at CONTRIBUTING.md for more information on how to change the schema.
 // Note: created_by/updated_by FKs to profiles are omitted here to avoid a teams↔profiles import cycle.
 // They are expressed in SQL migrations / live DB constraints.
 import { pgTable, pgPolicy, uuid, text, timestamp, integer } from "drizzle-orm/pg-core"

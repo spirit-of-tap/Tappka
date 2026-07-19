@@ -15,24 +15,33 @@ export type Database = {
           body: string
           book_id: string
           created_at: string
+          created_by_profile_id: string
           id: string
+          removed_at: string | null
           updated_at: string
+          updated_by_profile_id: string
         }
         Insert: {
           author_profile_id: string
           body: string
           book_id: string
           created_at?: string
+          created_by_profile_id: string
           id?: string
+          removed_at?: string | null
           updated_at?: string
+          updated_by_profile_id: string
         }
         Update: {
           author_profile_id?: string
           body?: string
           book_id?: string
           created_at?: string
+          created_by_profile_id?: string
           id?: string
+          removed_at?: string | null
           updated_at?: string
+          updated_by_profile_id?: string
         }
         Relationships: [
           {
@@ -56,131 +65,167 @@ export type Database = {
             referencedRelation: "books_with_essay_count"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "book_comments_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_comments_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_tags: {
+        Row: {
+          book_id: string
+          created_at: string
+          created_by_profile_id: string
+          tag_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          created_by_profile_id: string
+          tag_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          created_by_profile_id?: string
+          tag_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_tags_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_tags_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books_with_essay_count"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_tags_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_tags_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       books: {
         Row: {
-          added_by_profile_id: string
-          ai_book_points: number | null
-          ai_reason: string | null
-          approved_at: string | null
-          approved_by_profile_id: string | null
           author: string
-          book_points: number
-          cover_path: string | null
+          book_points: number | null
           created_at: string
+          created_by_profile_id: string
           description: string | null
           external_id: string | null
           id: string
           isbn_13: string | null
-          legacy_book_points: number | null
           page_count: number | null
           preview_link: string | null
-          rejection_reason: string | null
           source: Database["public"]["Enums"]["book_source"]
           status: Database["public"]["Enums"]["book_status"]
-          suggested_points: number
-          tags: string[]
+          status_changed_at: string | null
+          status_changed_by_profile_id: string | null
+          status_reason: string | null
+          supabase_cover_img_url: string | null
           title: string
           updated_at: string
+          updated_by_profile_id: string
         }
         Insert: {
-          added_by_profile_id: string
-          ai_book_points?: number | null
-          ai_reason?: string | null
-          approved_at?: string | null
-          approved_by_profile_id?: string | null
           author: string
-          book_points?: number
-          cover_path?: string | null
+          book_points?: number | null
           created_at?: string
+          created_by_profile_id: string
           description?: string | null
           external_id?: string | null
           id?: string
           isbn_13?: string | null
-          legacy_book_points?: number | null
           page_count?: number | null
           preview_link?: string | null
-          rejection_reason?: string | null
           source?: Database["public"]["Enums"]["book_source"]
           status?: Database["public"]["Enums"]["book_status"]
-          suggested_points?: number
-          tags?: string[]
+          status_changed_at?: string | null
+          status_changed_by_profile_id?: string | null
+          status_reason?: string | null
+          supabase_cover_img_url?: string | null
           title: string
           updated_at?: string
+          updated_by_profile_id: string
         }
         Update: {
-          added_by_profile_id?: string
-          ai_book_points?: number | null
-          ai_reason?: string | null
-          approved_at?: string | null
-          approved_by_profile_id?: string | null
           author?: string
-          book_points?: number
-          cover_path?: string | null
+          book_points?: number | null
           created_at?: string
+          created_by_profile_id?: string
           description?: string | null
           external_id?: string | null
           id?: string
           isbn_13?: string | null
-          legacy_book_points?: number | null
           page_count?: number | null
           preview_link?: string | null
-          rejection_reason?: string | null
           source?: Database["public"]["Enums"]["book_source"]
           status?: Database["public"]["Enums"]["book_status"]
-          suggested_points?: number
-          tags?: string[]
+          status_changed_at?: string | null
+          status_changed_by_profile_id?: string | null
+          status_reason?: string | null
+          supabase_cover_img_url?: string | null
           title?: string
           updated_at?: string
+          updated_by_profile_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "books_added_by_profile_id_fkey"
-            columns: ["added_by_profile_id"]
+            foreignKeyName: "books_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "books_approved_by_profile_id_fkey"
-            columns: ["approved_by_profile_id"]
+            foreignKeyName: "books_status_changed_by_profile_id_fkey"
+            columns: ["status_changed_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      cowork_participants: {
-        Row: {
-          id: string
-          joined_at: string
-          reservation_id: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          joined_at?: string
-          reservation_id: string
-          user_id: string
-        }
-        Update: {
-          id?: string
-          joined_at?: string
-          reservation_id?: string
-          user_id?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "cowork_participants_reservation_id_fkey"
-            columns: ["reservation_id"]
-            isOneToOne: false
-            referencedRelation: "reservations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cowork_participants_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "books_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -189,25 +234,48 @@ export type Database = {
       }
       dashboard_layouts: {
         Row: {
+          created_at: string
+          created_by_profile_id: string
           profile_id: string
           updated_at: string
+          updated_by_profile_id: string
           widgets: Json
         }
         Insert: {
+          created_at?: string
+          created_by_profile_id: string
           profile_id: string
           updated_at?: string
+          updated_by_profile_id: string
           widgets?: Json
         }
         Update: {
+          created_at?: string
+          created_by_profile_id?: string
           profile_id?: string
           updated_at?: string
+          updated_by_profile_id?: string
           widgets?: Json
         }
         Relationships: [
           {
+            foreignKeyName: "dashboard_layouts_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "dashboard_layouts_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dashboard_layouts_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -216,23 +284,42 @@ export type Database = {
       essay_coach_reads: {
         Row: {
           coach_profile_id: string
+          created_at: string
+          created_by_profile_id: string
           essay_id: string
           read_at: string
+          updated_at: string
+          updated_by_profile_id: string
         }
         Insert: {
           coach_profile_id: string
+          created_at?: string
+          created_by_profile_id: string
           essay_id: string
           read_at?: string
+          updated_at?: string
+          updated_by_profile_id: string
         }
         Update: {
           coach_profile_id?: string
+          created_at?: string
+          created_by_profile_id?: string
           essay_id?: string
           read_at?: string
+          updated_at?: string
+          updated_by_profile_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "essay_coach_reads_coach_profile_id_fkey"
             columns: ["coach_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essay_coach_reads_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -244,6 +331,13 @@ export type Database = {
             referencedRelation: "essays"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "essay_coach_reads_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       essay_comments: {
@@ -251,30 +345,46 @@ export type Database = {
           author_profile_id: string
           body: string
           created_at: string
+          created_by_profile_id: string
           essay_id: string
           id: string
+          removed_at: string | null
           updated_at: string
+          updated_by_profile_id: string
         }
         Insert: {
           author_profile_id: string
           body: string
           created_at?: string
+          created_by_profile_id: string
           essay_id: string
           id?: string
+          removed_at?: string | null
           updated_at?: string
+          updated_by_profile_id: string
         }
         Update: {
           author_profile_id?: string
           body?: string
           created_at?: string
+          created_by_profile_id?: string
           essay_id?: string
           id?: string
+          removed_at?: string | null
           updated_at?: string
+          updated_by_profile_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "essay_comments_author_profile_id_fkey"
             columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essay_comments_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -286,33 +396,124 @@ export type Database = {
             referencedRelation: "essays"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "essay_comments_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      essay_revisions: {
+        Row: {
+          content_json: Json
+          created_at: string
+          created_by_profile_id: string
+          essay_id: string
+          invalid_since: string | null
+          revision_no: number
+          title: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          content_json: Json
+          created_at?: string
+          created_by_profile_id: string
+          essay_id: string
+          invalid_since?: string | null
+          revision_no: number
+          title: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          content_json?: Json
+          created_at?: string
+          created_by_profile_id?: string
+          essay_id?: string
+          invalid_since?: string | null
+          revision_no?: number
+          title?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "essay_revisions_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essay_revisions_essay_id_fkey"
+            columns: ["essay_id"]
+            isOneToOne: false
+            referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essay_revisions_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       essay_views: {
         Row: {
+          created_at: string
+          created_by_profile_id: string
           essay_id: string
           first_viewed_at: string
           last_viewed_at: string
+          updated_at: string
+          updated_by_profile_id: string
           viewer_profile_id: string
         }
         Insert: {
+          created_at?: string
+          created_by_profile_id: string
           essay_id: string
           first_viewed_at?: string
           last_viewed_at?: string
+          updated_at?: string
+          updated_by_profile_id: string
           viewer_profile_id: string
         }
         Update: {
+          created_at?: string
+          created_by_profile_id?: string
           essay_id?: string
           first_viewed_at?: string
           last_viewed_at?: string
+          updated_at?: string
+          updated_by_profile_id?: string
           viewer_profile_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "essay_views_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "essay_views_essay_id_fkey"
             columns: ["essay_id"]
             isOneToOne: false
             referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essay_views_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -327,25 +528,48 @@ export type Database = {
       essay_votes: {
         Row: {
           created_at: string
+          created_by_profile_id: string
           essay_id: string
+          updated_at: string
+          updated_by_profile_id: string
           voter_profile_id: string
         }
         Insert: {
           created_at?: string
+          created_by_profile_id: string
           essay_id: string
+          updated_at?: string
+          updated_by_profile_id: string
           voter_profile_id: string
         }
         Update: {
           created_at?: string
+          created_by_profile_id?: string
           essay_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
           voter_profile_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "essay_votes_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "essay_votes_essay_id_fkey"
             columns: ["essay_id"]
             isOneToOne: false
             referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essay_votes_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -361,47 +585,41 @@ export type Database = {
         Row: {
           author_profile_id: string
           book_id: string | null
-          content_json: Json
-          content_text: string
           created_at: string
+          created_by_profile_id: string
           id: string
-          is_pinned: boolean
           pinned_at: string | null
-          published: boolean
-          title: string
+          pinned_by_profile_id: string | null
+          published_at: string | null
+          removed_at: string | null
           updated_at: string
-          view_count: number
-          vote_count: number
+          updated_by_profile_id: string
         }
         Insert: {
           author_profile_id: string
           book_id?: string | null
-          content_json?: Json
-          content_text?: string
           created_at?: string
+          created_by_profile_id: string
           id?: string
-          is_pinned?: boolean
           pinned_at?: string | null
-          published?: boolean
-          title: string
+          pinned_by_profile_id?: string | null
+          published_at?: string | null
+          removed_at?: string | null
           updated_at?: string
-          view_count?: number
-          vote_count?: number
+          updated_by_profile_id: string
         }
         Update: {
           author_profile_id?: string
           book_id?: string | null
-          content_json?: Json
-          content_text?: string
           created_at?: string
+          created_by_profile_id?: string
           id?: string
-          is_pinned?: boolean
           pinned_at?: string | null
-          published?: boolean
-          title?: string
+          pinned_by_profile_id?: string | null
+          published_at?: string | null
+          removed_at?: string | null
           updated_at?: string
-          view_count?: number
-          vote_count?: number
+          updated_by_profile_id?: string
         }
         Relationships: [
           {
@@ -425,53 +643,78 @@ export type Database = {
             referencedRelation: "books_with_essay_count"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      feedback: {
-        Row: {
-          admin_response: string | null
-          admin_response_at: string | null
-          admin_response_by: string | null
-          archived_at: string | null
-          author_profile_id: string
-          body: string
-          created_at: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          admin_response?: string | null
-          admin_response_at?: string | null
-          admin_response_by?: string | null
-          archived_at?: string | null
-          author_profile_id: string
-          body: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          admin_response?: string | null
-          admin_response_at?: string | null
-          admin_response_by?: string | null
-          archived_at?: string | null
-          author_profile_id?: string
-          body?: string
-          created_at?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "feedback_admin_response_by_fkey"
-            columns: ["admin_response_by"]
+            foreignKeyName: "essays_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "essays_pinned_by_profile_id_fkey"
+            columns: ["pinned_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essays_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback: {
+        Row: {
+          author_profile_id: string
+          body: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          resolved_at: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          author_profile_id: string
+          body: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          resolved_at?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          author_profile_id?: string
+          body?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          resolved_at?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
             foreignKeyName: "feedback_author_profile_id_fkey"
             columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -480,60 +723,73 @@ export type Database = {
       }
       profiles: {
         Row: {
-          beta_access: boolean
+          access_removed_at: string | null
+          access_removed_by_profile_id: string | null
+          beta_access_granted_at: string | null
           created_at: string
+          created_by_profile_id: string | null
           date_of_birth: string | null
           id: string
           name: string
           personal_email: string | null
           phone_number: string | null
           picture: string | null
-          removed_access: string | null
-          removed_access_by: string | null
           role: Database["public"]["Enums"]["profile_role"]
           team_id: string | null
           updated_at: string
+          updated_by_profile_id: string | null
           user_id: string | null
           work_email: string
         }
         Insert: {
-          beta_access?: boolean
+          access_removed_at?: string | null
+          access_removed_by_profile_id?: string | null
+          beta_access_granted_at?: string | null
           created_at?: string
+          created_by_profile_id?: string | null
           date_of_birth?: string | null
           id?: string
           name: string
           personal_email?: string | null
           phone_number?: string | null
           picture?: string | null
-          removed_access?: string | null
-          removed_access_by?: string | null
           role?: Database["public"]["Enums"]["profile_role"]
           team_id?: string | null
           updated_at?: string
+          updated_by_profile_id?: string | null
           user_id?: string | null
           work_email: string
         }
         Update: {
-          beta_access?: boolean
+          access_removed_at?: string | null
+          access_removed_by_profile_id?: string | null
+          beta_access_granted_at?: string | null
           created_at?: string
+          created_by_profile_id?: string | null
           date_of_birth?: string | null
           id?: string
           name?: string
           personal_email?: string | null
           phone_number?: string | null
           picture?: string | null
-          removed_access?: string | null
-          removed_access_by?: string | null
           role?: Database["public"]["Enums"]["profile_role"]
           team_id?: string | null
           updated_at?: string
+          updated_by_profile_id?: string | null
           user_id?: string | null
           work_email?: string
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_removed_access_by_fkey"
-            columns: ["removed_access_by"]
+            foreignKeyName: "profiles_access_removed_by_profile_id_fkey"
+            columns: ["access_removed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -543,6 +799,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -557,44 +820,56 @@ export type Database = {
       recurring_schedules: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by_profile_id: string
           day_of_week: number
           end_time: string
           id: string
+          removed_at: string | null
           room_id: string
+          schedule_type: Database["public"]["Enums"]["schedule_type"]
           start_time: string
-          team_id: string
+          team_id: string | null
+          updated_at: string
+          updated_by_profile_id: string
           valid_from: string
-          valid_until: string
+          valid_until: string | null
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by_profile_id: string
           day_of_week: number
           end_time: string
           id?: string
+          removed_at?: string | null
           room_id: string
+          schedule_type: Database["public"]["Enums"]["schedule_type"]
           start_time: string
-          team_id: string
+          team_id?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
           valid_from: string
-          valid_until: string
+          valid_until?: string | null
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by_profile_id?: string
           day_of_week?: number
           end_time?: string
           id?: string
+          removed_at?: string | null
           room_id?: string
+          schedule_type?: Database["public"]["Enums"]["schedule_type"]
           start_time?: string
-          team_id?: string
+          team_id?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
           valid_from?: string
-          valid_until?: string
+          valid_until?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "recurring_schedules_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: "recurring_schedules_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -613,60 +888,81 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "recurring_schedules_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reservations: {
         Row: {
+          cancelled_at: string | null
+          cancelled_by_profile_id: string | null
           created_at: string
-          end_time: string
+          created_by_profile_id: string
+          end_at: string
           id: string
-          is_cowork_open: boolean
+          owner_profile_id: string | null
           person_count: number | null
-          recurring_schedule_id: string | null
-          reservation_type: Database["public"]["Enums"]["reservation_type"]
           room_id: string
-          start_time: string
-          team_id: string | null
+          start_at: string
           title: string
           updated_at: string
-          user_id: string | null
+          updated_by_profile_id: string
         }
         Insert: {
+          cancelled_at?: string | null
+          cancelled_by_profile_id?: string | null
           created_at?: string
-          end_time: string
+          created_by_profile_id: string
+          end_at: string
           id?: string
-          is_cowork_open?: boolean
+          owner_profile_id?: string | null
           person_count?: number | null
-          recurring_schedule_id?: string | null
-          reservation_type?: Database["public"]["Enums"]["reservation_type"]
           room_id: string
-          start_time: string
-          team_id?: string | null
+          start_at: string
           title: string
           updated_at?: string
-          user_id?: string | null
+          updated_by_profile_id: string
         }
         Update: {
+          cancelled_at?: string | null
+          cancelled_by_profile_id?: string | null
           created_at?: string
-          end_time?: string
+          created_by_profile_id?: string
+          end_at?: string
           id?: string
-          is_cowork_open?: boolean
+          owner_profile_id?: string | null
           person_count?: number | null
-          recurring_schedule_id?: string | null
-          reservation_type?: Database["public"]["Enums"]["reservation_type"]
           room_id?: string
-          start_time?: string
-          team_id?: string | null
+          start_at?: string
           title?: string
           updated_at?: string
-          user_id?: string | null
+          updated_by_profile_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "reservations_recurring_schedule_id_fkey"
-            columns: ["recurring_schedule_id"]
+            foreignKeyName: "reservations_cancelled_by_profile_id_fkey"
+            columns: ["cancelled_by_profile_id"]
             isOneToOne: false
-            referencedRelation: "recurring_schedules"
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -677,75 +973,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "reservations_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reservations_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "reservations_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      room_issues: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          issue_type: Database["public"]["Enums"]["issue_type"]
-          reported_by: string | null
-          resolved_at: string | null
-          resolved_by: string | null
-          room_id: string
-          status: Database["public"]["Enums"]["issue_status"]
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          issue_type: Database["public"]["Enums"]["issue_type"]
-          reported_by?: string | null
-          resolved_at?: string | null
-          resolved_by?: string | null
-          room_id: string
-          status?: Database["public"]["Enums"]["issue_status"]
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          issue_type?: Database["public"]["Enums"]["issue_type"]
-          reported_by?: string | null
-          resolved_at?: string | null
-          resolved_by?: string | null
-          room_id?: string
-          status?: Database["public"]["Enums"]["issue_status"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "room_issues_reported_by_fkey"
-            columns: ["reported_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "room_issues_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "room_issues_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "rooms"
             referencedColumns: ["id"]
           },
         ]
@@ -756,152 +987,143 @@ export type Database = {
           can_have_ts: boolean
           code: string
           created_at: string
+          created_by_profile_id: string
           description: string | null
           id: string
           name: string
+          removed_at: string | null
+          updated_at: string
+          updated_by_profile_id: string
         }
         Insert: {
           available_days?: number[] | null
           can_have_ts?: boolean
           code: string
           created_at?: string
+          created_by_profile_id: string
           description?: string | null
           id?: string
           name: string
+          removed_at?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
         }
         Update: {
           available_days?: number[] | null
           can_have_ts?: boolean
           code?: string
           created_at?: string
+          created_by_profile_id?: string
           description?: string | null
           id?: string
           name?: string
-        }
-        Relationships: []
-      }
-      schedule_breaks: {
-        Row: {
-          break_type: Database["public"]["Enums"]["schedule_break_type"]
-          created_at: string
-          created_by: string | null
-          end_date: string
-          id: string
-          name: string
-          start_date: string
-        }
-        Insert: {
-          break_type: Database["public"]["Enums"]["schedule_break_type"]
-          created_at?: string
-          created_by?: string | null
-          end_date: string
-          id?: string
-          name: string
-          start_date: string
-        }
-        Update: {
-          break_type?: Database["public"]["Enums"]["schedule_break_type"]
-          created_at?: string
-          created_by?: string | null
-          end_date?: string
-          id?: string
-          name?: string
-          start_date?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "schedule_breaks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      team_reading_list_books: {
-        Row: {
-          book_id: string
-          list_id: string
-          note: string | null
-          position: number
-        }
-        Insert: {
-          book_id: string
-          list_id: string
-          note?: string | null
-          position?: number
-        }
-        Update: {
-          book_id?: string
-          list_id?: string
-          note?: string | null
-          position?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_reading_list_books_book_id_fkey"
-            columns: ["book_id"]
-            isOneToOne: false
-            referencedRelation: "books"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_reading_list_books_book_id_fkey"
-            columns: ["book_id"]
-            isOneToOne: false
-            referencedRelation: "books_with_essay_count"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_reading_list_books_list_id_fkey"
-            columns: ["list_id"]
-            isOneToOne: false
-            referencedRelation: "team_reading_lists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      team_reading_lists: {
-        Row: {
-          created_at: string
-          created_by_profile_id: string
-          id: string
-          month: string | null
-          team_id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by_profile_id: string
-          id?: string
-          month?: string | null
-          team_id: string
-          title: string
+          removed_at?: string | null
           updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by_profile_id?: string
-          id?: string
-          month?: string | null
-          team_id?: string
-          title?: string
-          updated_at?: string
+          updated_by_profile_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "team_reading_lists_created_by_profile_id_fkey"
+            foreignKeyName: "rooms_created_by_profile_id_fkey"
             columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "team_reading_lists_team_id_fkey"
-            columns: ["team_id"]
+            foreignKeyName: "rooms_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
             isOneToOne: false
-            referencedRelation: "teams"
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_breaks: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_breaks_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_breaks_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tags: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          name: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          name: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tags_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -910,29 +1132,38 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          created_by_profile_id: string | null
           id: string
           name: string
+          onboardingYear: number | null
           picture: string | null
+          removed_at: string | null
           updated_at: string
-          year: number | null
+          updated_by_profile_id: string | null
         }
         Insert: {
           color?: string | null
           created_at?: string
+          created_by_profile_id?: string | null
           id?: string
           name: string
+          onboardingYear?: number | null
           picture?: string | null
+          removed_at?: string | null
           updated_at?: string
-          year?: number | null
+          updated_by_profile_id?: string | null
         }
         Update: {
           color?: string | null
           created_at?: string
+          created_by_profile_id?: string | null
           id?: string
           name?: string
+          onboardingYear?: number | null
           picture?: string | null
+          removed_at?: string | null
           updated_at?: string
-          year?: number | null
+          updated_by_profile_id?: string | null
         }
         Relationships: []
       }
@@ -941,8 +1172,6 @@ export type Database = {
           auth_user_id: string | null
           created_at: string
           google_email: string
-          google_full_name: string | null
-          google_profile_picture: string | null
           id: string
           last_otp_sent_at: string | null
           suggested_work_email: string | null
@@ -954,8 +1183,6 @@ export type Database = {
           auth_user_id?: string | null
           created_at?: string
           google_email: string
-          google_full_name?: string | null
-          google_profile_picture?: string | null
           id?: string
           last_otp_sent_at?: string | null
           suggested_work_email?: string | null
@@ -967,8 +1194,6 @@ export type Database = {
           auth_user_id?: string | null
           created_at?: string
           google_email?: string
-          google_full_name?: string | null
-          google_profile_picture?: string | null
           id?: string
           last_otp_sent_at?: string | null
           suggested_work_email?: string | null
@@ -982,42 +1207,45 @@ export type Database = {
     Views: {
       books_with_essay_count: {
         Row: {
-          added_by_profile_id: string | null
-          ai_book_points: number | null
-          ai_reason: string | null
-          approved_at: string | null
-          approved_by_profile_id: string | null
           author: string | null
           book_points: number | null
-          cover_path: string | null
           created_at: string | null
+          created_by_profile_id: string | null
           description: string | null
           essay_count: number | null
           external_id: string | null
           id: string | null
           isbn_13: string | null
-          legacy_book_points: number | null
           page_count: number | null
           preview_link: string | null
-          rejection_reason: string | null
           source: Database["public"]["Enums"]["book_source"] | null
           status: Database["public"]["Enums"]["book_status"] | null
-          suggested_points: number | null
-          tags: string[] | null
+          status_changed_at: string | null
+          status_changed_by_profile_id: string | null
+          status_reason: string | null
+          supabase_cover_img_url: string | null
           title: string | null
           updated_at: string | null
+          updated_by_profile_id: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "books_added_by_profile_id_fkey"
-            columns: ["added_by_profile_id"]
+            foreignKeyName: "books_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "books_approved_by_profile_id_fkey"
-            columns: ["approved_by_profile_id"]
+            foreignKeyName: "books_status_changed_by_profile_id_fkey"
+            columns: ["status_changed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1065,11 +1293,8 @@ export type Database = {
     Enums: {
       book_source: "manual" | "google_books" | "open_library"
       book_status: "pending" | "approved" | "rejected"
-      issue_status: "open" | "resolved"
-      issue_type: "locked" | "mess" | "technical" | "other"
       profile_role: "student" | "mentor" | "coach" | "admin"
-      reservation_type: "personal" | "training_session" | "houston_calling"
-      schedule_break_type: "days_of_joy" | "holiday" | "other"
+      schedule_type: "training_session" | "houston_calling"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1199,11 +1424,8 @@ export const Constants = {
     Enums: {
       book_source: ["manual", "google_books", "open_library"],
       book_status: ["pending", "approved", "rejected"],
-      issue_status: ["open", "resolved"],
-      issue_type: ["locked", "mess", "technical", "other"],
       profile_role: ["student", "mentor", "coach", "admin"],
-      reservation_type: ["personal", "training_session", "houston_calling"],
-      schedule_break_type: ["days_of_joy", "holiday", "other"],
+      schedule_type: ["training_session", "houston_calling"],
     },
   },
 } as const

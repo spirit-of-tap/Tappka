@@ -1,5 +1,5 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
-// To change the schema: edit here, then `npx drizzle-kit generate` and apply the migration.
+// Please look at CONTRIBUTING.md for more information on how to change the schema.
 import { pgTable, foreignKey, pgPolicy, uuid, text, numeric, integer, timestamp, index, unique, check, pgEnum, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
@@ -26,9 +26,9 @@ export const tags = pgTable("tags", {
 			foreignColumns: [profiles.id],
 			name: "tags_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
-	pgPolicy("Authenticated users can view tags", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Authenticated users can view tags", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	pgPolicy("Coaches and admins can add tags", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`is_coach_or_admin()` }),
-	pgPolicy("Coaches and admins can update tags", { as: "permissive", for: "update", to: ["authenticated"] }),
+	pgPolicy("Coaches and admins can update tags", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
 	pgPolicy("Coaches and admins can delete tags", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
 ]).enableRLS();
 
@@ -76,9 +76,9 @@ export const books = pgTable("books", {
 		}).onDelete("set null"),
 	unique("books_isbn_13_key").on(table.isbn13),
 	pgPolicy("Coaches and admins can delete books", { as: "permissive", for: "delete", to: ["public"], using: sql`is_coach_or_admin()` }),
-	pgPolicy("Coaches and admins can update books", { as: "permissive", for: "update", to: ["authenticated"] }),
-	pgPolicy("Authenticated users can add books", { as: "permissive", for: "insert", to: ["authenticated"] }),
-	pgPolicy("Authenticated users can view all books", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Coaches and admins can update books", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
+	pgPolicy("Authenticated users can add books", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(created_by_profile_id = current_profile_id())` }),
+	pgPolicy("Authenticated users can view all books", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	check("books_book_points_check", sql`(book_points IS NULL) OR ((book_points >= (0)::numeric) AND (book_points <= (3)::numeric))`),
 ]).enableRLS();
 
@@ -112,9 +112,9 @@ export const bookTags = pgTable("book_tags", {
 			name: "book_tags_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	primaryKey({ columns: [table.bookId, table.tagId], name: "book_tags_pkey" }),
-	pgPolicy("Authenticated users can view book tags", { as: "permissive", for: "select", to: ["authenticated"] }),
-	pgPolicy("Authenticated users can assign book tags", { as: "permissive", for: "insert", to: ["authenticated"] }),
-	pgPolicy("Coaches and admins can update book tags", { as: "permissive", for: "update", to: ["authenticated"] }),
+	pgPolicy("Authenticated users can view book tags", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Authenticated users can assign book tags", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(created_by_profile_id = current_profile_id())` }),
+	pgPolicy("Coaches and admins can update book tags", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
 	pgPolicy("Coaches and admins can remove book tags", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
 ]).enableRLS();
 
@@ -152,8 +152,8 @@ export const bookComments = pgTable("book_comments", {
 			name: "book_comments_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	pgPolicy("Authors and admins can delete book comments", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((author_profile_id = current_profile_id()) OR is_admin())` }),
-	pgPolicy("Authors can update their own book comments", { as: "permissive", for: "update", to: ["authenticated"] }),
-	pgPolicy("Authenticated users can add book comments", { as: "permissive", for: "insert", to: ["authenticated"] }),
-	pgPolicy("Authenticated users can view book comments", { as: "permissive", for: "select", to: ["authenticated"] }),
+	pgPolicy("Authors can update their own book comments", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(author_profile_id = current_profile_id())`, withCheck: sql`(author_profile_id = current_profile_id())` }),
+	pgPolicy("Authenticated users can add book comments", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(author_profile_id = current_profile_id())` }),
+	pgPolicy("Authenticated users can view book comments", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	check("book_comments_body_check", sql`(char_length(body) >= 1) AND (char_length(body) <= 4000)`),
 ]).enableRLS();
