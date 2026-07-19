@@ -70,7 +70,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
         <BackButton />
         {isAuthor && (
           <div className="flex items-center gap-2">
-            <EssayPinButton essayId={essayId} isPinned={essay.is_pinned} />
+            <EssayPinButton essayId={essayId} isPinned={essay.pinned_at != null} />
             <Button variant="outline" asChild size="sm">
               <Link href={`/eseje/${essayId}/upravit`}>
                 <Pencil className="size-4 mr-2" />
@@ -96,7 +96,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
         <h1 className="text-3xl font-bold leading-tight">{essay.title}</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
           {essay.author?.picture ? (
-            <img src={essay.author.picture} alt={essay.author.name} className="size-6 rounded-full object-cover" />
+            <img src={essay.author.picture} alt={essay.author.name ?? ''} className="size-6 rounded-full object-cover" />
           ) : (
             <div className="size-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
               {essay.author?.name?.[0]}
@@ -129,9 +129,9 @@ export default async function EssayDetailPage({ params }: PageProps) {
         <Link href={`/knihovna/${essay.book.id}`} className="group block mb-8">
           <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors">
             <div className="shrink-0 w-9 h-12 rounded overflow-hidden bg-muted flex items-center justify-center">
-              {essay.book.cover_path ? (
+              {essay.book.supabase_cover_img_url ? (
                 <StorageImage
-                  storageKey={essay.book.cover_path}
+                  storageKey={essay.book.supabase_cover_img_url}
                   alt={essay.book.title}
                   className="w-full h-full object-cover"
                   width={36}

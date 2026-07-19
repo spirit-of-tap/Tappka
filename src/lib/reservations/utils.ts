@@ -2,11 +2,15 @@
  * Utility functions for the reservation system
  */
 
-import { 
-  OPERATING_HOURS, 
+import {
+  OPERATING_HOURS,
   TIME_SLOT_MINUTES,
+  HOUSTON_CALLING_TITLE,
+  TRAINING_SESSION_TITLE,
+  TRAINING_SESSION_TITLE_PREFIX,
   type Room,
   type Reservation,
+  type ReservationKind,
 } from './types';
 
 /**
@@ -25,9 +29,8 @@ const PRAGUE_TZ = "Europe/Prague";
  * Convert a date string (YYYY-MM-DD) and time string (HH:MM or HH:MM:SS)
  * from Europe/Prague local time to a UTC ISO string.
  *
- * This is needed because training session times are user-entered in Prague
- * time, but reservations.start_time / end_time are TIMESTAMPTZ columns stored
- * as UTC in the database.
+ * Training session times are user-entered in Prague time, but
+ * reservations.start_at / end_at are TIMESTAMPTZ columns stored as UTC.
  */
 export function pragueLocalToUtcISO(dateStr: string, timeStr: string): string {
   // Normalise time to HH:MM:SS
@@ -100,6 +103,43 @@ function getPragueHourAndMinute(date: Date): { hour: number; minute: number } {
   const hour = parseInt(parts.find((p) => p.type === "hour")!.value, 10);
   const minute = parseInt(parts.find((p) => p.type === "minute")!.value, 10);
   return { hour, minute };
+}
+
+/**
+ * Build the stable title for a training session reservation.
+ */
+export function trainingSessionTitle(teamName: string): string {
+  return `${TRAINING_SESSION_TITLE_PREFIX}${teamName}`;
+}
+
+/**
+ * Infer reservation kind from title / owner (no reservation_type column).
+ */
+export function inferReservationKind(
+  reservation: Pick<Reservation, "title" | "owner_profile_id">
+): ReservationKind {
+  const title = reservation.title.trim();
+
+  if (
+    title === HOUSTON_CALLING_TITLE ||
+    title.toLowerCase() === "houston calling"
+  ) {
+    return "houston_calling";
+  }
+
+  if (
+    title === TRAINING_SESSION_TITLE ||
+    title.startsWith(TRAINING_SESSION_TITLE_PREFIX)
+  ) {
+    return "training_session";
+  }
+
+  if (reservation.owner_profile_id) {
+    return "personal";
+  }
+
+  // System-generated rows without a recognised title — treat as personal display.
+  return "personal";
 }
 
 /**
@@ -210,14 +250,14 @@ export function getNextAvailableTime(
 
   // Sort by end time
   const sorted = [...reservations]
-    .sort((a, b) => new Date(a.end_time).getTime() - new Date(b.end_time).getTime());
+    .sort((a, b) => new Date(a.end_at).getTime() - new Date(b.end_at).getTime());
 
   // Find the first gap or the end of last reservation
   let currentTime = roundToSlot(referenceTime);
   
   for (const reservation of sorted) {
-    const startTime = new Date(reservation.start_time);
-    const endTime = new Date(reservation.end_time);
+    const startTime = new Date(reservation.start_at);
+    const endTime = new Date(reservation.end_at);
     
     if (currentTime < startTime) {
       // Found a gap
@@ -237,8 +277,8 @@ export function getNextAvailableTime(
  */
 export function isReservationActive(reservation: Reservation): boolean {
   const now = new Date();
-  const start = new Date(reservation.start_time);
-  const end = new Date(reservation.end_time);
+  const start = new Date(reservation.start_at);
+  const end = new Date(reservation.end_at);
   
   return now >= start && now < end;
 }
@@ -266,10 +306,10 @@ export function getDurationHours(startTime: string, endTime: string): number {
 }
 
 /**
- * Get background color classes for reservation type
+ * Get background color classes for reservation kind
  */
-export function getReservationColorClasses(type: string): string {
-  switch (type) {
+export function getReservationColorClasses(kind: ReservationKind | string): string {
+  switch (kind) {
     case "training_session":
       return "bg-red-100 dark:bg-red-950/50 border-red-500 text-red-900 dark:text-red-100";
     case "houston_calling":
@@ -284,7 +324,7 @@ export function getReservationColorClasses(type: string): string {
  */
 export function getMinutesUntilFree(reservation: Reservation): number {
   const now = new Date();
-  const end = new Date(reservation.end_time);
+  const end = new Date(reservation.end_at);
   return Math.round((end.getTime() - now.getTime()) / (1000 * 60));
 }
 
@@ -304,7 +344,7 @@ export function formatTimeUntilFree(reservation: Reservation): string {
   }
   
   // Show time instead
-  const end = new Date(reservation.end_time);
+  const end = new Date(reservation.end_at);
   return `v ${formatTime(end)}`;
 }
 
@@ -325,8 +365,8 @@ export function getQuickReservationEnd(durationMinutes: 30 | 60 | 120): Date {
 export function isRoomFreeNow(reservations: Reservation[]): boolean {
   const now = new Date();
   return !reservations.some(r => {
-    const start = new Date(r.start_time);
-    const end = new Date(r.end_time);
+    const start = new Date(r.start_at);
+    const end = new Date(r.end_at);
     return now >= start && now < end;
   });
 }

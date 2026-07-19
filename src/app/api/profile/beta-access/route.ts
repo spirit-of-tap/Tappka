@@ -23,17 +23,19 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Neplatná hodnota" }, { status: 400 })
     }
 
+    const beta_access_granted_at = beta_access ? new Date().toISOString() : null
+
     const { error } = await supabase
       .from("profiles")
-      .update({ beta_access })
+      .update({ beta_access_granted_at })
       .eq("id", profile.id)
 
     if (error) {
-      console.error("Error updating beta_access:", error)
+      console.error("Error updating beta_access_granted_at:", error)
       return NextResponse.json({ error: "Nepodařilo se uložit" }, { status: 500 })
     }
 
-    return NextResponse.json({ beta_access })
+    return NextResponse.json({ beta_access, beta_access_granted_at })
   } catch (error) {
     console.error("Beta access update error:", error)
     return NextResponse.json({ error: "Chyba serveru" }, { status: 500 })

@@ -1,5 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+
 import type { Database } from '@/lib/supabase/database.types';
+
+import { getBookIdsByTagNames, tagNamesFromJoin } from './tags';
 import type {
   Book,
   BookWithProfiles,
@@ -8,6 +11,31 @@ import type {
 } from './types';
 
 const PAGE_SIZE_DEFAULT = 20;
+
+const BOOK_PROFILES_SELECT = `
+  *,
+  created_by:profiles!created_by_profile_id(id, name, picture),
+  status_changed_by:profiles!status_changed_by_profile_id(id, name),
+  book_tags(tags(name))
+`;
+
+interface BookQueryRow extends Omit<BookWithProfiles, 'tags' | 'essay_count'> {
+  essay_count?: number;
+  book_tags?: { tags: { name: string } | null }[] | null;
+}
+
+/**
+ * Maps a books query row (with optional book_tags join) to BookWithProfiles.
+ */
+function mapBookRow(row: BookQueryRow): BookWithProfiles {
+  const { book_tags, essay_count, ...rest } = row;
+
+  return {
+    ...rest,
+    tags: tagNamesFromJoin(book_tags),
+    essay_count: essay_count ?? 0,
+  };
+}
 
 export async function getBooks(
   supabase: SupabaseClient<Database>,
@@ -28,11 +56,7 @@ export async function getBooks(
 
   let query = supabase
     .from(table)
-    .select(`
-      *,
-      added_by:profiles!added_by_profile_id(id, name, picture),
-      approved_by:profiles!approved_by_profile_id(id, name)
-    `)
+    .select(BOOK_PROFILES_SELECT)
     .range(from, to);
 
   if (filters?.sortBy === 'popular') {
@@ -45,8 +69,8 @@ export async function getBooks(
     query = query.eq('status', filters.status);
   }
 
-  if (filters?.addedBy) {
-    query = query.eq('added_by_profile_id', filters.addedBy);
+  if (filters?.createdBy) {
+    query = query.eq('created_by_profile_id', filters.createdBy);
   }
 
   if (filters?.search?.trim()) {
@@ -55,16 +79,15 @@ export async function getBooks(
   }
 
   if (filters?.tags && filters.tags.length > 0) {
-    query = query.overlaps('tags', filters.tags);
+    const bookIds = await getBookIdsByTagNames(supabase, filters.tags);
+    if (bookIds.length === 0) return [];
+    query = query.in('id', bookIds);
   }
 
   const { data, error } = await query;
   if (error) throw error;
 
-  return (data as BookWithProfiles[]).map((b) => ({
-    ...b,
-    essay_count: (b as BookWithProfiles & { essay_count?: number }).essay_count ?? 0,
-  }));
+  return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
 }
 
 export async function getBookById(
@@ -73,16 +96,14 @@ export async function getBookById(
 ): Promise<BookWithProfiles | null> {
   const { data, error } = await supabase
     .from('books')
-    .select(`
-      *,
-      added_by:profiles!added_by_profile_id(id, name, picture),
-      approved_by:profiles!approved_by_profile_id(id, name)
-    `)
+    .select(BOOK_PROFILES_SELECT)
     .eq('id', bookId)
     .maybeSingle();
 
   if (error) throw error;
-  return data as BookWithProfiles | null;
+  if (!data) return null;
+
+  return mapBookRow(data as unknown as BookQueryRow);
 }
 
 export async function getBookComments(
@@ -107,16 +128,12 @@ export async function getPendingBooks(
 ): Promise<BookWithProfiles[]> {
   const { data, error } = await supabase
     .from('books')
-    .select(`
-      *,
-      added_by:profiles!added_by_profile_id(id, name, picture),
-      approved_by:profiles!approved_by_profile_id(id, name)
-    `)
+    .select(BOOK_PROFILES_SELECT)
     .eq('status', 'pending')
     .order('created_at', { ascending: true });
 
   if (error) throw error;
-  return data as BookWithProfiles[];
+  return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
 }
 
 export async function getRejectedBooks(
@@ -124,16 +141,12 @@ export async function getRejectedBooks(
 ): Promise<BookWithProfiles[]> {
   const { data, error } = await supabase
     .from('books')
-    .select(`
-      *,
-      added_by:profiles!added_by_profile_id(id, name, picture),
-      approved_by:profiles!approved_by_profile_id(id, name)
-    `)
+    .select(BOOK_PROFILES_SELECT)
     .eq('status', 'rejected')
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
-  return data as BookWithProfiles[];
+  return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
 }
 
 export async function searchBooksLocally(
@@ -159,6 +172,8 @@ export async function getBooksByProfilePoints(
     .from('essays')
     .select('book_id, books!inner(book_points, status)')
     .eq('author_profile_id', profileId)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
     .not('book_id', 'is', null);
 
   if (error) throw error;
@@ -166,10 +181,10 @@ export async function getBooksByProfilePoints(
   const seen = new Set<string>();
   const result: { book_id: string; book_points: number }[] = [];
 
-  for (const row of (data ?? []) as unknown as Array<{ book_id: string; books: { book_points: number; status: string } }>) {
+  for (const row of (data ?? []) as unknown as Array<{ book_id: string; books: { book_points: number | null; status: string } }>) {
     if (row.book_id && !seen.has(row.book_id) && row.books.status === 'approved') {
       seen.add(row.book_id);
-      result.push({ book_id: row.book_id, book_points: Number(row.books.book_points) });
+      result.push({ book_id: row.book_id, book_points: Number(row.books.book_points ?? 0) });
     }
   }
 

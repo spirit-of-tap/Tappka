@@ -8,9 +8,11 @@ export type BookSource = Database['public']['Enums']['book_source'];
 export type Book = Tables<'books'>;
 
 export interface BookWithProfiles extends Book {
-  added_by: Pick<Profile, 'id' | 'name' | 'picture'> | null;
-  approved_by: Pick<Profile, 'id' | 'name'> | null;
+  created_by: Pick<Profile, 'id' | 'name' | 'picture'> | null;
+  status_changed_by: Pick<Profile, 'id' | 'name'> | null;
   essay_count: number;
+  /** Tag names derived from `book_tags` → `tags` join. */
+  tags: string[];
 }
 
 export type BookComment = Tables<'book_comments'>;
@@ -23,7 +25,7 @@ export interface BookFilters {
   status?: BookStatus;
   search?: string;
   tags?: string[];
-  addedBy?: string;
+  createdBy?: string;
   sortBy?: 'popular' | 'recent';
   page?: number;
   pageSize?: number;
@@ -34,9 +36,8 @@ export interface CreateBookInput {
   author: string;
   isbn_13?: string;
   description?: string;
-  cover_path?: string;
+  supabase_cover_img_url?: string;
   tags?: string[];
-  suggested_points: number;
   source: BookSource;
   external_id?: string;
 }
@@ -46,7 +47,7 @@ export interface ApproveBookInput {
 }
 
 export interface RejectBookInput {
-  rejection_reason: string;
+  status_reason: string;
 }
 
 export interface ExternalBookCandidate {

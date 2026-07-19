@@ -43,10 +43,10 @@ export default async function DashboardLayout({
 
   const sidebarUser = {
     id: profile.id,
-    name: profile.name,
+    name: profile.name ?? "",
     email: profile.work_email,
     role: profile.role,
-    beta_access: profile.beta_access ?? false,
+    beta_access: profile.beta_access_granted_at != null,
   };
 
   const isCoachOrAdmin = profile.role === "coach" || profile.role === "admin";

@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { addMonths, getDay, setHours, setMinutes, startOfMonth, addDays } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
+import { HOUSTON_CALLING_TITLE } from "@/lib/reservations/types";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 /**
  * Helper function to find first Wednesday of a month
@@ -25,7 +27,8 @@ async function createHCForMonth(
   adminClient: SupabaseClient<Database>,
   roomId: string,
   targetDate: Date,
-  scheduleBreaks: Array<{ start_date: string; end_date: string }>
+  scheduleBreaks: Array<{ start_date: string; end_date: string }>,
+  actorProfileId: string
 ): Promise<{ created: boolean; date: Date; reason?: string }> {
   const firstWednesday = getFirstWednesday(targetDate);
   const dateStr = firstWednesday.toISOString().split("T")[0];
@@ -39,7 +42,7 @@ async function createHCForMonth(
     return { created: false, date: firstWednesday, reason: "schedule_break" };
   }
 
-  // Check if HC already exists for this date
+  // Check if HC already exists for this date (room + start_at window + title)
   const startOfDay = setMinutes(setHours(firstWednesday, 0), 0);
   const endOfDay = setMinutes(setHours(firstWednesday, 23), 59);
 
@@ -47,10 +50,11 @@ async function createHCForMonth(
     .from("reservations")
     .select("id")
     .eq("room_id", roomId)
-    .eq("reservation_type", "houston_calling")
-    .gte("start_time", startOfDay.toISOString())
-    .lte("start_time", endOfDay.toISOString())
-    .single();
+    .eq("title", HOUSTON_CALLING_TITLE)
+    .is("cancelled_at", null)
+    .gte("start_at", startOfDay.toISOString())
+    .lte("start_at", endOfDay.toISOString())
+    .maybeSingle();
 
   if (existingHC) {
     return { created: false, date: firstWednesday, reason: "already_exists" };
@@ -63,11 +67,12 @@ async function createHCForMonth(
   // Create HC reservation using admin client (bypasses RLS)
   const { error } = await adminClient.from("reservations").insert({
     room_id: roomId,
-    user_id: null, // System reservation
-    reservation_type: "houston_calling",
-    title: "Houston Calling",
-    start_time: startTime.toISOString(),
-    end_time: endTime.toISOString(),
+    owner_profile_id: null,
+    title: HOUSTON_CALLING_TITLE,
+    start_at: startTime.toISOString(),
+    end_at: endTime.toISOString(),
+    created_by_profile_id: actorProfileId,
+    updated_by_profile_id: actorProfileId,
   });
 
   if (error) {
@@ -76,6 +81,30 @@ async function createHCForMonth(
   }
 
   return { created: true, date: firstWednesday };
+}
+
+/**
+ * Resolve a profile id to attribute system-generated HC rows.
+ * Prefer the calling user; fall back to any admin for cron runs.
+ */
+async function resolveActorProfileId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  adminClient: SupabaseClient<Database>
+): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const profile = await getCurrentUserProfile(supabase, { user });
+    if (profile?.id) return profile.id;
+  }
+
+  const { data: adminProfile } = await adminClient
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin")
+    .limit(1)
+    .maybeSingle();
+
+  return adminProfile?.id ?? null;
 }
 
 /**
@@ -108,11 +137,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const actorProfileId = await resolveActorProfileId(supabase, adminClient);
+    if (!actorProfileId) {
+      return NextResponse.json(
+        { error: "Nelze určit profil pro systémové rezervace" },
+        { status: 500 }
+      );
+    }
+
     // Get D107 room using admin client (bypasses RLS)
     const { data: room } = await adminClient
       .from("rooms")
       .select("id")
       .eq("code", "d107")
+      .is("removed_at", null)
       .single();
 
     if (!room) {
@@ -136,7 +174,13 @@ export async function POST(request: NextRequest) {
     const results = [];
     for (let i = -3; i <= 6; i++) {
       const targetMonth = addMonths(now, i);
-      const result = await createHCForMonth(adminClient, room.id, targetMonth, breaks);
+      const result = await createHCForMonth(
+        adminClient,
+        room.id,
+        targetMonth,
+        breaks,
+        actorProfileId
+      );
       results.push({
         month: targetMonth.toLocaleDateString("cs-CZ", { month: "long", year: "numeric" }),
         ...result,

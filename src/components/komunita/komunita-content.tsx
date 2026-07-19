@@ -49,7 +49,7 @@ export function KomunitaContent({
     if (!q) return profiles;
     return profiles.filter((p) => {
       return (
-        normalize(p.name).includes(q) ||
+        normalize(p.name ?? '').includes(q) ||
         normalize(p.work_email).includes(q) ||
         (p.personal_email ? normalize(p.personal_email).includes(q) : false)
       );

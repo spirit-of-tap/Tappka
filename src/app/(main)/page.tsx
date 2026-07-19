@@ -35,11 +35,11 @@ async function getNextReservation(
 ): Promise<DashboardReservation | null> {
   const { data } = await supabase
     .from("reservations")
-    .select("id, title, start_time, end_time, room:rooms(id, code, name)")
-    .eq("user_id", profileId)
-    .eq("status", "active")
-    .gt("end_time", new Date().toISOString())
-    .order("start_time")
+    .select("id, title, start_at, end_at, room:rooms(id, code, name)")
+    .eq("owner_profile_id", profileId)
+    .is("cancelled_at", null)
+    .gt("end_at", new Date().toISOString())
+    .order("start_at")
     .limit(1)
     .maybeSingle();
 

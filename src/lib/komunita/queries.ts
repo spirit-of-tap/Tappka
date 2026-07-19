@@ -28,7 +28,7 @@ export async function getProfiles(
       *,
       team:teams(*)
     `)
-    .is('removed_access', null) // Only active users
+    .is('access_removed_at', null) // Only active users
     .order('name', { ascending: true });
 
   // Apply search filter
@@ -50,11 +50,11 @@ export async function getProfiles(
 
   // Apply year filter (via team)
   if (filters?.year) {
-    // We need to join with teams to filter by year
+    // We need to join with teams to filter by onboardingYear
     const { data: teams } = await supabase
       .from('teams')
       .select('id')
-      .eq('year', filters.year);
+      .eq('onboardingYear', filters.year);
     
     if (teams && teams.length > 0) {
       const teamIds = teams.map(t => t.id);
@@ -89,7 +89,7 @@ export async function getProfileById(
       team:teams(*)
     `)
     .eq('id', profileId)
-    .is('removed_access', null)
+    .is('access_removed_at', null)
     .single();
 
   if (error) {
@@ -120,11 +120,13 @@ export async function getTeamsWithCount(
   }
 
   // Transform the data to include member_count
-  return (data || []).map((team: any) => ({
-    ...team,
-    member_count: team.profiles?.[0]?.count || 0,
-    profiles: undefined, // Remove the nested profiles object
-  })) as TeamWithCount[];
+  return (data || []).map((team) => {
+    const { profiles, ...rest } = team;
+    return {
+      ...rest,
+      member_count: profiles?.[0]?.count || 0,
+    };
+  }) as TeamWithCount[];
 }
 
 /**
@@ -158,7 +160,7 @@ export async function getTeamById(
       profiles(*)
     `)
     .eq('id', teamId)
-    .is('profiles.removed_access', null)
+    .is('profiles.access_removed_at', null)
     .single();
 
   if (error) {
@@ -172,7 +174,7 @@ export async function getTeamById(
     const orderA = roleOrder[a.role] ?? 999;
     const orderB = roleOrder[b.role] ?? 999;
     if (orderA !== orderB) return orderA - orderB;
-    return a.name.localeCompare(b.name);
+    return (a.name ?? '').localeCompare(b.name ?? '');
   });
 
   return {

@@ -41,15 +41,21 @@ async function seed(client: import("pg").PoolClient) {
   );
 
   const { rows: books } = await client.query(
-    `insert into public.books (title, author, added_by_profile_id, status, book_points)
-     values ('Book', 'Author', $1, 'approved', 2) returning id`,
+    `insert into public.books (title, author, created_by_profile_id, updated_by_profile_id, status, book_points)
+     values ('Book', 'Author', $1, $1, 'approved', 2) returning id`,
     [authorProfiles[0].id],
   );
 
   const { rows: essays } = await client.query(
-    `insert into public.essays (author_profile_id, book_id, title, content_json, content_text, published)
-     values ($1, $2, 'Essay', '{}', 'Hello', true) returning id`,
+    `insert into public.essays (author_profile_id, book_id, created_by_profile_id, updated_by_profile_id, published_at)
+     values ($1, $2, $1, $1, now()) returning id`,
     [authorProfiles[0].id, books[0].id],
+  );
+
+  await client.query(
+    `insert into public.essay_revisions (essay_id, revision_no, title, content_json, created_by_profile_id, updated_by_profile_id)
+     values ($1, 1, 'Essay', '{}'::jsonb, $2, $2)`,
+    [essays[0].id, authorProfiles[0].id],
   );
 
   return {
@@ -66,9 +72,8 @@ describe("essay_votes RLS SELECT", () => {
     await withRollback(async (client) => {
       const { voterProfileId, essayId } = await seed(client);
 
-      // Insert vote first (owner bypasses RLS)
       await client.query(
-        "insert into public.essay_votes (essay_id, voter_profile_id) values ($1, $2)",
+        "insert into public.essay_votes (essay_id, voter_profile_id, created_by_profile_id, updated_by_profile_id) values ($1, $2, $2, $2)",
         [essayId, voterProfileId],
       );
 
@@ -81,30 +86,30 @@ describe("essay_votes RLS SELECT", () => {
   });
 });
 
-describe("essay_votes trigger", () => {
-  it("increments vote_count on insert", async () => {
+describe("essay_votes rows", () => {
+  it("stores a vote row on insert", async () => {
     await withRollback(async (client) => {
       const { voterProfileId, essayId } = await seed(client);
 
       await client.query(
-        "insert into public.essay_votes (essay_id, voter_profile_id) values ($1, $2)",
+        "insert into public.essay_votes (essay_id, voter_profile_id, created_by_profile_id, updated_by_profile_id) values ($1, $2, $2, $2)",
         [essayId, voterProfileId],
       );
 
       const { rows } = await client.query(
-        "select vote_count from public.essays where id = $1",
+        "select count(*)::int as cnt from public.essay_votes where essay_id = $1",
         [essayId],
       );
-      expect(Number(rows[0].vote_count)).toBe(1);
+      expect(rows[0].cnt).toBe(1);
     });
   });
 
-  it("decrements vote_count on delete", async () => {
+  it("removes the vote row on delete", async () => {
     await withRollback(async (client) => {
       const { voterProfileId, essayId } = await seed(client);
 
       await client.query(
-        "insert into public.essay_votes (essay_id, voter_profile_id) values ($1, $2)",
+        "insert into public.essay_votes (essay_id, voter_profile_id, created_by_profile_id, updated_by_profile_id) values ($1, $2, $2, $2)",
         [essayId, voterProfileId],
       );
       await client.query(
@@ -113,10 +118,10 @@ describe("essay_votes trigger", () => {
       );
 
       const { rows } = await client.query(
-        "select vote_count from public.essays where id = $1",
+        "select count(*)::int as cnt from public.essay_votes where essay_id = $1",
         [essayId],
       );
-      expect(Number(rows[0].vote_count)).toBe(0);
+      expect(rows[0].cnt).toBe(0);
     });
   });
 });

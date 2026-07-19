@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { RoomQuickStatus } from "@/components/reservations/room-quick-status";
-import type { Room, Reservation, RoomIssue } from "@/lib/reservations/types";
+import type { Room } from "@/lib/reservations/types";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface QuickPageProps {
   params: Promise<{ code: string }>;
@@ -57,6 +58,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
     .from("rooms")
     .select("*")
     .eq("code", code.toLowerCase())
+    .is("removed_at", null)
     .single();
 
   if (roomError || !room) {
@@ -68,67 +70,44 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
   const twoHoursAhead = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
 
   const { data: { user } } = await supabase.auth.getUser();
-  const currentUserId = user?.id ?? null;
+  const profile = user ? await getCurrentUserProfile(supabase, { user }) : null;
+  const currentProfileId = profile?.id ?? null;
 
-  // Fire all three independent queries in parallel — eliminates 2 sequential round-trips
+  // Fire independent queries in parallel
   const [
     { data: currentReservation },
     { data: nextReservation },
-    { data: issues },
   ] = await Promise.all([
     // Current in-progress reservation
     supabase
       .from("reservations")
-      .select(`*, user:profiles(id, name), team:teams(id, name)`)
+      .select(`*, user:profiles!owner_profile_id(id, name)`)
       .eq("room_id", room.id)
-      .lte("start_time", nowIso)
-      .gt("end_time", nowIso)
+      .is("cancelled_at", null)
+      .lte("start_at", nowIso)
+      .gt("end_at", nowIso)
       .maybeSingle(),
 
     // Next upcoming reservation within 2 hours
     supabase
       .from("reservations")
-      .select(`*, user:profiles(id, name), team:teams(id, name)`)
+      .select(`*, user:profiles!owner_profile_id(id, name)`)
       .eq("room_id", room.id)
-      .gt("start_time", nowIso)
-      .lte("start_time", twoHoursAhead)
-      .order("start_time", { ascending: true })
+      .is("cancelled_at", null)
+      .gt("start_at", nowIso)
+      .lte("start_at", twoHoursAhead)
+      .order("start_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
-
-    // Open room issues
-    supabase
-      .from("room_issues")
-      .select("*")
-      .eq("room_id", room.id)
-      .eq("status", "open"),
   ]);
 
-  const roomIssues = (issues || []) as RoomIssue[];
-  const isLocked = roomIssues.some((i) => i.issue_type === "locked");
-  const otherIssues = roomIssues
-    .filter((i) => i.issue_type !== "locked")
-    .map((i) => {
-      const labels: Record<string, string> = {
-        mess: "Nepořádek",
-        technical: "Technický problém",
-        other: "Jiné",
-      };
-      return labels[i.issue_type] || i.issue_type;
-    });
-
   // Determine status
-  let status: 'free' | 'occupied' | 'locked' = 'free';
-  if (isLocked) {
-    status = 'locked';
-  } else if (currentReservation) {
-    status = 'occupied';
-  }
+  let status: 'free' | 'occupied' = currentReservation ? 'occupied' : 'free';
 
   // Compute milliseconds until next upcoming reservation for the occupancy check
   // (use raw ms to avoid rounding 14m31s → 15 which would skip the override)
   const msUntilNextReservation = nextReservation
-    ? new Date(nextReservation.start_time).getTime() - now.getTime()
+    ? new Date(nextReservation.start_at).getTime() - now.getTime()
     : null;
 
   // Integer minutes used for display
@@ -151,10 +130,6 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
       description: room.description,
     },
     status,
-    issues: {
-      isLocked,
-      otherIssues,
-    },
   };
 
   // Add current reservation details if occupied
@@ -163,40 +138,40 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
 
   // Show reservation details when there's an in-progress reservation
   if (currentReservation) {
-    const endTime = new Date(currentReservation.end_time);
+    const endTime = new Date(currentReservation.end_at);
     const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
 
     const occupantName = currentReservation.user?.name ??
-      currentReservation.team?.name ??
+      currentReservation.title ??
       "Neznámý";
 
     currentReservationData = {
       title: currentReservation.title,
       occupantName,
       personCount: currentReservation.person_count,
-      startTime: currentReservation.start_time,
-      endTime: currentReservation.end_time,
+      startTime: currentReservation.start_at,
+      endTime: currentReservation.end_at,
       endsInMinutes,
-      isMyReservation: currentReservation.user_id === currentUserId,
+      isMyReservation: currentReservation.owner_profile_id === currentProfileId,
     };
   } else if (nextReservation && minutesUntilNextReservation !== null && minutesUntilNextReservation < 15) {
     // Near-future reservation triggered the occupied override — show its details
-    const endTime = new Date(nextReservation.end_time);
+    const endTime = new Date(nextReservation.end_at);
     const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
 
     const occupantName = nextReservation.user?.name ??
-      nextReservation.team?.name ??
+      nextReservation.title ??
       "Neznámý";
 
     currentReservationData = {
       title: nextReservation.title,
       occupantName,
       personCount: nextReservation.person_count,
-      startTime: nextReservation.start_time,
-      endTime: nextReservation.end_time,
+      startTime: nextReservation.start_at,
+      endTime: nextReservation.end_at,
       endsInMinutes,
       startsInMinutes: minutesUntilNextReservation,
-      isMyReservation: nextReservation.user_id === currentUserId,
+      isMyReservation: nextReservation.owner_profile_id === currentProfileId,
     };
   }
 
@@ -208,13 +183,15 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
         .from("rooms")
         .select("*")
         .neq("id", room.id)
+        .is("removed_at", null)
         .order("code"),
 
       supabase
         .from("reservations")
         .select("room_id")
-        .lte("start_time", nowIso)
-        .gt("end_time", nowIso),
+        .is("cancelled_at", null)
+        .lte("start_at", nowIso)
+        .gt("end_at", nowIso),
     ]);
 
     if (allRooms && allRooms.length > 0) {

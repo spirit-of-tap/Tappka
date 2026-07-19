@@ -11,10 +11,9 @@ const base: FeedbackWithAuthor = {
   id: "f1",
   author_profile_id: "p1",
   body: "Přidejte tmavý režim",
-  archived_at: null,
-  admin_response: null,
-  admin_response_by: null,
-  admin_response_at: null,
+  resolved_at: null,
+  created_by_profile_id: "p1",
+  updated_by_profile_id: "p1",
   created_at: "2026-07-09T10:00:00.000Z",
   updated_at: "2026-07-09T10:00:00.000Z",
   author: { id: "p1", name: "Jan Novák", picture: null, role: "student" },
@@ -30,12 +29,6 @@ describe("FeedbackNoteCard", () => {
     expect(screen.getByText("Student")).toBeInTheDocument();
   });
 
-  it("renders admin response when present", () => {
-    const withResponse = { ...base, admin_response: "Díky, pracujeme na tom!" };
-    render(<FeedbackNoteCard feedback={withResponse} isAdmin={false} onChanged={noop} onDeleted={noop} />);
-    expect(screen.getByText("Díky, pracujeme na tom!")).toBeInTheDocument();
-  });
-
   it("hides admin actions for non-admins", () => {
     render(<FeedbackNoteCard feedback={base} isAdmin={false} onChanged={noop} onDeleted={noop} />);
     expect(screen.queryByRole("button", { name: /Archivovat/i })).not.toBeInTheDocument();
@@ -44,6 +37,6 @@ describe("FeedbackNoteCard", () => {
   it("shows admin actions for admins", () => {
     render(<FeedbackNoteCard feedback={base} isAdmin={true} onChanged={noop} onDeleted={noop} />);
     expect(screen.getByRole("button", { name: /Archivovat/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Odpovědět/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Smazat/i })).toBeInTheDocument();
   });
 });

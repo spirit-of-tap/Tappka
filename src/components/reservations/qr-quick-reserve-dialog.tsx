@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, Share2, Loader2 } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { roundToSlot } from "@/lib/reservations/utils";
 
 interface QRQuickReserveDialogProps {
@@ -40,12 +39,10 @@ export function QRQuickReserveDialog({
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("Rychlá rezervace");
   const [personCount, setPersonCount] = useState("1");
-  const [isCoworkOpen, setIsCoworkOpen] = useState(false);
 
   const resetForm = () => {
     setTitle("Rychlá rezervace");
     setPersonCount("1");
-    setIsCoworkOpen(false);
     setError(null);
   };
 
@@ -76,10 +73,9 @@ export function QRQuickReserveDialog({
         body: JSON.stringify({
           room_id: roomId,
           title: title.trim(),
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
+          start_at: startTime.toISOString(),
+          end_at: endTime.toISOString(),
           person_count: parseInt(personCount),
-          is_cowork_open: isCoworkOpen,
         }),
       });
 
@@ -164,29 +160,18 @@ export function QRQuickReserveDialog({
             />
           </div>
 
-          {/* Person count and Cowork */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 flex-1">
-              <Users className="size-4 text-muted-foreground flex-shrink-0" />
-              <Input
-                type="number"
-                min={1}
-                max={50}
-                value={personCount}
-                onChange={(e) => setPersonCount(e.target.value)}
-                className="w-16 h-9 text-sm font-body"
-              />
-              <span className="text-sm text-muted-foreground font-body">osob</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Share2 className="size-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm font-body">Cowork</span>
-              <Switch
-                checked={isCoworkOpen}
-                onCheckedChange={setIsCoworkOpen}
-              />
-            </div>
+          {/* Person count */}
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-muted-foreground flex-shrink-0" />
+            <Input
+              type="number"
+              min={1}
+              max={50}
+              value={personCount}
+              onChange={(e) => setPersonCount(e.target.value)}
+              className="w-16 h-9 text-sm font-body"
+            />
+            <span className="text-sm text-muted-foreground font-body">osob</span>
           </div>
 
           {/* Error */}

@@ -38,32 +38,33 @@ export async function GET(request: NextRequest) {
     const roomId = searchParams.get("room_id");
     const startDate = searchParams.get("start_date");
     const endDate = searchParams.get("end_date");
-    const userId = searchParams.get("user_id");
+    const ownerProfileId =
+      searchParams.get("owner_profile_id") ?? searchParams.get("user_id");
 
     let query = supabase
       .from("reservations")
       .select(`
         *,
         room:rooms(id, code, name),
-        user:profiles(id, name),
-        team:teams(id, name)
+        user:profiles!owner_profile_id(id, name)
       `)
-      .order("start_time");
+      .is("cancelled_at", null)
+      .order("start_at");
 
     if (roomId) {
       query = query.eq("room_id", roomId);
     }
 
     if (startDate) {
-      query = query.gt("end_time", startDate);
+      query = query.gt("end_at", startDate);
     }
 
     if (endDate) {
-      query = query.lt("start_time", endDate);
+      query = query.lt("start_at", endDate);
     }
 
-    if (userId) {
-      query = query.eq("user_id", userId);
+    if (ownerProfileId) {
+      query = query.eq("owner_profile_id", ownerProfileId);
     }
 
     const { data, error } = await query;
@@ -99,19 +100,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
-    const body: CreateReservationInput = await request.json();
-    const { room_id, title, person_count, start_time, end_time, is_cowork_open } = body;
+    const body = await request.json() as CreateReservationInput & {
+      /** @deprecated use start_at */
+      start_time?: string;
+      /** @deprecated use end_at */
+      end_time?: string;
+    };
+    const start_at = body.start_at ?? body.start_time;
+    const end_at = body.end_at ?? body.end_time;
+    const { room_id, title, person_count } = body;
 
     // Validation - title is required
-    if (!room_id || !title || !person_count || !start_time || !end_time) {
+    if (!room_id || !title || !person_count || !start_at || !end_at) {
       return NextResponse.json(
         { error: "Chybí povinné údaje" },
         { status: 400 }
       );
     }
 
-    const startDate = new Date(start_time);
-    const endDate = new Date(end_time);
+    const startDate = new Date(start_at);
+    const endDate = new Date(end_at);
     const now = new Date();
 
     // Check: end time is after start time
@@ -153,6 +161,7 @@ export async function POST(request: NextRequest) {
       .from("rooms")
       .select("*")
       .eq("id", room_id)
+      .is("removed_at", null)
       .single();
 
     if (roomError || !room) {
@@ -175,8 +184,9 @@ export async function POST(request: NextRequest) {
       .from("reservations")
       .select("id")
       .eq("room_id", room_id)
-      .lt("start_time", end_time)
-      .gt("end_time", start_time);
+      .is("cancelled_at", null)
+      .lt("start_at", end_at)
+      .gt("end_at", start_at);
 
     if (existingRoomReservations && existingRoomReservations.length > 0) {
       return NextResponse.json(
@@ -198,9 +208,10 @@ export async function POST(request: NextRequest) {
     const { data: existingUserReservations } = await supabase
       .from("reservations")
       .select("id, room:rooms(name)")
-      .eq("user_id", profile?.id)
-      .lt("start_time", end_time)
-      .gt("end_time", start_time);
+      .eq("owner_profile_id", profile.id)
+      .is("cancelled_at", null)
+      .lt("start_at", end_at)
+      .gt("end_at", start_at);
 
     if (existingUserReservations && existingUserReservations.length > 0) {
       return NextResponse.json(
@@ -214,13 +225,13 @@ export async function POST(request: NextRequest) {
       .from("reservations")
       .insert({
         room_id,
-        user_id: profile?.id,
-        reservation_type: "personal",
+        owner_profile_id: profile.id,
         title: title.trim(),
         person_count,
-        start_time,
-        end_time,
-        is_cowork_open: is_cowork_open || false,
+        start_at,
+        end_at,
+        created_by_profile_id: profile.id,
+        updated_by_profile_id: profile.id,
       })
       .select()
       .single();

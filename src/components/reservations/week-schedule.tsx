@@ -10,7 +10,7 @@ import {
   type ReservationWithDetails,
   type ScheduleBreak,
 } from "@/lib/reservations/types";
-import { formatTime, isReservationActive, getReservationColorClasses } from "@/lib/reservations/utils";
+import { formatTime, isReservationActive, getReservationColorClasses, inferReservationKind } from "@/lib/reservations/utils";
 
 interface WeekScheduleProps {
   startDate: Date;
@@ -47,7 +47,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
     weekDays.forEach((day) => {
       const dayKey = format(day, "yyyy-MM-dd");
       const dayReservations = reservations.filter((r) => {
-        const start = new Date(r.start_time);
+        const start = new Date(r.start_at);
         return isSameDay(start, day);
       });
       map.set(dayKey, dayReservations);
@@ -233,7 +233,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
               </div>
               {hasBreak && isAvailable && (
                 <div className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate px-1">
-                  {breakInfo.break_type === "days_of_joy" ? "DoJ" : breakInfo.break_type === "holiday" ? "Volno" : "Výjimka"}
+                  {breakInfo.name}
                 </div>
               )}
             </div>
@@ -313,8 +313,8 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
 
               {/* Reservations - only show on available days */}
               {isAvailable && dayReservations.map((reservation) => {
-                const start = new Date(reservation.start_time);
-                const end = new Date(reservation.end_time);
+                const start = new Date(reservation.start_at);
+                const end = new Date(reservation.end_at);
                 const startHour = start.getHours() + start.getMinutes() / 60;
                 const endHour = end.getHours() + end.getMinutes() / 60;
 
@@ -365,7 +365,7 @@ interface WeekReservationBlockProps {
 }
 
 function WeekReservationBlock({ reservation, top, height, isActive, onClick }: WeekReservationBlockProps) {
-  const bgColor = getReservationColorClasses(reservation.reservation_type);
+  const bgColor = getReservationColorClasses(inferReservationKind(reservation));
   const isSmall = height < 40;
 
   const handleClick = (e: React.MouseEvent) => {
@@ -383,18 +383,18 @@ function WeekReservationBlock({ reservation, top, height, isActive, onClick }: W
         isActive && "ring-1 ring-primary"
       )}
       style={{ top: `${top}px`, height: `${Math.max(height - 1, 16)}px` }}
-      title={`${reservation.title}\n${formatTime(reservation.start_time)} - ${formatTime(reservation.end_time)}`}
+      title={`${reservation.title}\n${formatTime(reservation.start_at)} - ${formatTime(reservation.end_at)}`}
       onClick={handleClick}
     >
       <div className="font-medium truncate">{reservation.title}</div>
       {!isSmall && (
         <div className="text-[10px] opacity-75">
-          {formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}
+          {formatTime(reservation.start_at)} - {formatTime(reservation.end_at)}
         </div>
       )}
-      {!isSmall && (reservation.user?.name ?? reservation.team?.name) && (
+      {!isSmall && reservation.user?.name && (
         <div className="text-[10px] opacity-75 truncate">
-          {reservation.user?.name ?? reservation.team?.name}
+          {reservation.user.name}
         </div>
       )}
     </div>

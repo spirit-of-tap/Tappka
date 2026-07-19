@@ -34,6 +34,32 @@ async function seedProfile(
   return { authId: auth.id as string, profileId: profileRows[0].id as string };
 }
 
+async function insertFeedback(
+  client: PoolClient,
+  profileId: string,
+  body: string,
+  extras: { resolvedAt?: string | null } = {},
+) {
+  if (extras.resolvedAt) {
+    await client.query(
+      `insert into public.feedback
+        (author_profile_id, body, created_by_profile_id, updated_by_profile_id, resolved_at)
+       values ($1, $2, $1, $1, $3)`,
+      [profileId, body, extras.resolvedAt],
+    );
+    return;
+  }
+
+  const { rows } = await client.query(
+    `insert into public.feedback
+      (author_profile_id, body, created_by_profile_id, updated_by_profile_id)
+     values ($1, $2, $1, $1)
+     returning id`,
+    [profileId, body],
+  );
+  return rows[0]?.id as string | undefined;
+}
+
 describe("feedback RLS", () => {
   it("author can insert feedback as themselves", async () => {
     await withRollback(async (client) => {
@@ -43,10 +69,7 @@ describe("feedback RLS", () => {
         role: "student",
       });
       await asClaims(client, { sub: author.authId });
-      await client.query(
-        "insert into public.feedback (author_profile_id, body) values ($1, $2)",
-        [author.profileId, "Přidejte tmavý režim"],
-      );
+      await insertFeedback(client, author.profileId, "Přidejte tmavý režim");
       const { rows } = await client.query(
         "select count(*)::int as cnt from public.feedback where author_profile_id = $1",
         [author.profileId],
@@ -62,8 +85,10 @@ describe("feedback RLS", () => {
       await asClaims(client, { sub: a.authId });
       await expect(
         client.query(
-          "insert into public.feedback (author_profile_id, body) values ($1, $2)",
-          [b.profileId, "spoof"],
+          `insert into public.feedback
+            (author_profile_id, body, created_by_profile_id, updated_by_profile_id)
+           values ($1, $2, $3, $3)`,
+          [b.profileId, "spoof", a.profileId],
         ),
       ).rejects.toThrow();
     });
@@ -73,37 +98,30 @@ describe("feedback RLS", () => {
     await withRollback(async (client) => {
       const author = await seedProfile(client, { name: "A", email: "a2@studenti.czu.cz", role: "student" });
       const other = await seedProfile(client, { name: "O", email: "o@studenti.czu.cz", role: "student" });
-      await client.query(
-        "insert into public.feedback (author_profile_id, body) values ($1, $2)",
-        [author.profileId, "note"],
-      );
+      await insertFeedback(client, author.profileId, "note");
       await asClaims(client, { sub: other.authId });
       const { rows } = await client.query("select count(*)::int as cnt from public.feedback");
       expect(rows[0].cnt).toBe(1);
     });
   });
 
-  it("non-admin cannot update (archive/respond); admin can", async () => {
+  it("non-admin cannot update (resolve); admin can", async () => {
     await withRollback(async (client) => {
       const author = await seedProfile(client, { name: "A", email: "a3@studenti.czu.cz", role: "student" });
       const admin = await seedProfile(client, { name: "Admin", email: "admin@rektorat.czu.cz", role: "admin" });
-      const { rows: fb } = await client.query(
-        "insert into public.feedback (author_profile_id, body) values ($1, $2) returning id",
-        [author.profileId, "note"],
-      );
-      const feedbackId = fb[0].id;
+      const feedbackId = await insertFeedback(client, author.profileId, "note");
 
       await asClaims(client, { sub: author.authId });
       const nonAdmin = await client.query(
-        "update public.feedback set archived_at = now() where id = $1",
+        "update public.feedback set resolved_at = now() where id = $1",
         [feedbackId],
       );
       expect(nonAdmin.rowCount).toBe(0); // RLS filters the row out
 
       await asClaims(client, { sub: admin.authId });
       const asAdmin = await client.query(
-        "update public.feedback set archived_at = now() where id = $1",
-        [feedbackId],
+        "update public.feedback set resolved_at = now(), updated_by_profile_id = $2 where id = $1",
+        [feedbackId, admin.profileId],
       );
       expect(asAdmin.rowCount).toBe(1);
     });
@@ -113,11 +131,7 @@ describe("feedback RLS", () => {
     await withRollback(async (client) => {
       const author = await seedProfile(client, { name: "A", email: "a4@studenti.czu.cz", role: "student" });
       const other = await seedProfile(client, { name: "O", email: "o2@studenti.czu.cz", role: "student" });
-      const { rows: fb } = await client.query(
-        "insert into public.feedback (author_profile_id, body) values ($1, $2) returning id",
-        [author.profileId, "note"],
-      );
-      const feedbackId = fb[0].id;
+      const feedbackId = await insertFeedback(client, author.profileId, "note");
 
       await asClaims(client, { sub: other.authId });
       const otherDel = await client.query("delete from public.feedback where id = $1", [feedbackId]);
@@ -134,7 +148,9 @@ describe("feedback RLS", () => {
       const author = await seedProfile(client, { name: "A", email: "a5@studenti.czu.cz", role: "student" });
       await expect(
         client.query(
-          "insert into public.feedback (author_profile_id, body) values ($1, $2)",
+          `insert into public.feedback
+            (author_profile_id, body, created_by_profile_id, updated_by_profile_id)
+           values ($1, $2, $1, $1)`,
           [author.profileId, ""],
         ),
       ).rejects.toThrow();
@@ -142,7 +158,9 @@ describe("feedback RLS", () => {
       const overLengthBody = "a".repeat(4001);
       await expect(
         client.query(
-          "insert into public.feedback (author_profile_id, body) values ($1, $2)",
+          `insert into public.feedback
+            (author_profile_id, body, created_by_profile_id, updated_by_profile_id)
+           values ($1, $2, $1, $1)`,
           [author.profileId, overLengthBody],
         ),
       ).rejects.toThrow();
@@ -164,27 +182,23 @@ describe("feedback RLS", () => {
   });
 });
 
-describe("feedback active/archived split", () => {
-  it("active excludes archived; archived includes only archived", async () => {
+describe("feedback active/resolved split", () => {
+  it("active excludes resolved; resolved includes only resolved", async () => {
     await withRollback(async (client) => {
       const author = await seedProfile(client, { name: "A", email: "split@studenti.czu.cz", role: "student" });
-      await client.query(
-        "insert into public.feedback (author_profile_id, body) values ($1, 'active-one')",
-        [author.profileId],
-      );
-      await client.query(
-        "insert into public.feedback (author_profile_id, body, archived_at) values ($1, 'archived-one', now())",
-        [author.profileId],
-      );
+      await insertFeedback(client, author.profileId, "active-one");
+      await insertFeedback(client, author.profileId, "archived-one", {
+        resolvedAt: new Date().toISOString(),
+      });
 
       const active = await client.query(
-        "select body from public.feedback where archived_at is null",
+        "select body from public.feedback where resolved_at is null",
       );
-      const archived = await client.query(
-        "select body from public.feedback where archived_at is not null",
+      const resolved = await client.query(
+        "select body from public.feedback where resolved_at is not null",
       );
       expect(active.rows.map((r) => r.body)).toEqual(["active-one"]);
-      expect(archived.rows.map((r) => r.body)).toEqual(["archived-one"]);
+      expect(resolved.rows.map((r) => r.body)).toEqual(["archived-one"]);
     });
   });
 });

@@ -5,8 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrainingSessionsManager } from "@/components/reservations/training-sessions-manager";
 import { ScheduleBreaksManager } from "@/components/reservations/schedule-breaks-manager";
-import { IssuesManager } from "@/components/reservations/issues-manager";
-import type { Room, RecurringSchedule, ScheduleBreak, RoomIssue } from "@/lib/reservations/types";
+import type { Room, RecurringSchedule, ScheduleBreak } from "@/lib/reservations/types";
 
 export const metadata = {
   title: "Nastavení rezervací | Tappka",
@@ -27,15 +26,15 @@ export default async function ReservationSettingsPage() {
     redirect("reservations");
   }
 
-  const isAdmin = profile?.role === "admin";
-
   // Fetch all data
-  const [roomsResult, schedulesResult, breaksResult, teamsResult, issuesResult] = await Promise.all([
+  const today = new Date().toISOString().split("T")[0];
+  const [roomsResult, schedulesResult, breaksResult, teamsResult] = await Promise.all([
     // Rooms that can have TS
     supabase
       .from("rooms")
       .select("*")
       .eq("can_have_ts", true)
+      .is("removed_at", null)
       .order("code"),
 
     // Recurring schedules with team info
@@ -46,45 +45,30 @@ export default async function ReservationSettingsPage() {
         room:rooms(id, code, name),
         team:teams(id, name)
       `)
-      .gte("valid_until", new Date().toISOString().split("T")[0])
+      .is("removed_at", null)
+      .eq("schedule_type", "training_session")
+      .or(`valid_until.is.null,valid_until.gte.${today}`)
       .order("day_of_week"),
 
     // Schedule breaks
     supabase
       .from("schedule_breaks")
       .select("*")
-      .gte("end_date", new Date().toISOString().split("T")[0])
+      .gte("end_date", today)
       .order("start_date"),
 
     // Teams for TS assignment
     supabase
       .from("teams")
-      .select("id, name, year")
-      .order("year")
+      .select("id, name, onboardingYear")
+      .order("onboardingYear")
       .order("name"),
-
-    // Room issues
-    supabase
-      .from("room_issues")
-      .select(`
-        *,
-        room:rooms(id, code, name),
-        reporter:profiles!reported_by(id, name),
-        resolver:profiles!resolved_by(id, name)
-      `)
-      .order("created_at", { ascending: false })
-      .limit(50),
   ]);
 
   const rooms = (roomsResult.data || []) as Room[];
   const schedules = (schedulesResult.data || []) as (RecurringSchedule & { room: Room; team: { id: string; name: string } })[];
   const breaks = (breaksResult.data || []) as ScheduleBreak[];
   const teams = teamsResult.data || [];
-  const issues = (issuesResult.data || []) as (RoomIssue & {
-    room?: { id: string; code: string; name: string };
-    reporter?: { id: string; name: string };
-    resolver?: { id: string; name: string };
-  })[];
 
   return (
     <div className="space-y-6">
@@ -105,9 +89,6 @@ export default async function ReservationSettingsPage() {
             </TabsTrigger>
             <TabsTrigger value="schedule-breaks" className="flex-1 md:flex-initial text-xs sm:text-sm">
               Volno a výjimky
-            </TabsTrigger>
-            <TabsTrigger value="issues" className="flex-1 md:flex-initial text-xs sm:text-sm">
-              Problémy
             </TabsTrigger>
           </TabsList>
         </div>
@@ -145,11 +126,6 @@ export default async function ReservationSettingsPage() {
               <ScheduleBreaksManager breaks={breaks} />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Issues Tab */}
-        <TabsContent value="issues" className="space-y-4">
-          <IssuesManager issues={issues} isAdmin={isAdmin} />
         </TabsContent>
       </Tabs>
     </div>

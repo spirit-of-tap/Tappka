@@ -99,7 +99,7 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
         <Link href={`/eseje/${essay.id}`} className="group flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2">
             {essay.author?.picture ? (
-              <img src={essay.author.picture} alt={essay.author.name} className="size-6 rounded-full object-cover shrink-0" />
+              <img src={essay.author.picture} alt={essay.author.name ?? ''} className="size-6 rounded-full object-cover shrink-0" />
             ) : (
               <div className="size-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold shrink-0">
                 {authorInitial}

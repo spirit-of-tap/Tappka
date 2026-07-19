@@ -13,7 +13,7 @@ export async function listActiveFeedback(
   const { data, error } = await supabase
     .from('feedback')
     .select(FEEDBACK_SELECT)
-    .is('archived_at', null)
+    .is('resolved_at', null)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -26,7 +26,7 @@ export async function listArchivedFeedback(
   const { data, error } = await supabase
     .from('feedback')
     .select(FEEDBACK_SELECT)
-    .not('archived_at', 'is', null)
+    .not('resolved_at', 'is', null)
     .order('created_at', { ascending: false });
 
   if (error) throw error;

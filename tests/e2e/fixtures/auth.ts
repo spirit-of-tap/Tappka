@@ -194,7 +194,7 @@ export async function getSetupSessionCookie(): Promise<{
   );
 
   // Ensure a team exists
-  let teams = (await restFetch(
+  const teams = (await restFetch(
     `/teams?select=id&limit=1`,
     "GET",
   )) as { id: string }[];
@@ -233,12 +233,11 @@ export async function seedBook(profileId: string): Promise<{ bookId: string }> {
   const books = (await restFetch("/books", "POST", {
     title: "E2E Test Book",
     author: "E2E Test Author",
-    tags: ["fiction"],
-    suggested_points: 1,
     book_points: 1,
     status: "approved",
     source: "manual",
-    added_by_profile_id: profileId,
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
   })) as { id: string }[];
   return { bookId: books[0].id };
 }
@@ -251,12 +250,23 @@ export async function seedEssay(
   const essays = (await restFetch("/essays", "POST", {
     author_profile_id: profileId,
     book_id: bookId ?? null,
-    title: "E2E Test Essay",
-    content_json: { type: "doc", content: [] },
-    content_text: "E2E test essay content for navigation testing.",
-    published: true,
+    published_at: new Date().toISOString(),
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
   })) as { id: string }[];
-  return { essayId: essays[0].id };
+
+  const essayId = essays[0].id;
+
+  await restFetch("/essay_revisions", "POST", {
+    essay_id: essayId,
+    revision_no: 1,
+    title: "E2E Test Essay",
+    content_json: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "E2E test essay content for navigation testing." }] }] },
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
+  });
+
+  return { essayId };
 }
 
 export async function setAuthCookie(

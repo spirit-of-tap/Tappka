@@ -19,7 +19,7 @@ export function EssayPinButton({ essayId, isPinned: initialPinned }: EssayPinBut
       const res = await fetch(`/api/essays/${essayId}/pin`, { method: 'POST' });
       if (!res.ok) return;
       const { data } = await res.json();
-      setPinned(data.is_pinned);
+      setPinned(data.pinned_at != null);
     } finally {
       setLoading(false);
     }

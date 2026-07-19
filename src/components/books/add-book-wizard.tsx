@@ -22,7 +22,6 @@ export function AddBookWizard() {
   const [isSearching, setIsSearching] = useState(false);
   const [localResults, setLocalResults] = useState<Book[]>([]);
   const [externalResults, setExternalResults] = useState<ExternalBookCandidate[]>([]);
-  const [selectedPoints, setSelectedPoints] = useState<1 | 2 | 3>(1);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [manualForm, setManualForm] = useState({ title: '', author: '', isbn_13: '', description: '' });
@@ -65,7 +64,6 @@ export function AddBookWizard() {
           cover_url: candidate.cover_url,
           source: candidate.source ?? 'manual',
           external_id: 'external_id' in candidate ? candidate.external_id : undefined,
-          suggested_points: selectedPoints,
           tags: selectedTags,
         }),
       });
@@ -179,23 +177,9 @@ export function AddBookWizard() {
                         <Label className="text-xs text-muted-foreground mb-1 block">Kategorie</Label>
                         <CategoryPicker selected={selectedTags} onChange={setSelectedTags} />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs">Bodů:</Label>
-                        {([1, 2, 3] as const).map((p) => (
-                          <Button
-                            key={p}
-                            size="sm"
-                            variant={selectedPoints === p ? 'default' : 'outline'}
-                            onClick={() => setSelectedPoints(p)}
-                            className="h-7 w-7 p-0"
-                          >
-                            {p}
-                          </Button>
-                        ))}
-                        <Button size="sm" onClick={() => submitBook(candidate)} disabled={isSubmitting}>
-                          {isSubmitting ? <Spinner className="size-4" /> : 'Přidat'}
-                        </Button>
-                      </div>
+                      <Button size="sm" onClick={() => submitBook(candidate)} disabled={isSubmitting}>
+                        {isSubmitting ? <Spinner className="size-4" /> : 'Přidat'}
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -229,20 +213,6 @@ export function AddBookWizard() {
             <div className="space-y-1">
               <Label>Kategorie</Label>
               <CategoryPicker selected={selectedTags} onChange={setSelectedTags} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Label>Navrhovaný počet bodů:</Label>
-              {([1, 2, 3] as const).map((p) => (
-                <Button
-                  key={p}
-                  size="sm"
-                  variant={selectedPoints === p ? 'default' : 'outline'}
-                  onClick={() => setSelectedPoints(p)}
-                  className="h-7 w-7 p-0"
-                >
-                  {p}
-                </Button>
-              ))}
             </div>
             <Button
               onClick={() => submitBook({ ...manualForm, cover_url: null, source: 'manual', external_id: undefined })}

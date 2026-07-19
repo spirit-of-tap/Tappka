@@ -24,7 +24,7 @@ import {
 
 interface ProfilePictureSectionProps {
   profileId: string;
-  profileName: string;
+  profileName: string | null;
   pictureKey: string | null;
   isOwnProfile: boolean;
   teamColor?: string | null;

@@ -17,7 +17,7 @@ interface CoachApprovalRowProps {
 }
 
 export function CoachApprovalRow({ book, onApprove, onReject, onRemove }: CoachApprovalRowProps) {
-  const [approvalPoints, setApprovalPoints] = useState<1 | 2 | 3>(book.suggested_points as 1 | 2 | 3 ?? 1);
+  const [approvalPoints, setApprovalPoints] = useState<1 | 2 | 3>(1);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -52,8 +52,8 @@ export function CoachApprovalRow({ book, onApprove, onReject, onRemove }: CoachA
   return (
     <div className="flex gap-4 py-4 border-b last:border-0">
       <div className="shrink-0 w-12 h-16 bg-muted rounded overflow-hidden flex items-center justify-center">
-        {book.cover_path ? (
-          <StorageImage storageKey={book.cover_path} alt={book.title} className="w-full h-full object-cover" width={48} height={64} />
+        {book.supabase_cover_img_url ? (
+          <StorageImage storageKey={book.supabase_cover_img_url} alt={book.title} className="w-full h-full object-cover" width={48} height={64} />
         ) : (
           <BookOpen className="size-5 text-muted-foreground" />
         )}
@@ -64,9 +64,11 @@ export function CoachApprovalRow({ book, onApprove, onReject, onRemove }: CoachA
           <p className="font-medium text-sm">{book.title}</p>
           <p className="text-xs text-muted-foreground">{book.author}</p>
           {book.isbn_13 && <p className="text-xs text-muted-foreground">ISBN: {book.isbn_13}</p>}
-          <p className="text-xs text-muted-foreground mt-1">
-            Přidal/a: {book.added_by?.name} · navrhuje {book.suggested_points} {book.suggested_points === 1 ? 'bod' : 'body'}
-          </p>
+          {book.created_by?.name && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Přidal/a: {book.created_by.name}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">

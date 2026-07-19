@@ -1,17 +1,22 @@
 "use client";
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { Users, Share2 } from "lucide-react";
+import { Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { 
   OPERATING_HOURS, 
-  RESERVATION_TYPE_LABELS,
+  RESERVATION_KIND_LABELS,
   TIME_SLOT_MINUTES,
   type ReservationWithDetails,
   type ScheduleBreak,
 } from "@/lib/reservations/types";
-import { formatTime, isReservationActive, getReservationColorClasses } from "@/lib/reservations/utils";
+import {
+  formatTime,
+  isReservationActive,
+  getReservationColorClasses,
+  inferReservationKind,
+} from "@/lib/reservations/utils";
 
 interface DayScheduleProps {
   date: Date;
@@ -67,8 +72,8 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
   const positionedReservations = useMemo(() => {
     return reservations
       .map((reservation) => {
-        const start = new Date(reservation.start_time);
-        const end = new Date(reservation.end_time);
+        const start = new Date(reservation.start_at);
+        const end = new Date(reservation.end_at);
 
         // Calculate position from operating hours start
         const startHour = start.getHours() + start.getMinutes() / 60;
@@ -122,13 +127,16 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
 
   // Keep refs for callbacks that need current values
   const pixelToTimeRef = useRef(pixelToTime);
-  pixelToTimeRef.current = pixelToTime;
   const getRelativeYRef = useRef(getRelativeY);
-  getRelativeYRef.current = getRelativeY;
   const onDragCreateRef = useRef(onDragCreate);
-  onDragCreateRef.current = onDragCreate;
   const slotHeightRef = useRef(slotHeight);
-  slotHeightRef.current = slotHeight;
+
+  useEffect(() => {
+    pixelToTimeRef.current = pixelToTime;
+    getRelativeYRef.current = getRelativeY;
+    onDragCreateRef.current = onDragCreate;
+    slotHeightRef.current = slotHeight;
+  });
 
   // Touch handlers using native event listeners (non-passive) to allow preventDefault
   useEffect(() => {
@@ -371,8 +379,7 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
       {scheduleBreak && (
         <div className="bg-emerald-100 dark:bg-emerald-900/50 px-3 py-2 border-b">
           <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-            {scheduleBreak.break_type === "days_of_joy" ? "🎉 Days of Joy" : 
-             scheduleBreak.break_type === "holiday" ? "📅 Volno" : "📋 Výjimka"}: {scheduleBreak.name}
+            Výjimka: {scheduleBreak.name}
           </p>
           <p className="text-xs text-emerald-600 dark:text-emerald-400">
             Místnosti jsou volné pro běžné rezervace
@@ -483,7 +490,8 @@ interface ReservationBlockProps {
 }
 
 function ReservationBlock({ reservation, top, height, isActive, onClick }: ReservationBlockProps) {
-  const bgColor = getReservationColorClasses(reservation.reservation_type);
+  const kind = inferReservationKind(reservation);
+  const bgColor = getReservationColorClasses(kind);
 
   return (
     <div
@@ -504,18 +512,15 @@ function ReservationBlock({ reservation, top, height, isActive, onClick }: Reser
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium truncate">{reservation.title}</p>
           <p className="text-xs text-muted-foreground">
-            {formatTime(reservation.start_time)} - {formatTime(reservation.end_time)}
+            {formatTime(reservation.start_at)} - {formatTime(reservation.end_at)}
           </p>
-          {(reservation.user?.name ?? reservation.team?.name) && (
+          {reservation.user?.name && (
             <p className="text-xs text-muted-foreground truncate">
-              {reservation.user?.name ?? reservation.team?.name}
+              {reservation.user.name}
             </p>
           )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {reservation.is_cowork_open && (
-            <Share2 className="size-3 text-muted-foreground" />
-          )}
           {reservation.person_count && height > 40 && (
             <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
               <Users className="size-3" />
@@ -526,7 +531,7 @@ function ReservationBlock({ reservation, top, height, isActive, onClick }: Reser
       </div>
       {height > 50 && (
         <Badge variant="outline" className="mt-1 text-xs">
-          {RESERVATION_TYPE_LABELS[reservation.reservation_type]}
+          {RESERVATION_KIND_LABELS[kind]}
         </Badge>
       )}
     </div>

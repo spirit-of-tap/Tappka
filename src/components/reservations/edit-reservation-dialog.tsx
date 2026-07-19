@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Edit, Trash2, Users, Share2 } from "lucide-react";
+import { Edit, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatTime, formatDateShort } from "@/lib/reservations/utils";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -70,10 +69,9 @@ export function EditReservationDialog({
   // Form state - simplified: title serves as reason
   const [reason, setReason] = useState(reservation.title || "");
   const [personCount, setPersonCount] = useState(reservation.person_count?.toString() || "1");
-  const [isCoworkOpen, setIsCoworkOpen] = useState(reservation.is_cowork_open);
 
-  const startDate = new Date(reservation.start_time);
-  const endDate = new Date(reservation.end_time);
+  const startDate = new Date(reservation.start_at);
+  const endDate = new Date(reservation.end_at);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -95,7 +93,6 @@ export function EditReservationDialog({
         body: JSON.stringify({
           title: reason.trim(), // Use reason as title
           person_count: parseInt(personCount),
-          is_cowork_open: isCoworkOpen,
         }),
       });
 
@@ -190,29 +187,18 @@ export function EditReservationDialog({
             />
           </div>
 
-          {/* Person count and Cowork */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="size-4 text-muted-foreground" />
-              <Input
-                type="number"
-                min={1}
-                max={50}
-                value={personCount}
-                onChange={(e) => setPersonCount(e.target.value)}
-                className="w-16 h-9"
-              />
-              <span className="text-sm text-muted-foreground">osob</span>
-            </div>
-
-            <div className="flex items-center gap-2 ml-auto">
-              <Share2 className="size-4 text-muted-foreground" />
-              <span className="text-sm">Cowork</span>
-              <Switch
-                checked={isCoworkOpen}
-                onCheckedChange={setIsCoworkOpen}
-              />
-            </div>
+          {/* Person count */}
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-muted-foreground" />
+            <Input
+              type="number"
+              min={1}
+              max={50}
+              value={personCount}
+              onChange={(e) => setPersonCount(e.target.value)}
+              className="w-16 h-9"
+            />
+            <span className="text-sm text-muted-foreground">osob</span>
           </div>
 
         </div>

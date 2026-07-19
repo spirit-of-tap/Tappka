@@ -49,8 +49,8 @@ export function ConflictResolutionDialog({
       return { canBefore: false, canAfter: false, beforeEnd: null, afterStart: null };
     }
 
-    const conflictStart = new Date(conflictingReservation.start_time);
-    const conflictEnd = new Date(conflictingReservation.end_time);
+    const conflictStart = new Date(conflictingReservation.start_at);
+    const conflictEnd = new Date(conflictingReservation.end_at);
 
     // Can book before? (if requested start is before conflict start)
     const canBefore = requestedStart < conflictStart;
@@ -65,8 +65,8 @@ export function ConflictResolutionDialog({
 
   if (!conflictingReservation || !requestedStart) return null;
 
-  const conflictStart = new Date(conflictingReservation.start_time);
-  const conflictEnd = new Date(conflictingReservation.end_time);
+  const conflictStart = new Date(conflictingReservation.start_at);
+  const conflictEnd = new Date(conflictingReservation.end_at);
   const dateLabel = format(requestedStart, "EEEE, d. MMMM", { locale: cs });
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { addDays, addWeeks, subWeeks, startOfWeek, format, isSameDay } from "date-fns";
 import { cs } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, CalendarDays, RotateCcw } from "lucide-react";
@@ -66,20 +66,18 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
     return new Date();
   });
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [syncedInitialDate, setSyncedInitialDate] = useState(initialDate);
 
-  // Update currentDate when initialDate changes (navigation with different date param)
-  useEffect(() => {
-    if (initialDate) {
-      setCurrentDate(initialDate);
-    }
-  }, [initialDate]);
+  // Sync when parent navigates to a different date (e.g. URL param change)
+  if (
+    initialDate &&
+    initialDate.getTime() !== syncedInitialDate?.getTime()
+  ) {
+    setSyncedInitialDate(initialDate);
+    setCurrentDate(initialDate);
+  }
 
-  // Keep view mode in sync if the viewport changes after mount
-  useEffect(() => {
-    if (isMobile && viewMode !== "day") {
-      setViewMode("day");
-    }
-  }, [isMobile, viewMode]);
+  const effectiveViewMode: ViewMode = isMobile ? "day" : viewMode;
 
   const today = new Date();
   const isToday = isSameDay(currentDate, today);
@@ -102,7 +100,7 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
   };
 
   const handlePrev = () => {
-    if (viewMode === "day") {
+    if (effectiveViewMode === "day") {
       setCurrentDate((d) => findNextAvailableDay(d, -1));
     } else {
       setCurrentDate((d) => subWeeks(d, 1));
@@ -110,7 +108,7 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
   };
 
   const handleNext = () => {
-    if (viewMode === "day") {
+    if (effectiveViewMode === "day") {
       setCurrentDate((d) => findNextAvailableDay(d, 1));
     } else {
       setCurrentDate((d) => addWeeks(d, 1));
@@ -142,7 +140,7 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
   };
 
   // Format the current date for the picker button
-  const datePickerLabel = viewMode === "day"
+  const datePickerLabel = effectiveViewMode === "day"
     ? format(currentDate, "d. MMMM yyyy", { locale: cs })
     : (() => {
         const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -151,7 +149,7 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
       })();
 
   // Day name for display above the picker (only in day view)
-  const dayName = viewMode === "day" 
+  const dayName = effectiveViewMode === "day" 
     ? format(currentDate, "EEEE", { locale: cs })
     : null;
 
@@ -262,11 +260,11 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
       </div>
 
       {/* Calendar view */}
-      {viewMode === "day" ? (
+      {effectiveViewMode === "day" ? (
         <DaySchedule
           date={currentDate}
           reservations={reservations.filter((r) => {
-            const start = new Date(r.start_time);
+            const start = new Date(r.start_at);
             return (
               start.getFullYear() === currentDate.getFullYear() &&
               start.getMonth() === currentDate.getMonth() &&

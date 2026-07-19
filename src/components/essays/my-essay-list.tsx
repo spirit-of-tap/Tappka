@@ -5,7 +5,7 @@ import { Eye, BookOpen, MessageCircle, Sparkles, Pin } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from './essay-vote-button';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
-import type { EssayWithDetails } from '@/lib/essays/types';
+import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
 interface MyEssayListProps {
   essays: EssayWithDetails[];
@@ -17,8 +17,10 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
   const topicEssays = essays.filter((e) => !e.book);
 
   const sortPinned = (a: EssayWithDetails, b: EssayWithDetails) => {
-    if (a.is_pinned && !b.is_pinned) return -1;
-    if (!a.is_pinned && b.is_pinned) return 1;
+    const aPinned = isEssayPinned(a);
+    const bPinned = isEssayPinned(b);
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
     return 0;
   };
 
@@ -56,9 +58,9 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
 
             {/* Cover */}
             <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border/40">
-              {essay.book?.cover_path ? (
+              {essay.book?.supabase_cover_img_url ? (
                 <StorageImage
-                  storageKey={essay.book.cover_path}
+                  storageKey={essay.book.supabase_cover_img_url}
                   alt={essay.book.title}
                   width={40}
                   height={56}
@@ -74,7 +76,7 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  {essay.is_pinned && (
+                  {isEssayPinned(essay) && (
                     <Pin className="size-3 shrink-0 text-primary fill-primary" />
                   )}
                   <h3 className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">

@@ -19,7 +19,12 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     const { error } = await supabase
       .from('essay_coach_reads')
       .upsert(
-        { essay_id: id, coach_profile_id: profile.id },
+        {
+          essay_id: id,
+          coach_profile_id: profile.id,
+          created_by_profile_id: profile.id,
+          updated_by_profile_id: profile.id,
+        },
         { onConflict: 'essay_id,coach_profile_id', ignoreDuplicates: true },
       );
 

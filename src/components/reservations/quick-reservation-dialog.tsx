@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
-import { Clock, Users, Share2, Edit2 } from "lucide-react";
+import { Clock, Users, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { TimePicker } from "./time-picker";
 
 interface QuickReservationDialogProps {
@@ -48,7 +47,6 @@ export function QuickReservationDialog({
   // Form state - simplified: just reason and person count
   const [reason, setReason] = useState("");
   const [personCount, setPersonCount] = useState("1");
-  const [isCoworkOpen, setIsCoworkOpen] = useState(false);
   
   // Editable time state
   const [editableStartTime, setEditableStartTime] = useState("");
@@ -72,7 +70,6 @@ export function QuickReservationDialog({
   const resetForm = () => {
     setReason("");
     setPersonCount("1");
-    setIsCoworkOpen(false);
     setError(null);
     setIsEditingTime(false);
   };
@@ -115,10 +112,9 @@ export function QuickReservationDialog({
         body: JSON.stringify({
           room_id: roomId,
           title: reason.trim(), // Use reason as title
-          start_time: finalStartTime.toISOString(),
-          end_time: finalEndTime.toISOString(),
+          start_at: finalStartTime.toISOString(),
+          end_at: finalEndTime.toISOString(),
           person_count: parseInt(personCount),
-          is_cowork_open: isCoworkOpen,
         }),
       });
 
@@ -244,29 +240,18 @@ export function QuickReservationDialog({
             />
           </div>
 
-          {/* Person count and Cowork - responsive layout */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="size-4 text-muted-foreground flex-shrink-0" />
-              <Input
-                type="number"
-                min={1}
-                max={50}
-                value={personCount}
-                onChange={(e) => setPersonCount(e.target.value)}
-                className="w-16 h-9"
-              />
-              <span className="text-sm text-muted-foreground">osob</span>
-            </div>
-
-            <div className="flex items-center gap-2 sm:ml-auto">
-              <Share2 className="size-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm">Cowork</span>
-              <Switch
-                checked={isCoworkOpen}
-                onCheckedChange={setIsCoworkOpen}
-              />
-            </div>
+          {/* Person count */}
+          <div className="flex items-center gap-2">
+            <Users className="size-4 text-muted-foreground flex-shrink-0" />
+            <Input
+              type="number"
+              min={1}
+              max={50}
+              value={personCount}
+              onChange={(e) => setPersonCount(e.target.value)}
+              className="w-16 h-9"
+            />
+            <span className="text-sm text-muted-foreground">osob</span>
           </div>
 
           {/* Error */}

@@ -1,11 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Archive, ArchiveRestore, MessageSquareReply, Send, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
 import type { FeedbackWithAuthor } from '@/lib/feedback/types';
@@ -29,8 +27,6 @@ function formatDate(iso: string): string {
 }
 
 export function FeedbackNoteCard({ feedback, isAdmin, onChanged, onDeleted }: FeedbackNoteCardProps) {
-  const [isResponding, setIsResponding] = useState(false);
-  const [responseDraft, setResponseDraft] = useState(feedback.admin_response ?? '');
   const [isSaving, setIsSaving] = useState(false);
 
   const patch = async (payload: Record<string, unknown>) => {
@@ -58,12 +54,7 @@ export function FeedbackNoteCard({ feedback, isAdmin, onChanged, onDeleted }: Fe
     }
   };
 
-  const handleSaveResponse = async () => {
-    await patch({ admin_response: responseDraft.trim() });
-    setIsResponding(false);
-  };
-
-  const isArchived = feedback.archived_at !== null;
+  const isResolved = feedback.resolved_at !== null;
   const role = feedback.author?.role;
 
   return (
@@ -86,49 +77,17 @@ export function FeedbackNoteCard({ feedback, isAdmin, onChanged, onDeleted }: Fe
         <span>· {formatDate(feedback.created_at)}</span>
       </div>
 
-      {feedback.admin_response && !isResponding && (
-        <div className="rounded-md border-l-2 border-primary bg-background/60 p-2 text-sm">
-          <p className="mb-0.5 text-xs font-semibold text-primary">Odpověď týmu</p>
-          <p className="whitespace-pre-wrap">{feedback.admin_response}</p>
-        </div>
-      )}
-
-      {isAdmin && isResponding && (
-        <div className="flex flex-col gap-2">
-          <Textarea
-            value={responseDraft}
-            onChange={(e) => setResponseDraft(e.target.value)}
-            placeholder="Napiš odpověď…"
-            rows={2}
-            aria-label="Odpověď na zpětnou vazbu"
-          />
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleSaveResponse} disabled={isSaving} className="gap-1">
-              {isSaving ? <Spinner className="size-3" /> : <Send className="size-3" />}
-              Uložit
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setIsResponding(false)}>
-              Zrušit
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {isAdmin && !isResponding && (
+      {isAdmin && (
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => setIsResponding(true)} className="gap-1">
-            <MessageSquareReply className="size-3" />
-            {feedback.admin_response ? 'Upravit odpověď' : 'Odpovědět'}
-          </Button>
           <Button
             size="sm"
             variant="outline"
-            onClick={() => patch({ archived: !isArchived })}
+            onClick={() => patch({ resolved: !isResolved })}
             disabled={isSaving}
             className="gap-1"
           >
-            {isArchived ? <ArchiveRestore className="size-3" /> : <Archive className="size-3" />}
-            {isArchived ? 'Obnovit' : 'Archivovat'}
+            {isResolved ? <ArchiveRestore className="size-3" /> : <Archive className="size-3" />}
+            {isResolved ? 'Obnovit' : 'Archivovat'}
           </Button>
           <Button size="sm" variant="ghost" onClick={handleDelete} disabled={isSaving} className="gap-1 text-destructive">
             <Trash2 className="size-3" />

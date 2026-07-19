@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
-import type { ScheduleBreakType } from "@/lib/reservations/types";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { TRAINING_SESSION_TITLE_PREFIX } from "@/lib/reservations/types";
 
 interface CreateBreakInput {
-  break_type: ScheduleBreakType;
   name: string;
   start_date: string; // YYYY-MM-DD
   end_date: string;   // YYYY-MM-DD
@@ -33,32 +33,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is coach or admin
-    if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
+    if (profile.role !== "coach" && profile.role !== "admin") {
       return NextResponse.json({ error: "Nedostatečná oprávnění" }, { status: 403 });
     }
 
     const body: CreateBreakInput = await request.json();
-    const { break_type, name, start_date, end_date } = body;
+    const { name, start_date, end_date } = body;
 
     // Validation
-    if (!break_type || !name || !start_date || !end_date) {
+    if (!name || !start_date || !end_date) {
       return NextResponse.json({ error: "Chybí povinné údaje" }, { status: 400 });
-    }
-
-    const validTypes: ScheduleBreakType[] = ["days_of_joy", "holiday", "other"];
-    if (!validTypes.includes(break_type)) {
-      return NextResponse.json({ error: "Neplatný typ výjimky" }, { status: 400 });
     }
 
     // Create schedule break
     const { data: breakData, error: breakError } = await supabase
       .from("schedule_breaks")
       .insert({
-        break_type,
         name: name.trim(),
         start_date,
         end_date,
-        created_by: profile?.id,
+        created_by_profile_id: profile.id,
+        updated_by_profile_id: profile.id,
       })
       .select()
       .single();
@@ -68,27 +63,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Nepodařilo se vytvořit výjimku" }, { status: 500 });
     }
 
-    // Delete existing TS reservations in this period
-    // We need to find reservations where:
-    // - reservation_type = 'training_session'
-    // - start_time is within the break period
+    // Soft-cancel existing TS reservations in this period (admin: null owners)
     const startDateTime = `${start_date}T00:00:00`;
     const endDateTime = `${end_date}T23:59:59`;
+    const adminClient = createAdminClient();
 
-    const { data: cancelledReservations, error: cancelError } = await supabase
+    const { data: toCancel } = await adminClient
       .from("reservations")
-      .delete()
-      .eq("reservation_type", "training_session")
-      .gte("start_time", startDateTime)
-      .lte("start_time", endDateTime)
-      .select("id");
+      .select("id, title")
+      .is("cancelled_at", null)
+      .gte("start_at", startDateTime)
+      .lte("start_at", endDateTime)
+      .like("title", `${TRAINING_SESSION_TITLE_PREFIX}%`);
 
-    if (cancelError) {
-      console.error("Error cancelling reservations:", cancelError);
-      // Don't fail the whole operation, just log
+    let cancelledCount = 0;
+    if (toCancel && toCancel.length > 0) {
+      const now = new Date().toISOString();
+      const { data: cancelledReservations, error: cancelError } = await adminClient
+        .from("reservations")
+        .update({
+          cancelled_at: now,
+          cancelled_by_profile_id: profile.id,
+          updated_by_profile_id: profile.id,
+        })
+        .in(
+          "id",
+          toCancel.map((r) => r.id)
+        )
+        .select("id");
+
+      if (cancelError) {
+        console.error("Error cancelling reservations:", cancelError);
+      } else {
+        cancelledCount = cancelledReservations?.length ?? 0;
+      }
     }
-
-    const cancelledCount = cancelledReservations?.length || 0;
 
     return NextResponse.json({
       success: true,

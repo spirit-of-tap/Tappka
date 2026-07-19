@@ -1,17 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import { addDays, format, getDay } from "date-fns";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
-import { pragueLocalToUtcISO } from "@/lib/reservations/utils";
+import { HOUSTON_CALLING_TITLE } from "@/lib/reservations/types";
+import { pragueLocalToUtcISO, trainingSessionTitle } from "@/lib/reservations/utils";
+import type { Insertable } from "@/lib/supabase/tables";
 
 interface CreateScheduleInput {
   room_id: string;
   team_id: string;
   day_of_week: number;
-  start_time: string; // HH:MM
+  start_time: string; // HH:MM (time-of-day on recurring_schedules)
   end_time: string;   // HH:MM
   valid_from: string; // YYYY-MM-DD
   valid_until: string; // YYYY-MM-DD
+  schedule_type?: "training_session" | "houston_calling";
 }
 
 /**
@@ -36,16 +40,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!profile || (profile?.role !== "coach" && profile?.role !== "admin")) {
+    if (profile.role !== "coach" && profile.role !== "admin") {
       return NextResponse.json({ error: "Nedostatečná oprávnění" }, { status: 403 });
     }
 
     const body: CreateScheduleInput = await request.json();
-    const { room_id, team_id, day_of_week, start_time, end_time, valid_from, valid_until } = body;
+    const {
+      room_id,
+      team_id,
+      day_of_week,
+      start_time,
+      end_time,
+      valid_from,
+      valid_until,
+    } = body;
+    const schedule_type = body.schedule_type ?? "training_session";
 
     // Validation
-    if (!room_id || !team_id || day_of_week === undefined || !start_time || !end_time || !valid_from || !valid_until) {
+    if (!room_id || day_of_week === undefined || !start_time || !end_time || !valid_from || !valid_until) {
       return NextResponse.json({ error: "Chybí povinné údaje" }, { status: 400 });
+    }
+
+    if (schedule_type === "training_session" && !team_id) {
+      return NextResponse.json({ error: "Training Session vyžaduje tým" }, { status: 400 });
     }
 
     if (day_of_week < 0 || day_of_week > 6) {
@@ -57,25 +74,29 @@ export async function POST(request: NextRequest) {
       .from("rooms")
       .select("id, can_have_ts")
       .eq("id", room_id)
+      .is("removed_at", null)
       .single();
 
     if (!room) {
       return NextResponse.json({ error: "Místnost neexistuje" }, { status: 404 });
     }
 
-    if (!room.can_have_ts) {
+    if (schedule_type === "training_session" && !room.can_have_ts) {
       return NextResponse.json({ error: "Tato místnost nemůže mít Training Sessions" }, { status: 400 });
     }
 
-    // Check team exists
-    const { data: team } = await supabase
-      .from("teams")
-      .select("id, name")
-      .eq("id", team_id)
-      .single();
+    let teamName = TRAINING_FALLBACK_NAME;
+    if (team_id) {
+      const { data: team } = await supabase
+        .from("teams")
+        .select("id, name")
+        .eq("id", team_id)
+        .single();
 
-    if (!team) {
-      return NextResponse.json({ error: "Tým neexistuje" }, { status: 404 });
+      if (!team) {
+        return NextResponse.json({ error: "Tým neexistuje" }, { status: 404 });
+      }
+      teamName = team.name;
     }
 
     // Create recurring schedule
@@ -83,8 +104,10 @@ export async function POST(request: NextRequest) {
       .from("recurring_schedules")
       .insert({
         room_id,
-        team_id,
-        created_by: profile?.id,
+        team_id: schedule_type === "training_session" ? team_id : null,
+        schedule_type,
+        created_by_profile_id: profile.id,
+        updated_by_profile_id: profile.id,
         day_of_week,
         start_time,
         end_time,
@@ -121,15 +144,12 @@ export async function POST(request: NextRequest) {
       currentDate = addDays(currentDate, 1);
     }
 
-    const reservations: {
-      room_id: string;
-      team_id: string;
-      recurring_schedule_id: string;
-      reservation_type: "training_session";
-      title: string;
-      start_time: string;
-      end_time: string;
-    }[] = [];
+    const reservationTitle =
+      schedule_type === "houston_calling"
+        ? HOUSTON_CALLING_TITLE
+        : trainingSessionTitle(teamName);
+
+    const reservations: Insertable<"reservations">[] = [];
 
     while (currentDate <= endDate) {
       // Check if this date falls within a break
@@ -144,28 +164,35 @@ export async function POST(request: NextRequest) {
 
         reservations.push({
           room_id,
-          team_id,
-          recurring_schedule_id: schedule.id,
-          reservation_type: "training_session",
-          title: `TS - ${team.name}`,
-          start_time: reservationStart,
-          end_time: reservationEnd,
+          owner_profile_id: null,
+          title: reservationTitle,
+          start_at: reservationStart,
+          end_at: reservationEnd,
+          created_by_profile_id: profile.id,
+          updated_by_profile_id: profile.id,
         });
       }
 
       currentDate = addDays(currentDate, 7);
     }
 
-    // Insert reservations
+    // Insert reservations (admin client: owner_profile_id is null for system rows)
     if (reservations.length > 0) {
-      const { error: reservationsError } = await supabase
+      const adminClient = createAdminClient();
+      const { error: reservationsError } = await adminClient
         .from("reservations")
         .insert(reservations);
 
       if (reservationsError) {
         console.error("Error creating reservations:", reservationsError);
-        // Rollback: delete the schedule
-        await supabase.from("recurring_schedules").delete().eq("id", schedule.id);
+        // Rollback: soft-remove the schedule
+        await supabase
+          .from("recurring_schedules")
+          .update({
+            removed_at: new Date().toISOString(),
+            updated_by_profile_id: profile.id,
+          })
+          .eq("id", schedule.id);
         return NextResponse.json({ error: "Nepodařilo se vygenerovat rezervace" }, { status: 500 });
       }
     }
@@ -181,6 +208,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }
+
+const TRAINING_FALLBACK_NAME = "Tým";
 
 /**
  * GET /api/recurring-schedules
@@ -202,6 +231,7 @@ export async function GET(request: NextRequest) {
         room:rooms(id, code, name),
         team:teams(id, name)
       `)
+      .is("removed_at", null)
       .order("day_of_week");
 
     if (error) {

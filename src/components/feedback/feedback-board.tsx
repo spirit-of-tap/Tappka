@@ -27,7 +27,7 @@ export function FeedbackBoard({ initialActive, initialArchived, isAdmin }: Feedb
   const handleChanged = (updated: FeedbackWithAuthor) => {
     setActive((prev) => prev.filter((f) => f.id !== updated.id));
     setArchived((prev) => prev.filter((f) => f.id !== updated.id));
-    if (updated.archived_at) {
+    if (updated.resolved_at) {
       setArchived((prev) => [updated, ...prev]);
     } else {
       setActive((prev) => [updated, ...prev]);

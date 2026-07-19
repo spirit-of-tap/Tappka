@@ -8,7 +8,6 @@ import {
   User,
   Pencil,
   ExternalLink,
-  Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -123,9 +122,9 @@ export default async function BookDetailPage({ params }: PageProps) {
       <div className="flex flex-col gap-6 sm:flex-row sm:gap-8">
         <div className="mx-auto shrink-0 sm:mx-0">
           <div className="flex aspect-[2/3] w-44 items-center justify-center overflow-hidden rounded-xl bg-muted shadow-lg ring-1 ring-border/50">
-            {book.cover_path ? (
+            {book.supabase_cover_img_url ? (
               <StorageImage
-                storageKey={book.cover_path}
+                storageKey={book.supabase_cover_img_url}
                 alt={book.title}
                 className="h-full w-full object-cover"
                 width={176}
@@ -181,7 +180,7 @@ export default async function BookDetailPage({ params }: PageProps) {
           <dl className="flex flex-wrap gap-x-6 gap-y-2 border-t border-border/60 pt-4">
             {book.page_count != null && <MetaItem icon={BookText}>{book.page_count} stran</MetaItem>}
             {book.isbn_13 && <MetaItem icon={Hash}>ISBN {book.isbn_13}</MetaItem>}
-            {book.added_by?.name && <MetaItem icon={User}>Přidal/a {book.added_by.name}</MetaItem>}
+            {book.created_by?.name && <MetaItem icon={User}>Přidal/a {book.created_by.name}</MetaItem>}
           </dl>
 
           {/* Action buttons */}
@@ -208,26 +207,11 @@ export default async function BookDetailPage({ params }: PageProps) {
               <BookDescription text={book.description} />
             </div>
           )}
-          {book.rejection_reason && (
-            <p className="text-sm text-destructive">Důvod zamítnutí: {book.rejection_reason}</p>
+          {book.status_reason && (
+            <p className="text-sm text-destructive">Důvod zamítnutí: {book.status_reason}</p>
           )}
         </div>
       </div>
-
-      {/* AI rating reason */}
-      {book.ai_reason && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="size-4 text-muted-foreground" />
-              Hodnocení knihy
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm leading-relaxed text-muted-foreground">{book.ai_reason}</p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Essays */}
       {essays.length > 0 && (

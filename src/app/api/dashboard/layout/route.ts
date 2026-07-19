@@ -23,6 +23,8 @@ export async function PUT(request: NextRequest) {
       profile_id: profile.id,
       widgets,
       updated_at: new Date().toISOString(),
+      created_by_profile_id: profile.id,
+      updated_by_profile_id: profile.id,
     });
 
     if (error) {

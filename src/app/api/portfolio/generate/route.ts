@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { tagNamesFromJoin } from '@/lib/books/tags';
 import { patchEsejeSheetXml } from '@/lib/portfolio/generate-eseje-sheet';
 
 export async function POST(request: NextRequest) {
@@ -20,27 +22,49 @@ export async function POST(request: NextRequest) {
 
   const essayData = await supabase
     .from('essays')
-    .select(`id, title, book:books!book_id(id, title, author, book_points, tags, source)`)
+    .select(`
+      id,
+      essay_revisions(title, revision_no, invalid_since),
+      book:books!book_id(
+        id,
+        title,
+        author,
+        book_points,
+        source,
+        book_tags(tags(name))
+      )
+    `)
     .eq('author_profile_id', profile.id)
-    .eq('published', true)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
     .not('book_id', 'is', null)
     .order('created_at', { ascending: true });
 
   if (essayData.error) throw essayData.error;
 
   const rows = (essayData.data ?? []).map((essay, i) => {
-    const book = (Array.isArray(essay.book) ? essay.book[0] : essay.book) as {
-      title: string; author: string; book_points: number; tags: string[];
+    const rawBook = Array.isArray(essay.book) ? essay.book[0] : essay.book;
+    const book = rawBook as {
+      title: string;
+      author: string;
+      book_points: number | null;
+      book_tags?: { tags: { name: string } | null }[] | null;
     } | null;
-    const firstTag = book?.tags?.[0] ?? '';
+    const tags = tagNamesFromJoin(book?.book_tags);
+    const firstTag = tags[0] ?? '';
     const category = BOOK_CATEGORY_LABELS[firstTag] ?? firstTag;
+    const revisions = essay.essay_revisions as { title: string; revision_no: number; invalid_since: string | null }[] | null;
+    const valid = (revisions ?? []).filter((r) => r.invalid_since == null);
+    const essayTitle = valid.length === 0
+      ? ''
+      : valid.reduce((best, row) => (row.revision_no > best.revision_no ? row : best)).title;
 
     return {
       index: i + 1,
       bookTitle: book?.title ?? '',
       author: book?.author ?? '',
-      essayId: essay.id as string,
-      essayTitle: essay.title as string,
+      essayId: essay.id,
+      essayTitle,
       essayUrl: `${origin}/eseje/${essay.id}`,
       category,
       source: 'Kniha',

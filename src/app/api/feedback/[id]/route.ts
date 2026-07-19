@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import type { Database } from '@/lib/supabase/database.types';
 
 const AUTHOR_SELECT = `*, author:profiles!author_profile_id(id, name, picture, role)`;
 
@@ -21,27 +22,17 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const payload = await request.json();
-    const update: Record<string, unknown> = {};
+    const hasResolved = 'resolved' in payload || 'archived' in payload;
 
-    if ('archived' in payload) {
-      update.archived_at = payload.archived ? new Date().toISOString() : null;
-    }
-    if ('admin_response' in payload) {
-      const resp = typeof payload.admin_response === 'string' ? payload.admin_response.trim() : '';
-      if (resp) {
-        update.admin_response = resp;
-        update.admin_response_by = profile.id;
-        update.admin_response_at = new Date().toISOString();
-      } else {
-        update.admin_response = null;
-        update.admin_response_by = null;
-        update.admin_response_at = null;
-      }
-    }
-
-    if (Object.keys(update).length === 0) {
+    if (!hasResolved) {
       return NextResponse.json({ error: 'Nic k aktualizaci' }, { status: 400 });
     }
+
+    const resolved = 'resolved' in payload ? Boolean(payload.resolved) : Boolean(payload.archived);
+    const update: Database['public']['Tables']['feedback']['Update'] = {
+      resolved_at: resolved ? new Date().toISOString() : null,
+      updated_by_profile_id: profile.id,
+    };
 
     const { data, error } = await supabase
       .from('feedback')

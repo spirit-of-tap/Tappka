@@ -5,11 +5,20 @@
 import type { Database } from '@/lib/supabase/database.types';
 import type { Tables } from '@/lib/supabase/tables';
 
-// Database enum types
-export type ReservationType = Database['public']['Enums']['reservation_type'];
-export type IssueType = Database['public']['Enums']['issue_type'];
-export type IssueStatus = Database['public']['Enums']['issue_status'];
-export type ScheduleBreakType = Database['public']['Enums']['schedule_break_type'];
+/** Schedule type from recurring_schedules (also used as inferred reservation kind). */
+export type ScheduleType = Database['public']['Enums']['schedule_type'];
+
+/** Inferred kind for a reservation row (no reservation_type column). */
+export type ReservationKind = 'personal' | ScheduleType;
+
+/** Stable title for Houston Calling generated reservations. */
+export const HOUSTON_CALLING_TITLE = 'Houston Calling';
+
+/** Fallback title for training session reservations when team name is unknown. */
+export const TRAINING_SESSION_TITLE = 'Training Session';
+
+/** Prefix used for team training session titles (`TS - ${teamName}`). */
+export const TRAINING_SESSION_TITLE_PREFIX = 'TS - ';
 
 // Room from database
 export type Room = Tables<'rooms'>;
@@ -18,8 +27,6 @@ export type Room = Tables<'rooms'>;
 export interface RoomWithStatus extends Room {
   currentReservation: Reservation | null;
   nextAvailableTime: Date | null;
-  hasOpenIssue: boolean;
-  issueType: IssueType | null;
   // Filter availability metadata (set when time filter is active)
   availabilityForFilter?: {
     isAvailable: boolean;
@@ -40,23 +47,7 @@ export interface ReservationWithDetails extends Reservation {
     name: string;
     picture?: string | null;
   };
-  team?: {
-    id: string;
-    name: string;
-  };
-  cowork_participants?: CoworkParticipant[];
 }
-
-// Cowork participant (row + optional joined user)
-export type CoworkParticipant = Tables<'cowork_participants'> & {
-  user?: {
-    id: string;
-    name: string;
-  };
-};
-
-// Room issue from database
-export type RoomIssue = Tables<'room_issues'>;
 
 // Recurring schedule from database
 export type RecurringSchedule = Tables<'recurring_schedules'>;
@@ -69,18 +60,16 @@ export interface CreateReservationInput {
   room_id: string;
   title: string; // Also serves as reason (simplified)
   person_count: number;
-  start_time: string;
-  end_time: string;
-  is_cowork_open?: boolean;
+  start_at: string;
+  end_at: string;
 }
 
 // Form data for updating a reservation
 export interface UpdateReservationInput {
   title?: string;
   person_count?: number;
-  start_time?: string;
-  end_time?: string;
-  is_cowork_open?: boolean;
+  start_at?: string;
+  end_at?: string;
 }
 
 // Constants
@@ -102,17 +91,12 @@ export const DAY_NAMES_CS: Record<number, string> = {
   6: 'Sobota',
 };
 
-// Reservation type labels in Czech
-export const RESERVATION_TYPE_LABELS: Record<ReservationType, string> = {
+/** Reservation kind labels in Czech */
+export const RESERVATION_KIND_LABELS: Record<ReservationKind, string> = {
   personal: 'Osobní',
   training_session: 'Training Session',
   houston_calling: 'Houston Calling',
 };
 
-// Issue type labels in Czech
-export const ISSUE_TYPE_LABELS: Record<IssueType, string> = {
-  locked: 'Zamčená místnost',
-  mess: 'Nepořádek',
-  technical: 'Technický problém',
-  other: 'Jiné',
-};
+/** @deprecated Use RESERVATION_KIND_LABELS */
+export const RESERVATION_TYPE_LABELS = RESERVATION_KIND_LABELS;

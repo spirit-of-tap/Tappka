@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, XCircle, AlertTriangle, X, Clock, Users, ArrowRight } from "lucide-react";
+import { CheckCircle2, XCircle, X, Clock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QRQuickReserveDialog } from "./qr-quick-reserve-dialog";
@@ -16,7 +15,7 @@ interface RoomQuickStatusProps {
     name: string;
     description: string | null;
   };
-  status: 'free' | 'occupied' | 'locked';
+  status: 'free' | 'occupied';
   currentReservation?: {
     title: string;
     occupantName: string;
@@ -26,10 +25,6 @@ interface RoomQuickStatusProps {
     endsInMinutes: number;
     startsInMinutes?: number;
     isMyReservation?: boolean;
-  };
-  issues: {
-    isLocked: boolean;
-    otherIssues: string[];
   };
   alternativeRooms?: Array<{
     id: string;
@@ -46,11 +41,9 @@ export function RoomQuickStatus({
   room,
   status,
   currentReservation,
-  issues,
   alternativeRooms = [],
   minutesUntilNextReservation,
 }: RoomQuickStatusProps) {
-  const router = useRouter();
   const [reserveDialogOpen, setReserveDialogOpen] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<15 | 30 | 45>(15);
 
@@ -81,9 +74,7 @@ export function RoomQuickStatus({
 
   // Determine background color - using explicit hex values to avoid Tailwind purging dynamic class names
   let bgHex = "#16a34a"; // green-600
-  if (status === 'locked') {
-    bgHex = "#ea580c"; // orange-600
-  } else if (status === 'occupied') {
+  if (status === 'occupied') {
     bgHex = isNearFutureOccupied ? "#d97706" : "#b31b1b"; // amber-600 for near-future, TAP red for active
   }
 
@@ -108,7 +99,6 @@ export function RoomQuickStatus({
         <div className="w-full max-w-lg space-y-10">
           {/* Large icon */}
           <div className="flex justify-center">
-            {status === 'locked' && <AlertTriangle className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
             {status === 'occupied' && !isNearFutureOccupied && <XCircle className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
             {status === 'occupied' && isNearFutureOccupied && <Clock className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
             {status === 'free' && <CheckCircle2 className="size-32 drop-shadow-2xl" strokeWidth={1.5} />}
@@ -126,15 +116,6 @@ export function RoomQuickStatus({
 
           {/* Status text and details */}
           <div className="space-y-8 text-center">
-            {status === 'locked' && (
-              <>
-                <p className="text-3xl font-heading font-bold tracking-tight">ZAMČENÁ MÍSTNOST</p>
-                <p className="text-sm opacity-90 max-w-xs mx-auto font-body">
-                  Někdo nahlásil, že se do místnosti nedá dostat
-                </p>
-              </>
-            )}
-
             {status === 'occupied' && currentReservation && (
               <>
                 {isNearFutureOccupied ? (
@@ -236,21 +217,6 @@ export function RoomQuickStatus({
                     <ArrowRight className="size-4 ml-2 shrink-0" />
                   </Link>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* Other issues warning */}
-          {issues.otherIssues.length > 0 && (
-            <div className="flex items-start gap-2 p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 shadow-lg">
-              <AlertTriangle className="size-5 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="font-heading font-medium text-sm">
-                  Nahlášené problémy
-                </p>
-                <p className="text-xs opacity-80 font-body">
-                  {issues.otherIssues.join(", ")}
-                </p>
               </div>
             </div>
           )}

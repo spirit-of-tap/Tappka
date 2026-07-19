@@ -26,7 +26,12 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('feedback')
-      .insert({ author_profile_id: profile.id, body: trimmed })
+      .insert({
+        author_profile_id: profile.id,
+        body: trimmed,
+        created_by_profile_id: profile.id,
+        updated_by_profile_id: profile.id,
+      })
       .select(AUTHOR_SELECT)
       .single();
 

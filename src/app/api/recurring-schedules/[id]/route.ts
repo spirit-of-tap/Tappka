@@ -1,12 +1,90 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import { addDays, format, parseISO, getDay } from "date-fns";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
-import { pragueLocalToUtcISO } from "@/lib/reservations/utils";
-import type { Insertable } from "@/lib/supabase/tables";
+import { HOUSTON_CALLING_TITLE, TRAINING_SESSION_TITLE } from "@/lib/reservations/types";
+import { pragueLocalToUtcISO, trainingSessionTitle } from "@/lib/reservations/utils";
+import type { Insertable, Tables } from "@/lib/supabase/tables";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+type ScheduleRow = Tables<"recurring_schedules">;
+
+/**
+ * Soft-cancel future active reservations that match a schedule's room + title.
+ * Uses admin client because system rows have null owner_profile_id.
+ */
+async function cancelFutureMatchingReservations(params: {
+  adminClient: SupabaseClient<Database>;
+  roomId: string;
+  title: string;
+  profileId: string;
+  fromIso: string;
+}): Promise<number> {
+  const { adminClient, roomId, title, profileId, fromIso } = params;
+
+  const { data: toCancel } = await adminClient
+    .from("reservations")
+    .select("id")
+    .eq("room_id", roomId)
+    .eq("title", title)
+    .is("cancelled_at", null)
+    .gte("start_at", fromIso);
+
+  if (!toCancel || toCancel.length === 0) {
+    return 0;
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await adminClient
+    .from("reservations")
+    .update({
+      cancelled_at: now,
+      cancelled_by_profile_id: profileId,
+      updated_by_profile_id: profileId,
+    })
+    .in(
+      "id",
+      toCancel.map((r) => r.id)
+    );
+
+  if (error) {
+    console.error("Error cancelling matching reservations:", error);
+    return 0;
+  }
+
+  return toCancel.length;
+}
+
+/**
+ * Resolve the stable reservation title for a schedule.
+ */
+async function resolveScheduleTitle(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  schedule: ScheduleRow
+): Promise<string> {
+  if (schedule.schedule_type === "houston_calling") {
+    return HOUSTON_CALLING_TITLE;
+  }
+
+  if (schedule.team_id) {
+    const { data: team } = await supabase
+      .from("teams")
+      .select("name")
+      .eq("id", schedule.team_id)
+      .single();
+
+    if (team?.name) {
+      return trainingSessionTitle(team.name);
+    }
+  }
+
+  return TRAINING_SESSION_TITLE;
 }
 
 /**
@@ -33,7 +111,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user is coach or admin
-    if (!profile || (profile?.role !== "coach" && profile?.role !== "admin")) {
+    if (profile.role !== "coach" && profile.role !== "admin") {
       return NextResponse.json({ error: "Nedostatečná oprávnění" }, { status: 403 });
     }
 
@@ -45,14 +123,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .from("recurring_schedules")
       .select("*")
       .eq("id", id)
+      .is("removed_at", null)
       .single();
 
     if (!existingSchedule) {
       return NextResponse.json({ error: "Rozvrh nenalezen" }, { status: 404 });
     }
 
+    const previousTitle = await resolveScheduleTitle(supabase, existingSchedule);
+
     // Build update object
-    const updateData: Record<string, unknown> = {};
+    const updateData: Record<string, unknown> = {
+      updated_by_profile_id: profile.id,
+    };
     if (room_id !== undefined) updateData.room_id = room_id;
     if (team_id !== undefined) updateData.team_id = team_id;
     if (day_of_week !== undefined) updateData.day_of_week = day_of_week;
@@ -74,23 +157,36 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Nepodařilo se upravit rozvrh" }, { status: 500 });
     }
 
-    // Delete all future reservations linked to this schedule
     const now = new Date().toISOString();
-    await supabase
-      .from("reservations")
-      .delete()
-      .eq("recurring_schedule_id", id)
-      .gte("start_time", now);
+    const adminClient = createAdminClient();
+
+    // Soft-cancel future reservations that matched the previous schedule title
+    await cancelFutureMatchingReservations({
+      adminClient,
+      roomId: existingSchedule.room_id,
+      title: previousTitle,
+      profileId: profile.id,
+      fromIso: now,
+    });
 
     // Regenerate reservations with new settings
     const finalSchedule = updatedSchedule;
+    if (!finalSchedule.valid_until) {
+      return NextResponse.json({
+        success: true,
+        schedule: finalSchedule,
+        reservations_created: 0,
+      });
+    }
+
     const startDate = parseISO(finalSchedule.valid_from);
     const endDate = parseISO(finalSchedule.valid_until);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     let currentDate = startDate < today ? today : startDate;
-    const reservationsToCreate: Insertable<'reservations'>[] = [];
+    const reservationsToCreate: Insertable<"reservations">[] = [];
+    const newTitle = await resolveScheduleTitle(supabase, finalSchedule);
 
     while (currentDate <= endDate) {
       if (getDay(currentDate) === finalSchedule.day_of_week) {
@@ -98,20 +194,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
         reservationsToCreate.push({
           room_id: finalSchedule.room_id,
-          team_id: finalSchedule.team_id,
-          recurring_schedule_id: id,
-          reservation_type: "training_session",
-          title: "Training Session",
-          start_time: pragueLocalToUtcISO(dateStr, finalSchedule.start_time),
-          end_time: pragueLocalToUtcISO(dateStr, finalSchedule.end_time),
+          owner_profile_id: null,
+          title: newTitle,
+          start_at: pragueLocalToUtcISO(dateStr, finalSchedule.start_time),
+          end_at: pragueLocalToUtcISO(dateStr, finalSchedule.end_time),
+          created_by_profile_id: profile.id,
+          updated_by_profile_id: profile.id,
         });
       }
       currentDate = addDays(currentDate, 1);
     }
 
-    // Insert new reservations
+    // Insert new reservations (admin: null owner_profile_id)
     if (reservationsToCreate.length > 0) {
-      const { error: insertError } = await supabase
+      const { error: insertError } = await adminClient
         .from("reservations")
         .insert(reservationsToCreate);
 
@@ -134,7 +230,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 /**
  * DELETE /api/recurring-schedules/[id]
- * Delete a recurring schedule and its associated reservations
+ * Soft-remove a recurring schedule and cancel its future reservations
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
@@ -155,43 +251,51 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
+    if (profile.role !== "coach" && profile.role !== "admin") {
       return NextResponse.json({ error: "Nedostatečná oprávnění" }, { status: 403 });
     }
 
     // Check if schedule exists
     const { data: schedule } = await supabase
       .from("recurring_schedules")
-      .select("id")
+      .select("*")
       .eq("id", id)
+      .is("removed_at", null)
       .single();
 
     if (!schedule) {
       return NextResponse.json({ error: "Rozvrh nenalezen" }, { status: 404 });
     }
 
-    // Delete all future reservations linked to this schedule
+    const title = await resolveScheduleTitle(supabase, schedule);
     const now = new Date().toISOString();
-    await supabase
-      .from("reservations")
-      .delete()
-      .eq("recurring_schedule_id", id)
-      .gte("start_time", now);
+    const adminClient = createAdminClient();
 
-    // Delete the schedule (past reservations remain unaffected)
+    await cancelFutureMatchingReservations({
+      adminClient,
+      roomId: schedule.room_id,
+      title,
+      profileId: profile.id,
+      fromIso: now,
+    });
+
+    // Soft-remove the schedule (past reservations remain unaffected)
     const { error } = await supabase
       .from("recurring_schedules")
-      .delete()
+      .update({
+        removed_at: now,
+        updated_by_profile_id: profile.id,
+      })
       .eq("id", id);
 
     if (error) {
-      console.error("Error deleting recurring schedule:", error);
+      console.error("Error removing recurring schedule:", error);
       return NextResponse.json({ error: "Nepodařilo se smazat rozvrh" }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      message: "Rozvrh smazán a budoucí rezervace odstraněny",
+      message: "Rozvrh smazán a budoucí rezervace zrušeny",
     });
   } catch (error) {
     console.error("DELETE /api/recurring-schedules/[id] error:", error);

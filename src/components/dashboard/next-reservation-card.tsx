@@ -14,8 +14,8 @@ import { formatDateShort, formatTime } from '@/lib/reservations/utils';
 export interface DashboardReservation {
   id: string;
   title: string;
-  start_time: string;
-  end_time: string;
+  start_at: string;
+  end_at: string;
   room: { id: string; code: string; name: string } | null;
 }
 
@@ -44,8 +44,8 @@ export function NextReservationCard({ reservation }: NextReservationCardProps) {
         </CardTitle>
         {reservation && (
           <CardDescription>
-            {relativeDayLabel(reservation.start_time)} ·{' '}
-            {formatTime(reservation.start_time)}–{formatTime(reservation.end_time)}
+            {relativeDayLabel(reservation.start_at)} ·{' '}
+            {formatTime(reservation.start_at)}–{formatTime(reservation.end_at)}
           </CardDescription>
         )}
         <CardAction>

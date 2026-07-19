@@ -26,16 +26,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .select(`
         *,
         room:rooms(id, code, name),
-        user:profiles(id, name),
-        team:teams(id, name),
-        cowork_participants(
-          id,
-          user_id,
-          joined_at,
-          user:profiles(id, name)
-        )
+        user:profiles!owner_profile_id(id, name)
       `)
       .eq("id", id)
+      .is("cancelled_at", null)
       .single();
 
     if (error || !reservation) {
@@ -81,18 +75,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Check ownership
     const { data: existing } = await supabase
       .from("reservations")
-      .select("user_id")
+      .select("owner_profile_id, cancelled_at")
       .eq("id", id)
       .single();
 
-    if (!existing) {
+    if (!existing || existing.cancelled_at) {
       return NextResponse.json(
         { error: "Rezervace nenalezena" },
         { status: 404 }
       );
     }
 
-    if (existing.user_id !== profile?.id) {
+    if (existing.owner_profile_id !== profile.id) {
       return NextResponse.json(
         { error: "Nemáš oprávnění upravovat tuto rezervaci" },
         { status: 403 }
@@ -100,16 +94,18 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body: UpdateReservationInput = await request.json();
-    const allowedFields = ["title", "person_count", "is_cowork_open"];
-    const updateData: Record<string, unknown> = {};
+    const allowedFields = ["title", "person_count"] as const;
+    const updateData: Record<string, unknown> = {
+      updated_by_profile_id: profile.id,
+    };
 
     for (const field of allowedFields) {
       if (field in body) {
-        updateData[field] = body[field as keyof UpdateReservationInput];
+        updateData[field] = body[field];
       }
     }
 
-    if (Object.keys(updateData).length === 0) {
+    if (Object.keys(updateData).length === 1) {
       return NextResponse.json(
         { error: "Žádné údaje k aktualizaci" },
         { status: 400 }
@@ -133,10 +129,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Check if the update actually happened (RLS might silently block it)
     if (!updated) {
-      console.error("Update blocked by RLS - no rows affected", { 
-        reservationId: id, 
-        profileId: profile?.id,
-        existingUserId: existing.user_id 
+      console.error("Update blocked by RLS - no rows affected", {
+        reservationId: id,
+        profileId: profile.id,
+        existingOwnerProfileId: existing.owner_profile_id,
       });
       return NextResponse.json(
         { error: "Nepodařilo se aktualizovat rezervaci - chyba oprávnění" },
@@ -160,7 +156,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 /**
  * DELETE /api/reservations/[id]
- * Delete a reservation
+ * Soft-cancel a reservation
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
@@ -184,31 +180,36 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Check ownership
     const { data: existing } = await supabase
       .from("reservations")
-      .select("user_id")
+      .select("owner_profile_id, cancelled_at")
       .eq("id", id)
       .single();
 
-    if (!existing) {
+    if (!existing || existing.cancelled_at) {
       return NextResponse.json(
         { error: "Rezervace nenalezena" },
         { status: 404 }
       );
     }
 
-    if (existing.user_id !== profile?.id) {
+    if (existing.owner_profile_id !== profile.id) {
       return NextResponse.json(
         { error: "Nemáš oprávnění smazat tuto rezervaci" },
         { status: 403 }
       );
     }
 
+    const now = new Date().toISOString();
     const { error } = await supabase
       .from("reservations")
-      .delete()
+      .update({
+        cancelled_at: now,
+        cancelled_by_profile_id: profile.id,
+        updated_by_profile_id: profile.id,
+      })
       .eq("id", id);
 
     if (error) {
-      console.error("Error deleting reservation:", error);
+      console.error("Error cancelling reservation:", error);
       return NextResponse.json(
         { error: "Nepodařilo se smazat rezervaci" },
         { status: 500 }

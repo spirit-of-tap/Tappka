@@ -32,13 +32,13 @@ export function CoachDashboard({ initialPending, initialRejected }: CoachDashboa
     const res = await fetch(`/api/books/${bookId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reject', rejection_reason: reason }),
+      body: JSON.stringify({ action: 'reject', status_reason: reason }),
     });
     if (res.ok) {
       const book = pending.find((b) => b.id === bookId);
       if (book) {
         setPending((prev) => prev.filter((b) => b.id !== bookId));
-        setRejected((prev) => [{ ...book, status: 'rejected', rejection_reason: reason } as BookWithProfiles, ...prev]);
+        setRejected((prev) => [{ ...book, status: 'rejected', status_reason: reason } as BookWithProfiles, ...prev]);
       }
     }
   };
@@ -94,8 +94,8 @@ export function CoachDashboard({ initialPending, initialRejected }: CoachDashboa
                 <div className="flex-1">
                   <p className="font-medium text-sm">{book.title}</p>
                   <p className="text-xs text-muted-foreground">{book.author}</p>
-                  {book.rejection_reason && (
-                    <p className="text-xs text-destructive mt-1">Důvod: {book.rejection_reason}</p>
+                  {book.status_reason && (
+                    <p className="text-xs text-destructive mt-1">Důvod: {book.status_reason}</p>
                   )}
                 </div>
                 <Button

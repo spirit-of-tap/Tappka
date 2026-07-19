@@ -165,16 +165,16 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
             {bookEssays.length > 0 && (
               <div className="grid sm:grid-cols-2 gap-3">
                 {[...bookEssays].sort((a, b) => {
-                  if (a.is_pinned && !b.is_pinned) return -1;
-                  if (!a.is_pinned && b.is_pinned) return 1;
+                  if (a.pinned_at && !b.pinned_at) return -1;
+                  if (!a.pinned_at && b.pinned_at) return 1;
                   return 0;
                 }).map((essay) => {
                   const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
                   return (
                     <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
                       <Link href={`/eseje/${essay.id}`} className="shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5" style={{ height: '60px' }}>
-                        {essay.book!.cover_path ? (
-                          <StorageImage storageKey={essay.book!.cover_path} alt={essay.book!.title} width={44} height={60} className="w-full h-full object-cover" />
+                        {essay.book!.supabase_cover_img_url ? (
+                          <StorageImage storageKey={essay.book!.supabase_cover_img_url} alt={essay.book!.title} width={44} height={60} className="w-full h-full object-cover" />
                         ) : (
                           <BookOpen className="size-4 text-muted-foreground/30" />
                         )}
@@ -182,7 +182,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                       <div className="flex-1 min-w-0 space-y-1">
                         <Link href={`/eseje/${essay.id}`}>
                           <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors inline-flex items-center gap-1.5">
-                            {essay.is_pinned && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
+                            {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
                             {essay.title}
                           </p>
                         </Link>
@@ -214,8 +214,8 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {[...topicEssays].sort((a, b) => {
-                    if (a.is_pinned && !b.is_pinned) return -1;
-                    if (!a.is_pinned && b.is_pinned) return 1;
+                    if (a.pinned_at && !b.pinned_at) return -1;
+                    if (!a.pinned_at && b.pinned_at) return 1;
                     return 0;
                   }).map((essay) => {
                     const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
@@ -227,7 +227,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                         <div className="flex-1 min-w-0 space-y-1">
                           <Link href={`/eseje/${essay.id}`}>
                             <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors inline-flex items-center gap-1.5">
-                              {essay.is_pinned && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
+                              {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
                               {essay.title}
                             </p>
                           </Link>

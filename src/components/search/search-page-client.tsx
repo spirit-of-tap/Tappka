@@ -6,32 +6,28 @@ import { Search, BookOpen, PenLine, ExternalLink, Sparkles } from 'lucide-react'
 import { Input } from '@/components/ui/input';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
-import { TeamReadingListsHero } from '@/components/books/team-reading-lists-hero';
 import { BookCard } from '@/components/books/book-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 import { formatPoints, formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
-import type { TeamReadingList } from '@/lib/books/team-lists';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
-type BookResult = { id: string; title: string; author: string; cover_path: string | null };
+type BookResult = { id: string; title: string; author: string; supabase_cover_img_url: string | null };
 type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
 type TeamMember = { profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
 type TeamWithMembers = { id: string; name: string; members: TeamMember[] };
 
 interface SearchPageClientProps {
-  teamLists: TeamReadingList[];
   popularEssays: EssayWithVoted[];
   categoryBestBooks: Record<string, CategoryBook[]>;
   teamsWithMembers: TeamWithMembers[];
-  hasTeam: boolean;
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
 
-export function SearchPageClient({ teamLists, popularEssays, categoryBestBooks, teamsWithMembers, hasTeam }: SearchPageClientProps) {
+export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMembers }: SearchPageClientProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -125,11 +121,9 @@ export function SearchPageClient({ teamLists, popularEssays, categoryBestBooks, 
           />
         ) : (
           <DiscoveryView
-            teamLists={teamLists}
             popularEssays={popularEssays}
             categoryBestBooks={categoryBestBooks}
             teamsWithMembers={teamsWithMembers}
-            hasTeam={hasTeam}
             onSelectCategory={toggleCategory}
           />
         )}
@@ -141,21 +135,15 @@ export function SearchPageClient({ teamLists, popularEssays, categoryBestBooks, 
 // ─── Discovery ────────────────────────────────────────────────────────────────
 
 function DiscoveryView({
-  teamLists, popularEssays, categoryBestBooks, teamsWithMembers, hasTeam, onSelectCategory,
+  popularEssays, categoryBestBooks, teamsWithMembers, onSelectCategory,
 }: {
-  teamLists: TeamReadingList[];
   popularEssays: EssayWithVoted[];
   categoryBestBooks: Record<string, CategoryBook[]>;
   teamsWithMembers: TeamWithMembers[];
-  hasTeam: boolean;
   onSelectCategory: (key: string) => void;
 }) {
   return (
     <div className="space-y-10">
-      {(teamLists.length > 0 || hasTeam) && (
-        <TeamReadingListsHero lists={teamLists} hasTeam={hasTeam} />
-      )}
-
       {popularEssays.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -189,9 +177,9 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
       <Link href={`/eseje/${essay.id}`} className="flex gap-2.5">
         {/* Small portrait cover — at this size low-res thumbnails look fine */}
         <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-          {essay.book?.cover_path ? (
+          {essay.book?.supabase_cover_img_url ? (
             <StorageImage
-              storageKey={essay.book.cover_path}
+              storageKey={essay.book.supabase_cover_img_url}
               alt={essay.book?.title ?? ''}
               width={40}
               height={56}
@@ -207,7 +195,7 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
           <div className="flex items-center gap-1.5">
             <div className="size-4 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center">
               {essay.author?.picture ? (
-                <img src={essay.author.picture} alt={essay.author.name} className="w-full h-full object-cover" />
+                <img src={essay.author.picture} alt={essay.author.name ?? ''} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-[8px] font-semibold">{essay.author?.name?.[0]}</span>
               )}
@@ -469,8 +457,8 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
               >
                 <div className="shrink-0 w-8 h-11 rounded overflow-hidden bg-muted flex items-center justify-center">
-                  {book.cover_path ? (
-                    <StorageImage storageKey={book.cover_path} alt={book.title} width={32} height={44} className="w-full h-full object-cover" />
+                  {book.supabase_cover_img_url ? (
+                    <StorageImage storageKey={book.supabase_cover_img_url} alt={book.title} width={32} height={44} className="w-full h-full object-cover" />
                   ) : (
                     <BookOpen className="size-3.5 text-muted-foreground/40" />
                   )}
@@ -499,7 +487,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
               >
                 <div className="shrink-0 size-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-semibold overflow-hidden">
                   {essay.author?.picture ? (
-                    <img src={essay.author.picture} alt={essay.author.name} className="w-full h-full object-cover" />
+                    <img src={essay.author.picture} alt={essay.author.name ?? ''} className="w-full h-full object-cover" />
                   ) : (
                     (essay.author?.name?.[0] ?? <PenLine className="size-3 text-muted-foreground" />)
                   )}

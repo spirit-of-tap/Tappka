@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import type { Reservation, RoomIssue, Room } from "@/lib/reservations/types";
+import type { Room } from "@/lib/reservations/types";
 
 interface RouteParams {
   params: Promise<{ code: string }>;
@@ -13,7 +13,7 @@ interface QuickStatusResponse {
     name: string;
     description: string | null;
   };
-  status: 'free' | 'occupied' | 'locked';
+  status: 'free' | 'occupied';
   currentReservation?: {
     title: string;
     occupantName: string;
@@ -23,10 +23,6 @@ interface QuickStatusResponse {
     endsInMinutes: number;
   };
   nextAvailable?: string;
-  issues: {
-    isLocked: boolean;
-    otherIssues: string[];
-  };
   alternativeRooms?: Array<{
     id: string;
     code: string;
@@ -54,6 +50,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from("rooms")
       .select("*")
       .eq("code", code.toLowerCase())
+      .is("removed_at", null)
       .single();
 
     if (roomError || !room) {
@@ -71,41 +68,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from("reservations")
       .select(`
         *,
-        user:profiles(id, name),
-        team:teams(id, name)
+        user:profiles!owner_profile_id(id, name)
       `)
       .eq("room_id", room.id)
-      .lte("start_time", nowIso)
-      .gt("end_time", nowIso)
-      .single();
-
-    // Fetch open issues
-    const { data: issues } = await supabase
-      .from("room_issues")
-      .select("*")
-      .eq("room_id", room.id)
-      .eq("status", "open");
-
-    const roomIssues = (issues || []) as RoomIssue[];
-    const isLocked = roomIssues.some((i) => i.issue_type === "locked");
-    const otherIssues = roomIssues
-      .filter((i) => i.issue_type !== "locked")
-      .map((i) => {
-        const labels: Record<string, string> = {
-          mess: "Nepořádek",
-          technical: "Technický problém",
-          other: "Jiné",
-        };
-        return labels[i.issue_type] || i.issue_type;
-      });
+      .is("cancelled_at", null)
+      .lte("start_at", nowIso)
+      .gt("end_at", nowIso)
+      .maybeSingle();
 
     // Determine status
-    let status: 'free' | 'occupied' | 'locked' = 'free';
-    if (isLocked) {
-      status = 'locked';
-    } else if (currentReservation) {
-      status = 'occupied';
-    }
+    const status: 'free' | 'occupied' = currentReservation ? 'occupied' : 'free';
 
     const response: QuickStatusResponse = {
       room: {
@@ -115,27 +87,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         description: room.description,
       },
       status,
-      issues: {
-        isLocked,
-        otherIssues,
-      },
     };
 
     // Add current reservation details if occupied
     if (currentReservation) {
-      const endTime = new Date(currentReservation.end_time);
+      const endTime = new Date(currentReservation.end_at);
       const endsInMinutes = Math.round((endTime.getTime() - now.getTime()) / (1000 * 60));
 
       const occupantName = currentReservation.user?.name ||
-        currentReservation.team?.name ||
+        currentReservation.title ||
         "Neznámý";
 
       response.currentReservation = {
         title: currentReservation.title,
         occupantName,
         personCount: currentReservation.person_count,
-        startTime: currentReservation.start_time,
-        endTime: currentReservation.end_time,
+        startTime: currentReservation.start_at,
+        endTime: currentReservation.end_at,
         endsInMinutes,
       };
 
@@ -144,6 +112,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         .from("rooms")
         .select("*")
         .neq("id", room.id)
+        .is("removed_at", null)
         .order("code");
 
       if (allRooms && allRooms.length > 0) {
@@ -151,8 +120,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const { data: otherCurrentReservations } = await supabase
           .from("reservations")
           .select("room_id")
-          .lte("start_time", nowIso)
-          .gt("end_time", nowIso);
+          .is("cancelled_at", null)
+          .lte("start_at", nowIso)
+          .gt("end_at", nowIso);
 
         const occupiedRoomIds = new Set(
           (otherCurrentReservations || []).map((r) => r.room_id)
@@ -184,7 +154,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 /**
  * Sort alternative rooms based on current room type
- * (Same logic as in /appreservations/[code]/page.tsx)
+ * (Same logic as in /app/reservations/[code]/page.tsx)
  */
 function sortAlternativeRooms(rooms: Room[], currentRoom: Room): Room[] {
   const tsRoomCodes = ["d126", "d132", "d226"];

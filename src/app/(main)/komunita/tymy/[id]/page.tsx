@@ -62,8 +62,8 @@ export default async function TeamPage({ params }: PageProps) {
         <div className="flex-1 space-y-2">
           <h1 className="text-3xl font-bold">{team.name}</h1>
           <div className="flex items-center gap-2 flex-wrap">
-            {team.year && (
-              <Badge variant="outline">{YEAR_LABELS[team.year]}</Badge>
+            {team.onboardingYear && (
+              <Badge variant="outline">{YEAR_LABELS[team.onboardingYear]}</Badge>
             )}
             <span className="text-sm text-muted-foreground">
               {team.profiles.length} {team.profiles.length === 1 ? 'člen' : team.profiles.length < 5 ? 'členové' : 'členů'}

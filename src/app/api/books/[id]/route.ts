@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
+import { setBookTags } from '@/lib/books/tags';
 import type { ApproveBookInput, RejectBookInput } from '@/lib/books/types';
 
 interface RouteContext {
@@ -42,7 +44,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     const body: { action: 'approve' | 'reject' | 'edit' } & Partial<ApproveBookInput & RejectBookInput> & {
       title?: string; author?: string; description?: string; tags?: string[];
+      /** @deprecated use status_reason */
+      rejection_reason?: string;
     } = await request.json();
+
+    const now = new Date().toISOString();
 
     if (body.action === 'approve') {
       const points = body.book_points;
@@ -55,8 +61,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         .update({
           status: 'approved',
           book_points: points,
-          approved_by_profile_id: profile.id,
-          approved_at: new Date().toISOString(),
+          status_changed_by_profile_id: profile.id,
+          status_changed_at: now,
+          status_reason: null,
+          updated_by_profile_id: profile.id,
         })
         .eq('id', id)
         .eq('status', 'pending')
@@ -70,7 +78,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     if (body.action === 'reject') {
-      const reason = body.rejection_reason?.trim();
+      const reason = (body.status_reason ?? body.rejection_reason)?.trim();
       if (!reason) {
         return NextResponse.json({ error: 'Důvod zamítnutí je povinný' }, { status: 400 });
       }
@@ -79,10 +87,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         .from('books')
         .update({
           status: 'rejected',
-          book_points: 0,
-          rejection_reason: reason,
-          approved_by_profile_id: profile.id,
-          approved_at: new Date().toISOString(),
+          book_points: null,
+          status_reason: reason,
+          status_changed_by_profile_id: profile.id,
+          status_changed_at: now,
+          updated_by_profile_id: profile.id,
         })
         .eq('id', id)
         .eq('status', 'pending')
@@ -96,25 +105,35 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     if (body.action === 'edit') {
-      const updates: Record<string, unknown> = {};
+      const updates: Record<string, unknown> = {
+        updated_by_profile_id: profile.id,
+      };
       if (body.title?.trim()) updates.title = body.title.trim();
       if (body.author?.trim()) updates.author = body.author.trim();
       if (body.description !== undefined) updates.description = body.description?.trim() || null;
-      if (body.tags !== undefined) updates.tags = body.tags;
 
-      if (Object.keys(updates).length === 0) {
+      const hasFieldUpdates = body.title?.trim() || body.author?.trim() || body.description !== undefined;
+      const hasTagUpdates = body.tags !== undefined;
+
+      if (!hasFieldUpdates && !hasTagUpdates) {
         return NextResponse.json({ error: 'Žádné změny' }, { status: 400 });
       }
 
-      const { data, error } = await supabase
-        .from('books')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      if (hasFieldUpdates) {
+        const { error } = await supabase
+          .from('books')
+          .update(updates)
+          .eq('id', id);
 
-      if (error) throw error;
-      return NextResponse.json({ data });
+        if (error) throw error;
+      }
+
+      if (hasTagUpdates) {
+        await setBookTags(supabase, id, body.tags ?? [], profile.id);
+      }
+
+      const book = await getBookById(supabase, id);
+      return NextResponse.json({ data: book });
     }
 
     return NextResponse.json({ error: 'Neplatná akce' }, { status: 400 });

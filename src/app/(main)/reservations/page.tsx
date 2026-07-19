@@ -20,29 +20,27 @@ export default async function ReservationsPage() {
   const profile = await getCurrentUserProfile(supabase);
   const profileId = profile?.id ?? "";
 
-  // Fetch rooms with current reservations and issues
-  const now = new Date().toISOString();
+  // Fetch rooms with current reservations
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const in24hIso = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
-  const [roomsResult, reservationsResult, issuesResult, myReservationsResult, joinedIdsResult, coworksResult] = await Promise.all([
+  const [roomsResult, reservationsResult, myReservationsResult] = await Promise.all([
     // All rooms
     supabase
       .from("rooms")
       .select("*")
+      .is("removed_at", null)
       .order("code"),
 
     // Current and upcoming reservations for today
     supabase
       .from("reservations")
       .select("*")
-      .gte("end_time", now)
-      .lte("start_time", new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())
-      .order("start_time"),
-
-    // Open issues
-    supabase
-      .from("room_issues")
-      .select("room_id, issue_type")
-      .eq("status", "open"),
+      .is("cancelled_at", null)
+      .gte("end_at", nowIso)
+      .lte("start_at", in24hIso)
+      .order("start_at"),
 
     // User's own reservations (use profile.id, not auth user id)
     supabase
@@ -51,80 +49,36 @@ export default async function ReservationsPage() {
         *,
         room:rooms(id, code, name)
       `)
-      .eq("user_id", profileId)
-      .gte("end_time", now)
-      .order("start_time")
+      .eq("owner_profile_id", profileId)
+      .is("cancelled_at", null)
+      .gte("end_at", nowIso)
+      .order("start_at")
       .limit(10),
-
-    // Get reservation IDs user has joined (use profile.id)
-    supabase
-      .from("cowork_participants")
-      .select("reservation_id")
-      .eq("user_id", profileId),
-
-    // Available coworks (open for cowork, active, upcoming - include all, we'll filter later)
-    supabase
-      .from("reservations")
-      .select(`
-        *,
-        room:rooms(id, code, name),
-        user:profiles!reservations_user_id_fkey(id, name),
-        team:teams(id, name),
-        cowork_participants(
-          id,
-          user_id,
-          joined_at,
-          user:profiles(id, name)
-        )
-      `)
-      .eq("is_cowork_open", true)
-      .gte("end_time", now)
-      .order("start_time")
-      .limit(50), // Increased limit to catch both joined and available
   ]);
 
   // Process rooms with status
   const rooms = roomsResult.data || [];
   const reservations = reservationsResult.data || [];
-  const issues = issuesResult.data || [];
   const myReservations = (myReservationsResult.data || []) as ReservationWithDetails[];
-
-  // Get IDs of reservations user has joined
-  const joinedReservationIds = new Set(
-    (joinedIdsResult.data || []).map((jp: any) => jp.reservation_id)
-  );
-
-  // Split all coworks into joined and available
-  const allCoworks = (coworksResult.data || []) as ReservationWithDetails[];
-  const joinedCoworks = allCoworks.filter(c => joinedReservationIds.has(c.id));
-  const availableCoworks = allCoworks.filter(c =>
-    !joinedReservationIds.has(c.id) && c.user_id !== profileId // Exclude joined and own reservations
-  );
 
   const roomsWithStatus: RoomWithStatus[] = rooms.map((room) => {
     // Find current reservation for this room
     const roomReservations = reservations.filter((r) => r.room_id === room.id);
-    const currentTime = new Date();
     const currentReservation = roomReservations.find((r) => {
-      const start = new Date(r.start_time);
-      const end = new Date(r.end_time);
-      return currentTime >= start && currentTime < end;
+      const start = new Date(r.start_at);
+      const end = new Date(r.end_at);
+      return now >= start && now < end;
     }) || null;
-
-    // Find open issues
-    const roomIssue = issues.find((i) => i.room_id === room.id);
 
     // Calculate next available time
     const nextAvailableTime = currentReservation
-      ? getNextAvailableTime(roomReservations, currentTime)
+      ? getNextAvailableTime(roomReservations, now)
       : null;
 
     return {
       ...room,
       currentReservation,
       nextAvailableTime,
-      hasOpenIssue: !!roomIssue,
-      issueType: roomIssue?.issue_type || null,
     };
   });
 
@@ -138,12 +92,7 @@ export default async function ReservationsPage() {
         </p>
       </div>
 
-      {/* Desktop: Side-by-side, Mobile: See ReservationsTabs component */}
-      <ReservationsTabs
-        myReservations={myReservations}
-        joinedCoworks={joinedCoworks}
-        availableCoworks={availableCoworks}
-      />
+      <ReservationsTabs myReservations={myReservations} />
 
       {/* Room List with Filter */}
       <div>

@@ -97,9 +97,9 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         {selectedBook ? (
           <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
             <div className="flex h-12 w-9 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-              {selectedBook.cover_path ? (
+              {selectedBook.supabase_cover_img_url ? (
                 <StorageImage
-                  storageKey={selectedBook.cover_path}
+                  storageKey={selectedBook.supabase_cover_img_url}
                   alt={selectedBook.title}
                   width={36}
                   height={48}
@@ -142,9 +142,9 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                     onClick={() => { setSelectedBook(book); setBookResults([]); setBookQuery(''); }}
                   >
                     <div className="flex h-12 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-                      {book.cover_path ? (
+                      {book.supabase_cover_img_url ? (
                         <StorageImage
-                          storageKey={book.cover_path}
+                          storageKey={book.supabase_cover_img_url}
                           alt={book.title}
                           width={32}
                           height={48}

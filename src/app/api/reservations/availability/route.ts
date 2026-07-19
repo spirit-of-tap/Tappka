@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { OPERATING_HOURS, TIME_SLOT_MINUTES } from "@/lib/reservations/types";
+import { inferReservationKind } from "@/lib/reservations/utils";
 
 /**
  * GET /api/reservations/availability
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
       .from("rooms")
       .select("id, code, name, available_days")
       .eq("id", roomId)
+      .is("removed_at", null)
       .single();
 
     if (roomError || !room) {
@@ -73,11 +75,12 @@ export async function GET(request: NextRequest) {
     // Fetch reservations for this room on this date
     const { data: reservations, error: resError } = await supabase
       .from("reservations")
-      .select("id, start_time, end_time, title, reservation_type")
+      .select("id, start_at, end_at, title, owner_profile_id")
       .eq("room_id", roomId)
-      .gte("start_time", startOfDay.toISOString())
-      .lte("start_time", endOfDay.toISOString())
-      .order("start_time");
+      .is("cancelled_at", null)
+      .gte("start_at", startOfDay.toISOString())
+      .lte("start_at", endOfDay.toISOString())
+      .order("start_at");
 
     if (resError) {
       console.error("Error fetching reservations:", resError);
@@ -109,8 +112,8 @@ export async function GET(request: NextRequest) {
 
       // Check if this slot overlaps with any reservation
       const overlapping = reservations?.find((r) => {
-        const resStart = new Date(r.start_time);
-        const resEnd = new Date(r.end_time);
+        const resStart = new Date(r.start_at);
+        const resEnd = new Date(r.end_at);
         return slotStart < resEnd && slotEnd > resStart;
       });
 
@@ -122,7 +125,7 @@ export async function GET(request: NextRequest) {
           ? {
               id: overlapping.id,
               title: overlapping.title,
-              type: overlapping.reservation_type,
+              type: inferReservationKind(overlapping),
             }
           : undefined,
       });

@@ -16,9 +16,9 @@ export function BookCard({ book }: BookCardProps) {
   return (
     <div className="flex gap-3 px-3 py-2.5 rounded-xl border bg-card hover:shadow-sm transition-shadow group">
       <Link href={`/knihovna/${book.id}`} className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-        {book.cover_path ? (
+        {book.supabase_cover_img_url ? (
           <StorageImage
-            storageKey={book.cover_path}
+            storageKey={book.supabase_cover_img_url}
             alt={book.title}
             className="w-full h-full object-cover"
             width={40}

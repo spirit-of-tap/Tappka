@@ -5,12 +5,14 @@ import { getPublicStorageUrl, isExternalUrl } from '@/lib/storage/public-url';
 
 interface StorageAvatarProps {
   storageKey: string | null;
-  name: string;
+  name: string | null;
   size?: "default" | "sm" | "lg" | "xl" | "2xl";
   className?: string;
 }
 
-function getInitials(name: string): string {
+function getInitials(name: string | null): string {
+  if (!name?.trim()) return '?';
+
   return name
     .split(' ')
     .map((n) => n[0])
@@ -31,7 +33,7 @@ export function StorageAvatar({
 
   return (
     <Avatar size={size} className={className}>
-      {src && <AvatarImage src={src} alt={name} />}
+      {src && <AvatarImage src={src} alt={name ?? undefined} />}
       <AvatarFallback>{getInitials(name)}</AvatarFallback>
     </Avatar>
   );

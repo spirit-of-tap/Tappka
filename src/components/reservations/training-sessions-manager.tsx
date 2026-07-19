@@ -37,7 +37,7 @@ import { DAY_NAMES_CS, type Room, type RecurringSchedule } from "@/lib/reservati
 interface TrainingSessionsManagerProps {
   rooms: Room[];
   schedules: (RecurringSchedule & { room: Room; team: { id: string; name: string } })[];
-  teams: { id: string; name: string; year: number | null }[];
+  teams: { id: string; name: string; onboardingYear: number | null }[];
 }
 
 type ScheduleWithRelations = RecurringSchedule & { room: Room; team: { id: string; name: string } };
@@ -93,12 +93,12 @@ export function TrainingSessionsManager({
     setEditingSchedule(duplicate ? null : schedule);
     setIsDuplicating(duplicate);
     setRoomId(schedule.room_id);
-    setTeamId(schedule.team_id);
+    setTeamId(schedule.team_id ?? "");
     setDayOfWeek(schedule.day_of_week.toString());
     setStartTime(schedule.start_time.slice(0, 5));
     setEndTime(schedule.end_time.slice(0, 5));
     setValidFrom(new Date(schedule.valid_from));
-    setValidUntil(new Date(schedule.valid_until));
+    setValidUntil(schedule.valid_until ? new Date(schedule.valid_until) : undefined);
     setError(null);
     setIsDialogOpen(true);
   };
@@ -145,6 +145,7 @@ export function TrainingSessionsManager({
       const payload = {
         room_id: roomId,
         team_id: teamId,
+        schedule_type: "training_session" as const,
         day_of_week: parseInt(dayOfWeek),
         start_time: startTime,
         end_time: endTime,
@@ -353,7 +354,7 @@ export function TrainingSessionsManager({
                 <SelectContent>
                   {teams.map((team) => (
                     <SelectItem key={team.id} value={team.id}>
-                      {team.name} ({team.year}. ročník)
+                      {team.name} ({team.onboardingYear}. ročník)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -513,7 +514,10 @@ export function TrainingSessionsManager({
                       <span className="text-xs sm:text-sm">{schedule.team?.name}</span>
                     </div>
                     <span className="text-[10px] sm:text-xs text-muted-foreground">
-                      {format(new Date(schedule.valid_from), "d.M.yyyy")} - {format(new Date(schedule.valid_until), "d.M.yyyy")}
+                      {format(new Date(schedule.valid_from), "d.M.yyyy")}
+                      {schedule.valid_until
+                        ? ` - ${format(new Date(schedule.valid_until), "d.M.yyyy")}`
+                        : " –"}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 self-end sm:self-auto">

@@ -1,25 +1,31 @@
 import type { Profile } from '@/lib/auth-helpers';
 import type { Book } from '@/lib/books/types';
 
+/**
+ * Application-facing essay shape. Title/content come from the latest valid
+ * `essay_revisions` row; vote/view/comment counts are aggregated embeds.
+ */
 export interface Essay {
   id: string;
   author_profile_id: string;
   book_id: string | null;
   title: string;
   content_json: object;
+  /** Plain text derived from `content_json` for snippets (not stored). */
   content_text: string;
-  published: boolean;
+  published_at: string | null;
   view_count: number;
   vote_count: number;
   created_at: string;
   updated_at: string;
-  is_pinned: boolean;
   pinned_at: string | null;
+  pinned_by_profile_id: string | null;
+  removed_at: string | null;
 }
 
 export interface EssayWithDetails extends Essay {
   author: Pick<Profile, 'id' | 'name' | 'picture' | 'role'> | null;
-  book: Pick<Book, 'id' | 'title' | 'author' | 'book_points' | 'status' | 'cover_path'> | null;
+  book: Pick<Book, 'id' | 'title' | 'author' | 'book_points' | 'status' | 'supabase_cover_img_url'> | null;
   comment_count: number;
 }
 
@@ -28,6 +34,7 @@ export interface EssayComment {
   essay_id: string;
   author_profile_id: string;
   body: string;
+  removed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -81,7 +88,7 @@ export interface EssayFilters {
 export interface CreateEssayInput {
   title: string;
   content_json: object;
-  content_text: string;
+  content_text?: string;
   book_id?: string;
 }
 
@@ -97,3 +104,8 @@ export const ESSAY_LIST_VIEW_LABELS: Record<EssayListView, string> = {
   tym: 'Tým',
   vse: 'Celá škola',
 };
+
+/** Whether an essay is currently pinned. */
+export function isEssayPinned(essay: Pick<Essay, 'pinned_at'>): boolean {
+  return essay.pinned_at != null;
+}

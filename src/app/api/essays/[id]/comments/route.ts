@@ -39,7 +39,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const { data, error } = await supabase
       .from('essay_comments')
-      .insert({ essay_id: id, author_profile_id: profile.id, body: body.trim() })
+      .insert({
+        essay_id: id,
+        author_profile_id: profile.id,
+        body: body.trim(),
+        created_by_profile_id: profile.id,
+        updated_by_profile_id: profile.id,
+      })
       .select(`*, author:profiles!author_profile_id(id, name, picture, role)`)
       .single();
 

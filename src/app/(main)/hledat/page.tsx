@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getTeamReadingLists } from '@/lib/books/team-lists';
 import { getEssays } from '@/lib/essays/queries';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { SearchPageClient } from '@/components/search/search-page-client';
@@ -13,8 +12,7 @@ export default async function HledatPage() {
 
   const profile = await getCurrentUserProfile(supabase, { user });
 
-  const [teamLists, popularEssays, categoryRows, teamRows] = await Promise.all([
-    getTeamReadingLists(supabase),
+  const [popularEssays, categoryRows, teamRows] = await Promise.all([
     getEssays(supabase, { sort: 'week', pageSize: 8 }),
     supabase.rpc('get_best_books_per_category', { top_n: 3 }),
     supabase.rpc('get_teams_with_member_stats'),
@@ -50,11 +48,9 @@ export default async function HledatPage() {
 
   return (
     <SearchPageClient
-      teamLists={teamLists}
       popularEssays={popularWithVoted}
       categoryBestBooks={categoryBestBooks}
       teamsWithMembers={teamsWithMembers}
-      hasTeam={!!profile?.team_id}
     />
   );
 }

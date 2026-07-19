@@ -1,15 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, AlertTriangle, Lock, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RoomScheduleView } from "@/components/reservations/room-schedule-view";
 import { AlternativeRooms } from "@/components/reservations/alternative-rooms";
-import { IssueReportButton } from "@/components/reservations/issue-report-button";
-import { DAY_NAMES_CS, ISSUE_TYPE_LABELS } from "@/lib/reservations/types";
-import type { Room, ReservationWithDetails, RoomIssue, ScheduleBreak } from "@/lib/reservations/types";
+import { DAY_NAMES_CS } from "@/lib/reservations/types";
+import type { Room, ReservationWithDetails, ScheduleBreak } from "@/lib/reservations/types";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 interface RoomDetailPageProps {
@@ -42,6 +41,7 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
     .from("rooms")
     .select("*")
     .eq("code", code.toLowerCase())
+    .is("removed_at", null)
     .single();
 
   if (roomError || !room) {
@@ -58,32 +58,25 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
 
   const oneWeekAgoStr = oneWeekAgo.toISOString().split("T")[0];
 
-  const [reservationsResult, issuesResult, alternativeRoomsResult, breaksResult] = await Promise.all([
+  const [reservationsResult, alternativeRoomsResult, breaksResult] = await Promise.all([
     // Reservations for this room (past 7 days + future for calendar navigation)
     supabase
       .from("reservations")
       .select(`
         *,
-        user:profiles(id, name, picture),
-        team:teams(id, name)
+        user:profiles!owner_profile_id(id, name, picture)
       `)
       .eq("room_id", room.id)
-      .gte("start_time", oneWeekAgo.toISOString())
-      .order("start_time"),
-
-    // Open issues for this room
-    supabase
-      .from("room_issues")
-      .select("*")
-      .eq("room_id", room.id)
-      .eq("status", "open")
-      .order("created_at", { ascending: false }),
+      .is("cancelled_at", null)
+      .gte("start_at", oneWeekAgo.toISOString())
+      .order("start_at"),
 
     // Alternative rooms for suggestions
     supabase
       .from("rooms")
       .select("*")
       .neq("id", room.id)
+      .is("removed_at", null)
       .order("code"),
 
     // Schedule breaks for the date range (past 7 + future)
@@ -95,7 +88,6 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
   ]);
 
   const reservations = (reservationsResult.data ?? []) as ReservationWithDetails[];
-  const issues = (issuesResult.data || []) as RoomIssue[];
   const allAlternativeRooms = (alternativeRoomsResult.data || []) as Room[];
   const scheduleBreaks = (breaksResult.data || []) as ScheduleBreak[];
 
@@ -134,10 +126,6 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
 
   const alternativeRooms = sortAlternativeRooms(allAlternativeRooms, room);
 
-  // Check for locked issue
-  const lockedIssue = issues.find((i) => i.issue_type === "locked");
-  const otherIssues = issues.filter((i) => i.issue_type !== "locked");
-
   // Available days info
   const availableDaysText = room.available_days
     ? room.available_days.map((d: number) => DAY_NAMES_CS[d]).join(", ")
@@ -173,39 +161,9 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
             <p className="text-sm">{availableDaysText}</p>
           </div>
         </div>
-        <IssueReportButton roomId={room.id} />
       </div>
 
       <Separator />
-
-      {/* Issue warnings */}
-      {lockedIssue && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-orange-100 dark:bg-orange-950/30 border border-orange-300 dark:border-orange-800">
-          <Lock className="size-5 text-orange-600 dark:text-orange-400" />
-          <div>
-            <p className="font-medium text-orange-800 dark:text-orange-200">
-              Místnost je nahlášena jako zamčená
-            </p>
-            <p className="text-sm text-orange-700 dark:text-orange-300">
-              Někdo nahlásil, že se do místnosti nedá dostat
-            </p>
-          </div>
-        </div>
-      )}
-
-      {otherIssues.length > 0 && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-yellow-100 dark:bg-yellow-950/30 border border-yellow-300 dark:border-yellow-800">
-          <AlertTriangle className="size-5 text-yellow-600 dark:text-yellow-400" />
-          <div>
-            <p className="font-medium text-yellow-800 dark:text-yellow-200">
-              Nahlášené problémy
-            </p>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              {otherIssues.map((i) => ISSUE_TYPE_LABELS[i.issue_type]).join(", ")}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Main content */}
       <div className="grid gap-6 lg:grid-cols-3">

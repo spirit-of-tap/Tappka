@@ -18,7 +18,12 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
     const { error } = await supabase
       .from('essay_votes')
-      .insert({ essay_id: id, voter_profile_id: profile.id });
+      .insert({
+        essay_id: id,
+        voter_profile_id: profile.id,
+        created_by_profile_id: profile.id,
+        updated_by_profile_id: profile.id,
+      });
 
     if (error) {
       if (error.code === '23505') {

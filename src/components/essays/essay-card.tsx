@@ -24,7 +24,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
           {/* Author row */}
           <div className="flex items-center gap-2">
             {essay.author?.picture ? (
-              <img src={essay.author.picture} alt={essay.author.name} className="size-6 rounded-full object-cover shrink-0" />
+              <img src={essay.author.picture} alt={essay.author.name ?? ''} className="size-6 rounded-full object-cover shrink-0" />
             ) : (
               <div className="size-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold shrink-0">
                 {authorInitial}
@@ -43,10 +43,10 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
                 <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{snippet}</p>
               )}
             </div>
-            {essay.book?.cover_path && (
+            {essay.book?.supabase_cover_img_url && (
               <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted">
                 <StorageImage
-                  storageKey={essay.book.cover_path}
+                  storageKey={essay.book.supabase_cover_img_url}
                   alt={essay.book.title}
                   width={40}
                   height={56}
