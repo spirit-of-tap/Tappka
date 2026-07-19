@@ -1,6 +1,6 @@
 {
-  "id": "705c0028-af91-4e93-8f0c-a1937bfb63f5",
-  "prevId": "111846c8-c9d2-4c2a-83ee-427d8f011c26",
+  "id": "b09c5048ef04e24bc60307e23a056e40",
+  "prevId": "8e3d25fa558b2f66b7187b6d004d9c77",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3092,28 +3092,6 @@
           "isUnique": false,
           "concurrently": false,
           "method": "btree",
-          "with": {}
-        },
-        "no_overlap": {
-          "name": "no_overlap",
-          "columns": [
-            {
-              "expression": "room_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            },
-            {
-              "expression": "tstzrange(\"start_at\", \"end_at\")",
-              "asc": true,
-              "isExpression": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "gist",
           "with": {}
         }
       },

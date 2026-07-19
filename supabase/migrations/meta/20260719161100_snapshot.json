@@ -1,6 +1,6 @@
 {
-  "id": "00bf90ad-e4c8-4fd1-8e46-3ac5a15457af",
-  "prevId": "3e0eb592-e88e-48e9-a0cb-3ff08870ca33",
+  "id": "696353a1-6f3e-44a4-949a-540fed6af7bb",
+  "prevId": "68861db6e229cc3f531c09b592edc38e",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2221,7 +2221,7 @@
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "picture": {
           "name": "picture",

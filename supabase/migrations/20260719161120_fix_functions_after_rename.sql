@@ -241,3 +241,10 @@ as $$
   where ranked.rn <= top_n
   order by ranked.tag, ranked.rn;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- vote_count denormalization removed with essays.vote_count; app counts rows
+-- ---------------------------------------------------------------------------
+
+drop trigger if exists essay_votes_change_trigger on public.essay_votes;
+drop function if exists public.handle_essay_vote_change();
