@@ -27,12 +27,13 @@
     "db:reset": "pnpm supabase db reset",
     "db:generate": "drizzle-kit generate",
     "db:generate:custom": "drizzle-kit generate --custom",
-    "db:check": "drizzle-kit check",
     "db:check-integrity": "node scripts/check-migration-integrity.mjs",
+    "db:doctor": "run-s db:check-integrity db:local-check",
+    "db:local-check": "node scripts/check-schema-local.mjs",
     "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts",
     "db:export": "node scripts/package-json-helpers/export-db-sql.mjs",
     "wiki": "node scripts/generate-docs-html-shims.mjs && vitepress dev docs --open",
-    "wiki:check-links": "node scripts/check-docs-links.mjs"
+    "wiki:doctor": "node scripts/check-docs-links.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
