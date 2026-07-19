@@ -11,6 +11,9 @@
 !.yarn/versions
 .tmp
 
+# Generated local DB dumps — do not commit
+db/sql
+
 .claude
 .agents
 
@@ -56,7 +59,7 @@ mise.local.toml
 mise.*.local.toml
 
 # Production data dumps — personal data, never commit
-data/*_rows.sql
+scripts/data/*_rows.sql
 
 # Playwright
 /test-results/

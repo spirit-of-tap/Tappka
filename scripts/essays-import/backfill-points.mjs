@@ -60,7 +60,7 @@ function legacyPointsOf(r) {
   return Number.isFinite(n) ? n : null;
 }
 
-const csv = parseCsv(readFileSync(process.cwd() + "/data/Books.csv", "utf8"));
+const csv = parseCsv(readFileSync(process.cwd() + "/scripts/data/Books.csv", "utf8"));
 const byId = new Map();
 for (const r of csv) {
   const id = (r.ID || "").trim();

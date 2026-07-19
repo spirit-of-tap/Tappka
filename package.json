@@ -5,7 +5,7 @@
     "ensure-env": "node scripts/package-json-helpers/ensure-env.js",
     "supabase:start": "node scripts/package-json-helpers/supabase-start.js",
     "wait-2s": "node scripts/package-json-helpers/wait-2s.js",
-    "dev:parallel": "run-p docker:restart-auth setup-env dev:next",
+    "dev:parallel": "run-p docker:restart-auth setup-env dev:next db:export",
     "docker:restart-auth": "node scripts/package-json-helpers/restart-docker-auth.js",
     "setup-env": "node scripts/package-json-helpers/setup-env.js",
     "dev:next": "cross-env NODE_OPTIONS='--inspect' next dev",
@@ -27,7 +27,8 @@
     "db:generate": "drizzle-kit generate",
     "db:generate:custom": "drizzle-kit generate --custom",
     "db:check": "drizzle-kit check",
-    "db:types": "supabase gen types typescript --local --schema public > lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local --schema public > lib/supabase/database.types.ts",
+    "db:export": "node scripts/export-db-sql.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

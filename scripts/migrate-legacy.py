@@ -22,8 +22,8 @@ SUPABASE_KEY = (
     ".1TZszmxyBvP32ShyinCwR17NASNB_uZgo8gNSJGtDP2mkt2wGWdyWSLdObjOD0J6lYIV3ArPXL6CqIXmmEuLqg"
 )
 
-BOOKS_CSV  = "data/Books.csv"
-ESSAYS_CSV = "data/Essays (1).csv"
+BOOKS_CSV  = "scripts/data/Books.csv"
+ESSAYS_CSV = "scripts/data/Essays (1).csv"
 
 # CategoryID → tag slug mapping
 CATEGORY_MAP: dict[str, str] = {

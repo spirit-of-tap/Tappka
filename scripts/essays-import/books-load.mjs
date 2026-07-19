@@ -1,4 +1,4 @@
-// Re-import books from data/Books.csv, storing external_id = Books.csv ID so
+// Re-import books from scripts/data/Books.csv, storing external_id = Books.csv ID so
 // essays can link by SourceID -> external_id (pure id, no name/ISBN matching).
 // Deletes existing books first (cascades to team_reading_list_books,
 // book_comments; nulls essays.book_id). Run before reloading essays.
@@ -94,7 +94,7 @@ if (delErr) throw delErr;
 console.log(`deleted ${before ?? "?"} existing books`);
 
 // --- build rows --------------------------------------------------------------
-const csv = parseCsv(readFileSync(process.cwd() + "/data/Books.csv", "utf8"));
+const csv = parseCsv(readFileSync(process.cwd() + "/scripts/data/Books.csv", "utf8"));
 const clamp = (n) => Math.max(1, Math.min(3, n));
 const rows = [];
 let skipped = 0;

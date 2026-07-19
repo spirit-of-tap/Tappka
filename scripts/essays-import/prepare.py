@@ -12,7 +12,7 @@ Outputs:
 import csv, json, sys, unicodedata
 from datetime import datetime
 
-CSV_PATH = "data/Essays.csv"
+CSV_PATH = "scripts/data/Essays.csv"
 OUT_NDJSON = "/tmp/essays.ndjson"
 OUT_LABELS = "/tmp/author_labels.json"
 

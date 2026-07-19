@@ -2,7 +2,7 @@
   "mcpServers": {
     "supabase": {
       "type": "http",
-      "url": "http://localhost:54321/mcp"
+      "url": "http://127.0.0.1:54323/api/mcp"
     }
   }
 }

@@ -97,9 +97,11 @@ Casts (`as X`) are allowed only at genuine reshape boundaries (e.g. collapsing a
 
 Drizzle can't model these — use a hand-authored custom migration:
 
-1. Edit the reference copy in `db/sql/functions.sql` (or `triggers.sql`).
+1. Optionally dump the live definitions for reference with
+   `pnpm db:export` (writes gitignored `db/sql/functions.sql` and
+   `db/sql/triggers.sql` — generated only, never commit).
 2. `pnpm db:generate:custom` — creates an empty timestamped migration.
-3. Paste the full `CREATE OR REPLACE FUNCTION ...` into it.
+3. Paste the full `CREATE OR REPLACE FUNCTION ...` (or trigger SQL) into it.
 4. `pnpm db:generate` once (reports "No schema changes") so the Drizzle journal
    records the custom migration; commit the `meta/` changes too.
 5. `pnpm supabase migration up`, verify, commit.
