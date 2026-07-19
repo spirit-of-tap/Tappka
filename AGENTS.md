@@ -10,7 +10,7 @@ pnpm lint       # ESLint
 
 # Tests (see docs/runbooks/testing.md)
 pnpm test              # Unit + component (fast, no Docker)
-pnpm test:unit         # Pure logic in lib/* (*.test.ts, co-located)
+pnpm test:unit         # Pure logic in src/lib/* (*.test.ts, co-located)
 pnpm test:component    # React components, jsdom + Testing Library (*.test.tsx)
 pnpm test:integration  # DB schema/triggers/RLS on a throwaway Postgres (needs Docker)
 pnpm test:e2e          # Playwright flows (needs pnpm build + local Supabase)
@@ -79,10 +79,10 @@ Full guide: **`docs/runbooks/testing.md`**. Four layers; `pnpm test` (unit +
 component) is the fast default. CI (`.github/workflows/test.yml`) runs all layers
 on PRs and pushes to `preview`/`production`.
 
-- **Where tests live:** unit `*.test.ts` co-located next to `lib/*` source;
-  component `*.test.tsx` next to the component; integration in
-  `tests/integration/*.int.test.ts`; E2E in `tests/e2e/*.spec.ts`. Shared setup
-  in `tests/setup/`.
+- **Where tests live:** unit `*.test.ts` co-located next to `src/lib/*` source;
+  component `*.test.tsx` next to the component under `src/components/`;
+  integration in `tests/integration/*.int.test.ts`; E2E in
+  `tests/e2e/*.spec.ts`. Shared setup in `tests/setup/`.
 - **What goes where:** pure logic (no DB) → unit; React rendering → component;
   DB schema/constraints/triggers/RLS → integration; real user flows through the
   app → E2E. The app talks to the DB only via `supabase-js` (PostgREST over
