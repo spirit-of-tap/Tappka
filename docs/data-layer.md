@@ -11,7 +11,7 @@ them day to day. Read this before touching schema, migrations, or query code.
 - **drizzle-kit** turns schema edits into SQL migration files; the **Supabase CLI**
   applies them.
 - The app queries the DB **only through `supabase-js`**, and every query is
-  **type-checked** against generated types (`lib/supabase/database.types.ts`).
+  **type-checked** against generated types (`src/lib/supabase/database.types.ts`).
 - **Drizzle never runs in the app.** There is no runtime ORM. Do not add one.
 
 ## The three parts
@@ -24,16 +24,16 @@ This is a deliberate split. There is no single "ORM" — three tools each own on
 | Functions & triggers (Drizzle can't model these) | raw SQL reference in migrations | `supabase/migrations/*.sql` | dev-time only |
 | Migration generation | **drizzle-kit** | `pnpm db:generate` | dev-time only |
 | Migration application | **Supabase CLI** | `pnpm db:up` | deploy-time |
-| Runtime queries | **supabase-js** | `lib/**`, `app/**` | runtime |
-| TypeScript types | **generated** | `lib/supabase/database.types.ts` | dev-time |
+| Runtime queries | **supabase-js** | `src/lib/**`, `src/app/**` | runtime |
+| TypeScript types | **generated** | `src/lib/supabase/database.types.ts` | dev-time |
 
 ## How queries work
 
 All three client factories are typed with the generated `Database` type:
 
-- `lib/supabase/server.ts` — `createClient()` for Server Components / route handlers
-- `lib/supabase/client.ts` — `createClient()` for Client Components
-- `lib/supabase/admin.ts` — `createAdminClient()` **service-role, bypasses RLS**;
+- `src/lib/supabase/server.ts` — `createClient()` for Server Components / route handlers
+- `src/lib/supabase/client.ts` — `createClient()` for Client Components
+- `src/lib/supabase/admin.ts` — `createAdminClient()` **service-role, bypasses RLS**;
   server-only, for system operations. Never expose to the browser.
 
 Because the clients carry `<Database>`, every query is typed:
@@ -54,7 +54,7 @@ async function getEssays(supabase: SupabaseClient<Database>) { ... }
 ### Types: never hand-write row shapes
 
 Row, Insert, and Update shapes come from the generated types via helpers in
-`lib/supabase/tables.ts`:
+`src/lib/supabase/tables.ts`:
 
 ```ts
 import type { Tables, Insertable, Updatable } from "@/lib/supabase/tables";
@@ -70,7 +70,7 @@ Enums come from the generated types too:
 type BookStatus = Database["public"]["Enums"]["book_status"];
 ```
 
-`lib/*/types.ts` holds **composites** built on top of these (e.g. `EssayWithDetails`
+`src/lib/*/types.ts` holds **composites** built on top of these (e.g. `EssayWithDetails`
 = a row plus joined `author`/`book`). Base row types and enum unions are **derived,
 never hand-declared** — otherwise they drift from the DB. (This is why derived DB
 types use `type`, not `interface`.)
@@ -85,7 +85,7 @@ Casts (`as X`) are allowed only at genuine reshape boundaries (e.g. collapsing a
 1. Edit `db/schema/*.ts`.
 2. `pnpm db:generate` — writes a timestamped SQL file to `supabase/migrations/`.
 3. **Review the generated SQL** for unintended `DROP`s.
-4. `pnpm db:types` — regenerate `lib/supabase/database.types.ts` from the local DB.
+4. `pnpm db:types` — regenerate `src/lib/supabase/database.types.ts` from the local DB.
 5. `pnpm supabase migration up` — apply locally.
 6. Commit the schema edit, the migration, **and** the regenerated types together.
 7. Deploy: `supabase db push` against production.

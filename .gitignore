@@ -66,3 +66,8 @@ scripts/data/*_rows.sql
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# VitePress
+docs/.vitepress/cache
+docs/.vitepress/dist
+.vitepress

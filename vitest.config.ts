@@ -1,12 +1,15 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-const root = fileURLToPath(new URL(".", import.meta.url));
+const srcRoot = fileURLToPath(new URL("./src", import.meta.url));
+const testsRoot = fileURLToPath(new URL("./tests", import.meta.url));
 
 export default defineConfig({
   resolve: {
     alias: {
-      "@": root,
+      // More specific alias first — integration tests import `@/tests/setup/*`.
+      "@/tests": testsRoot,
+      "@": srcRoot,
     },
   },
   test: {
@@ -16,7 +19,7 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: ["lib/**/*.test.ts", "tests/unit/**/*.test.ts"],
+          include: ["src/lib/**/*.test.ts", "tests/unit/**/*.test.ts"],
           globals: true,
         },
       },
@@ -26,7 +29,10 @@ export default defineConfig({
           name: "component",
           environment: "jsdom",
           setupFiles: ["tests/setup/component.setup.ts"],
-          include: ["components/**/*.test.tsx", "tests/component/**/*.test.tsx"],
+          include: [
+            "src/components/**/*.test.tsx",
+            "tests/component/**/*.test.tsx",
+          ],
           globals: true,
         },
       },

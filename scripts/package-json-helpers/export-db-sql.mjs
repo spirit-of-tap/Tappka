@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 import pg from "pg";
 
-const ROOT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OUTPUT_DIR = join(ROOT_DIR, "db", "sql");
 const FUNCTIONS_PATH = join(OUTPUT_DIR, "functions.sql");
 const TRIGGERS_PATH = join(OUTPUT_DIR, "triggers.sql");

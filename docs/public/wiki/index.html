@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAP Wiki — Digitalizace portfolií Tiimiakatemia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Roboto:wght@300;400;500;700&family=Pacifico&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --tap-red: #b31b1b;
+  --tap-red-rgb: 179, 27, 27;
+  --tap-white: #fcfff7;
+  --tap-brown: #2c1a1d;
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Roboto', sans-serif;
+  --font-quote: 'Pacifico', cursive;
+}
+body {
+  font-family: var(--font-body);
+  color: var(--tap-brown);
+  background: var(--tap-white);
+  line-height: 1.6;
+}
+
+/* Header */
+.site-header {
+  background: var(--tap-red);
+  color: white;
+  padding: 32px 0 28px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.site-header .wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.site-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 2.8rem;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.site-title .mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: white;
+  color: var(--tap-red);
+  border-radius: 8px;
+  font-size: 1.6rem;
+}
+.site-desc {
+  font-family: var(--font-quote);
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin-top: 4px;
+  margin-left: 62px;
+}
+
+/* Main */
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* Quick nav */
+.quick-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 32px;
+  padding: 16px 20px;
+  background: white;
+  border: 1px solid #e0d6d0;
+  border-radius: 10px;
+}
+.quick-nav a {
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--tap-brown);
+  border: 1px solid #e0d6d0;
+  background: rgba(255,255,255,0.5);
+  transition: all 0.2s;
+}
+.quick-nav a:hover {
+  background: var(--tap-red);
+  color: white;
+  border-color: var(--tap-red);
+}
+
+/* Section titles */
+h2 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--tap-brown);
+  margin: 40px 0 20px;
+  padding-bottom: 8px;
+  border-bottom: 3px solid var(--tap-red);
+}
+h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin: 24px 0 12px;
+  color: var(--tap-brown);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Summary cards */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.summary-card {
+  background: white;
+  border: 1px solid #e0d6d0;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+.summary-card.primary { border-left: 4px solid var(--tap-red); }
+.summary-card.team { border-left: 4px solid #1a5276; }
+.summary-card.individual { border-left: 4px solid #1a6b3c; }
+.summary-card.high { border-left: 4px solid #b31b1b; }
+.summary-card.missing { border-left: 4px solid #b8860b; }
+.summary-num {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1.8rem;
+  display: block;
+  color: var(--tap-brown);
+}
+.summary-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+/* Module grid */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.module-card {
+  background: white;
+  border: 1px solid #e0d6d0;
+  border-radius: 10px;
+  padding: 16px;
+}
+.module-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.module-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.module-card-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--tap-brown);
+}
+.module-card-meta {
+  font-size: 0.78rem;
+  color: #888;
+}
+.feat-count {
+  font-weight: 600;
+  color: var(--tap-red);
+}
+.module-feat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.module-feat-list li {
+  padding: 3px 0;
+  font-size: 0.82rem;
+  border-bottom: 1px solid #f0ece8;
+}
+.module-feat-list li:last-child { border: none; }
+.module-sheet-links {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f0ece8;
+  font-size: 0.78rem;
+}
+.module-sheet-links strong { color: #888; }
+.mini-sheet-link {
+  display: inline-block;
+  padding: 1px 6px;
+  background: rgba(179,27,27,0.06);
+  border-radius: 3px;
+  color: var(--tap-red);
+  text-decoration: none;
+  font-size: 0.72rem;
+  margin: 1px;
+}
+.mini-sheet-link:hover { background: rgba(179,27,27,0.15); }
+
+/* Badge small */
+.badge-sm {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+.badge-sm.badge-high { background: #b31b1b; }
+.badge-sm.badge-medium { background: #d4a050; }
+.badge-sm.badge-low { background: #6b8a6b; }
+
+/* Count badge */
+.count-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(179,27,27,0.08);
+  color: var(--tap-red);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Sheet grid */
+.sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.sheet-card {
+  display: block;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e0d6d0;
+  border-radius: 6px;
+  color: var(--tap-brown);
+  text-decoration: none;
+  font-size: 0.82rem;
+  transition: all 0.2s;
+}
+.sheet-card:hover {
+  border-color: var(--tap-red);
+  background: rgba(179,27,27,0.03);
+  color: var(--tap-red);
+}
+
+/* Footer */
+.site-footer {
+  background: var(--tap-brown);
+  color: rgba(255,255,255,0.7);
+  padding: 24px 0;
+  font-size: 0.85rem;
+}
+.site-footer .wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.sheet-card--missing { opacity: 0.55; cursor: default; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+<div class="wrapper">
+  <div class="site-title">
+    <span class="mark">T</span>
+    TAP Wiki
+  </div>
+  <div class="site-desc">&ldquo;Digitalizace Tiimiakatemia portfolií do Tappka&rdquo;</div>
+</div>
+</header>
+
+<main>
+
+<div class="quick-nav">
+  <a href="#overview">Přehled</a>
+  <a href="#modules">Moduly</a>
+  <a href="#features">Funkce</a>
+  <a href="#sheets">Analýza sheetů</a>
+  <a href="features" style="background:var(--tap-red);color:white;border-color:var(--tap-red);">📦 Databáze funkcí →</a>
+</div>
+
+<h1 id="overview">📊 Přehled</h1>
+
+<div class="summary">
+  <div class="summary-card primary">
+    <span class="summary-num">23</span>
+    <span class="summary-label">Funkcí k implementaci</span>
+  </div>
+  <div class="summary-card team">
+    <span class="summary-num">23</span>
+    <span class="summary-label">Listů (osobní)</span>
+  </div>
+  <div class="summary-card individual">
+    <span class="summary-num">20</span>
+    <span class="summary-label">Listů (týmové)</span>
+  </div>
+  <div class="summary-card high">
+    <span class="summary-num">12</span>
+    <span class="summary-label">Vysoká priorita</span>
+  </div>
+  <div class="summary-card missing">
+    <span class="summary-num">19</span>
+    <span class="summary-label">Chybí v Tappka</span>
+  </div>
+</div>
+
+<p style="margin-bottom:24px;color:#555;">
+Tato wiki vznikla analýzou dvou portfoliových Excelů — <strong>tymove.xlsx</strong> (týmové/podnikatelské portfolio, 20 listů) a <strong>individualni.xlsx</strong> (osobní/vzdělávací portfolio, 23 listů) — a následným návrhem <strong>23 funkcí</strong> rozdělených do <strong>7 modulů</strong>.
+Všechny funkce byly diskutovány na <strong>IT House meetingu</strong> (2025), kde padla klíčová rozhodnutí o prioritách, designu a proveditelnosti.
+</p>
+
+<h2 id="modules">🗂️ Moduly</h2>
+
+<div class="module-grid">
+
+<div class="module-card" style="border-top: 4px solid #2c1a1d;">
+  <div class="module-card-header">
+    <span class="module-icon">👥</span>
+    <div>
+      <h3 class="module-card-title">Tým a lidé</h3>
+      <div class="module-card-meta"><span class="feat-count">6 funkcí</span> · 2 vysokých · 4 chybí</div>
+    </div>
+  </div>
+  <ul class="module-feat-list"><li><a href="features#team-dashboard" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Přehled týmu</a></li><li><a href="features#team-contract" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-medium"></span> Team Contract</a></li><li><a href="features#team-roles" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-medium"></span> Týmové role</a></li><li><a href="features#team-diary" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-low"></span> Týmový deník</a></li><li><a href="features#team-feedback" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-low"></span> Zpětná vazba (360°)</a></li><li><a href="features#rocket-model" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Rocket Model</a></li></ul>
+  <div class="module-sheet-links small"><strong>Analýza:</strong> <a href="individual-sheet-01-prehled-tym-a-tymova-spol" class="mini-sheet-link">01-přehled-tým-a-týmová-spol</a> <a href="individual-sheet-03-team-contract-leading-thoughts" class="mini-sheet-link">03-team-contract-leading-thoughts</a> <a href="individual-sheet-04-tymove-role" class="mini-sheet-link">04-týmové-role</a> <a href="individual-sheet-05-tymovy-denik" class="mini-sheet-link">05-týmový-deník</a> <a href="individual-sheet-08-rocket-model" class="mini-sheet-link">08-rocket-model</a> <a href="individual-sheet-09-tymova-zpetna-vazba" class="mini-sheet-link">09-týmová-zpětná-vazba</a> <a href="team-sheet-01-prehled" class="mini-sheet-link">01-přehled</a> <a href="team-sheet-07-rocket-model" class="mini-sheet-link">07-rocket-model</a> </div>
+</div>
+<div class="module-card" style="border-top: 4px solid #1a5276;">
+  <div class="module-card-header">
+    <span class="module-icon">📚</span>
+    <div>
+      <h3 class="module-card-title">Vzdělávání a rozvoj</h3>
+      <div class="module-card-meta"><span class="feat-count">7 funkcí</span> · 3 vysokých · 7 chybí</div>
+    </div>
+  </div>
+  <ul class="module-feat-list"><li><a href="features#skill-profile" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Skill Profile (kompetenční profil)</a></li><li><a href="features#learning-contract" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Learning Contract</a></li><li><a href="features#training-sessions" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Training Session (TS)</a></li><li><a href="features#tools-techniques" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-medium"></span> Nástroje a techniky</a></li><li><a href="features#crossfertilization" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-medium"></span> Crossfertilizace</a></li><li><a href="features#professional-practice" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-medium"></span> Odborná praxe</a></li><li><a href="features#personality-tests" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-low"></span> Osobnostní testy</a></li></ul>
+  <div class="module-sheet-links small"><strong>Analýza:</strong> <a href="individual-sheet-02-training-session" class="mini-sheet-link">02-training-session</a> <a href="team-sheet-04-nastroje-a-techniky" class="mini-sheet-link">04-nástroje-a-techniky</a> <a href="team-sheet-05-crossfertilizace" class="mini-sheet-link">05-crossfertilizace</a> <a href="team-sheet-06-skill-profile" class="mini-sheet-link">06-skill-profile</a> <a href="team-sheet-08-learning-contract" class="mini-sheet-link">08-learning-contract</a> <a href="team-sheet-11-osobnostni-test" class="mini-sheet-link">11-osobnostní-test</a> <a href="team-sheet-23-odborna-praxe" class="mini-sheet-link">23-odborná-praxe</a> </div>
+</div>
+<div class="module-card" style="border-top: 4px solid #1a6b3c;">
+  <div class="module-card-header">
+    <span class="module-icon">🚀</span>
+    <div>
+      <h3 class="module-card-title">Projekty a zákazníci</h3>
+      <div class="module-card-meta"><span class="feat-count">3 funkcí</span> · 2 vysokých · 3 chybí</div>
+    </div>
+  </div>
+  <ul class="module-feat-list"><li><a href="features#project-management" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Projekty</a></li><li><a href="features#customer-meetings" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Zákaznické schůzky (CRM)</a></li><li><a href="features#birth-giving" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-low"></span> Birth Giving</a></li></ul>
+  <div class="module-sheet-links small"><strong>Analýza:</strong> <a href="team-sheet-02-projekty" class="mini-sheet-link">02-projekty</a> <a href="team-sheet-03-zakaznicke-schuzky" class="mini-sheet-link">03-zákaznické-schůzky</a> <a href="team-sheet-10-birth-giving" class="mini-sheet-link">10-birth-giving</a> </div>
+</div>
+<div class="module-card" style="border-top: 4px solid #8b5e3c;">
+  <div class="module-card-header">
+    <span class="module-icon">📝</span>
+    <div>
+      <h3 class="module-card-title">Eseje a knihy</h3>
+      <div class="module-card-meta"><span class="feat-count">1 funkcí</span> · 1 vysokých · 0 chybí</div>
+    </div>
+  </div>
+  <ul class="module-feat-list"><li><a href="features#essay-bank" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Eseje</a></li></ul>
+  <div class="module-sheet-links small"><strong>Analýza:</strong> <a href="team-sheet-22-eseje" class="mini-sheet-link">22-eseje</a> </div>
+</div>
+<div class="module-card" style="border-top: 4px solid #6c3483;">
+  <div class="module-card-header">
+    <span class="module-icon">🎯</span>
+    <div>
+      <h3 class="module-card-title">Koučování a reflexe</h3>
+      <div class="module-card-meta"><span class="feat-count">2 funkcí</span> · 1 vysokých · 2 chybí</div>
+    </div>
+  </div>
+  <ul class="module-feat-list"><li><a href="features#individual-coaching" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Individuální koučování (1v1)</a></li><li><a href="features#semester-reflection" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-medium"></span> Reflexe (semestrální + týmová)</a></li></ul>
+  <div class="module-sheet-links small"><strong>Analýza:</strong> <a href="individual-sheet-06-tymova-reflexe" class="mini-sheet-link">06-týmová-reflexe</a> <a href="individual-sheet-07-semestralni-reflexe" class="mini-sheet-link">07-semestrální-reflexe</a> <a href="team-sheet-09-individualni-koucovani" class="mini-sheet-link">09-individuální-koučování</a> </div>
+</div>
+<div class="module-card" style="border-top: 4px solid #b31b1b;">
+  <div class="module-card-header">
+    <span class="module-icon">💰</span>
+    <div>
+      <h3 class="module-card-title">Finance a účetnictví</h3>
+      <div class="module-card-meta"><span class="feat-count">3 funkcí</span> · 2 vysokých · 3 chybí</div>
+    </div>
+  </div>
+  <ul class="module-feat-list"><li><a href="features#financial-reports" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Finanční reporty</a></li><li><a href="features#accounting" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Účetnictví (Rozvaha + VZZ)</a></li><li><a href="features#company-closure" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-low"></span> Ukončení činnosti</a></li></ul>
+  <div class="module-sheet-links small"><strong>Analýza:</strong> <a href="individual-sheet-11-financni-smernice" class="mini-sheet-link">11-finanční-směrnice</a> <a href="individual-sheet-12-financni-report-spolecnosti" class="mini-sheet-link">12-finanční-report-společnosti</a> <a href="individual-sheet-13-financni-report-projektu" class="mini-sheet-link">13-finanční-report-projektů</a> <a href="individual-sheet-14-vyrocni-zprava" class="mini-sheet-link">14-výroční-zpráva</a> <a href="individual-sheet-15-rozvaha-aktiva" class="mini-sheet-link">15-rozvaha-aktiva</a> <a href="individual-sheet-16-rozvaha-pasiva" class="mini-sheet-link">16-rozvaha-pasiva</a> <a href="individual-sheet-17-vzz-ucetni-vykaz" class="mini-sheet-link">17-vzz-účetní-výkaz</a> <a href="individual-sheet-18-ukonceni-cinnosti" class="mini-sheet-link">18-ukončení-činnosti</a> </div>
+</div>
+<div class="module-card" style="border-top: 4px solid #5d6d7e;">
+  <div class="module-card-header">
+    <span class="module-icon">📋</span>
+    <div>
+      <h3 class="module-card-title">Dokumenty a správa</h3>
+      <div class="module-card-meta"><span class="feat-count">1 funkcí</span> · 1 vysokých · 0 chybí</div>
+    </div>
+  </div>
+  <ul class="module-feat-list"><li><a href="features#student-dashboard" style="text-decoration:none;color:inherit;"><span class="badge-sm badge-high"></span> Osobní dashboard studenta</a></li></ul>
+  <div class="module-sheet-links small"><strong>Analýza:</strong> <a href="team-sheet-01-prehled" class="mini-sheet-link">01-přehled</a> </div>
+</div>
+</div>
+
+<h2 id="features">📦 Databáze funkcí → <a href="features" style="font-size:0.9rem;font-weight:400;text-decoration:none;color:var(--tap-red);">otevřít &rarr;</a></h2>
+<p>Kompletní specifikace všech 23 funkcí s filtry podle priority a stavu, design návrhy a poznámkami z meetingu. <a href="features" style="color:var(--tap-red);">→ Otevřít databázi funkcí</a></p>
+
+<h2 id="sheets">📄 Analýza sheetů</h2>
+<p>Podrobná analýza každého listu z obou portfoliových Excelů. Každá stránka obsahuje strukturu dat, ukázkové hodnoty a návrhy na digitalizaci.</p>
+<h3>👥 Týmové portfolio (tymove.xlsx) <span class='count-badge'>20 listů</span></h3>
+<div class='sheet-grid'>
+<a href="individual-sheet-01-prehled-tym-a-tymova-spol" class="sheet-card">01 Přehled týmu a týmová společnost</a>
+<a href="individual-sheet-02-training-session" class="sheet-card">02 Training Session</a>
+<a href="individual-sheet-03-team-contract-leading-thoughts" class="sheet-card">03 Team Contract a Leading Thoughts</a>
+<a href="individual-sheet-04-tymove-role" class="sheet-card">04 Týmové role</a>
+<a href="individual-sheet-05-tymovy-denik" class="sheet-card">05 Týmový deník</a>
+<a href="individual-sheet-06-tymova-reflexe" class="sheet-card">06 Týmová reflexe</a>
+<a href="individual-sheet-07-semestralni-reflexe" class="sheet-card">07 Semestrální reflexe</a>
+<a href="individual-sheet-08-rocket-model" class="sheet-card">08 Rocket Model</a>
+<a href="individual-sheet-09-tymova-zpetna-vazba" class="sheet-card">09 Týmová zpětná vazba</a>
+<a href="individual-sheet-10-tymove-dovednosti" class="sheet-card">10 Týmové dovednosti</a>
+<a href="individual-sheet-11-financni-smernice" class="sheet-card">11 Finanční směrnice</a>
+<a href="individual-sheet-12-financni-report-spolecnosti" class="sheet-card">12 Finanční report společnosti</a>
+<a href="individual-sheet-13-financni-report-projektu" class="sheet-card">13 Finanční report projektů</a>
+<a href="individual-sheet-14-vyrocni-zprava" class="sheet-card">14 Výroční zpráva</a>
+<a href="individual-sheet-15-rozvaha-aktiva" class="sheet-card">15 Rozvaha — Aktiva</a>
+<a href="individual-sheet-16-rozvaha-pasiva" class="sheet-card">16 Rozvaha — Pasiva</a>
+<a href="individual-sheet-17-vzz-ucetni-vykaz" class="sheet-card">17 Výkaz zisku a ztráty (VZZ)</a>
+<a href="individual-sheet-18-ukonceni-cinnosti" class="sheet-card">18 Ukončení činnosti</a>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">19 Zahraniční cesty</span>
+<a href="individual-sheet-20-zprava-k-tp" class="sheet-card">20 Zpráva k TP</a>
+</div>
+<h3>📘 Osobní portfolio (individualni.xlsx) <span class='count-badge'>23 listů</span></h3>
+<div class='sheet-grid'>
+<a href="team-sheet-01-prehled" class="sheet-card">01 Přehled</a>
+<a href="team-sheet-02-projekty" class="sheet-card">02 Projekty</a>
+<a href="team-sheet-03-zakaznicke-schuzky" class="sheet-card">03 Zákaznické schůzky</a>
+<a href="team-sheet-04-nastroje-a-techniky" class="sheet-card">04 Nástroje a techniky</a>
+<a href="team-sheet-05-crossfertilizace" class="sheet-card">05 Crossfertilizace</a>
+<a href="team-sheet-06-skill-profile" class="sheet-card">06 Skill Profile</a>
+<a href="team-sheet-07-rocket-model" class="sheet-card">07 Rocket Model</a>
+<a href="team-sheet-08-learning-contract" class="sheet-card">08 Learning Contract</a>
+<a href="team-sheet-09-individualni-koucovani" class="sheet-card">09 Individuální koučování</a>
+<a href="team-sheet-10-birth-giving" class="sheet-card">10 Birth Giving</a>
+<a href="team-sheet-11-osobnostni-test" class="sheet-card">11 Osobnostní test</a>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">12 Projektová praxe</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">13 Úvod — BaTe vysvětlení</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">14 Seznam technik</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">15 Skill Profile (dodatečný)</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">16 Zastávané role</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">17 Individuální koučování (dodatečný)</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">18 Seznam přečtených knih</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">19 Seznam knih k BP</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">20 Learning contracty (dodatečný)</span>
+<span class="sheet-card sheet-card--missing" title="Spec not available yet">21 Přílohy</span>
+<a href="team-sheet-22-eseje" class="sheet-card">22 Eseje</a>
+<a href="team-sheet-23-odborna-praxe" class="sheet-card">23 Odborná praxe</a>
+</div>
+
+
+</main>
+
+<footer class="site-footer">
+<div class="wrapper">
+  <span>&copy; 2026 Tappka — Tiimiakatemia Prague</span>
+  <span>Vygenerováno z analýzy portfoliových Excelů + IT House meeting</span>
+</div>
+</footer>
+
+</body>
+</html>

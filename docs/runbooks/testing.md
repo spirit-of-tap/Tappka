@@ -6,7 +6,7 @@ Three layers, all runnable with pnpm.
 
 | Layer | Command | Needs | What it covers |
 |-------|---------|-------|----------------|
-| Unit | `pnpm test:unit` | nothing | Pure logic in `lib/*` (`*.test.ts` co-located) |
+| Unit | `pnpm test:unit` | nothing | Pure logic in `src/lib/*` (`*.test.ts` co-located) |
 | Component | `pnpm test:component` | nothing | React components via jsdom + Testing Library (`*.test.tsx`) |
 | Integration | `pnpm test:integration` | Docker | DB schema, triggers, RLS against a throwaway Postgres (`tests/integration/*.int.test.ts`) |
 | E2E | `pnpm test:e2e` | local Supabase + `pnpm build` | Critical flows against the running app (`tests/e2e/*.spec.ts`) |
