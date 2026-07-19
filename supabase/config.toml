@@ -247,6 +247,7 @@ additional_redirect_urls = [
   "https://preview.tiimi.cz/auth/callback",
   "https://preview.tiimi.cz/auth/confirm-email-change",
 ]
+minimum_password_length = 32767
 
 [remotes.preview.auth.email]
 max_frequency = "1s"
