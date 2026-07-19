@@ -1,27 +1,3 @@
-# AGENTS.md - Tappka
-
-Next.js 16 + React 19 + Supabase + Tailwind CSS v4 + shadcn/ui. Package manager: pnpm.
-
-## Commands
-
-```bash
-pnpm dev        # Start dev server + local Supabase
-pnpm lint       # ESLint
-
-# Tests (see docs/runbooks/testing.md)
-pnpm test              # Unit + component (fast, no Docker)
-pnpm test:unit         # Pure logic in src/lib/* (*.test.ts, co-located)
-pnpm test:component    # React components, jsdom + Testing Library (*.test.tsx)
-pnpm test:integration  # DB schema/triggers/RLS on a throwaway Postgres (needs Docker)
-pnpm test:e2e          # Playwright flows (needs pnpm build + local Supabase)
-pnpm test:watch        # Watch unit tests
-
-# Data layer (see docs/data-layer.md)
-pnpm db:generate:custom  # Empty custom migration (functions/triggers/RLS)
-pnpm db:up               # Apply custom migrations locally
-pnpm db:migrate          # Do not run yourself. Prompt the user to run it whenever you make a change to the database schema.
-```
-
 ## Code Style
 
 - **TypeScript strict mode** - no `any`, use `interface` over `type` (except derived DB types, which must be `type` — see `docs/data-layer.md`), prefer `??` over `||`

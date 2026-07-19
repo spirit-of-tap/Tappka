@@ -98,7 +98,8 @@ Casts (`as X`) are allowed only at genuine reshape boundaries (e.g. collapsing a
 Drizzle can't model these — use a hand-authored custom migration:
 
 1. Optionally dump the live definitions for reference with
-   `pnpm db:export` (writes gitignored `db/sql/functions.sql` and
+   `pnpm db:export` (writes gitignored `db/sql/schema.sql` for
+   tables/enums/views/indexes/constraints/RLS, plus `db/sql/functions.sql` and
    `db/sql/triggers.sql` — generated only, never commit).
 2. `pnpm db:generate:custom` — creates an empty timestamped migration.
 3. Paste the full `CREATE OR REPLACE FUNCTION ...` (or trigger SQL) into it.
