@@ -1334,6 +1334,14 @@ export type Database = {
           title: string
         }[]
       }
+      get_notification_preferences: {
+        Args: { p_profile_id: string }
+        Returns: {
+          essay_coach_read_email: boolean
+          essay_comment_email: boolean
+          essay_vote_email: boolean
+        }[]
+      }
       get_teams_with_member_stats: {
         Args: never
         Returns: {
