@@ -21,6 +21,7 @@ const defaultProps = {
   initialCoachReadEmail: true,
   initialCommentEmail: true,
   initialVoteEmail: false,
+  hasBetaAccess: true,
 }
 
 describe("NotificationPreferencesForm", () => {
@@ -53,5 +54,33 @@ describe("NotificationPreferencesForm", () => {
     expect(toggle).toBeChecked() // optimistic update applied synchronously, before the failed fetch resolves
 
     await waitFor(() => expect(toggle).not.toBeChecked()) // rolled back after the failed PATCH
+  })
+
+  it("renders switches disabled and unchecked when the user has no beta access, regardless of initial values", () => {
+    render(<NotificationPreferencesForm {...defaultProps} hasBetaAccess={false} />)
+
+    const switches = screen.getAllByRole("switch")
+    expect(switches).toHaveLength(3)
+    for (const toggle of switches) {
+      expect(toggle).not.toBeChecked()
+      expect(toggle).toBeDisabled()
+    }
+  })
+
+  it("shows a beta-access note linking to /beta when the user has no beta access", () => {
+    render(<NotificationPreferencesForm {...defaultProps} hasBetaAccess={false} />)
+
+    const link = screen.getByRole("link", { name: /beta/i })
+    expect(link).toHaveAttribute("href", "/beta")
+  })
+
+  it("does not fire a fetch call when a disabled switch is clicked without beta access", async () => {
+    render(<NotificationPreferencesForm {...defaultProps} hasBetaAccess={false} />)
+    const toggle = screen.getByRole("switch", { name: "Nový like na tvou esej" })
+
+    fireEvent.click(toggle)
+
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(toggle).not.toBeChecked()
   })
 })

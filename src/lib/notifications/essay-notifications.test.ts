@@ -37,8 +37,18 @@ function supabaseStub(preferencesRow: Record<string, boolean> | null) {
 }
 
 const ESSAY = { id: 'essay-1', title: 'Moje esej', authorProfileId: 'author-1' };
-const AUTHOR = { id: 'author-1', name: 'Anna Autorová', work_email: 'anna@studenti.czu.cz' };
-const ACTOR = { id: 'actor-1', name: 'Petr Herec', work_email: 'petr@studenti.czu.cz' };
+const AUTHOR = {
+  id: 'author-1',
+  name: 'Anna Autorová',
+  work_email: 'anna@studenti.czu.cz',
+  beta_access_granted_at: '2026-01-01T00:00:00.000Z',
+};
+const ACTOR = {
+  id: 'actor-1',
+  name: 'Petr Herec',
+  work_email: 'petr@studenti.czu.cz',
+  beta_access_granted_at: '2026-01-01T00:00:00.000Z',
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -99,6 +109,20 @@ describe('notifyEssayCommented', () => {
       p_profile_id: ESSAY.authorProfileId,
     });
   });
+
+  it('skips when the author has no beta access', async () => {
+    mockedGetProfileById.mockImplementation(async (_supabase, id) =>
+      (id === AUTHOR.id ? { ...AUTHOR, beta_access_granted_at: null } : ACTOR) as never,
+    );
+
+    await notifyEssayCommented(supabaseStub(null).client, {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
 });
 
 describe('notifyEssayVoted', () => {
@@ -152,6 +176,20 @@ describe('notifyEssayVoted', () => {
       p_profile_id: ESSAY.authorProfileId,
     });
   });
+
+  it('skips when the author has no beta access', async () => {
+    mockedGetProfileById.mockImplementation(async (_supabase, id) =>
+      (id === AUTHOR.id ? { ...AUTHOR, beta_access_granted_at: null } : ACTOR) as never,
+    );
+
+    await notifyEssayVoted(supabaseStub(null).client, {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
 });
 
 describe('notifyEssayCoachRead', () => {
@@ -204,5 +242,19 @@ describe('notifyEssayCoachRead', () => {
     expect(rpc).toHaveBeenCalledWith('get_notification_preferences', {
       p_profile_id: ESSAY.authorProfileId,
     });
+  });
+
+  it('skips when the author has no beta access', async () => {
+    mockedGetProfileById.mockImplementation(async (_supabase, id) =>
+      (id === AUTHOR.id ? { ...AUTHOR, beta_access_granted_at: null } : ACTOR) as never,
+    );
+
+    await notifyEssayCoachRead(supabaseStub(null).client, {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
   });
 });

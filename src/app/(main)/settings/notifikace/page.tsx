@@ -28,6 +28,7 @@ export default async function NotificationSettingsPage() {
         initialCoachReadEmail={preferences?.essay_coach_read_email ?? true}
         initialCommentEmail={preferences?.essay_comment_email ?? true}
         initialVoteEmail={preferences?.essay_vote_email ?? true}
+        hasBetaAccess={Boolean(profile.beta_access_granted_at)}
       />
     </div>
   );

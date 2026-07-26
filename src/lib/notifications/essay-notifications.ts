@@ -32,6 +32,7 @@ async function dispatchEssayNotification(
   ]);
 
   if (!author?.work_email || !actor) return;
+  if (!author.beta_access_granted_at) return;
   if (preferencesError) throw preferencesError;
 
   const preferences = preferencesRows?.[0];

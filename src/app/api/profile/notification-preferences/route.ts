@@ -14,6 +14,9 @@ export async function PATCH(request: NextRequest) {
 
     const profile = await getCurrentUserProfile(supabase, { user })
     if (!profile) return NextResponse.json({ error: "Profil nenalezen" }, { status: 403 })
+    if (!profile.beta_access_granted_at) {
+      return NextResponse.json({ error: "Tato funkce vyžaduje beta přístup" }, { status: 403 })
+    }
 
     const body = await request.json()
     const updates: Partial<Record<ToggleKey, boolean>> = {}
