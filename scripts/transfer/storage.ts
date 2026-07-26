@@ -11,6 +11,38 @@ const CONTENT_TYPES = {
 
 const FALLBACK_CONTENT_TYPE = "application/octet-stream";
 
+const MAX_ATTEMPTS = 4;
+const RETRY_BASE_DELAY_MS = 500;
+
+/**
+ * Retries transient transport failures. Moving ~1.1 GB across 1746 objects hits
+ * occasional connection resets, and a bare `fetch` rejection ("fetch failed")
+ * carries no status — so without this a single blip aborts the whole run.
+ * Only the transport is retried: an HTTP error response is the caller's to
+ * interpret and is never retried here.
+ */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  what: string,
+): Promise<Response> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await fetch(url, init);
+    } catch (error: unknown) {
+      lastError = error;
+      if (attempt === MAX_ATTEMPTS) break;
+      const delay = RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  const reason = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`${what} failed after ${MAX_ATTEMPTS} attempts: ${reason}`);
+}
+
 export interface ObjectHead {
   readonly exists: boolean;
   readonly size: number | null;
@@ -32,9 +64,11 @@ export function contentTypeFor(path: string): string {
  * anything other than 200 counts as absent.
  */
 export async function headObject(endpoint: Endpoint, path: string): Promise<ObjectHead> {
-  const response = await fetch(`${endpoint.publicImagePrefix}/${encodeObjectPath(path)}`, {
-    method: "HEAD",
-  });
+  const response = await fetchWithRetry(
+    `${endpoint.publicImagePrefix}/${encodeObjectPath(path)}`,
+    { method: "HEAD" },
+    `HEAD object ${path}`,
+  );
   if (!response.ok) return { exists: false, size: null };
 
   const length = response.headers.get("content-length");
@@ -45,7 +79,11 @@ export async function downloadObject(
   endpoint: Endpoint,
   path: string,
 ): Promise<{ bytes: Uint8Array<ArrayBuffer>; contentType: string }> {
-  const response = await fetch(`${endpoint.publicImagePrefix}/${encodeObjectPath(path)}`);
+  const response = await fetchWithRetry(
+    `${endpoint.publicImagePrefix}/${encodeObjectPath(path)}`,
+    {},
+    `GET object ${path}`,
+  );
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     throw new Error(`GET object ${path} failed: ${response.status} ${body}`);
@@ -62,7 +100,7 @@ export async function uploadObject(
   bytes: Uint8Array<ArrayBuffer>,
   contentType: string,
 ): Promise<void> {
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `${endpoint.storageApiUrl}/object/${IMAGES_BUCKET}/${encodeObjectPath(path)}`,
     {
       method: "POST",
@@ -73,6 +111,7 @@ export async function uploadObject(
       },
       body: bytes,
     },
+    `PUT object ${path}`,
   );
   if (!response.ok) {
     const body = await response.text().catch(() => "");
