@@ -67,6 +67,14 @@ export async function transferProfiles(
     const sourceProfile = plan.sourceProfiles.find((p) => p.id === collision.sourceId);
     if (sourceProfile?.team_id == null) continue;
 
+    // Skip when the target already holds this team. `handle_updated_at` is a
+    // BEFORE UPDATE trigger, so even a PATCH that changes nothing would stamp
+    // `updated_at = now()` and destroy the timestamp R1 requires. On a resume
+    // every source profile is a collision, so without this guard the run would
+    // re-stamp every profile it had previously inserted.
+    const targetProfile = plan.targetProfiles.find((p) => p.id === collision.targetId);
+    if (targetProfile?.team_id === sourceProfile.team_id) continue;
+
     // team_id is the ONLY column ever written to an existing target profile (R3).
     await patchRows(target, "profiles", `id=eq.${collision.targetId}`, {
       team_id: sourceProfile.team_id,
