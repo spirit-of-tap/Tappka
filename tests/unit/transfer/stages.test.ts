@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Tables } from "@/lib/supabase/database.types";
 
 import { buildProfileMap } from "../../../scripts/transfer/profile-map";
+import { buildTeamMap } from "../../../scripts/transfer/team-map";
 import type { DataTable, TransferPlan } from "../../../scripts/transfer/preflight";
 import { inFilter } from "../../../scripts/transfer/rollback";
 import { buildBookInsertRows } from "../../../scripts/transfer/stage-catalog";
@@ -80,6 +81,10 @@ const TARGET_KULO = profile({
   role: "admin",
 });
 
+const SOURCE_TEAMS = [
+  { id: "team-1", name: "Tuuli" },
+] as unknown as Tables<"teams">[];
+
 function makePlan(): TransferPlan {
   const sourceProfiles = [STUDENT, SYSTEM, REUSED];
   const targetProfiles = [TARGET_KULO];
@@ -87,6 +92,8 @@ function makePlan(): TransferPlan {
     sourceProfiles,
     targetProfiles,
     profileMap: buildProfileMap(sourceProfiles, targetProfiles),
+    sourceTeams: SOURCE_TEAMS,
+    teamMap: buildTeamMap(SOURCE_TEAMS, [{ id: "team-1", name: "Tuuli" }]),
     sourceCounts: ZERO_COUNTS,
     targetCounts: ZERO_COUNTS,
   };

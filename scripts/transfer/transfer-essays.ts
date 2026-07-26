@@ -8,6 +8,7 @@ import { transferCatalog } from "./stage-catalog";
 import { transferEssays } from "./stage-essays";
 import { collectAllObjectPaths, syncStorage } from "./stage-storage";
 import { transferProfiles } from "./stage-profiles";
+import { createMissingTeams } from "./stage-teams";
 import { verifyTransfer } from "./verify";
 
 const PRODUCTION_CONFIRM_FLAG = "--i-know-this-is-production";
@@ -68,6 +69,12 @@ async function main(): Promise<void> {
   }
 
   assertTargetEmpty(plan.targetCounts, options.resume);
+
+  section("Teams");
+  const teams = await createMissingTeams(target, plan);
+  console.log(
+    `  created ${teams.created}, matched by id ${teams.matchedById}, matched by name ${teams.matchedByName}`,
+  );
 
   section("Profiles");
   const profiles = await transferProfiles(target, plan);

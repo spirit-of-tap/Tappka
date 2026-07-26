@@ -4,6 +4,7 @@ import type { Endpoint } from "./config";
 import type { TransferPlan } from "./preflight";
 import { remapOptionalProfileId } from "./profile-map";
 import { insertRows, patchRows } from "./rest";
+import { remapTeamId } from "./team-map";
 
 export const SYSTEM_PROFILE_EMAIL = "admin@studenti.czu.cz";
 
@@ -20,6 +21,8 @@ function toInsertRow(
     ...profile,
     // Auth users are environment-specific, so inserted profiles are unlinked (R7).
     user_id: null,
+    // Target team ids differ per environment; missing teams are created first.
+    team_id: remapTeamId(plan.teamMap, profile.team_id),
     access_removed_by_profile_id: remapOptionalProfileId(
       plan.profileMap,
       profile.access_removed_by_profile_id,
@@ -67,17 +70,24 @@ export async function transferProfiles(
     const sourceProfile = plan.sourceProfiles.find((p) => p.id === collision.sourceId);
     if (sourceProfile?.team_id == null) continue;
 
-    // Skip when the target already holds this team. `handle_updated_at` is a
-    // BEFORE UPDATE trigger, so even a PATCH that changes nothing would stamp
-    // `updated_at = now()` and destroy the timestamp R1 requires. On a resume
+    // Only ever FILL an empty team, never override one the target already has.
+    // A live environment's own team assignments are authoritative — production
+    // has 96 profiles already placed in its own teams, and overwriting those
+    // would move real users between teams.
+    //
+    // Skipping also protects R1: `handle_updated_at` is a BEFORE UPDATE trigger,
+    // so even a value-identical PATCH stamps `updated_at = now()`. On a resume
     // every source profile is a collision, so without this guard the run would
     // re-stamp every profile it had previously inserted.
     const targetProfile = plan.targetProfiles.find((p) => p.id === collision.targetId);
-    if (targetProfile?.team_id === sourceProfile.team_id) continue;
+    if (targetProfile?.team_id != null) continue;
+
+    const teamId = remapTeamId(plan.teamMap, sourceProfile.team_id);
+    if (teamId === null) continue;
 
     // team_id is the ONLY column ever written to an existing target profile (R3).
     await patchRows(target, "profiles", `id=eq.${collision.targetId}`, {
-      team_id: sourceProfile.team_id,
+      team_id: teamId,
     });
     teamPatched += 1;
   }
