@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -10,6 +10,7 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  Edit2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,8 @@ import {
 } from "@/components/ui/responsive-dialog";
 import { Separator } from "@/components/ui/separator";
 import { StorageAvatar } from "@/components/storage/storage-avatar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { TimePicker } from "./time-picker";
 import {
   formatTime,
   formatDateShort,
@@ -55,11 +58,16 @@ export function ReservationDetailDialog({
   const router = useRouter();
   const [currentReservation, setCurrentReservation] =
     useState<ReservationWithDetails | null>(reservation);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   // Edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editPersonCount, setEditPersonCount] = useState("1");
+  const [editableStartTime, setEditableStartTime] = useState("");
+  const [editableEndTime, setEditableEndTime] = useState("");
+  const [isEditingTime, setIsEditingTime] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -77,16 +85,44 @@ export function ReservationDetailDialog({
     }
   }, [open]);
 
+  // On mobile, scroll focused inputs into view when keyboard opens
+  useEffect(() => {
+    if (!open || !isMobile) return;
+
+    const el = contentRef.current;
+    if (!el) return;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        setTimeout(() => target.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+      }
+    };
+
+    el.addEventListener("focusin", handleFocusIn);
+    return () => el.removeEventListener("focusin", handleFocusIn);
+  }, [open, isMobile]);
+
   const startEditing = () => {
     if (!reservationData) return;
     setEditTitle(reservationData.title);
     setEditPersonCount((reservationData.person_count ?? 1).toString());
+    const start = new Date(reservationData.start_at);
+    const end = new Date(reservationData.end_at);
+    setEditableStartTime(
+      `${start.getHours().toString().padStart(2, "0")}:${start.getMinutes().toString().padStart(2, "0")}`
+    );
+    setEditableEndTime(
+      `${end.getHours().toString().padStart(2, "0")}:${end.getMinutes().toString().padStart(2, "0")}`
+    );
+    setIsEditingTime(false);
     setEditError(null);
     setIsEditing(true);
   };
 
   const cancelEditing = () => {
     setIsEditing(false);
+    setIsEditingTime(false);
     setEditError(null);
   };
 
@@ -102,6 +138,35 @@ export function ReservationDetailDialog({
       return;
     }
 
+    // Build request body
+    const body: Record<string, unknown> = {
+      title: editTitle.trim(),
+      person_count: parseInt(editPersonCount),
+    };
+
+    // Only include time values if they were edited
+    if (isEditingTime) {
+      // Compute ISO times from editable time strings
+      const originalStart = new Date(reservationData.start_at);
+      const originalEnd = new Date(reservationData.end_at);
+
+      const [startHours, startMins] = editableStartTime.split(":").map(Number);
+      const finalStart = new Date(originalStart);
+      finalStart.setHours(startHours, startMins, 0, 0);
+
+      const [endHours, endMins] = editableEndTime.split(":").map(Number);
+      const finalEnd = new Date(originalEnd);
+      finalEnd.setHours(endHours, endMins, 0, 0);
+
+      // If end time is not after start time, it's an overnight reservation
+      if (finalEnd <= finalStart) {
+        finalEnd.setDate(finalEnd.getDate() + 1);
+      }
+
+      body.start_at = finalStart.toISOString();
+      body.end_at = finalEnd.toISOString();
+    }
+
     setIsSaving(true);
     setEditError(null);
 
@@ -109,10 +174,7 @@ export function ReservationDetailDialog({
       const response = await fetch(`/api/reservations/${reservationData.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: editTitle.trim(),
-          person_count: parseInt(editPersonCount),
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
@@ -212,130 +274,182 @@ export function ReservationDetailDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {isEditing ? (
-          /* ── Edit form ── */
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Název / důvod</Label>
-              <Textarea
-                id="edit-title"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                onKeyDown={handleEditTitleKeyDown}
-                rows={2}
-                autoFocus
-              />
-            </div>
+        <div ref={contentRef}>
+          {isEditing ? (
+            /* ── Edit form ── */
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">Název / důvod</Label>
+                <Textarea
+                  id="edit-title"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  onKeyDown={handleEditTitleKeyDown}
+                  rows={2}
+                  autoFocus
+                />
+              </div>
 
-            <div className="flex items-center gap-2">
-              <Users className="size-4 text-muted-foreground" />
-              <Input
-                type="number"
-                min={1}
-                max={50}
-                value={editPersonCount}
-                onChange={(e) => setEditPersonCount(e.target.value)}
-                className="w-16 h-9"
-              />
-              <span className="text-sm text-muted-foreground">osob</span>
-            </div>
+              <div className="flex items-center gap-2">
+                <Users className="size-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={editPersonCount}
+                  onChange={(e) => setEditPersonCount(e.target.value)}
+                  className="w-16 h-9"
+                />
+                <span className="text-sm text-muted-foreground">osob</span>
+              </div>
 
-            {editError && (
-              <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
-                {editError}
-              </p>
-            )}
-
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSaveEdit}
-                disabled={isSaving || !editTitle.trim()}
-                className="flex-1"
-              >
-                {isSaving ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
-                Uložit
-              </Button>
-              <Button variant="outline" onClick={cancelEditing} disabled={isSaving}>
-                Zrušit
-              </Button>
-            </div>
-          </div>
-        ) : (
-          /* ── Detail view ── */
-          <div className="space-y-4">
-            {/* Time info */}
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Calendar className="size-4" />
-                {formatDateShort(startDate)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="size-4" />
-                {formatTime(startDate)} - {formatTime(endDate)}
-              </span>
-            </div>
-
-            {/* Owner info (personal reservations) or type badge (non-personal) */}
-            {isPersonal ? (
-              reservationData.user && (
-                <div className="flex items-center gap-2">
-                  <StorageAvatar
-                    storageKey={reservationData.user.picture ?? null}
-                    name={reservationData.user.name}
-                    size="sm"
-                  />
-                  <span className="text-sm font-medium">{reservationData.user.name}</span>
-                  {isOwner && (
-                    <Badge variant="secondary" className="text-xs ml-1">Ty</Badge>
+              {/* Time editing */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Clock className="size-4 text-muted-foreground" />
+                    Čas
+                  </Label>
+                  {!isEditingTime && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditingTime(true)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <Edit2 className="size-3 mr-1" />
+                      Upravit čas
+                    </Button>
                   )}
                 </div>
-              )
-            ) : (
-              <Badge variant="outline">
-                {RESERVATION_KIND_LABELS[kind]}
-              </Badge>
-            )}
 
-            {/* Person count */}
-            {reservationData.person_count != null && (
-              <div className="flex items-center gap-2 text-sm">
-                <Users className="size-4 text-muted-foreground" />
-                <span>{reservationData.person_count} osob</span>
+                {isEditingTime ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <TimePicker
+                        value={editableStartTime}
+                        onChange={setEditableStartTime}
+                        date={startDate}
+                      />
+                    </div>
+                    <span className="text-muted-foreground shrink-0">-</span>
+                    <div className="flex-1">
+                      <TimePicker
+                        value={editableEndTime}
+                        onChange={setEditableEndTime}
+                        minTime={editableStartTime}
+                        date={startDate}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 p-2 rounded-md bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => setIsEditingTime(true)}
+                  >
+                    <span className="font-medium">{editableStartTime} - {editableEndTime}</span>
+                  </button>
+                )}
               </div>
-            )}
 
-            {/* Owner actions */}
-            {isOwner && isNotEnded && (
-              <>
-                <Separator />
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={startEditing}
-                    className="flex-1"
-                  >
-                    <Pencil className="size-3.5 mr-1.5" />
-                    Upravit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={handleCancelReservation}
-                    disabled={isCancelling}
-                  >
-                    {isCancelling ? (
-                      <Loader2 className="size-3.5 animate-spin mr-1.5" />
-                    ) : (
-                      <Trash2 className="size-3.5 mr-1.5" />
+              {editError && (
+                <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
+                  {editError}
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={isSaving || !editTitle.trim()}
+                  className="flex-1"
+                >
+                  {isSaving ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
+                  Uložit
+                </Button>
+                <Button variant="outline" onClick={cancelEditing} disabled={isSaving}>
+                  Zrušit
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* ── Detail view ── */
+            <div className="space-y-4">
+              {/* Time info */}
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Calendar className="size-4" />
+                  {formatDateShort(startDate)}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="size-4" />
+                  {formatTime(startDate)} - {formatTime(endDate)}
+                </span>
+              </div>
+
+              {/* Owner info (personal reservations) or type badge (non-personal) */}
+              {isPersonal ? (
+                reservationData.user && (
+                  <div className="flex items-center gap-2">
+                    <StorageAvatar
+                      storageKey={reservationData.user.picture ?? null}
+                      name={reservationData.user.name}
+                      size="sm"
+                    />
+                    <span className="text-sm font-medium">{reservationData.user.name}</span>
+                    {isOwner && (
+                      <Badge variant="secondary" className="text-xs ml-1">Ty</Badge>
                     )}
-                    Zrušit
-                  </Button>
+                  </div>
+                )
+              ) : (
+                <Badge variant="outline">
+                  {RESERVATION_KIND_LABELS[kind]}
+                </Badge>
+              )}
+
+              {/* Person count */}
+              {reservationData.person_count != null && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="size-4 text-muted-foreground" />
+                  <span>{reservationData.person_count} osob</span>
                 </div>
-              </>
-            )}
-          </div>
-        )}
+              )}
+
+              {/* Owner actions */}
+              {isOwner && isNotEnded && (
+                <>
+                  <Separator />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={startEditing}
+                      className="flex-1"
+                    >
+                      <Pencil className="size-3.5 mr-1.5" />
+                      Upravit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleCancelReservation}
+                      disabled={isCancelling}
+                    >
+                      {isCancelling ? (
+                        <Loader2 className="size-3.5 animate-spin mr-1.5" />
+                      ) : (
+                        <Trash2 className="size-3.5 mr-1.5" />
+                      )}
+                      Zrušit
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

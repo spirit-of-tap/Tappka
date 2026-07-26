@@ -44,6 +44,10 @@ const DURATION_OPTIONS = [
   { value: '120', label: '2 hod' },
   { value: '180', label: '3 hod' },
   { value: '240', label: '4 hod' },
+  { value: '300', label: '5 hod' },
+  { value: '360', label: '6 hod' },
+  { value: '420', label: '7 hod' },
+  { value: '480', label: '8 hod' },
 ];
 
 /**
@@ -52,10 +56,10 @@ const DURATION_OPTIONS = [
 export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomFilterProps) {
   const [filterDate, setFilterDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState<string>(() => {
-    // Default to current time rounded to next 15min slot
+    // Default to current time rounded to current 15min slot
     const now = new Date();
     const minutes = now.getMinutes();
-    const roundedMinutes = Math.ceil(minutes / 15) * 15;
+    const roundedMinutes = Math.floor(minutes / 15) * 15;
     now.setMinutes(roundedMinutes, 0, 0);
     return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   });
@@ -152,7 +156,7 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
     setFilterDate(new Date());
     const now = new Date();
     const minutes = now.getMinutes();
-    const roundedMinutes = Math.ceil(minutes / 15) * 15;
+    const roundedMinutes = Math.floor(minutes / 15) * 15;
     now.setMinutes(roundedMinutes, 0, 0);
     setStartTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
     setDuration(null);
