@@ -113,6 +113,30 @@ describe("notification_preferences RLS", () => {
     });
   });
 
+  it("lets the owner insert and then update their own row", async () => {
+    await withRollback(async (client) => {
+      const { ownerProfileId, ownerAuthId } = await seed(client);
+
+      await asClaims(client, { sub: ownerAuthId });
+      await client.query(
+        `insert into public.notification_preferences (profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $1, $1)`,
+        [ownerProfileId],
+      );
+      await client.query(
+        `update public.notification_preferences set essay_vote_email = false, updated_by_profile_id = $1
+         where profile_id = $1`,
+        [ownerProfileId],
+      );
+
+      const { rows } = await client.query(
+        "select essay_vote_email from public.notification_preferences where profile_id = $1",
+        [ownerProfileId],
+      );
+      expect(rows[0].essay_vote_email).toBe(false);
+    });
+  });
+
   it("does not let another authenticated user select someone else's row directly", async () => {
     await withRollback(async (client) => {
       const { ownerProfileId, otherAuthId } = await seed(client);
