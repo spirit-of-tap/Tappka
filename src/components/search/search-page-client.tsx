@@ -27,6 +27,7 @@ interface SearchPageClientProps {
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
+const FINE_POINTER_QUERY = '(pointer: fine)';
 
 export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMembers }: SearchPageClientProps) {
   const [query, setQuery] = useState('');
@@ -36,6 +37,13 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
   const [categoryBooks, setCategoryBooks] = useState<(BookWithProfiles & { essay_count?: number })[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Focus the search box on pointer devices only — on touch it would pop up the
+  // on-screen keyboard and cover the page the moment it opens.
+  useEffect(() => {
+    if (window.matchMedia(FINE_POINTER_QUERY).matches) inputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (!query.trim()) { setResults(null); return; }
@@ -75,11 +83,11 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
         <Input
+          ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Hledat eseje, knihy, témata…"
           className="h-12 pl-12 text-base rounded-xl shadow-sm"
-          autoFocus
         />
         {loading && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
