@@ -154,6 +154,17 @@ function assertExistingMigrationsImmutable() {
     return;
   }
 
+  try {
+    run("git", ["cat-file", "-t", base]);
+  } catch {
+    try {
+      run("git", ["fetch", "--depth", "1", "origin", base]);
+    } catch {
+      console.log(`Skipping immutability check (base commit ${base} not available)`);
+      return;
+    }
+  }
+
   let diff;
   try {
     diff = run("git", ["diff", "--name-status", `${base}...HEAD`, "--", "supabase/migrations"]);
