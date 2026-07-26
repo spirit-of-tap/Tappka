@@ -3097,10 +3097,12 @@ Create `docs/runbooks/essay-data-transfer.md` covering, in order:
 Run: `pnpm wiki:doctor`
 Expected: no broken links. If the runbook must be registered in a docs index, add it where the other runbooks in `docs/runbooks/` are listed.
 
-- [ ] **Step 3: Run the full test suite and typecheck**
+- [ ] **Step 3: Run the test suite, typecheck and lint**
 
-Run: `pnpm test && pnpm typecheck && pnpm lint`
+Run: `pnpm test:unit && pnpm typecheck && pnpm lint`
 Expected: all pass.
+
+**Do not gate on `pnpm test`.** Verified 2026-07-26 at branch head `ea95b38`, before any transfer code existed: `src/components/essays/topic-pills.test.tsx` fails 4 tests (`Unable to find an element with the text: Podnikání`) because the component's topic list drifted from the test's expectations. That is pre-existing breakage in the `component` project, unrelated to this plan, and must be fixed separately before the branch merges. `pnpm test:unit` — the project this plan adds tests to — is clean.
 
 - [ ] **Step 4: Commit**
 
