@@ -59,6 +59,9 @@ next-env.d.ts
 # git worktrees
 /.worktrees/
 
+# superpowers subagent-driven-development scratch workspace
+/.superpowers/
+
 # mise local overrides (not committed)
 mise.local.toml
 mise.*.local.toml
