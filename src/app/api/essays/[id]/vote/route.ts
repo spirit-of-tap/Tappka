@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { notifyEssayVoted } from '@/lib/notifications/essay-notifications';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-export async function POST(_request: NextRequest, { params }: RouteParams) {
+export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const supabase = await createClient();
@@ -35,6 +36,14 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       console.error('POST vote error:', error);
       return NextResponse.json({ error: 'Chyba při hlasování' }, { status: 500 });
     }
+
+    after(() => {
+      notifyEssayVoted(supabase, {
+        essayId: id,
+        actorProfileId: profile.id,
+        origin: new URL(request.url).origin,
+      }).catch((err) => console.error('notifyEssayVoted failed:', err));
+    });
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {

@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { notifyEssayCoachRead } from '@/lib/notifications/essay-notifications';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-export async function POST(_request: NextRequest, { params }: RouteParams) {
+export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const supabase = await createClient();
@@ -16,7 +17,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     const profile = await getCurrentUserProfile(supabase, { user });
     if (!profile) return NextResponse.json({ error: 'Profil nenalezen' }, { status: 403 });
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('essay_coach_reads')
       .upsert(
         {
@@ -26,7 +27,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
           updated_by_profile_id: profile.id,
         },
         { onConflict: 'essay_id,coach_profile_id', ignoreDuplicates: true },
-      );
+      )
+      .select('essay_id');
 
     if (error) {
       if (error.code === '42501' || error.message?.includes('policy')) {
@@ -34,6 +36,16 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       }
       console.error('POST coach-read error:', error);
       return NextResponse.json({ error: 'Chyba při označení' }, { status: 500 });
+    }
+
+    if (data && data.length > 0) {
+      after(() => {
+        notifyEssayCoachRead(supabase, {
+          essayId: id,
+          actorProfileId: profile.id,
+          origin: new URL(request.url).origin,
+        }).catch((err) => console.error('notifyEssayCoachRead failed:', err));
+      });
     }
 
     return NextResponse.json({ success: true }, { status: 201 });
