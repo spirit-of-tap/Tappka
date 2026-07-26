@@ -181,11 +181,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                         )}
                       </Link>
                       <div className="flex-1 min-w-0 space-y-1">
-                        <Link href={`/eseje/${essay.id}`}>
-                          <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors inline-flex items-center gap-1.5">
-                            {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
+                        <Link href={`/eseje/${essay.id}`} className="flex min-w-0 items-center gap-1.5">
+                          {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
+                          <span className="font-semibold text-sm leading-snug truncate group-hover:text-primary transition-colors">
                             {essay.title}
-                          </p>
+                          </span>
                         </Link>
                         <p className="text-xs text-muted-foreground truncate">
                           {essay.book!.title_cs}
@@ -226,11 +226,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                           <Sparkles className="size-4 text-amber-500/40" />
                         </Link>
                         <div className="flex-1 min-w-0 space-y-1">
-                          <Link href={`/eseje/${essay.id}`}>
-                            <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors inline-flex items-center gap-1.5">
-                              {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
+                          <Link href={`/eseje/${essay.id}`} className="flex min-w-0 items-center gap-1.5">
+                            {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
+                            <span className="font-semibold text-sm leading-snug truncate group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
                               {essay.title}
-                            </p>
+                            </span>
                           </Link>
                           <p className="text-xs text-amber-600/70 dark:text-amber-400/70 flex items-center gap-1">
                             <Sparkles className="size-3" />
