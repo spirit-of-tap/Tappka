@@ -84,7 +84,7 @@ describe("selectAll", () => {
   it("throws with status and body on failure", async () => {
     stubFetch([new Response("nope", { status: 401 })]);
 
-    await expect(selectAll(ENDPOINT, "teams")).rejects.toThrow(/401.*nope/s);
+    await expect(selectAll(ENDPOINT, "teams")).rejects.toThrow(/401[\s\S]*nope/);
   });
 });
 
@@ -132,7 +132,7 @@ describe("insertRows", () => {
     stubFetch([new Response("fk violation", { status: 409 })]);
 
     await expect(insertRows(ENDPOINT, "essays", [{ id: "a" }])).rejects.toThrow(
-      /essays.*409.*fk violation/s,
+      /essays[\s\S]*409[\s\S]*fk violation/,
     );
   });
 });
