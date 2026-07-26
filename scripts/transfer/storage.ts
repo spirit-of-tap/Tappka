@@ -44,7 +44,7 @@ export async function headObject(endpoint: Endpoint, path: string): Promise<Obje
 export async function downloadObject(
   endpoint: Endpoint,
   path: string,
-): Promise<{ bytes: Uint8Array; contentType: string }> {
+): Promise<{ bytes: Uint8Array<ArrayBuffer>; contentType: string }> {
   const response = await fetch(`${endpoint.publicImagePrefix}/${encodeObjectPath(path)}`);
   if (!response.ok) {
     const body = await response.text().catch(() => "");
@@ -59,7 +59,7 @@ export async function downloadObject(
 export async function uploadObject(
   endpoint: Endpoint,
   path: string,
-  bytes: Uint8Array,
+  bytes: Uint8Array<ArrayBuffer>,
   contentType: string,
 ): Promise<void> {
   const response = await fetch(
@@ -71,7 +71,7 @@ export async function uploadObject(
         "Content-Type": contentType,
         "x-upsert": "true",
       },
-      body: bytes.buffer as ArrayBuffer,
+      body: bytes,
     },
   );
   if (!response.ok) {

@@ -138,6 +138,29 @@ describe("uploadObject", () => {
       uploadObject(ENDPOINT, "a/b.png", new Uint8Array([1]), "image/png"),
     ).rejects.toThrow(/403[\s\S]*denied/);
   });
+
+  it("respects byteOffset and byteLength when uploading a view", async () => {
+    const bodies: ArrayBufferLike[] = [];
+    vi.stubGlobal("fetch", (url: string, init: RequestInit) => {
+      if (init.body !== undefined) {
+        bodies.push(init.body as ArrayBufferLike);
+      }
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+
+    const buffer = new ArrayBuffer(10);
+    const view = new Uint8Array(buffer, 2, 3);
+    view[0] = 10;
+    view[1] = 20;
+    view[2] = 30;
+
+    await uploadObject(ENDPOINT, "a/b.png", view, "image/png");
+
+    expect(bodies.length).toBe(1);
+    const uploaded = new Uint8Array(bodies[0]);
+    expect(uploaded.length).toBe(3);
+    expect([...uploaded]).toEqual([10, 20, 30]);
+  });
 });
 
 describe("mapWithConcurrency", () => {
