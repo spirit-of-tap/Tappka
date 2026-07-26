@@ -93,22 +93,6 @@ export async function verifyTransfer(
     });
   }
 
-  // No local URL may survive in the target (R5).
-  const leaked = await selectAll<{ essay_id: string }>(
-    target,
-    "essay_revisions",
-    "essay_id",
-    `content_json=like.*${LOCALHOST_MARKER}*`,
-  ).catch(() => null);
-  checks.push({
-    name: "content_json:no-localhost",
-    passed: leaked !== null && leaked.length === 0,
-    detail:
-      leaked === null
-        ? "query failed — check manually"
-        : `${leaked.length} revisions still reference ${LOCALHOST_MARKER}`,
-  });
-
   // Chronology survived the transfer (R1) — the direct guard on timestamps.
   const [targetEarliest, sourceEarliest] = await Promise.all([
     selectAll<Pick<Tables<"essays">, "created_at">>(target, "essays", "created_at", EARLIEST_FIRST),
@@ -120,12 +104,25 @@ export async function verifyTransfer(
     detail: `source ${sourceEarliest[0]?.created_at}, target ${targetEarliest[0]?.created_at}`,
   });
 
-  // A sample of rewritten image URLs must actually resolve in the target.
   const targetRevisions = await selectAll<Pick<Tables<"essay_revisions">, "content_json">>(
     target,
     "essay_revisions",
     "content_json",
   );
+
+  // No local URL may survive in the target (R5). Scanned in JS rather than with a
+  // PostgREST filter: `like` cannot be applied to a jsonb column, so
+  // `content_json=like.*…*` errors out instead of matching.
+  const leaked = targetRevisions.filter((revision) =>
+    JSON.stringify(revision.content_json).includes(LOCALHOST_MARKER),
+  );
+  checks.push({
+    name: "content_json:no-localhost",
+    passed: leaked.length === 0,
+    detail: `${leaked.length} of ${targetRevisions.length} revisions reference ${LOCALHOST_MARKER}`,
+  });
+
+  // A sample of rewritten image URLs must actually resolve in the target.
   const sample = collectTargetImagePaths(targetRevisions, target.publicImagePrefix).slice(
     0,
     IMAGE_SAMPLE_SIZE,
