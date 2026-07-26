@@ -59,9 +59,9 @@ interface EssayRawRow {
 /**
  * Picks the latest non-invalid essay revision (highest revision_no).
  */
-export function pickLatestRevision(
-  revisions: EssayRevisionEmbed[] | null | undefined,
-): EssayRevisionEmbed | null {
+export function pickLatestRevision<
+  T extends { revision_no: number; invalid_since: string | null },
+>(revisions: T[] | null | undefined): T | null {
   const valid = (revisions ?? []).filter((r) => r.invalid_since == null);
   if (valid.length === 0) return null;
 
@@ -287,6 +287,30 @@ export async function getEssayById(
 
   const rows = mapEssayRows([data as unknown as EssayRawRow]);
   return rows[0] ?? null;
+}
+
+export async function getEssayAuthorInfo(
+  supabase: SupabaseClient<Database>,
+  essayId: string,
+): Promise<{ id: string; title: string; authorProfileId: string } | null> {
+  const { data, error } = await supabase
+    .from('essays')
+    .select('id, author_profile_id, essay_revisions(title, revision_no, invalid_since)')
+    .eq('id', essayId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const revision = pickLatestRevision(
+    data.essay_revisions as { title: string; revision_no: number; invalid_since: string | null }[] | null,
+  );
+
+  return {
+    id: data.id as string,
+    title: revision?.title ?? '',
+    authorProfileId: data.author_profile_id as string,
+  };
 }
 
 export async function getEssayComments(
