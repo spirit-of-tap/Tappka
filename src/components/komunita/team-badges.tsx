@@ -54,10 +54,10 @@ export function TeamBadges({ teams }: TeamBadgesProps) {
   if (teams.length === 0) return null;
 
   const active = teams
-    .filter((t) => t.member_count > 0)
+    .filter((t) => t.removed_at === null)
     .sort((a, b) => b.member_count - a.member_count);
   const alumni = teams
-    .filter((t) => t.member_count === 0)
+    .filter((t) => t.removed_at !== null)
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
