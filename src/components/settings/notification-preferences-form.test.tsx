@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 
 const mockPush = vi.fn()
@@ -44,14 +44,14 @@ describe("NotificationPreferencesForm", () => {
     })
   })
 
-  it("rolls back the toggle when the request fails", async () => {
+  it("optimistically checks the switch, then rolls back on failure", async () => {
     fetchSpy.mockResolvedValueOnce(new Response(null, { status: 500 }))
-    const user = userEvent.setup()
     render(<NotificationPreferencesForm {...defaultProps} />)
-
     const toggle = screen.getByRole("switch", { name: "Nový like na tvou esej" })
-    await user.click(toggle)
 
-    expect(toggle).not.toBeChecked()
+    fireEvent.click(toggle)
+    expect(toggle).toBeChecked() // optimistic update applied synchronously, before the failed fetch resolves
+
+    await waitFor(() => expect(toggle).not.toBeChecked()) // rolled back after the failed PATCH
   })
 })
