@@ -1,0 +1,140 @@
+# Essay data transfer (local → preview → production)
+
+How to copy the legacy SharePoint essay import from the local Supabase database to
+another environment.
+
+## Why this script exists
+
+The legacy import was run against the **local** database with
+`scripts/essayimport/*.ts`, and getting it right required manual, unrecorded fixes
+applied directly to the local database and storage. Re-running those import scripts
+against another environment would reproduce the *raw* import, not the corrected
+state. The local database is therefore the source of truth, and this script copies
+it forward.
+
+Design detail and the reasoning behind each invariant:
+`docs/superpowers/specs/2026-07-26-essay-data-transfer-design.md`.
+
+## Required environment variables
+
+All credentials live in `.env.transfer.local`, which is gitignored via `.env**` and
+**must never be committed**. Delete it once the transfer is done.
+
+```
+LOCAL_SUPABASE_URL=http://127.0.0.1:54321
+LOCAL_SERVICE_ROLE_KEY=<local service_role key>
+
+PREVIEW_SUPABASE_URL=https://<preview-ref>.supabase.co
+PREVIEW_SERVICE_ROLE_KEY=<preview service_role key>
+
+PRODUCTION_SUPABASE_URL=https://<production-ref>.supabase.co
+PRODUCTION_SERVICE_ROLE_KEY=<production service_role key>
+```
+
+Service-role keys come from Supabase Dashboard → Project Settings → API Keys →
+`service_role` (secret).
+
+## Commands
+
+```bash
+pnpm transfer:essays:dry                       # preview, read-only, prints the plan
+pnpm transfer:essays --target=preview          # run against preview
+pnpm transfer:essays --target=preview --resume # continue an interrupted run
+pnpm transfer:essays --target=preview --rollback
+
+# production requires the explicit confirmation flag
+pnpm transfer:essays --target=production --i-know-this-is-production
+```
+
+Always run `pnpm transfer:essays:dry` first and read the plan.
+
+## Preconditions
+
+- Local Supabase must be running (`pnpm dev`, or `pnpm supabase start`).
+- The target's `teams` must already match local **by id and by name**. The script
+  never inserts teams; a divergence aborts the run in preflight. This is deliberate:
+  profiles carry a `team_id` FK, so a mismatched team would leave every transferred
+  profile's team reference wrong or dangling.
+- The target's essay tables should be empty. If they are not, the run aborts and
+  tells you to pass `--resume` or `--rollback`.
+
+## What it never touches
+
+- `teams` — verified, never written.
+- `users` — environment-specific and bound to `auth.users`.
+- **Existing target profiles, except `team_id`.** Nothing else about a profile that
+  already exists in the target is ever modified. This matters: preview holds two
+  `admin` accounts that local calls `student`, and a blind copy would demote them.
+- `reservations`, `rooms`, `essay_views`, `essay_votes`, `dashboard_layouts` — local
+  development noise, not part of the import.
+- Target storage on `--rollback`. Object paths are deterministic and orphaned
+  objects are harmless, so rollback leaves them in place.
+
+## Expected numbers for preview
+
+Measured 2026-07-26. Use these to spot drift.
+
+| Table | Source | Notes |
+| --- | --- | --- |
+| `profiles` | 193 | 190 inserted, 3 reused by `work_email` |
+| `books` | 618 | |
+| `tags` | 8 | |
+| `book_tags` | 616 | |
+| `essays` | 6595 | |
+| `essay_revisions` | 6595 | |
+| `essay_comments` | 220 | |
+| storage | 1745 referenced objects | 1746 exist locally; one is unreferenced and is never uploaded |
+
+The three reused profiles are `xkulo007@studenti.czu.cz`,
+`xprot040@studenti.czu.cz` and `xscho008@studenti.czu.cz`. Two of them are `admin`
+in preview and `student` locally.
+
+`urls rewritten` reports **1753**, not 1745: 1745 is the number of *distinct* image
+srcs, while 1753 counts every occurrence across all revisions.
+
+## Verification
+
+The run ends with automatic checks, and any failure exits non-zero:
+
+- row counts per table match the source
+- `profiles` count matches the source (190 new + 3 pre-existing)
+- `teams` count unchanged
+- each reused profile still has its original `role` and `user_id`
+- **zero** revisions still reference `127.0.0.1`
+- earliest `essays.created_at` matches the source — the direct guard that the
+  2019→2026 chronology survived
+- a sample of rewritten image URLs returns HTTP 200 from target storage
+
+## Troubleshooting
+
+**Direct Postgres to preview is unreachable, by design of the environment.**
+`db.<ref>.supabase.co` publishes only an AAAA record (the IPv4 add-on is not
+enabled), and the shared pooler has no tenant for the preview branch ref
+(`FATAL: (ENOTFOUND) tenant/user postgres.<ref> not found`). That is why the script
+uses PostgREST plus the Storage API rather than a direct connection, and why there
+is no single wrapping transaction. Safety comes from insert-or-skip idempotency,
+fail-fast stages, and the verification pass.
+
+**A missing storage object returns HTTP 400, not 404.** Any non-200 HEAD is treated
+as "absent". Do not "fix" this to check for 404.
+
+**Writes use `resolution=ignore-duplicates`, never `merge-duplicates`.**
+`handle_updated_at` is a `BEFORE UPDATE` trigger on `profiles`, `books`, `essays`
+and `essay_comments`. It does not fire on INSERT, so inserts preserve the original
+timestamps — but an upsert resolving to an UPDATE would overwrite `updated_at`,
+corrupting the data on exactly the resume runs idempotency exists to support.
+
+**The run is safe to repeat.** Every row carries an explicit primary key from the
+source, so re-running skips what is already there instead of duplicating it.
+
+## Before running against production
+
+Production is not interchangeable with preview:
+
+- Re-inspect production's `profiles` first. The collision set **will differ** from
+  preview's three, and the mapping is derived from `work_email` at runtime — no
+  uuids are hardcoded anywhere.
+- Confirm production's `teams` match local by id and name, or preflight will abort.
+- The script refuses to run without `--i-know-this-is-production`.
+- Do a `--dry-run`-equivalent read first by inspecting the printed plan, and stop if
+  the reused-profile list contains anyone unexpected.
