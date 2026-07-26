@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     ".vitepress/cache/**",
     "docs/.vitepress/cache/**",
+    // Untracked legacy one-off imports (gitignored); not part of the app.
+    "scripts/essayimport/**",
   ]),
   {
     rules: {
