@@ -22,12 +22,16 @@ const mockedSendEmail = vi.mocked(sendEmail);
 
 function supabaseStub(preferencesRow: Record<string, boolean> | null): SupabaseClient {
   return {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({ data: preferencesRow, error: null }),
-        }),
-      }),
+    rpc: async () => ({
+      data: [
+        {
+          essay_coach_read_email: true,
+          essay_comment_email: true,
+          essay_vote_email: true,
+          ...preferencesRow,
+        },
+      ],
+      error: null,
     }),
   } as unknown as SupabaseClient;
 }
@@ -93,7 +97,19 @@ describe('notifyEssayCommented', () => {
 });
 
 describe('notifyEssayVoted', () => {
-  it('checks the essay_vote_email preference', async () => {
+  it('skips when the actor is the essay author', async () => {
+    mockedGetEssayAuthorInfo.mockResolvedValue({ ...ESSAY, authorProfileId: ACTOR.id });
+
+    await notifyEssayVoted(supabaseStub(null), {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
+
+  it('skips when the preference is explicitly off', async () => {
     await notifyEssayVoted(supabaseStub({ essay_vote_email: false }), {
       essayId: ESSAY.id,
       actorProfileId: ACTOR.id,
@@ -102,10 +118,46 @@ describe('notifyEssayVoted', () => {
 
     expect(mockedSendEmail).not.toHaveBeenCalled();
   });
+
+  it('sends when no preference row exists (default on)', async () => {
+    await notifyEssayVoted(supabaseStub(null), {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: AUTHOR.work_email }),
+    );
+  });
+
+  it('sends to the essay author with a link back to the essay', async () => {
+    await notifyEssayVoted(supabaseStub({ essay_vote_email: true }), {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    const call = mockedSendEmail.mock.calls[0][0];
+    expect(call.to).toBe(AUTHOR.work_email);
+    expect(call.html).toContain('https://tappka.app/eseje/essay-1');
+  });
 });
 
 describe('notifyEssayCoachRead', () => {
-  it('checks the essay_coach_read_email preference', async () => {
+  it('skips when the actor is the essay author', async () => {
+    mockedGetEssayAuthorInfo.mockResolvedValue({ ...ESSAY, authorProfileId: ACTOR.id });
+
+    await notifyEssayCoachRead(supabaseStub(null), {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
+
+  it('skips when the preference is explicitly off', async () => {
     await notifyEssayCoachRead(supabaseStub({ essay_coach_read_email: false }), {
       essayId: ESSAY.id,
       actorProfileId: ACTOR.id,
@@ -113,5 +165,29 @@ describe('notifyEssayCoachRead', () => {
     });
 
     expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
+
+  it('sends when no preference row exists (default on)', async () => {
+    await notifyEssayCoachRead(supabaseStub(null), {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: AUTHOR.work_email }),
+    );
+  });
+
+  it('sends to the essay author with a link back to the essay', async () => {
+    await notifyEssayCoachRead(supabaseStub({ essay_coach_read_email: true }), {
+      essayId: ESSAY.id,
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    const call = mockedSendEmail.mock.calls[0][0];
+    expect(call.to).toBe(AUTHOR.work_email);
+    expect(call.html).toContain('https://tappka.app/eseje/essay-1');
   });
 });

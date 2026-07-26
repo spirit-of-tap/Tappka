@@ -25,18 +25,17 @@ async function dispatchEssayNotification(
   if (!essay) return;
   if (essay.authorProfileId === params.actorProfileId) return;
 
-  const [author, actor, { data: preferences }] = await Promise.all([
+  const [author, actor, { data: preferencesRows, error: preferencesError }] = await Promise.all([
     getProfileById(supabase, essay.authorProfileId),
     getProfileById(supabase, params.actorProfileId),
-    supabase
-      .from('notification_preferences')
-      .select(preferenceColumn)
-      .eq('profile_id', essay.authorProfileId)
-      .maybeSingle(),
+    supabase.rpc('get_notification_preferences', { p_profile_id: essay.authorProfileId }),
   ]);
 
   if (!author?.work_email || !actor) return;
-  if (preferences && (preferences as Record<PreferenceColumn, boolean>)[preferenceColumn] === false) return;
+  if (preferencesError) throw preferencesError;
+
+  const preferences = preferencesRows?.[0];
+  if (preferences && preferences[preferenceColumn] === false) return;
 
   const { subject, html } = buildEmail({
     essayTitle: essay.title,
