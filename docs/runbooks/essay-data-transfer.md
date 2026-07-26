@@ -51,20 +51,24 @@ Always run `pnpm transfer:essays:dry` first and read the plan.
 ## Preconditions
 
 - Local Supabase must be running (`pnpm dev`, or `pnpm supabase start`).
-- The target's `teams` must already match local **by id and by name**. The script
-  never inserts teams; a divergence aborts the run in preflight. This is deliberate:
-  profiles carry a `team_id` FK, so a mismatched team would leave every transferred
-  profile's team reference wrong or dangling.
+- Teams are resolved automatically: matched on id, else on **normalized name**
+  (case- and whitespace-insensitive), and any source team with no counterpart is
+  **created** with its source id. Profile `team_id` is remapped through that map, so
+  a dangling team FK is impossible. Two target teams sharing a normalized name abort
+  the run as ambiguous.
 - The target's essay tables should be empty. If they are not, the run aborts and
   tells you to pass `--resume` or `--rollback`.
 
 ## What it never touches
 
-- `teams` — verified, never written.
+- Existing `teams` — matched, never modified. Only genuinely missing teams are
+  created.
 - `users` — environment-specific and bound to `auth.users`.
-- **Existing target profiles, except `team_id`.** Nothing else about a profile that
-  already exists in the target is ever modified. This matters: preview holds two
-  `admin` accounts that local calls `student`, and a blind copy would demote them.
+- **Existing target profiles, except an empty `team_id`.** `role`, `user_id`, `name`
+  and everything else are never modified, and `team_id` is only ever *filled* when
+  the target has none — never overwritten. This matters: production has 96 profiles
+  already placed in its own teams, and 6 accounts (2 `admin`, 4 `coach`) that local
+  calls `student`; a blind copy would both reshuffle teams and demote real admins.
 - `reservations`, `rooms`, `essay_views`, `essay_votes`, `dashboard_layouts` — local
   development noise, not part of the import.
 - Target storage on `--rollback`. Object paths are deterministic and orphaned
@@ -88,6 +92,24 @@ Measured 2026-07-26. Use these to spot drift.
 The three reused profiles are `xkulo007@studenti.czu.cz`,
 `xprot040@studenti.czu.cz` and `xscho008@studenti.czu.cz`. Two of them are `admin`
 in preview and `student` locally.
+
+## Production, as transferred 2026-07-26
+
+| | Value |
+| --- | --- |
+| profiles | 94 inserted, 99 reused, 4 target-only untouched → 197 total |
+| teams | 6 matched by name, 9 created, 0 matched by id |
+| team_id filled (was NULL) | 4 |
+| role / user_id / team_id changes on existing profiles | **0** |
+| storage | 1745 referenced, 1210 uploaded (535 already present from an aborted first run) |
+
+Production team ids do **not** match local. Six matched by name — including
+`Timace`→`TIMACE` and `WEAM`→`Weam`, which differ only by case — and nine were
+created: Aconditor, GimiTimi, InviTAP, JBS, KAAMOS, Luotapa, Teamly, Tiimeri,
+koučové. Some carry `removed_at` from local and were created archived.
+
+The profile count check expects **source + target-only**, not `source == target`:
+production has 4 real staff accounts absent from the legacy import.
 
 `urls rewritten` reports **1753**, not 1745: 1745 is the number of *distinct* image
 srcs, while 1753 counts every occurrence across all revisions.
@@ -123,6 +145,12 @@ as "absent". Do not "fix" this to check for 404.
 and `essay_comments`. It does not fire on INSERT, so inserts preserve the original
 timestamps — but an upsert resolving to an UPDATE would overwrite `updated_at`,
 corrupting the data on exactly the resume runs idempotency exists to support.
+
+**Transient upload failures are retried.** A first production run died with a bare
+`fetch failed` after ~500 of 1745 uploads. Storage transport is now retried 4 times
+with exponential backoff; HTTP error responses are deliberately *not* retried. If a
+run still dies mid-upload, re-run with `--resume` — already-uploaded objects are
+skipped by a size-matched HEAD.
 
 **The run is safe to repeat.** Every row carries an explicit primary key from the
 source, so re-running skips what is already there instead of duplicating it.
