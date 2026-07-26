@@ -144,18 +144,28 @@ export function ReservationDetailDialog({
       person_count: parseInt(editPersonCount),
     };
 
-    // Compute ISO times from editable time strings
-    const startBase = new Date(reservationData.start_at);
-    const [startHours, startMins] = editableStartTime.split(":").map(Number);
-    const finalStart = new Date(startBase);
-    finalStart.setHours(startHours, startMins, 0, 0);
+    // Only include time values if they were edited
+    if (isEditingTime) {
+      // Compute ISO times from editable time strings
+      const originalStart = new Date(reservationData.start_at);
+      const originalEnd = new Date(reservationData.end_at);
 
-    const [endHours, endMins] = editableEndTime.split(":").map(Number);
-    const finalEnd = new Date(startBase);
-    finalEnd.setHours(endHours, endMins, 0, 0);
+      const [startHours, startMins] = editableStartTime.split(":").map(Number);
+      const finalStart = new Date(originalStart);
+      finalStart.setHours(startHours, startMins, 0, 0);
 
-    body.start_at = finalStart.toISOString();
-    body.end_at = finalEnd.toISOString();
+      const [endHours, endMins] = editableEndTime.split(":").map(Number);
+      const finalEnd = new Date(originalEnd);
+      finalEnd.setHours(endHours, endMins, 0, 0);
+
+      // If end time is not after start time, it's an overnight reservation
+      if (finalEnd <= finalStart) {
+        finalEnd.setDate(finalEnd.getDate() + 1);
+      }
+
+      body.start_at = finalStart.toISOString();
+      body.end_at = finalEnd.toISOString();
+    }
 
     setIsSaving(true);
     setEditError(null);
@@ -333,12 +343,13 @@ export function ReservationDetailDialog({
                     </div>
                   </div>
                 ) : (
-                  <div
+                  <button
+                    type="button"
                     className="flex items-center gap-2 p-2 rounded-md bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
                     onClick={() => setIsEditingTime(true)}
                   >
                     <span className="font-medium">{editableStartTime} - {editableEndTime}</span>
-                  </div>
+                  </button>
                 )}
               </div>
 

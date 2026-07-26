@@ -84,6 +84,23 @@ export function EditReservationDialog({
   const startDate = new Date(reservation.start_at);
   const endDate = new Date(reservation.end_at);
 
+  // Reset form state when dialog opens
+  useEffect(() => {
+    if (open) {
+      const start = new Date(reservation.start_at);
+      const end = new Date(reservation.end_at);
+      setReason(reservation.title || "");
+      setPersonCount(reservation.person_count?.toString() || "1");
+      setEditableStartTime(
+        `${start.getHours().toString().padStart(2, "0")}:${start.getMinutes().toString().padStart(2, "0")}`
+      );
+      setEditableEndTime(
+        `${end.getHours().toString().padStart(2, "0")}:${end.getMinutes().toString().padStart(2, "0")}`
+      );
+      setIsEditingTime(false);
+    }
+  }, [open, reservation]);
+
   // On mobile, scroll focused inputs into view when keyboard opens
   useEffect(() => {
     if (!open) return;
@@ -119,8 +136,19 @@ export function EditReservationDialog({
     finalStart.setHours(startHours, startMins, 0, 0);
 
     const [endHours, endMins] = editableEndTime.split(":").map(Number);
-    const finalEnd = new Date(startDate);
+    const finalEnd = new Date(endDate);
     finalEnd.setHours(endHours, endMins, 0, 0);
+
+    // If end time is not after start time, it's an overnight reservation
+    if (finalEnd <= finalStart) {
+      finalEnd.setDate(finalEnd.getDate() + 1);
+    }
+
+    // Validate that finalEnd is after finalStart
+    if (finalEnd <= finalStart) {
+      toast.error("Čas konce musí být po čase začátku");
+      return;
+    }
 
     setIsLoading(true);
 
@@ -281,12 +309,13 @@ export function EditReservationDialog({
                 </div>
               </div>
             ) : (
-              <div
+              <button
+                type="button"
                 className="flex items-center gap-2 p-2 rounded-md bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
                 onClick={() => setIsEditingTime(true)}
               >
                 <span className="font-medium">{editableStartTime} - {editableEndTime}</span>
-              </div>
+              </button>
             )}
           </div>
 

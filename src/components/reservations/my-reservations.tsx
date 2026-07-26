@@ -112,10 +112,10 @@ function ReservationItem({ reservation }: ReservationItemProps) {
         {/* Date badge */}
         <div className="flex-shrink-0 w-12 h-10 rounded-md bg-primary/10 flex flex-col items-center justify-center leading-tight">
           <span className="text-[10px] text-muted-foreground uppercase">
-            {startDate.toLocaleDateString("cs-CZ", { weekday: "short" })}
+            {startDate.toLocaleDateString("cs-CZ", { weekday: "short", timeZone: "Europe/Prague" })}
           </span>
           <span className="text-sm font-bold text-primary">
-            {startDate.getDate()}.{startDate.getMonth() + 1}.
+            {startDate.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", timeZone: "Europe/Prague" })}
           </span>
         </div>
 

@@ -14,13 +14,36 @@ import {
 } from './types';
 
 /**
- * Check if a room is available on a specific day of week
+ * Check if a room is available on a specific day of week.
+ * Uses Europe/Prague timezone to determine the weekday.
  */
 export function isRoomAvailableOnDay(room: Room, date: Date): boolean {
   if (!room.available_days || room.available_days.length === 0) {
     return true; // NULL means all days
   }
-  return room.available_days.includes(date.getDay());
+
+  // Derive weekday in Europe/Prague timezone using formatToParts
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Prague",
+    weekday: "short",
+  }).formatToParts(date);
+
+  const weekdayStr = parts.find((p) => p.type === "weekday")?.value;
+
+  // Map short weekday names to JS getDay() format: 0 (Sunday) to 6 (Saturday)
+  const weekdayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  const weekdayNumber = weekdayStr ? weekdayMap[weekdayStr] : 0;
+
+  return room.available_days.includes(weekdayNumber);
 }
 
 const PRAGUE_TZ = "Europe/Prague";
@@ -254,7 +277,7 @@ export function getNextAvailableTime(
   referenceTime: Date = new Date()
 ): Date | null {
   if (reservations.length === 0) {
-    return roundToSlot(referenceTime);
+    return roundToNextSlot(referenceTime);
   }
 
   // Sort by end time
@@ -262,22 +285,22 @@ export function getNextAvailableTime(
     .sort((a, b) => new Date(a.end_at).getTime() - new Date(b.end_at).getTime());
 
   // Find the first gap or the end of last reservation
-  let currentTime = roundToSlot(referenceTime);
-  
+  let currentTime = roundToNextSlot(referenceTime);
+
   for (const reservation of sorted) {
     const startTime = new Date(reservation.start_at);
     const endTime = new Date(reservation.end_at);
-    
+
     if (currentTime < startTime) {
       // Found a gap
       return currentTime;
     }
-    
+
     if (currentTime < endTime) {
-      currentTime = roundToSlot(endTime);
+      currentTime = roundToNextSlot(endTime);
     }
   }
-  
+
   return currentTime;
 }
 
@@ -362,7 +385,7 @@ export function formatTimeUntilFree(reservation: Reservation): string {
  */
 export function getQuickReservationEnd(durationMinutes: 30 | 60 | 120): Date {
   const now = new Date();
-  const rounded = roundToSlot(now);
+  const rounded = roundToNextSlot(now);
   const end = new Date(rounded);
   end.setMinutes(end.getMinutes() + durationMinutes);
   return end;

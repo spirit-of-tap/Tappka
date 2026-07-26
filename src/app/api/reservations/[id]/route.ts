@@ -114,6 +114,43 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const body: UpdateReservationInput = await request.json();
+
+    // Validate request body fields
+    if (body.title !== undefined && typeof body.title !== "string") {
+      return NextResponse.json(
+        { error: "Neplatný formát názvu", code: "INVALID_TITLE" },
+        { status: 400 }
+      );
+    }
+
+    if (body.person_count !== undefined) {
+      const count = Number(body.person_count);
+      if (!Number.isInteger(count) || count < 1) {
+        return NextResponse.json(
+          { error: "Počet osob musí být kladné číslo", code: "INVALID_PERSON_COUNT" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.start_at !== undefined) {
+      if (typeof body.start_at !== "string" || isNaN(new Date(body.start_at).getTime())) {
+        return NextResponse.json(
+          { error: "Neplatný formát času začátku", code: "INVALID_START_TIME" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.end_at !== undefined) {
+      if (typeof body.end_at !== "string" || isNaN(new Date(body.end_at).getTime())) {
+        return NextResponse.json(
+          { error: "Neplatný formát času konce", code: "INVALID_END_TIME" },
+          { status: 400 }
+        );
+      }
+    }
+
     const allowedFields = ["title", "person_count", "start_at", "end_at"] as const;
     const updateData: Record<string, unknown> = {
       updated_by_profile_id: profile.id,
@@ -142,13 +179,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      // Allow current 15-min slot (same as POST)
-      const ALLOWED_PAST_MS = TIME_SLOT_MINUTES * 60 * 1000;
-      if (startDate.getTime() < now.getTime() - ALLOWED_PAST_MS) {
-        return NextResponse.json(
-          { error: "Nelze rezervovat v minulosti" },
-          { status: 400 }
-        );
+      // Only enforce past-time cutoff if start_at is explicitly changed
+      if ("start_at" in body) {
+        // Allow current 15-min slot (same as POST)
+        const ALLOWED_PAST_MS = TIME_SLOT_MINUTES * 60 * 1000;
+        if (startDate.getTime() < now.getTime() - ALLOWED_PAST_MS) {
+          return NextResponse.json(
+            { error: "Nelze rezervovat v minulosti" },
+            { status: 400 }
+          );
+        }
       }
 
       // Check operating hours
