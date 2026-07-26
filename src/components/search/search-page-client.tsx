@@ -15,7 +15,7 @@ import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
-type BookResult = { id: string; title: string; author: string; supabase_cover_img_url: string | null };
+type BookResult = { id: string; title_cs: string; author: string; google_books_cover_url: string | null };
 type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
 type TeamMember = { profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
 type TeamWithMembers = { id: string; name: string; members: TeamMember[] };
@@ -178,10 +178,10 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
       <Link href={`/eseje/${essay.id}`} className="flex gap-2.5">
         {/* Small portrait cover — at this size low-res thumbnails look fine */}
         <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-          {essay.book?.supabase_cover_img_url ? (
+          {essay.book?.google_books_cover_url ? (
             <StorageImage
-              storageKey={essay.book.supabase_cover_img_url}
-              alt={essay.book?.title ?? ''}
+              storageKey={essay.book.google_books_cover_url}
+              alt={essay.book?.title_cs ?? ''}
               width={40}
               height={56}
               className="w-full h-full object-cover"
@@ -207,7 +207,7 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
             {essay.title}
           </p>
           {essay.book ? (
-            <p className="text-xs text-muted-foreground truncate">{essay.book.title}</p>
+            <p className="text-xs text-muted-foreground truncate">{essay.book.title_cs}</p>
           ) : (
             <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
               <Sparkles className="size-3" />
@@ -458,14 +458,14 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
               >
                 <div className="shrink-0 w-8 h-11 rounded overflow-hidden bg-muted flex items-center justify-center">
-                  {book.supabase_cover_img_url ? (
-                    <StorageImage storageKey={book.supabase_cover_img_url} alt={book.title} width={32} height={44} className="w-full h-full object-cover" />
+                  {book.google_books_cover_url ? (
+                    <StorageImage storageKey={book.google_books_cover_url} alt={book.title_cs} width={32} height={44} className="w-full h-full object-cover" />
                   ) : (
                     <BookOpen className="size-3.5 text-muted-foreground/40" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{book.title}</p>
+                  <p className="text-sm font-medium truncate">{book.title_cs}</p>
                   <p className="text-xs text-muted-foreground truncate">{book.author}</p>
                 </div>
               </Link>
@@ -496,7 +496,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{essay.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {essay.author?.name}{essay.book ? ` · ${essay.book.title}` : ''}
+                    {essay.author?.name}{essay.book ? ` · ${essay.book.title_cs}` : ''}
                   </p>
                 </div>
                 <span className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground">

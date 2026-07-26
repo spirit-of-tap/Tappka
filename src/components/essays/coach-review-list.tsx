@@ -121,7 +121,7 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
             {essay.book ? (
               <>
                 <BookOpen className="size-3 shrink-0" />
-                <span className="truncate">{essay.book.title}</span>
+                <span className="truncate">{essay.book.title_cs}</span>
               </>
             ) : (
               <>

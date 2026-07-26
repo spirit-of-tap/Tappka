@@ -51,11 +51,11 @@ export async function POST(request: NextRequest) {
     // Duplicate check: same ISBN, or same title+author (case-insensitive)
     const { data: existing } = await supabase
       .from('books')
-      .select('id, title, author')
+      .select('id, title_cs, author')
       .or(
         body.isbn_13
-          ? `isbn_13.eq.${body.isbn_13},and(title.ilike.${body.title.trim()},author.ilike.${body.author.trim()})`
-          : `and(title.ilike.${body.title.trim()},author.ilike.${body.author.trim()})`
+          ? `isbn_13.eq.${body.isbn_13},and(title_cs.ilike.${body.title.trim()},author.ilike.${body.author.trim()})`
+          : `and(title_cs.ilike.${body.title.trim()},author.ilike.${body.author.trim()})`
       )
       .limit(1)
       .maybeSingle();
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const { data: inserted, error: insertError } = await supabase
       .from('books')
       .insert({
-        title: body.title.trim(),
+        title_cs: body.title.trim(),
         author: body.author.trim(),
         isbn_13: body.isbn_13 ?? null,
         description: body.description ?? null,
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     if (insertError) throw insertError;
 
-    let coverUrl: string | null = body.supabase_cover_img_url ?? null;
+    let coverUrl: string | null = body.google_books_cover_url ?? null;
     if (!coverUrl && body.cover_url) {
       coverUrl = await downloadAndStoreCover(body.cover_url, inserted.id);
     }
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       await supabase
         .from('books')
         .update({
-          supabase_cover_img_url: coverUrl,
+          google_books_cover_url: coverUrl,
           updated_by_profile_id: profile.id,
         })
         .eq('id', inserted.id);
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { data: { ...inserted, supabase_cover_img_url: coverUrl, tags: cleanTags } },
+      { data: { ...inserted, google_books_cover_url: coverUrl, tags: cleanTags } },
       { status: 201 },
     );
   } catch (error) {

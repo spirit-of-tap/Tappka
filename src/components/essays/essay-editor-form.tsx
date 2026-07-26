@@ -97,10 +97,10 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         {selectedBook ? (
           <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
             <div className="flex h-12 w-9 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-              {selectedBook.supabase_cover_img_url ? (
+              {selectedBook.google_books_cover_url ? (
                 <StorageImage
-                  storageKey={selectedBook.supabase_cover_img_url}
-                  alt={selectedBook.title}
+                  storageKey={selectedBook.google_books_cover_url}
+                  alt={selectedBook.title_cs}
                   width={36}
                   height={48}
                   className="h-full w-full object-cover"
@@ -111,7 +111,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="mb-0.5 text-xs text-muted-foreground">Zdroj</p>
-              <p className="truncate text-sm font-medium">{selectedBook.title}</p>
+              <p className="truncate text-sm font-medium">{selectedBook.title_cs}</p>
               <p className="truncate text-xs text-muted-foreground">{selectedBook.author}</p>
             </div>
             {selectedBook.status === 'approved' && (
@@ -142,10 +142,10 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                     onClick={() => { setSelectedBook(book); setBookResults([]); setBookQuery(''); }}
                   >
                     <div className="flex h-12 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-                      {book.supabase_cover_img_url ? (
+                      {book.google_books_cover_url ? (
                         <StorageImage
-                          storageKey={book.supabase_cover_img_url}
-                          alt={book.title}
+                          storageKey={book.google_books_cover_url}
+                          alt={book.title_cs}
                           width={32}
                           height={48}
                           className="h-full w-full object-cover"
@@ -155,7 +155,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{book.title}</p>
+                      <p className="truncate text-sm font-medium">{book.title_cs}</p>
                       <p className="truncate text-xs text-muted-foreground">{book.author}</p>
                     </div>
                     {book.status === 'approved' && (

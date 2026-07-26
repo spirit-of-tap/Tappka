@@ -44,11 +44,11 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
                 <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{snippet}</p>
               )}
             </div>
-            {essay.book?.supabase_cover_img_url && (
+            {essay.book?.google_books_cover_url && (
               <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted">
                 <StorageImage
-                  storageKey={essay.book.supabase_cover_img_url}
-                  alt={essay.book.title}
+                  storageKey={essay.book.google_books_cover_url}
+                  alt={essay.book.title_cs}
                   width={40}
                   height={56}
                   className="w-full h-full object-cover"
@@ -62,7 +62,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
             {essay.book ? (
               <>
                 <BookOpen className="size-3 shrink-0" />
-                <span className="truncate">{essay.book.title}</span>
+                <span className="truncate">{essay.book.title_cs}</span>
                 {essay.book.status === 'approved' && pointsNumber(essay.book.book_points) > 0 && (
                   <span className="shrink-0 ml-auto font-medium text-foreground">{formatPoints(essay.book.book_points)} b.</span>
                 )}

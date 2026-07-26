@@ -28,7 +28,7 @@ export async function getProfiles(
       *,
       team:teams(*)
     `)
-    .is('access_removed_at', null) // Only active users
+    .is('access_removed_at', null)
     .order('name', { ascending: true });
 
   // Apply search filter

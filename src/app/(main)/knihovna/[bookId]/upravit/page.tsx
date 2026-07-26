@@ -35,7 +35,7 @@ export default async function BookEditPage({ params }: PageProps) {
       </Button>
       <div>
         <h1 className="text-2xl font-bold">Upravit knihu</h1>
-        <p className="text-muted-foreground text-sm mt-1">{book.title}</p>
+        <p className="text-muted-foreground text-sm mt-1">{book.title_cs}</p>
       </div>
       <BookEditForm book={book} />
     </div>

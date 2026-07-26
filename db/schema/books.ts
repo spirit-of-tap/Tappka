@@ -34,11 +34,12 @@ export const tags = pgTable("tags", {
 
 export const books = pgTable("books", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
-	title: text().notNull(),
+	titleCs: text("title_cs").notNull(),
+	titleEn: text("title_en"),
 	author: text().notNull(),
 	isbn13: text("isbn_13"),
 	description: text(),
-	supabaseCoverImgUrl: text("supabase_cover_img_url"),
+	googleBooksCoverUrl: text("google_books_cover_url"),
 	bookPoints: numeric("book_points", { precision: 3, scale: 2 }),
 	pageCount: integer("page_count"),
 	previewLink: text("preview_link"),
@@ -58,7 +59,7 @@ export const books = pgTable("books", {
 	index("books_created_desc_idx").using("btree", table.createdAt.desc().nullsFirst().op("timestamptz_ops")),
 	index("books_isbn_13_idx").using("btree", table.isbn13.asc().nullsLast().op("text_ops")).where(sql`(isbn_13 IS NOT NULL)`),
 	index("books_status_idx").using("btree", table.status.asc().nullsLast().op("enum_ops")),
-	index("books_title_trgm_idx").using("gin", table.title.asc().nullsLast().op("gin_trgm_ops")),
+	index("books_title_cs_trgm_idx").using("gin", table.titleCs.asc().nullsLast().op("gin_trgm_ops")),
 	foreignKey({
 			columns: [table.createdByProfileId],
 			foreignColumns: [profiles.id],

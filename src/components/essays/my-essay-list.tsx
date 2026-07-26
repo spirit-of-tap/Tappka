@@ -58,10 +58,10 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
 
             {/* Cover */}
             <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border/40">
-              {essay.book?.supabase_cover_img_url ? (
+              {essay.book?.google_books_cover_url ? (
                 <StorageImage
-                  storageKey={essay.book.supabase_cover_img_url}
-                  alt={essay.book.title}
+                  storageKey={essay.book.google_books_cover_url}
+                  alt={essay.book.title_cs}
                   width={40}
                   height={56}
                   className="w-full h-full object-cover"
@@ -97,7 +97,7 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
 
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 {essay.book ? (
-                  <>{essay.book.title}</>
+                  <>{essay.book.title_cs}</>
                 ) : (
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                     <Sparkles className="size-3" />

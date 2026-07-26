@@ -157,7 +157,7 @@ export async function searchBooksLocally(
   const { data, error } = await supabase
     .from('books')
     .select('*')
-    .or(`title.ilike.%${query}%,author.ilike.%${query}%`)
+    .or(`title_cs.ilike.%${query}%,title_en.ilike.%${query}%,author.ilike.%${query}%`)
     .limit(limit);
 
   if (error) throw error;

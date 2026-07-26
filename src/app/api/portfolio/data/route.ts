@@ -37,7 +37,7 @@ export async function GET() {
         essay_revisions(title, revision_no, invalid_since),
         book:books!book_id(
           id,
-          title,
+          title_cs,
           author,
           book_points,
           source,
@@ -58,7 +58,7 @@ export async function GET() {
     const rawBook = Array.isArray(essay.book) ? essay.book[0] : essay.book;
     const book = rawBook as {
       id: string;
-      title: string;
+      title_cs: string;
       author: string;
       book_points: number | null;
       source: string;
@@ -71,7 +71,7 @@ export async function GET() {
 
     return {
       index: i + 1,
-      bookTitle: book?.title ?? '',
+      bookTitle: book?.title_cs ?? '',
       author: book?.author ?? '',
       essayId: essay.id,
       essayTitle: latestRevisionTitle(revisions),

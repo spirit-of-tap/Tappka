@@ -52,8 +52,8 @@ export function CoachApprovalRow({ book, onApprove, onReject, onRemove }: CoachA
   return (
     <div className="flex gap-4 py-4 border-b last:border-0">
       <div className="shrink-0 w-12 h-16 bg-muted rounded overflow-hidden flex items-center justify-center">
-        {book.supabase_cover_img_url ? (
-          <StorageImage storageKey={book.supabase_cover_img_url} alt={book.title} className="w-full h-full object-cover" width={48} height={64} />
+        {book.google_books_cover_url ? (
+          <StorageImage storageKey={book.google_books_cover_url} alt={book.title_cs} className="w-full h-full object-cover" width={48} height={64} />
         ) : (
           <BookOpen className="size-5 text-muted-foreground" />
         )}
@@ -61,7 +61,7 @@ export function CoachApprovalRow({ book, onApprove, onReject, onRemove }: CoachA
 
       <div className="flex-1 space-y-2">
         <div>
-          <p className="font-medium text-sm">{book.title}</p>
+          <p className="font-medium text-sm">{book.title_cs}</p>
           <p className="text-xs text-muted-foreground">{book.author}</p>
           {book.isbn_13 && <p className="text-xs text-muted-foreground">ISBN: {book.isbn_13}</p>}
           {book.created_by?.name && (

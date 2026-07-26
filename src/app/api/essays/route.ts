@@ -45,7 +45,7 @@ async function fetchCreatedEssay(
       essay_views(count),
       essay_comments(count),
       author:profiles!author_profile_id(id, name, picture, role),
-      book:books!book_id(id, title, author, book_points, status, supabase_cover_img_url)
+      book:books!book_id(id, title_cs, author, book_points, status, google_books_cover_url)
     `)
     .eq('id', essayId)
     .single();

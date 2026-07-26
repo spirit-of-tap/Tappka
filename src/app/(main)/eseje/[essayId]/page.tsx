@@ -95,14 +95,16 @@ export default async function EssayDetailPage({ params }: PageProps) {
       <div className="mb-6 space-y-3">
         <h1 className="text-3xl font-bold leading-tight">{essay.title}</h1>
         <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-          {essay.author?.picture ? (
-            <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover" />
-          ) : (
-            <div className="size-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-              {essay.author?.name?.[0]}
-            </div>
-          )}
-          <span className="font-medium text-foreground">{essay.author?.name}</span>
+          <Link href={`/komunita/profil/${essay.author_profile_id}`} className="flex items-center gap-2 hover:underline">
+            {essay.author?.picture ? (
+              <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover" />
+            ) : (
+              <div className="size-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                {essay.author?.name?.[0]}
+              </div>
+            )}
+            <span className="font-medium text-foreground">{essay.author?.name}</span>
+          </Link>
           <span className="text-muted-foreground/50">&middot;</span>
           <span>{new Date(essay.created_at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           <span className="text-muted-foreground/50">&middot;</span>
@@ -129,10 +131,10 @@ export default async function EssayDetailPage({ params }: PageProps) {
         <Link href={`/knihovna/${essay.book.id}`} className="group block mb-8">
           <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors">
             <div className="shrink-0 w-9 h-12 rounded overflow-hidden bg-muted flex items-center justify-center">
-              {essay.book.supabase_cover_img_url ? (
+              {essay.book.google_books_cover_url ? (
                 <StorageImage
-                  storageKey={essay.book.supabase_cover_img_url}
-                  alt={essay.book.title}
+                  storageKey={essay.book.google_books_cover_url}
+                  alt={essay.book.title_cs}
                   className="w-full h-full object-cover"
                   width={36}
                   height={48}
@@ -143,7 +145,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground mb-0.5">Zdroj</p>
-              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{essay.book.title}</p>
+              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{essay.book.title_cs}</p>
               <p className="text-xs text-muted-foreground truncate">{essay.book.author}</p>
             </div>
             {essay.book.status === 'approved' && (

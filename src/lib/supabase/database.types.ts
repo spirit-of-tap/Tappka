@@ -152,6 +152,7 @@ export type Database = {
           created_by_profile_id: string
           description: string | null
           external_id: string | null
+          google_books_cover_url: string | null
           id: string
           isbn_13: string | null
           page_count: number | null
@@ -161,8 +162,8 @@ export type Database = {
           status_changed_at: string | null
           status_changed_by_profile_id: string | null
           status_reason: string | null
-          supabase_cover_img_url: string | null
-          title: string
+          title_cs: string
+          title_en: string | null
           updated_at: string
           updated_by_profile_id: string
         }
@@ -173,6 +174,7 @@ export type Database = {
           created_by_profile_id: string
           description?: string | null
           external_id?: string | null
+          google_books_cover_url?: string | null
           id?: string
           isbn_13?: string | null
           page_count?: number | null
@@ -182,8 +184,8 @@ export type Database = {
           status_changed_at?: string | null
           status_changed_by_profile_id?: string | null
           status_reason?: string | null
-          supabase_cover_img_url?: string | null
-          title: string
+          title_cs: string
+          title_en?: string | null
           updated_at?: string
           updated_by_profile_id: string
         }
@@ -194,6 +196,7 @@ export type Database = {
           created_by_profile_id?: string
           description?: string | null
           external_id?: string | null
+          google_books_cover_url?: string | null
           id?: string
           isbn_13?: string | null
           page_count?: number | null
@@ -203,8 +206,8 @@ export type Database = {
           status_changed_at?: string | null
           status_changed_by_profile_id?: string | null
           status_reason?: string | null
-          supabase_cover_img_url?: string | null
-          title?: string
+          title_cs?: string
+          title_en?: string | null
           updated_at?: string
           updated_by_profile_id?: string
         }
@@ -587,6 +590,7 @@ export type Database = {
           book_id: string | null
           created_at: string
           created_by_profile_id: string
+          external_id: string | null
           id: string
           pinned_at: string | null
           pinned_by_profile_id: string | null
@@ -600,6 +604,7 @@ export type Database = {
           book_id?: string | null
           created_at?: string
           created_by_profile_id: string
+          external_id?: string | null
           id?: string
           pinned_at?: string | null
           pinned_by_profile_id?: string | null
@@ -613,6 +618,7 @@ export type Database = {
           book_id?: string | null
           created_at?: string
           created_by_profile_id?: string
+          external_id?: string | null
           id?: string
           pinned_at?: string | null
           pinned_by_profile_id?: string | null
@@ -1214,6 +1220,7 @@ export type Database = {
           description: string | null
           essay_count: number | null
           external_id: string | null
+          google_books_cover_url: string | null
           id: string | null
           isbn_13: string | null
           page_count: number | null
@@ -1223,8 +1230,8 @@ export type Database = {
           status_changed_at: string | null
           status_changed_by_profile_id: string | null
           status_reason: string | null
-          supabase_cover_img_url: string | null
-          title: string | null
+          title_cs: string | null
+          title_en: string | null
           updated_at: string | null
           updated_by_profile_id: string | null
         }

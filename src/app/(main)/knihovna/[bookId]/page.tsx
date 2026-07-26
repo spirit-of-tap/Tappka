@@ -96,7 +96,7 @@ export default async function BookDetailPage({ params }: PageProps) {
   const isCoachOrAdmin = profile?.role === 'coach' || profile?.role === 'admin';
 
   const previewUrl = book.preview_link ? book.preview_link.replace(/^http:\/\//, 'https://') : null;
-  const goodreadsUrl = `https://www.goodreads.com/search?q=${encodeURIComponent(book.title)}`;
+  const goodreadsUrl = `https://www.goodreads.com/search?q=${encodeURIComponent(book.title_cs)}`;
 
   return (
     <div className="container mx-auto max-w-4xl py-6 space-y-8">
@@ -116,7 +116,7 @@ export default async function BookDetailPage({ params }: PageProps) {
                 Upravit
               </Link>
             </Button>
-            <BookDeleteButton bookId={book.id} bookTitle={book.title} />
+            <BookDeleteButton bookId={book.id} bookTitle={book.title_cs} />
           </div>
         )}
       </div>
@@ -125,10 +125,10 @@ export default async function BookDetailPage({ params }: PageProps) {
       <div className="flex flex-col gap-6 sm:flex-row sm:gap-8">
         <div className="mx-auto shrink-0 sm:mx-0">
           <div className="flex aspect-[2/3] w-44 items-center justify-center overflow-hidden rounded-xl bg-muted shadow-lg ring-1 ring-border/50">
-            {book.supabase_cover_img_url ? (
+            {book.google_books_cover_url ? (
               <StorageImage
-                storageKey={book.supabase_cover_img_url}
-                alt={book.title}
+                storageKey={book.google_books_cover_url}
+                alt={book.title_cs}
                 className="h-full w-full object-cover"
                 width={176}
                 height={264}
@@ -141,7 +141,7 @@ export default async function BookDetailPage({ params }: PageProps) {
 
         <div className="min-w-0 flex-1 space-y-4">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold leading-tight tracking-tight">{book.title}</h1>
+            <h1 className="text-3xl font-bold leading-tight tracking-tight">{book.title_cs}</h1>
             <p className="text-lg text-muted-foreground">{book.author}</p>
           </div>
 

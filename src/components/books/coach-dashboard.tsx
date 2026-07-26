@@ -92,7 +92,7 @@ export function CoachDashboard({ initialPending, initialRejected }: CoachDashboa
             {rejected.map((book) => (
               <div key={book.id} className="flex gap-3 py-3 border-b last:border-0 items-start">
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{book.title}</p>
+                  <p className="font-medium text-sm">{book.title_cs}</p>
                   <p className="text-xs text-muted-foreground">{book.author}</p>
                   {book.status_reason && (
                     <p className="text-xs text-destructive mt-1">Důvod: {book.status_reason}</p>
