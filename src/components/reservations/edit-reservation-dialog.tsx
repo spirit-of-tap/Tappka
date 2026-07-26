@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Edit, Trash2, Users } from "lucide-react";
+import { Edit, Trash2, Users, Clock, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/responsive-alert-dialog";
+import { TimePicker } from "./time-picker";
 import type { ReservationWithDetails } from "@/lib/reservations/types";
 
 interface EditReservationDialogProps {
@@ -69,9 +70,37 @@ export function EditReservationDialog({
   // Form state - simplified: title serves as reason
   const [reason, setReason] = useState(reservation.title || "");
   const [personCount, setPersonCount] = useState(reservation.person_count?.toString() || "1");
+  const [editableStartTime, setEditableStartTime] = useState(() => {
+    const start = new Date(reservation.start_at);
+    return `${start.getHours().toString().padStart(2, "0")}:${start.getMinutes().toString().padStart(2, "0")}`;
+  });
+  const [editableEndTime, setEditableEndTime] = useState(() => {
+    const end = new Date(reservation.end_at);
+    return `${end.getHours().toString().padStart(2, "0")}:${end.getMinutes().toString().padStart(2, "0")}`;
+  });
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const startDate = new Date(reservation.start_at);
   const endDate = new Date(reservation.end_at);
+
+  // On mobile, scroll focused inputs into view when keyboard opens
+  useEffect(() => {
+    if (!open) return;
+
+    const el = contentRef.current;
+    if (!el) return;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        setTimeout(() => target.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+      }
+    };
+
+    el.addEventListener("focusin", handleFocusIn);
+    return () => el.removeEventListener("focusin", handleFocusIn);
+  }, [open]);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -84,6 +113,15 @@ export function EditReservationDialog({
       return;
     }
 
+    // Compute ISO times from editable time strings
+    const [startHours, startMins] = editableStartTime.split(":").map(Number);
+    const finalStart = new Date(startDate);
+    finalStart.setHours(startHours, startMins, 0, 0);
+
+    const [endHours, endMins] = editableEndTime.split(":").map(Number);
+    const finalEnd = new Date(startDate);
+    finalEnd.setHours(endHours, endMins, 0, 0);
+
     setIsLoading(true);
 
     try {
@@ -91,8 +129,10 @@ export function EditReservationDialog({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: reason.trim(), // Use reason as title
+          title: reason.trim(),
           person_count: parseInt(personCount),
+          start_at: finalStart.toISOString(),
+          end_at: finalEnd.toISOString(),
         }),
       });
 
@@ -173,7 +213,7 @@ export function EditReservationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div ref={contentRef} className="space-y-4">
           {/* Reason */}
           <div className="space-y-2">
             <Label htmlFor="edit-reason">Důvod rezervace</Label>
@@ -199,6 +239,55 @@ export function EditReservationDialog({
               className="w-16 h-9"
             />
             <span className="text-sm text-muted-foreground">osob</span>
+          </div>
+
+          {/* Time editing */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Clock className="size-4 text-muted-foreground" />
+                Čas
+              </Label>
+              {!isEditingTime && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditingTime(true)}
+                  className="h-7 px-2 text-xs"
+                >
+                  <Edit2 className="size-3 mr-1" />
+                  Upravit čas
+                </Button>
+              )}
+            </div>
+
+            {isEditingTime ? (
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <TimePicker
+                    value={editableStartTime}
+                    onChange={setEditableStartTime}
+                    date={startDate}
+                  />
+                </div>
+                <span className="text-muted-foreground shrink-0">-</span>
+                <div className="flex-1">
+                  <TimePicker
+                    value={editableEndTime}
+                    onChange={setEditableEndTime}
+                    minTime={editableStartTime}
+                    date={startDate}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-2 p-2 rounded-md bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                onClick={() => setIsEditingTime(true)}
+              >
+                <span className="font-medium">{editableStartTime} - {editableEndTime}</span>
+              </div>
+            )}
           </div>
 
         </div>

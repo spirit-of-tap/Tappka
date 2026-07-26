@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -53,6 +53,8 @@ export function QuickReservationDialog({
   const [editableEndTime, setEditableEndTime] = useState("");
   const [isEditingTime, setIsEditingTime] = useState(false);
 
+  const contentRef = useRef<HTMLDivElement>(null);
+
   // Sync editable times when props change
   useEffect(() => {
     if (startTime) {
@@ -66,6 +68,25 @@ export function QuickReservationDialog({
       setEditableEndTime(`${hours}:${mins}`);
     }
   }, [startTime, endTime]);
+
+  // On mobile, scroll focused inputs into view when keyboard opens
+  useEffect(() => {
+    if (!open) return;
+
+    const el = contentRef.current;
+    if (!el) return;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        // Small delay lets the browser finish keyboard transition before scrolling
+        setTimeout(() => target.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+      }
+    };
+
+    el.addEventListener("focusin", handleFocusIn);
+    return () => el.removeEventListener("focusin", handleFocusIn);
+  }, [open]);
 
   const resetForm = () => {
     setReason("");
@@ -176,7 +197,7 @@ export function QuickReservationDialog({
           <DialogTitle>{roomName}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div ref={contentRef} className="space-y-4">
           {/* Time selection - always visible */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">

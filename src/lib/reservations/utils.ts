@@ -158,18 +158,27 @@ export function isWithinOperatingHours(date: Date): boolean {
 /**
  * Round time to nearest slot (15 minutes)
  */
-export function roundToSlot(date: Date): Date {
+export function roundToSlot(date: Date, direction: "floor" | "ceil" = "floor"): Date {
   const rounded = new Date(date);
   const minutes = rounded.getMinutes();
   const remainder = minutes % TIME_SLOT_MINUTES;
-  
+
   if (remainder !== 0) {
-    rounded.setMinutes(minutes + (TIME_SLOT_MINUTES - remainder));
+    if (direction === "floor") {
+      rounded.setMinutes(minutes - remainder);
+    } else {
+      rounded.setMinutes(minutes + (TIME_SLOT_MINUTES - remainder));
+    }
   }
   rounded.setSeconds(0);
   rounded.setMilliseconds(0);
-  
+
   return rounded;
+}
+
+/** Round up to next slot (legacy behavior). */
+export function roundToNextSlot(date: Date): Date {
+  return roundToSlot(date, "ceil");
 }
 
 /**
