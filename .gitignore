@@ -69,6 +69,10 @@ scripts/data/*_rows.sql
 # Legacy CSV import — contains personal data and CSV exports
 scripts/essayimport/
 
+# Contact exports — names, phone numbers, birthdays, personal emails, photos
+scripts/*.vcf
+scripts/**/*.vcf
+
 # Playwright
 /test-results/
 /playwright-report/

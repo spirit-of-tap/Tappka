@@ -1,4 +1,4 @@
-import { IMAGES_BUCKET, type Endpoint } from "./config";
+import { IMAGES_BUCKET, publicObjectPrefix, type Endpoint } from "./config";
 
 const CONTENT_TYPES = {
   ".jpg": "image/jpeg",
@@ -63,9 +63,13 @@ export function contentTypeFor(path: string): string {
  * Supabase storage answers a missing public object with HTTP 400, not 404, so
  * anything other than 200 counts as absent.
  */
-export async function headObject(endpoint: Endpoint, path: string): Promise<ObjectHead> {
+export async function headObject(
+  endpoint: Endpoint,
+  path: string,
+  bucket: string = IMAGES_BUCKET,
+): Promise<ObjectHead> {
   const response = await fetchWithRetry(
-    `${endpoint.publicImagePrefix}/${encodeObjectPath(path)}`,
+    `${publicObjectPrefix(endpoint, bucket)}/${encodeObjectPath(path)}`,
     { method: "HEAD" },
     `HEAD object ${path}`,
   );
@@ -78,9 +82,10 @@ export async function headObject(endpoint: Endpoint, path: string): Promise<Obje
 export async function downloadObject(
   endpoint: Endpoint,
   path: string,
+  bucket: string = IMAGES_BUCKET,
 ): Promise<{ bytes: Uint8Array<ArrayBuffer>; contentType: string }> {
   const response = await fetchWithRetry(
-    `${endpoint.publicImagePrefix}/${encodeObjectPath(path)}`,
+    `${publicObjectPrefix(endpoint, bucket)}/${encodeObjectPath(path)}`,
     {},
     `GET object ${path}`,
   );
@@ -99,9 +104,10 @@ export async function uploadObject(
   path: string,
   bytes: Uint8Array<ArrayBuffer>,
   contentType: string,
+  bucket: string = IMAGES_BUCKET,
 ): Promise<void> {
   const response = await fetchWithRetry(
-    `${endpoint.storageApiUrl}/object/${IMAGES_BUCKET}/${encodeObjectPath(path)}`,
+    `${endpoint.storageApiUrl}/object/${bucket}/${encodeObjectPath(path)}`,
     {
       method: "POST",
       headers: {

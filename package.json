@@ -35,7 +35,8 @@
     "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts",
     "db:export": "node scripts/package-json-helpers/export-db-sql.mjs",
     "wiki": "node scripts/generate-docs-html-shims.mjs && vitepress dev docs --open",
-    "wiki:doctor": "node scripts/check-docs-links.mjs"
+    "wiki:doctor": "node scripts/check-docs-links.mjs",
+    "transfer:avatars": "node --env-file=.env.transfer.local --import tsx scripts/transfer/import-avatars.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

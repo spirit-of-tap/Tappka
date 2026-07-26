@@ -1,4 +1,5 @@
 export const IMAGES_BUCKET = "images";
+export const AVATARS_BUCKET = "avatars";
 
 export type TargetName = "preview" | "production";
 
@@ -9,6 +10,11 @@ export interface Endpoint {
   readonly storageApiUrl: string;
   readonly publicImagePrefix: string;
   readonly serviceKey: string;
+}
+
+/** Public object URL prefix for any bucket on this endpoint. */
+export function publicObjectPrefix(endpoint: Endpoint, bucket: string): string {
+  return `${endpoint.storageApiUrl}/object/public/${bucket}`;
 }
 
 export function buildEndpoint(baseUrl: string, serviceKey: string): Endpoint {
