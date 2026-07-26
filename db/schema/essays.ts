@@ -7,6 +7,7 @@ import { books } from "./books"
 
 export const essays = pgTable("essays", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
+	externalId: text("external_id"),
 	authorProfileId: uuid("author_profile_id").notNull(),
 	bookId: uuid("book_id"),
 	publishedAt: timestamp("published_at", { withTimezone: true, mode: 'string' }),

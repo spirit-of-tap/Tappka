@@ -36,7 +36,7 @@ export interface CreateBookInput {
   author: string;
   isbn_13?: string;
   description?: string;
-  supabase_cover_img_url?: string;
+  google_books_cover_url?: string;
   tags?: string[];
   source: BookSource;
   external_id?: string;
@@ -73,31 +73,25 @@ export const BOOK_STATUS_COLORS: Record<BookStatus, string> = {
 };
 
 export const BOOK_CATEGORIES = [
-  'podnikani',
-  'uceni',
-  'managment',
-  'duchovni_rust',
-  'vedeni',
-  'spolecnost',
-  'inovace',
-  'koucovani',
-  'marketing',
+  'Finance & ekonomika',
+  'Inovace & kreativita',
+  'Komunikace & prodej',
   'Leadership',
-  'Finance',
+  'Management',
+  'Marketing',
+  'Multidisciplinární',
+  'Osobní rozvoj',
 ] as const;
 
 export const BOOK_CATEGORY_LABELS: Record<string, string> = {
-  podnikani: 'Podnikání',
-  uceni: 'Učení',
-  managment: 'Management',
-  duchovni_rust: 'Duchovní růst',
-  vedeni: 'Vedení',
-  spolecnost: 'Společnost',
-  inovace: 'Inovace',
-  koucovani: 'Koučování',
-  marketing: 'Marketing',
+  'Finance & ekonomika': 'Finance & ekonomika',
+  'Inovace & kreativita': 'Inovace & kreativita',
+  'Komunikace & prodej': 'Komunikace & prodej',
   Leadership: 'Leadership',
-  Finance: 'Finance',
+  Management: 'Management',
+  Marketing: 'Marketing',
+  Multidisciplinární: 'Multidisciplinární',
+  'Osobní rozvoj': 'Osobní rozvoj',
 };
 
 export const BOOK_POINTS_GOAL = 120;

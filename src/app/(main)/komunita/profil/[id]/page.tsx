@@ -174,8 +174,8 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                   return (
                     <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
                       <Link href={`/eseje/${essay.id}`} className="shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5" style={{ height: '60px' }}>
-                        {essay.book!.supabase_cover_img_url ? (
-                          <StorageImage storageKey={essay.book!.supabase_cover_img_url} alt={essay.book!.title} width={44} height={60} className="w-full h-full object-cover" />
+                        {essay.book!.google_books_cover_url ? (
+                          <StorageImage storageKey={essay.book!.google_books_cover_url} alt={essay.book!.title_cs} width={44} height={60} className="w-full h-full object-cover" />
                         ) : (
                           <BookOpen className="size-4 text-muted-foreground/30" />
                         )}
@@ -188,7 +188,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                           </p>
                         </Link>
                         <p className="text-xs text-muted-foreground truncate">
-                          {essay.book!.title}
+                          {essay.book!.title_cs}
                           {pointsNumber(essay.book!.book_points) > 0 && <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(essay.book!.book_points)}</span>}
                         </p>
                         {excerpt && excerpt.length > 20 && (

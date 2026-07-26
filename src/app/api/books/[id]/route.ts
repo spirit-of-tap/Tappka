@@ -108,7 +108,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       const updates: Record<string, unknown> = {
         updated_by_profile_id: profile.id,
       };
-      if (body.title?.trim()) updates.title = body.title.trim();
+      if (body.title?.trim()) updates.title_cs = body.title.trim();
       if (body.author?.trim()) updates.author = body.author.trim();
       if (body.description !== undefined) updates.description = body.description?.trim() || null;
 

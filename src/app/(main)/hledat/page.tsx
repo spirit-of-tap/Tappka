@@ -20,7 +20,7 @@ export default async function HledatPage() {
 
   type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
   const categoryBestBooks: Record<string, CategoryBook[]> = {};
-  for (const row of (categoryRows.data ?? []) as CategoryBook[]) {
+  for (const row of (categoryRows.data ?? []) as unknown as CategoryBook[]) {
     if (!(row.tag in BOOK_CATEGORY_LABELS)) continue;
     (categoryBestBooks[row.tag] ??= []).push(row);
   }

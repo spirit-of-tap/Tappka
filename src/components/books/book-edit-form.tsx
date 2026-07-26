@@ -17,7 +17,7 @@ interface BookEditFormProps {
 
 export function BookEditForm({ book }: BookEditFormProps) {
   const router = useRouter();
-  const [title, setTitle] = useState(book.title);
+  const [title, setTitle] = useState(book.title_cs);
   const [author, setAuthor] = useState(book.author);
   const [description, setDescription] = useState(book.description ?? '');
   const [tags, setTags] = useState<string[]>(book.tags);

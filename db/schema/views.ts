@@ -7,11 +7,12 @@ import { bookSource, bookStatus } from "./books"
 
 export const booksWithEssayCount = pgView("books_with_essay_count", {
 	id: uuid(),
-	title: text(),
+	titleCs: text("title_cs"),
+	titleEn: text("title_en"),
 	author: text(),
 	isbn13: text("isbn_13"),
 	description: text(),
-	supabaseCoverImgUrl: text("supabase_cover_img_url"),
+	googleBooksCoverUrl: text("google_books_cover_url"),
 	bookPoints: numeric("book_points", { precision: 3, scale: 2 }),
 	pageCount: integer("page_count"),
 	previewLink: text("preview_link"),
@@ -26,4 +27,4 @@ export const booksWithEssayCount = pgView("books_with_essay_count", {
 	createdByProfileId: uuid("created_by_profile_id"),
 	updatedByProfileId: uuid("updated_by_profile_id"),
 	essayCount: integer("essay_count"),
-}).as(sql`SELECT b.id, b.title, b.author, b.isbn_13, b.description, b.supabase_cover_img_url, b.book_points, b.page_count, b.preview_link, b.source, b.external_id, b.status, b.status_changed_at, b.status_changed_by_profile_id, b.status_reason, b.created_at, b.updated_at, b.created_by_profile_id, b.updated_by_profile_id, COALESCE(ec.essay_count, 0) AS essay_count FROM books b LEFT JOIN ( SELECT essays.book_id, count(*)::integer AS essay_count FROM essays WHERE essays.book_id IS NOT NULL GROUP BY essays.book_id) ec ON ec.book_id = b.id`);
+}).as(sql`SELECT b.id, b.title_cs, b.title_en, b.author, b.isbn_13, b.description, b.google_books_cover_url, b.book_points, b.page_count, b.preview_link, b.source, b.external_id, b.status, b.status_changed_at, b.status_changed_by_profile_id, b.status_reason, b.created_at, b.updated_at, b.created_by_profile_id, b.updated_by_profile_id, COALESCE(ec.essay_count, 0) AS essay_count FROM books b LEFT JOIN ( SELECT essays.book_id, count(*)::integer AS essay_count FROM essays WHERE essays.book_id IS NOT NULL GROUP BY essays.book_id) ec ON ec.book_id = b.id`);

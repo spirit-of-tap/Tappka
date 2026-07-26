@@ -107,7 +107,7 @@ export function AddBookWizard() {
                 <Card key={book.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push(`/knihovna/${book.id}`)}>
                   <CardContent className="p-3 flex justify-between items-center">
                     <div>
-                      <p className="font-medium text-sm">{book.title}</p>
+                      <p className="font-medium text-sm">{book.title_cs}</p>
                       <p className="text-xs text-muted-foreground">{book.author}</p>
                     </div>
                     <ChevronRight className="size-4 text-muted-foreground" />
@@ -148,7 +148,7 @@ export function AddBookWizard() {
           {externalResults.map((candidate, i) => {
             const existing = localResults.find((b) =>
               (candidate.isbn_13 && b.isbn_13 === candidate.isbn_13) ||
-              (b.title.toLowerCase() === candidate.title.toLowerCase() &&
+              (b.title_cs.toLowerCase() === candidate.title.toLowerCase() &&
                b.author.toLowerCase() === candidate.author.toLowerCase())
             );
             return (

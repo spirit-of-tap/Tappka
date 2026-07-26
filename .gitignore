@@ -66,6 +66,9 @@ mise.*.local.toml
 # Production data dumps — personal data, never commit
 scripts/data/*_rows.sql
 
+# Legacy CSV import — contains personal data and CSV exports
+scripts/essayimport/
+
 # Playwright
 /test-results/
 /playwright-report/

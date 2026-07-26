@@ -59,7 +59,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
                   </p>
                   <p className="text-xs text-muted-foreground line-clamp-1">
                     {essay.author?.name ?? 'Neznámý autor'}
-                    {essay.book && ` · ${essay.book.title}`}
+                    {essay.book && ` · ${essay.book.title_cs}`}
                     {' · '}
                     {new Date(essay.created_at).toLocaleDateString('cs-CZ', {
                       day: 'numeric',
