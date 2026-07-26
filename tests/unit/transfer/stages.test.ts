@@ -14,7 +14,7 @@ import {
 } from "../../../scripts/transfer/stage-essays";
 import { buildProfileInsertRows } from "../../../scripts/transfer/stage-profiles";
 import { collectAllObjectPaths } from "../../../scripts/transfer/stage-storage";
-import { compareCounts } from "../../../scripts/transfer/verify";
+import { compareCounts, expectedProfileCount } from "../../../scripts/transfer/verify";
 
 const FROM = "http://127.0.0.1:54321/storage/v1/object/public/images";
 const TO = "https://preview.supabase.co/storage/v1/object/public/images";
@@ -339,5 +339,27 @@ describe("inFilter", () => {
 
   it("rejects an empty id list, which would otherwise delete nothing silently", () => {
     expect(() => inFilter("id", [])).toThrow(/empty/i);
+  });
+});
+
+describe("expectedProfileCount", () => {
+  it("equals the source count when every target profile collides", () => {
+    // Preview's shape: all 3 target profiles exist in the source.
+    expect(expectedProfileCount(makePlan())).toBe(3);
+  });
+
+  it("adds target-only accounts that have no source counterpart", () => {
+    // Production's shape: real staff accounts absent from the legacy import
+    // must not make a correct transfer look wrong.
+    const plan = makePlan();
+    const withStranger: TransferPlan = {
+      ...plan,
+      targetProfiles: [
+        ...plan.targetProfiles,
+        profile({ id: "tgt-only", work_email: "staff@pef.czu.cz", role: "mentor" }),
+      ],
+    };
+
+    expect(expectedProfileCount(withStranger)).toBe(4);
   });
 });

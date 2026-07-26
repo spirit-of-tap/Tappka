@@ -15,6 +15,18 @@ export interface Check {
   readonly detail: string;
 }
 
+/**
+ * Every source profile plus the target's own accounts that have no source
+ * counterpart. Preview happened to have none of the latter — all 3 of its
+ * profiles collided — but production carries 4 real staff accounts absent from
+ * the legacy import, so asserting `target === source` would fail there on
+ * correct data.
+ */
+export function expectedProfileCount(plan: TransferPlan): number {
+  const targetOnly = plan.targetProfiles.length - plan.profileMap.collisions.length;
+  return plan.sourceProfiles.length + targetOnly;
+}
+
 export function compareCounts(
   sourceCounts: Readonly<Record<DataTable, number>>,
   targetCounts: Readonly<Record<DataTable, number>>,
@@ -65,10 +77,11 @@ export async function verifyTransfer(
   checks.push(...compareCounts(plan.sourceCounts, targetCounts));
 
   const targetProfileCount = await countRows(target, "profiles");
+  const expected = expectedProfileCount(plan);
   checks.push({
     name: "count:profiles",
-    passed: targetProfileCount === plan.sourceProfiles.length,
-    detail: `source ${plan.sourceProfiles.length}, target ${targetProfileCount}`,
+    passed: targetProfileCount === expected,
+    detail: `expected ${expected} (source ${plan.sourceProfiles.length} + ${expected - plan.sourceProfiles.length} target-only), target ${targetProfileCount}`,
   });
 
   const [sourceTeams, targetTeams] = await Promise.all([
