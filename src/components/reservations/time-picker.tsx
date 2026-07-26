@@ -79,10 +79,10 @@ export function TimePicker({
     let floor = minTime ?? null;
 
     if (isToday) {
-      // Round current time up to the next slot increment
+      // Round current time down to the current slot start
       const increment = hourOnly ? 60 : TIME_SLOT_MINUTES;
       const totalMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-      const roundedMinutes = Math.ceil(totalMinutes / increment) * increment;
+      const roundedMinutes = Math.floor(totalMinutes / increment) * increment;
       const nowHour = Math.floor(roundedMinutes / 60);
       const nowMin = roundedMinutes % 60;
       const nowStr = `${nowHour.toString().padStart(2, "0")}:${nowMin.toString().padStart(2, "0")}`;
@@ -98,12 +98,9 @@ export function TimePicker({
     setOpen(false);
   };
 
-  // Handle wheel scroll manually for better UX
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (scrollRef.current) {
-      e.stopPropagation();
-      scrollRef.current.scrollTop += e.deltaY;
-    }
+  // Stop propagation so parent (drawer) doesn't capture scroll/touch
+  const stopPropagation = useCallback((e: React.WheelEvent | React.TouchEvent) => {
+    e.stopPropagation();
   }, []);
 
   return (
@@ -125,12 +122,14 @@ export function TimePicker({
         className="w-32 p-0"
         align="start"
         sideOffset={4}
-        onWheel={handleWheel}
+        onWheel={stopPropagation}
+        onTouchMove={stopPropagation}
       >
         <div
           ref={scrollRef}
-          className="p-1 max-h-64 overflow-y-auto"
-          onWheel={handleWheel}
+          className="p-1 max-h-64 overflow-y-auto overscroll-contain"
+          onWheel={stopPropagation}
+          onTouchMove={stopPropagation}
         >
           {availableSlots.map((slot) => (
             <Button
