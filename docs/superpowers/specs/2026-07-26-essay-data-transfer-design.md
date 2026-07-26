@@ -148,6 +148,23 @@ individually, so neither count needs to be reconciled up front — but verificat
 must compare *referenced* URLs, not raw object counts, or it will report a spurious
 mismatch.
 
+### R6a — Trigger behaviour the transfer depends on
+
+Verified against the local database on 2026-07-26; preview and production share these
+definitions because they come from `supabase/migrations/`.
+
+| Trigger | Table(s) | Timing | Consequence for the transfer |
+| --- | --- | --- | --- |
+| `handle_updated_at` | `profiles`, `books`, `essays`, `essay_comments` | `BEFORE UPDATE` | Does not fire on INSERT, so explicit timestamps survive. Forbids `merge-duplicates` (see Failure handling). |
+| `validate_picture_only_update` | `profiles` | `BEFORE UPDATE` | Would reject a `team_id` change from a normal user, but returns early when the JWT role is `service_role`. The `team_id` PATCH therefore succeeds. |
+| `apply_google_profile_defaults` | `profiles` | `BEFORE INSERT/UPDATE` | Returns immediately when `new.user_id is null`, so it is inert for all 190 inserted profiles (R7). |
+| `books_protect_approved_trigger` | `books` | `BEFORE UPDATE` | Inert for inserts; another reason updates are avoided. |
+
+One accepted side effect: the `team_id` PATCH targets two profiles that *do* have a
+`user_id`, so `apply_google_profile_defaults` will run for them. If such a profile has
+an empty `name` or `picture`, the trigger fills it from Google metadata. This is the
+application's own intended behaviour and is treated as benign rather than suppressed.
+
 ### R7 — `user_id` is always `NULL` for inserted profiles
 
 `profiles.user_id` references `users.id`, which is environment-specific and bound to
@@ -199,10 +216,20 @@ RESTRICT` and `NOT NULL`, so referenced profiles must exist first.
 
 Without a wrapping transaction, safety comes from three properties:
 
-- **Idempotency.** Every row carries an explicit primary key from the source, so all
-  writes are upserts (`Prefer: resolution=merge-duplicates`, with
-  `on_conflict=essay_id,revision_no` for `essay_revisions`, whose PK is composite).
+- **Idempotency via insert-or-skip, never insert-or-update.** Every row carries an
+  explicit primary key from the source, so all writes use
+  `Prefer: resolution=ignore-duplicates` (`ON CONFLICT DO NOTHING`), with
+  `on_conflict=essay_id,revision_no` for `essay_revisions`, whose PK is composite.
   An interrupted run is resumed by re-running, never duplicating.
+
+  It must **not** be `merge-duplicates`. `handle_updated_at` is a `BEFORE UPDATE`
+  trigger (`new.updated_at := now()`) on `profiles`, `books`, `essays`, and
+  `essay_comments`. Because it does not fire on INSERT, an insert preserves the
+  explicit timestamps R1 requires — but any upsert that resolved to an UPDATE would
+  overwrite `updated_at`, silently violating R1 on exactly the resume runs the
+  idempotency exists to support. `books_protect_approved_trigger` is likewise
+  `BEFORE UPDATE` and would add further surprises. Skipping existing rows avoids
+  both.
 - **Ordered, fail-fast stages.** A stage that reports any error stops the run before
   the next stage, so a failure cannot cascade into rows referencing missing FKs. The
   earlier scripts silently swallowed per-row errors (`if (text.includes("23505"))
