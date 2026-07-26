@@ -155,6 +155,13 @@
       "when": 1785086930827,
       "tag": "20260726172850_equal_clint_barton",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1785089006562,
+      "tag": "20260726180326_faulty_black_queen",
+      "breakpoints": true
     }
   ]
 }
