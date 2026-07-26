@@ -1,5 +1,6 @@
 # CodeRabbit configuration
 # See https://docs.coderabbit.ai/configuration for more options
 
-ignore:
-  - ".specstory/**"
+reviews:
+  path_filters:
+    - "!.specstory/**"

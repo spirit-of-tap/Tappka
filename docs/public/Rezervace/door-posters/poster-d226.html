@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D226 — Tappka | Tiimiakatemia Prague</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Roboto:wght@400;500&display=swap');
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    html, body {
+      width: 210mm;
+      height: 297mm;
+      background: #fcfff7;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      font-family: 'Roboto', sans-serif;
+      color: #2c1a1d;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* Top red accent bar */
+    .accent-bar {
+      width: 100%;
+      height: 6px;
+      background: #b31b1b;
+      flex-shrink: 0;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20mm;
+      gap: 0;
+    }
+
+    /* Logo */
+    .logo {
+      margin-bottom: 24px;
+    }
+    .logo img {
+      height: 100px;
+      width: auto;
+      display: block;
+    }
+
+    /* Room number — big and bold */
+    .room-number {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 800;
+      font-size: 130px;
+      line-height: 1;
+      color: #2c1a1d;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .room-subtitle {
+      font-family: 'Roboto', sans-serif;
+      font-weight: 400;
+      font-size: 20px;
+      color: #2c1a1d;
+      opacity: 0.45;
+      text-transform: uppercase;
+      letter-spacing: 5px;
+      margin-bottom: 40px;
+    }
+
+    /* QR code container with NFC overlay */
+    .qr-container {
+      position: relative;
+      margin-bottom: 36px;
+      border: 3px solid #2c1a1d;
+      border-radius: 20px;
+      padding: 20px;
+      background: #ffffff;
+    }
+    .qr-container img {
+      width: 260px;
+      height: 260px;
+      display: block;
+    }
+
+    /* NFC circle overlay — Lucide NFC icon inside white circle */
+    .nfc-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 52px;
+      height: 52px;
+      background: #ffffff;
+      border-radius: 50%;
+      border: 2px solid #2c1a1d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 2px #ffffff;
+    }
+    .nfc-overlay svg {
+      width: 26px;
+      height: 26px;
+      display: block;
+    }
+
+    /* Fun CTA */
+    .cta {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 34px;
+      color: #b31b1b;
+      text-align: center;
+      line-height: 1.3;
+      margin-bottom: 14px;
+    }
+
+    .cta-sub {
+      font-family: 'Roboto', sans-serif;
+      font-weight: 400;
+      font-size: 18px;
+      color: #2c1a1d;
+      opacity: 0.55;
+      text-align: center;
+      line-height: 1.5;
+      max-width: 440px;
+      margin-bottom: 28px;
+    }
+
+    /* How-to pills */
+    .how-to {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 0;
+    }
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(179, 27, 27, 0.06);
+      border-radius: 24px;
+      padding: 10px 22px;
+    }
+    .pill svg {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .pill span {
+      font-family: 'Roboto', sans-serif;
+      font-weight: 500;
+      font-size: 17px;
+      color: #2c1a1d;
+    }
+    .pill-or {
+      font-family: 'Roboto', sans-serif;
+      font-weight: 400;
+      font-size: 15px;
+      color: #2c1a1d;
+      opacity: 0.35;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Footer */
+    .footer {
+      position: absolute;
+      bottom: 22px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      color: #2c1a1d;
+      opacity: 0.3;
+      letter-spacing: 0.3px;
+    }
+
+    @media print {
+      html, body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="accent-bar"></div>
+
+    <div class="content">
+      <!-- Logo -->
+      <div class="logo">
+        <img src="/tap_logo.png" alt="Tiimiakatemia Prague">
+      </div>
+
+      <!-- Room Number -->
+      <div class="room-number">D226</div>
+      <div class="room-subtitle">Místnost</div>
+
+      <!-- QR Code with NFC overlay -->
+      <div class="qr-container">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&amp;data=https://tiimi.cz/r/d226" alt="QR kód — Tappka rezervace D226">
+        <!-- NFC icon overlay (Lucide NFC icon) -->
+        <div class="nfc-overlay">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#b31b1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 8.32a7.43 7.43 0 0 1 0 7.36"/>
+            <path d="M9.46 6.21a11.76 11.76 0 0 1 0 11.58"/>
+            <path d="M12.91 4.1a15.91 15.91 0 0 1 .01 15.8"/>
+            <path d="M16.37 2a20.16 20.16 0 0 1 0 20"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Fun CTA -->
+      <div class="cta">Tappni a rezervuj!</div>
+      <div class="cta-sub">Naskenuj QR kód nebo přilož telefon a&nbsp;zjisti, jestli je místnost volná</div>
+
+      <!-- How-to pills -->
+      <div class="how-to">
+        <div class="pill">
+          <!-- Scan icon (Lucide scan-line) -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#b31b1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+            <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+            <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+            <line x1="7" y1="12" x2="17" y2="12"/>
+          </svg>
+          <span>Naskenuj QR</span>
+        </div>
+        <div class="pill-or">nebo</div>
+        <div class="pill">
+          <!-- NFC icon (Lucide nfc) -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#b31b1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 8.32a7.43 7.43 0 0 1 0 7.36"/>
+            <path d="M9.46 6.21a11.76 11.76 0 0 1 0 11.58"/>
+            <path d="M12.91 4.1a15.91 15.91 0 0 1 .01 15.8"/>
+            <path d="M16.37 2a20.16 20.16 0 0 1 0 20"/>
+          </svg>
+          <span>Přilož telefon</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">Provided by IT House Tiimiakatemia Prague</div>
+  </div>
+</body>
+</html>

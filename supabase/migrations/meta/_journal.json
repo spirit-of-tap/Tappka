@@ -1,0 +1,153 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1781288789471,
+      "tag": "0000_fluffy_alice",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781292607096,
+      "tag": "20260612193007_restore_search_rpc_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783542432640,
+      "tag": "20260708202712_fix_function_search_path",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783543121159,
+      "tag": "20260708203841_optimize_rls_auth_initplan",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783548065633,
+      "tag": "20260708220105_certain_tombstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783548074500,
+      "tag": "20260708220114_smiling_the_initiative",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783626992340,
+      "tag": "20260709195632_cool_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783627992540,
+      "tag": "20260709201312_sticky_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783633748057,
+      "tag": "20260709214908_smart_korath",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783915405096,
+      "tag": "20260713040325_wooden_marvel_apes",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783915628689,
+      "tag": "20260713040708_warm_purple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784410067653,
+      "tag": "20260718212747_noisy_medusa",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1784477410000,
+      "tag": "20260719161010_fix_rename_casts",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784477420000,
+      "tag": "20260719161100_schema_delta",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784477430000,
+      "tag": "20260719161110_restore_no_overlap",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1784477440000,
+      "tag": "20260719161120_fix_functions_after_rename",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1784477450000,
+      "tag": "20260719161130_restore_data_api_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784477460000,
+      "tag": "20260719161140_google_profile_defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785025524494,
+      "tag": "20260726002524_opposite_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785025702303,
+      "tag": "20260726002822_white_black_bird",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1785054874674,
+      "tag": "20260726083434_foamy_toad_men",
+      "breakpoints": true
+    }
+  ]
+}

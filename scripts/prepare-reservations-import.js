@@ -18,17 +18,17 @@ const PERSONAL_FALLBACK_DURATION_MINUTES = 60;
 const OUTPUT_COLUMNS = [
   "id",
   "room_id",
-  "user_id",
-  "team_id",
-  "recurring_schedule_id",
-  "reservation_type",
+  "owner_profile_id",
   "title",
   "person_count",
-  "start_time",
-  "end_time",
-  "is_cowork_open",
+  "start_at",
+  "end_at",
+  "cancelled_at",
+  "cancelled_by_profile_id",
   "created_at",
   "updated_at",
+  "created_by_profile_id",
+  "updated_by_profile_id",
 ];
 
 /**
@@ -283,8 +283,8 @@ const removeOverlapsFirstReservedWins = (rows) => {
 
   for (const row of sorted) {
     const roomId = String(row.room_id ?? "");
-    const start = parsePostgresUtcTimestamp(String(row.start_time ?? ""));
-    const end = parsePostgresUtcTimestamp(String(row.end_time ?? ""));
+    const start = parsePostgresUtcTimestamp(String(row.start_at ?? ""));
+    const end = parsePostgresUtcTimestamp(String(row.end_at ?? ""));
     const sourceRow = Number(row.__sourceRow ?? 0);
 
     if (!roomId || !start || !end) {
@@ -334,14 +334,16 @@ const convertDateTime = (value) => {
  * @returns {string}
  */
 const getReservationTitle = (title, tsTitle) => {
+  const normalizedTsTitle = tsTitle.trim();
+  if (normalizedTsTitle.length > 0) {
+    return normalizedTsTitle.startsWith("TS - ")
+      ? normalizedTsTitle
+      : `TS - ${normalizedTsTitle}`;
+  }
+
   const normalizedTitle = title.trim();
   if (normalizedTitle.length > 0) {
     return normalizedTitle;
-  }
-
-  const normalizedTsTitle = tsTitle.trim();
-  if (normalizedTsTitle.length > 0) {
-    return normalizedTsTitle;
   }
 
   return "Bez nazvu";
@@ -416,7 +418,7 @@ const transformRows = (reservationRows, roomIdByCode) => {
     const startTime = convertDateTime(row[startIndex] ?? "");
     let endTime = convertDateTime(row[endIndex] ?? "");
     const tsTitle = row[tsIndex] ?? "";
-    const reservationType = tsTitle.trim().length > 0 ? "training_session" : "personal";
+    const isTrainingSession = tsTitle.trim().length > 0;
 
     if (!startTime || !endTime) {
       skipped.push(`Row ${rowNumber}: invalid start/end time`);
@@ -432,32 +434,32 @@ const transformRows = (reservationRows, roomIdByCode) => {
     }
 
     if (endDate <= startDate) {
-      const fallbackMinutes =
-        reservationType === "training_session"
-          ? TRAINING_SESSION_DURATION_MINUTES
-          : PERSONAL_FALLBACK_DURATION_MINUTES;
+      const fallbackMinutes = isTrainingSession
+        ? TRAINING_SESSION_DURATION_MINUTES
+        : PERSONAL_FALLBACK_DURATION_MINUTES;
 
       const adjustedEndDate = new Date(startDate.getTime() + fallbackMinutes * 60_000);
       endTime = formatUtcForPostgres(adjustedEndDate);
-      skipped.push(`Row ${rowNumber}: adjusted end time to keep end_time > start_time`);
+      skipped.push(`Row ${rowNumber}: adjusted end time to keep end_at > start_at`);
     }
 
     const createdAt = convertDateTime(row[createdIndex] ?? "") ?? formatUtcForPostgres(new Date());
+    const actorProfileId = getArgValue("actor-profile-id") ?? "";
 
     transformed.push({
       id: crypto.randomUUID(),
       room_id: roomId,
-      user_id: "",
-      team_id: "",
-      recurring_schedule_id: "",
-      reservation_type: reservationType,
+      owner_profile_id: "",
       title: getReservationTitle(row[titleIndex] ?? "", tsTitle),
       person_count: "",
-      start_time: startTime,
-      end_time: endTime,
-      is_cowork_open: "false",
+      start_at: startTime,
+      end_at: endTime,
+      cancelled_at: "",
+      cancelled_by_profile_id: "",
       created_at: createdAt,
       updated_at: createdAt,
+      created_by_profile_id: actorProfileId,
+      updated_by_profile_id: actorProfileId,
       __sourceRow: rowNumber,
     });
   });

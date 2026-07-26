@@ -1,0 +1,11 @@
+---
+title: "team-sheet-09-individualni-koucovani"
+layout: false
+htmlShim: true
+---
+
+<iframe
+  src="/wiki/team-sheet-09-individualni-koucovani.html"
+  title="team-sheet-09-individualni-koucovani"
+  style="position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fcfff7"
+></iframe>

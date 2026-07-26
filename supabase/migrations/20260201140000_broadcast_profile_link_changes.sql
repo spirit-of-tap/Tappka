@@ -103,11 +103,9 @@ using (
   topic = 'user:' || (select auth.uid())::text || ':profile'
 );
 
-comment on policy "Users can receive their own profile link broadcasts" on realtime.messages is 'Allows authenticated users to receive Realtime broadcasts on their own profile channel. Enables cross-device synchronization when profile is approved/linked by admin.';
-
--- Note: Index creation on realtime.messages may require special permissions
--- The RLS policy will work without the index, though performance may be slightly reduced
--- If needed, create the index manually with appropriate permissions:
+-- COMMENT ON POLICY / CREATE INDEX on realtime.messages require table ownership
+-- (supabase_realtime_admin) and fail with SQLSTATE 42501 under the migrator role.
+-- comment on policy "Users can receive their own profile link broadcasts" on realtime.messages is 'Allows authenticated users to receive Realtime broadcasts on their own profile channel. Enables cross-device synchronization when profile is approved/linked by admin.';
 -- create index idx_realtime_messages_topic_user_profile
 -- on realtime.messages(topic)
 -- where topic like 'user:%:profile';

@@ -1,0 +1,5 @@
+# macOS + Linux only (skipped on Windows via auto_env).
+# Docker Desktop substitute: Colima runs the daemon in a Lima VM.
+[tools]
+colima = "0.10.3"
+lima = "2.1.4"

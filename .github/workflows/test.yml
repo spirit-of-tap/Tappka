@@ -1,0 +1,49 @@
+name: Tests
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Migration integrity
+        env:
+          # Refuse edits/deletes of migration SQL that already exists on the PR base.
+          # Push events still run journal/snapshot/generate checks; immutability is PR-only
+          # so one-time unpublished-tail cleanups are not blocked.
+          MIGRATION_DIFF_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: pnpm db:check-integrity
+
+      - name: Unit + component tests
+        run: pnpm test
+
+      - name: Integration tests (Testcontainers)
+        run: pnpm test:integration
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build
+        run: pnpm build
+
+      - name: E2E smoke test
+        run: pnpm test:e2e
