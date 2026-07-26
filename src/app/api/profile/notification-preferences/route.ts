@@ -31,7 +31,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: existing } = await supabase
       .from("notification_preferences")
-      .select("essay_coach_read_email, essay_comment_email, essay_vote_email")
+      .select("essay_coach_read_email, essay_comment_email, essay_vote_email, created_by_profile_id")
       .eq("profile_id", profile.id)
       .maybeSingle()
 
@@ -44,7 +44,7 @@ export async function PATCH(request: NextRequest) {
           essay_comment_email: existing?.essay_comment_email ?? true,
           essay_vote_email: existing?.essay_vote_email ?? true,
           ...updates,
-          created_by_profile_id: profile.id,
+          created_by_profile_id: existing?.created_by_profile_id ?? profile.id,
           updated_by_profile_id: profile.id,
         },
         { onConflict: "profile_id" },
