@@ -55,6 +55,45 @@ describe("buildProfileMap", () => {
     expect(map.collisions).toEqual([]);
     expect(map.insertIds.size).toBe(3);
   });
+
+  it("throws when two target profiles share a normalized email", () => {
+    expect(() =>
+      buildProfileMap(
+        [{ id: "src-1", work_email: "unique@example.com" }],
+        [
+          { id: "tgt-1", work_email: "foo@example.com" },
+          { id: "tgt-2", work_email: "FOO@example.com" },
+        ],
+      ),
+    ).toThrow(/Ambiguous target profiles/);
+  });
+
+  it("throws when two source profiles map to the same target id", () => {
+    expect(() =>
+      buildProfileMap(
+        [
+          { id: "src-1", work_email: "foo@example.com" },
+          { id: "src-2", work_email: "FOO@example.com" },
+        ],
+        [{ id: "tgt-1", work_email: "foo@example.com" }],
+      ),
+    ).toThrow(/Ambiguous source profiles/);
+  });
+
+  it("allows two source profiles with the same normalized email if neither matches a target", () => {
+    const map = buildProfileMap(
+      [
+        { id: "src-1", work_email: "foo@example.com" },
+        { id: "src-2", work_email: "FOO@example.com" },
+      ],
+      [],
+    );
+
+    expect(map.byId.get("src-1")).toBe("src-1");
+    expect(map.byId.get("src-2")).toBe("src-2");
+    expect([...map.insertIds].sort()).toEqual(["src-1", "src-2"]);
+    expect(map.collisions).toEqual([]);
+  });
 });
 
 describe("remapProfileId", () => {
