@@ -28,10 +28,12 @@ export async function selectAll<T>(
   endpoint: Endpoint,
   table: string,
   select = "*",
+  query = "",
 ): Promise<T[]> {
   const rows: T[] = [];
+  const suffix = query === "" ? "" : `&${query}`;
   for (let offset = 0; ; offset += PAGE_SIZE) {
-    const url = `${endpoint.restUrl}/${table}?select=${encodeURIComponent(select)}&limit=${PAGE_SIZE}&offset=${offset}`;
+    const url = `${endpoint.restUrl}/${table}?select=${encodeURIComponent(select)}&limit=${PAGE_SIZE}&offset=${offset}${suffix}`;
     const response = await fetch(url, { headers: headers(endpoint) });
     if (!response.ok) throw await failure(`GET ${table}`, response);
     const page = (await response.json()) as T[];
