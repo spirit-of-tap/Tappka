@@ -15,7 +15,7 @@ function wrapEmail(bodyHtml: string): string {
 
 export function coachReadEmail(ctx: EssayEmailContext): EmailContent {
   return {
-    subject: `${ctx.actorName} přečetl/a tvou esej „${ctx.essayTitle}"`,
+    subject: `${ctx.actorName} přečetl/a tvou esej „${ctx.essayTitle}“`,
     html: wrapEmail(
       `<p>${ctx.actorName} si přečetl/a tvou esej <strong>${ctx.essayTitle}</strong>.</p>` +
         `<p><a href="${ctx.essayUrl}">Zobrazit esej</a></p>`,
@@ -25,7 +25,7 @@ export function coachReadEmail(ctx: EssayEmailContext): EmailContent {
 
 export function commentEmail(ctx: EssayEmailContext): EmailContent {
   return {
-    subject: `${ctx.actorName} okomentoval/a tvou esej „${ctx.essayTitle}"`,
+    subject: `${ctx.actorName} okomentoval/a tvou esej „${ctx.essayTitle}“`,
     html: wrapEmail(
       `<p>${ctx.actorName} přidal/a komentář k tvé eseji <strong>${ctx.essayTitle}</strong>.</p>` +
         `<p><a href="${ctx.essayUrl}">Zobrazit komentář</a></p>`,
@@ -35,7 +35,7 @@ export function commentEmail(ctx: EssayEmailContext): EmailContent {
 
 export function voteEmail(ctx: EssayEmailContext): EmailContent {
   return {
-    subject: `${ctx.actorName} dal/a like tvé eseji „${ctx.essayTitle}"`,
+    subject: `${ctx.actorName} dal/a like tvé eseji „${ctx.essayTitle}“`,
     html: wrapEmail(
       `<p>${ctx.actorName} dal/a like tvé eseji <strong>${ctx.essayTitle}</strong>.</p>` +
         `<p><a href="${ctx.essayUrl}">Zobrazit esej</a></p>`,
