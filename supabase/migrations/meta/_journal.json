@@ -162,6 +162,13 @@
       "when": 1785089006562,
       "tag": "20260726180326_faulty_black_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1785188254646,
+      "tag": "20260727213734_exotic_saracen",
+      "breakpoints": true
     }
   ]
 }

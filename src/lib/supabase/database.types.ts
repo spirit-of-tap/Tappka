@@ -235,6 +235,79 @@ export type Database = {
           },
         ]
       }
+      customer_meetings: {
+        Row: {
+          company: string
+          contact_person: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          meeting_at: string | null
+          objective: string
+          position: string
+          post_mortem: string | null
+          profile_id: string
+          removed_at: string | null
+          team_share: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          company: string
+          contact_person: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          meeting_at?: string | null
+          objective: string
+          position: string
+          post_mortem?: string | null
+          profile_id: string
+          removed_at?: string | null
+          team_share?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          company?: string
+          contact_person?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          meeting_at?: string | null
+          objective?: string
+          position?: string
+          post_mortem?: string | null
+          profile_id?: string
+          removed_at?: string | null
+          team_share?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_meetings_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_meetings_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_meetings_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboard_layouts: {
         Row: {
           created_at: string
