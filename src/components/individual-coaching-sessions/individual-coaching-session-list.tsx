@@ -1,10 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
 import { Plus, UserCircle, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
@@ -15,10 +13,9 @@ import {
 } from "@/components/ui/responsive-dialog"
 import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
 import { IndividualCoachingSessionForm } from "./individual-coaching-session-form"
-import { coachDisplayName } from "@/lib/individual-coaching-sessions/types"
+import { IndividualCoachingSessionCard } from "./individual-coaching-session-card"
 import type { IndividualCoachingSessionWithCoach } from "@/lib/individual-coaching-sessions/types"
 import type { Profile } from "@/lib/auth-helpers"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 const MONTH_LABELS = [
   "Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
@@ -112,6 +109,14 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
     setCreateOpen(false)
   }
 
+  function handleSessionUpdated(session: IndividualCoachingSessionWithCoach) {
+    setItems((prev) => prev.map((s) => (s.id === session.id ? session : s)))
+  }
+
+  function handleSessionDeleted(id: string) {
+    setItems((prev) => prev.filter((s) => s.id !== id))
+  }
+
   function toggleCollapse(key: string) {
     setCollapsed((prev) => {
       const next = new Set(prev)
@@ -166,30 +171,14 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
           {!collapsed.has("__undated__") && (
             <div className="space-y-2">
               {sessionMap.undated.map((session) => (
-                <Link key={session.id} href={`/koucovani/${session.id}`} className="block">
-                  <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="size-6 shrink-0">
-                            <AvatarImage src={session.coach?.picture ?? undefined} alt={coachDisplayName(session)} />
-                            <AvatarFallback>
-                              <UserCircle className="size-4 text-muted-foreground" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-sm truncate">
-                            {coachDisplayName(session)}
-                          </span>
-                        </div>
-                        {session.key_takeaways && (
-                          <p className="text-xs text-muted-foreground/80 line-clamp-2">
-                            {session.key_takeaways}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
+                <IndividualCoachingSessionCard
+                  key={session.id}
+                  session={session}
+                  profileId={profileId}
+                  coachProfiles={coachProfiles}
+                  onUpdated={handleSessionUpdated}
+                  onDeleted={handleSessionDeleted}
+                />
               ))}
             </div>
           )}
@@ -251,38 +240,14 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
                       </p>
                     ) : (
                       sessionsInMonth.map((session) => (
-                        <Link key={session.id} href={`/koucovani/${session.id}`} className="block">
-                          <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1 space-y-1.5">
-<div className="flex items-center gap-2">
-                                   <Avatar className="size-6 shrink-0">
-                                     <AvatarImage src={session.coach?.picture ?? undefined} alt={coachDisplayName(session)} />
-                                     <AvatarFallback>
-                                       <UserCircle className="size-4 text-muted-foreground" />
-                                     </AvatarFallback>
-                                   </Avatar>
-                                   <span className="font-medium text-sm truncate">
-                                     {coachDisplayName(session)}
-                                   </span>
-                                  {session.session_at && (
-                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                      {new Date(session.session_at).toLocaleDateString("cs-CZ", {
-                                        day: "numeric",
-                                        month: "short",
-                                      })}
-                                    </span>
-                                  )}
-                                </div>
-                                {session.key_takeaways && (
-                                  <p className="text-xs text-muted-foreground/80 line-clamp-2">
-                                    {session.key_takeaways}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </Card>
-                        </Link>
+                        <IndividualCoachingSessionCard
+                          key={session.id}
+                          session={session}
+                          profileId={profileId}
+                          coachProfiles={coachProfiles}
+                          onUpdated={handleSessionUpdated}
+                          onDeleted={handleSessionDeleted}
+                        />
                       ))
                     )}
                   </div>
