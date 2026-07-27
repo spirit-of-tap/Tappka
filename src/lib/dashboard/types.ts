@@ -5,7 +5,8 @@ export type DashboardWidgetId =
   | 'reading'
   | 'reservation'
   | 'ke-kontrole'
-  | 'team-snapshot';
+  | 'team-snapshot'
+  | 'metrics';
 
 export interface DashboardWidgetMeta {
   id: DashboardWidgetId;
@@ -44,6 +45,12 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
     id: 'team-snapshot',
     label: 'Tým',
     description: 'Nejlepší čtenáři tvého týmu podle BookPoints.',
+    roles: ['student', 'mentor', 'coach', 'admin'],
+  },
+  {
+    id: 'metrics',
+    label: 'Metriky',
+    description: 'Knižní body a počet zákaznických schůzek na jednom místě.',
     roles: ['student', 'mentor', 'coach', 'admin'],
   },
 ];
