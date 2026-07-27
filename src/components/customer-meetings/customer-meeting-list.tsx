@@ -119,10 +119,13 @@ export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingList
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {items.length} {items.length === 1 ? "schůzka" : items.length >= 2 && items.length <= 4 ? "schůzky" : "schůzek"}
-        </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold tabular-nums leading-none">{items.length}</span>
+          <span className="text-sm text-muted-foreground">
+            {items.length === 1 ? "schůzka" : items.length >= 2 && items.length <= 4 ? "schůzky" : "schůzek"}
+          </span>
+        </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button size="sm">
