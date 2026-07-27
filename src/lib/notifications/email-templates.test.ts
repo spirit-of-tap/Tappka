@@ -24,6 +24,12 @@ describe('commentEmail', () => {
     expect(subject).toContain('Moje esej o vedení');
     expect(html).toContain('https://tappka.app/eseje/essay-1');
   });
+
+  it('includes the comment body when provided', () => {
+    const commentBody = 'Toto je testovací komentář!';
+    const { html } = commentEmail({ ...ctx, commentBody });
+    expect(html).toContain(commentBody);
+  });
 });
 
 describe('voteEmail', () => {
