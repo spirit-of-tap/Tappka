@@ -13,6 +13,7 @@ import {
   Heart,
   BookOpen,
   Handshake,
+  GraduationCap,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -80,6 +81,11 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           icon: Handshake,
         },
         {
+          title: "Koučování",
+          url: "/koucovani",
+          icon: GraduationCap,
+        },
+        {
           title: "Komunita",
           url: "/komunita",
           icon: Users,
@@ -133,6 +139,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const isBeta = user?.beta_access ?? false
   const isReservationsActive = pathname.startsWith("/reservations")
   const isSchuzkyActive = pathname.startsWith("/schuzky")
+  const isKoucovaniActive = pathname.startsWith("/koucovani")
   const isCteniActive = pathname === "/prehled" || pathname === "/hledat" || pathname.startsWith("/eseje") || pathname.startsWith("/knihovna") || pathname.startsWith("/settings/kniha-knih")
   const cteniSubItems = [
     { title: "Přehled", url: "/prehled" },
@@ -228,6 +235,32 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                         <SidebarMenuButton
                           asChild
                           isActive={isSchuzkyActive}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Koučování — beta-only
+                  if (item.title === "Koučování") {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isKoucovaniActive}
                           tooltip={item.title}
                         >
                           <Link href={item.url} onClick={closeSidebarOnMobile}>
