@@ -727,6 +727,61 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          essay_coach_read_email: boolean
+          essay_comment_email: boolean
+          essay_vote_email: boolean
+          profile_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          essay_coach_read_email?: boolean
+          essay_comment_email?: boolean
+          essay_vote_email?: boolean
+          profile_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          essay_coach_read_email?: boolean
+          essay_comment_email?: boolean
+          essay_vote_email?: boolean
+          profile_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           access_removed_at: string | null
@@ -1277,6 +1332,14 @@ export type Database = {
           tag: string
           tags: string[]
           title: string
+        }[]
+      }
+      get_notification_preferences: {
+        Args: { p_profile_id: string }
+        Returns: {
+          essay_coach_read_email: boolean
+          essay_comment_email: boolean
+          essay_vote_email: boolean
         }[]
       }
       get_teams_with_member_stats: {

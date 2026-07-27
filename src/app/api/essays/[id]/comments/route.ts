@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayComments } from '@/lib/essays/queries';
+import { notifyEssayCommented } from '@/lib/notifications/essay-notifications';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -50,6 +51,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       .single();
 
     if (error) throw error;
+
+    after(() => {
+      notifyEssayCommented(supabase, {
+        essayId: id,
+        actorProfileId: profile.id,
+        origin: new URL(request.url).origin,
+      }).catch((err) => console.error('notifyEssayCommented failed:', err));
+    });
+
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
     console.error('POST /api/essays/[id]/comments error:', error);
