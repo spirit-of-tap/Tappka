@@ -11,6 +11,7 @@ export interface NotifyParams {
   essayId: string;
   actorProfileId: string;
   origin: string;
+  commentBody?: string;
 }
 
 type PreferenceColumn = 'essay_coach_read_email' | 'essay_comment_email' | 'essay_vote_email';
@@ -42,6 +43,7 @@ async function dispatchEssayNotification(
     essayTitle: essay.title,
     essayUrl: `${params.origin}/eseje/${essay.id}`,
     actorName: actor.name ?? 'Někdo',
+    commentBody: params.commentBody,
   });
 
   await sendEmail({ to: author.work_email, subject, html });

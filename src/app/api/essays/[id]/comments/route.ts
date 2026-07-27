@@ -57,6 +57,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         essayId: id,
         actorProfileId: profile.id,
         origin: new URL(request.url).origin,
+        commentBody: body.trim(),
       }).catch((err) => console.error('notifyEssayCommented failed:', err));
     });
 
