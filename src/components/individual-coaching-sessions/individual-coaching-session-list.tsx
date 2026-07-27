@@ -18,6 +18,7 @@ import { IndividualCoachingSessionForm } from "./individual-coaching-session-for
 import { coachDisplayName } from "@/lib/individual-coaching-sessions/types"
 import type { IndividualCoachingSessionWithCoach } from "@/lib/individual-coaching-sessions/types"
 import type { Profile } from "@/lib/auth-helpers"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 const MONTH_LABELS = [
   "Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
@@ -170,7 +171,12 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex items-center gap-2">
-                          <UserCircle className="size-4 shrink-0 text-muted-foreground" />
+                          <Avatar className="size-6 shrink-0">
+                            <AvatarImage src={session.coach?.picture ?? undefined} alt={coachDisplayName(session)} />
+                            <AvatarFallback>
+                              <UserCircle className="size-4 text-muted-foreground" />
+                            </AvatarFallback>
+                          </Avatar>
                           <span className="font-medium text-sm truncate">
                             {coachDisplayName(session)}
                           </span>
@@ -249,11 +255,16 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
                           <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1 space-y-1.5">
-                                <div className="flex items-center gap-2">
-                                  <UserCircle className="size-4 shrink-0 text-muted-foreground" />
-                                  <span className="font-medium text-sm truncate">
-                                    {coachDisplayName(session)}
-                                  </span>
+<div className="flex items-center gap-2">
+                                   <Avatar className="size-6 shrink-0">
+                                     <AvatarImage src={session.coach?.picture ?? undefined} alt={coachDisplayName(session)} />
+                                     <AvatarFallback>
+                                       <UserCircle className="size-4 text-muted-foreground" />
+                                     </AvatarFallback>
+                                   </Avatar>
+                                   <span className="font-medium text-sm truncate">
+                                     {coachDisplayName(session)}
+                                   </span>
                                   {session.session_at && (
                                     <span className="text-xs text-muted-foreground whitespace-nowrap">
                                       {new Date(session.session_at).toLocaleDateString("cs-CZ", {
