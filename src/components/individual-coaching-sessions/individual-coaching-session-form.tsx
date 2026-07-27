@@ -123,7 +123,7 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
                   </div>
                 </SelectItem>
               ))}
-              <SelectItem value={EXTERNAL_COACH_VALUE}>Někdo mimo tým</SelectItem>
+              <SelectItem value={EXTERNAL_COACH_VALUE}>Externí kouč</SelectItem>
             </SelectContent>
           </Select>
         </div>
