@@ -34,21 +34,6 @@ export async function countIndividualCoachingSessions(
   return count ?? 0
 }
 
-export async function getIndividualCoachingSession(
-  supabase: SupabaseClient<Database>,
-  id: string,
-): Promise<IndividualCoachingSessionWithCoach | null> {
-  const { data, error } = await supabase
-    .from("individual_coaching_sessions")
-    .select(SESSION_WITH_COACH_SELECT)
-    .eq("id", id)
-    .is("removed_at", null)
-    .maybeSingle()
-
-  if (error) throw error
-  return data as IndividualCoachingSessionWithCoach | null
-}
-
 export async function listCoachProfiles(
   supabase: SupabaseClient<Database>,
 ): Promise<Pick<Profile, "id" | "name" | "picture">[]> {
