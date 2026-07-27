@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { BOOK_POINTS_GOAL, BOOK_POINTS_PER_YEAR } from '@/lib/books/types';
+import { shortName } from '@/lib/string-utils';
 
 interface MemberStats {
   profile: { id: string; name: string; picture: string | null };
@@ -20,16 +21,6 @@ interface MemberStats {
 
 interface TeamBookPointsChartProps {
   stats: MemberStats[];
-}
-
-const SHORT_NAME_MAX = 12;
-
-function shortName(name: string): string {
-  const parts = name.split(' ');
-  const first = parts[0] ?? '';
-  const last = parts[parts.length - 1] ?? '';
-  const result = parts.length > 1 ? `${first} ${last.charAt(0)}.` : first;
-  return result.length > SHORT_NAME_MAX ? result.slice(0, SHORT_NAME_MAX - 1) + '…' : result;
 }
 
 export function TeamBookPointsChart({ stats }: TeamBookPointsChartProps) {

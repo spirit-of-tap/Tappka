@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserCard } from '@/components/komunita/user-card';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
+import { TeamCustomerMeetingsChart } from '@/components/teams/team-customer-meetings-chart';
 import { YEAR_LABELS, ROLE_LABELS } from '@/lib/komunita/types';
 import { getTeamBookPointsStats } from '@/lib/essays/queries';
+import { getTeamCustomerMeetingsStats } from '@/lib/customer-meetings/queries';
 
 interface PageProps {
   params: Promise<{
@@ -22,9 +24,10 @@ export default async function TeamPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [team, bookStats] = await Promise.all([
+  const [team, bookStats, meetingStats] = await Promise.all([
     getTeamById(supabase, id),
-    getTeamBookPointsStats(supabase, id),
+    getTeamBookPointsStats(supabase, id).catch(() => []),
+    getTeamCustomerMeetingsStats(id).catch(() => []),
   ]);
 
   if (!team) {
@@ -152,13 +155,26 @@ export default async function TeamPage({ params }: PageProps) {
         </TabsContent>
 
         <TabsContent value="statistiky" className="mt-4">
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold">BookPoints — přehled týmu</h2>
-              <p className="text-sm text-muted-foreground">Schválené a čekající knihy na cestu k cíli 120 bodů</p>
-            </div>
-            <TeamBookPointsChart stats={bookStats} />
-          </div>
+          <Tabs defaultValue="bookpoints">
+            <TabsList>
+              <TabsTrigger value="bookpoints">Knižní body</TabsTrigger>
+              <TabsTrigger value="schuzky">Zákaznické schůzky</TabsTrigger>
+            </TabsList>
+            <TabsContent value="bookpoints" className="mt-4 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Knižní body — přehled týmu</h2>
+                <p className="text-sm text-muted-foreground">Schválené a čekající knihy na cestu k cíli 120 bodů</p>
+              </div>
+              <TeamBookPointsChart stats={bookStats} />
+            </TabsContent>
+            <TabsContent value="schuzky" className="mt-4 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Zákaznické schůzky — přehled týmu</h2>
+                <p className="text-sm text-muted-foreground">Počet schůzek napříč členy týmu</p>
+              </div>
+              <TeamCustomerMeetingsChart stats={meetingStats} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
