@@ -6,6 +6,7 @@ import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getUserBookPointsStats } from '@/lib/essays/queries';
 import { countCustomerMeetings } from '@/lib/customer-meetings/queries';
+import { countIndividualCoachingSessions } from '@/lib/individual-coaching-sessions/queries';
 import { ProfilePictureSection } from '@/components/komunita/profile-picture-section';
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
@@ -32,10 +33,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
   if (!profile) notFound();
 
-  const [essays, stats, meetingCount] = await Promise.all([
+  const [essays, stats, meetingCount, coachingSessionCount] = await Promise.all([
     getEssays(supabase, { authorProfileId: id, sort: 'best', pageSize: 100 }),
     getUserBookPointsStats(supabase, id),
     countCustomerMeetings(supabase, id).catch(() => 0),
+    countIndividualCoachingSessions(supabase, id).catch(() => 0),
   ]);
 
   const votedIds = new Set<string>();
@@ -59,6 +61,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   const eseje = (n: number) => n === 1 ? 'esej' : n >= 2 && n <= 4 ? 'eseje' : 'esejí';
   const hlasy = (n: number) => n === 1 ? 'hlas' : n >= 2 && n <= 4 ? 'hlasy' : 'hlasů';
   const schuzky = (n: number) => n === 1 ? 'schůzka' : n >= 2 && n <= 4 ? 'schůzky' : 'schůzek';
+  const koucovaniLabel = 'sezení';
 
   return (
     /* break out of the parent <main>'s p-4 so the banner is full-bleed */
@@ -120,6 +123,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               { value: stats.essay_count,    label: eseje(stats.essay_count) },
               { value: totalVotes,           label: hlasy(totalVotes) },
               { value: meetingCount,         label: schuzky(meetingCount) },
+              { value: coachingSessionCount, label: koucovaniLabel },
             ].map(({ value, label }) => (
               <div key={label} className="text-center">
                 <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
