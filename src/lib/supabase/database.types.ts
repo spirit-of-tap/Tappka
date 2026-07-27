@@ -800,6 +800,80 @@ export type Database = {
           },
         ]
       }
+      individual_coaching_sessions: {
+        Row: {
+          action_steps: string | null
+          coach_profile_id: string | null
+          created_at: string
+          created_by_profile_id: string
+          external_coach_name: string | null
+          id: string
+          key_takeaways: string | null
+          profile_id: string
+          removed_at: string | null
+          session_at: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          action_steps?: string | null
+          coach_profile_id?: string | null
+          created_at?: string
+          created_by_profile_id: string
+          external_coach_name?: string | null
+          id?: string
+          key_takeaways?: string | null
+          profile_id: string
+          removed_at?: string | null
+          session_at?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          action_steps?: string | null
+          coach_profile_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string
+          external_coach_name?: string | null
+          id?: string
+          key_takeaways?: string | null
+          profile_id?: string
+          removed_at?: string | null
+          session_at?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "individual_coaching_sessions_coach_profile_id_fkey"
+            columns: ["coach_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "individual_coaching_sessions_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "individual_coaching_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "individual_coaching_sessions_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
