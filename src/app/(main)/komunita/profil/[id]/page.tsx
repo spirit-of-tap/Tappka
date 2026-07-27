@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getUserBookPointsStats } from '@/lib/essays/queries';
+import { countCustomerMeetings } from '@/lib/customer-meetings/queries';
 import { ProfilePictureSection } from '@/components/komunita/profile-picture-section';
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
@@ -31,9 +32,10 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
   if (!profile) notFound();
 
-  const [essays, stats] = await Promise.all([
+  const [essays, stats, meetingCount] = await Promise.all([
     getEssays(supabase, { authorProfileId: id, sort: 'best', pageSize: 100 }),
     getUserBookPointsStats(supabase, id),
+    countCustomerMeetings(supabase, id).catch(() => 0),
   ]);
 
   const votedIds = new Set<string>();
@@ -53,9 +55,10 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   const isOwnProfile = currentUserProfile?.id === profile.id;
   const teamColor = profile.team?.color ?? null;
 
-  const pts   = (n: number) => n === 1 ? 'bod' : n < 5 ? 'body' : 'bodů';
-  const eseje = (n: number) => n === 1 ? 'esej' : n < 5 ? 'eseje' : 'esejí';
-  const hlasy = (n: number) => n === 1 ? 'hlas' : n < 5 ? 'hlasy' : 'hlasů';
+  const pts   = (n: number) => n === 1 ? 'bod' : n >= 2 && n <= 4 ? 'body' : 'bodů';
+  const eseje = (n: number) => n === 1 ? 'esej' : n >= 2 && n <= 4 ? 'eseje' : 'esejí';
+  const hlasy = (n: number) => n === 1 ? 'hlas' : n >= 2 && n <= 4 ? 'hlasy' : 'hlasů';
+  const schuzky = (n: number) => n === 1 ? 'schůzka' : n >= 2 && n <= 4 ? 'schůzky' : 'schůzek';
 
   return (
     /* break out of the parent <main>'s p-4 so the banner is full-bleed */
@@ -116,6 +119,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               { value: stats.approved_points, label: pts(stats.approved_points) },
               { value: stats.essay_count,    label: eseje(stats.essay_count) },
               { value: totalVotes,           label: hlasy(totalVotes) },
+              { value: meetingCount,         label: schuzky(meetingCount) },
             ].map(({ value, label }) => (
               <div key={label} className="text-center">
                 <p className="text-xl font-bold tabular-nums leading-none">{value}</p>

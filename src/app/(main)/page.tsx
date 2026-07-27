@@ -7,6 +7,7 @@ import {
   getUnreadTeamEssaysForCoach,
   getTeamBookPointsStats,
 } from "@/lib/essays/queries";
+import { countCustomerMeetings } from "@/lib/customer-meetings/queries";
 import {
   sanitizeWidgetIds,
   widgetsForRole,
@@ -22,6 +23,7 @@ import {
 } from "@/components/dashboard/next-reservation-card";
 import { CoachReviewCard } from "@/components/dashboard/coach-review-card";
 import { TeamSnapshotCard } from "@/components/dashboard/team-snapshot-card";
+import { MetricsCard } from "@/components/dashboard/metrics-card";
 import { MessageCircleQuestion, ExternalLink } from "lucide-react";
 
 const TEAMS_SUPPORT_URL =
@@ -71,8 +73,9 @@ export default async function DashboardPage() {
     isCoach && !!profile.team_id && (has("ke-kontrole") || has("quick-actions"));
 
   // Only fetch data for widgets the user actually placed on the dashboard.
-  const [stats, reservation, unreadEssays, teamStats] = await Promise.all([
-    has("reading")
+  const needsStats = has("reading") || has("metrics");
+  const [stats, reservation, unreadEssays, teamStats, meetingCount] = await Promise.all([
+    needsStats
       ? getUserBookPointsStats(supabase, profile.id).catch(() => EMPTY_STATS)
       : null,
     has("reservation") ? getNextReservation(supabase, profile.id) : null,
@@ -84,6 +87,7 @@ export default async function DashboardPage() {
     has("team-snapshot") && profile.team_id
       ? getTeamBookPointsStats(supabase, profile.team_id).catch(() => [])
       : [],
+    has("metrics") ? countCustomerMeetings(supabase, profile.id).catch(() => 0) : 0,
   ]);
 
   const nodes: Partial<Record<DashboardWidgetId, ReactNode>> = {};
@@ -109,6 +113,14 @@ export default async function DashboardPage() {
         stats={teamStats}
         hasTeam={!!profile.team_id}
         teamName={profile.team?.name}
+      />
+    );
+  }
+  if (has("metrics") && stats && profile.beta_access_granted_at) {
+    nodes["metrics"] = (
+      <MetricsCard
+        bookPoints={stats.approved_points}
+        meetingCount={meetingCount}
       />
     );
   }
