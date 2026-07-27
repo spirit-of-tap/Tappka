@@ -10,9 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserCard } from '@/components/komunita/user-card';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { TeamCustomerMeetingsChart } from '@/components/teams/team-customer-meetings-chart';
+import { TeamCoachingSessionsChart } from '@/components/teams/team-coaching-sessions-chart';
 import { YEAR_LABELS, ROLE_LABELS } from '@/lib/komunita/types';
 import { getTeamBookPointsStats } from '@/lib/essays/queries';
 import { getTeamCustomerMeetingsStats } from '@/lib/customer-meetings/queries';
+import { getTeamCoachingSessionStats } from '@/lib/individual-coaching-sessions/queries';
 
 interface PageProps {
   params: Promise<{
@@ -24,10 +26,11 @@ export default async function TeamPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [team, bookStats, meetingStats] = await Promise.all([
+  const [team, bookStats, meetingStats, coachingStats] = await Promise.all([
     getTeamById(supabase, id),
     getTeamBookPointsStats(supabase, id).catch(() => []),
     getTeamCustomerMeetingsStats(id).catch(() => []),
+    getTeamCoachingSessionStats(id).catch(() => []),
   ]);
 
   if (!team) {
@@ -159,6 +162,7 @@ export default async function TeamPage({ params }: PageProps) {
             <TabsList>
               <TabsTrigger value="bookpoints">Knižní body</TabsTrigger>
               <TabsTrigger value="schuzky">Zákaznické schůzky</TabsTrigger>
+              <TabsTrigger value="koucovani">Koučování</TabsTrigger>
             </TabsList>
             <TabsContent value="bookpoints" className="mt-4 space-y-4">
               <div>
@@ -173,6 +177,13 @@ export default async function TeamPage({ params }: PageProps) {
                 <p className="text-sm text-muted-foreground">Počet schůzek napříč členy týmu</p>
               </div>
               <TeamCustomerMeetingsChart stats={meetingStats} />
+            </TabsContent>
+            <TabsContent value="koucovani" className="mt-4 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Individuální koučování — přehled týmu</h2>
+                <p className="text-sm text-muted-foreground">Počet koučovacích sezení napříč členy týmu</p>
+              </div>
+              <TeamCoachingSessionsChart stats={coachingStats} />
             </TabsContent>
           </Tabs>
         </TabsContent>
