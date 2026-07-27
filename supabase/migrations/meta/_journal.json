@@ -169,6 +169,13 @@
       "when": 1785188254646,
       "tag": "20260727213734_exotic_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1785193135515,
+      "tag": "20260727225855_known_bucky",
+      "breakpoints": true
     }
   ]
 }
