@@ -213,20 +213,17 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                 "flex-1 text-center py-2 border-r last:border-r-0",
                 isToday && isAvailable && "bg-primary/10",
                 hasBreak && isAvailable && "bg-warning/10 border-warning",
-                !isAvailable && "bg-red-50/60 dark:bg-red-950/20"
+                !isAvailable && "bg-muted/60"
               )}
               title={!isAvailable ? "Místnost není v tento den dostupná" : hasBreak ? breakInfo.name : undefined}
             >
-              <div className={cn(
-                "text-xs",
-                isAvailable ? "text-muted-foreground" : "text-red-400 dark:text-red-500"
-              )}>
+              <div className="text-xs text-muted-foreground">
                 {DAY_NAMES_CS[day.getDay()]}
               </div>
               <div className={cn(
                 "text-sm font-medium",
                 isToday && isAvailable && "text-primary",
-                !isAvailable && "text-red-400 dark:text-red-500"
+                !isAvailable && "text-muted-foreground"
               )}>
                 {format(day, "d.M.")}
               </div>
@@ -273,7 +270,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                 "flex-1 relative border-r last:border-r-0 select-none",
                 isAvailable && isToday && "bg-primary/5",
                 isAvailable && hasBreak && "bg-warning/10 border-warning",
-                !isAvailable && "bg-red-50/40 dark:bg-red-950/15 cursor-not-allowed",
+                !isAvailable && "bg-muted/40 cursor-not-allowed",
                 isAvailable && isDragging && dragDayIndex === dayIndex && "cursor-grabbing"
               )}
               onMouseDown={(e) => isAvailable && handleMouseDown(e, dayIndex)}
@@ -342,8 +339,8 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                     className="absolute left-0 right-0 pointer-events-none z-20 flex items-center"
                     style={{ top: `${top}px` }}
                   >
-                    <div className="size-1.5 rounded-full bg-red-500 flex-shrink-0" />
-                    <div className="flex-1 h-px bg-red-500" />
+                    <div className="size-1.5 rounded-full bg-primary flex-shrink-0" />
+                    <div className="flex-1 h-px bg-primary" />
                   </div>
                 );
               })()}

@@ -471,8 +471,8 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
                 className="absolute left-0 right-0 pointer-events-none z-20 flex items-center"
                 style={{ top: `${top}px` }}
               >
-                <div className="size-2 rounded-full bg-red-500 -ml-1 flex-shrink-0" />
-                <div className="flex-1 h-px bg-red-500" />
+                <div className="size-2 rounded-full bg-primary -ml-1 flex-shrink-0" />
+                <div className="flex-1 h-px bg-primary" />
               </div>
             );
           })()}

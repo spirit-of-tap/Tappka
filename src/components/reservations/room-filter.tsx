@@ -32,6 +32,7 @@ interface RoomFilterProps {
   rooms: RoomWithStatus[];
   onFilterChange: (filteredRooms: RoomWithStatus[]) => void;
   onFilterStateChange?: (state: FilterState) => void;
+  onCheckingChange?: (isChecking: boolean) => void;
 }
 
 // Duration options in minutes
@@ -53,7 +54,7 @@ const DURATION_OPTIONS = [
 /**
  * Inline filter component with instant feedback
  */
-export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomFilterProps) {
+export function RoomFilter({ rooms, onFilterChange, onFilterStateChange, onCheckingChange }: RoomFilterProps) {
   const [filterDate, setFilterDate] = useState<Date>(new Date());
   const [startTime, setStartTime] = useState<string>(() => {
     // Default to current time rounded to current 15min slot
@@ -65,6 +66,7 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
   });
   const [duration, setDuration] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
   // Auto-update when filter changes
   useEffect(() => {
@@ -75,6 +77,7 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
         return;
       }
 
+      setIsChecking(true);
       try {
         // Parse start time
         const [hours, minutes] = startTime.split(':').map(Number);
@@ -139,6 +142,8 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
         onFilterChange(annotatedRooms);
       } catch (error) {
         console.error("Error filtering rooms:", error);
+      } finally {
+        setIsChecking(false);
       }
     };
 
@@ -146,6 +151,11 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
     const debounced = setTimeout(checkAvailability, 300);
     return () => clearTimeout(debounced);
   }, [filterDate, startTime, duration, rooms, onFilterChange]);
+
+  // Notify parent of checking state changes
+  useEffect(() => {
+    onCheckingChange?.(isChecking);
+  }, [isChecking, onCheckingChange]);
 
   // Notify parent of filter state changes
   useEffect(() => {
@@ -228,7 +238,7 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
         <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           Čas:
         </label>
-        <div className="w-[140px]">
+        <div className="w-36">
           <TimePicker
             value={startTime}
             onChange={setStartTime}
@@ -244,7 +254,7 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange }: RoomF
           Délka:
         </label>
         <Select value={duration || ''} onValueChange={(val) => setDuration(val || null)}>
-          <SelectTrigger size="sm" className="w-[120px] h-8">
+          <SelectTrigger size="sm" className="w-32 h-8">
             <SelectValue placeholder="Vybrat..." />
           </SelectTrigger>
           <SelectContent>

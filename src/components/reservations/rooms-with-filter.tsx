@@ -5,6 +5,7 @@ import { addMinutes } from "date-fns";
 import { RoomList } from "./room-list";
 import { RoomFilter, type FilterState } from "./room-filter";
 import { QuickReservationDialog } from "./quick-reservation-dialog";
+import { Spinner } from "@/components/ui/spinner";
 import type { RoomWithStatus } from "@/lib/reservations/types";
 
 interface RoomsWithFilterProps {
@@ -17,6 +18,7 @@ interface RoomsWithFilterProps {
 export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
   const [filteredRooms, setFilteredRooms] = useState<RoomWithStatus[]>(rooms);
   const [filterState, setFilterState] = useState<FilterState | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
 
   // Dialog state for quick reservation
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -30,6 +32,10 @@ export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
 
   const handleFilterStateChange = useCallback((state: FilterState) => {
     setFilterState(state);
+  }, []);
+
+  const handleCheckingChange = useCallback((checking: boolean) => {
+    setIsChecking(checking);
   }, []);
 
   // Handle room click - open dialog with prefilled times if filter is active
@@ -61,16 +67,18 @@ export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
 
   return (
     <div className="space-y-4">
-      <RoomFilter 
-        rooms={rooms} 
-        onFilterChange={handleFilterChange} 
+      <RoomFilter
+        rooms={rooms}
+        onFilterChange={handleFilterChange}
         onFilterStateChange={handleFilterStateChange}
+        onCheckingChange={handleCheckingChange}
       />
-      
+
       {/* Results Counter */}
       {hasActiveFilter && (
-        <div className="text-sm text-muted-foreground px-1">
-          {availableCount} volné z {rooms.length} místností
+        <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
+          <span>{availableCount} volné z {rooms.length} místností</span>
+          {isChecking && <Spinner className="size-3.5" />}
         </div>
       )}
       
