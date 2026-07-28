@@ -180,35 +180,33 @@ export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingList
               }`}
             />
           </button>
-          {!collapsed.has("__undated__") && (
-            <div id="month-__undated__-content" className="space-y-2">
-              {meetingMap.undated.map((meeting) => (
-                <Link key={meeting.id} href={`/schuzky/${meeting.id}`} className="block focus-ring rounded-xl">
-                  <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="size-4 shrink-0 text-muted-foreground" />
-                          <span className="font-medium text-sm truncate">
-                            {meeting.company}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <UserCircle className="size-3" />
-                            {meeting.contact_person}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground/80 line-clamp-2">
-                          {meeting.objective}
-                        </p>
+          <div id="month-__undated__-content" className="space-y-2" hidden={collapsed.has("__undated__")}>
+            {meetingMap.undated.map((meeting) => (
+              <Link key={meeting.id} href={`/schuzky/${meeting.id}`} className="block focus-ring rounded-xl">
+                <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="font-medium text-sm truncate">
+                          {meeting.company}
+                        </span>
                       </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <UserCircle className="size-3" />
+                          {meeting.contact_person}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground/80 line-clamp-2">
+                        {meeting.objective}
+                      </p>
                     </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
         </section>
       )}
 
@@ -263,49 +261,47 @@ export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingList
                   />
                 </button>
 
-                {!isCollapsed && (
-                  <div id={`month-${group.key}-content`} className="space-y-2">
-                    {meetingsInMonth.length === 0 ? (
-                      <p className="text-xs text-muted-foreground/70 px-1 py-3 text-center sm:text-left">
-                        — tento měsíc žádná schůzka
-                      </p>
-                    ) : (
-                      meetingsInMonth.map((meeting) => (
-                        <Link key={meeting.id} href={`/schuzky/${meeting.id}`} className="block focus-ring rounded-xl">
-                          <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1 space-y-1.5">
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="size-4 shrink-0 text-muted-foreground" />
-                                  <span className="font-medium text-sm truncate">
-                                    {meeting.company}
-                                  </span>
-                                </div>
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <UserCircle className="size-3" />
-                                    {meeting.contact_person}
-                                  </span>
-                                  {meeting.meeting_at && (
-                                    <span className="flex items-center gap-1 whitespace-nowrap">
-                                      {new Date(meeting.meeting_at).toLocaleDateString("cs-CZ", {
-                                        day: "numeric",
-                                        month: "short",
-                                      })}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground/80 line-clamp-2">
-                                  {meeting.objective}
-                                </p>
+                <div id={`month-${group.key}-content`} className="space-y-2" hidden={isCollapsed}>
+                  {meetingsInMonth.length === 0 ? (
+                    <p className="text-xs text-muted-foreground/70 px-1 py-3 text-center sm:text-left">
+                      — tento měsíc žádná schůzka
+                    </p>
+                  ) : (
+                    meetingsInMonth.map((meeting) => (
+                      <Link key={meeting.id} href={`/schuzky/${meeting.id}`} className="block focus-ring rounded-xl">
+                        <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <Building2 className="size-4 shrink-0 text-muted-foreground" />
+                                <span className="font-medium text-sm truncate">
+                                  {meeting.company}
+                                </span>
                               </div>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <UserCircle className="size-3" />
+                                  {meeting.contact_person}
+                                </span>
+                                {meeting.meeting_at && (
+                                  <span className="flex items-center gap-1 whitespace-nowrap">
+                                    {new Date(meeting.meeting_at).toLocaleDateString("cs-CZ", {
+                                      day: "numeric",
+                                      month: "short",
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground/80 line-clamp-2">
+                                {meeting.objective}
+                              </p>
                             </div>
-                          </Card>
-                        </Link>
-                      ))
-                    )}
-                  </div>
-                )}
+                          </div>
+                        </Card>
+                      </Link>
+                    ))
+                  )}
+                </div>
               </section>
             )
           })}
