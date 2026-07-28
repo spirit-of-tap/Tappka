@@ -183,6 +183,20 @@
       "when": 1785232445378,
       "tag": "20260728095405_slow_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1785237662132,
+      "tag": "20260728112102_tough_reptil",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1785256009598,
+      "tag": "20260728162649_whole_puppet_master",
+      "breakpoints": true
     }
   ]
 }

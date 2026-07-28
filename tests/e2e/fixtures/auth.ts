@@ -158,12 +158,17 @@ export async function getSessionCookie(): Promise<string> {
 /**
  * Creates a complete user with team + profile and returns a session cookie.
  * Needed for pages that check current_profile_id().
+ *
+ * Pass `teamId` to place the user in a specific (e.g. test-isolated) team
+ * instead of reusing/creating a shared one — needed whenever a test relies
+ * on team-scoped uniqueness or doesn't want to pollute real team data.
  */
-export async function getSetupSessionCookie(): Promise<{
+export async function getSetupSessionCookie(teamId?: string): Promise<{
   cookie: string;
   userId: string;
   email: string;
   profileId: string;
+  teamId: string;
 }> {
   const email = `e2e-test-${randomUUID().slice(0, 8)}@studenti.czu.cz`;
 
@@ -193,22 +198,15 @@ export async function getSetupSessionCookie(): Promise<{
     { verified_work_email: email },
   );
 
-  // Ensure a team exists
-  const teams = (await restFetch(
-    `/teams?select=id&limit=1`,
-    "GET",
-  )) as { id: string }[];
-
-  let teamId: string;
-  if (teams.length > 0) {
-    teamId = teams[0].id;
-  } else {
-    const newTeams = (await restFetch(
-      "/teams",
-      "POST",
-      { name: "E2E Test Team" },
+  let resolvedTeamId = teamId;
+  if (!resolvedTeamId) {
+    // Ensure a team exists
+    const teams = (await restFetch(
+      `/teams?select=id&limit=1`,
+      "GET",
     )) as { id: string }[];
-    teamId = newTeams[0].id;
+
+    resolvedTeamId = teams.length > 0 ? teams[0].id : await createTestTeam();
   }
 
   // Create profile
@@ -216,7 +214,7 @@ export async function getSetupSessionCookie(): Promise<{
     name: "E2E Test User",
     work_email: email,
     user_id: internalUserId,
-    team_id: teamId,
+    team_id: resolvedTeamId,
     role: "student",
   })) as { id: string }[];
 
@@ -225,7 +223,42 @@ export async function getSetupSessionCookie(): Promise<{
     throw new Error("Failed to create profile");
   }
 
-  return { cookie: makeSessionCookie(userId, email), userId, email, profileId };
+  return { cookie: makeSessionCookie(userId, email), userId, email, profileId, teamId: resolvedTeamId };
+}
+
+/** Creates a brand new, isolated team — for tests that must not touch real team data. */
+export async function createTestTeam(onboardingYear?: number): Promise<string> {
+  const newTeams = (await restFetch(
+    "/teams",
+    "POST",
+    {
+      name: `E2E Team ${randomUUID().slice(0, 8)}`,
+      ...(onboardingYear !== undefined && { onboardingYear }),
+    },
+  )) as { id: string }[];
+  return newTeams[0].id;
+}
+
+/** Grants beta access, needed for pages gated on profile.beta_access_granted_at. */
+export async function grantBetaAccess(profileId: string): Promise<void> {
+  await restFetch(`/profiles?id=eq.${profileId}`, "PATCH", {
+    beta_access_granted_at: new Date().toISOString(),
+  });
+}
+
+/** Seeds a team reflection row directly, bypassing the UI. */
+export async function seedTeamReflection(
+  teamId: string,
+  profileId: string,
+  month: string,
+): Promise<{ reflectionId: string }> {
+  const rows = (await restFetch("/team_reflections", "POST", {
+    team_id: teamId,
+    month,
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
+  })) as { id: string }[];
+  return { reflectionId: rows[0].id };
 }
 
 /** Create a seeded book for E2E tests. */

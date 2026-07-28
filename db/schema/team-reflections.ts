@@ -18,7 +18,7 @@ export const teamReflections = pgTable("team_reflections", {
 	createdByProfileId: uuid("created_by_profile_id").notNull(),
 	updatedByProfileId: uuid("updated_by_profile_id").notNull(),
 }, (table) => [
-	uniqueIndex("team_reflections_team_month_idx").using("btree", table.teamId.asc().nullsLast().op("uuid_ops"), table.month.asc().nullsLast().op("date_ops")),
+	uniqueIndex("team_reflections_team_month_idx").using("btree", table.teamId.asc().nullsLast().op("uuid_ops"), table.month.asc().nullsLast().op("date_ops")).where(sql`(removed_at IS NULL)`),
 	foreignKey({
 			columns: [table.teamId],
 			foreignColumns: [teams.id],

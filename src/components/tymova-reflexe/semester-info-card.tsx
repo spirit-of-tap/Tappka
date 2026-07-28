@@ -1,0 +1,30 @@
+import { Info } from "lucide-react"
+
+export function SemesterInfoCard() {
+  return (
+    <div className="flex gap-2 rounded-lg border border-border/50 bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+      <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground/50" />
+      <div className="space-y-1.5">
+        <p>
+          Reflexe je proces aktivního a systematického analyzování událostí a jejich dopadu, které
+          nám umožňují identifikovat oblasti, ve kterých je možné se rozvíjet, zlepšovat nebo
+          stabilizovat a umět se v nich orientovat.
+        </p>
+        <p>
+          „Neučíme se ze zkušenosti. Učíme se z reflexe zkušenosti.“ — John Dewey. Právě především
+          díky komplexní semestrální reflexi je možné udržovat TAP jako učící se organizaci a
+          neustále ho rozvíjet!
+        </p>
+        <p>
+          Semestrální reflexi doplňujte <strong>nejméně jednou za semestr</strong> po ukončení
+          zkouškového období — průběžné vyplňování ale napomůže větší konkrétnosti a rychlejšímu
+          rozvoji. Konkrétní deadline se dozvíte s předstihem od koučů, případně od CIO.
+        </p>
+        <p>
+          Výjimkou je reflexe v březnu 3. ročníku, kdy probíhá celostudijní reflexe — ta zatím není
+          v aplikaci samostatně podporovaná.
+        </p>
+      </div>
+    </div>
+  )
+}

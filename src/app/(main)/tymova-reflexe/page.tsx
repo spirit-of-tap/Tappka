@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth/session"
 import { listTeamReflections } from "@/lib/tymova-reflexe/queries"
+import { listTeamSemesterReflectionsWithProgress } from "@/lib/tymova-reflexe/semester-queries"
 import { TeamReflectionList } from "@/components/tymova-reflexe/team-reflection-list"
 import { InfoCard } from "@/components/tymova-reflexe/info-card"
 
@@ -20,7 +21,10 @@ export default async function TymovaReflexePage() {
   if (!profile.beta_access_granted_at) redirect("/")
   if (!profile.team_id) redirect("/")
 
-  const reflections = await listTeamReflections(supabase, profile.team_id)
+  const [reflections, semesterReflections] = await Promise.all([
+    listTeamReflections(supabase, profile.team_id),
+    listTeamSemesterReflectionsWithProgress(supabase, profile.team_id),
+  ])
 
   return (
     <div className="container mx-auto max-w-5xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
@@ -32,15 +36,17 @@ export default async function TymovaReflexePage() {
           </p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-3xl font-bold tabular-nums leading-none">{reflections.length}</p>
+          <p className="text-3xl font-bold tabular-nums leading-none">
+            {reflections.length + semesterReflections.length}
+          </p>
           <p className="text-sm text-muted-foreground">reflexí</p>
         </div>
       </div>
       <InfoCard />
       <TeamReflectionList
         reflections={reflections}
-        teamId={profile.team_id}
-        profileId={profile.id}
+        semesterReflections={semesterReflections}
+        onboardingYear={profile.team?.onboardingYear ?? null}
       />
     </div>
   )

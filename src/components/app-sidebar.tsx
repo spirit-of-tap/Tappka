@@ -14,7 +14,7 @@ import {
   BookOpen,
   Handshake,
   GraduationCap,
-  RefreshCw,
+  NotebookPen,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -89,7 +89,7 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
         {
           title: "Týmová reflexe",
           url: "/tymova-reflexe",
-          icon: RefreshCw,
+          icon: NotebookPen,
         },
         {
           title: "Komunita",

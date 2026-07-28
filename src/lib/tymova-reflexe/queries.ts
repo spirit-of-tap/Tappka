@@ -37,15 +37,15 @@ export async function getTeamReflectionForMonth(
   supabase: SupabaseClient<Database>,
   teamId: string,
   month: string,
-): Promise<TeamReflectionWithCreator | null> {
+): Promise<{ id: string } | null> {
   const { data, error } = await supabase
     .from("team_reflections")
-    .select(REFLECTION_WITH_CREATOR_SELECT)
+    .select("id")
     .is("removed_at", null)
     .eq("team_id", teamId)
     .eq("month", month)
     .maybeSingle()
 
   if (error) throw error
-  return data as TeamReflectionWithCreator | null
+  return data
 }

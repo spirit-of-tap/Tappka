@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { FileEdit, Trash2, Calendar } from "lucide-react"
+import { Trash2, Calendar, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -30,12 +30,11 @@ function monthLabel(monthStr: string): string {
   return `${MONTH_LABELS[m - 1]} ${monthStr.slice(0, 4)}`
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  if (!children) return null
+function PreviewField({ label, children }: { label: string; children: string }) {
   return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-sm whitespace-pre-wrap">{children}</p>
+    <div className="min-w-0 space-y-0.5">
+      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className="text-sm text-muted-foreground line-clamp-2">{children}</p>
     </div>
   )
 }
@@ -70,75 +69,82 @@ export function TeamReflectionCard({
     }
   }
 
-  return (
-    <Link href={`/tymova-reflexe/${reflection.id}`}>
-      <Card className="p-3 sm:p-4 space-y-4 hover:bg-accent/30 transition-colors cursor-pointer">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <Calendar className="size-4 shrink-0 text-muted-foreground" />
-            <span className="font-semibold text-sm">{monthLabel(reflection.month)}</span>
-          </div>
+  const hasContent =
+    reflection.what_went_well ||
+    reflection.what_didnt_go_well ||
+    reflection.what_we_do_differently ||
+    reflection.planned_action_steps
 
-          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.preventDefault()}>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/tymova-reflexe/${reflection.id}`}>
-                <FileEdit className="size-4" />
-                <span className="hidden sm:inline">Otevřít</span>
-              </Link>
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-destructive">
-                  <Trash2 className="size-4" />
-                  <span className="hidden sm:inline">Smazat</span>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Odstranit reflexi?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tato akce reflexi za {monthLabel(reflection.month)} odstraní.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Zrušit</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    disabled={deleting}
-                  >
-                    {deleting ? "Odstraňuji..." : "Odstranit"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+  return (
+    <Card className="relative p-3 sm:p-4 space-y-3 hover:bg-accent/30 transition-colors">
+      <Link
+        href={`/tymova-reflexe/${reflection.id}`}
+        className="absolute inset-0 z-0"
+        aria-label={`Otevřít reflexi za ${monthLabel(reflection.month)}`}
+      />
+
+      <div className="relative z-10 flex items-start justify-between gap-3 pointer-events-none">
+        <div className="flex items-center gap-2 min-w-0">
+          <Calendar className="size-4 shrink-0 text-muted-foreground" />
+          <span className="font-semibold text-sm">{monthLabel(reflection.month)}</span>
         </div>
 
-        <div className="border-t pt-4 space-y-4">
+        <div className="pointer-events-auto shrink-0">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-destructive">
+                <Trash2 className="size-4" />
+                <span className="hidden sm:inline">Smazat</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Odstranit reflexi?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tato akce reflexi za {monthLabel(reflection.month)} odstraní.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleting}
+                >
+                  {deleting ? "Odstraňuji..." : "Odstranit"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+
+      {hasContent ? (
+        <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 border-t pt-3 pointer-events-none">
           {reflection.what_went_well && (
-            <Field label="Co se povedlo">{reflection.what_went_well}</Field>
+            <PreviewField label="Co se povedlo">{reflection.what_went_well}</PreviewField>
           )}
           {reflection.what_didnt_go_well && (
-            <Field label="Co se nepovedlo">{reflection.what_didnt_go_well}</Field>
-          )}
-          {reflection.what_we_do_differently && (
-            <Field label="Co uděláme jinak">{reflection.what_we_do_differently}</Field>
-          )}
-          {reflection.planned_action_steps && (
-            <Field label="Plánované akční kroky">{reflection.planned_action_steps}</Field>
-          )}
-          {reflection.responsible_person && (
-            <Field label="Zodpovědná osoba">{reflection.responsible_person}</Field>
+            <PreviewField label="Co se nepovedlo">{reflection.what_didnt_go_well}</PreviewField>
           )}
         </div>
+      ) : (
+        <p className="relative z-10 border-t pt-3 text-sm text-muted-foreground/70 italic pointer-events-none">
+          Zatím nevyplněno — klikněte pro úpravu
+        </p>
+      )}
 
-        {reflection.created_by && (
-          <div className="border-t pt-3 text-xs text-muted-foreground">
-            Vytvořil/a: {reflection.created_by.name}
-          </div>
+      <div className="relative z-10 flex items-center justify-between gap-3 border-t pt-3 text-xs text-muted-foreground pointer-events-none">
+        <span className="truncate">
+          {reflection.created_by && `Vytvořil/a: ${reflection.created_by.name}`}
+        </span>
+        {reflection.responsible_person && (
+          <span className="flex items-center gap-1 shrink-0">
+            <UserRound className="size-3" />
+            {reflection.responsible_person}
+          </span>
         )}
-      </Card>
-    </Link>
+      </div>
+    </Card>
   )
 }
