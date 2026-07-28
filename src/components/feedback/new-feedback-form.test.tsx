@@ -35,4 +35,16 @@ describe("NewFeedbackForm", () => {
     );
     expect((textarea as HTMLTextAreaElement).value).toBe("");
   });
+
+  it("shows an error toast when the post fails", async () => {
+    const toastModule = await import("sonner");
+    const errorSpy = vi.spyOn(toastModule.toast, "error").mockImplementation(() => "");
+    fetchSpy.mockResolvedValueOnce({ ok: false, json: async () => ({}) } as Response);
+
+    render(<NewFeedbackForm onCreated={vi.fn()} />);
+    await userEvent.type(screen.getByRole("textbox"), "Ahoj");
+    await userEvent.click(screen.getByRole("button", { name: /Odeslat/i }));
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+  });
 });
