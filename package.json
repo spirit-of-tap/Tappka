@@ -32,6 +32,7 @@
     "db:local-check": "node scripts/check-schema-local.mjs",
     "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts",
     "db:export": "node scripts/package-json-helpers/export-db-sql.mjs",
+    "cleanup:e2e": "node scripts/cleanup-e2e-data.mjs",
     "wiki": "node scripts/generate-docs-html-shims.mjs && vitepress dev docs --open",
     "wiki:doctor": "node scripts/check-docs-links.mjs"
   },

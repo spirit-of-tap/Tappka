@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { getSetupSessionCookie, setAuthCookie } from "./fixtures/auth";
+import { cleanupTestData, getSetupSessionCookie, setAuthCookie } from "./fixtures/auth";
 
 test.describe("zpětná vazba - unauthenticated", () => {
   test("redirects to login when not authenticated", async ({ page }) => {
@@ -35,4 +35,8 @@ test.describe("zpětná vazba - authenticated", () => {
     await page.getByRole("button", { name: /Odeslat/i }).click();
     await expect(page.getByText(unique)).toBeVisible();
   });
+});
+
+test.afterAll(async () => {
+  await cleanupTestData();
 });

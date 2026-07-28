@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  cleanupTestData,
   getSetupSessionCookie,
   seedBook,
   seedEssay,
@@ -132,4 +133,8 @@ test.describe("reading navigation - arrow back", () => {
     await page.getByRole("link", { name: /zpět/i }).click();
     await expect(page).toHaveURL(new RegExp(`/eseje/${essayId}$`));
   });
+});
+
+test.afterAll(async () => {
+  await cleanupTestData();
 });

@@ -152,6 +152,8 @@ export async function getSessionCookie(): Promise<string> {
     email_confirm: true,
   })) as { id: string };
 
+  _trackedUsers.add(userData.id);
+
   return makeSessionCookie(userData.id, email);
 }
 
@@ -198,16 +200,11 @@ export async function getSetupSessionCookie(teamId?: string): Promise<{
     { verified_work_email: email },
   );
 
-  let resolvedTeamId = teamId;
-  if (!resolvedTeamId) {
-    // Ensure a team exists
-    const teams = (await restFetch(
-      `/teams?select=id&limit=1`,
-      "GET",
-    )) as { id: string }[];
+  _trackedUsers.add(userId);
 
-    resolvedTeamId = teams.length > 0 ? teams[0].id : await createTestTeam();
-  }
+  // Always create a fresh team so each test group owns its data and can
+  // safely clean up without affecting other groups.
+  const resolvedTeamId = teamId ?? await createTestTeam();
 
   // Create profile
   const profiles = (await restFetch("/profiles", "POST", {
@@ -222,9 +219,15 @@ export async function getSetupSessionCookie(teamId?: string): Promise<{
   if (!profileId) {
     throw new Error("Failed to create profile");
   }
+  _trackedProfiles.add(profileId);
 
   return { cookie: makeSessionCookie(userId, email), userId, email, profileId, teamId: resolvedTeamId };
 }
+
+/** Track created resources per worker so afterAll can clean them up. */
+const _trackedTeams = new Set<string>();
+const _trackedUsers = new Set<string>();
+const _trackedProfiles = new Set<string>();
 
 /** Creates a brand new, isolated team — for tests that must not touch real team data. */
 export async function createTestTeam(onboardingYear?: number): Promise<string> {
@@ -236,7 +239,63 @@ export async function createTestTeam(onboardingYear?: number): Promise<string> {
       ...(onboardingYear !== undefined && { onboardingYear }),
     },
   )) as { id: string }[];
-  return newTeams[0].id;
+  const id = newTeams[0].id;
+  _trackedTeams.add(id);
+  return id;
+}
+
+/** Deletes all data created by the current worker's E2E tests.
+ *
+ *  Must be called from test.afterAll (or a global teardown). Safe to call
+ *  multiple times — subsequent calls are no-ops once the sets are empty.
+ *  Within each phase, deletions run in parallel (Promise.all) for speed.
+ */
+export async function cleanupTestData(): Promise<void> {
+  const teamIds = [..._trackedTeams];
+  const userIds = [..._trackedUsers];
+  const profileIds = [..._trackedProfiles];
+
+  if (teamIds.length === 0 && userIds.length === 0 && profileIds.length === 0) return;
+
+  // Phase 1 — delete profile-owned data (CASCADE on author FKs handles
+  // essays → essay_revisions, essay_comments, etc.)
+  await Promise.all(profileIds.flatMap((pid) => [
+    restFetch(`/feedback?author_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
+    restFetch(`/essays?author_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
+    restFetch(`/books?created_by_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
+  ]));
+
+  // Phase 2 — delete team-scoped data
+  await Promise.all(teamIds.flatMap((tid) => [
+    restFetch(`/recurring_schedules?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+    restFetch(`/team_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+    restFetch(`/team_semester_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+  ]));
+
+  // Phase 3 — delete profiles
+  await Promise.all(profileIds.map((pid) =>
+    restFetch(`/profiles?id=eq.${pid}`, "DELETE").catch(() => {}),
+  ));
+
+  // Phase 4 — delete teams
+  await Promise.all(teamIds.map((tid) =>
+    restFetch(`/teams?id=eq.${tid}`, "DELETE").catch(() => {}),
+  ));
+
+  // Phase 5 — delete auth users
+  await Promise.all(userIds.map((uid) =>
+    fetch(`${GOTRUE_URL}/admin/users/${uid}`, {
+      method: "DELETE",
+      headers: {
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
+    }).catch(() => {}),
+  ));
+
+  _trackedTeams.clear();
+  _trackedUsers.clear();
+  _trackedProfiles.clear();
 }
 
 /** Grants beta access, needed for pages gated on profile.beta_access_granted_at. */

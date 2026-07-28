@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  cleanupTestData,
   createTestTeam,
   getSetupSessionCookie,
   grantBetaAccess,
@@ -257,4 +258,8 @@ test.describe("týmová reflexe - concurrent editing", () => {
       await contextB.close();
     }
   });
+});
+
+test.afterAll(async () => {
+  await cleanupTestData();
 });
