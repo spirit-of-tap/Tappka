@@ -176,6 +176,13 @@
       "when": 1785193135515,
       "tag": "20260727225855_known_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1785232445378,
+      "tag": "20260728095405_slow_spiral",
+      "breakpoints": true
     }
   ]
 }

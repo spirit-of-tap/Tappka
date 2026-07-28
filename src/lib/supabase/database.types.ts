@@ -1336,6 +1336,76 @@ export type Database = {
           },
         ]
       }
+      team_reflections: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          month: string
+          planned_action_steps: string | null
+          removed_at: string | null
+          responsible_person: string | null
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+          what_didnt_go_well: string | null
+          what_we_do_differently: string | null
+          what_went_well: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          month: string
+          planned_action_steps?: string | null
+          removed_at?: string | null
+          responsible_person?: string | null
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+          what_didnt_go_well?: string | null
+          what_we_do_differently?: string | null
+          what_went_well?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          month?: string
+          planned_action_steps?: string | null
+          removed_at?: string | null
+          responsible_person?: string | null
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+          what_didnt_go_well?: string | null
+          what_we_do_differently?: string | null
+          what_went_well?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_reflections_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_reflections_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_reflections_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           color: string | null
