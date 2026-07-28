@@ -18,6 +18,21 @@ export async function listTeamReflections(
   return (data ?? []) as TeamReflectionWithCreator[]
 }
 
+export async function getTeamReflectionById(
+  supabase: SupabaseClient<Database>,
+  id: string,
+): Promise<TeamReflectionWithCreator | null> {
+  const { data, error } = await supabase
+    .from("team_reflections")
+    .select(REFLECTION_WITH_CREATOR_SELECT)
+    .is("removed_at", null)
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) throw error
+  return data as TeamReflectionWithCreator | null
+}
+
 export async function getTeamReflectionForMonth(
   supabase: SupabaseClient<Database>,
   teamId: string,

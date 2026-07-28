@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,8 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-import type { TeamReflection, TeamReflectionWithCreator } from "@/lib/tymova-reflexe/types"
-import { REFLECTION_WITH_CREATOR_SELECT } from "@/lib/tymova-reflexe/types"
+import type { TeamReflection } from "@/lib/tymova-reflexe/types"
 
 function getCurrentMonth(): string {
   const now = new Date()
@@ -39,20 +39,18 @@ function availableMonths(): string[] {
 interface TeamReflectionFormProps {
   teamId: string
   profileId: string
-  initial?: Partial<TeamReflection>
-  onSuccess: (reflection: TeamReflectionWithCreator) => void
-  onCancel: () => void
 }
 
-export function TeamReflectionForm({ teamId, profileId, initial, onSuccess, onCancel }: TeamReflectionFormProps) {
+export function TeamReflectionForm({ teamId, profileId }: TeamReflectionFormProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [month, setMonth] = useState(initial?.month ?? getCurrentMonth())
-  const [whatWentWell, setWhatWentWell] = useState(initial?.what_went_well ?? "")
-  const [whatDidntGoWell, setWhatDidntGoWell] = useState(initial?.what_didnt_go_well ?? "")
-  const [whatWeDoDifferently, setWhatWeDoDifferently] = useState(initial?.what_we_do_differently ?? "")
-  const [plannedActionSteps, setPlannedActionSteps] = useState(initial?.planned_action_steps ?? "")
-  const [responsiblePerson, setResponsiblePerson] = useState(initial?.responsible_person ?? "")
+  const [month, setMonth] = useState(getCurrentMonth())
+  const [whatWentWell, setWhatWentWell] = useState("")
+  const [whatDidntGoWell, setWhatDidntGoWell] = useState("")
+  const [whatWeDoDifferently, setWhatWeDoDifferently] = useState("")
+  const [plannedActionSteps, setPlannedActionSteps] = useState("")
+  const [responsiblePerson, setResponsiblePerson] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -61,50 +59,39 @@ export function TeamReflectionForm({ teamId, profileId, initial, onSuccess, onCa
 
     try {
       const supabase = createClient()
-      const isEdit = !!initial?.id
-      const base = {
-        team_id: teamId,
-        month,
-        what_went_well: whatWentWell.trim() || null,
-        what_didnt_go_well: whatDidntGoWell.trim() || null,
-        what_we_do_differently: whatWeDoDifferently.trim() || null,
-        planned_action_steps: plannedActionSteps.trim() || null,
-        responsible_person: responsiblePerson.trim() || null,
-        updated_by_profile_id: profileId,
-      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Nepřihlášen")
 
-      let data: TeamReflectionWithCreator
-      if (isEdit) {
-        const result = await supabase
-          .from("team_reflections")
-          .update(base)
-          .eq("id", initial!.id!)
-          .select(REFLECTION_WITH_CREATOR_SELECT)
-          .single()
-        if (result.error) throw result.error
-        data = result.data as TeamReflectionWithCreator
-      } else {
-        const result = await supabase
-          .from("team_reflections")
-          .insert({ ...base, created_by_profile_id: profileId })
-          .select(REFLECTION_WITH_CREATOR_SELECT)
-          .single()
-        if (result.error) throw result.error
-        data = result.data as TeamReflectionWithCreator
-      }
+      const { data: inserted, error: insertError } = await supabase
+        .from("team_reflections")
+        .insert({
+          team_id: teamId,
+          month,
+          what_went_well: whatWentWell.trim() || null,
+          what_didnt_go_well: whatDidntGoWell.trim() || null,
+          what_we_do_differently: whatWeDoDifferently.trim() || null,
+          planned_action_steps: plannedActionSteps.trim() || null,
+          responsible_person: responsiblePerson.trim() || null,
+          created_by_profile_id: profileId,
+          updated_by_profile_id: profileId,
+        })
+        .select("id")
+        .single()
 
-      toast.success(initial ? "Reflexe aktualizována" : "Reflexe vytvořena")
-      onSuccess(data)
+      if (insertError) throw insertError
+
+      toast.success("Reflexe vytvořena")
+      router.push(`/tymova-reflexe/${inserted.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Neznámá chyba")
-      toast.error("Nepodařilo se uložit reflexi")
+      toast.error("Nepodařilo se vytvořit reflexi")
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -113,44 +100,41 @@ export function TeamReflectionForm({ teamId, profileId, initial, onSuccess, onCa
 
       <div className="space-y-2">
         <Label htmlFor="month">Měsíc reflexe</Label>
-        {initial ? (
-          <Input id="month" value={monthLabel(month)} disabled />
-        ) : (
-          <select
-            id="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {availableMonths().map((m) => (
-              <option key={m} value={m}>
-                {monthLabel(m)}
-              </option>
-            ))}
-          </select>
-        )}
+        <select
+          id="month"
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {availableMonths().map((m) => (
+            <option key={m} value={m}>
+              {monthLabel(m)}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="what-went-well">Co se povedlo</Label>
-        <Textarea
-          id="what-went-well"
-          value={whatWentWell}
-          onChange={(e) => setWhatWentWell(e.target.value)}
-          placeholder="Úspěchy a pozitiva za uplynulý měsíc"
-          rows={3}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="what-didnt-go-well">Co se nepovedlo</Label>
-        <Textarea
-          id="what-didnt-go-well"
-          value={whatDidntGoWell}
-          onChange={(e) => setWhatDidntGoWell(e.target.value)}
-          placeholder="Problémy a výzvy, které nastaly"
-          rows={3}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="what-went-well">Co se povedlo</Label>
+          <Textarea
+            id="what-went-well"
+            value={whatWentWell}
+            onChange={(e) => setWhatWentWell(e.target.value)}
+            placeholder="Úspěchy a pozitiva za uplynulý měsíc"
+            rows={5}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="what-didnt-go-well">Co se nepovedlo</Label>
+          <Textarea
+            id="what-didnt-go-well"
+            value={whatDidntGoWell}
+            onChange={(e) => setWhatDidntGoWell(e.target.value)}
+            placeholder="Problémy a výzvy, které nastaly"
+            rows={5}
+          />
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -160,38 +144,39 @@ export function TeamReflectionForm({ teamId, profileId, initial, onSuccess, onCa
           value={whatWeDoDifferently}
           onChange={(e) => setWhatWeDoDifferently(e.target.value)}
           placeholder="Změny přístupu do budoucna"
-          rows={3}
+          rows={4}
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="action-steps">Plánované akční kroky</Label>
-        <Textarea
-          id="action-steps"
-          value={plannedActionSteps}
-          onChange={(e) => setPlannedActionSteps(e.target.value)}
-          placeholder="Konkrétní kroky ke zlepšení"
-          rows={3}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="responsible-person">Zodpovědná osoba za AK</Label>
-        <Input
-          id="responsible-person"
-          value={responsiblePerson}
-          onChange={(e) => setResponsiblePerson(e.target.value)}
-          placeholder="Jméno člena týmu"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="action-steps">Plánované akční kroky</Label>
+          <Textarea
+            id="action-steps"
+            value={plannedActionSteps}
+            onChange={(e) => setPlannedActionSteps(e.target.value)}
+            placeholder="Konkrétní kroky ke zlepšení"
+            rows={4}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="responsible-person">Zodpovědná osoba za AK</Label>
+          <Input
+            id="responsible-person"
+            value={responsiblePerson}
+            onChange={(e) => setResponsiblePerson(e.target.value)}
+            placeholder="Jméno člena týmu"
+          />
+        </div>
       </div>
 
       <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+        <Button type="button" variant="outline" onClick={() => router.push("/tymova-reflexe")}>
           Zrušit
         </Button>
         <Button type="submit" disabled={loading}>
           {loading && <Loader2 className="size-4 animate-spin" />}
-          {initial ? "Uložit změny" : "Vytvořit reflexi"}
+          Vytvořit reflexi
         </Button>
       </div>
     </form>
