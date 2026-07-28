@@ -120,12 +120,12 @@ export function IndividualCoachingSessionCard({
           )}
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" aria-label="Upravit sezení">
                 <Pencil className="size-4" />
-                <span className="hidden sm:inline">Upravit</span>
+                <span className="sr-only sm:not-sr-only sm:inline">Upravit</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
@@ -143,9 +143,9 @@ export function IndividualCoachingSessionCard({
           </Dialog>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-destructive">
+              <Button variant="outline" size="sm" className="text-destructive" aria-label="Smazat sezení">
                 <Trash2 className="size-4" />
-                <span className="hidden sm:inline">Smazat</span>
+                <span className="sr-only sm:not-sr-only sm:inline">Smazat</span>
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -170,7 +170,7 @@ export function IndividualCoachingSessionCard({
         </div>
       </div>
 
-      {(session.key_takeaways || session.action_steps) && (
+      {session.key_takeaways || session.action_steps ? (
         <div className="border-t pt-4 space-y-4">
           {session.key_takeaways && (
             <Field icon={Lightbulb} label="Co jsem si odnesl / uvědomění">
@@ -182,6 +182,12 @@ export function IndividualCoachingSessionCard({
               <p className="whitespace-pre-wrap">{session.action_steps}</p>
             </Field>
           )}
+        </div>
+      ) : (
+        <div className="border-t pt-4">
+          <p className="text-sm text-muted-foreground">
+            Zatím žádné poznámky — uprav sezení a doplň, co sis odnesl.
+          </p>
         </div>
       )}
     </Card>

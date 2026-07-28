@@ -155,7 +155,7 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
           <button
             type="button"
             onClick={() => toggleCollapse("__undated__")}
-            className="flex w-full items-center gap-2 mb-2 sm:mb-3 group"
+            className="focus-ring flex w-full items-center gap-2 mb-2 sm:mb-3 group"
           >
             <Calendar className="size-4 shrink-0 text-muted-foreground" />
             <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
@@ -214,7 +214,7 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
                 <button
                   type="button"
                   onClick={() => toggleCollapse(group.key)}
-                  className="flex w-full items-center gap-2 mb-2 sm:mb-3 group"
+                  className="focus-ring flex w-full items-center gap-2 mb-2 sm:mb-3 group"
                 >
                   <Calendar className="size-4 shrink-0 text-muted-foreground" />
                   <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
