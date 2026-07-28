@@ -117,7 +117,7 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end gap-2 -mt-12 sm:-mt-2">
+      <div className="flex justify-end gap-2 sm:-mt-2">
         {editing && (
           <Popover>
             <PopoverTrigger asChild>
