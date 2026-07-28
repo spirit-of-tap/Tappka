@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { 
-  OPERATING_HOURS, 
+import {
+  OPERATING_HOURS,
   RESERVATION_KIND_LABELS,
   TIME_SLOT_MINUTES,
   type ReservationWithDetails,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/reservations/types";
 import {
   formatTime,
+  getFirstBookableRange,
   isReservationActive,
   getReservationColorClasses,
   inferReservationKind,
@@ -374,6 +375,19 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     onSlotClick(clickedTime);
   };
 
+  // Keyboard-reachable alternative to drag-to-create: opens the same dialog the
+  // drag gesture opens, pre-filled with the first bookable window of this day.
+  const handleCreateClick = () => {
+    const { startTime, endTime } = getFirstBookableRange(date, reservations);
+    onDragCreate?.(startTime, endTime);
+  };
+
+  const dayLabel = date.toLocaleDateString("cs-CZ", {
+    weekday: "long",
+    day: "numeric",
+    month: "numeric",
+  });
+
   return (
     <div className="relative border rounded-lg overflow-hidden bg-card">
       {/* Schedule break banner */}
@@ -385,6 +399,24 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
           <p className="text-xs text-warning">
             Místnosti jsou volné pro běžné rezervace
           </p>
+        </div>
+      )}
+
+      {/* Column header — keyboard-reachable alternative to drag-to-create */}
+      {onDragCreate && (
+        <div className="flex border-b bg-muted/30">
+          <div className="flex-shrink-0 w-12 md:w-16 border-r" />
+          <div className="flex-1 flex items-center justify-end px-2 py-1.5">
+            <button
+              type="button"
+              onClick={handleCreateClick}
+              aria-label={`Přidat rezervaci — ${dayLabel}`}
+              className="focus-ring inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Plus className="size-3.5" />
+              Přidat rezervaci
+            </button>
+          </div>
         </div>
       )}
 

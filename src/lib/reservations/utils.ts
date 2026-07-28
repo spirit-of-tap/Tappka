@@ -304,6 +304,66 @@ export function getNextAvailableTime(
   return currentTime;
 }
 
+/** Duration used when a reservation is started without an explicit time range. */
+export const DEFAULT_RESERVATION_MINUTES = 60;
+
+/**
+ * Find the first bookable time range on a given day.
+ *
+ * Walks the day's slots from the start of operating hours (or from the next
+ * slot after `now` when `day` is today) and returns the first window of
+ * `durationMinutes` that does not overlap any of `reservations`.
+ *
+ * Used by the keyboard-reachable "add reservation" affordance in the schedule
+ * views: the quick-reservation dialog always renders a start/end pair, so a
+ * concrete range is required to open it.
+ *
+ * When the whole day is taken it returns the last window of the day, which
+ * lets the caller's normal conflict-resolution flow offer alternatives.
+ */
+export function getFirstBookableRange(
+  day: Date,
+  reservations: Reservation[],
+  durationMinutes: number = DEFAULT_RESERVATION_MINUTES,
+  now: Date = new Date()
+): { startTime: Date; endTime: Date } {
+  const dayStart = new Date(day);
+  dayStart.setHours(OPERATING_HOURS.start, 0, 0, 0);
+
+  const dayEnd = new Date(day);
+  dayEnd.setHours(OPERATING_HOURS.end, 0, 0, 0);
+
+  const durationMs = durationMinutes * 60_000;
+  const slotMs = TIME_SLOT_MINUTES * 60_000;
+  const lastStartMs = dayEnd.getTime() - durationMs;
+
+  // On today's schedule, skip slots that have already started.
+  const firstStartMs =
+    now > dayStart && now < dayEnd
+      ? roundToSlot(now, "ceil").getTime()
+      : dayStart.getTime();
+
+  for (let startMs = firstStartMs; startMs <= lastStartMs; startMs += slotMs) {
+    const startTime = new Date(startMs);
+    const endTime = new Date(startMs + durationMs);
+
+    const isFree = !reservations.some((reservation) =>
+      doTimesOverlap(
+        startTime,
+        endTime,
+        new Date(reservation.start_at),
+        new Date(reservation.end_at)
+      )
+    );
+
+    if (isFree) {
+      return { startTime, endTime };
+    }
+  }
+
+  return { startTime: new Date(lastStartMs), endTime: new Date(dayEnd) };
+}
+
 /**
  * Check if a reservation is currently active (happening now)
  */

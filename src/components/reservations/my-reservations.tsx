@@ -103,11 +103,25 @@ function ReservationItem({ reservation }: ReservationItemProps) {
     }
   };
 
+  // Keyboard equivalent of clicking the row. Ignore keys that bubble up from the
+  // nested action buttons so Enter on "Smazat" doesn't also open the edit dialog.
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    setEditOpen(true);
+  };
+
   return (
     <>
       <div
-        className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+        role="button"
+        tabIndex={0}
+        aria-label={`Upravit rezervaci ${reservation.title}`}
+        className="focus-ring flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
         onClick={() => setEditOpen(true)}
+        onKeyDown={handleKeyDown}
       >
         {/* Date badge */}
         <div className="flex-shrink-0 w-12 h-10 rounded-md bg-primary/10 flex flex-col items-center justify-center leading-tight">
@@ -152,7 +166,7 @@ function ReservationItem({ reservation }: ReservationItemProps) {
         {/* Actions — hidden until hover */}
         <div
           className={cn(
-            "flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity",
+            "flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
             "max-sm:opacity-100"
           )}
           onClick={(e) => e.stopPropagation()}

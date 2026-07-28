@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { addDays, format, startOfWeek, isSameDay } from "date-fns";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   OPERATING_HOURS,
@@ -10,7 +11,13 @@ import {
   type ReservationWithDetails,
   type ScheduleBreak,
 } from "@/lib/reservations/types";
-import { formatTime, isReservationActive, getReservationColorClasses, inferReservationKind } from "@/lib/reservations/utils";
+import {
+  formatTime,
+  getFirstBookableRange,
+  isReservationActive,
+  getReservationColorClasses,
+  inferReservationKind,
+} from "@/lib/reservations/utils";
 
 interface WeekScheduleProps {
   startDate: Date;
@@ -196,6 +203,14 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
     };
   }, [isDragging, dragDayIndex, dragStart, dragEnd, weekDays, slotHeight, pixelToTime]);
 
+  // Keyboard-reachable alternative to drag-to-create: opens the same dialog the
+  // drag gesture opens, pre-filled with the first bookable window of that day.
+  const handleCreateClick = (day: Date) => {
+    const dayReservations = reservationsByDay.get(format(day, "yyyy-MM-dd")) ?? [];
+    const { startTime, endTime } = getFirstBookableRange(day, dayReservations);
+    onDragCreate?.(startTime, endTime);
+  };
+
   return (
     <div className="border rounded-lg overflow-hidden bg-card">
       {/* Header - Day names */}
@@ -231,6 +246,17 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                 <div className="text-[10px] text-warning truncate px-1">
                   {breakInfo.name}
                 </div>
+              )}
+              {/* Keyboard-reachable alternative to drag-to-create */}
+              {isAvailable && onDragCreate && (
+                <button
+                  type="button"
+                  onClick={() => handleCreateClick(day)}
+                  aria-label={`Přidat rezervaci — ${DAY_NAMES_CS[day.getDay()]} ${format(day, "d.M.")}`}
+                  className="focus-ring mx-auto mt-0.5 flex size-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Plus className="size-3.5" />
+                </button>
               )}
             </div>
           );
