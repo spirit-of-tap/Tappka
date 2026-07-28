@@ -14,6 +14,7 @@ import {
   BookOpen,
   Handshake,
   GraduationCap,
+  RefreshCw,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -86,6 +87,11 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           icon: GraduationCap,
         },
         {
+          title: "Týmová reflexe",
+          url: "/tymova-reflexe",
+          icon: RefreshCw,
+        },
+        {
           title: "Komunita",
           url: "/komunita",
           icon: Users,
@@ -140,6 +146,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const isReservationsActive = pathname.startsWith("/reservations")
   const isSchuzkyActive = pathname.startsWith("/schuzky")
   const isKoucovaniActive = pathname.startsWith("/koucovani")
+  const isTymovaReflexeActive = pathname.startsWith("/tymova-reflexe")
   const isCteniActive = pathname === "/prehled" || pathname === "/hledat" || pathname.startsWith("/eseje") || pathname.startsWith("/knihovna") || pathname.startsWith("/settings/kniha-knih")
   const cteniSubItems = [
     { title: "Přehled", url: "/prehled" },
@@ -261,6 +268,32 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                         <SidebarMenuButton
                           asChild
                           isActive={isKoucovaniActive}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Týmová reflexe — beta-only
+                  if (item.title === "Týmová reflexe") {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isTymovaReflexeActive}
                           tooltip={item.title}
                         >
                           <Link href={item.url} onClick={closeSidebarOnMobile}>
