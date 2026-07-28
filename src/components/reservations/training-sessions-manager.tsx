@@ -17,6 +17,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/responsive-dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/responsive-alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -58,6 +68,9 @@ export function TrainingSessionsManager({
   // Edit mode
   const [editingSchedule, setEditingSchedule] = useState<ScheduleWithRelations | null>(null);
   const [isDuplicating, setIsDuplicating] = useState(false);
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<ScheduleWithRelations | null>(null);
 
   // Drag state
   const [draggedSchedule, setDraggedSchedule] = useState<ScheduleWithRelations | null>(null);
@@ -188,8 +201,6 @@ export function TrainingSessionsManager({
   };
 
   const handleDelete = async (scheduleId: string) => {
-    if (!confirm("Opravdu chceš smazat tento Training Session?")) return;
-
     try {
       const response = await fetch(`/api/recurring-schedules/${scheduleId}`, {
         method: "DELETE",
@@ -204,6 +215,8 @@ export function TrainingSessionsManager({
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -540,7 +553,7 @@ export function TrainingSessionsManager({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(schedule.id); }}
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(schedule); }}
                       className="text-destructive hover:text-destructive"
                       title="Smazat"
                     >
@@ -553,6 +566,29 @@ export function TrainingSessionsManager({
           )}
         </div>
       ))}
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat Training Session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opravdu chceš smazat Training Session pro tým &quot;
+              {deleteTarget?.team?.name}&quot;? Tato akce nelze vrátit zpět.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ne, ponechat</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
+            >
+              Ano, smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

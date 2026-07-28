@@ -23,6 +23,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/responsive-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/responsive-alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { StorageAvatar } from "@/components/storage/storage-avatar";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -70,6 +80,7 @@ export function ReservationDetailDialog({
   const [isEditingTime, setIsEditingTime] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const reservationData = currentReservation ?? reservation;
 
@@ -220,7 +231,6 @@ export function ReservationDetailDialog({
 
   const handleCancelReservation = async () => {
     if (!reservationData) return;
-    if (!confirm("Opravdu chceš zrušit tuto rezervaci?")) return;
 
     setIsCancelling(true);
     try {
@@ -240,6 +250,7 @@ export function ReservationDetailDialog({
       toast.error("Něco se pokazilo");
     } finally {
       setIsCancelling(false);
+      setDeleteConfirmOpen(false);
     }
   };
 
@@ -434,7 +445,7 @@ export function ReservationDetailDialog({
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={handleCancelReservation}
+                      onClick={() => setDeleteConfirmOpen(true)}
                       disabled={isCancelling}
                     >
                       {isCancelling ? (
@@ -450,6 +461,23 @@ export function ReservationDetailDialog({
             </div>
           )}
         </div>
+
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Zrušit rezervaci?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Opravdu chceš zrušit tuto rezervaci? Tato akce nelze vrátit zpět.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Ne, ponechat</AlertDialogCancel>
+              <AlertDialogAction onClick={handleCancelReservation}>
+                Ano, zrušit
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
