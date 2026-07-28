@@ -136,7 +136,7 @@ export default async function DashboardPage() {
       <FirstLoginConfetti />
 
       {/* Hero greeting */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-3xl font-heading font-bold tracking-tight">
           {firstName ? `Vítej, ${firstName}!` : "Vítej!"}
         </h2>
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
       />
 
       {/* Support */}
-      <div className="mt-10 flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
         <MessageCircleQuestion className="size-4 shrink-0" />
         <span>Potřebuješ pomoc?</span>
         <a
