@@ -39,8 +39,8 @@ function cellHref(cell: MonthCell): string {
 function cellClasses(cell: MonthCell): string {
   if (cell.kind === "semester") {
     return cell.status === "done"
-      ? "border-violet-500/40 bg-violet-500/10 text-foreground hover:bg-violet-500/15"
-      : "border-violet-500/40 border-dashed text-muted-foreground/70 hover:text-muted-foreground hover:bg-violet-500/5"
+      ? "border-chart-5/40 bg-chart-5/10 text-foreground hover:bg-chart-5/15"
+      : "border-chart-5/40 border-dashed text-muted-foreground/70 hover:text-muted-foreground hover:bg-chart-5/5"
   }
   return cell.status === "done"
     ? "border-primary/30 bg-primary/10 text-foreground hover:bg-primary/15"
@@ -79,7 +79,7 @@ function CalendarCell({ cell }: { cell: MonthCell }) {
         <span
           className={cn(
             "size-1.5 rounded-full",
-            cell.status === "current-missing" ? (cell.kind === "semester" ? "bg-violet-500" : "bg-amber-500") : "bg-transparent",
+            cell.status === "current-missing" ? (cell.kind === "semester" ? "bg-chart-5" : "bg-amber-500") : "bg-transparent",
           )}
         />
       )}
@@ -114,12 +114,12 @@ export function TeamReflectionCalendar({
     <Card className="p-3 sm:p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold">Docházka reflexí</h2>
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <span className="size-2 rounded-full bg-primary/50" /> měsíční
           </span>
           <span className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-violet-500/50" /> semestrální
+            <span className="size-2 rounded-full bg-chart-5/50" /> semestrální
           </span>
           <span className="flex items-center gap-1">
             <span className="size-2 rounded-full border border-dashed border-amber-500/70" /> chybí
@@ -144,7 +144,7 @@ export function TeamReflectionCalendar({
                 )}
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-9 gap-2 pt-1 pb-2">
+                <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-2 pt-1 pb-2">
                   {year.months.map((cell) => (
                     <CalendarCell key={cell.month} cell={cell} />
                   ))}

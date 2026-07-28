@@ -33,7 +33,7 @@ function monthLabel(monthStr: string): string {
 function PreviewField({ label, children }: { label: string; children: string }) {
   return (
     <div className="min-w-0 space-y-0.5">
-      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
       <p className="text-sm text-muted-foreground line-clamp-2">{children}</p>
     </div>
   )

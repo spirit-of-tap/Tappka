@@ -53,7 +53,7 @@ export function SemesterReflectionCard({ reflection, onDeleted }: SemesterReflec
   }
 
   return (
-    <Card className="relative p-3 sm:p-4 space-y-3 border-violet-500/30 hover:bg-violet-500/5 transition-colors">
+    <Card className="relative p-3 sm:p-4 space-y-3 border-chart-5/30 hover:bg-chart-5/5 transition-colors">
       <Link
         href={`/tymova-reflexe/semestralni/${reflection.id}`}
         className="absolute inset-0 z-0"
@@ -62,7 +62,7 @@ export function SemesterReflectionCard({ reflection, onDeleted }: SemesterReflec
 
       <div className="relative z-10 flex items-start justify-between gap-3 pointer-events-none">
         <div className="flex items-center gap-2 min-w-0">
-          <GraduationCap className="size-4 shrink-0 text-violet-600" />
+          <GraduationCap className="size-4 shrink-0 text-chart-5" />
           <span className="font-semibold text-sm">{semesterLabel(reflection.semester_month)}</span>
         </div>
 

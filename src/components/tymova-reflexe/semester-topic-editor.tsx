@@ -149,7 +149,7 @@ function InlineSaveStatus({ saving, dirty }: { saving: boolean; dirty: boolean }
     return (
       <span className="flex items-center gap-1 font-medium text-amber-600">
         <span className="size-1.5 rounded-full bg-amber-500" />
-        Neuloženo
+        Neuložené změny
       </span>
     )
   }
