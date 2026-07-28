@@ -24,6 +24,12 @@ interface ReflectionRef {
 // monthly one in January and May. The program itself is fixed at 3 years.
 const SCHOOL_YEAR_MONTHS = [9, 10, 11, 12, 1, 2, 3, 4, 5]
 const SEMESTER_MONTHS = new Set([1, 5])
+
+export function isSemesterMonth(monthKey: string): boolean {
+  const month = Number(monthKey.split("-")[1])
+  return SEMESTER_MONTHS.has(month)
+}
+
 const PROGRAM_LENGTH_YEARS = 3
 
 function schoolYearStartYearFor(monthKey: string): number {

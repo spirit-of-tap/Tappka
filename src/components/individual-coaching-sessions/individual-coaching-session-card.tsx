@@ -92,7 +92,6 @@ export function IndividualCoachingSessionCard({
   function handleUpdated(updated: IndividualCoachingSessionWithCoach) {
     setEditOpen(false)
     onUpdated(updated)
-    toast.success("Sezení aktualizováno")
   }
 
   return (

@@ -11,6 +11,8 @@ import { countCustomerMeetings } from "@/lib/customer-meetings/queries";
 import {
   sanitizeWidgetIds,
   widgetsForRole,
+  availableWidgetIds,
+  availableWidgets,
   type DashboardWidgetId,
 } from "@/lib/dashboard/types";
 import { FirstLoginConfetti } from "@/components/first-login-confetti";
@@ -66,7 +68,11 @@ export default async function DashboardPage() {
     .select("widgets")
     .eq("profile_id", profile.id)
     .maybeSingle();
-  const layout = sanitizeWidgetIds(layoutRow?.widgets, profile.role);
+  const hasMetricsAccess = !!profile.beta_access_granted_at;
+  const layout = availableWidgetIds(
+    sanitizeWidgetIds(layoutRow?.widgets, profile.role),
+    hasMetricsAccess,
+  );
 
   const has = (id: DashboardWidgetId) => layout.includes(id);
   const needsUnread =
@@ -141,7 +147,7 @@ export default async function DashboardPage() {
 
       <DashboardEditor
         initialLayout={layout}
-        catalog={widgetsForRole(profile.role)}
+        catalog={availableWidgets(widgetsForRole(profile.role), hasMetricsAccess)}
         nodes={nodes}
       />
 

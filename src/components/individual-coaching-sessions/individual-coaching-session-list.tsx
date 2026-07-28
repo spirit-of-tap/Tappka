@@ -197,14 +197,10 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Plus className="size-4" />
-                  Přidat sezení
-                </Button>
-              </DialogTrigger>
-            </Dialog>
+            <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4" />
+              Přidat sezení
+            </Button>
           </EmptyContent>
         </Empty>
       ) : (

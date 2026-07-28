@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { buildSchoolYears, rocnikForSchoolYear } from "./month-grid"
+import { buildSchoolYears, rocnikForSchoolYear, isSemesterMonth } from "./month-grid"
 
 describe("buildSchoolYears", () => {
   it("returns 3 school years (current + 2 back), oldest first, when onboardingYear is unknown", () => {
@@ -108,5 +108,17 @@ describe("rocnikForSchoolYear", () => {
 
   it("returns null for a school year before the team onboarded", () => {
     expect(rocnikForSchoolYear(2024, 2023)).toBeNull()
+  })
+})
+
+describe("isSemesterMonth", () => {
+  it("is true for January and May", () => {
+    expect(isSemesterMonth("2026-01-01")).toBe(true)
+    expect(isSemesterMonth("2026-05-01")).toBe(true)
+  })
+
+  it("is false for every other month", () => {
+    expect(isSemesterMonth("2026-09-01")).toBe(false)
+    expect(isSemesterMonth("2026-12-01")).toBe(false)
   })
 })

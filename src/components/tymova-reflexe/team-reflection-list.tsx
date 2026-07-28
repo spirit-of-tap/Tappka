@@ -15,6 +15,7 @@ import {
 import { TeamReflectionCard } from "./team-reflection-card"
 import { SemesterReflectionCard } from "./semester-reflection-card"
 import { TeamReflectionCalendar } from "./team-reflection-calendar"
+import { isSemesterMonth } from "@/lib/tymova-reflexe/month-grid"
 import type { TeamReflectionWithCreator } from "@/lib/tymova-reflexe/types"
 import type { TeamSemesterReflectionSummary } from "@/lib/tymova-reflexe/semester-types"
 
@@ -42,7 +43,13 @@ export function TeamReflectionList({
   const [semesterItems, setSemesterItems] = useState(semesterReflections)
 
   const currentMonth = getCurrentMonth()
-  const hasCurrentMonthReflection = items.some((r) => r.month === currentMonth)
+  const currentMonthIsSemester = isSemesterMonth(currentMonth)
+  const hasCurrentReflection = currentMonthIsSemester
+    ? semesterItems.some((r) => r.semester_month === currentMonth)
+    : items.some((r) => r.month === currentMonth)
+  const newReflectionHref = currentMonthIsSemester
+    ? "/tymova-reflexe/semestralni/nova"
+    : "/tymova-reflexe/nova"
 
   function handleDeleted(id: string) {
     setItems((prev) => prev.filter((r) => r.id !== id))
@@ -70,10 +77,10 @@ export function TeamReflectionList({
         onboardingYear={onboardingYear}
       />
 
-      {!hasCurrentMonthReflection && (
+      {!hasCurrentReflection && (
         <div className="flex items-center justify-end gap-4">
           <Button size="sm" asChild>
-            <Link href="/tymova-reflexe/nova">
+            <Link href={newReflectionHref}>
               <Plus className="size-4" />
               Nová reflexe
             </Link>
@@ -97,7 +104,7 @@ export function TeamReflectionList({
             </EmptyHeader>
             <EmptyContent>
               <Button variant="outline" size="sm" asChild>
-                <Link href="/tymova-reflexe/nova">
+                <Link href={newReflectionHref}>
                   <Plus className="size-4" />
                   Přidat reflexi
                 </Link>

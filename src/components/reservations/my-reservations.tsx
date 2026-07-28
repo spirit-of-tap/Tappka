@@ -205,12 +205,6 @@ function ReservationItem({ reservation }: ReservationItemProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <EditReservationDialog
-        reservation={reservation}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-      />
     </>
   );
 }
