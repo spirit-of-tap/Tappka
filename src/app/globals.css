@@ -41,6 +41,12 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -98,6 +104,13 @@
   --destructive: oklch(0.581 0.223 27.9); /* Destructive red */
   --destructive-foreground: oklch(1 0 0);
 
+  --success: oklch(0.6 0.14 145); /* Positive/available status */
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.758 0.152 69.3); /* Same hue as --chart-2 Amber */
+  --warning-foreground: oklch(0.145 0 0);
+  --info: oklch(0.635 0.089 195.1); /* Same hue as --chart-3 Teal */
+  --info-foreground: oklch(1 0 0);
+
   --border: oklch(0.877 0.013 5.8); /* Light warm border */
   --input: oklch(0.918 0.008 5.7); /* Light input background */
   --ring: oklch(0.484 0.184 27.7); /* TAP Red for focus rings */
@@ -145,6 +158,13 @@
 
   --destructive: oklch(0.602 0.21 26.3); /* Destructive red */
   --destructive-foreground: oklch(1 0 0);
+
+  --success: oklch(0.72 0.15 145); /* Brightened for dark, same pattern as --primary/--destructive above */
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.792 0.137 72.4); /* Same hue as dark --chart-2 */
+  --warning-foreground: oklch(0.145 0 0);
+  --info: oklch(0.761 0.103 195.2); /* Same hue as dark --chart-3 */
+  --info-foreground: oklch(1 0 0);
 
   --border: oklch(0.303 0.041 8.9); /* Dark border */
   --input: oklch(0.265 0.034 8.7); /* Dark input */
@@ -303,3 +323,9 @@ mark[data-color="orange"] { background-color: #fdba74; }
 .dark mark[data-color="green"]  { background-color: #14532d; color: #dcfce7; }
 .dark mark[data-color="blue"]   { background-color: #1e3a8a; color: #dbeafe; }
 .dark mark[data-color="orange"] { background-color: #7c2d12; color: #ffedd5; }
+
+@layer utilities {
+  .focus-ring {
+    @apply outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px];
+  }
+}
