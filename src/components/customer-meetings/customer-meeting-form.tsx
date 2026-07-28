@@ -78,8 +78,8 @@ export function CustomerMeetingForm({ profileId, initial, onSuccess, onCancel }:
 
       toast.success(initial ? "Schůzka aktualizována" : "Schůzka vytvořena")
       onSuccess(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Neznámá chyba")
+    } catch {
+      setError("Nepodařilo se uložit schůzku.")
       toast.error("Nepodařilo se uložit schůzku")
     } finally {
       setLoading(false)

@@ -109,7 +109,7 @@ export function CustomerMeetingDetail({ meeting, profileId }: CustomerMeetingDet
         </Dialog>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm" className="text-destructive">
+            <Button variant="destructive" size="sm">
               <Trash2 className="size-4" />
               Smazat
             </Button>

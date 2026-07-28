@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Plus, Building2, UserCircle, Calendar } from "lucide-react"
+import { Plus, Building2, UserCircle, Calendar, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -63,7 +63,24 @@ interface CustomerMeetingListProps {
 export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingListProps) {
   const [items, setItems] = useState(meetings)
   const [createOpen, setCreateOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const countByKey = new Map<string, number>()
+    let earliestKey = getCurrentMonthKey()
+    for (const m of meetings) {
+      const key = getMonthKey(m.meeting_at)
+      if (!key) continue
+      countByKey.set(key, (countByKey.get(key) ?? 0) + 1)
+      if (key < earliestKey) earliestKey = key
+    }
+    const currentKey = getCurrentMonthKey()
+    const emptyKeys = new Set<string>()
+    let cursor = earliestKey
+    while (cursor <= currentKey) {
+      if (!countByKey.has(cursor)) emptyKeys.add(cursor)
+      cursor = addMonths(cursor, 1)
+    }
+    return emptyKeys
+  })
 
   const meetingMap = useMemo(() => {
     const map = new Map<string, CustomerMeeting[]>()
@@ -147,6 +164,8 @@ export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingList
             type="button"
             onClick={() => toggleCollapse("__undated__")}
             className="flex w-full items-center gap-2 mb-2 sm:mb-3 group"
+            aria-expanded={!collapsed.has("__undated__")}
+            aria-controls="month-__undated__-content"
           >
             <Calendar className="size-4 shrink-0 text-muted-foreground" />
             <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
@@ -155,14 +174,16 @@ export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingList
             <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
               {meetingMap.undated.length}
             </Badge>
-            <span className="ml-auto text-xs text-muted-foreground transition-transform group-hover:translate-y-0.5">
-              {collapsed.has("__undated__") ? "rozbalit" : "skrýt"}
-            </span>
+            <ChevronDown
+              className={`ml-auto size-4 text-muted-foreground transition-transform ${
+                collapsed.has("__undated__") ? "-rotate-90" : "rotate-0"
+              }`}
+            />
           </button>
           {!collapsed.has("__undated__") && (
-            <div className="space-y-2">
+            <div id="month-__undated__-content" className="space-y-2">
               {meetingMap.undated.map((meeting) => (
-                <Link key={meeting.id} href={`/schuzky/${meeting.id}`} className="block">
+                <Link key={meeting.id} href={`/schuzky/${meeting.id}`} className="block focus-ring rounded-xl">
                   <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1.5">
@@ -225,6 +246,8 @@ export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingList
                   type="button"
                   onClick={() => toggleCollapse(group.key)}
                   className="flex w-full items-center gap-2 mb-2 sm:mb-3 group"
+                  aria-expanded={!isCollapsed}
+                  aria-controls={`month-${group.key}-content`}
                 >
                   <Calendar className="size-4 shrink-0 text-muted-foreground" />
                   <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
@@ -233,20 +256,22 @@ export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingList
                   <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
                     {group.count}
                   </Badge>
-                  <span className="ml-auto text-xs text-muted-foreground transition-transform group-hover:translate-y-0.5">
-                    {isCollapsed ? "rozbalit" : "skrýt"}
-                  </span>
+                  <ChevronDown
+                    className={`ml-auto size-4 text-muted-foreground transition-transform ${
+                      isCollapsed ? "-rotate-90" : "rotate-0"
+                    }`}
+                  />
                 </button>
 
                 {!isCollapsed && (
-                  <div className="space-y-2">
+                  <div id={`month-${group.key}-content`} className="space-y-2">
                     {meetingsInMonth.length === 0 ? (
-                      <p className="text-xs text-muted-foreground/40 italic px-1 py-3 text-center sm:text-left">
+                      <p className="text-xs text-muted-foreground/70 px-1 py-3 text-center sm:text-left">
                         — tento měsíc žádná schůzka
                       </p>
                     ) : (
                       meetingsInMonth.map((meeting) => (
-                        <Link key={meeting.id} href={`/schuzky/${meeting.id}`} className="block">
+                        <Link key={meeting.id} href={`/schuzky/${meeting.id}`} className="block focus-ring rounded-xl">
                           <Card className="p-3 sm:p-4 hover:bg-accent/50 transition-colors cursor-pointer">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1 space-y-1.5">
