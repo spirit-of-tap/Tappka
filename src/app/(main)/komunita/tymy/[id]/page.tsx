@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserCard } from '@/components/komunita/user-card';
+import { PageShell } from '@/components/ui/page-shell';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { TeamCustomerMeetingsChart } from '@/components/teams/team-customer-meetings-chart';
 import { TeamCoachingSessionsChart } from '@/components/teams/team-coaching-sessions-chart';
@@ -47,7 +48,7 @@ export default async function TeamPage({ params }: PageProps) {
   const backHref = `/komunita/tymy/${team.id}`;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <PageShell>
       {/* Back Button */}
       <Button variant="ghost" size="sm" asChild>
         <Link href="/komunita">
@@ -188,6 +189,6 @@ export default async function TeamPage({ params }: PageProps) {
           </Tabs>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }

@@ -21,7 +21,7 @@ function TeamPill({
     <Link
       href={`/komunita/tymy/${team.id}`}
       className={cn(
-        'group inline-flex items-center gap-2 rounded-full border bg-card pl-2.5 pr-1.5 py-1 text-sm transition-colors hover:bg-muted',
+        'group focus-ring inline-flex items-center gap-2 rounded-full border bg-card pl-2.5 pr-1.5 py-1 text-sm transition-colors hover:bg-muted',
         muted && 'opacity-70 hover:opacity-100'
       )}
     >
