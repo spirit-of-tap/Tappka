@@ -212,7 +212,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
               className={cn(
                 "flex-1 text-center py-2 border-r last:border-r-0",
                 isToday && isAvailable && "bg-primary/10",
-                hasBreak && isAvailable && "bg-emerald-50 dark:bg-emerald-950/30",
+                hasBreak && isAvailable && "bg-warning/10 border-warning",
                 !isAvailable && "bg-red-50/60 dark:bg-red-950/20"
               )}
               title={!isAvailable ? "Místnost není v tento den dostupná" : hasBreak ? breakInfo.name : undefined}
@@ -231,7 +231,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                 {format(day, "d.M.")}
               </div>
               {hasBreak && isAvailable && (
-                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate px-1">
+                <div className="text-[10px] text-warning truncate px-1">
                   {breakInfo.name}
                 </div>
               )}
@@ -272,7 +272,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
               className={cn(
                 "flex-1 relative border-r last:border-r-0 select-none",
                 isAvailable && isToday && "bg-primary/5",
-                isAvailable && hasBreak && "bg-emerald-50/50 dark:bg-emerald-950/20",
+                isAvailable && hasBreak && "bg-warning/10 border-warning",
                 !isAvailable && "bg-red-50/40 dark:bg-red-950/15 cursor-not-allowed",
                 isAvailable && isDragging && dragDayIndex === dayIndex && "cursor-grabbing"
               )}

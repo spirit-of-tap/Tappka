@@ -25,8 +25,8 @@ export function RoomCard({ room, filterState: _filterState, onRoomClick }: RoomC
 
   // Determine status color
   const statusColor = isOccupied
-    ? "border-red-500 bg-red-50 dark:bg-red-950/20"
-    : "border-green-500 bg-green-50 dark:bg-green-950/20";
+    ? "border-destructive bg-destructive/5"
+    : "border-success bg-success/5";
 
   const statusBadge = isOccupied
     ? { label: "Obsazeno", variant: "destructive" as const }
@@ -61,7 +61,7 @@ export function RoomCard({ room, filterState: _filterState, onRoomClick }: RoomC
       <CardContent className="p-4 h-full flex flex-col relative z-10">
         {/* Filter unavailability banner */}
         {isFilteredOut && (
-          <div className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-4 mb-3 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+          <div className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-4 mb-3 bg-muted text-muted-foreground">
             <Clock className="size-4 flex-shrink-0" />
             <span className="text-sm font-medium line-clamp-2">
               {filterAvailability.reason === 'day_restricted'

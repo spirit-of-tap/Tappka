@@ -343,11 +343,11 @@ export function getDurationHours(startTime: string, endTime: string): number {
 export function getReservationColorClasses(kind: ReservationKind | string): string {
   switch (kind) {
     case "training_session":
-      return "bg-red-100 dark:bg-red-950/50 border-red-500 text-red-900 dark:text-red-100";
+      return "bg-chart-1/10 border-chart-1 text-chart-1";
     case "houston_calling":
-      return "bg-purple-100 dark:bg-purple-950/50 border-purple-500 text-purple-900 dark:text-purple-100";
+      return "bg-chart-4/10 border-chart-4 text-chart-4";
     default:
-      return "bg-blue-100 dark:bg-blue-950/50 border-blue-500 text-blue-900 dark:text-blue-100";
+      return "bg-chart-3/10 border-chart-3 text-chart-3";
   }
 }
 
