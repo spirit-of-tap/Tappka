@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { BookOpen, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CoachApprovalRow } from './coach-approval-row';
@@ -25,6 +26,9 @@ export function CoachDashboard({ initialPending, initialRejected }: CoachDashboa
     });
     if (res.ok) {
       setPending((prev) => prev.filter((b) => b.id !== bookId));
+      toast.success('Kniha schválena.');
+    } else {
+      toast.error('Nepodařilo se knihu schválit.');
     }
   };
 
@@ -40,6 +44,9 @@ export function CoachDashboard({ initialPending, initialRejected }: CoachDashboa
         setPending((prev) => prev.filter((b) => b.id !== bookId));
         setRejected((prev) => [{ ...book, status: 'rejected', status_reason: reason } as BookWithProfiles, ...prev]);
       }
+      toast.success('Kniha zamítnuta.');
+    } else {
+      toast.error('Nepodařilo se knihu zamítnout.');
     }
   };
 
@@ -48,6 +55,9 @@ export function CoachDashboard({ initialPending, initialRejected }: CoachDashboa
     if (res.ok) {
       setPending((prev) => prev.filter((b) => b.id !== bookId));
       setRejected((prev) => prev.filter((b) => b.id !== bookId));
+      toast.success('Kniha odebrána.');
+    } else {
+      toast.error('Nepodařilo se knihu odebrat.');
     }
   };
 

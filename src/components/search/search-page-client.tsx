@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Search, BookOpen, PenLine, ExternalLink, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { PageShell } from '@/components/ui/page-shell';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
@@ -78,7 +79,8 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
   const toggleCategory = (key: string) => setSelectedCategory((prev) => (prev === key ? null : key));
 
   return (
-    <div className="container mx-auto max-w-2xl py-10 space-y-6">
+    <PageShell size="narrow">
+      <h1 className="sr-only">Hledat</h1>
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
@@ -101,6 +103,7 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
             <button
               key={key}
               onClick={() => toggleCategory(key)}
+              aria-pressed={selectedCategory === key}
               className={cn(
                 'shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors',
                 selectedCategory === key
@@ -137,7 +140,7 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
           />
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }
 
@@ -250,6 +253,7 @@ function TeamsSection({ teams }: { teams: TeamWithMembers[] }) {
           <button
             key={team.id}
             onClick={() => setActiveTeamId((prev) => (prev === team.id ? null : team.id))}
+            aria-pressed={activeTeamId === team.id}
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition-colors',
               activeTeamId === team.id

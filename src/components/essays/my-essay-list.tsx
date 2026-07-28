@@ -44,7 +44,7 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
           <Link
             key={essay.id}
             href={`/eseje/${essay.id}`}
-            className="group flex items-start gap-4 py-4 hover:bg-muted/30 transition-colors rounded-lg px-2 -mx-2"
+            className="group focus-ring flex items-start gap-4 py-4 hover:bg-muted/30 transition-colors rounded-lg px-2 -mx-2"
           >
             {/* Index — only for book essays */}
             {!isTopic && (

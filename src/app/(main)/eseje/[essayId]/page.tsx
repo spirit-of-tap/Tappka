@@ -15,6 +15,7 @@ import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { EssayPinButton } from '@/components/essays/essay-pin-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PageShell } from '@/components/ui/page-shell';
 import { BackButton } from '@/components/essays/back-button';
 import { ProfilePicture } from '@/components/profile-picture';
 import { formatPoints } from '@/lib/books/points';
@@ -62,7 +63,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
   const alreadyRead = profile ? coachReads.some((r) => r.coach_profile_id === profile.id) : false;
 
   return (
-    <div className="container mx-auto py-6 max-w-2xl">
+    <PageShell size="narrow">
       <ViewTracker essayId={essayId} />
 
       {/* Top bar */}
@@ -171,6 +172,6 @@ export default async function EssayDetailPage({ params }: PageProps) {
       )}
 
       <EssayCommentThread essayId={essayId} initialComments={comments} />
-    </div>
+    </PageShell>
   );
 }

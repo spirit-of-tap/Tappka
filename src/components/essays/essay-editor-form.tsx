@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Save, BookOpen, X } from 'lucide-react';
 import { TiptapEditor } from './tiptap-editor';
 import { Button } from '@/components/ui/button';
@@ -70,9 +71,14 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
           book_id: selectedBook?.id ?? null,
         }),
       });
-      const { data } = await res.json();
-      if (data?.id) {
-        router.push(`/eseje/${data.id}`);
+      if (res.ok) {
+        const { data } = await res.json();
+        if (data?.id) {
+          toast.success('Esej publikována.');
+          router.push(`/eseje/${data.id}`);
+        }
+      } else {
+        toast.error('Nepodařilo se publikovat esej.');
       }
     } finally {
       setIsSaving(false);

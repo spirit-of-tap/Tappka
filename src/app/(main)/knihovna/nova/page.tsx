@@ -1,15 +1,16 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageShell } from '@/components/ui/page-shell';
 import { AddBookWizard } from '@/components/books/add-book-wizard';
 
 export default function NovaKnihaPage() {
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-2xl">
+    <PageShell size="narrow">
       <Button variant="ghost" asChild className="gap-2">
         <Link href="/hledat">
           <ArrowLeft className="size-4" />
-          Zpět do knihovny
+          Zpět do hledání
         </Link>
       </Button>
       <div className="space-y-1">
@@ -20,6 +21,6 @@ export default function NovaKnihaPage() {
         </p>
       </div>
       <AddBookWizard />
-    </div>
+    </PageShell>
   );
 }

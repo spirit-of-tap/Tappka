@@ -16,6 +16,7 @@ import { getEssays } from '@/lib/essays/queries';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfilePicture } from '@/components/profile-picture';
 import { Button } from '@/components/ui/button';
+import { PageShell } from '@/components/ui/page-shell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookDeleteButton } from '@/components/books/book-delete-button';
 import { BookDescription } from '@/components/books/book-description';
@@ -28,18 +29,15 @@ import { cn } from '@/lib/utils';
 const ALL_ESSAYS_PAGE_SIZE = 500;
 
 const STATUS_PILL: Record<BookStatus, string> = {
-  approved:
-    'border-emerald-600/20 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-950/40 dark:text-emerald-400',
-  pending:
-    'border-amber-600/20 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-950/40 dark:text-amber-400',
-  rejected:
-    'border-red-600/20 bg-red-50 text-red-700 dark:border-red-400/20 dark:bg-red-950/40 dark:text-red-400',
+  approved: 'border-success/20 bg-success/10 text-success',
+  pending: 'border-warning/20 bg-warning/10 text-warning',
+  rejected: 'border-destructive/20 bg-destructive/10 text-destructive',
 };
 
 const STATUS_DOT: Record<BookStatus, string> = {
-  approved: 'bg-emerald-500',
-  pending: 'bg-amber-500',
-  rejected: 'bg-red-500',
+  approved: 'bg-success',
+  pending: 'bg-warning',
+  rejected: 'bg-destructive',
 };
 
 interface PageProps {
@@ -99,13 +97,13 @@ export default async function BookDetailPage({ params }: PageProps) {
   const goodreadsUrl = `https://www.goodreads.com/search?q=${encodeURIComponent(book.title_cs)}`;
 
   return (
-    <div className="container mx-auto max-w-4xl py-6 space-y-8">
+    <PageShell size="wide" className="space-y-8">
       {/* Top bar */}
       <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" asChild className="gap-2 -ml-2">
           <Link href="/hledat">
             <ArrowLeft className="size-4" />
-            Zpět do knihovny
+            Zpět do hledání
           </Link>
         </Button>
         {isCoachOrAdmin && (
@@ -161,7 +159,7 @@ export default async function BookDetailPage({ params }: PageProps) {
               </span>
             ) : book.status === 'rejected' ? (
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                0 bodů
+                0 b.
               </span>
             ) : null}
           </div>
@@ -247,6 +245,6 @@ export default async function BookDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageShell>
   );
 }

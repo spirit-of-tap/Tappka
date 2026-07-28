@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,10 +32,14 @@ export function EssayCommentThread({ essayId, initialComments }: EssayCommentThr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body }),
       });
-      const { data } = await res.json();
-      if (data) {
-        setComments((prev) => [...prev, data]);
-        setBody('');
+      if (res.ok) {
+        const { data } = await res.json();
+        if (data) {
+          setComments((prev) => [...prev, data]);
+          setBody('');
+        }
+      } else {
+        toast.error('Nepodařilo se odeslat komentář.');
       }
     } finally {
       setIsPosting(false);

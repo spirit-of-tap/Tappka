@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserBookPointsStats, getTeamBookPointsStats, getEssays } from '@/lib/essays/queries';
 import { PrehledTabs } from '@/components/essays/prehled-tabs';
+import { PageShell } from '@/components/ui/page-shell';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -29,7 +30,7 @@ export default async function PrehledPage({ searchParams }: PageProps) {
   const defaultTab = tab === 'moje' || tab === 'tym' ? tab : 'moje';
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <PageShell size="full">
       <div className="space-y-1">
         <h1 className="text-3xl font-bold">Přehled</h1>
         <p className="text-muted-foreground">Tvůj pokrok, eseje a srovnání s týmem</p>
@@ -43,6 +44,6 @@ export default async function PrehledPage({ searchParams }: PageProps) {
         hasTeam={!!profile.team_id}
         votedEssayIds={votedEssayIds}
       />
-    </div>
+    </PageShell>
   );
 }

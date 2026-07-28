@@ -6,6 +6,7 @@ import {
   getReadTeamEssaysForCoach,
 } from '@/lib/essays/queries';
 import { CoachReviewList } from '@/components/essays/coach-review-list';
+import { PageShell } from '@/components/ui/page-shell';
 
 export default async function CoachReviewPage() {
   const supabase = await createClient();
@@ -19,12 +20,12 @@ export default async function CoachReviewPage() {
 
   if (!profile.team_id) {
     return (
-      <div className="container mx-auto py-6 max-w-3xl">
+      <PageShell size="medium">
         <h1 className="text-2xl font-bold mb-2">Ke kontrole</h1>
         <p className="text-sm text-muted-foreground">
           Nemáte přiřazený tým, takže zde nejsou žádné eseje ke kontrole.
         </p>
-      </div>
+      </PageShell>
     );
   }
 
@@ -34,7 +35,7 @@ export default async function CoachReviewPage() {
   ]);
 
   return (
-    <div className="container mx-auto py-6 max-w-3xl">
+    <PageShell size="medium">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Ke kontrole</h1>
         <p className="text-sm text-muted-foreground">
@@ -43,6 +44,6 @@ export default async function CoachReviewPage() {
       </div>
 
       <CoachReviewList initialUnread={unread} initialRead={read} />
-    </div>
+    </PageShell>
   );
 }
