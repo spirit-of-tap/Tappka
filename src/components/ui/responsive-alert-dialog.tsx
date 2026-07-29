@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import {
   Drawer,
+  DrawerNestedRoot,
   DrawerClose,
   DrawerContent,
   DrawerDescription,
@@ -24,6 +25,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
+import { DrawerNestingContext } from "@/components/ui/responsive-dialog"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -39,11 +41,16 @@ function ResponsiveAlertDialog({
   ...props
 }: React.ComponentProps<typeof AlertDialog>) {
   const isMobile = useIsMobile()
+  // True when this alert dialog is rendered inside another dialog's content
+  // (e.g. a delete/cancel confirmation nested inside a detail dialog) — see
+  // DrawerNestingContext in responsive-dialog.tsx.
+  const isNestedInDrawer = React.useContext(DrawerNestingContext)
 
   if (isMobile) {
+    const DrawerRoot = isNestedInDrawer ? DrawerNestedRoot : Drawer
     return (
       <ResponsiveAlertDialogContext.Provider value={{ isMobile: true }}>
-        <Drawer {...props}>{children}</Drawer>
+        <DrawerRoot {...props}>{children}</DrawerRoot>
       </ResponsiveAlertDialogContext.Provider>
     )
   }
