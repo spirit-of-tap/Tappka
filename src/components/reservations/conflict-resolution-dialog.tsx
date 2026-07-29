@@ -70,7 +70,7 @@ export function ConflictResolutionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-warning">
+          <DialogTitle className="flex items-center gap-2 text-warning-strong">
             <AlertTriangle className="size-5" />
             Kolize rezervací
           </DialogTitle>
@@ -79,7 +79,7 @@ export function ConflictResolutionDialog({
         <div className="space-y-4">
           {/* Conflict info */}
           <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
-            <p className="text-sm text-warning">
+            <p className="text-sm text-warning-strong">
               V čase <strong>{formatTime(requestedStart.toISOString())} - {formatTime(requestedEnd?.toISOString() || "")}</strong> už existuje rezervace:
             </p>
             <div className="mt-2 p-2 rounded bg-white dark:bg-background border">

@@ -243,7 +243,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                 {format(day, "d.M.")}
               </div>
               {hasBreak && isAvailable && (
-                <div className="text-[10px] text-warning truncate px-1">
+                <div className="text-[10px] text-warning-strong truncate px-1">
                   {breakInfo.name}
                 </div>
               )}

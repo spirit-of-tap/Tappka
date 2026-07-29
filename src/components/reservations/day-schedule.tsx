@@ -393,10 +393,10 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
       {/* Schedule break banner */}
       {scheduleBreak && (
         <div className="bg-warning/10 border-warning border-b px-3 py-2">
-          <p className="text-sm font-medium text-warning">
+          <p className="text-sm font-medium text-warning-strong">
             Výjimka: {scheduleBreak.name}
           </p>
-          <p className="text-xs text-warning">
+          <p className="text-xs text-warning-strong">
             Místnosti jsou volné pro běžné rezervace
           </p>
         </div>

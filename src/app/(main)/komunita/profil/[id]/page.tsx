@@ -215,8 +215,8 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               {topicEssays.length > 0 && (
                 <section className="space-y-3">
                   <div className="flex items-center gap-2 pt-2">
-                    <Sparkles className="size-4 text-warning" />
-                    <h3 className="font-semibold text-sm text-warning">
+                    <Sparkles className="size-4 text-warning-strong" />
+                    <h3 className="font-semibold text-sm text-warning-strong">
                       Nad rámec četby
                     </h3>
                   </div>
@@ -238,11 +238,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                           <div className="flex-1 min-w-0 space-y-1">
                             <Link href={`/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
                               {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
-                              <span className="font-semibold text-sm leading-snug truncate group-hover:text-warning transition-colors">
+                              <span className="font-semibold text-sm leading-snug truncate group-hover:text-warning-strong transition-colors">
                                 {essay.title}
                               </span>
                             </Link>
-                            <p className="text-xs text-warning/70 flex items-center gap-1">
+                            <p className="text-xs text-warning-strong flex items-center gap-1">
                               <Sparkles className="size-3" />
                               Nad rámec četby
                             </p>

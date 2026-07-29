@@ -29,8 +29,10 @@ import { cn } from '@/lib/utils';
 const ALL_ESSAYS_PAGE_SIZE = 500;
 
 const STATUS_PILL: Record<BookStatus, string> = {
-  approved: 'border-success/20 bg-success/10 text-success',
-  pending: 'border-warning/20 bg-warning/10 text-warning',
+  approved: 'border-success/20 bg-success/10 text-success-strong',
+  pending: 'border-warning/20 bg-warning/10 text-warning-strong',
+  // text-destructive already clears WCAG AA (~4.7:1) on this tinted
+  // background; pre-existing and unrelated to the token migration.
   rejected: 'border-destructive/20 bg-destructive/10 text-destructive',
 };
 
