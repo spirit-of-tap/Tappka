@@ -63,6 +63,11 @@ interface CustomerMeetingListProps {
 export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingListProps) {
   const [items, setItems] = useState(meetings)
   const [createOpen, setCreateOpen] = useState(false)
+  // NOTE: this month-key walk (earliestKey..currentKey via addMonths) is
+  // duplicated in the `groups` memo below. Left as-is for this fix — the two
+  // walks build different shapes (a Set here vs. an array of GroupedMeetings
+  // there), so extracting a shared helper would take more restructuring than
+  // this fix's scope warrants.
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
     const countByKey = new Map<string, number>()
     let earliestKey = getCurrentMonthKey()
@@ -121,6 +126,16 @@ export function CustomerMeetingList({ meetings, profileId }: CustomerMeetingList
         return b.meeting_at.localeCompare(a.meeting_at)
       })
       return updated
+    })
+    // Ensure the month the new meeting landed in is expanded — it may have
+    // been seeded into `collapsed` at mount as an empty month, which would
+    // otherwise hide the just-created meeting behind a `hidden` section.
+    const monthKey = meeting.meeting_at ? getMonthKey(meeting.meeting_at) : "__undated__"
+    setCollapsed((prev) => {
+      if (!prev.has(monthKey)) return prev
+      const next = new Set(prev)
+      next.delete(monthKey)
+      return next
     })
     setCreateOpen(false)
   }
