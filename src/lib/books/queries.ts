@@ -84,6 +84,19 @@ export async function getBooks(
     query = query.in('id', bookIds);
   }
 
+  if (filters?.libraryOnly) {
+    const { data: libraryBookIds, error: libError } = await supabase
+      .from('library_books')
+      .select('book_id');
+
+    if (libError) throw libError;
+
+    const bookIdsWithCopies = [...new Set(libraryBookIds?.map((lb: { book_id: string }) => lb.book_id) ?? [])];
+
+    if (bookIdsWithCopies.length === 0) return [];
+    query = query.in('id', bookIdsWithCopies);
+  }
+
   const { data, error } = await query;
   if (error) throw error;
 

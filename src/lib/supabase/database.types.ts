@@ -81,6 +81,54 @@ export type Database = {
           },
         ]
       }
+      book_loans: {
+        Row: {
+          borrowed_at: string
+          borrower_id: string
+          created_at: string
+          due_at: string
+          id: string
+          library_book_id: string
+          returned_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          borrowed_at: string
+          borrower_id: string
+          created_at?: string
+          due_at: string
+          id?: string
+          library_book_id: string
+          returned_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          borrowed_at?: string
+          borrower_id?: string
+          created_at?: string
+          due_at?: string
+          id?: string
+          library_book_id?: string
+          returned_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_loans_borrower_id_fkey"
+            columns: ["borrower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_loans_library_book_id_fkey"
+            columns: ["library_book_id"]
+            isOneToOne: false
+            referencedRelation: "library_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_tags: {
         Row: {
           book_id: string
@@ -867,6 +915,65 @@ export type Database = {
           },
           {
             foreignKeyName: "individual_coaching_sessions_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_books: {
+        Row: {
+          book_id: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          isbn_13: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          isbn_13?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          isbn_13?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books_with_essay_count"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_books_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_books_updated_by_profile_id_fkey"
             columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"

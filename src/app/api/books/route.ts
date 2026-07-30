@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
       createdBy: searchParams.get('created_by') ?? searchParams.get('added_by') ?? undefined,
       page: searchParams.get('page') ? Number(searchParams.get('page')) : undefined,
       pageSize: searchParams.get('page_size') ? Number(searchParams.get('page_size')) : undefined,
+      libraryOnly: searchParams.get('library_only') === 'true',
     };
 
     const books = await getBooks(supabase, filters);

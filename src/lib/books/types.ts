@@ -29,6 +29,7 @@ export interface BookFilters {
   sortBy?: 'popular' | 'recent';
   page?: number;
   pageSize?: number;
+  libraryOnly?: boolean;
 }
 
 export interface CreateBookInput {

@@ -75,7 +75,8 @@ export const books = pgTable("books", {
 			foreignColumns: [profiles.id],
 			name: "books_status_changed_by_profile_id_fkey"
 		}).onDelete("set null"),
-	unique("books_isbn_13_key").on(table.isbn13),
+	// ISBN identifies an edition, not a literary work — no UNIQUE constraint
+
 	pgPolicy("Coaches and admins can delete books", { as: "permissive", for: "delete", to: ["public"], using: sql`is_coach_or_admin()` }),
 	pgPolicy("Coaches and admins can update books", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
 	pgPolicy("Authenticated users can add books", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(created_by_profile_id = current_profile_id())` }),
@@ -157,4 +158,64 @@ export const bookComments = pgTable("book_comments", {
 	pgPolicy("Authenticated users can add book comments", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(author_profile_id = current_profile_id())` }),
 	pgPolicy("Authenticated users can view book comments", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	check("book_comments_body_check", sql`(char_length(body) >= 1) AND (char_length(body) <= 4000)`),
+]).enableRLS();
+
+export const libraryBooks = pgTable("library_books", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	bookId: uuid("book_id").notNull(),
+	isbn13: text("isbn_13"),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdByProfileId: uuid("created_by_profile_id").notNull(),
+	updatedByProfileId: uuid("updated_by_profile_id").notNull(),
+}, (table) => [
+	index("library_books_book_id_idx").using("btree", table.bookId.asc().nullsLast().op("uuid_ops")),
+	index("library_books_isbn_13_idx").using("btree", table.isbn13.asc().nullsLast().op("text_ops")).where(sql`(isbn_13 IS NOT NULL)`),
+	foreignKey({
+			columns: [table.bookId],
+			foreignColumns: [books.id],
+			name: "library_books_book_id_fkey"
+		}).onDelete("restrict"),
+	foreignKey({
+			columns: [table.createdByProfileId],
+			foreignColumns: [profiles.id],
+			name: "library_books_created_by_profile_id_fkey"
+		}).onDelete("restrict"),
+	foreignKey({
+			columns: [table.updatedByProfileId],
+			foreignColumns: [profiles.id],
+			name: "library_books_updated_by_profile_id_fkey"
+		}).onDelete("restrict"),
+	pgPolicy("Authenticated users can view library books", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Coaches and admins can add library books", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`is_coach_or_admin()` }),
+	pgPolicy("Coaches and admins can update library books", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
+	pgPolicy("Coaches and admins can delete library books", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
+]).enableRLS();
+
+export const bookLoans = pgTable("book_loans", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	libraryBookId: uuid("library_book_id").notNull(),
+	borrowerId: uuid("borrower_id").notNull(),
+	borrowedAt: timestamp("borrowed_at", { withTimezone: true, mode: 'string' }).notNull(),
+	dueAt: timestamp("due_at", { withTimezone: true, mode: 'string' }).notNull(),
+	returnedAt: timestamp("returned_at", { withTimezone: true, mode: 'string' }),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("book_loans_library_book_id_idx").using("btree", table.libraryBookId.asc().nullsLast().op("uuid_ops")),
+	index("book_loans_borrower_id_idx").using("btree", table.borrowerId.asc().nullsLast().op("uuid_ops")),
+	index("book_loans_active_idx").using("btree", table.libraryBookId.asc().nullsLast().op("uuid_ops")).where(sql`(returned_at IS NULL)`),
+	foreignKey({
+			columns: [table.libraryBookId],
+			foreignColumns: [libraryBooks.id],
+			name: "book_loans_library_book_id_fkey"
+		}).onDelete("restrict"),
+	foreignKey({
+			columns: [table.borrowerId],
+			foreignColumns: [profiles.id],
+			name: "book_loans_borrower_id_fkey"
+		}).onDelete("restrict"),
+	pgPolicy("Authenticated users can view loans", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Users can borrow for themselves", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(borrower_id = current_profile_id())` }),
+	pgPolicy("Borrower can return their own loan", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(borrower_id = current_profile_id())`, withCheck: sql`(borrower_id = current_profile_id())` }),
 ]).enableRLS();

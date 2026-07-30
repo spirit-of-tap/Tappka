@@ -95,6 +95,7 @@
     "posthog-js": "^1.344.0",
     "posthog-node": "^5.26.1",
     "react": "^19.2.3",
+    "react-barcode-scanner": "^4.0.1",
     "react-day-picker": "^9.13.0",
     "react-dom": "^19.2.3",
     "react-easy-crop": "^5.5.6",

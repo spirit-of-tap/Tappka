@@ -147,13 +147,15 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const isSchuzkyActive = pathname.startsWith("/schuzky")
   const isKoucovaniActive = pathname.startsWith("/koucovani")
   const isTymovaReflexeActive = pathname.startsWith("/tymova-reflexe")
-  const isCteniActive = pathname === "/prehled" || pathname === "/hledat" || pathname.startsWith("/eseje") || pathname.startsWith("/knihovna") || pathname.startsWith("/settings/kniha-knih")
+  const isCteniActive = pathname === "/prehled" || pathname === "/hledat" || pathname === "/knihovna/moje" || pathname.startsWith("/eseje") || pathname.startsWith("/knihovna") || pathname.startsWith("/settings/kniha-knih")
   const cteniSubItems = [
     { title: "Přehled", url: "/prehled" },
     { title: "Hledat", url: "/hledat" },
+    { title: "Moje výpůjčky", url: "/knihovna/moje" },
     ...(isCoachOrAdmin
       ? [
         { title: "Ke kontrole", url: "/eseje/ke-kontrole", badge: reviewCount },
+        { title: "Import", url: "/knihovna/import" },
         { title: "Nastavení", url: "/settings/kniha-knih" },
       ]
       : []),

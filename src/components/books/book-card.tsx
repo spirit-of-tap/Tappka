@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, FileText, ExternalLink } from 'lucide-react';
+import { BookOpen, FileText, ExternalLink, Library } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
@@ -8,9 +8,10 @@ import type { BookWithProfiles } from '@/lib/books/types';
 
 interface BookCardProps {
   book: BookWithProfiles;
+  libraryInfo?: { totalCopies: number; availableCopies: number; inLibrary: boolean } | null;
 }
 
-export function BookCard({ book }: BookCardProps) {
+export function BookCard({ book, libraryInfo }: BookCardProps) {
   const pointsLabel = formatPointsWithLabel(book.book_points);
 
   return (
@@ -53,6 +54,14 @@ export function BookCard({ book }: BookCardProps) {
             <span className="text-xs text-muted-foreground">{book.page_count} str.</span>
           )}
           <span className="text-xs font-medium text-foreground">{pointsLabel}</span>
+          {libraryInfo?.inLibrary && (
+            <span className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400">
+              <Library className="size-3" />
+              TAP Knihovna
+              <span className="text-indigo-400 dark:text-indigo-500">·</span>
+              {libraryInfo.availableCopies} dostupných kopií
+            </span>
+          )}
           {book.preview_link && (
             <a
               href={book.preview_link}

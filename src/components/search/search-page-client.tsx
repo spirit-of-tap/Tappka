@@ -37,6 +37,7 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryBooks, setCategoryBooks] = useState<(BookWithProfiles & { essay_count?: number })[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [libraryFilterEnabled, setLibraryFilterEnabled] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -69,11 +70,17 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
   useEffect(() => {
     if (!selectedCategory) { setCategoryBooks([]); return; }
     setCategoryLoading(true);
-    fetch(`/api/books?tag=${encodeURIComponent(selectedCategory)}&sort=popular&page_size=40`)
+    const params = new URLSearchParams({
+      tag: selectedCategory,
+      sort: 'popular',
+      page_size: '40',
+    });
+    if (libraryFilterEnabled) params.set('library_only', 'true');
+    fetch(`/api/books?${params}`)
       .then((r) => r.json())
       .then(({ data }) => setCategoryBooks(data ?? []))
       .finally(() => setCategoryLoading(false));
-  }, [selectedCategory]);
+  }, [selectedCategory, libraryFilterEnabled]);
 
   const hasQuery = query.trim().length > 0;
   const toggleCategory = (key: string) => setSelectedCategory((prev) => (prev === key ? null : key));
@@ -115,6 +122,19 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
             </button>
           ))}
         </div>
+      )}
+
+      {/* Library filter checkbox */}
+      {!hasQuery && selectedCategory && (
+        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer py-1">
+          <input
+            type="checkbox"
+            checked={libraryFilterEnabled}
+            onChange={(e) => setLibraryFilterEnabled(e.target.checked)}
+            className="rounded border-border accent-primary"
+          />
+          Pouze knihy v TAP Knihovně
+        </label>
       )}
 
       {/* Content */}

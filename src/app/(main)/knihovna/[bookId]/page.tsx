@@ -5,6 +5,7 @@ import {
   BookOpen,
   BookText,
   Hash,
+  Library,
   User,
   Pencil,
   ExternalLink,
@@ -13,6 +14,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById, getBookComments } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
+import { getBookLibraryInfo } from '@/lib/library/queries';
+import { BorrowButton } from '@/components/library/borrow-button';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfilePicture } from '@/components/profile-picture';
 import { Button } from '@/components/ui/button';
@@ -84,11 +87,12 @@ export default async function BookDetailPage({ params }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [book, comments, essays, profile] = await Promise.all([
+  const [book, comments, essays, profile, libraryInfo] = await Promise.all([
     getBookById(supabase, bookId),
     getBookComments(supabase, bookId),
     getEssays(supabase, { bookId, pageSize: ALL_ESSAYS_PAGE_SIZE, sort: 'best' }),
     user ? getCurrentUserProfile(supabase, { user }) : null,
+    getBookLibraryInfo(supabase, bookId),
   ]);
 
   if (!book) notFound();
@@ -215,6 +219,25 @@ export default async function BookDetailPage({ params }: PageProps) {
           )}
         </div>
       </div>
+
+      {/* Library availability */}
+      {libraryInfo.inLibrary && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">TAP Knihovna</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Tato kniha je dostupná v TAP Knihovně.
+            </p>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-medium">Dostupné kopie:</span>
+              <span>{libraryInfo.availableCopies} / {libraryInfo.totalCopies}</span>
+            </div>
+            <BorrowButton bookId={book.id} disabled={libraryInfo.availableCopies === 0} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Essays */}
       {essays.length > 0 && (
