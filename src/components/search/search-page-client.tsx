@@ -502,7 +502,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
                   <p className="text-xs text-muted-foreground truncate">{book.author}</p>
                 </div>
                 {book.in_library && (
-                  <Badge variant="default" className="gap-1 bg-emerald-600 hover:bg-emerald-600 text-white text-[11px] px-2.5 py-1">
+                  <Badge variant="default" className="gap-1 bg-blue-600 hover:bg-blue-600 text-white text-[11px] px-2.5 py-1">
                     <Library className="size-3.5" />
                     V TAPu
                   </Badge>
