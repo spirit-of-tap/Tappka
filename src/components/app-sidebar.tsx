@@ -77,6 +77,11 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           icon: CalendarDays,
         },
         {
+          title: "Komunita",
+          url: "/komunita",
+          icon: Users,
+        },
+        {
           title: "Zák. schůzky",
           url: "/schuzky",
           icon: Handshake,
@@ -92,15 +97,10 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           icon: NotebookPen,
         },
         {
-          title: "Komunita",
-          url: "/komunita",
-          icon: Users,
+          title: "Čtení",
+          url: "/prehled",
+          icon: BookOpen,
         },
-{
-  title: "Čtení",
-  url: "/prehled",
-  icon: BookOpen,
-},
       ],
     },
     ...(isDevelopment

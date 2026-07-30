@@ -73,4 +73,32 @@ describe("mergeIncomingRecord", () => {
     expect(merged.what_went_well).toBe("My in-progress edit")
     expect(conflicts).toEqual(["what_went_well"])
   })
+
+  it("rolls the baseline forward to the incoming value so a later unrelated broadcast doesn't re-flag the same conflict", () => {
+    const dirtyFields = new Set<Field>(["what_went_well"])
+    const local = makeRecord({ what_went_well: "My in-progress edit" })
+
+    const first = mergeIncomingRecord(
+      makeRecord({ what_went_well: "Someone else's rewrite" }),
+      local,
+      editableFields,
+      dirtyFields,
+      { what_went_well: "original baseline text" },
+    )
+    expect(first.conflicts).toEqual(["what_went_well"])
+    expect(first.nextBaselines.what_went_well).toBe("Someone else's rewrite")
+
+    // A later broadcast triggered by an edit to a *different* field still carries
+    // the same (already-seen) what_went_well value along, since broadcasts are
+    // whole-row. That should not re-report the conflict.
+    const second = mergeIncomingRecord(
+      makeRecord({ what_went_well: "Someone else's rewrite", responsible_person: "Dana" }),
+      local,
+      editableFields,
+      dirtyFields,
+      first.nextBaselines,
+    )
+    expect(second.conflicts).toEqual([])
+    expect(second.merged.what_went_well).toBe("My in-progress edit")
+  })
 })

@@ -32,14 +32,28 @@ export function SemesterReflectionDetail({ reflection, entries, profileId }: Sem
 
   useEffect(() => {
     const channel = supabase.current
-      .channel(topic, { config: { private: true } })
+      .channel(topic, {
+        config: {
+          broadcast: { self: false, ack: true },
+          private: true,
+        },
+      })
       .on("broadcast", { event: "entry_updated" }, (message) => {
         const incoming = message.payload as SemesterReflectionEntryWithUpdater
         listenersRef.current.get(incoming.id)?.(incoming)
       })
-      .subscribe()
 
     channelRef.current = channel
+
+    supabase.current.realtime.setAuth().then(() => {
+      channel.subscribe((status, err) => {
+        if (status === "CHANNEL_ERROR") {
+          console.error("Semester reflection channel error:", err)
+        }
+      })
+    }).catch((err) => {
+      console.error("Failed to set auth for semester reflection channel:", err)
+    })
 
     return () => {
       channelRef.current = null

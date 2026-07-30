@@ -39,6 +39,7 @@ export function fieldsUnchangedSince<F extends string>(
 export interface RecordMergeResult<T, F extends string> {
   merged: T
   conflicts: F[]
+  nextBaselines: Partial<Record<F, string | null>>
 }
 
 /**
@@ -48,6 +49,12 @@ export interface RecordMergeResult<T, F extends string> {
  * incoming value for a locally-dirty field also diverged from the baseline
  * the local edit started from, that's a genuine same-field conflict worth
  * surfacing rather than silently resolving.
+ *
+ * The baseline for a dirty field is rolled forward to the incoming value on
+ * every call (whether or not it conflicted), so a divergence is only
+ * reported once — without this, a field left dirty for a long stretch would
+ * re-report the same already-seen conflict on every later broadcast to
+ * *any* field, since the whole row rides along on each broadcast.
  */
 export function mergeIncomingRecord<T extends FieldRecord<F>, F extends string>(
   incoming: T,
@@ -58,13 +65,15 @@ export function mergeIncomingRecord<T extends FieldRecord<F>, F extends string>(
 ): RecordMergeResult<T, F> {
   const merged: T = { ...incoming }
   const conflicts: F[] = []
+  const nextBaselines = { ...baselines }
 
   for (const field of editableFields) {
     if (!dirtyFields.has(field)) continue
     merged[field] = local[field]
     const baseline = baselines[field] ?? null
     if (incoming[field] !== baseline) conflicts.push(field)
+    nextBaselines[field] = incoming[field]
   }
 
-  return { merged, conflicts }
+  return { merged, conflicts, nextBaselines }
 }

@@ -84,13 +84,27 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
 
   useEffect(() => {
     const channel = supabase.current
-      .channel(topic, { config: { private: true } })
+      .channel(topic, {
+        config: {
+          broadcast: { self: false, ack: true },
+          private: true,
+        },
+      })
       .on("broadcast", { event: "reflection_updated" }, (message) => {
         applyIncoming(message.payload as TeamReflectionWithCreator)
       })
-      .subscribe()
 
     channelRef.current = channel
+
+    supabase.current.realtime.setAuth().then(() => {
+      channel.subscribe((status, err) => {
+        if (status === "CHANNEL_ERROR") {
+          console.error("Reflection channel error:", err)
+        }
+      })
+    }).catch((err) => {
+      console.error("Failed to set auth for reflection channel:", err)
+    })
 
     return () => {
       channelRef.current = null

@@ -12,7 +12,7 @@ describe("buildSchoolYears", () => {
     const current = years[years.length - 1]
     expect(current.label).toBe("2025/2026")
     const byMonth = Object.fromEntries(current.months.map((m) => [m.month, m.status]))
-    expect(byMonth["2025-09-01"]).toBe("missing")
+    expect(byMonth["2025-10-01"]).toBe("missing")
     expect(byMonth["2025-11-01"]).toBe("current-missing")
     expect(byMonth["2025-12-01"]).toBe("future")
     expect(byMonth["2026-05-01"]).toBe("future")
@@ -28,7 +28,7 @@ describe("buildSchoolYears", () => {
     const kinds = Object.fromEntries(years[0].months.map((m) => [m.month, m.kind]))
     expect(kinds["2026-01-01"]).toBe("semester")
     expect(kinds["2026-05-01"]).toBe("semester")
-    expect(kinds["2025-09-01"]).toBe("monthly")
+    expect(kinds["2025-10-01"]).toBe("monthly")
     expect(kinds["2026-02-01"]).toBe("monthly")
   })
 
@@ -59,7 +59,7 @@ describe("buildSchoolYears", () => {
     const years = buildSchoolYears([], [], "2025-11-01", 0)
     const byMonth = Object.fromEntries(years[0].months.map((m) => [m.month, m]))
     expect(byMonth["2025-11-01"].status).toBe("current-missing")
-    expect(byMonth["2025-09-01"].status).toBe("missing")
+    expect(byMonth["2025-10-01"].status).toBe("missing")
   })
 
   it("computes rocnik for each school year from onboardingYear", () => {

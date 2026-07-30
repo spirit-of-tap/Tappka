@@ -94,13 +94,14 @@ export function useFieldAutosave<T extends Identifiable<F>, F extends string>({
       if (incoming.id !== dataRef.current.id) return
       if (incoming.updated_at === dataRef.current.updated_at) return
 
-      const { merged, conflicts } = mergeIncomingRecord(
+      const { merged, conflicts, nextBaselines } = mergeIncomingRecord(
         incoming,
         dataRef.current,
         fields,
         dirtyFieldsRef.current,
         baselinesRef.current,
       )
+      baselinesRef.current = nextBaselines
       setData(merged)
       if (conflicts.length > 0) onConflict?.(conflicts)
     },

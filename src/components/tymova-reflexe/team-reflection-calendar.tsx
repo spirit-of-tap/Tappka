@@ -8,14 +8,24 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn } from "@/lib/utils"
 import { buildSchoolYears, type MonthCell } from "@/lib/tymova-reflexe/month-grid"
 
-const MONTH_SHORT_LABELS = [
-  "Led", "Úno", "Bře", "Dub", "Kvě", "Čvn",
-  "Čvc", "Srp", "Zář", "Říj", "Lis", "Pro",
+const MONTH_LABELS = [
+  { short: "Led", full: "Leden" },
+  { short: "Úno", full: "Únor" },
+  { short: "Bře", full: "Březen" },
+  { short: "Dub", full: "Duben" },
+  { short: "Kvě", full: "Květen" },
+  { short: "Čvn", full: "Červen" },
+  { short: "Čvc", full: "Červenec" },
+  { short: "Srp", full: "Srpen" },
+  { short: "Zář", full: "Září" },
+  { short: "Říj", full: "Říjen" },
+  { short: "Lis", full: "Listopad" },
+  { short: "Pro", full: "Prosinec" },
 ] as const
 
-function shortMonthLabel(monthStr: string): string {
+function monthLabel(monthStr: string): { short: string; full: string } {
   const m = Number(monthStr.slice(5, 7))
-  return MONTH_SHORT_LABELS[m - 1]
+  return MONTH_LABELS[m - 1]
 }
 
 interface TeamReflectionCalendarProps {
@@ -56,7 +66,8 @@ function CalendarCell({ cell }: { cell: MonthCell }) {
         title={cell.month}
         className="flex flex-col items-center justify-center gap-0.5 rounded-md border border-dashed border-border/30 py-2.5 text-xs font-medium text-muted-foreground/30"
       >
-        <span>{shortMonthLabel(cell.month)}</span>
+        <span className="sm:hidden">{monthLabel(cell.month).short}</span>
+        <span className="hidden sm:inline">{monthLabel(cell.month).full}</span>
       </div>
     )
   }
@@ -83,7 +94,8 @@ function CalendarCell({ cell }: { cell: MonthCell }) {
           )}
         />
       )}
-      <span>{shortMonthLabel(cell.month)}</span>
+      <span className="sm:hidden">{monthLabel(cell.month).short}</span>
+      <span className="hidden sm:inline">{monthLabel(cell.month).full}</span>
     </Link>
   )
 }
@@ -95,8 +107,9 @@ export function TeamReflectionCalendar({
   onboardingYear,
 }: TeamReflectionCalendarProps) {
   const years = buildSchoolYears(monthlyReflections, semesterReflections, currentMonth, 2, onboardingYear)
-  const currentYear = years.find((y) => y.months.some((m) => m.month === currentMonth))
-  const defaultOpenStartYear = currentYear?.startYear ?? years[years.length - 1]?.startYear
+  const [yearStr, monthStr] = currentMonth.split("-").map(Number)
+  const currentStartYear = monthStr >= 9 ? yearStr : yearStr - 1
+  const defaultOpenStartYear = years.find((y) => y.startYear === currentStartYear)?.startYear ?? years[years.length - 1]?.startYear
   const [openYears, setOpenYears] = useState<Set<number>>(
     () => new Set(defaultOpenStartYear !== undefined ? [defaultOpenStartYear] : []),
   )
@@ -113,7 +126,7 @@ export function TeamReflectionCalendar({
   return (
     <Card className="p-3 sm:p-4 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Docházka reflexí</h2>
+        <h2 className="text-sm font-semibold">Kalendář reflexí</h2>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <span className="size-2 rounded-full bg-primary/50" /> měsíční
@@ -144,7 +157,7 @@ export function TeamReflectionCalendar({
                 )}
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-2 pt-1 pb-2">
+                <div className="grid grid-cols-4 gap-2 pt-1 pb-2">
                   {year.months.map((cell) => (
                     <CalendarCell key={cell.month} cell={cell} />
                   ))}
