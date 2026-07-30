@@ -4,43 +4,26 @@ import {
   ArrowLeft,
   BookOpen,
   BookText,
-  Pencil,
   ExternalLink,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById, getBookComments } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
-import { getBookLibraryInfo } from '@/lib/library/queries';
+import { getBookCopiesStatus, getBookLibraryInfo } from '@/lib/library/queries';
 import { LibraryStatusBadge } from '@/components/library/library-status-badge';
+import { BookCopiesList } from '@/components/library/book-copies-list';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfilePicture } from '@/components/profile-picture';
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/ui/page-shell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookDeleteButton } from '@/components/books/book-delete-button';
+import { BookAdminActions } from './admin-actions';
 import { BookDescription } from '@/components/books/book-description';
 import { BookEssaysList } from '@/components/books/book-essays-list';
-import { BOOK_STATUS_LABELS, BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
-import type { BookStatus } from '@/lib/books/types';
-import { cn } from '@/lib/utils';
 
 const ALL_ESSAYS_PAGE_SIZE = 500;
-
-const STATUS_PILL: Record<BookStatus, string> = {
-  approved: 'border-success/20 bg-success/10 text-success-strong',
-  pending: 'border-warning/20 bg-warning/10 text-warning-strong',
-  // text-destructive already clears WCAG AA (~4.7:1) on this tinted
-  // background; pre-existing and unrelated to the token migration.
-  rejected: 'border-destructive/20 bg-destructive/10 text-destructive',
-};
-
-const STATUS_DOT: Record<BookStatus, string> = {
-  approved: 'bg-success',
-  pending: 'bg-warning',
-  rejected: 'bg-destructive',
-};
 
 interface PageProps {
   params: Promise<{ bookId: string }>;
@@ -84,12 +67,13 @@ export default async function BookDetailPage({ params }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [book, comments, essays, profile, libraryInfo] = await Promise.all([
+  const [book, comments, essays, profile, libraryInfo, copies] = await Promise.all([
     getBookById(supabase, bookId),
     getBookComments(supabase, bookId),
     getEssays(supabase, { bookId, pageSize: ALL_ESSAYS_PAGE_SIZE, sort: 'best' }),
     user ? getCurrentUserProfile(supabase, { user }) : null,
     getBookLibraryInfo(supabase, bookId),
+    getBookCopiesStatus(supabase, bookId),
   ]);
 
   if (!book) notFound();
@@ -109,17 +93,13 @@ export default async function BookDetailPage({ params }: PageProps) {
             Zpět do hledání
           </Link>
         </Button>
-        {isCoachOrAdmin && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild className="gap-2">
-              <Link href={`/knihovna/${book.id}/upravit`}>
-                <Pencil className="size-4" />
-                Upravit
-              </Link>
-            </Button>
-            <BookDeleteButton bookId={book.id} bookTitle={book.title_cs} />
-          </div>
-        )}
+        <BookAdminActions
+          bookId={book.id}
+          bookTitle={book.title_cs}
+          goodreadsUrl={goodreadsUrl}
+          isCoachOrAdmin={isCoachOrAdmin}
+          createdByName={book.created_by?.name}
+        />
       </div>
 
       {/* Hero */}
@@ -138,6 +118,19 @@ export default async function BookDetailPage({ params }: PageProps) {
               <BookOpen className="size-14 text-muted-foreground/60" />
             )}
           </div>
+          {previewUrl && (
+            <Button asChild variant="outline" className="w-44 mt-3">
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="gap-2"
+              >
+                Náhled
+                <ExternalLink className="size-3.5" />
+              </a>
+            </Button>
+          )}
         </div>
 
         <div className="min-w-0 flex-1 space-y-4">
@@ -147,24 +140,27 @@ export default async function BookDetailPage({ params }: PageProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
-                STATUS_PILL[book.status],
-              )}
-            >
-              <span className={cn('size-1.5 rounded-full', STATUS_DOT[book.status])} />
-              {BOOK_STATUS_LABELS[book.status]}
-            </span>
             {book.status === 'approved' ? (
               <span className="inline-flex items-center rounded-full bg-foreground px-2.5 py-1 text-xs font-semibold text-background">
                 {formatPointsWithLabel(book.book_points)}
               </span>
-            ) : book.status === 'rejected' ? (
+            ) : book.status === 'pending' ? (
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                Čeká na schválení
+              </span>
+            ) : (
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                 0 b.
               </span>
-            ) : null}
+            )}
+            {book.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
+              >
+                {BOOK_CATEGORY_LABELS[tag] ?? tag}
+              </span>
+            ))}
             <LibraryStatusBadge
               inLibrary={libraryInfo.inLibrary}
               availableCopies={libraryInfo.availableCopies}
@@ -172,88 +168,53 @@ export default async function BookDetailPage({ params }: PageProps) {
             />
           </div>
 
-          {book.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {book.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
-                >
-                  {BOOK_CATEGORY_LABELS[tag] ?? tag}
-                </span>
-              ))}
-            </div>
-          )}
-
           {/* Description — what the book is about, the first thing a student wants to know */}
           {book.description && (
             <div className="border-t border-border/60 pt-4">
               <BookDescription text={book.description} />
             </div>
           )}
-          {book.status_reason && (
-            <p className="text-sm text-destructive">Důvod zamítnutí: {book.status_reason}</p>
+          {book.page_count != null && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+              <MetaItem icon={BookText}>{book.page_count} stran</MetaItem>
+            </div>
           )}
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
-            {book.page_count != null && <MetaItem icon={BookText}>{book.page_count} stran</MetaItem>}
-            {previewUrl && (
-              <a
-                href={previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
-              >
-                Náhled na Google Books
-                <ExternalLink className="size-3.5" />
-              </a>
-            )}
-            <a
-              href={goodreadsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
-            >
-              Goodreads
-              <ExternalLink className="size-3.5" />
-            </a>
-            {isCoachOrAdmin && book.created_by?.name && (
-              <span className="text-sm text-muted-foreground">Přidal/a {book.created_by.name}</span>
-            )}
-          </div>
         </div>
       </div>
 
+      {/* TAP Knihovna copies */}
+      {libraryInfo.inLibrary && (
+        <div className="rounded-lg border border-border p-4">
+          <h2 className="mb-2 flex items-center gap-2 text-base font-bold">
+            <BookOpen className="size-4 text-muted-foreground" />
+            TAP Knihovna
+          </h2>
+          <BookCopiesList copies={copies} />
+        </div>
+      )}
+
       {/* Essays */}
       {essays.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Co o knize napsali ostatní ({essays.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BookEssaysList essays={essays} />
-          </CardContent>
-        </Card>
+        <div className="border-t border-border/60 pt-6">
+          <h2 className="text-base font-bold mb-4">Co o knize napsali ostatní ({essays.length})</h2>
+          <BookEssaysList essays={essays} />
+        </div>
       )}
 
       {/* Comments */}
       {comments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Komentáře ({comments.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <Avatar picture={comment.author?.picture} name={comment.author?.name} size={32} />
-                <div className="min-w-0 flex-1 space-y-0.5">
-                  <p className="text-xs font-medium">{comment.author?.name}</p>
-                  <p className="text-sm leading-relaxed">{comment.body}</p>
-                </div>
+        <div className="border-t border-border/60 pt-6 space-y-4">
+          <h2 className="text-base font-bold">Komentáře ({comments.length})</h2>
+          {comments.map((comment) => (
+            <div key={comment.id} className="flex gap-3">
+              <Avatar picture={comment.author?.picture} name={comment.author?.name} size={32} />
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="text-xs font-medium">{comment.author?.name}</p>
+                <p className="text-sm leading-relaxed">{comment.body}</p>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+            </div>
+          ))}
+        </div>
       )}
     </PageShell>
   );

@@ -18,6 +18,13 @@ export interface BookLibraryInfo {
   inLibrary: boolean;
 }
 
+export interface BookCopyStatus {
+  id: string;
+  borrower: { id: string; name: string | null; picture: string | null } | null;
+  dueAt: string | null;
+  isOverdue: boolean;
+}
+
 export interface LibraryBookResult {
   id: string;
   book_id: string;

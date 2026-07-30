@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
-import type { BookLibraryInfo, BookLoanWithDetails, LibraryBookWithBook } from './types';
+import type { BookCopyStatus, BookLibraryInfo, BookLoanWithDetails, LibraryBookWithBook } from './types';
 import { tagNamesFromJoin } from '@/lib/books/tags';
 import type { BookWithProfiles } from '@/lib/books/types';
 
@@ -92,6 +92,49 @@ export async function getBookLibraryInfo(
     availableCopies,
     inLibrary: totalCopies > 0,
   };
+}
+
+export async function getBookCopiesStatus(
+  supabase: SupabaseClient<Database>,
+  bookId: string,
+): Promise<BookCopyStatus[]> {
+  const { data: copies, error } = await supabase
+    .from('library_books')
+    .select('id, created_at')
+    .eq('book_id', bookId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  if (!copies?.length) return [];
+
+  const copyIds = copies.map((c: { id: string }) => c.id);
+
+  const { data: activeLoans, error: loanError } = await supabase
+    .from('book_loans')
+    .select('library_book_id, due_at, borrower:profiles!borrower_id(id, name, picture)')
+    .in('library_book_id', copyIds)
+    .is('returned_at', null);
+
+  if (loanError) throw loanError;
+
+  const loanByCopyId = new Map(
+    (activeLoans ?? []).map((loan) => [loan.library_book_id, loan]),
+  );
+
+  const now = new Date();
+
+  return copies.map((copy: { id: string }) => {
+    const loan = loanByCopyId.get(copy.id);
+    if (!loan) {
+      return { id: copy.id, borrower: null, dueAt: null, isOverdue: false };
+    }
+    return {
+      id: copy.id,
+      borrower: loan.borrower as unknown as { id: string; name: string | null; picture: string | null },
+      dueAt: loan.due_at,
+      isOverdue: new Date(loan.due_at) < now,
+    };
+  });
 }
 
 export async function getBooksWithLibraryInfo(
