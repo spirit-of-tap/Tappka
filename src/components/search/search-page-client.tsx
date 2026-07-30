@@ -16,7 +16,7 @@ import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
-type BookResult = { id: string; title_cs: string; author: string; google_books_cover_url: string | null };
+type BookResult = { id: string; title_cs: string; author: string; google_books_cover_url: string | null; in_library: boolean };
 type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
 type TeamMember = { profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
 type TeamWithMembers = { id: string; name: string; members: TeamMember[] };
@@ -500,6 +500,11 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
                   <p className="text-sm font-medium truncate">{book.title_cs}</p>
                   <p className="text-xs text-muted-foreground truncate">{book.author}</p>
                 </div>
+                {book.in_library && (
+                  <span className="shrink-0 rounded bg-emerald-600/10 dark:bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                    V TAPu
+                  </span>
+                )}
               </Link>
             ))}
           </div>
