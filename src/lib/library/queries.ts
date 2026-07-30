@@ -148,6 +148,15 @@ export async function getUserActiveLoanForBook(
   profileId: string,
   bookId: string,
 ): Promise<string | null> {
+  const loan = await getUserActiveLoanDetails(supabase, profileId, bookId);
+  return loan?.id ?? null;
+}
+
+export async function getUserActiveLoanDetails(
+  supabase: SupabaseClient<Database>,
+  profileId: string,
+  bookId: string,
+): Promise<{ id: string; due_at: string } | null> {
   const { data: copies, error: copiesError } = await supabase
     .from('library_books')
     .select('id')
@@ -160,14 +169,14 @@ export async function getUserActiveLoanForBook(
 
   const { data: loan, error: loanError } = await supabase
     .from('book_loans')
-    .select('id')
+    .select('id, due_at')
     .in('library_book_id', copyIds)
     .eq('borrower_id', profileId)
     .is('returned_at', null)
     .maybeSingle();
 
   if (loanError) throw loanError;
-  return loan?.id ?? null;
+  return loan;
 }
 
 export async function getMyLoans(

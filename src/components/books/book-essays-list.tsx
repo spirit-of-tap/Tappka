@@ -36,7 +36,15 @@ export function BookEssaysList({ essays }: { essays: EssayWithDetails[] }) {
             <Avatar picture={essay.author?.picture} name={essay.author?.name} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium group-hover:text-primary">{essay.title}</p>
-              <p className="truncate text-xs text-muted-foreground">{essay.author?.name}</p>
+              <p className="flex items-baseline gap-1.5 text-xs text-muted-foreground">
+                <span className="shrink-0">{essay.author?.name}</span>
+                {essay.content_text && (
+                  <>
+                    <span className="shrink-0 text-muted-foreground/40">·</span>
+                    <span className="truncate">{essay.content_text}</span>
+                  </>
+                )}
+              </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-4 pl-10 text-xs text-muted-foreground tabular-nums sm:pl-0">

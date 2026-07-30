@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeftFromLine } from 'lucide-react';
+import { BookCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ export function ReturnButton({ bookId, onReturned }: ReturnButtonProps) {
 
   return (
     <Button onClick={handleReturn} disabled={loading} variant="outline" className="gap-2">
-      {loading ? <Spinner className="size-4" /> : <ArrowLeftFromLine className="size-4" />}
+      {loading ? <Spinner className="size-4" /> : <BookCheck className="size-4" />}
       Vrátit
     </Button>
   );

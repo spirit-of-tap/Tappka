@@ -4,9 +4,6 @@ import {
   ArrowLeft,
   BookOpen,
   BookText,
-  Hash,
-  Library,
-  User,
   Pencil,
   ExternalLink,
 } from 'lucide-react';
@@ -15,7 +12,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById, getBookComments } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
 import { getBookLibraryInfo } from '@/lib/library/queries';
-import { BorrowButton } from '@/components/library/borrow-button';
+import { LibraryStatusBadge } from '@/components/library/library-status-badge';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfilePicture } from '@/components/profile-picture';
 import { Button } from '@/components/ui/button';
@@ -168,6 +165,11 @@ export default async function BookDetailPage({ params }: PageProps) {
                 0 b.
               </span>
             ) : null}
+            <LibraryStatusBadge
+              inLibrary={libraryInfo.inLibrary}
+              availableCopies={libraryInfo.availableCopies}
+              totalCopies={libraryInfo.totalCopies}
+            />
           </div>
 
           {book.tags.length > 0 && (
@@ -183,32 +185,7 @@ export default async function BookDetailPage({ params }: PageProps) {
             </div>
           )}
 
-          {/* Metadata strip */}
-          <dl className="flex flex-wrap gap-x-6 gap-y-2 border-t border-border/60 pt-4">
-            {book.page_count != null && <MetaItem icon={BookText}>{book.page_count} stran</MetaItem>}
-            {book.isbn_13 && <MetaItem icon={Hash}>ISBN {book.isbn_13}</MetaItem>}
-            {book.created_by?.name && <MetaItem icon={User}>Přidal/a {book.created_by.name}</MetaItem>}
-          </dl>
-
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-2 pt-1">
-            {previewUrl && (
-              <Button asChild className="gap-2">
-                <a href={previewUrl} target="_blank" rel="noopener noreferrer">
-                  Náhled na Google Books
-                  <ExternalLink className="size-4" />
-                </a>
-              </Button>
-            )}
-            <Button asChild variant="outline" className="gap-2">
-              <a href={goodreadsUrl} target="_blank" rel="noopener noreferrer">
-                Goodreads
-                <ExternalLink className="size-4" />
-              </a>
-            </Button>
-          </div>
-
-          {/* Description */}
+          {/* Description — what the book is about, the first thing a student wants to know */}
           {book.description && (
             <div className="border-t border-border/60 pt-4">
               <BookDescription text={book.description} />
@@ -217,33 +194,41 @@ export default async function BookDetailPage({ params }: PageProps) {
           {book.status_reason && (
             <p className="text-sm text-destructive">Důvod zamítnutí: {book.status_reason}</p>
           )}
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+            {book.page_count != null && <MetaItem icon={BookText}>{book.page_count} stran</MetaItem>}
+            {previewUrl && (
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
+              >
+                Náhled na Google Books
+                <ExternalLink className="size-3.5" />
+              </a>
+            )}
+            <a
+              href={goodreadsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground hover:underline"
+            >
+              Goodreads
+              <ExternalLink className="size-3.5" />
+            </a>
+            {isCoachOrAdmin && book.created_by?.name && (
+              <span className="text-sm text-muted-foreground">Přidal/a {book.created_by.name}</span>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Library availability */}
-      {libraryInfo.inLibrary && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">TAP Knihovna</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Tato kniha je dostupná v TAP Knihovně.
-            </p>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-medium">Dostupné kopie:</span>
-              <span>{libraryInfo.availableCopies} / {libraryInfo.totalCopies}</span>
-            </div>
-            <BorrowButton bookId={book.id} disabled={libraryInfo.availableCopies === 0} />
-          </CardContent>
-        </Card>
-      )}
 
       {/* Essays */}
       {essays.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Eseje o této knize ({essays.length})</CardTitle>
+            <CardTitle className="text-base">Co o knize napsali ostatní ({essays.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <BookEssaysList essays={essays} />

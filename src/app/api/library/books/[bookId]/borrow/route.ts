@@ -1,14 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getAvailableCopyForBook } from '@/lib/library/queries';
+import { notifyBookBorrowed } from '@/lib/notifications/library-notifications';
 
 interface RouteContext {
   params: Promise<{ bookId: string }>;
 }
 
-export async function POST(_request: NextRequest, { params }: RouteContext) {
+export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
     const { bookId } = await params;
     const supabase = await createClient();
@@ -38,6 +39,15 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       .single();
 
     if (error) throw error;
+
+    after(() => {
+      notifyBookBorrowed(supabase, {
+        bookId,
+        borrowerProfileId: profile.id,
+        dueAt,
+        origin: new URL(request.url).origin,
+      }).catch((err) => console.error('notifyBookBorrowed failed:', err));
+    });
 
     return NextResponse.json({ data: loan }, { status: 201 });
   } catch (error) {

@@ -72,6 +72,9 @@ scripts/data/*_rows.sql
 # Legacy CSV import — contains personal data and CSV exports
 scripts/essayimport/
 
+# Generated print sheets — regenerate on demand, don't version
+scripts/output/
+
 # Playwright
 /test-results/
 /playwright-report/
