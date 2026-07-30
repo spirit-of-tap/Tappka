@@ -161,11 +161,6 @@ export default async function BookDetailPage({ params }: PageProps) {
                 {BOOK_CATEGORY_LABELS[tag] ?? tag}
               </span>
             ))}
-            <LibraryStatusBadge
-              inLibrary={libraryInfo.inLibrary}
-              availableCopies={libraryInfo.availableCopies}
-              totalCopies={libraryInfo.totalCopies}
-            />
           </div>
 
           {/* Description — what the book is about, the first thing a student wants to know */}
