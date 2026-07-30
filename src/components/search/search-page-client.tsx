@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, PenLine, ExternalLink, Sparkles, Library } from 'lucide-react';
+import { Search, BookOpen, PenLine, ExternalLink, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { PageShell } from '@/components/ui/page-shell';
@@ -502,8 +502,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
                   <p className="text-xs text-muted-foreground truncate">{book.author}</p>
                 </div>
                 {book.in_library && (
-                  <Badge variant="default" className="gap-1 text-[11px] px-2.5 py-1">
-                    <Library className="size-3.5" />
+                  <Badge variant="default" className="text-[11px] px-2.5 py-1">
                     V TAPu
                   </Badge>
                 )}
