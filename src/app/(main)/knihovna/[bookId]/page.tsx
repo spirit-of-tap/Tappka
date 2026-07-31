@@ -5,22 +5,21 @@ import {
   BookOpen,
   BookText,
   ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getBookById, getBookComments } from '@/lib/books/queries';
+import { getBookById } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
 import { getBookCopiesStatus, getBookLibraryInfo } from '@/lib/library/queries';
-import { LibraryStatusBadge } from '@/components/library/library-status-badge';
 import { BookCopiesList } from '@/components/library/book-copies-list';
 import { StorageImage } from '@/components/storage/storage-image';
-import { ProfilePicture } from '@/components/profile-picture';
 import { Button } from '@/components/ui/button';
 import { PageShell } from '@/components/ui/page-shell';
 import { BookAdminActions } from './admin-actions';
 import { BookDescription } from '@/components/books/book-description';
 import { BookEssaysList } from '@/components/books/book-essays-list';
-import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { BOOK_CATEGORY_LABELS, BOOK_STATUS_LABELS, HIGHLIGHT_CATEGORY_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
 
 const ALL_ESSAYS_PAGE_SIZE = 500;
@@ -29,29 +28,6 @@ interface PageProps {
   params: Promise<{ bookId: string }>;
 }
 
-
-function Avatar({ picture, name, size = 28 }: { picture?: string | null; name?: string | null; size?: number }) {
-  const initial = name?.[0]?.toUpperCase() ?? '?';
-  const dimClass = size <= 28 ? 'size-7' : size <= 32 ? 'size-8' : 'size-10';
-  const imageSize = size <= 28 ? 28 : size <= 32 ? 32 : 40;
-  if (picture) {
-    return (
-      <ProfilePicture
-        src={picture}
-        alt={name ?? ''}
-        size={imageSize}
-        className={`rounded-full object-cover shrink-0 ${dimClass}`}
-      />
-    );
-  }
-  return (
-    <div
-      className={`rounded-full bg-muted flex items-center justify-center font-semibold text-muted-foreground shrink-0 ${dimClass} text-xs`}
-    >
-      {initial}
-    </div>
-  );
-}
 
 function MetaItem({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
   return (
@@ -67,9 +43,8 @@ export default async function BookDetailPage({ params }: PageProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [book, comments, essays, profile, libraryInfo, copies] = await Promise.all([
+  const [book, essays, profile, libraryInfo, copies] = await Promise.all([
     getBookById(supabase, bookId),
-    getBookComments(supabase, bookId),
     getEssays(supabase, { bookId, pageSize: ALL_ESSAYS_PAGE_SIZE, sort: 'best' }),
     user ? getCurrentUserProfile(supabase, { user }) : null,
     getBookLibraryInfo(supabase, bookId),
@@ -140,17 +115,23 @@ export default async function BookDetailPage({ params }: PageProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {book.status === 'approved' ? (
+            {book.list_status === 'shortlist' || book.list_status === 'longlist' ? (
               <span className="inline-flex items-center rounded-full bg-foreground px-2.5 py-1 text-xs font-semibold text-background">
                 {formatPointsWithLabel(book.book_points)}
               </span>
-            ) : book.status === 'pending' ? (
+            ) : book.list_status === 'processing' ? (
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                Čeká na schválení
+                {BOOK_STATUS_LABELS.processing}
               </span>
             ) : (
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                 0 b.
+              </span>
+            )}
+            {book.highlight && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                <Sparkles className="size-3" />
+                {HIGHLIGHT_CATEGORY_LABELS[book.highlight.category]}
               </span>
             )}
             {book.tags.map((tag) => (
@@ -193,22 +174,6 @@ export default async function BookDetailPage({ params }: PageProps) {
         <div className="border-t border-border/60 pt-6">
           <h2 className="text-base font-bold mb-4">Co o knize napsali ostatní ({essays.length})</h2>
           <BookEssaysList essays={essays} />
-        </div>
-      )}
-
-      {/* Comments */}
-      {comments.length > 0 && (
-        <div className="border-t border-border/60 pt-6 space-y-4">
-          <h2 className="text-base font-bold">Komentáře ({comments.length})</h2>
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex gap-3">
-              <Avatar picture={comment.author?.picture} name={comment.author?.name} size={32} />
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-xs font-medium">{comment.author?.name}</p>
-                <p className="text-sm leading-relaxed">{comment.body}</p>
-              </div>
-            </div>
-          ))}
         </div>
       )}
     </PageShell>

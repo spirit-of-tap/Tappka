@@ -2,27 +2,27 @@ import type { Profile } from '@/lib/auth-helpers';
 import type { Database } from '@/lib/supabase/database.types';
 import type { Tables } from '@/lib/supabase/tables';
 
-export type BookStatus = Database['public']['Enums']['book_status'];
+export type BookListStatus = Database['public']['Enums']['book_list_status'];
 export type BookSource = Database['public']['Enums']['book_source'];
+export type HighlightCategory = Database['public']['Enums']['highlight_category'];
 
 export type Book = Tables<'books'>;
+export type BookHighlight = Tables<'book_highlights'>;
 
 export interface BookWithProfiles extends Book {
   created_by: Pick<Profile, 'id' | 'name' | 'picture'> | null;
-  status_changed_by: Pick<Profile, 'id' | 'name'> | null;
+  list_status_changed_by: Pick<Profile, 'id' | 'name'> | null;
   essay_count: number;
   /** Tag names derived from `book_tags` → `tags` join. */
   tags: string[];
-}
-
-export type BookComment = Tables<'book_comments'>;
-
-export interface BookCommentWithAuthor extends BookComment {
-  author: Pick<Profile, 'id' | 'name' | 'picture' | 'role'> | null;
+  /** Present when the book is one of the highlighted 50. */
+  highlight?: BookHighlight | null;
 }
 
 export interface BookFilters {
-  status?: BookStatus;
+  listStatus?: BookListStatus;
+  /** When set, filters to any of these list statuses (takes precedence over `listStatus`). */
+  listStatuses?: BookListStatus[];
   search?: string;
   tags?: string[];
   createdBy?: string;
@@ -43,12 +43,19 @@ export interface CreateBookInput {
   external_id?: string;
 }
 
-export interface ApproveBookInput {
-  book_points: 1 | 2 | 3;
+/** Classification of a book into a list by a coach. */
+export interface ClassifyBookInput {
+  list_status: BookListStatus;
+  book_points?: 1 | 2 | 3 | null;
+  status_reason?: string | null;
 }
 
-export interface RejectBookInput {
-  status_reason: string;
+/** Upsert payload for the highlighted-50 management. */
+export interface SetBookHighlightInput {
+  category: HighlightCategory;
+  description?: string | null;
+  /** true upserts, false deletes the highlight row */
+  highlighted: boolean;
 }
 
 export interface ExternalBookCandidate {
@@ -61,16 +68,25 @@ export interface ExternalBookCandidate {
   external_id: string;
 }
 
-export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
-  pending: 'Čeká na schválení',
-  approved: 'Schváleno',
-  rejected: 'Zamítnuto',
+export const BOOK_STATUS_LABELS: Record<BookListStatus, string> = {
+  processing: 'Zpracovává se',
+  shortlist: 'Shortlist',
+  longlist: 'Longlist',
+  archived: 'Archivováno',
 };
 
-export const BOOK_STATUS_COLORS: Record<BookStatus, string> = {
-  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  approved: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  rejected: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+export const BOOK_STATUS_COLORS: Record<BookListStatus, string> = {
+  processing: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  shortlist: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+  longlist: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  archived: 'bg-muted text-muted-foreground',
+};
+
+export const HIGHLIGHT_CATEGORY_LABELS: Record<HighlightCategory, string> = {
+  ja: 'Já',
+  my: 'My',
+  oni: 'Oni',
+  system: 'Systém',
 };
 
 export const BOOK_CATEGORIES = [

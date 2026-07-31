@@ -22,7 +22,7 @@ const ESSAY_DETAIL_SELECT = `
   essay_views(count),
   essay_comments(count),
   author:profiles!author_profile_id(id, name, picture, role),
-  book:books!book_id(id, title_cs, author, book_points, status, google_books_cover_url)
+  book:books!book_id(id, title_cs, author, book_points, list_status, google_books_cover_url)
 `;
 
 interface EssayRevisionEmbed {
@@ -473,7 +473,7 @@ export async function getUserBookPointsStats(
 ): Promise<{ approved_points: number; pending_points: number; essay_count: number }> {
   const { data: essays, error } = await supabase
     .from('essays')
-    .select('book_id, books!inner(book_points, status)')
+    .select('book_id, books!inner(book_points, list_status)')
     .eq('author_profile_id', profileId)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -481,16 +481,17 @@ export async function getUserBookPointsStats(
 
   if (error) throw error;
 
-  type Row = { book_id: string; books: { book_points: number; status: string } };
+  type Row = { book_id: string; books: { book_points: number; list_status: string } };
 
+  const ELIGIBLE = new Set(['shortlist', 'longlist']);
   const approved = new Map<string, number>();
   const pending = new Set<string>();
 
   for (const row of (essays ?? []) as unknown as Row[]) {
     if (!row.book_id) continue;
-    if (row.books.status === 'approved') {
+    if (ELIGIBLE.has(row.books.list_status)) {
       approved.set(row.book_id, Number(row.books.book_points));
-    } else if (row.books.status === 'pending') {
+    } else if (row.books.list_status === 'processing') {
       pending.add(row.book_id);
     }
   }
@@ -524,7 +525,7 @@ export async function getTeamBookPointsStats(
 
   const { data: essays, error: essayError } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, books!inner(book_points, status)')
+    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
     .in('author_profile_id', profileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -535,9 +536,10 @@ export async function getTeamBookPointsStats(
   type EssayRow = {
     author_profile_id: string;
     book_id: string;
-    books: { book_points: number; status: string };
+    books: { book_points: number; list_status: string };
   };
 
+  const ELIGIBLE = new Set(['shortlist', 'longlist']);
   const byProfile: Record<string, { approved: Set<string>; pending: Set<string> }> = {};
   for (const profileId of profileIds) {
     byProfile[profileId] = { approved: new Set(), pending: new Set() };
@@ -546,9 +548,9 @@ export async function getTeamBookPointsStats(
   for (const essay of (essays ?? []) as unknown as EssayRow[]) {
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.book_id) continue;
-    if (essay.books.status === 'approved') {
+    if (ELIGIBLE.has(essay.books.list_status)) {
       bucket.approved.add(essay.book_id);
-    } else if (essay.books.status === 'pending') {
+    } else if (essay.books.list_status === 'processing') {
       bucket.pending.add(essay.book_id);
     }
   }
@@ -556,7 +558,7 @@ export async function getTeamBookPointsStats(
   const { data: approvedBooks, error: booksError } = await supabase
     .from('books')
     .select('id, book_points')
-    .eq('status', 'approved');
+    .in('list_status', ['shortlist', 'longlist']);
 
   if (booksError) throw booksError;
 

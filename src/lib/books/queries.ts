@@ -5,8 +5,8 @@ import type { Database } from '@/lib/supabase/database.types';
 import { getBookIdsByTagNames, tagNamesFromJoin } from './tags';
 import type {
   Book,
+  BookHighlight,
   BookWithProfiles,
-  BookCommentWithAuthor,
   BookFilters,
 } from './types';
 
@@ -15,12 +15,14 @@ const PAGE_SIZE_DEFAULT = 20;
 const BOOK_PROFILES_SELECT = `
   *,
   created_by:profiles!created_by_profile_id(id, name, picture),
-  status_changed_by:profiles!status_changed_by_profile_id(id, name),
+  list_status_changed_by:profiles!list_status_changed_by_profile_id(id, name),
+  highlight:book_highlights(*),
   book_tags(tags(name))
 `;
 
-interface BookQueryRow extends Omit<BookWithProfiles, 'tags' | 'essay_count'> {
+interface BookQueryRow extends Omit<BookWithProfiles, 'tags' | 'essay_count' | 'highlight'> {
   essay_count?: number;
+  highlight?: BookWithProfiles['highlight'] | BookWithProfiles['highlight'][];
   book_tags?: { tags: { name: string } | null }[] | null;
 }
 
@@ -28,12 +30,13 @@ interface BookQueryRow extends Omit<BookWithProfiles, 'tags' | 'essay_count'> {
  * Maps a books query row (with optional book_tags join) to BookWithProfiles.
  */
 function mapBookRow(row: BookQueryRow): BookWithProfiles {
-  const { book_tags, essay_count, ...rest } = row;
+  const { book_tags, essay_count, highlight, ...rest } = row;
 
   return {
     ...rest,
     tags: tagNamesFromJoin(book_tags),
     essay_count: essay_count ?? 0,
+    highlight: Array.isArray(highlight) ? highlight[0] ?? null : highlight ?? null,
   };
 }
 
@@ -65,8 +68,10 @@ export async function getBooks(
     query = query.order('created_at', { ascending: false });
   }
 
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
+  if (filters?.listStatuses) {
+    query = query.in('list_status', filters.listStatuses);
+  } else if (filters?.listStatus) {
+    query = query.eq('list_status', filters.listStatus);
   }
 
   if (filters?.createdBy) {
@@ -119,43 +124,26 @@ export async function getBookById(
   return mapBookRow(data as unknown as BookQueryRow);
 }
 
-export async function getBookComments(
-  supabase: SupabaseClient<Database>,
-  bookId: string,
-): Promise<BookCommentWithAuthor[]> {
-  const { data, error } = await supabase
-    .from('book_comments')
-    .select(`
-      *,
-      author:profiles!author_profile_id(id, name, picture, role)
-    `)
-    .eq('book_id', bookId)
-    .order('created_at', { ascending: true });
-
-  if (error) throw error;
-  return data as BookCommentWithAuthor[];
-}
-
-export async function getPendingBooks(
+export async function getProcessingBooks(
   supabase: SupabaseClient<Database>,
 ): Promise<BookWithProfiles[]> {
   const { data, error } = await supabase
     .from('books')
     .select(BOOK_PROFILES_SELECT)
-    .eq('status', 'pending')
+    .eq('list_status', 'processing')
     .order('created_at', { ascending: true });
 
   if (error) throw error;
   return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
 }
 
-export async function getRejectedBooks(
+export async function getArchivedBooks(
   supabase: SupabaseClient<Database>,
 ): Promise<BookWithProfiles[]> {
   const { data, error } = await supabase
     .from('books')
     .select(BOOK_PROFILES_SELECT)
-    .eq('status', 'rejected')
+    .eq('list_status', 'archived')
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
@@ -183,7 +171,7 @@ export async function getBooksByProfilePoints(
 ): Promise<{ book_id: string; book_points: number }[]> {
   const { data, error } = await supabase
     .from('essays')
-    .select('book_id, books!inner(book_points, status)')
+    .select('book_id, books!inner(book_points, list_status)')
     .eq('author_profile_id', profileId)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -191,15 +179,51 @@ export async function getBooksByProfilePoints(
 
   if (error) throw error;
 
+  const ELIGIBLE: string[] = ['shortlist', 'longlist'];
   const seen = new Set<string>();
   const result: { book_id: string; book_points: number }[] = [];
 
-  for (const row of (data ?? []) as unknown as Array<{ book_id: string; books: { book_points: number | null; status: string } }>) {
-    if (row.book_id && !seen.has(row.book_id) && row.books.status === 'approved') {
+  for (const row of (data ?? []) as unknown as Array<{ book_id: string; books: { book_points: number | null; list_status: string } }>) {
+    if (row.book_id && !seen.has(row.book_id) && ELIGIBLE.includes(row.books.list_status)) {
       seen.add(row.book_id);
       result.push({ book_id: row.book_id, book_points: Number(row.books.book_points ?? 0) });
     }
   }
 
   return result;
+}
+
+export async function getHighlightedBooks(
+  supabase: SupabaseClient<Database>,
+): Promise<BookWithProfiles[]> {
+  const { data, error } = await supabase
+    .from('books')
+    .select(`${BOOK_PROFILES_SELECT}, book_highlights!inner(*)`)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as unknown as (BookQueryRow & { book_highlights: BookWithProfiles['highlight'][] })[];
+
+  return rows.map((row) => {
+    const { book_highlights, ...rest } = row;
+    return {
+      ...mapBookRow(rest),
+      highlight: Array.isArray(book_highlights) ? book_highlights[0] ?? null : book_highlights,
+    };
+  });
+}
+
+export async function getBookHighlight(
+  supabase: SupabaseClient<Database>,
+  bookId: string,
+): Promise<BookHighlight | null> {
+  const { data, error } = await supabase
+    .from('book_highlights')
+    .select('*')
+    .eq('book_id', bookId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as BookHighlight | null;
 }

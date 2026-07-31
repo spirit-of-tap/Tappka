@@ -36,8 +36,8 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
           year: 'numeric',
         });
         const points = pointsNumber(essay.book?.book_points);
-        const hasPoints = essay.book?.status === 'approved' && points > 0;
-        const isRejected = essay.book?.status === 'rejected';
+        const hasPoints = essay.book?.list_status !== 'archived' && points > 0;
+        const isRejected = essay.book?.list_status === 'archived';
         const isTopic = !essay.book;
 
         return (

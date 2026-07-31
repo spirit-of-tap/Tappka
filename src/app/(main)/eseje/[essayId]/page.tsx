@@ -149,7 +149,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
               <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{essay.book.title_cs}</p>
               <p className="text-xs text-muted-foreground truncate">{essay.book.author}</p>
             </div>
-            {essay.book.status === 'approved' && (
+            {essay.book.list_status !== 'archived' && (
               <Badge variant="secondary" className="shrink-0">{formatPoints(essay.book.book_points)} b.</Badge>
             )}
           </div>

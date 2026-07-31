@@ -5,7 +5,8 @@ import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
 
 export const bookSource = pgEnum("book_source", ['manual', 'google_books', 'open_library'])
-export const bookStatus = pgEnum("book_status", ['pending', 'approved', 'rejected'])
+export const bookListStatus = pgEnum("book_list_status", ['processing', 'shortlist', 'longlist', 'archived'])
+export const highlightCategory = pgEnum("highlight_category", ['ja', 'my', 'oni', 'system'])
 
 export const tags = pgTable("tags", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -45,10 +46,10 @@ export const books = pgTable("books", {
 	previewLink: text("preview_link"),
 	source: bookSource().default('manual').notNull(),
 	externalId: text("external_id"),
-	status: bookStatus().default('pending').notNull(),
-	statusChangedAt: timestamp("status_changed_at", { withTimezone: true, mode: 'string' }),
-	statusChangedByProfileId: uuid("status_changed_by_profile_id"),
-	statusReason: text("status_reason"),
+	listStatus: bookListStatus("list_status").default('processing').notNull(),
+	listStatusChangedAt: timestamp("list_status_changed_at", { withTimezone: true, mode: 'string' }),
+	listStatusChangedByProfileId: uuid("list_status_changed_by_profile_id"),
+	listStatusReason: text("list_status_reason"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdByProfileId: uuid("created_by_profile_id").notNull(),
@@ -58,7 +59,7 @@ export const books = pgTable("books", {
 	index("books_author_trgm_idx").using("gin", table.author.asc().nullsLast().op("gin_trgm_ops")),
 	index("books_created_desc_idx").using("btree", table.createdAt.desc().nullsFirst().op("timestamptz_ops")),
 	index("books_isbn_13_idx").using("btree", table.isbn13.asc().nullsLast().op("text_ops")).where(sql`(isbn_13 IS NOT NULL)`),
-	index("books_status_idx").using("btree", table.status.asc().nullsLast().op("enum_ops")),
+	index("books_list_status_idx").using("btree", table.listStatus.asc().nullsLast().op("enum_ops")),
 	index("books_title_cs_trgm_idx").using("gin", table.titleCs.asc().nullsLast().op("gin_trgm_ops")),
 	foreignKey({
 			columns: [table.createdByProfileId],
@@ -71,9 +72,9 @@ export const books = pgTable("books", {
 			name: "books_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	foreignKey({
-			columns: [table.statusChangedByProfileId],
+			columns: [table.listStatusChangedByProfileId],
 			foreignColumns: [profiles.id],
-			name: "books_status_changed_by_profile_id_fkey"
+			name: "books_list_status_changed_by_profile_id_fkey"
 		}).onDelete("set null"),
 	// ISBN identifies an edition, not a literary work — no UNIQUE constraint
 
@@ -82,6 +83,41 @@ export const books = pgTable("books", {
 	pgPolicy("Authenticated users can add books", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(created_by_profile_id = current_profile_id())` }),
 	pgPolicy("Authenticated users can view all books", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 	check("books_book_points_check", sql`(book_points IS NULL) OR ((book_points >= (0)::numeric) AND (book_points <= (3)::numeric))`),
+	// Archived books are not eligible for points — force book_points to 0.
+	check("books_archived_points_check", sql`(list_status <> 'archived') OR (book_points = (0)::numeric)`),
+]).enableRLS();
+
+export const bookHighlights = pgTable("book_highlights", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	bookId: uuid("book_id").notNull(),
+	category: highlightCategory().notNull(),
+	description: text(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdByProfileId: uuid("created_by_profile_id").notNull(),
+	updatedByProfileId: uuid("updated_by_profile_id").notNull(),
+}, (table) => [
+	unique("book_highlights_book_id_key").on(table.bookId),
+	index("book_highlights_category_idx").using("btree", table.category.asc().nullsLast().op("enum_ops")),
+	foreignKey({
+			columns: [table.bookId],
+			foreignColumns: [books.id],
+			name: "book_highlights_book_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.createdByProfileId],
+			foreignColumns: [profiles.id],
+			name: "book_highlights_created_by_profile_id_fkey"
+		}).onDelete("restrict"),
+	foreignKey({
+			columns: [table.updatedByProfileId],
+			foreignColumns: [profiles.id],
+			name: "book_highlights_updated_by_profile_id_fkey"
+		}).onDelete("restrict"),
+	pgPolicy("Authenticated users can view book highlights", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Coaches and admins can add book highlights", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`is_coach_or_admin()` }),
+	pgPolicy("Coaches and admins can update book highlights", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
+	pgPolicy("Coaches and admins can delete book highlights", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
 ]).enableRLS();
 
 export const bookTags = pgTable("book_tags", {
@@ -118,46 +154,6 @@ export const bookTags = pgTable("book_tags", {
 	pgPolicy("Authenticated users can assign book tags", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(created_by_profile_id = current_profile_id())` }),
 	pgPolicy("Coaches and admins can update book tags", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
 	pgPolicy("Coaches and admins can remove book tags", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
-]).enableRLS();
-
-export const bookComments = pgTable("book_comments", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
-	bookId: uuid("book_id").notNull(),
-	authorProfileId: uuid("author_profile_id").notNull(),
-	body: text().notNull(),
-	removedAt: timestamp("removed_at", { withTimezone: true, mode: 'string' }),
-	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	createdByProfileId: uuid("created_by_profile_id").notNull(),
-	updatedByProfileId: uuid("updated_by_profile_id").notNull(),
-}, (table) => [
-	index("book_comments_author_idx").using("btree", table.authorProfileId.asc().nullsLast().op("uuid_ops")),
-	index("book_comments_book_idx").using("btree", table.bookId.asc().nullsLast().op("uuid_ops")),
-	foreignKey({
-			columns: [table.bookId],
-			foreignColumns: [books.id],
-			name: "book_comments_book_id_fkey"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.authorProfileId],
-			foreignColumns: [profiles.id],
-			name: "book_comments_author_profile_id_fkey"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.createdByProfileId],
-			foreignColumns: [profiles.id],
-			name: "book_comments_created_by_profile_id_fkey"
-		}).onDelete("restrict"),
-	foreignKey({
-			columns: [table.updatedByProfileId],
-			foreignColumns: [profiles.id],
-			name: "book_comments_updated_by_profile_id_fkey"
-		}).onDelete("restrict"),
-	pgPolicy("Authors and admins can delete book comments", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((author_profile_id = current_profile_id()) OR is_admin())` }),
-	pgPolicy("Authors can update their own book comments", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(author_profile_id = current_profile_id())`, withCheck: sql`(author_profile_id = current_profile_id())` }),
-	pgPolicy("Authenticated users can add book comments", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(author_profile_id = current_profile_id())` }),
-	pgPolicy("Authenticated users can view book comments", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
-	check("book_comments_body_check", sql`(char_length(body) >= 1) AND (char_length(body) <= 4000)`),
 ]).enableRLS();
 
 export const libraryBooks = pgTable("library_books", {

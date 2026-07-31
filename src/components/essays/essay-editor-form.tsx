@@ -120,7 +120,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
               <p className="truncate text-sm font-medium">{selectedBook.title_cs}</p>
               <p className="truncate text-xs text-muted-foreground">{selectedBook.author}</p>
             </div>
-            {selectedBook.status === 'approved' && (
+            {selectedBook.list_status !== 'archived' && (
               <Badge variant="secondary" className="shrink-0">{formatPoints(selectedBook.book_points)} b.</Badge>
             )}
             <button
@@ -164,7 +164,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                       <p className="truncate text-sm font-medium">{book.title_cs}</p>
                       <p className="truncate text-xs text-muted-foreground">{book.author}</p>
                     </div>
-                    {book.status === 'approved' && (
+                    {book.list_status !== 'archived' && (
                       <Badge variant="secondary" className="shrink-0 text-xs">{formatPoints(book.book_points)} b.</Badge>
                     )}
                   </button>

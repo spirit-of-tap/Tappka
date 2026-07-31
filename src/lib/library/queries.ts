@@ -23,7 +23,7 @@ const BOOK_SELECT = `
   book:books!inner(
     *,
     created_by:profiles!created_by_profile_id(id, name, picture),
-    status_changed_by:profiles!status_changed_by_profile_id(id, name),
+    list_status_changed_by:profiles!list_status_changed_by_profile_id(id, name),
     book_tags(tags(name))
   )
 `;
@@ -235,7 +235,7 @@ export async function getMyLoans(
         book:books!inner(
           *,
           created_by:profiles!created_by_profile_id(id, name, picture),
-          status_changed_by:profiles!status_changed_by_profile_id(id, name),
+          list_status_changed_by:profiles!list_status_changed_by_profile_id(id, name),
           book_tags(tags(name))
         )
       )

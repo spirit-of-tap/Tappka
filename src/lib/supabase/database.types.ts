@@ -9,71 +9,61 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      book_comments: {
+      book_highlights: {
         Row: {
-          author_profile_id: string
-          body: string
           book_id: string
+          category: Database["public"]["Enums"]["highlight_category"]
           created_at: string
           created_by_profile_id: string
+          description: string | null
           id: string
-          removed_at: string | null
           updated_at: string
           updated_by_profile_id: string
         }
         Insert: {
-          author_profile_id: string
-          body: string
           book_id: string
+          category: Database["public"]["Enums"]["highlight_category"]
           created_at?: string
           created_by_profile_id: string
+          description?: string | null
           id?: string
-          removed_at?: string | null
           updated_at?: string
           updated_by_profile_id: string
         }
         Update: {
-          author_profile_id?: string
-          body?: string
           book_id?: string
+          category?: Database["public"]["Enums"]["highlight_category"]
           created_at?: string
           created_by_profile_id?: string
+          description?: string | null
           id?: string
-          removed_at?: string | null
           updated_at?: string
           updated_by_profile_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "book_comments_author_profile_id_fkey"
-            columns: ["author_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "book_comments_book_id_fkey"
+            foreignKeyName: "book_highlights_book_id_fkey"
             columns: ["book_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "books"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "book_comments_book_id_fkey"
+            foreignKeyName: "book_highlights_book_id_fkey"
             columns: ["book_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "books_with_essay_count"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "book_comments_created_by_profile_id_fkey"
+            foreignKeyName: "book_highlights_created_by_profile_id_fkey"
             columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "book_comments_updated_by_profile_id_fkey"
+            foreignKeyName: "book_highlights_updated_by_profile_id_fkey"
             columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -203,13 +193,13 @@ export type Database = {
           google_books_cover_url: string | null
           id: string
           isbn_13: string | null
+          list_status: Database["public"]["Enums"]["book_list_status"]
+          list_status_changed_at: string | null
+          list_status_changed_by_profile_id: string | null
+          list_status_reason: string | null
           page_count: number | null
           preview_link: string | null
           source: Database["public"]["Enums"]["book_source"]
-          status: Database["public"]["Enums"]["book_status"]
-          status_changed_at: string | null
-          status_changed_by_profile_id: string | null
-          status_reason: string | null
           title_cs: string
           title_en: string | null
           updated_at: string
@@ -225,13 +215,13 @@ export type Database = {
           google_books_cover_url?: string | null
           id?: string
           isbn_13?: string | null
+          list_status?: Database["public"]["Enums"]["book_list_status"]
+          list_status_changed_at?: string | null
+          list_status_changed_by_profile_id?: string | null
+          list_status_reason?: string | null
           page_count?: number | null
           preview_link?: string | null
           source?: Database["public"]["Enums"]["book_source"]
-          status?: Database["public"]["Enums"]["book_status"]
-          status_changed_at?: string | null
-          status_changed_by_profile_id?: string | null
-          status_reason?: string | null
           title_cs: string
           title_en?: string | null
           updated_at?: string
@@ -247,13 +237,13 @@ export type Database = {
           google_books_cover_url?: string | null
           id?: string
           isbn_13?: string | null
+          list_status?: Database["public"]["Enums"]["book_list_status"]
+          list_status_changed_at?: string | null
+          list_status_changed_by_profile_id?: string | null
+          list_status_reason?: string | null
           page_count?: number | null
           preview_link?: string | null
           source?: Database["public"]["Enums"]["book_source"]
-          status?: Database["public"]["Enums"]["book_status"]
-          status_changed_at?: string | null
-          status_changed_by_profile_id?: string | null
-          status_reason?: string | null
           title_cs?: string
           title_en?: string | null
           updated_at?: string
@@ -268,8 +258,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "books_status_changed_by_profile_id_fkey"
-            columns: ["status_changed_by_profile_id"]
+            foreignKeyName: "books_list_status_changed_by_profile_id_fkey"
+            columns: ["list_status_changed_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1705,13 +1695,13 @@ export type Database = {
           google_books_cover_url: string | null
           id: string | null
           isbn_13: string | null
+          list_status: Database["public"]["Enums"]["book_list_status"] | null
+          list_status_changed_at: string | null
+          list_status_changed_by_profile_id: string | null
+          list_status_reason: string | null
           page_count: number | null
           preview_link: string | null
           source: Database["public"]["Enums"]["book_source"] | null
-          status: Database["public"]["Enums"]["book_status"] | null
-          status_changed_at: string | null
-          status_changed_by_profile_id: string | null
-          status_reason: string | null
           title_cs: string | null
           title_en: string | null
           updated_at: string | null
@@ -1726,8 +1716,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "books_status_changed_by_profile_id_fkey"
-            columns: ["status_changed_by_profile_id"]
+            foreignKeyName: "books_list_status_changed_by_profile_id_fkey"
+            columns: ["list_status_changed_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1788,8 +1778,9 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      book_list_status: "processing" | "shortlist" | "longlist" | "archived"
       book_source: "manual" | "google_books" | "open_library"
-      book_status: "pending" | "approved" | "rejected"
+      highlight_category: "ja" | "my" | "oni" | "system"
       profile_role: "student" | "mentor" | "coach" | "admin"
       schedule_type: "training_session" | "houston_calling"
       semester_reflection_topic:
@@ -1931,8 +1922,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      book_list_status: ["processing", "shortlist", "longlist", "archived"],
       book_source: ["manual", "google_books", "open_library"],
-      book_status: ["pending", "approved", "rejected"],
+      highlight_category: ["ja", "my", "oni", "system"],
       profile_role: ["student", "mentor", "coach", "admin"],
       schedule_type: ["training_session", "houston_calling"],
       semester_reflection_topic: [

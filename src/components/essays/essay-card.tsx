@@ -63,10 +63,10 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
               <>
                 <BookOpen className="size-3 shrink-0" />
                 <span className="truncate">{essay.book.title_cs}</span>
-                {essay.book.status === 'approved' && pointsNumber(essay.book.book_points) > 0 && (
+                {essay.book.list_status !== 'archived' && pointsNumber(essay.book.book_points) > 0 && (
                   <span className="shrink-0 ml-auto font-medium text-foreground">{formatPoints(essay.book.book_points)} b.</span>
                 )}
-                {essay.book.status === 'rejected' && (
+                {essay.book.list_status === 'archived' && (
                   <span className="shrink-0 ml-auto text-destructive">0 b.</span>
                 )}
               </>

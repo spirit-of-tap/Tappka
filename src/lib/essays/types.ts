@@ -25,7 +25,7 @@ export interface Essay {
 
 export interface EssayWithDetails extends Essay {
   author: Pick<Profile, 'id' | 'name' | 'picture' | 'role'> | null;
-  book: Pick<Book, 'id' | 'title_cs' | 'author' | 'book_points' | 'status' | 'google_books_cover_url'> | null;
+  book: Pick<Book, 'id' | 'title_cs' | 'author' | 'book_points' | 'list_status' | 'google_books_cover_url'> | null;
   comment_count: number;
 }
 

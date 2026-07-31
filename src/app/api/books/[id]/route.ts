@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
-import type { ApproveBookInput, RejectBookInput } from '@/lib/books/types';
+import type { ClassifyBookInput, SetBookHighlightInput } from '@/lib/books/types';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -42,66 +42,80 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Nemáš oprávnění' }, { status: 403 });
     }
 
-    const body: { action: 'approve' | 'reject' | 'edit' } & Partial<ApproveBookInput & RejectBookInput> & {
+    const body: { action: 'classify' | 'highlight' | 'edit' } & Partial<ClassifyBookInput> & SetBookHighlightInput & {
       title?: string; author?: string; description?: string; tags?: string[];
-      /** @deprecated use status_reason */
-      rejection_reason?: string;
     } = await request.json();
 
     const now = new Date().toISOString();
 
-    if (body.action === 'approve') {
-      const points = body.book_points;
-      if (!points || ![1, 2, 3].includes(points)) {
-        return NextResponse.json({ error: 'Neplatný počet bodů (1–3)' }, { status: 400 });
+    if (body.action === 'classify') {
+      const listStatus = body.list_status;
+      if (!listStatus || !['processing', 'shortlist', 'longlist', 'archived'].includes(listStatus)) {
+        return NextResponse.json({ error: 'Neplatný seznam' }, { status: 400 });
+      }
+
+      if (listStatus === 'archived') {
+        if (!body.status_reason?.trim()) {
+          return NextResponse.json({ error: 'Důvod archivace je povinný' }, { status: 400 });
+        }
+      } else {
+        const points = body.book_points;
+        if (points === undefined || points === null || ![1, 2, 3].includes(points)) {
+          return NextResponse.json({ error: 'Neplatný počet bodů (1–3)' }, { status: 400 });
+        }
       }
 
       const { data, error } = await supabase
         .from('books')
         .update({
-          status: 'approved',
-          book_points: points,
-          status_changed_by_profile_id: profile.id,
-          status_changed_at: now,
-          status_reason: null,
+          list_status: listStatus,
+          book_points: listStatus === 'archived' ? 0 : body.book_points,
+          list_status_changed_by_profile_id: profile.id,
+          list_status_changed_at: now,
+          list_status_reason: body.status_reason ?? null,
           updated_by_profile_id: profile.id,
         })
         .eq('id', id)
-        .eq('status', 'pending')
         .select()
         .single();
 
       if (error) throw error;
-      if (!data) return NextResponse.json({ error: 'Kniha nenalezena nebo není ve stavu čekání' }, { status: 404 });
+      if (!data) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
 
       return NextResponse.json({ data });
     }
 
-    if (body.action === 'reject') {
-      const reason = (body.status_reason ?? body.rejection_reason)?.trim();
-      if (!reason) {
-        return NextResponse.json({ error: 'Důvod zamítnutí je povinný' }, { status: 400 });
+    if (body.action === 'highlight') {
+      if (!body.highlighted && !body.category) {
+        return NextResponse.json({ error: 'Chybí kategorie' }, { status: 400 });
       }
 
-      const { data, error } = await supabase
-        .from('books')
-        .update({
-          status: 'rejected',
-          book_points: null,
-          status_reason: reason,
-          status_changed_by_profile_id: profile.id,
-          status_changed_at: now,
-          updated_by_profile_id: profile.id,
-        })
-        .eq('id', id)
-        .eq('status', 'pending')
-        .select()
-        .single();
+      if (body.highlighted) {
+        if (!body.category || !['ja', 'my', 'oni', 'system'].includes(body.category)) {
+          return NextResponse.json({ error: 'Neplatná kategorie' }, { status: 400 });
+        }
+        const { data, error } = await supabase
+          .from('book_highlights')
+          .upsert({
+            book_id: id,
+            category: body.category,
+            description: body.description?.trim() || null,
+            created_by_profile_id: profile.id,
+            updated_by_profile_id: profile.id,
+          }, { onConflict: 'book_id' })
+          .select()
+          .single();
 
+        if (error) throw error;
+        return NextResponse.json({ data });
+      }
+
+      const { error } = await supabase
+        .from('book_highlights')
+        .delete()
+        .eq('book_id', id);
       if (error) throw error;
-      if (!data) return NextResponse.json({ error: 'Kniha nenalezena nebo není ve stavu čekání' }, { status: 404 });
-
-      return NextResponse.json({ data });
+      return NextResponse.json({ data: null });
     }
 
     if (body.action === 'edit') {

@@ -5,7 +5,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBooks } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
 import { downloadAndStoreCover } from '@/lib/storage/service';
-import type { CreateBookInput, BookFilters, BookStatus } from '@/lib/books/types';
+import type { CreateBookInput, BookFilters, BookListStatus } from '@/lib/books/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +15,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const tags = searchParams.getAll('tag');
+    const rawStatus = searchParams.get('status');
+    const status = rawStatus && (['processing', 'shortlist', 'longlist', 'archived'] as string[]).includes(rawStatus)
+      ? rawStatus as BookListStatus
+      : null;
     const filters: BookFilters = {
-      status: (searchParams.get('status') ?? 'approved') as BookStatus,
+      listStatus: status ?? undefined,
+      listStatuses: status ? undefined : ['shortlist', 'longlist'],
       search: searchParams.get('q') ?? undefined,
       tags: tags.length ? tags : undefined,
       sortBy: (searchParams.get('sort') === 'popular' ? 'popular' : undefined),
