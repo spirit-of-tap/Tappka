@@ -98,7 +98,7 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
         },
         {
           title: "Čtení",
-          url: "/prehled",
+          url: "/cteni/prehled",
           icon: BookOpen,
         },
       ],
@@ -147,16 +147,14 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const isSchuzkyActive = pathname.startsWith("/schuzky")
   const isKoucovaniActive = pathname.startsWith("/koucovani")
   const isTymovaReflexeActive = pathname.startsWith("/tymova-reflexe")
-  const isCteniActive = pathname === "/prehled" || pathname === "/hledat" || pathname === "/knihovna/moje" || pathname.startsWith("/eseje") || pathname.startsWith("/knihovna") || pathname.startsWith("/settings/kniha-knih")
+  const isCteniActive = pathname.startsWith("/cteni")
   const cteniSubItems = [
-    { title: "Přehled", url: "/prehled" },
-    { title: "Hledat", url: "/hledat" },
-    { title: "Moje výpůjčky", url: "/knihovna/moje" },
+    { title: "Přehled", url: "/cteni/prehled" },
+    { title: "Hledat", url: "/cteni/hledat" },
     ...(isCoachOrAdmin
       ? [
-        { title: "Ke kontrole", url: "/eseje/ke-kontrole", badge: reviewCount },
-        { title: "Import", url: "/knihovna/import" },
-        { title: "Nastavení", url: "/settings/kniha-knih" },
+        { title: "Ke kontrole", url: "/cteni/eseje/ke-kontrole", badge: reviewCount },
+        { title: "Správa knihovny", url: "/cteni/sprava" },
       ]
       : []),
   ]
