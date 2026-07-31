@@ -92,7 +92,7 @@ export function BorrowPanel({
         )}
         <div className="borrow-fade-up flex flex-col items-center gap-2">
           <ReturnButton bookId={bookId} onReturned={handleReturned} />
-          <Link href="/knihovna/moje" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/cteni/prehled?tab=vypujcky" className="text-sm font-medium text-primary hover:underline">
             Moje výpůjčky
           </Link>
         </div>

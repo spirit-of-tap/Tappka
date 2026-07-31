@@ -8,6 +8,7 @@ import { PersonalProgress } from './personal-progress';
 import { MyEssayList } from './my-essay-list';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import type { EssayWithDetails } from '@/lib/essays/types';
+import { MyLoansList } from '@/components/library/my-loans-list';
 
 interface PrehledTabsProps {
   defaultTab: string;
@@ -24,6 +25,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
       <TabsList>
         <TabsTrigger value="moje">Moje</TabsTrigger>
         <TabsTrigger value="tym">Tým</TabsTrigger>
+        <TabsTrigger value="vypujcky">Výpůjčky</TabsTrigger>
       </TabsList>
 
       {/* Moje tab */}
@@ -68,6 +70,11 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
             <TeamBookPointsChart stats={teamStats} />
           </div>
         )}
+      </TabsContent>
+
+      {/* Výpůjčky tab */}
+      <TabsContent value="vypujcky" className="mt-6">
+        <MyLoansList />
       </TabsContent>
     </Tabs>
   );

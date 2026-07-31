@@ -45,7 +45,7 @@ describe('bookLoanEmail', () => {
   const loanCtx = {
     bookTitle: 'Atomové návyky',
     dueDate: '30. srpna 2026',
-    loansUrl: 'https://tappka.app/knihovna/moje',
+    loansUrl: 'https://tappka.app/cteni/prehled?tab=vypujcky',
   };
 
   it('mentions the book title in the subject', () => {
@@ -56,6 +56,6 @@ describe('bookLoanEmail', () => {
   it('shows the due date and links to the loans page', () => {
     const { html } = bookLoanEmail(loanCtx);
     expect(html).toContain('30. srpna 2026');
-    expect(html).toContain('https://tappka.app/knihovna/moje');
+    expect(html).toContain('https://tappka.app/cteni/prehled?tab=vypujcky');
   });
 });

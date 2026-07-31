@@ -42,7 +42,7 @@ describe('notifyBookBorrowed', () => {
     const call = mockedSendEmail.mock.calls[0][0];
     expect(call.to).toBe(BORROWER.work_email);
     expect(call.subject).toContain('Atomové návyky');
-    expect(call.html).toContain('https://tappka.app/knihovna/moje');
+    expect(call.html).toContain('https://tappka.app/cteni/prehled?tab=vypujcky');
   });
 
   it('skips when the borrower has no work email', async () => {

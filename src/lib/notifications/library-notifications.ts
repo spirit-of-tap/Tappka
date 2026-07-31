@@ -34,7 +34,7 @@ export async function notifyBookBorrowed(
   const { subject, html } = bookLoanEmail({
     bookTitle: book.title_cs,
     dueDate,
-    loansUrl: `${params.origin}/knihovna/moje`,
+    loansUrl: `${params.origin}/cteni/prehled?tab=vypujcky`,
   });
 
   await sendEmail({ to: borrower.work_email, subject, html });
