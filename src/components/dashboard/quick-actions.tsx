@@ -12,7 +12,7 @@ export function QuickActions({ isCoach, unreadCount = 0 }: QuickActionsProps) {
     <div className="flex flex-wrap gap-2">
       {isCoach ? (
         <Button asChild>
-          <Link href="/eseje/ke-kontrole">
+          <Link href="/cteni/eseje/ke-kontrole">
             <Inbox className="size-4 mr-1.5" />
             Zkontrolovat eseje
             {unreadCount > 0 && (
@@ -24,7 +24,7 @@ export function QuickActions({ isCoach, unreadCount = 0 }: QuickActionsProps) {
         </Button>
       ) : (
         <Button asChild>
-          <Link href="/eseje/nova">
+          <Link href="/cteni/eseje/nova">
             <PenLine className="size-4 mr-1.5" />
             Napsat esej
           </Link>

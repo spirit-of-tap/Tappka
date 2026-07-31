@@ -4,7 +4,7 @@ import { bookLoanEmail, coachReadEmail, commentEmail, voteEmail } from './email-
 
 const ctx = {
   essayTitle: 'Moje esej o vedení',
-  essayUrl: 'https://tappka.app/eseje/essay-1',
+  essayUrl: 'https://tappka.app/cteni/eseje/essay-1',
   actorName: 'Anna Nováková',
 };
 
@@ -13,7 +13,7 @@ describe('coachReadEmail', () => {
     const { subject, html } = coachReadEmail(ctx);
     expect(subject).toContain('Anna Nováková');
     expect(subject).toContain('Moje esej o vedení');
-    expect(html).toContain('https://tappka.app/eseje/essay-1');
+    expect(html).toContain('https://tappka.app/cteni/eseje/essay-1');
   });
 });
 
@@ -22,7 +22,7 @@ describe('commentEmail', () => {
     const { subject, html } = commentEmail(ctx);
     expect(subject).toContain('Anna Nováková');
     expect(subject).toContain('Moje esej o vedení');
-    expect(html).toContain('https://tappka.app/eseje/essay-1');
+    expect(html).toContain('https://tappka.app/cteni/eseje/essay-1');
   });
 
   it('includes the comment body when provided', () => {
@@ -37,7 +37,7 @@ describe('voteEmail', () => {
     const { subject, html } = voteEmail(ctx);
     expect(subject).toContain('Anna Nováková');
     expect(subject).toContain('Moje esej o vedení');
-    expect(html).toContain('https://tappka.app/eseje/essay-1');
+    expect(html).toContain('https://tappka.app/cteni/eseje/essay-1');
   });
 });
 

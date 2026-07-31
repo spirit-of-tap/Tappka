@@ -21,12 +21,12 @@ export default async function EssayEditPage({ params }: PageProps) {
   const essay = await getEssayById(supabase, essayId);
 
   if (!essay) notFound();
-  if (essay.author_profile_id !== profile?.id) redirect(`/eseje/${essayId}`);
+  if (essay.author_profile_id !== profile?.id) redirect(`/cteni/eseje/${essayId}`);
 
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-3xl">
       <Button variant="ghost" asChild className="gap-2">
-        <Link href={`/eseje/${essayId}`}>
+        <Link href={`/cteni/eseje/${essayId}`}>
           <ArrowLeft className="size-4" />
           Zpět na esej
         </Link>

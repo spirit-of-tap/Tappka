@@ -34,7 +34,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
         </CardDescription>
         <CardAction>
           <Link
-            href="/eseje/ke-kontrole"
+            href="/cteni/eseje/ke-kontrole"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
           >
             Otevřít
@@ -53,7 +53,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
           <ul className="space-y-3">
             {preview.map((essay) => (
               <li key={essay.id}>
-                <Link href={`/eseje/${essay.id}`} className="group block">
+                <Link href={`/cteni/eseje/${essay.id}`} className="group block">
                   <p className="text-sm font-medium group-hover:underline underline-offset-4 line-clamp-1">
                     {essay.title}
                   </p>

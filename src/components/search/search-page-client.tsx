@@ -313,7 +313,7 @@ function RocketModelCard({ books }: { books: BookWithProfiles[] }) {
 function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; initialVoted: boolean }) {
   return (
     <div className="shrink-0 w-52 rounded-xl border bg-card hover:shadow-md transition-shadow group flex flex-col p-3 gap-2.5">
-      <Link href={`/eseje/${essay.id}`} className="flex gap-2.5">
+      <Link href={`/cteni/eseje/${essay.id}`} className="flex gap-2.5">
         {/* Small portrait cover — at this size low-res thumbnails look fine */}
         <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
           {essay.book?.google_books_cover_url ? (
@@ -636,7 +636,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
             {essays.map((essay) => (
               <Link
                 key={essay.id}
-                href={`/eseje/${essay.id}`}
+                href={`/cteni/eseje/${essay.id}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group"
               >
                 <div className="shrink-0 size-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-semibold overflow-hidden">

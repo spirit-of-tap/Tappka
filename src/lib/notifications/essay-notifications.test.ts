@@ -104,7 +104,7 @@ describe('notifyEssayCommented', () => {
 
     const call = mockedSendEmail.mock.calls[0][0];
     expect(call.to).toBe(AUTHOR.work_email);
-    expect(call.html).toContain('https://tappka.app/eseje/essay-1');
+    expect(call.html).toContain('https://tappka.app/cteni/eseje/essay-1');
     expect(rpc).toHaveBeenCalledWith('get_notification_preferences', {
       p_profile_id: ESSAY.authorProfileId,
     });
@@ -171,7 +171,7 @@ describe('notifyEssayVoted', () => {
 
     const call = mockedSendEmail.mock.calls[0][0];
     expect(call.to).toBe(AUTHOR.work_email);
-    expect(call.html).toContain('https://tappka.app/eseje/essay-1');
+    expect(call.html).toContain('https://tappka.app/cteni/eseje/essay-1');
     expect(rpc).toHaveBeenCalledWith('get_notification_preferences', {
       p_profile_id: ESSAY.authorProfileId,
     });
@@ -238,7 +238,7 @@ describe('notifyEssayCoachRead', () => {
 
     const call = mockedSendEmail.mock.calls[0][0];
     expect(call.to).toBe(AUTHOR.work_email);
-    expect(call.html).toContain('https://tappka.app/eseje/essay-1');
+    expect(call.html).toContain('https://tappka.app/cteni/eseje/essay-1');
     expect(rpc).toHaveBeenCalledWith('get_notification_preferences', {
       p_profile_id: ESSAY.authorProfileId,
     });

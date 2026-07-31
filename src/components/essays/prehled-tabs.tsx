@@ -33,7 +33,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-lg">Moje eseje</h2>
           <Button asChild size="sm">
-            <Link href="/eseje/nova">
+            <Link href="/cteni/eseje/nova">
               <Plus className="size-4 mr-1.5" />
               Psát
             </Link>
@@ -45,7 +45,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
             <FileText className="size-10 mx-auto text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Zatím žádné eseje. Napiš svou první!</p>
             <Button asChild>
-              <Link href="/eseje/nova">Napsat esej</Link>
+              <Link href="/cteni/eseje/nova">Napsat esej</Link>
             </Button>
           </div>
         ) : (

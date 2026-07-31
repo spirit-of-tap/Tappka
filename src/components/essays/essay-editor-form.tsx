@@ -79,7 +79,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         const { data } = await res.json();
         if (data?.id) {
           toast.success('Esej publikována.');
-          router.push(`/eseje/${data.id}`);
+          router.push(`/cteni/eseje/${data.id}`);
         }
       } else {
         toast.error('Nepodařilo se publikovat esej.');

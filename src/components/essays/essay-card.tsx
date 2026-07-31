@@ -19,7 +19,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
 
   return (
-    <Link href={`/eseje/${essay.id}`} className="group block h-full">
+    <Link href={`/cteni/eseje/${essay.id}`} className="group block h-full">
       <Card className="h-full transition-all group-hover:shadow-md group-hover:border-border/80 py-0">
         <CardContent className="px-4 py-3 flex flex-col h-full gap-2">
 

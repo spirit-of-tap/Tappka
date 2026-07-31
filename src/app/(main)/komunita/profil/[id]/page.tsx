@@ -184,7 +184,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                     const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
                     return (
                       <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
-                        <Link href={`/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5">
+                        <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5">
                           {essay.book!.google_books_cover_url ? (
                             <StorageImage storageKey={essay.book!.google_books_cover_url} alt={essay.book!.title_cs} width={44} height={60} className="w-full h-full object-cover" />
                           ) : (
@@ -192,7 +192,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                           )}
                         </Link>
                         <div className="flex-1 min-w-0 space-y-1">
-                          <Link href={`/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
+                          <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
                             {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
                             <span className="font-semibold text-sm leading-snug truncate group-hover:text-primary transition-colors">
                               {essay.title}
@@ -234,11 +234,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                       const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
                       return (
                         <div key={essay.id} className="flex gap-3 rounded-xl border border-warning/20 bg-warning/10 px-3.5 py-3 group hover:shadow-sm transition-shadow">
-                          <Link href={`/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-warning/10 flex items-center justify-center mt-0.5">
+                          <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-warning/10 flex items-center justify-center mt-0.5">
                             <Sparkles className="size-4 text-warning/40" />
                           </Link>
                           <div className="flex-1 min-w-0 space-y-1">
-                            <Link href={`/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
+                            <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
                               {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
                               <span className="font-semibold text-sm leading-snug truncate group-hover:text-warning-strong transition-colors">
                                 {essay.title}

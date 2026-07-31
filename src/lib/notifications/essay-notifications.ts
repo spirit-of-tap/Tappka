@@ -41,7 +41,7 @@ async function dispatchEssayNotification(
 
   const { subject, html } = buildEmail({
     essayTitle: essay.title,
-    essayUrl: `${params.origin}/eseje/${essay.id}`,
+    essayUrl: `${params.origin}/cteni/eseje/${essay.id}`,
     actorName: actor.name ?? 'Někdo',
     commentBody: params.commentBody,
   });

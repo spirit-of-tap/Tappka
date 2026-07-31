@@ -97,7 +97,7 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
   return (
     <Card className="py-0">
       <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
-        <Link href={`/eseje/${essay.id}`} className="group flex-1 min-w-0 space-y-2">
+        <Link href={`/cteni/eseje/${essay.id}`} className="group flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2">
             {essay.author?.picture ? (
               <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover shrink-0" />

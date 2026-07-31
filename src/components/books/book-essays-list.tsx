@@ -29,7 +29,7 @@ export function BookEssaysList({ essays }: { essays: EssayWithDetails[] }) {
       {visible.map((essay) => (
         <Link
           key={essay.id}
-          href={`/eseje/${essay.id}`}
+          href={`/cteni/eseje/${essay.id}`}
           className="group focus-ring flex flex-col gap-1.5 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted sm:flex-row sm:items-center sm:gap-3"
         >
           <div className="flex min-w-0 items-center gap-3 sm:flex-1">

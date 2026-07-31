@@ -74,7 +74,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
           <div className="flex items-center gap-2">
             <EssayPinButton essayId={essayId} isPinned={essay.pinned_at != null} />
             <Button variant="outline" asChild size="sm">
-              <Link href={`/eseje/${essayId}/upravit`}>
+              <Link href={`/cteni/eseje/${essayId}/upravit`}>
                 <Pencil className="size-4 mr-2" />
                 Upravit
               </Link>
