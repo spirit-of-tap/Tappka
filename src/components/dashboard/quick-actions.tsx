@@ -37,7 +37,7 @@ export function QuickActions({ isCoach, unreadCount = 0 }: QuickActionsProps) {
         </Link>
       </Button>
       <Button asChild variant="outline">
-        <Link href="/hledat">
+        <Link href="/cteni/hledat">
           <Search className="size-4 mr-1.5" />
           Hledat knihu
         </Link>
