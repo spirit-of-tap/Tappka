@@ -9,68 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      book_highlights: {
-        Row: {
-          book_id: string
-          category: Database["public"]["Enums"]["highlight_category"]
-          created_at: string
-          created_by_profile_id: string
-          description: string | null
-          id: string
-          updated_at: string
-          updated_by_profile_id: string
-        }
-        Insert: {
-          book_id: string
-          category: Database["public"]["Enums"]["highlight_category"]
-          created_at?: string
-          created_by_profile_id: string
-          description?: string | null
-          id?: string
-          updated_at?: string
-          updated_by_profile_id: string
-        }
-        Update: {
-          book_id?: string
-          category?: Database["public"]["Enums"]["highlight_category"]
-          created_at?: string
-          created_by_profile_id?: string
-          description?: string | null
-          id?: string
-          updated_at?: string
-          updated_by_profile_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "book_highlights_book_id_fkey"
-            columns: ["book_id"]
-            isOneToOne: true
-            referencedRelation: "books"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "book_highlights_book_id_fkey"
-            columns: ["book_id"]
-            isOneToOne: true
-            referencedRelation: "books_with_essay_count"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "book_highlights_created_by_profile_id_fkey"
-            columns: ["created_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "book_highlights_updated_by_profile_id_fkey"
-            columns: ["updated_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       book_loans: {
         Row: {
           borrowed_at: string
@@ -191,7 +129,9 @@ export type Database = {
           description: string | null
           external_id: string | null
           google_books_cover_url: string | null
+          highlight_category_id: string | null
           id: string
+          is_rocket_model: boolean
           isbn_13: string | null
           list_status: Database["public"]["Enums"]["book_list_status"]
           list_status_changed_at: string | null
@@ -213,7 +153,9 @@ export type Database = {
           description?: string | null
           external_id?: string | null
           google_books_cover_url?: string | null
+          highlight_category_id?: string | null
           id?: string
+          is_rocket_model?: boolean
           isbn_13?: string | null
           list_status?: Database["public"]["Enums"]["book_list_status"]
           list_status_changed_at?: string | null
@@ -235,7 +177,9 @@ export type Database = {
           description?: string | null
           external_id?: string | null
           google_books_cover_url?: string | null
+          highlight_category_id?: string | null
           id?: string
+          is_rocket_model?: boolean
           isbn_13?: string | null
           list_status?: Database["public"]["Enums"]["book_list_status"]
           list_status_changed_at?: string | null
@@ -255,6 +199,13 @@ export type Database = {
             columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_highlight_category_id_fkey"
+            columns: ["highlight_category_id"]
+            isOneToOne: false
+            referencedRelation: "highlight_categories"
             referencedColumns: ["id"]
           },
           {
@@ -831,6 +782,51 @@ export type Database = {
           },
           {
             foreignKeyName: "feedback_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      highlight_categories: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlight_categories_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlight_categories_updated_by_profile_id_fkey"
             columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1693,7 +1689,9 @@ export type Database = {
           essay_count: number | null
           external_id: string | null
           google_books_cover_url: string | null
+          highlight_category_id: string | null
           id: string | null
+          is_rocket_model: boolean | null
           isbn_13: string | null
           list_status: Database["public"]["Enums"]["book_list_status"] | null
           list_status_changed_at: string | null
@@ -1713,6 +1711,13 @@ export type Database = {
             columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_highlight_category_id_fkey"
+            columns: ["highlight_category_id"]
+            isOneToOne: false
+            referencedRelation: "highlight_categories"
             referencedColumns: ["id"]
           },
           {
@@ -1773,6 +1778,14 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_coach_or_admin: { Args: never; Returns: boolean }
+      reassign_essays_to_book: {
+        Args: {
+          p_source_book_id: string
+          p_target_book_id: string
+          p_updated_by_profile_id: string
+        }
+        Returns: number
+      }
       record_essay_view: { Args: { p_essay_id: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
@@ -1780,7 +1793,6 @@ export type Database = {
     Enums: {
       book_list_status: "processing" | "shortlist" | "longlist" | "archived"
       book_source: "manual" | "google_books" | "open_library"
-      highlight_category: "ja" | "my" | "oni" | "system"
       profile_role: "student" | "mentor" | "coach" | "admin"
       schedule_type: "training_session" | "houston_calling"
       semester_reflection_topic:
@@ -1924,7 +1936,6 @@ export const Constants = {
     Enums: {
       book_list_status: ["processing", "shortlist", "longlist", "archived"],
       book_source: ["manual", "google_books", "open_library"],
-      highlight_category: ["ja", "my", "oni", "system"],
       profile_role: ["student", "mentor", "coach", "admin"],
       schedule_type: ["training_session", "houston_calling"],
       semester_reflection_topic: [

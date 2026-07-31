@@ -1,0 +1,1 @@
+ALTER TABLE "books" ADD COLUMN "is_rocket_model" boolean DEFAULT false NOT NULL;

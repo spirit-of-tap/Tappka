@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CoachReadButton } from './coach-read-button';
 import { ProfilePicture } from '@/components/profile-picture';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
 interface CoachReviewListProps {
@@ -122,6 +123,7 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
               <>
                 <BookOpen className="size-3 shrink-0" />
                 <span className="truncate">{essay.book.title_cs}</span>
+                <BookStatusBadges book={essay.book} />
               </>
             ) : (
               <>

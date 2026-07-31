@@ -11,6 +11,7 @@ import { ProfilePictureSection } from '@/components/komunita/profile-picture-sec
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { StorageImage } from '@/components/storage/storage-image';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/ui/page-shell';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
@@ -197,8 +198,9 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                               {essay.title}
                             </span>
                           </Link>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
                             {essay.book!.title_cs}
+                            <BookStatusBadges book={essay.book!} />
                             {pointsNumber(essay.book!.book_points) > 0 && <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(essay.book!.book_points)}</span>}
                           </p>
                           {excerpt && excerpt.length > 20 && (

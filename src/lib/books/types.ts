@@ -4,10 +4,9 @@ import type { Tables } from '@/lib/supabase/tables';
 
 export type BookListStatus = Database['public']['Enums']['book_list_status'];
 export type BookSource = Database['public']['Enums']['book_source'];
-export type HighlightCategory = Database['public']['Enums']['highlight_category'];
 
 export type Book = Tables<'books'>;
-export type BookHighlight = Tables<'book_highlights'>;
+export type HighlightCategory = Tables<'highlight_categories'>;
 
 export interface BookWithProfiles extends Book {
   created_by: Pick<Profile, 'id' | 'name' | 'picture'> | null;
@@ -15,8 +14,8 @@ export interface BookWithProfiles extends Book {
   essay_count: number;
   /** Tag names derived from `book_tags` → `tags` join. */
   tags: string[];
-  /** Present when the book is one of the highlighted 50. */
-  highlight?: BookHighlight | null;
+  /** Present when the book is in the curated selection. */
+  highlight_category: HighlightCategory | null;
 }
 
 export interface BookFilters {
@@ -30,6 +29,7 @@ export interface BookFilters {
   page?: number;
   pageSize?: number;
   libraryOnly?: boolean;
+  isRocketModel?: boolean;
 }
 
 export interface CreateBookInput {
@@ -50,12 +50,15 @@ export interface ClassifyBookInput {
   status_reason?: string | null;
 }
 
-/** Upsert payload for the highlighted-50 management. */
+/** Payload for adding/removing a book from the curated selection. */
 export interface SetBookHighlightInput {
-  category: HighlightCategory;
+  /** Category to assign, or null to remove the book from the selection. */
+  highlight_category_id: string | null;
+}
+
+export interface HighlightCategoryInput {
+  name: string;
   description?: string | null;
-  /** true upserts, false deletes the highlight row */
-  highlighted: boolean;
 }
 
 export interface ExternalBookCandidate {
@@ -72,7 +75,7 @@ export const BOOK_STATUS_LABELS: Record<BookListStatus, string> = {
   processing: 'Zpracovává se',
   shortlist: 'Shortlist',
   longlist: 'Longlist',
-  archived: 'Archivováno',
+  archived: 'Zamítnuto',
 };
 
 export const BOOK_STATUS_COLORS: Record<BookListStatus, string> = {
@@ -82,12 +85,8 @@ export const BOOK_STATUS_COLORS: Record<BookListStatus, string> = {
   archived: 'bg-muted text-muted-foreground',
 };
 
-export const HIGHLIGHT_CATEGORY_LABELS: Record<HighlightCategory, string> = {
-  ja: 'Já',
-  my: 'My',
-  oni: 'Oni',
-  system: 'Systém',
-};
+/** A book only counts toward a student's book_points once it has cleared review. */
+export const POINTS_ELIGIBLE_LIST_STATUSES: readonly BookListStatus[] = ['shortlist', 'longlist'];
 
 export const BOOK_CATEGORIES = [
   'Finance & ekonomika',

@@ -2,43 +2,20 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/lib/supabase/database.types';
 
-import { getBookIdsByTagNames, tagNamesFromJoin } from './tags';
+import { getBookIdsByTagNames } from './tags';
+import { BOOK_JOIN_FIELDS, mapBookRow, type BookQueryRow } from './row-mapper';
+import { getBookIdsInLibrary } from '@/lib/library/book-ids';
 import type {
-  Book,
-  BookHighlight,
+  HighlightCategory,
   BookWithProfiles,
   BookFilters,
+  BookListStatus,
 } from './types';
+import { POINTS_ELIGIBLE_LIST_STATUSES } from './types';
 
 const PAGE_SIZE_DEFAULT = 20;
 
-const BOOK_PROFILES_SELECT = `
-  *,
-  created_by:profiles!created_by_profile_id(id, name, picture),
-  list_status_changed_by:profiles!list_status_changed_by_profile_id(id, name),
-  highlight:book_highlights(*),
-  book_tags(tags(name))
-`;
-
-interface BookQueryRow extends Omit<BookWithProfiles, 'tags' | 'essay_count' | 'highlight'> {
-  essay_count?: number;
-  highlight?: BookWithProfiles['highlight'] | BookWithProfiles['highlight'][];
-  book_tags?: { tags: { name: string } | null }[] | null;
-}
-
-/**
- * Maps a books query row (with optional book_tags join) to BookWithProfiles.
- */
-function mapBookRow(row: BookQueryRow): BookWithProfiles {
-  const { book_tags, essay_count, highlight, ...rest } = row;
-
-  return {
-    ...rest,
-    tags: tagNamesFromJoin(book_tags),
-    essay_count: essay_count ?? 0,
-    highlight: Array.isArray(highlight) ? highlight[0] ?? null : highlight ?? null,
-  };
-}
+const BOOK_PROFILES_SELECT = `*, ${BOOK_JOIN_FIELDS}`;
 
 export async function getBooks(
   supabase: SupabaseClient<Database>,
@@ -80,7 +57,7 @@ export async function getBooks(
 
   if (filters?.search?.trim()) {
     const q = filters.search.trim();
-    query = query.or(`title.ilike.%${q}%,author.ilike.%${q}%`);
+    query = query.or(`title_cs.ilike.%${q}%,title_en.ilike.%${q}%,author.ilike.%${q}%`);
   }
 
   if (filters?.tags && filters.tags.length > 0) {
@@ -90,16 +67,13 @@ export async function getBooks(
   }
 
   if (filters?.libraryOnly) {
-    const { data: libraryBookIds, error: libError } = await supabase
-      .from('library_books')
-      .select('book_id');
-
-    if (libError) throw libError;
-
-    const bookIdsWithCopies = [...new Set(libraryBookIds?.map((lb: { book_id: string }) => lb.book_id) ?? [])];
-
+    const bookIdsWithCopies = [...await getBookIdsInLibrary(supabase)];
     if (bookIdsWithCopies.length === 0) return [];
     query = query.in('id', bookIdsWithCopies);
+  }
+
+  if (filters?.isRocketModel) {
+    query = query.eq('is_rocket_model', true);
   }
 
   const { data, error } = await query;
@@ -137,6 +111,33 @@ export async function getProcessingBooks(
   return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
 }
 
+export async function getShortlistedBooks(
+  supabase: SupabaseClient<Database>,
+): Promise<BookWithProfiles[]> {
+  // Use the view so essay_count is populated for the list table.
+  const { data, error } = await supabase
+    .from('books_with_essay_count')
+    .select(BOOK_PROFILES_SELECT)
+    .eq('list_status', 'shortlist')
+    .order('updated_at', { ascending: false });
+
+  if (error) throw error;
+  return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
+}
+
+export async function getLonglistedBooks(
+  supabase: SupabaseClient<Database>,
+): Promise<BookWithProfiles[]> {
+  const { data, error } = await supabase
+    .from('books_with_essay_count')
+    .select(BOOK_PROFILES_SELECT)
+    .eq('list_status', 'longlist')
+    .order('updated_at', { ascending: false });
+
+  if (error) throw error;
+  return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
+}
+
 export async function getArchivedBooks(
   supabase: SupabaseClient<Database>,
 ): Promise<BookWithProfiles[]> {
@@ -148,21 +149,6 @@ export async function getArchivedBooks(
 
   if (error) throw error;
   return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
-}
-
-export async function searchBooksLocally(
-  supabase: SupabaseClient<Database>,
-  query: string,
-  limit = 10,
-): Promise<Book[]> {
-  const { data, error } = await supabase
-    .from('books')
-    .select('*')
-    .or(`title_cs.ilike.%${query}%,title_en.ilike.%${query}%,author.ilike.%${query}%`)
-    .limit(limit);
-
-  if (error) throw error;
-  return data as Book[];
 }
 
 export async function getBooksByProfilePoints(
@@ -179,12 +165,11 @@ export async function getBooksByProfilePoints(
 
   if (error) throw error;
 
-  const ELIGIBLE: string[] = ['shortlist', 'longlist'];
   const seen = new Set<string>();
   const result: { book_id: string; book_points: number }[] = [];
 
-  for (const row of (data ?? []) as unknown as Array<{ book_id: string; books: { book_points: number | null; list_status: string } }>) {
-    if (row.book_id && !seen.has(row.book_id) && ELIGIBLE.includes(row.books.list_status)) {
+  for (const row of (data ?? []) as unknown as Array<{ book_id: string; books: { book_points: number | null; list_status: BookListStatus } }>) {
+    if (row.book_id && !seen.has(row.book_id) && POINTS_ELIGIBLE_LIST_STATUSES.includes(row.books.list_status)) {
       seen.add(row.book_id);
       result.push({ book_id: row.book_id, book_points: Number(row.books.book_points ?? 0) });
     }
@@ -198,32 +183,36 @@ export async function getHighlightedBooks(
 ): Promise<BookWithProfiles[]> {
   const { data, error } = await supabase
     .from('books')
-    .select(`${BOOK_PROFILES_SELECT}, book_highlights!inner(*)`)
+    .select(BOOK_PROFILES_SELECT)
+    .not('highlight_category_id', 'is', null)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-
-  const rows = (data ?? []) as unknown as (BookQueryRow & { book_highlights: BookWithProfiles['highlight'][] })[];
-
-  return rows.map((row) => {
-    const { book_highlights, ...rest } = row;
-    return {
-      ...mapBookRow(rest),
-      highlight: Array.isArray(book_highlights) ? book_highlights[0] ?? null : book_highlights,
-    };
-  });
+  return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
 }
 
-export async function getBookHighlight(
+export async function getRocketModelBooks(
   supabase: SupabaseClient<Database>,
-  bookId: string,
-): Promise<BookHighlight | null> {
+): Promise<BookWithProfiles[]> {
   const { data, error } = await supabase
-    .from('book_highlights')
-    .select('*')
-    .eq('book_id', bookId)
-    .maybeSingle();
+    .from('books')
+    .select(BOOK_PROFILES_SELECT)
+    .eq('is_rocket_model', true)
+    .in('list_status', POINTS_ELIGIBLE_LIST_STATUSES)
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data as BookHighlight | null;
+  return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
+}
+
+export async function getHighlightCategories(
+  supabase: SupabaseClient<Database>,
+): Promise<HighlightCategory[]> {
+  const { data, error } = await supabase
+    .from('highlight_categories')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data as HighlightCategory[];
 }

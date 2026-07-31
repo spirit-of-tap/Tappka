@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays } from '@/lib/essays/queries';
+import { getRocketModelBooks, getHighlightedBooks, getHighlightCategories } from '@/lib/books/queries';
+import { groupHighlightedBooks } from '@/lib/books/highlight-groups';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { SearchPageClient } from '@/components/search/search-page-client';
 
@@ -12,10 +14,13 @@ export default async function HledatPage() {
 
   const profile = await getCurrentUserProfile(supabase, { user });
 
-  const [popularEssays, categoryRows, teamRows] = await Promise.all([
-    getEssays(supabase, { sort: 'week', pageSize: 8 }),
+  const [popularEssays, categoryRows, teamRows, rocketModelBooks, highlightedBooks, highlightCategories] = await Promise.all([
+    getEssays(supabase, { sort: 'month', pageSize: 8 }),
     supabase.rpc('get_best_books_per_category', { top_n: 3 }),
     supabase.rpc('get_teams_with_member_stats'),
+    getRocketModelBooks(supabase),
+    getHighlightedBooks(supabase),
+    getHighlightCategories(supabase),
   ]);
 
   type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
@@ -24,6 +29,8 @@ export default async function HledatPage() {
     if (!(row.tag in BOOK_CATEGORY_LABELS)) continue;
     (categoryBestBooks[row.tag] ??= []).push(row);
   }
+
+  const highlightedByCategory = groupHighlightedBooks(highlightedBooks, highlightCategories);
 
   type MemberRow = { team_id: string; team_name: string; profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
   type TeamWithMembers = { id: string; name: string; members: Omit<MemberRow, 'team_id' | 'team_name'>[] };
@@ -51,6 +58,8 @@ export default async function HledatPage() {
       popularEssays={popularWithVoted}
       categoryBestBooks={categoryBestBooks}
       teamsWithMembers={teamsWithMembers}
+      rocketModelBooks={rocketModelBooks}
+      highlightedByCategory={highlightedByCategory}
     />
   );
 }

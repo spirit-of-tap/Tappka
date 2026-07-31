@@ -5,7 +5,6 @@ import {
   BookOpen,
   BookText,
   ExternalLink,
-  Sparkles,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -19,7 +18,8 @@ import { PageShell } from '@/components/ui/page-shell';
 import { BookAdminActions } from './admin-actions';
 import { BookDescription } from '@/components/books/book-description';
 import { BookEssaysList } from '@/components/books/book-essays-list';
-import { BOOK_CATEGORY_LABELS, BOOK_STATUS_LABELS, HIGHLIGHT_CATEGORY_LABELS } from '@/lib/books/types';
+import { VerifiedBadge, RocketBadge, HighlightBadge } from '@/components/books/book-status-badges';
+import { BOOK_CATEGORY_LABELS, BOOK_STATUS_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
 
 const ALL_ESSAYS_PAGE_SIZE = 500;
@@ -110,7 +110,10 @@ export default async function BookDetailPage({ params }: PageProps) {
 
         <div className="min-w-0 flex-1 space-y-4">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold leading-tight tracking-tight">{book.title_cs}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold leading-tight tracking-tight">{book.title_cs}</h1>
+              <VerifiedBadge status={book.list_status} className="size-6" />
+            </div>
             <p className="text-lg text-muted-foreground">{book.author}</p>
           </div>
 
@@ -128,12 +131,8 @@ export default async function BookDetailPage({ params }: PageProps) {
                 0 b.
               </span>
             )}
-            {book.highlight && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                <Sparkles className="size-3" />
-                {HIGHLIGHT_CATEGORY_LABELS[book.highlight.category]}
-              </span>
-            )}
+            {book.is_rocket_model && <RocketBadge />}
+            {book.highlight_category && <HighlightBadge category={book.highlight_category} variant="full" />}
             {book.tags.map((tag) => (
               <span
                 key={tag}

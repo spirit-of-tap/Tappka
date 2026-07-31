@@ -3,6 +3,8 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/supabase/database.types';
 
 import { contentTextFromJson } from './content-text';
+import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
+import type { HighlightCategory } from '@/lib/books/types';
 import type {
   EssayWithDetails,
   EssayCommentWithAuthor,
@@ -13,7 +15,9 @@ import type {
 } from './types';
 
 const PAGE_SIZE_DEFAULT = 20;
-const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+/** Candidate pool size for popularity ranking — big enough to rank properly, small enough to stay cheap. */
+const POPULAR_CANDIDATE_LIMIT = 200;
+const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
 
 const ESSAY_DETAIL_SELECT = `
   *,
@@ -22,7 +26,7 @@ const ESSAY_DETAIL_SELECT = `
   essay_views(count),
   essay_comments(count),
   author:profiles!author_profile_id(id, name, picture, role),
-  book:books!book_id(id, title_cs, author, book_points, list_status, google_books_cover_url)
+  book:books!book_id(id, title_cs, author, book_points, list_status, is_rocket_model, google_books_cover_url, highlight_category:highlight_categories(*))
 `;
 
 interface EssayRevisionEmbed {
@@ -53,7 +57,9 @@ interface EssayRawRow {
   essay_views?: CountEmbed[] | null;
   essay_comments?: CountEmbed[] | null;
   author: EssayWithDetails['author'];
-  book: EssayWithDetails['book'];
+  book: (Omit<NonNullable<EssayWithDetails['book']>, 'highlight_category'> & {
+    highlight_category?: HighlightCategory | HighlightCategory[] | null;
+  }) | null;
 }
 
 /**
@@ -80,6 +86,7 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
       essay_comments,
       created_by_profile_id: _createdBy,
       updated_by_profile_id: _updatedBy,
+      book,
       ...rest
     } = row;
 
@@ -88,6 +95,9 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
 
     return {
       ...rest,
+      book: book
+        ? { ...book, highlight_category: Array.isArray(book.highlight_category) ? book.highlight_category[0] ?? null : book.highlight_category ?? null }
+        : null,
       title: revision?.title ?? '',
       content_json,
       content_text: contentTextFromJson(content_json),
@@ -99,11 +109,15 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
 }
 
 /**
- * Sorts essays by vote_count desc, then created_at desc (within current page).
+ * Popularity score: votes are the stronger quality signal, so they're
+ * weighted 3x over views (mirrors the essay_count*3 + book_points weighting
+ * used for book rankings elsewhere). Ties break to the newer essay.
  */
-function sortByVotesThenCreated(essays: EssayWithDetails[]): EssayWithDetails[] {
+function sortByPopularity(essays: EssayWithDetails[]): EssayWithDetails[] {
   return [...essays].sort((a, b) => {
-    if (b.vote_count !== a.vote_count) return b.vote_count - a.vote_count;
+    const scoreA = a.vote_count * 3 + a.view_count;
+    const scoreB = b.vote_count * 3 + b.view_count;
+    if (scoreB !== scoreA) return scoreB - scoreA;
     return b.created_at.localeCompare(a.created_at);
   });
 }
@@ -181,45 +195,50 @@ export async function getEssays(
     if (searchEssayIds.length === 0) return [];
   }
 
-  let query = supabase
-    .from('essays')
-    .select(ESSAY_DETAIL_SELECT)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .range(from, to);
+  const isPopularSort = sort === 'best' || sort === 'month';
 
-  if (sort === 'week') {
-    const oneWeekAgo = new Date(Date.now() - MS_PER_WEEK).toISOString();
-    query = query
-      .gte('created_at', oneWeekAgo)
+  // Popularity ranking needs its own candidate pool: pagination by recency
+  // has to happen *after* ranking by votes/views, not before, or the ranking
+  // only ever reorders whatever page of recent rows happened to be fetched.
+  const buildQuery = (sinceIso?: string) => {
+    let q = supabase
+      .from('essays')
+      .select(ESSAY_DETAIL_SELECT)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
       .order('created_at', { ascending: false });
-  } else {
-    query = query.order('created_at', { ascending: false });
-  }
 
-  if (filters?.authorProfileId) {
-    query = query.eq('author_profile_id', filters.authorProfileId);
-  }
+    if (isPopularSort) {
+      if (sinceIso) q = q.gte('created_at', sinceIso);
+      q = q.limit(POPULAR_CANDIDATE_LIMIT);
+    } else {
+      q = q.range(from, to);
+    }
 
-  if (filters?.bookId) {
-    query = query.eq('book_id', filters.bookId);
-  }
+    if (filters?.authorProfileId) q = q.eq('author_profile_id', filters.authorProfileId);
+    if (filters?.bookId) q = q.eq('book_id', filters.bookId);
+    if (tagBookIds) q = q.in('book_id', tagBookIds);
+    if (searchEssayIds) q = q.in('id', searchEssayIds);
 
-  if (tagBookIds) {
-    query = query.in('book_id', tagBookIds);
-  }
+    return q;
+  };
 
-  if (searchEssayIds) {
-    query = query.in('id', searchEssayIds);
-  }
-
-  const { data, error } = await query;
+  const monthAgo = new Date(Date.now() - MS_PER_MONTH).toISOString();
+  const { data, error } = await buildQuery(sort === 'month' ? monthAgo : undefined);
   if (error) throw error;
 
-  const essays = mapEssayRows((data ?? []) as unknown as EssayRawRow[]);
+  let essays = mapEssayRows((data ?? []) as unknown as EssayRawRow[]);
 
-  if (sort === 'best' || sort === 'week') {
-    return sortByVotesThenCreated(essays);
+  // A quiet month shouldn't leave the section empty — widen to the most
+  // recent candidates regardless of date if the month's pool is too thin.
+  if (sort === 'month' && essays.length < pageSize) {
+    const { data: fallbackData, error: fallbackError } = await buildQuery();
+    if (fallbackError) throw fallbackError;
+    essays = mapEssayRows((fallbackData ?? []) as unknown as EssayRawRow[]);
+  }
+
+  if (isPopularSort) {
+    return sortByPopularity(essays).slice(from, to + 1);
   }
 
   return essays;
@@ -483,7 +502,7 @@ export async function getUserBookPointsStats(
 
   type Row = { book_id: string; books: { book_points: number; list_status: string } };
 
-  const ELIGIBLE = new Set(['shortlist', 'longlist']);
+  const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const approved = new Map<string, number>();
   const pending = new Set<string>();
 
@@ -539,7 +558,7 @@ export async function getTeamBookPointsStats(
     books: { book_points: number; list_status: string };
   };
 
-  const ELIGIBLE = new Set(['shortlist', 'longlist']);
+  const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const byProfile: Record<string, { approved: Set<string>; pending: Set<string> }> = {};
   for (const profileId of profileIds) {
     byProfile[profileId] = { approved: new Set(), pending: new Set() };

@@ -1,12 +1,11 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
 // Please look at CONTRIBUTING.md for more information on how to change the schema.
-import { pgTable, foreignKey, pgPolicy, uuid, text, numeric, integer, timestamp, index, unique, check, pgEnum, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgPolicy, uuid, text, numeric, integer, boolean, timestamp, index, unique, check, pgEnum, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
 
 export const bookSource = pgEnum("book_source", ['manual', 'google_books', 'open_library'])
 export const bookListStatus = pgEnum("book_list_status", ['processing', 'shortlist', 'longlist', 'archived'])
-export const highlightCategory = pgEnum("highlight_category", ['ja', 'my', 'oni', 'system'])
 
 export const tags = pgTable("tags", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -50,6 +49,8 @@ export const books = pgTable("books", {
 	listStatusChangedAt: timestamp("list_status_changed_at", { withTimezone: true, mode: 'string' }),
 	listStatusChangedByProfileId: uuid("list_status_changed_by_profile_id"),
 	listStatusReason: text("list_status_reason"),
+	highlightCategoryId: uuid("highlight_category_id"),
+	isRocketModel: boolean("is_rocket_model").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdByProfileId: uuid("created_by_profile_id").notNull(),
@@ -76,6 +77,11 @@ export const books = pgTable("books", {
 			foreignColumns: [profiles.id],
 			name: "books_list_status_changed_by_profile_id_fkey"
 		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.highlightCategoryId],
+			foreignColumns: [highlightCategories.id],
+			name: "books_highlight_category_id_fkey"
+		}).onDelete("set null"),
 	// ISBN identifies an edition, not a literary work — no UNIQUE constraint
 
 	pgPolicy("Coaches and admins can delete books", { as: "permissive", for: "delete", to: ["public"], using: sql`is_coach_or_admin()` }),
@@ -87,37 +93,29 @@ export const books = pgTable("books", {
 	check("books_archived_points_check", sql`(list_status <> 'archived') OR (book_points = (0)::numeric)`),
 ]).enableRLS();
 
-export const bookHighlights = pgTable("book_highlights", {
+export const highlightCategories = pgTable("highlight_categories", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
-	bookId: uuid("book_id").notNull(),
-	category: highlightCategory().notNull(),
+	name: text().notNull(),
 	description: text(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdByProfileId: uuid("created_by_profile_id").notNull(),
 	updatedByProfileId: uuid("updated_by_profile_id").notNull(),
 }, (table) => [
-	unique("book_highlights_book_id_key").on(table.bookId),
-	index("book_highlights_category_idx").using("btree", table.category.asc().nullsLast().op("enum_ops")),
-	foreignKey({
-			columns: [table.bookId],
-			foreignColumns: [books.id],
-			name: "book_highlights_book_id_fkey"
-		}).onDelete("cascade"),
 	foreignKey({
 			columns: [table.createdByProfileId],
 			foreignColumns: [profiles.id],
-			name: "book_highlights_created_by_profile_id_fkey"
+			name: "highlight_categories_created_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	foreignKey({
 			columns: [table.updatedByProfileId],
 			foreignColumns: [profiles.id],
-			name: "book_highlights_updated_by_profile_id_fkey"
+			name: "highlight_categories_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
-	pgPolicy("Authenticated users can view book highlights", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
-	pgPolicy("Coaches and admins can add book highlights", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`is_coach_or_admin()` }),
-	pgPolicy("Coaches and admins can update book highlights", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
-	pgPolicy("Coaches and admins can delete book highlights", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
+	pgPolicy("Authenticated users can view highlight categories", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Coaches and admins can add highlight categories", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`is_coach_or_admin()` }),
+	pgPolicy("Coaches and admins can update highlight categories", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
+	pgPolicy("Coaches and admins can delete highlight categories", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
 ]).enableRLS();
 
 export const bookTags = pgTable("book_tags", {

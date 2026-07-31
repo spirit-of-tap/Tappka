@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Eye, BookOpen, MessageCircle, Sparkles, Pin } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from './essay-vote-button';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
@@ -95,9 +96,12 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                 {essay.book ? (
-                  <>{essay.book.title_cs}</>
+                  <>
+                    {essay.book.title_cs}
+                    <BookStatusBadges book={essay.book} />
+                  </>
                 ) : (
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                     <Sparkles className="size-3" />

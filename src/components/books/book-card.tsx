@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { BookOpen, FileText, ExternalLink, Library } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StorageImage } from '@/components/storage/storage-image';
+import { BookStatusBadges } from './book-status-badges';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
 import type { BookWithProfiles } from '@/lib/books/types';
@@ -31,10 +32,11 @@ export function BookCard({ book, libraryInfo }: BookCardProps) {
       </Link>
 
       <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-        <Link href={`/knihovna/${book.id}`}>
+        <Link href={`/knihovna/${book.id}`} className="flex items-center gap-1.5">
           <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
             {book.title_cs}
           </p>
+          <BookStatusBadges book={book} />
         </Link>
         <p className="text-xs text-muted-foreground truncate">{book.author}</p>
 

@@ -1,30 +1,13 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import type { BookCopyStatus, BookLibraryInfo, BookLoanWithDetails, LibraryBookWithBook } from './types';
-import { tagNamesFromJoin } from '@/lib/books/tags';
-import type { BookWithProfiles } from '@/lib/books/types';
-
-interface BookQueryRow extends Omit<BookWithProfiles, 'tags' | 'essay_count'> {
-  essay_count?: number;
-  book_tags?: { tags: { name: string } | null }[] | null;
-}
-
-function mapBookRow(row: BookQueryRow): BookWithProfiles {
-  const { book_tags, essay_count, ...rest } = row;
-  return {
-    ...rest,
-    tags: tagNamesFromJoin(book_tags),
-    essay_count: essay_count ?? 0,
-  };
-}
+import { BOOK_JOIN_FIELDS, mapBookRow, type BookQueryRow } from '@/lib/books/row-mapper';
 
 const BOOK_SELECT = `
   *,
   book:books!inner(
     *,
-    created_by:profiles!created_by_profile_id(id, name, picture),
-    list_status_changed_by:profiles!list_status_changed_by_profile_id(id, name),
-    book_tags(tags(name))
+    ${BOOK_JOIN_FIELDS}
   )
 `;
 
@@ -234,9 +217,7 @@ export async function getMyLoans(
         *,
         book:books!inner(
           *,
-          created_by:profiles!created_by_profile_id(id, name, picture),
-          list_status_changed_by:profiles!list_status_changed_by_profile_id(id, name),
-          book_tags(tags(name))
+          ${BOOK_JOIN_FIELDS}
         )
       )
     `)

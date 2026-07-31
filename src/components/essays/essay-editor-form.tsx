@@ -11,9 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { formatPoints } from '@/lib/books/points';
-import type { Book } from '@/lib/books/types';
+import type { Book, HighlightCategory } from '@/lib/books/types';
 import type { EssayWithDetails } from '@/lib/essays/types';
+
+/** `/api/books/search` returns `BookWithProfiles`-shaped rows; the raw `Book` type is missing the joined highlight_category. */
+type BookSearchResult = Book & { highlight_category: HighlightCategory | null };
 
 interface EssayEditorFormProps {
   initialEssay?: EssayWithDetails;
@@ -26,9 +30,9 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     json: initialEssay?.content_json ?? {},
     text: initialEssay?.content_text ?? '',
   });
-  const [selectedBook, setSelectedBook] = useState<Book | null>(initialEssay?.book as Book | null ?? null);
+  const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(initialEssay?.book as BookSearchResult | null ?? null);
   const [bookQuery, setBookQuery] = useState('');
-  const [bookResults, setBookResults] = useState<Book[]>([]);
+  const [bookResults, setBookResults] = useState<BookSearchResult[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [essayId] = useState<string | null>(initialEssay?.id ?? null);
 
@@ -117,7 +121,10 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="mb-0.5 text-xs text-muted-foreground">Zdroj</p>
-              <p className="truncate text-sm font-medium">{selectedBook.title_cs}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="truncate text-sm font-medium">{selectedBook.title_cs}</p>
+                <BookStatusBadges book={selectedBook} />
+              </div>
               <p className="truncate text-xs text-muted-foreground">{selectedBook.author}</p>
             </div>
             {selectedBook.list_status !== 'archived' && (
@@ -161,7 +168,10 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{book.title_cs}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-sm font-medium">{book.title_cs}</p>
+                        <BookStatusBadges book={book} />
+                      </div>
                       <p className="truncate text-xs text-muted-foreground">{book.author}</p>
                     </div>
                     {book.list_status !== 'archived' && (

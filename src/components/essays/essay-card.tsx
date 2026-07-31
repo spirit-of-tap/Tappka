@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from './essay-vote-button';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
@@ -63,6 +64,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
               <>
                 <BookOpen className="size-3 shrink-0" />
                 <span className="truncate">{essay.book.title_cs}</span>
+                <BookStatusBadges book={essay.book} />
                 {essay.book.list_status !== 'archived' && pointsNumber(essay.book.book_points) > 0 && (
                   <span className="shrink-0 ml-auto font-medium text-foreground">{formatPoints(essay.book.book_points)} b.</span>
                 )}

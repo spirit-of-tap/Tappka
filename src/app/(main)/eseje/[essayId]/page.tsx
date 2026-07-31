@@ -19,6 +19,7 @@ import { PageShell } from '@/components/ui/page-shell';
 import { BackButton } from '@/components/essays/back-button';
 import { ProfilePicture } from '@/components/profile-picture';
 import { formatPoints } from '@/lib/books/points';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 
 interface PageProps {
   params: Promise<{ essayId: string }>;
@@ -146,7 +147,10 @@ export default async function EssayDetailPage({ params }: PageProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground mb-0.5">Zdroj</p>
-              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{essay.book.title_cs}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{essay.book.title_cs}</p>
+                <BookStatusBadges book={essay.book} />
+              </div>
               <p className="text-xs text-muted-foreground truncate">{essay.book.author}</p>
             </div>
             {essay.book.list_status !== 'archived' && (

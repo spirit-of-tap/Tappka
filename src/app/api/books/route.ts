@@ -16,12 +16,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const tags = searchParams.getAll('tag');
     const rawStatus = searchParams.get('status');
-    const status = rawStatus && (['processing', 'shortlist', 'longlist', 'archived'] as string[]).includes(rawStatus)
+    const searchAll = searchParams.get('status') === 'all';
+    const status = !searchAll && rawStatus && (['processing', 'shortlist', 'longlist', 'archived'] as string[]).includes(rawStatus)
       ? rawStatus as BookListStatus
       : null;
     const filters: BookFilters = {
       listStatus: status ?? undefined,
-      listStatuses: status ? undefined : ['shortlist', 'longlist'],
+      listStatuses: searchAll ? undefined : (status ? undefined : ['shortlist', 'longlist']),
       search: searchParams.get('q') ?? undefined,
       tags: tags.length ? tags : undefined,
       sortBy: (searchParams.get('sort') === 'popular' ? 'popular' : undefined),

@@ -12,7 +12,7 @@ interface LoadMoreEssaysProps {
   view: 'vse' | 'moje' | 'tym';
   teamId?: string;
   q?: string;
-  sort?: 'recent' | 'week' | 'best';
+  sort?: 'recent' | 'month' | 'best';
   tag?: string;
   showVoteButton?: boolean;
 }
