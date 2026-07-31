@@ -30,7 +30,7 @@ export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
-          <Link href="/prehled" className="space-y-1 rounded-lg p-2 -m-2 transition-colors hover:bg-muted/50">
+          <Link href="/cteni/prehled" className="space-y-1 rounded-lg p-2 -m-2 transition-colors hover:bg-muted/50">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <BookOpen className="size-3.5" />
               Knižní body

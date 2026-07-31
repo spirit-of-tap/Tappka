@@ -26,10 +26,10 @@ describe("ReadingProgressCard", () => {
     expect(screen.getByText("Zatím žádné eseje")).toBeInTheDocument();
   });
 
-  it("renders a link to /prehled", () => {
+  it("renders a link to /cteni/prehled", () => {
     render(<ReadingProgressCard stats={stats} />);
     const link = screen.getByRole("link", { name: /Přehled/ });
-    expect(link).toHaveAttribute("href", "/prehled");
+    expect(link).toHaveAttribute("href", "/cteni/prehled");
   });
 
   it("renders PersonalProgress with correct points", () => {
