@@ -63,7 +63,7 @@ export default async function BookDetailPage({ params }: PageProps) {
       {/* Top bar */}
       <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" asChild className="gap-2 -ml-2">
-          <Link href="/hledat">
+          <Link href="/cteni/hledat">
             <ArrowLeft className="size-4" />
             Zpět do hledání
           </Link>

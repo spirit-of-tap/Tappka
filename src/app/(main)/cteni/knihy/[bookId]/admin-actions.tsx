@@ -52,7 +52,7 @@ export function BookAdminActions({
     try {
       const res = await fetch(`/api/books/${bookId}`, { method: "DELETE" });
       if (res.ok) {
-        router.push("/knihovna");
+        router.push("/cteni/hledat");
       } else {
         const json = await res.json().catch(() => ({}));
         setError(json.error ?? `Chyba ${res.status}`);
@@ -91,7 +91,7 @@ export function BookAdminActions({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href={`/knihovna/${bookId}/upravit`} className="flex items-center gap-2">
+                <Link href={`/cteni/knihy/${bookId}/upravit`} className="flex items-center gap-2">
                   <Pencil className="size-4" />
                   Upravit
                 </Link>

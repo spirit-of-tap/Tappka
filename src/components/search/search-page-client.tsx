@@ -275,7 +275,7 @@ function TopPicksCard({ groups }: { groups: HighlightedGroup[] }) {
           ))}
         </div>
         <Link
-          href="/knihovna/top-bob"
+          href="/cteni/knihy/top-bob"
           className="mt-auto inline-flex items-center gap-1 self-start text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400"
         >
           Zobrazit celý výběr
@@ -299,7 +299,7 @@ function RocketModelCard({ books }: { books: BookWithProfiles[] }) {
           </p>
         </div>
         <Link
-          href="/knihovna/rocket-model"
+          href="/cteni/knihy/rocket-model"
           className="mt-auto inline-flex items-center gap-1 self-start text-sm font-semibold text-primary hover:underline"
         >
           Zobrazit knihy
@@ -477,7 +477,7 @@ function CategoryBestBooksSection({
                 {books.map((book) => (
                   <div key={book.id} className="flex gap-3 px-3 py-2.5 group">
                     <Link
-                      href={`/knihovna/${book.id}`}
+                      href={`/cteni/knihy/${book.id}`}
                       className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5"
                     >
                       {book.cover_path ? (
@@ -487,7 +487,7 @@ function CategoryBestBooksSection({
                       )}
                     </Link>
                     <div className="flex-1 min-w-0 py-0.5 space-y-1">
-                      <Link href={`/knihovna/${book.id}`}>
+                      <Link href={`/cteni/knihy/${book.id}`}>
                         <p className="font-medium text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
                           {book.title}
                         </p>
@@ -599,7 +599,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
             {books.map((book) => (
               <Link
                 key={book.id}
-                href={`/knihovna/${book.id}`}
+                href={`/cteni/knihy/${book.id}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
               >
                 <div className="shrink-0 w-8 h-11 rounded overflow-hidden bg-muted flex items-center justify-center">

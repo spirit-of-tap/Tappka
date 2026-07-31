@@ -130,7 +130,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
 
       {/* Book source */}
       {essay.book && (
-        <Link href={`/knihovna/${essay.book.id}`} className="group block mb-8">
+        <Link href={`/cteni/knihy/${essay.book.id}`} className="group block mb-8">
           <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors">
             <div className="shrink-0 w-9 h-12 rounded overflow-hidden bg-muted flex items-center justify-center">
               {essay.book.google_books_cover_url ? (

@@ -23,12 +23,12 @@ export default async function BookEditPage({ params }: PageProps) {
   ]);
 
   if (!book) notFound();
-  if (profile?.role !== 'coach' && profile?.role !== 'admin') redirect(`/knihovna/${bookId}`);
+  if (profile?.role !== 'coach' && profile?.role !== 'admin') redirect(`/cteni/knihy/${bookId}`);
 
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-2xl">
       <Button variant="ghost" asChild className="gap-2">
-        <Link href={`/knihovna/${bookId}`}>
+        <Link href={`/cteni/knihy/${bookId}`}>
           <ArrowLeft className="size-4" />
           Zpět na knihu
         </Link>

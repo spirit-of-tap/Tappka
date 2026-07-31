@@ -44,7 +44,7 @@ export function BookEditForm({ book, onSaved }: BookEditFormProps) {
         onSaved({ ...json.data, tags });
         return;
       }
-      router.push(`/knihovna/${book.id}`);
+      router.push(`/cteni/knihy/${book.id}`);
       router.refresh();
     } finally {
       setIsSaving(false);

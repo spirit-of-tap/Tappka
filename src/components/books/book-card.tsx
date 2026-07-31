@@ -17,7 +17,7 @@ export function BookCard({ book, libraryInfo }: BookCardProps) {
 
   return (
     <div className="flex gap-3 px-3 py-2.5 rounded-xl border bg-card hover:shadow-sm transition-shadow group">
-      <Link href={`/knihovna/${book.id}`} className="focus-ring shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+      <Link href={`/cteni/knihy/${book.id}`} className="focus-ring shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
         {book.google_books_cover_url ? (
           <StorageImage
             storageKey={book.google_books_cover_url}
@@ -32,7 +32,7 @@ export function BookCard({ book, libraryInfo }: BookCardProps) {
       </Link>
 
       <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-        <Link href={`/knihovna/${book.id}`} className="flex items-center gap-1.5">
+        <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5">
           <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
             {book.title_cs}
           </p>

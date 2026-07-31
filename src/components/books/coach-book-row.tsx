@@ -66,7 +66,7 @@ export function CoachProcessingRow({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <Link
-                href={`/knihovna/${book.id}`}
+                href={`/cteni/knihy/${book.id}`}
                 className="font-medium text-sm leading-snug hover:underline focus-ring"
               >
                 {book.title_cs}

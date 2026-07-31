@@ -15,7 +15,7 @@ export default async function RocketModelPage() {
   return (
     <PageShell size="wide" className="space-y-8">
       <Button variant="ghost" asChild className="-ml-2 gap-2">
-        <Link href="/hledat">
+        <Link href="/cteni/hledat">
           <ArrowLeft className="size-4" />
           Zpět do hledání
         </Link>
@@ -45,7 +45,7 @@ export default async function RocketModelPage() {
           {books.map((book) => (
             <div key={book.id} className="group flex gap-3 px-3 py-3">
               <Link
-                href={`/knihovna/${book.id}`}
+                href={`/cteni/knihy/${book.id}`}
                 className="mt-0.5 flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted"
               >
                 {book.google_books_cover_url ? (
@@ -61,7 +61,7 @@ export default async function RocketModelPage() {
                 )}
               </Link>
               <div className="min-w-0 flex-1 space-y-1 py-0.5">
-                <Link href={`/knihovna/${book.id}`} className="flex items-center gap-1.5">
+                <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5">
                   <p className="line-clamp-1 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
                     {book.title_cs}
                   </p>

@@ -52,7 +52,7 @@ export function BookRowHeader({
       <div className={cn('min-w-0', textClassName)}>
         <div className="flex items-center gap-1.5">
           <Link
-            href={`/knihovna/${book.id}`}
+            href={`/cteni/knihy/${book.id}`}
             className={cn('font-medium text-sm leading-snug hover:underline focus-ring', titleClassName)}
           >
             {book.title_cs}

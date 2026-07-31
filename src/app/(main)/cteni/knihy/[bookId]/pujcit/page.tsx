@@ -43,7 +43,7 @@ export default async function BorrowBookPage({ params }: PageProps) {
   return (
     <PageShell size="narrow" className="space-y-2">
       <Link
-        href={`/knihovna/${book.id}`}
+        href={`/cteni/knihy/${book.id}`}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />

@@ -21,7 +21,7 @@ export default async function TopBobPage() {
   return (
     <PageShell size="wide" className="space-y-8">
       <Button variant="ghost" asChild className="-ml-2 gap-2">
-        <Link href="/hledat">
+        <Link href="/cteni/hledat">
           <ArrowLeft className="size-4" />
           Zpět do hledání
         </Link>

@@ -8,7 +8,7 @@ export default function NovaKnihaPage() {
   return (
     <PageShell size="narrow">
       <Button variant="ghost" asChild className="gap-2">
-        <Link href="/hledat">
+        <Link href="/cteni/hledat">
           <ArrowLeft className="size-4" />
           Zpět do hledání
         </Link>
