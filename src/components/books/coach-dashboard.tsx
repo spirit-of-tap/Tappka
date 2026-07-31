@@ -11,6 +11,7 @@ import { DeleteBookDialog } from './delete-book-dialog';
 import { BookRowHeader } from './book-row-header';
 import { ListStatusBadge } from './book-status-badges';
 import { RocketModelManager } from './rocket-model-manager';
+import { LibraryImportScanner } from '@/components/library/library-import-scanner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
@@ -313,6 +314,9 @@ export function CoachDashboard({
           Raketový model
           {rocketModel.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{rocketModel.length}</Badge>}
         </TabsTrigger>
+        <TabsTrigger value="import" className="gap-2">
+          Import
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="processing" className="mt-4">
@@ -419,6 +423,10 @@ export function CoachDashboard({
           onAdd={handleAddRocketModel}
           onRemove={handleRemoveRocketModel}
         />
+      </TabsContent>
+
+      <TabsContent value="import" className="mt-4">
+        <LibraryImportScanner />
       </TabsContent>
     </Tabs>
   );
