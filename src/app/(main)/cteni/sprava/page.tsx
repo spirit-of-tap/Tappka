@@ -5,7 +5,7 @@ import { getProcessingBooks, getArchivedBooks, getHighlightedBooks, getShortlist
 import { CoachDashboard } from '@/components/books/coach-dashboard';
 import { PageShell } from '@/components/ui/page-shell';
 
-export default async function KnihaKnihSettingsPage() {
+export default async function SpravaKnihovnyPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
