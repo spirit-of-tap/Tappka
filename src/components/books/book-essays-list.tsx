@@ -29,14 +29,22 @@ export function BookEssaysList({ essays }: { essays: EssayWithDetails[] }) {
       {visible.map((essay) => (
         <Link
           key={essay.id}
-          href={`/eseje/${essay.id}`}
+          href={`/cteni/eseje/${essay.id}`}
           className="group focus-ring flex flex-col gap-1.5 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted sm:flex-row sm:items-center sm:gap-3"
         >
           <div className="flex min-w-0 items-center gap-3 sm:flex-1">
             <Avatar picture={essay.author?.picture} name={essay.author?.name} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium group-hover:text-primary">{essay.title}</p>
-              <p className="truncate text-xs text-muted-foreground">{essay.author?.name}</p>
+              <p className="flex items-baseline gap-1.5 text-xs text-muted-foreground">
+                <span className="shrink-0">{essay.author?.name}</span>
+                {essay.content_text && (
+                  <>
+                    <span className="shrink-0 text-muted-foreground/40">·</span>
+                    <span className="truncate">{essay.content_text}</span>
+                  </>
+                )}
+              </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-4 pl-10 text-xs text-muted-foreground tabular-nums sm:pl-0">

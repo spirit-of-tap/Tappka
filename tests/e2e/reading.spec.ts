@@ -8,26 +8,20 @@ import {
 } from "./fixtures/auth";
 
 test.describe("reading feature - unauthenticated", () => {
-  test("prehled page redirects to login when not authenticated", async ({ page }) => {
-    const response = await page.goto("/prehled");
+  test("cteni/prehled redirects to login when not authenticated", async ({ page }) => {
+    const response = await page.goto("/cteni/prehled");
     expect(response?.status()).toBeLessThan(400);
     await expect(page).toHaveURL(/\/auth\/login/);
   });
 
-  test("eseje page redirects to login when not authenticated", async ({ page }) => {
-    const response = await page.goto("/eseje");
+  test("cteni/eseje/nova redirects to login when not authenticated", async ({ page }) => {
+    const response = await page.goto("/cteni/eseje/nova");
     expect(response?.status()).toBeLessThan(400);
     await expect(page).toHaveURL(/\/auth\/login/);
   });
 
-  test("hledat page redirects to login when not authenticated", async ({ page }) => {
-    const response = await page.goto("/hledat");
-    expect(response?.status()).toBeLessThan(400);
-    await expect(page).toHaveURL(/\/auth\/login/);
-  });
-
-  test("knihovna page redirects to login when not authenticated", async ({ page }) => {
-    const response = await page.goto("/knihovna");
+  test("cteni/hledat redirects to login when not authenticated", async ({ page }) => {
+    const response = await page.goto("/cteni/hledat");
     expect(response?.status()).toBeLessThan(400);
     await expect(page).toHaveURL(/\/auth\/login/);
   });
@@ -45,28 +39,22 @@ test.describe("reading feature - authenticated", () => {
     await setAuthCookie(context, cookieValue);
   });
 
-  test("prehled page loads for authenticated user", async ({ page }) => {
-    const response = await page.goto("/prehled");
+  test("cteni/prehled page loads for authenticated user", async ({ page }) => {
+    const response = await page.goto("/cteni/prehled");
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test("eseje nova page loads for authenticated user", async ({ page }) => {
-    const response = await page.goto("/eseje/nova");
+  test("cteni/eseje/nova page loads for authenticated user", async ({ page }) => {
+    const response = await page.goto("/cteni/eseje/nova");
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test("hledat page loads for authenticated user", async ({ page }) => {
-    const response = await page.goto("/hledat");
+  test("cteni/hledat page loads for authenticated user", async ({ page }) => {
+    const response = await page.goto("/cteni/hledat");
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).toBeVisible();
-  });
-
-  test("knihovna page redirects to /hledat for authenticated user", async ({ page }) => {
-    const response = await page.goto("/knihovna");
-    expect(response?.status()).toBeLessThan(400);
-    await expect(page).toHaveURL(/\/hledat/);
   });
 });
 
@@ -93,45 +81,45 @@ test.describe("reading navigation - arrow back", () => {
     await setAuthCookie(context, cookieValue);
   });
 
-  test("knihovna/nova - Zpět do knihovny navigates to /hledat", async ({ page }) => {
-    await page.goto("/knihovna/nova");
+  test("cteni/knihy/nova - Zpět do hledání navigates to /cteni/hledat", async ({ page }) => {
+    await page.goto("/cteni/knihy/nova");
     await expect(page.getByRole("link", { name: /zpět/i })).toBeVisible();
     await page.getByRole("link", { name: /zpět/i }).click();
-    await expect(page).toHaveURL(/\/hledat/);
+    await expect(page).toHaveURL(/\/cteni\/hledat/);
   });
 
-  test("knihovna/[bookId] - Zpět do knihovny navigates to /hledat", async ({ page }) => {
-    await page.goto(`/knihovna/${bookId}`);
+  test("cteni/knihy/[bookId] - Zpět do hledání navigates to /cteni/hledat", async ({ page }) => {
+    await page.goto(`/cteni/knihy/${bookId}`);
     await expect(page.getByRole("link", { name: /zpět/i })).toBeVisible();
     await page.getByRole("link", { name: /zpět/i }).click();
-    await expect(page).toHaveURL(/\/hledat/);
+    await expect(page).toHaveURL(/\/cteni\/hledat/);
   });
 
-  test("eseje/nova - Zpět (router.back) navigates back", async ({ page }) => {
-    await page.goto("/hledat");
-    const response = await page.goto("/eseje/nova");
+  test("cteni/eseje/nova - Zpět (router.back) navigates back", async ({ page }) => {
+    await page.goto("/cteni/hledat");
+    const response = await page.goto("/cteni/eseje/nova");
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).toBeVisible();
     await expect(page.locator("text=Zpět").first()).toBeVisible({ timeout: 10000 });
     await page.locator("text=Zpět").first().click();
-    await expect(page).toHaveURL(/\/hledat/);
+    await expect(page).toHaveURL(/\/cteni\/hledat/);
   });
 
-  test("eseje/[essayId] - Zpět (router.back) navigates back", async ({ page }) => {
-    await page.goto("/hledat");
-    const response = await page.goto(`/eseje/${essayId}`);
+  test("cteni/eseje/[essayId] - Zpět (router.back) navigates back", async ({ page }) => {
+    await page.goto("/cteni/hledat");
+    const response = await page.goto(`/cteni/eseje/${essayId}`);
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).toBeVisible();
     await expect(page.locator("text=Zpět").first()).toBeVisible({ timeout: 10000 });
     await page.locator("text=Zpět").first().click();
-    await expect(page).toHaveURL(/\/hledat/);
+    await expect(page).toHaveURL(/\/cteni\/hledat/);
   });
 
-  test("eseje/[essayId]/upravit - Zpět na esej navigates to essay", async ({ page }) => {
-    await page.goto(`/eseje/${essayId}/upravit`);
+  test("cteni/eseje/[essayId]/upravit - Zpět na esej navigates to essay", async ({ page }) => {
+    await page.goto(`/cteni/eseje/${essayId}/upravit`);
     await expect(page.getByRole("link", { name: /zpět/i })).toBeVisible();
     await page.getByRole("link", { name: /zpět/i }).click();
-    await expect(page).toHaveURL(new RegExp(`/eseje/${essayId}$`));
+    await expect(page).toHaveURL(new RegExp(`/cteni/eseje/${essayId}$`));
   });
 });
 

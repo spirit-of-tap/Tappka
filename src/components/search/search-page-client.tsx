@@ -2,21 +2,33 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, PenLine, ExternalLink, Sparkles } from 'lucide-react';
+import { Search, BookOpen, PenLine, ExternalLink, Sparkles, Rocket, Medal, ArrowRight, BadgeCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { PageShell } from '@/components/ui/page-shell';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { BookCard } from '@/components/books/book-card';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 import { formatPoints, formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
 import type { EssayWithDetails } from '@/lib/essays/types';
-import type { BookWithProfiles } from '@/lib/books/types';
+import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
+import type { HighlightedGroup } from '@/lib/books/highlight-groups';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
-type BookResult = { id: string; title_cs: string; author: string; google_books_cover_url: string | null };
+type BookResult = {
+  id: string;
+  title_cs: string;
+  author: string;
+  google_books_cover_url: string | null;
+  in_library: boolean;
+  list_status: BookListStatus;
+  is_rocket_model: boolean;
+  highlight_category: HighlightCategory | null;
+};
 type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
 type TeamMember = { profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
 type TeamWithMembers = { id: string; name: string; members: TeamMember[] };
@@ -25,18 +37,23 @@ interface SearchPageClientProps {
   popularEssays: EssayWithVoted[];
   categoryBestBooks: Record<string, CategoryBook[]>;
   teamsWithMembers: TeamWithMembers[];
+  rocketModelBooks: BookWithProfiles[];
+  highlightedByCategory: HighlightedGroup[];
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
 const FINE_POINTER_QUERY = '(pointer: fine)';
 
-export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMembers }: SearchPageClientProps) {
+export function SearchPageClient({
+  popularEssays, categoryBestBooks, teamsWithMembers, rocketModelBooks, highlightedByCategory,
+}: SearchPageClientProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryBooks, setCategoryBooks] = useState<(BookWithProfiles & { essay_count?: number })[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [libraryFilterEnabled, setLibraryFilterEnabled] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -69,11 +86,17 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
   useEffect(() => {
     if (!selectedCategory) { setCategoryBooks([]); return; }
     setCategoryLoading(true);
-    fetch(`/api/books?tag=${encodeURIComponent(selectedCategory)}&sort=popular&page_size=40`)
+    const params = new URLSearchParams({
+      tag: selectedCategory,
+      sort: 'popular',
+      page_size: '40',
+    });
+    if (libraryFilterEnabled) params.set('library_only', 'true');
+    fetch(`/api/books?${params}`)
       .then((r) => r.json())
       .then(({ data }) => setCategoryBooks(data ?? []))
       .finally(() => setCategoryLoading(false));
-  }, [selectedCategory]);
+  }, [selectedCategory, libraryFilterEnabled]);
 
   const hasQuery = query.trim().length > 0;
   const toggleCategory = (key: string) => setSelectedCategory((prev) => (prev === key ? null : key));
@@ -117,6 +140,19 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
         </div>
       )}
 
+      {/* Library filter checkbox */}
+      {!hasQuery && selectedCategory && (
+        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer py-1">
+          <input
+            type="checkbox"
+            checked={libraryFilterEnabled}
+            onChange={(e) => setLibraryFilterEnabled(e.target.checked)}
+            className="rounded border-border accent-primary"
+          />
+          Pouze knihy v TAP Knihovně
+        </label>
+      )}
+
       {/* Content */}
       <div className="space-y-10">
         {hasQuery ? (
@@ -136,6 +172,8 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
             popularEssays={popularEssays}
             categoryBestBooks={categoryBestBooks}
             teamsWithMembers={teamsWithMembers}
+            rocketModelBooks={rocketModelBooks}
+            highlightedByCategory={highlightedByCategory}
             onSelectCategory={toggleCategory}
           />
         )}
@@ -147,11 +185,13 @@ export function SearchPageClient({ popularEssays, categoryBestBooks, teamsWithMe
 // ─── Discovery ────────────────────────────────────────────────────────────────
 
 function DiscoveryView({
-  popularEssays, categoryBestBooks, teamsWithMembers, onSelectCategory,
+  popularEssays, categoryBestBooks, teamsWithMembers, rocketModelBooks, highlightedByCategory, onSelectCategory,
 }: {
   popularEssays: EssayWithVoted[];
   categoryBestBooks: Record<string, CategoryBook[]>;
   teamsWithMembers: TeamWithMembers[];
+  rocketModelBooks: BookWithProfiles[];
+  highlightedByCategory: HighlightedGroup[];
   onSelectCategory: (key: string) => void;
 }) {
   return (
@@ -159,7 +199,7 @@ function DiscoveryView({
       {popularEssays.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-base">Populární tento týden</h2>
+            <h2 className="font-semibold text-base">Populární tento měsíc</h2>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {popularEssays.map((essay) => (
@@ -167,6 +207,13 @@ function DiscoveryView({
             ))}
           </div>
         </section>
+      )}
+
+      {(highlightedByCategory.length > 0 || rocketModelBooks.length > 0) && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {highlightedByCategory.length > 0 && <TopPicksCard groups={highlightedByCategory} />}
+          {rocketModelBooks.length > 0 && <RocketModelCard books={rocketModelBooks} />}
+        </div>
       )}
 
       {teamsWithMembers.length > 0 && (
@@ -183,10 +230,90 @@ function DiscoveryView({
   );
 }
 
+/** Small pill of stacked icon + eyebrow label, shared by the two invite cards below. */
+function InviteCardEyebrow({ icon: Icon, label, tone }: { icon: React.ElementType; label: string; tone: 'amber' | 'primary' }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={cn(
+        'flex size-8 shrink-0 items-center justify-center rounded-full',
+        tone === 'amber' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-primary/15 text-primary',
+      )}>
+        <Icon className="size-4" />
+      </span>
+      <span className={cn(
+        'text-[11px] font-semibold uppercase tracking-wide',
+        tone === 'amber' ? 'text-amber-700 dark:text-amber-400' : 'text-primary',
+      )}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function TopPicksCard({ groups }: { groups: HighlightedGroup[] }) {
+  const totalBooks = groups.reduce((sum, g) => sum + g.books.length, 0);
+
+  return (
+    <section className="rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-background to-background p-5 dark:border-amber-900/40 dark:from-amber-950/20">
+      <div className="flex h-full flex-col gap-3">
+        <InviteCardEyebrow icon={Medal} label="Doporučení koučů a komunity" tone="amber" />
+        <div className="space-y-1.5">
+          <h2 className="text-lg font-bold leading-snug">TOP BOB</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Zlato celé knihovny — {totalBooks} knih, na kterých se shodli kouči i komunita.
+            Když nevíš, co číst dál, začni tady: tady nešlápneš vedle.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {groups.map(({ category, books }) => (
+            <span
+              key={category.id}
+              className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-300"
+            >
+              {category.name} <span className="opacity-70">· {books.length}</span>
+            </span>
+          ))}
+        </div>
+        <Link
+          href="/cteni/knihy/top-bob"
+          className="mt-auto inline-flex items-center gap-1 self-start text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400"
+        >
+          Zobrazit celý výběr
+          <ArrowRight className="size-3.5" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function RocketModelCard({ books }: { books: BookWithProfiles[] }) {
+  return (
+    <section className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background p-5">
+      <div className="flex h-full flex-col gap-3">
+        <InviteCardEyebrow icon={Rocket} label="Klíčové knihy programu" tone="primary" />
+        <div className="space-y-1.5">
+          <h2 className="text-lg font-bold leading-snug">Rocket Model</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {books.length} {books.length === 1 ? 'kniha klíčová' : books.length < 5 ? 'knihy klíčové' : 'knih klíčových'} pro
+            studijní program — pomáhají Téčkům v cestě na Tiimi.
+          </p>
+        </div>
+        <Link
+          href="/cteni/knihy/rocket-model"
+          className="mt-auto inline-flex items-center gap-1 self-start text-sm font-semibold text-primary hover:underline"
+        >
+          Zobrazit knihy
+          <ArrowRight className="size-3.5" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; initialVoted: boolean }) {
   return (
     <div className="shrink-0 w-52 rounded-xl border bg-card hover:shadow-md transition-shadow group flex flex-col p-3 gap-2.5">
-      <Link href={`/eseje/${essay.id}`} className="flex gap-2.5">
+      <Link href={`/cteni/eseje/${essay.id}`} className="flex gap-2.5">
         {/* Small portrait cover — at this size low-res thumbnails look fine */}
         <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
           {essay.book?.google_books_cover_url ? (
@@ -328,77 +455,83 @@ function CategoryBestBooksSection({
   if (entries.length === 0) return null;
 
   return (
-    <div className="space-y-8">
-      {entries.map(([key, label]) => {
-        const books = categoryBestBooks[key];
-        const totalEssays = books.reduce((s, b) => s + b.essay_count, 0);
-        return (
-          <section key={key} className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-base">{label}</h2>
-              {totalEssays > 0 && (
-                <span className="text-xs text-muted-foreground">{totalEssays} esejí</span>
-              )}
-            </div>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <BadgeCheck className="size-4 text-blue-500 dark:text-blue-400" />
+        <h2 className="font-semibold text-base">Ověřené knihy podle kategorie</h2>
+      </div>
+      <div className="space-y-8">
+        {entries.map(([key, label]) => {
+          const books = categoryBestBooks[key];
+          const totalEssays = books.reduce((s, b) => s + b.essay_count, 0);
+          return (
+            <section key={key} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-base">{label}</h2>
+                {totalEssays > 0 && (
+                  <span className="text-xs text-muted-foreground">{totalEssays} esejí</span>
+                )}
+              </div>
 
-            <div className="divide-y rounded-xl border overflow-hidden bg-card">
-              {books.map((book) => (
-                <div key={book.id} className="flex gap-3 px-3 py-2.5 group">
-                  <Link
-                    href={`/knihovna/${book.id}`}
-                    className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5"
-                  >
-                    {book.cover_path ? (
-                      <StorageImage storageKey={book.cover_path} alt={book.title} width={40} height={56} className="w-full h-full object-cover" />
-                    ) : (
-                      <BookOpen className="size-3.5 text-muted-foreground/30" />
-                    )}
-                  </Link>
-                  <div className="flex-1 min-w-0 py-0.5 space-y-1">
-                    <Link href={`/knihovna/${book.id}`}>
-                      <p className="font-medium text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
-                        {book.title}
-                      </p>
+              <div className="divide-y rounded-xl border overflow-hidden bg-card">
+                {books.map((book) => (
+                  <div key={book.id} className="flex gap-3 px-3 py-2.5 group">
+                    <Link
+                      href={`/cteni/knihy/${book.id}`}
+                      className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5"
+                    >
+                      {book.cover_path ? (
+                        <StorageImage storageKey={book.cover_path} alt={book.title} width={40} height={56} className="w-full h-full object-cover" />
+                      ) : (
+                        <BookOpen className="size-3.5 text-muted-foreground/30" />
+                      )}
                     </Link>
-                    {book.description && (
-                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{book.description}</p>
-                    )}
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="font-medium">{formatPointsWithLabel(book.book_points)}</span>
-                      {book.essay_count > 0 && (
-                        <>
-                          <span className="text-muted-foreground/40">·</span>
-                          <span className="text-muted-foreground">{book.essay_count} esejí</span>
-                        </>
+                    <div className="flex-1 min-w-0 py-0.5 space-y-1">
+                      <Link href={`/cteni/knihy/${book.id}`}>
+                        <p className="font-medium text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+                          {book.title}
+                        </p>
+                      </Link>
+                      {book.description && (
+                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{book.description}</p>
                       )}
-                      {book.preview_link && (
-                        <a
-                          href={book.preview_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="ml-auto flex items-center gap-0.5 text-primary hover:underline"
-                        >
-                          <ExternalLink className="size-3" />Náhled
-                        </a>
-                      )}
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-medium">{formatPointsWithLabel(book.book_points)}</span>
+                        {book.essay_count > 0 && (
+                          <>
+                            <span className="text-muted-foreground/40">·</span>
+                            <span className="text-muted-foreground">{book.essay_count} esejí</span>
+                          </>
+                        )}
+                        {book.preview_link && (
+                          <a
+                            href={book.preview_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="ml-auto flex items-center gap-0.5 text-primary hover:underline"
+                          >
+                            <ExternalLink className="size-3" />Náhled
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div className="flex justify-end">
-              <button
-                onClick={() => onSelectCategory(key)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Zobrazit vše →
-              </button>
-            </div>
-          </section>
-        );
-      })}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => onSelectCategory(key)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Zobrazit vše →
+                </button>
+              </div>
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -466,7 +599,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
             {books.map((book) => (
               <Link
                 key={book.id}
-                href={`/knihovna/${book.id}`}
+                href={`/cteni/knihy/${book.id}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
               >
                 <div className="shrink-0 w-8 h-11 rounded overflow-hidden bg-muted flex items-center justify-center">
@@ -477,9 +610,17 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{book.title_cs}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium truncate">{book.title_cs}</p>
+                    <BookStatusBadges book={book} />
+                  </div>
                   <p className="text-xs text-muted-foreground truncate">{book.author}</p>
                 </div>
+                {book.in_library && (
+                  <Badge variant="default" className="text-[11px] px-2.5 py-1">
+                    V TAPu
+                  </Badge>
+                )}
               </Link>
             ))}
           </div>
@@ -495,7 +636,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
             {essays.map((essay) => (
               <Link
                 key={essay.id}
-                href={`/eseje/${essay.id}`}
+                href={`/cteni/eseje/${essay.id}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group"
               >
                 <div className="shrink-0 size-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-semibold overflow-hidden">

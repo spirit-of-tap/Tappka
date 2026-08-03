@@ -5,6 +5,12 @@ export interface EssayEmailContext {
   commentBody?: string;
 }
 
+export interface BookLoanEmailContext {
+  bookTitle: string;
+  dueDate: string;
+  loansUrl: string;
+}
+
 export interface EmailContent {
   subject: string;
   html: string;
@@ -127,6 +133,34 @@ export function voteEmail(ctx: EssayEmailContext): EmailContent {
       </p>
       <div style="margin:32px 0;">
         ${ctaButton(ctx.essayUrl, 'Zobrazit esej')}
+      </div>
+    `),
+  };
+}
+
+export function bookLoanEmail(ctx: BookLoanEmailContext): EmailContent {
+  return {
+    subject: `Vypůjčil/a sis „${ctx.bookTitle}“`,
+    html: brandWrapper(`
+      <div style="text-align:center;margin:0 0 24px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background-color:#f9f5f0;font-size:32px;line-height:1;">📚</span>
+      </div>
+      <h2 style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:600;color:#2c1a1d;line-height:1.3;text-align:center;">
+        Kniha vypůjčena
+      </h2>
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;text-align:center;">
+        Vypůjčil/a sis <strong>„${ctx.bookTitle}“</strong> z TAP Knihovny.
+      </p>
+      <div style="margin:28px 0;padding:20px 24px;background-color:#f9f5f0;border-radius:8px;text-align:center;">
+        <p style="margin:0 0 4px;font-size:12px;font-weight:500;color:#2c1a1d;opacity:0.6;text-transform:uppercase;letter-spacing:0.5px;">
+          Vrať do
+        </p>
+        <p style="margin:0;font-size:22px;font-weight:700;font-family:'Poppins',Arial,sans-serif;color:#b31b1b;">
+          ${ctx.dueDate}
+        </p>
+      </div>
+      <div style="margin:32px 0 0;">
+        ${ctaButton(ctx.loansUrl, 'Zobrazit moje výpůjčky')}
       </div>
     `),
   };

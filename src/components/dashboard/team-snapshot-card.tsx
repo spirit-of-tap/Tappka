@@ -33,7 +33,7 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
         <CardDescription>Nejlepší čtenáři podle BookPoints</CardDescription>
         <CardAction>
           <Link
-            href="/prehled?tab=tym"
+            href="/cteni/prehled?tab=tym"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
           >
             Celý tým

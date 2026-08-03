@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CoachReadButton } from './coach-read-button';
 import { ProfilePicture } from '@/components/profile-picture';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
 interface CoachReviewListProps {
@@ -96,7 +97,7 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
   return (
     <Card className="py-0">
       <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
-        <Link href={`/eseje/${essay.id}`} className="group flex-1 min-w-0 space-y-2">
+        <Link href={`/cteni/eseje/${essay.id}`} className="group flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2">
             {essay.author?.picture ? (
               <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover shrink-0" />
@@ -122,6 +123,7 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
               <>
                 <BookOpen className="size-3 shrink-0" />
                 <span className="truncate">{essay.book.title_cs}</span>
+                <BookStatusBadges book={essay.book} />
               </>
             ) : (
               <>

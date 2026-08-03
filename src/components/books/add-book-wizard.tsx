@@ -69,11 +69,11 @@ export function AddBookWizard() {
       });
       const json = await res.json();
       if (res.status === 409 && json.existingId) {
-        router.push(`/knihovna/${json.existingId}`);
+        router.push(`/cteni/knihy/${json.existingId}`);
         return;
       }
       if (json.data?.id) {
-        router.push(`/knihovna/${json.data.id}`);
+        router.push(`/cteni/knihy/${json.data.id}`);
       }
     } finally {
       setIsSubmitting(false);
@@ -104,7 +104,7 @@ export function AddBookWizard() {
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Nalezeno v katalogu:</p>
               {localResults.map((book) => (
-                <Card key={book.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push(`/knihovna/${book.id}`)}>
+                <Card key={book.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => router.push(`/cteni/knihy/${book.id}`)}>
                   <CardContent className="p-3 flex justify-between items-center">
                     <div>
                       <p className="font-medium text-sm">{book.title_cs}</p>
@@ -167,7 +167,7 @@ export function AddBookWizard() {
                   {existing ? (
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">Již v katalogu</span>
-                      <Button size="sm" variant="outline" onClick={() => router.push(`/knihovna/${existing.id}`)}>
+                      <Button size="sm" variant="outline" onClick={() => router.push(`/cteni/knihy/${existing.id}`)}>
                         Zobrazit
                       </Button>
                     </div>

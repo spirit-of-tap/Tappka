@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from './essay-vote-button';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
@@ -18,7 +19,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
 
   return (
-    <Link href={`/eseje/${essay.id}`} className="group block h-full">
+    <Link href={`/cteni/eseje/${essay.id}`} className="group block h-full">
       <Card className="h-full transition-all group-hover:shadow-md group-hover:border-border/80 py-0">
         <CardContent className="px-4 py-3 flex flex-col h-full gap-2">
 
@@ -63,10 +64,11 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
               <>
                 <BookOpen className="size-3 shrink-0" />
                 <span className="truncate">{essay.book.title_cs}</span>
-                {essay.book.status === 'approved' && pointsNumber(essay.book.book_points) > 0 && (
+                <BookStatusBadges book={essay.book} />
+                {essay.book.list_status !== 'archived' && pointsNumber(essay.book.book_points) > 0 && (
                   <span className="shrink-0 ml-auto font-medium text-foreground">{formatPoints(essay.book.book_points)} b.</span>
                 )}
-                {essay.book.status === 'rejected' && (
+                {essay.book.list_status === 'archived' && (
                   <span className="shrink-0 ml-auto text-destructive">0 b.</span>
                 )}
               </>

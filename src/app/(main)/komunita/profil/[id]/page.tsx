@@ -11,6 +11,7 @@ import { ProfilePictureSection } from '@/components/komunita/profile-picture-sec
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { StorageImage } from '@/components/storage/storage-image';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/ui/page-shell';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
@@ -183,7 +184,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                     const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
                     return (
                       <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
-                        <Link href={`/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5">
+                        <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5">
                           {essay.book!.google_books_cover_url ? (
                             <StorageImage storageKey={essay.book!.google_books_cover_url} alt={essay.book!.title_cs} width={44} height={60} className="w-full h-full object-cover" />
                           ) : (
@@ -191,14 +192,15 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                           )}
                         </Link>
                         <div className="flex-1 min-w-0 space-y-1">
-                          <Link href={`/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
+                          <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
                             {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
                             <span className="font-semibold text-sm leading-snug truncate group-hover:text-primary transition-colors">
                               {essay.title}
                             </span>
                           </Link>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
                             {essay.book!.title_cs}
+                            <BookStatusBadges book={essay.book!} />
                             {pointsNumber(essay.book!.book_points) > 0 && <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(essay.book!.book_points)}</span>}
                           </p>
                           {excerpt && excerpt.length > 20 && (
@@ -232,11 +234,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                       const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
                       return (
                         <div key={essay.id} className="flex gap-3 rounded-xl border border-warning/20 bg-warning/10 px-3.5 py-3 group hover:shadow-sm transition-shadow">
-                          <Link href={`/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-warning/10 flex items-center justify-center mt-0.5">
+                          <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-warning/10 flex items-center justify-center mt-0.5">
                             <Sparkles className="size-4 text-warning/40" />
                           </Link>
                           <div className="flex-1 min-w-0 space-y-1">
-                            <Link href={`/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
+                            <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
                               {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
                               <span className="font-semibold text-sm leading-snug truncate group-hover:text-warning-strong transition-colors">
                                 {essay.title}

@@ -1,5 +1,5 @@
 import type { Profile } from '@/lib/auth-helpers';
-import type { Book } from '@/lib/books/types';
+import type { Book, HighlightCategory } from '@/lib/books/types';
 
 /**
  * Application-facing essay shape. Title/content come from the latest valid
@@ -25,7 +25,9 @@ export interface Essay {
 
 export interface EssayWithDetails extends Essay {
   author: Pick<Profile, 'id' | 'name' | 'picture' | 'role'> | null;
-  book: Pick<Book, 'id' | 'title_cs' | 'author' | 'book_points' | 'status' | 'google_books_cover_url'> | null;
+  book: (Pick<Book, 'id' | 'title_cs' | 'author' | 'book_points' | 'list_status' | 'is_rocket_model' | 'google_books_cover_url'> & {
+    highlight_category: HighlightCategory | null;
+  }) | null;
   comment_count: number;
 }
 
@@ -71,7 +73,7 @@ export interface CoachReviewEssay extends EssayWithDetails {
 
 export type EssayListView = 'moje' | 'tym' | 'vse';
 
-export type EssaySortOrder = 'recent' | 'week' | 'best';
+export type EssaySortOrder = 'recent' | 'month' | 'best';
 
 export interface EssayFilters {
   view?: EssayListView;

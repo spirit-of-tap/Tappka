@@ -384,3 +384,19 @@ mark[data-color="orange"] { background-color: #fdba74; }
   .count-float { animation: count-up 0.5s ease-out forwards; }
   .particle { animation: particle 0.5s ease-out forwards; }
 }
+
+/* ── Book borrow success animation ────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes borrow-check-pop {
+    0%   { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes borrow-fade-up {
+    0%   { transform: translateY(8px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  .borrow-check-pop { animation: borrow-check-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  .borrow-fade-up { animation: borrow-fade-up 0.4s ease-out 0.15s both; }
+}

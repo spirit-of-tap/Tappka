@@ -8,6 +8,7 @@ import { PersonalProgress } from './personal-progress';
 import { MyEssayList } from './my-essay-list';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import type { EssayWithDetails } from '@/lib/essays/types';
+import { MyLoansList } from '@/components/library/my-loans-list';
 
 interface PrehledTabsProps {
   defaultTab: string;
@@ -24,6 +25,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
       <TabsList>
         <TabsTrigger value="moje">Moje</TabsTrigger>
         <TabsTrigger value="tym">Tým</TabsTrigger>
+        <TabsTrigger value="vypujcky">Výpůjčky</TabsTrigger>
       </TabsList>
 
       {/* Moje tab */}
@@ -33,7 +35,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-lg">Moje eseje</h2>
           <Button asChild size="sm">
-            <Link href="/eseje/nova">
+            <Link href="/cteni/eseje/nova">
               <Plus className="size-4 mr-1.5" />
               Psát
             </Link>
@@ -45,7 +47,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
             <FileText className="size-10 mx-auto text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Zatím žádné eseje. Napiš svou první!</p>
             <Button asChild>
-              <Link href="/eseje/nova">Napsat esej</Link>
+              <Link href="/cteni/eseje/nova">Napsat esej</Link>
             </Button>
           </div>
         ) : (
@@ -68,6 +70,11 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
             <TeamBookPointsChart stats={teamStats} />
           </div>
         )}
+      </TabsContent>
+
+      {/* Výpůjčky tab */}
+      <TabsContent value="vypujcky" className="mt-6">
+        <MyLoansList />
       </TabsContent>
     </Tabs>
   );

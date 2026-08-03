@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Eye, BookOpen, MessageCircle, Sparkles, Pin } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from './essay-vote-button';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
@@ -36,14 +37,14 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
           year: 'numeric',
         });
         const points = pointsNumber(essay.book?.book_points);
-        const hasPoints = essay.book?.status === 'approved' && points > 0;
-        const isRejected = essay.book?.status === 'rejected';
+        const hasPoints = essay.book?.list_status !== 'archived' && points > 0;
+        const isRejected = essay.book?.list_status === 'archived';
         const isTopic = !essay.book;
 
         return (
           <Link
             key={essay.id}
-            href={`/eseje/${essay.id}`}
+            href={`/cteni/eseje/${essay.id}`}
             className="group focus-ring flex items-start gap-4 py-4 hover:bg-muted/30 transition-colors rounded-lg px-2 -mx-2"
           >
             {/* Index — only for book essays */}
@@ -95,9 +96,12 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                 {essay.book ? (
-                  <>{essay.book.title_cs}</>
+                  <>
+                    {essay.book.title_cs}
+                    <BookStatusBadges book={essay.book} />
+                  </>
                 ) : (
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                     <Sparkles className="size-3" />

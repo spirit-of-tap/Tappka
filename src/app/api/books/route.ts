@@ -5,7 +5,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBooks } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
 import { downloadAndStoreCover } from '@/lib/storage/service';
-import type { CreateBookInput, BookFilters, BookStatus } from '@/lib/books/types';
+import type { CreateBookInput, BookFilters, BookListStatus } from '@/lib/books/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,14 +15,21 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const tags = searchParams.getAll('tag');
+    const rawStatus = searchParams.get('status');
+    const searchAll = searchParams.get('status') === 'all';
+    const status = !searchAll && rawStatus && (['processing', 'shortlist', 'longlist', 'archived'] as string[]).includes(rawStatus)
+      ? rawStatus as BookListStatus
+      : null;
     const filters: BookFilters = {
-      status: (searchParams.get('status') ?? 'approved') as BookStatus,
+      listStatus: status ?? undefined,
+      listStatuses: searchAll ? undefined : (status ? undefined : ['shortlist', 'longlist']),
       search: searchParams.get('q') ?? undefined,
       tags: tags.length ? tags : undefined,
       sortBy: (searchParams.get('sort') === 'popular' ? 'popular' : undefined),
       createdBy: searchParams.get('created_by') ?? searchParams.get('added_by') ?? undefined,
       page: searchParams.get('page') ? Number(searchParams.get('page')) : undefined,
       pageSize: searchParams.get('page_size') ? Number(searchParams.get('page_size')) : undefined,
+      libraryOnly: searchParams.get('library_only') === 'true',
     };
 
     const books = await getBooks(supabase, filters);

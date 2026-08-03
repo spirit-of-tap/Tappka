@@ -326,7 +326,7 @@ export async function seedBook(profileId: string): Promise<{ bookId: string }> {
     title: "E2E Test Book",
     author: "E2E Test Author",
     book_points: 1,
-    status: "approved",
+    list_status: "longlist",
     source: "manual",
     created_by_profile_id: profileId,
     updated_by_profile_id: profileId,

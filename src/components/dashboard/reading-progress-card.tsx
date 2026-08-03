@@ -31,7 +31,7 @@ export function ReadingProgressCard({ stats }: ReadingProgressCardProps) {
         </CardDescription>
         <CardAction>
           <Link
-            href="/prehled"
+            href="/cteni/prehled"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
           >
             Přehled
