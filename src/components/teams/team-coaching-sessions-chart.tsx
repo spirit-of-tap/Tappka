@@ -8,6 +8,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import {
+  MEMBER_CHART_NAME_WIDTH,
+  memberChartHeight,
+} from '@/lib/charts/member-chart-layout';
 import { shortName } from '@/lib/string-utils';
 import type { TeamMemberCoachingStats } from '@/lib/individual-coaching-sessions/queries';
 
@@ -31,12 +35,21 @@ export function TeamCoachingSessionsChart({ stats }: TeamCoachingSessionsChartPr
 
   return (
     <div className="space-y-4">
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-          <YAxis domain={[0, maxCount + 2]} tick={{ fontSize: 11 }} allowDecimals={false} />
+      <ResponsiveContainer width="100%" height={memberChartHeight(data.length)}>
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+        >
+          <XAxis type="number" domain={[0, maxCount + 2]} tick={{ fontSize: 11 }} allowDecimals={false} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={MEMBER_CHART_NAME_WIDTH}
+            tick={{ fontSize: 11 }}
+          />
           <Tooltip />
-          <Bar dataKey="Sezení" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Sezení" fill="#0ea5e9" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
