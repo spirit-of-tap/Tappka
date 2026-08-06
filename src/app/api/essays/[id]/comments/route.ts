@@ -33,9 +33,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const profile = await getCurrentUserProfile(supabase, { user });
     if (!profile) return NextResponse.json({ error: 'Profil nenalezen' }, { status: 403 });
 
-    const payload = (await request.json()) as { body?: unknown; parent_id?: unknown };
-    const body = payload.body;
-    const parent_id = payload.parent_id;
+    let payload: unknown;
+    try {
+      payload = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Neplatné tělo požadavku' }, { status: 400 });
+    }
+    const { body, parent_id } = (payload ?? {}) as { body?: unknown; parent_id?: unknown };
     if (typeof body !== 'string' || !body.trim()) {
       return NextResponse.json({ error: 'Text komentáře je povinný' }, { status: 400 });
     }
@@ -58,7 +62,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       .insert({
         essay_id: id,
         author_profile_id: profile.id,
-        parent_id: typeof parent_id === 'string' ? parent_id : null,
+        parent_id: typeof parent_id === 'string' && parent_id.trim() ? parent_id : null,
         body: body.trim(),
         created_by_profile_id: profile.id,
         updated_by_profile_id: profile.id,
