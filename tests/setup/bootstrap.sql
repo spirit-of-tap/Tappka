@@ -69,6 +69,14 @@ create table if not exists realtime.messages (
 create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true)
   returns void language sql as $$ select $$;
 
+-- stub matching realtime.topic(), used by the realtime.messages RLS policies.
+-- Upstream reads the topic of the current realtime connection from a GUC; no
+-- test opens one, so this returns NULL and those policies simply never match.
+create or replace function realtime.topic()
+  returns text language sql stable as $$
+  select nullif(current_setting('realtime.topic', true), '')
+$$;
+
 do $$ begin
   if not exists (select from pg_publication where pubname = 'supabase_realtime') then
     create publication supabase_realtime;

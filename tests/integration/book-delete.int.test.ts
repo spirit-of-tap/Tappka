@@ -42,12 +42,12 @@ async function seed(client: import("pg").PoolClient) {
   );
 
   const { rows: sourceBooks } = await client.query(
-    `insert into public.books (title, author, created_by_profile_id, updated_by_profile_id, list_status, book_points)
+    `insert into public.books (title_cs, author, created_by_profile_id, updated_by_profile_id, list_status, book_points)
      values ('Duplicate', 'Author', $1, $1, 'longlist', 2) returning id`,
     [coachProfiles[0].id],
   );
   const { rows: targetBooks } = await client.query(
-    `insert into public.books (title, author, created_by_profile_id, updated_by_profile_id, list_status, book_points)
+    `insert into public.books (title_cs, author, created_by_profile_id, updated_by_profile_id, list_status, book_points)
      values ('Original', 'Author', $1, $1, 'longlist', 2) returning id`,
     [coachProfiles[0].id],
   );
@@ -98,7 +98,7 @@ describe("reassign_essays_to_book", () => {
       const { coachAuthId, coachProfileId, targetBookId } = await seed(client);
 
       const { rows: emptyBooks } = await client.query(
-        `insert into public.books (title, author, created_by_profile_id, updated_by_profile_id)
+        `insert into public.books (title_cs, author, created_by_profile_id, updated_by_profile_id)
          values ('No Essays', 'Author', $1, $1) returning id`,
         [coachProfileId],
       );
