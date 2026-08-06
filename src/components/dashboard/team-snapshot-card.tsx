@@ -49,15 +49,22 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
         ) : (
           <ul className="space-y-3">
             {top.map((row, i) => (
-              <li key={row.profile.id} className="flex items-center gap-3">
-                <span className="w-4 text-sm tabular-nums text-muted-foreground">
-                  {i + 1}.
-                </span>
-                <ProfileAvatar picture={row.profile.picture} name={row.profile.name} size={28} />
-                <span className="flex-1 truncate text-sm">{row.profile.name}</span>
-                <span className="text-sm font-medium tabular-nums">
-                  {row.approved_points} b.
-                </span>
+              <li key={row.profile.id}>
+                <Link
+                  href={`/komunita/profil/${row.profile.id}`}
+                  className="group focus-ring flex items-center gap-3 rounded-md"
+                >
+                  <span className="w-4 text-sm tabular-nums text-muted-foreground">
+                    {i + 1}.
+                  </span>
+                  <ProfileAvatar picture={row.profile.picture} name={row.profile.name} size={28} />
+                  <span className="flex-1 truncate text-sm group-hover:underline underline-offset-4">
+                    {row.profile.name}
+                  </span>
+                  <span className="text-sm font-medium tabular-nums">
+                    {row.approved_points} b.
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
