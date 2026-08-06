@@ -121,6 +121,30 @@ export function commentEmail(ctx: EssayEmailContext): EmailContent {
   };
 }
 
+export function replyEmail(ctx: EssayEmailContext): EmailContent {
+  const commentQuote = ctx.commentBody
+    ? `<div style="margin:24px 0;padding:16px 20px;background-color:#f9f5f0;border-left:3px solid #b31b1b;border-radius:4px;font-size:15px;line-height:1.5;color:#2c1a1d;">
+      ${escapeHtml(ctx.commentBody)}
+    </div>`
+    : '';
+
+  return {
+    subject: `${ctx.actorName} odpov\u011bd\u011bl/a na tv\u016fj koment\u00e1\u0159 u eseje \u201e${ctx.essayTitle}\u201c`,
+    html: brandWrapper(`
+      <h2 style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:600;color:#2c1a1d;line-height:1.3;">
+        Nov\u00e1 odpov\u011b\u010f na koment\u00e1\u0159
+      </h2>
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
+        <strong>${ctx.actorName}</strong> odpov\u011bd\u011bl/a na tv\u016fj koment\u00e1\u0159 u eseje <strong>\u201e${ctx.essayTitle}\u201c</strong>:
+      </p>
+      ${commentQuote}
+      <div style="margin:32px 0;">
+        ${ctaButton(ctx.essayUrl, 'Zobrazit odpov\u011b\u010f')}
+      </div>
+    `),
+  };
+}
+
 export function voteEmail(ctx: EssayEmailContext): EmailContent {
   return {
     subject: `${ctx.actorName} dal/a like tv\u00e9 eseji \u201e${ctx.essayTitle}\u201c`,

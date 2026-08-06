@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayComments } from '@/lib/essays/queries';
-import { notifyEssayCommented } from '@/lib/notifications/essay-notifications';
+import { notifyEssayCommented, notifyEssayReplied } from '@/lib/notifications/essay-notifications';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -79,6 +79,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         origin: new URL(request.url).origin,
         commentBody: body.trim(),
       }).catch((err) => console.error('notifyEssayCommented failed:', err));
+
+      if (typeof parent_id === 'string' && parent_id.trim()) {
+        notifyEssayReplied(supabase, {
+          essayId: id,
+          parentId: parent_id,
+          actorProfileId: profile.id,
+          origin: new URL(request.url).origin,
+          replyBody: body.trim(),
+        }).catch((err) => console.error('notifyEssayReplied failed:', err));
+      }
     });
 
     return NextResponse.json({ data }, { status: 201 });

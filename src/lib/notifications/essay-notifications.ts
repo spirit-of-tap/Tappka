@@ -5,7 +5,7 @@ import { getEssayAuthorInfo } from '@/lib/essays/queries';
 import { getProfileById } from '@/lib/komunita/queries';
 
 import { sendEmail } from './send-email';
-import { coachReadEmail, commentEmail, voteEmail, type EmailContent, type EssayEmailContext } from './email-templates';
+import { coachReadEmail, commentEmail, replyEmail, voteEmail, type EmailContent, type EssayEmailContext } from './email-templates';
 
 export interface NotifyParams {
   essayId: string;
@@ -61,6 +61,57 @@ export async function notifyEssayCommented(
   params: NotifyParams,
 ): Promise<void> {
   await dispatchEssayNotification(supabase, params, 'essay_comment_email', commentEmail);
+}
+
+export interface NotifyReplyParams {
+  essayId: string;
+  parentId: string;
+  actorProfileId: string;
+  origin: string;
+  replyBody?: string;
+}
+
+export async function notifyEssayReplied(
+  supabase: SupabaseClient<Database>,
+  params: NotifyReplyParams,
+): Promise<void> {
+  const { essayId, parentId, actorProfileId, origin, replyBody } = params;
+
+  const essay = await getEssayAuthorInfo(supabase, essayId);
+  if (!essay) return;
+
+  const { data: parentComment } = await supabase
+    .from('essay_comments')
+    .select('author_profile_id')
+    .eq('id', parentId)
+    .is('removed_at', null)
+    .maybeSingle();
+  if (!parentComment) return;
+  if (parentComment.author_profile_id === actorProfileId) return;
+
+  const commentAuthorProfileId = parentComment.author_profile_id as string;
+
+  const [commentAuthor, actor, { data: preferencesRows, error: preferencesError }] = await Promise.all([
+    getProfileById(supabase, commentAuthorProfileId),
+    getProfileById(supabase, actorProfileId),
+    supabase.rpc('get_notification_preferences', { p_profile_id: commentAuthorProfileId }),
+  ]);
+
+  if (!commentAuthor?.work_email || !actor) return;
+  if (!commentAuthor.beta_access_granted_at) return;
+  if (preferencesError) throw preferencesError;
+
+  const preferences = preferencesRows?.[0];
+  if (preferences && preferences.essay_comment_email === false) return;
+
+  const { subject, html } = replyEmail({
+    essayTitle: essay.title,
+    essayUrl: `${origin}/cteni/eseje/${essay.id}`,
+    actorName: actor.name ?? 'Někdo',
+    commentBody: replyBody,
+  });
+
+  await sendEmail({ to: commentAuthor.work_email, subject, html });
 }
 
 export async function notifyEssayVoted(
