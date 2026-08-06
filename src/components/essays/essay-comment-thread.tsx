@@ -6,10 +6,9 @@ import { toast } from 'sonner';
 import { CornerDownRight, MessageSquare, Pencil, Reply, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { ProfileAvatar } from '@/components/profile-avatar';
-import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
+import { ROLE_LABELS } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
 import type { EssayCommentWithAuthor } from '@/lib/essays/types';
 
@@ -268,6 +267,14 @@ export function EssayCommentThread({
     const isEditing = editingId === comment.id;
     const isReplyTarget = replyTarget?.id === comment.id;
     const isEdited = !isRemoved && comment.updated_at !== comment.created_at;
+    const role = comment.author?.role;
+    // Role reads as metadata next to the date rather than a coloured chip --
+    // it is useful context on staff feedback, not the headline of a comment.
+    const meta = [
+      role && role !== 'student' ? ROLE_LABELS[role] : null,
+      new Date(comment.created_at).toLocaleDateString('cs-CZ'),
+      isEdited ? 'upraveno' : null,
+    ].filter((part): part is string => part != null);
 
     return (
       <div
@@ -292,20 +299,11 @@ export function EssayCommentThread({
             >
               {comment.author?.name}
             </Link>
-            {comment.author?.role && comment.author.role !== 'student' && (
-              <Badge variant="outline" className={cn('text-xs', ROLE_COLORS[comment.author.role])}>
-                {ROLE_LABELS[comment.author.role]}
-              </Badge>
-            )}
             <span
               className="text-xs text-muted-foreground"
               title={new Date(comment.created_at).toLocaleString('cs-CZ')}
             >
-              <span aria-hidden className="mr-2">
-                ·
-              </span>
-              {new Date(comment.created_at).toLocaleDateString('cs-CZ')}
-              {isEdited && ' · upraveno'}
+              {meta.join(' · ')}
             </span>
           </div>
 

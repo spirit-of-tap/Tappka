@@ -271,6 +271,19 @@ describe("EssayCommentThread", () => {
     expect(screen.queryByRole("button", { name: "Smazat" })).not.toBeInTheDocument();
   });
 
+  it("shows a non-student role as muted metadata beside the date", () => {
+    renderThread([
+      { ...ownComment, author: { ...ownComment.author!, role: "admin" } },
+    ]);
+    expect(screen.getByText(/Admin · 1\. 8\. 2026/)).toBeInTheDocument();
+  });
+
+  it("omits the role for students", () => {
+    renderThread([ownComment]);
+    expect(screen.queryByText(/Student/)).not.toBeInTheDocument();
+    expect(screen.getByText("1. 8. 2026")).toBeInTheDocument();
+  });
+
   it("renders an empty state when there are no comments", () => {
     renderThread([]);
     expect(screen.getByText("Zatím tu nikdo nekomentoval. Začni diskuzi.")).toBeInTheDocument();
