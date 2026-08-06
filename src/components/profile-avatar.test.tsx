@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ProfileAvatar } from '@/components/profile-avatar';
 
 vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://project.supabase.co');
@@ -23,6 +23,32 @@ describe('ProfileAvatar', () => {
     expect(img).toHaveAttribute(
       'src',
       'https://project.supabase.co/storage/v1/object/public/avatars/profile/user-1/1700000000000-abc.webp',
+    );
+  });
+
+  it('falls back to the initial when the picture fails to load', () => {
+    const { container } = render(
+      <ProfileAvatar picture="profile/user-1/deleted.webp" name="Monika" size={24} />,
+    );
+
+    fireEvent.error(screen.getByRole('img', { name: 'Monika' }));
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(container.textContent).toBe('M');
+  });
+
+  it('retries a new picture after a previous one failed', () => {
+    const { rerender } = render(
+      <ProfileAvatar picture="profile/user-1/deleted.webp" name="Monika" size={24} />,
+    );
+    fireEvent.error(screen.getByRole('img', { name: 'Monika' }));
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+
+    rerender(<ProfileAvatar picture="profile/user-1/fresh.webp" name="Monika" size={24} />);
+
+    expect(screen.getByRole('img', { name: 'Monika' })).toHaveAttribute(
+      'src',
+      'https://project.supabase.co/storage/v1/object/public/avatars/profile/user-1/fresh.webp',
     );
   });
 });
