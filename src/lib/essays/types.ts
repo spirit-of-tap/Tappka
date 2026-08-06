@@ -35,6 +35,7 @@ export interface EssayComment {
   id: string;
   essay_id: string;
   author_profile_id: string;
+  parent_id: string | null;
   body: string;
   removed_at: string | null;
   created_at: string;

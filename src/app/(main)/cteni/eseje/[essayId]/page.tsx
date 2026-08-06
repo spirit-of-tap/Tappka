@@ -175,7 +175,9 @@ export default async function EssayDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      <EssayCommentThread essayId={essayId} initialComments={comments} />
+      {profile && (
+        <EssayCommentThread essayId={essayId} initialComments={comments} currentProfileId={profile.id} />
+      )}
     </PageShell>
   );
 }

@@ -413,6 +413,7 @@ export type Database = {
           created_by_profile_id: string
           essay_id: string
           id: string
+          parent_id: string | null
           removed_at: string | null
           updated_at: string
           updated_by_profile_id: string
@@ -424,6 +425,7 @@ export type Database = {
           created_by_profile_id: string
           essay_id: string
           id?: string
+          parent_id?: string | null
           removed_at?: string | null
           updated_at?: string
           updated_by_profile_id: string
@@ -435,6 +437,7 @@ export type Database = {
           created_by_profile_id?: string
           essay_id?: string
           id?: string
+          parent_id?: string | null
           removed_at?: string | null
           updated_at?: string
           updated_by_profile_id?: string
@@ -459,6 +462,13 @@ export type Database = {
             columns: ["essay_id"]
             isOneToOne: false
             referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essay_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "essay_comments"
             referencedColumns: ["id"]
           },
           {

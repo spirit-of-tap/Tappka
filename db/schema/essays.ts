@@ -90,6 +90,7 @@ export const essayComments = pgTable("essay_comments", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	essayId: uuid("essay_id").notNull(),
 	authorProfileId: uuid("author_profile_id").notNull(),
+	parentId: uuid("parent_id"),
 	body: text().notNull(),
 	removedAt: timestamp("removed_at", { withTimezone: true, mode: 'string' }),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -119,6 +120,11 @@ export const essayComments = pgTable("essay_comments", {
 			foreignColumns: [profiles.id],
 			name: "essay_comments_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
+	foreignKey({
+			columns: [table.parentId],
+			foreignColumns: [table.id],
+			name: "essay_comments_parent_id_fkey"
+		}).onDelete("set null"),
 	pgPolicy("Authors and admins can delete essay comments", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((author_profile_id = current_profile_id()) OR is_admin())` }),
 	pgPolicy("Authors can update their own essay comments", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(author_profile_id = current_profile_id())`, withCheck: sql`(author_profile_id = current_profile_id())` }),
 	pgPolicy("Authenticated users can add essay comments", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(author_profile_id = current_profile_id())` }),
