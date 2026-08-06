@@ -33,12 +33,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const profile = await getCurrentUserProfile(supabase, { user });
     if (!profile) return NextResponse.json({ error: 'Profil nenalezen' }, { status: 403 });
 
-    const { body, parent_id } = await request.json();
-    if (!body?.trim()) {
+    const payload = (await request.json()) as { body?: unknown; parent_id?: unknown };
+    const body = payload.body;
+    const parent_id = payload.parent_id;
+    if (typeof body !== 'string' || !body.trim()) {
       return NextResponse.json({ error: 'Text komentáře je povinný' }, { status: 400 });
     }
 
-    if (parent_id != null) {
+    if (typeof parent_id === 'string' && parent_id.trim()) {
       const { data: parent } = await supabase
         .from('essay_comments')
         .select('id')
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       .insert({
         essay_id: id,
         author_profile_id: profile.id,
-        parent_id: parent_id ?? null,
+        parent_id: typeof parent_id === 'string' ? parent_id : null,
         body: body.trim(),
         created_by_profile_id: profile.id,
         updated_by_profile_id: profile.id,
@@ -85,8 +87,17 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
-    const { comment_id, body } = await request.json();
-    if (!body?.trim()) {
+    let payload: unknown;
+    try {
+      payload = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Neplatné tělo požadavku' }, { status: 400 });
+    }
+    const { comment_id, body } = (payload ?? {}) as { comment_id?: unknown; body?: unknown };
+    if (typeof comment_id !== 'string' || !comment_id.trim()) {
+      return NextResponse.json({ error: 'Neplatné ID komentáře' }, { status: 400 });
+    }
+    if (typeof body !== 'string' || !body.trim()) {
       return NextResponse.json({ error: 'Text komentáře je povinný' }, { status: 400 });
     }
 
@@ -98,7 +109,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     const { data, error } = await supabase
       .from('essay_comments')
-      .update({ body: body.trim(), updated_by_profile_id: profile.id })
+      .update({ body: body.trim(), updated_by_profile_id: profile.id, updated_at: new Date().toISOString() })
       .eq('id', comment_id)
       .eq('essay_id', id)
       .is('removed_at', null)
@@ -121,7 +132,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
-    const { comment_id } = await request.json();
+    let payload: unknown;
+    try {
+      payload = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Neplatné tělo požadavku' }, { status: 400 });
+    }
+    const { comment_id } = (payload ?? {}) as { comment_id?: unknown };
+    if (typeof comment_id !== 'string' || !comment_id.trim()) {
+      return NextResponse.json({ error: 'Neplatné ID komentáře' }, { status: 400 });
+    }
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -133,6 +153,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       .from('essay_comments')
       .update({
         removed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         updated_by_profile_id: profile.id,
       })
       .eq('id', comment_id)
@@ -143,7 +164,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Komentář nebyl nalezen nebo nemáš oprávnění' }, { status: 404 });
+        return NextResponse.json({ error: 'Komentář nebyl nalezen nebo nemáte oprávnění' }, { status: 404 });
       }
       throw error;
     }
