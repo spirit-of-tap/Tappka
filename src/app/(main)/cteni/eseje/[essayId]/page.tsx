@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/ui/page-shell';
 import { BackButton } from '@/components/essays/back-button';
-import { ProfilePicture } from '@/components/profile-picture';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { formatPoints } from '@/lib/books/points';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 
@@ -99,7 +99,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
           <Link href={`/komunita/profil/${essay.author_profile_id}`} className="flex items-center gap-2 hover:underline">
             {essay.author?.picture ? (
-              <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover" />
+              <ProfileAvatar picture={essay.author.picture} name={essay.author.name} size={24} />
             ) : (
               <div className="size-6 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
                 {essay.author?.name?.[0]}

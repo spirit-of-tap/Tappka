@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { PageShell } from '@/components/ui/page-shell';
 import { StorageImage } from '@/components/storage/storage-image';
-import { ProfilePicture } from '@/components/profile-picture';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { BookCard } from '@/components/books/book-card';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
@@ -334,7 +334,7 @@ function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; 
           <div className="flex items-center gap-1.5">
             <div className="size-4 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center">
               {essay.author?.picture ? (
-                <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={16} className="w-full h-full object-cover" />
+                <ProfileAvatar picture={essay.author.picture} name={essay.author.name} size={16} className="w-full h-full" />
               ) : (
                 <span className="text-[8px] font-semibold">{essay.author?.name?.[0]}</span>
               )}
@@ -393,7 +393,7 @@ function TeamsSection({ teams }: { teams: TeamWithMembers[] }) {
               {team.members.slice(0, 3).map((m) => (
                 <div key={m.profile_id} className="size-5 rounded-full overflow-hidden border-2 border-background bg-muted shrink-0 flex items-center justify-center text-[8px] font-semibold">
                   {m.profile_picture
-                    ? <ProfilePicture src={m.profile_picture} alt={m.profile_name} size={20} className="w-full h-full object-cover" />
+                    ? <ProfileAvatar picture={m.profile_picture} name={m.profile_name} size={20} className="w-full h-full" />
                     : m.profile_name[0]}
                 </div>
               ))}
@@ -415,7 +415,7 @@ function TeamsSection({ teams }: { teams: TeamWithMembers[] }) {
               >
                 <div className="size-8 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center text-xs font-semibold">
                   {member.profile_picture
-                    ? <ProfilePicture src={member.profile_picture} alt={member.profile_name} size={32} className="w-full h-full object-cover" />
+                    ? <ProfileAvatar picture={member.profile_picture} name={member.profile_name} size={32} className="w-full h-full" />
                     : member.profile_name[0]}
                 </div>
                 <p className="flex-1 text-sm font-medium group-hover:text-primary transition-colors truncate">
@@ -641,7 +641,7 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
               >
                 <div className="shrink-0 size-7 rounded-full bg-muted flex items-center justify-center text-[11px] font-semibold overflow-hidden">
                   {essay.author?.picture ? (
-                    <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={28} className="w-full h-full object-cover" />
+                    <ProfileAvatar picture={essay.author.picture} name={essay.author.name} size={28} className="w-full h-full" />
                   ) : (
                     (essay.author?.name?.[0] ?? <PenLine className="size-3 text-muted-foreground" />)
                   )}

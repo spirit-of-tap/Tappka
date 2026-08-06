@@ -3,21 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronUp, Eye, MessageCircle } from 'lucide-react';
-import { ProfilePicture } from '@/components/profile-picture';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 const INITIAL_COUNT = 8;
 
 function Avatar({ picture, name }: { picture?: string | null; name?: string | null }) {
-  const initial = name?.[0]?.toUpperCase() ?? '?';
-  if (picture) {
-    return <ProfilePicture src={picture} alt={name ?? ''} size={28} className="size-7 shrink-0 rounded-full object-cover" />;
-  }
-  return (
-    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">
-      {initial}
-    </div>
-  );
+  return <ProfileAvatar picture={picture} name={name} size={28} />;
 }
 
 export function BookEssaysList({ essays }: { essays: EssayWithDetails[] }) {

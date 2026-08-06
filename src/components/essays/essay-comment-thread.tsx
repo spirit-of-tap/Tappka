@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
-import { ProfilePicture } from '@/components/profile-picture';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
 import type { EssayCommentWithAuthor } from '@/lib/essays/types';
@@ -53,7 +53,7 @@ export function EssayCommentThread({ essayId, initialComments }: EssayCommentThr
       {comments.map((comment) => (
         <div key={comment.id} className="flex gap-3">
           {comment.author?.picture ? (
-            <ProfilePicture src={comment.author.picture} alt={comment.author.name ?? ''} size={32} className="size-8 rounded-full object-cover shrink-0 mt-0.5" />
+            <ProfileAvatar picture={comment.author.picture} name={comment.author.name} size={32} className="mt-0.5" />
           ) : (
             <div className="size-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium shrink-0 mt-0.5">
               {comment.author?.name?.[0]}

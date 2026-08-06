@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ProfileAvatar } from '@/components/profile-avatar';
 
 interface TeamSnapshotCardProps {
   stats: {
@@ -53,12 +53,7 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
                 <span className="w-4 text-sm tabular-nums text-muted-foreground">
                   {i + 1}.
                 </span>
-                <Avatar className="size-7">
-                  <AvatarImage src={row.profile.picture ?? undefined} alt={row.profile.name} />
-                  <AvatarFallback className="text-xs">
-                    {row.profile.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
+                <ProfileAvatar picture={row.profile.picture} name={row.profile.name} size={28} />
                 <span className="flex-1 truncate text-sm">{row.profile.name}</span>
                 <span className="text-sm font-medium tabular-nums">
                   {row.approved_points} b.

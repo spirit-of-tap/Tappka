@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import { ProfilePicture } from '@/components/profile-picture';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { cn } from '@/lib/utils';
 import type { BookCopyStatus } from '@/lib/library/types';
 
@@ -23,22 +23,7 @@ function dayLabel(days: number): string {
 }
 
 function BorrowerAvatar({ picture, name }: { picture?: string | null; name?: string | null }) {
-  const initial = name?.[0]?.toUpperCase() ?? '?';
-  if (picture) {
-    return (
-      <ProfilePicture
-        src={picture}
-        alt={name ?? ''}
-        size={24}
-        className="size-6 shrink-0 rounded-full object-cover"
-      />
-    );
-  }
-  return (
-    <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
-      {initial}
-    </div>
-  );
+  return <ProfileAvatar picture={picture} name={name} size={24} />;
 }
 
 interface BookCopiesListProps {

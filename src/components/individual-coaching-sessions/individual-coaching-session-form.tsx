@@ -16,7 +16,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { IndividualCoachingSession, IndividualCoachingSessionWithCoach } from "@/lib/individual-coaching-sessions/types"
 import { SESSION_WITH_COACH_SELECT } from "@/lib/individual-coaching-sessions/types"
 import type { Profile } from "@/lib/auth-helpers"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { ProfileAvatar } from "@/components/profile-avatar"
 
 const EXTERNAL_COACH_VALUE = "__external__"
 
@@ -115,10 +115,7 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
               {coachProfiles.map((coach) => (
                 <SelectItem key={coach.id} value={coach.id}>
                   <div className="flex items-center gap-2">
-                    <Avatar className="size-6 shrink-0">
-                      <AvatarImage src={coach.picture ?? undefined} alt={coach.name ?? ""} />
-                      <AvatarFallback>{coach.name?.charAt(0).toUpperCase() ?? "?"}</AvatarFallback>
-                    </Avatar>
+                  <ProfileAvatar picture={coach.picture} name={coach.name} size={24} />
                     {coach.name}
                   </div>
                 </SelectItem>

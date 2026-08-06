@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { MessageCircle, Eye, BookOpen, ChevronUp, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { StorageImage } from '@/components/storage/storage-image';
-import { ProfilePicture } from '@/components/profile-picture';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import { EssayVoteButton } from './essay-vote-button';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
@@ -26,7 +26,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
           {/* Author row */}
           <div className="flex items-center gap-2">
             {essay.author?.picture ? (
-              <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover shrink-0" />
+              <ProfileAvatar picture={essay.author.picture} name={essay.author.name} size={24} />
             ) : (
               <div className="size-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold shrink-0">
                 {authorInitial}

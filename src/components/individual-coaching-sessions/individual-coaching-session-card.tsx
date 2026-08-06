@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Pencil, Trash2, UserCircle, Lightbulb, ListChecks } from "lucide-react"
+import { Pencil, Trash2, Lightbulb, ListChecks } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
@@ -28,7 +28,7 @@ import { IndividualCoachingSessionForm } from "./individual-coaching-session-for
 import { coachDisplayName } from "@/lib/individual-coaching-sessions/types"
 import type { IndividualCoachingSessionWithCoach } from "@/lib/individual-coaching-sessions/types"
 import type { Profile } from "@/lib/auth-helpers"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { ProfileAvatar } from "@/components/profile-avatar"
 
 interface IndividualCoachingSessionCardProps {
   session: IndividualCoachingSessionWithCoach
@@ -98,12 +98,7 @@ export function IndividualCoachingSessionCard({
     <Card className="p-3 sm:p-4 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Avatar className="size-6 shrink-0">
-            <AvatarImage src={session.coach?.picture ?? undefined} alt={coachDisplayName(session)} />
-            <AvatarFallback>
-              <UserCircle className="size-4 text-muted-foreground" />
-            </AvatarFallback>
-          </Avatar>
+          <ProfileAvatar picture={session.coach?.picture} name={coachDisplayName(session)} size={24} />
           <span className="font-medium text-sm truncate">{coachDisplayName(session)}</span>
           {session.session_at && (
             <span className="text-xs text-muted-foreground whitespace-nowrap">
