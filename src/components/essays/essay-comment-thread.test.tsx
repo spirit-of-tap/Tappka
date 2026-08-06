@@ -1,10 +1,12 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EssayCommentThread } from "@/components/essays/essay-comment-thread";
 import type { EssayCommentWithAuthor } from "@/lib/essays/types";
 
 const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+let confirmSpy: ReturnType<typeof vi.spyOn> | undefined;
 
 const ownComment: EssayCommentWithAuthor = {
   id: "c-1",
@@ -52,6 +54,11 @@ const jsonBody = (init?: RequestInit): Record<string, unknown> =>
 
 beforeEach(() => {
   fetchSpy.mockReset();
+  confirmSpy = undefined;
+});
+
+afterEach(() => {
+  confirmSpy?.mockRestore();
 });
 
 describe("EssayCommentThread", () => {
@@ -132,7 +139,7 @@ describe("EssayCommentThread", () => {
   });
 
   it("soft-deletes an own comment via DELETE and shows the muted state", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const removed = { ...ownComment, removed_at: "2026-08-02T09:00:00.000Z" };
     fetchSpy.mockResolvedValueOnce(
       new Response(JSON.stringify({ data: removed }), { status: 200 }),
@@ -151,7 +158,89 @@ describe("EssayCommentThread", () => {
     expect(await screen.findByText("Komentář byl smazán")).toBeInTheDocument();
     expect(screen.queryByText("První komentář")).not.toBeInTheDocument();
     expect(screen.getByText("Karel Novák")).toBeInTheDocument();
-    confirmSpy.mockRestore();
+  });
+
+  it("clears the reply banner when the active reply target is deleted", async () => {
+    confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const removed = { ...ownComment, removed_at: "2026-08-02T09:00:00.000Z" };
+    fetchSpy.mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: removed }), { status: 200 }),
+    );
+    const user = userEvent.setup();
+    renderThread();
+
+    await user.click(screen.getAllByRole("button", { name: "Odpovědět" })[0]);
+    expect(
+      screen.getByPlaceholderText("Odpovědět na Karel Novák..."),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Smazat" }));
+
+    expect(await screen.findByText("Komentář byl smazán")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Přidat komentář...")).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Odpovědět na Karel Novák..."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("disables Smazat while the delete request is in flight", async () => {
+    confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    let resolveFetch: ((value: Response) => void) | undefined;
+    fetchSpy.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    renderThread();
+
+    await user.click(screen.getByRole("button", { name: "Smazat" }));
+
+    expect(screen.getByRole("button", { name: "Smazat" })).toBeDisabled();
+
+    resolveFetch?.(
+      new Response(
+        JSON.stringify({
+          data: { ...ownComment, removed_at: "2026-08-02T09:00:00.000Z" },
+        }),
+        { status: 200 },
+      ),
+    );
+    expect(await screen.findByText("Komentář byl smazán")).toBeInTheDocument();
+  });
+
+  it("starting an edit cancels an active reply mode", async () => {
+    const user = userEvent.setup();
+    renderThread();
+
+    await user.click(screen.getAllByRole("button", { name: "Odpovědět" })[1]);
+    expect(
+      screen.getByPlaceholderText("Odpovědět na Jana Dvořáková..."),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Upravit" }));
+
+    expect(screen.getByDisplayValue("První komentář")).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Odpovědět na Jana Dvořáková..."),
+    ).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Přidat komentář...")).toBeInTheDocument();
+  });
+
+  it("starting a reply cancels an active edit mode", async () => {
+    const user = userEvent.setup();
+    renderThread();
+
+    await user.click(screen.getByRole("button", { name: "Upravit" }));
+    expect(screen.getByDisplayValue("První komentář")).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole("button", { name: "Odpovědět" })[1]);
+
+    expect(
+      screen.getByPlaceholderText("Odpovědět na Jana Dvořáková..."),
+    ).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("První komentář")).not.toBeInTheDocument();
   });
 
   it("cancels editing and restores the original body without fetching", async () => {

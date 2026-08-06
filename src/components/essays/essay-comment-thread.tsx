@@ -31,6 +31,7 @@ export function EssayCommentThread({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const replyName = replyTarget?.author?.name ?? 'uživatele';
 
@@ -61,6 +62,7 @@ export function EssayCommentThread({
   };
 
   const startEdit = (comment: EssayCommentWithAuthor) => {
+    setReplyTarget(null);
     setEditingId(comment.id);
     setEditBody(comment.body);
   };
@@ -97,6 +99,7 @@ export function EssayCommentThread({
 
   const handleDelete = async (comment: EssayCommentWithAuthor) => {
     if (!window.confirm('Opravdu smazat tento komentář?')) return;
+    setIsDeleting(true);
     try {
       const res = await fetch(`/api/essays/${essayId}/comments`, {
         method: 'DELETE',
@@ -107,12 +110,16 @@ export function EssayCommentThread({
         const { data } = await res.json();
         if (data) {
           setComments((prev) => prev.map((c) => (c.id === comment.id ? data : c)));
+          if (replyTarget?.id === comment.id) setReplyTarget(null);
+          if (editingId === comment.id) cancelEdit();
         }
       } else {
         toast.error('Nepodařilo se smazat komentář.');
       }
     } catch {
       toast.error('Nepodařilo se smazat komentář.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -157,6 +164,7 @@ export function EssayCommentThread({
                     onClick={() => {
                       setReplyTarget(comment);
                       setBody('');
+                      cancelEdit();
                     }}
                   >
                     <Reply className="size-3.5" />
@@ -175,6 +183,7 @@ export function EssayCommentThread({
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        disabled={isDeleting}
                         onClick={() => handleDelete(comment)}
                       >
                         <Trash2 className="size-3.5" />
