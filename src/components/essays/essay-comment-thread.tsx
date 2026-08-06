@@ -7,6 +7,17 @@ import { CornerDownRight, MessageSquare, Pencil, Reply, Send, Trash2 } from 'luc
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/responsive-alert-dialog';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { ROLE_LABELS } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
@@ -231,7 +242,6 @@ export function EssayCommentThread({
   };
 
   const handleDelete = async (comment: EssayCommentWithAuthor) => {
-    if (!window.confirm('Opravdu smazat tento komentář?')) return;
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/essays/${essayId}/comments`, {
@@ -359,15 +369,32 @@ export function EssayCommentThread({
                       <Pencil className="size-3.5" />
                       Upravit
                     </button>
-                    <button
-                      type="button"
-                      className={ACTION_BUTTON_CLASS}
-                      disabled={isDeleting}
-                      onClick={() => handleDelete(comment)}
-                    >
-                      <Trash2 className="size-3.5" />
-                      Smazat
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button type="button" className={ACTION_BUTTON_CLASS} disabled={isDeleting}>
+                          <Trash2 className="size-3.5" />
+                          Smazat
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Smazat komentář?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Komentář zmizí z diskuze. Odpovědi na něj zůstanou zachované.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(comment)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={isDeleting}
+                          >
+                            Smazat komentář
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </>
                 )}
               </div>

@@ -1,12 +1,10 @@
-import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EssayCommentThread } from "@/components/essays/essay-comment-thread";
 import type { EssayCommentWithAuthor } from "@/lib/essays/types";
 
 const fetchSpy = vi.spyOn(globalThis, "fetch");
-
-let confirmSpy: ReturnType<typeof vi.spyOn> | undefined;
 
 const ownComment: EssayCommentWithAuthor = {
   id: "c-1",
@@ -52,13 +50,14 @@ function renderThread(comments: EssayCommentWithAuthor[] = [ownComment, otherCom
 const jsonBody = (init?: RequestInit): Record<string, unknown> =>
   JSON.parse(String(init?.body ?? "{}"));
 
+/** Opens the delete confirmation and confirms it. */
+async function confirmDelete(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Smazat" }));
+  await user.click(await screen.findByRole("button", { name: "Smazat komentář" }));
+}
+
 beforeEach(() => {
   fetchSpy.mockReset();
-  confirmSpy = undefined;
-});
-
-afterEach(() => {
-  confirmSpy?.mockRestore();
 });
 
 describe("EssayCommentThread", () => {
@@ -139,7 +138,6 @@ describe("EssayCommentThread", () => {
   });
 
   it("soft-deletes an own comment via DELETE and shows the muted state", async () => {
-    confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const removed = { ...ownComment, removed_at: "2026-08-02T09:00:00.000Z" };
     fetchSpy.mockResolvedValueOnce(
       new Response(JSON.stringify({ data: removed }), { status: 200 }),
@@ -147,9 +145,8 @@ describe("EssayCommentThread", () => {
     const user = userEvent.setup();
     renderThread();
 
-    await user.click(screen.getByRole("button", { name: "Smazat" }));
+    await confirmDelete(user);
 
-    expect(confirmSpy).toHaveBeenCalledWith("Opravdu smazat tento komentář?");
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url, init] = fetchSpy.mock.calls[0];
     expect(url).toBe("/api/essays/essay-1/comments");
@@ -160,8 +157,20 @@ describe("EssayCommentThread", () => {
     expect(screen.getByText("Karel Novák")).toBeInTheDocument();
   });
 
+  it("asks for confirmation in-app and keeps the comment when cancelled", async () => {
+    const user = userEvent.setup();
+    renderThread();
+
+    await user.click(screen.getByRole("button", { name: "Smazat" }));
+    expect(await screen.findByText("Smazat komentář?")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Zrušit" }));
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(screen.getByText("První komentář")).toBeInTheDocument();
+  });
+
   it("clears the reply banner when the active reply target is deleted", async () => {
-    confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const removed = { ...ownComment, removed_at: "2026-08-02T09:00:00.000Z" };
     fetchSpy.mockResolvedValueOnce(
       new Response(JSON.stringify({ data: removed }), { status: 200 }),
@@ -174,7 +183,7 @@ describe("EssayCommentThread", () => {
       screen.getByPlaceholderText("Odpovědět na Karel Novák..."),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Smazat" }));
+    await confirmDelete(user);
 
     expect(await screen.findByText("Komentář byl smazán")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Přidat komentář...")).toBeInTheDocument();
@@ -184,7 +193,6 @@ describe("EssayCommentThread", () => {
   });
 
   it("disables Smazat while the delete request is in flight", async () => {
-    confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     let resolveFetch: ((value: Response) => void) | undefined;
     fetchSpy.mockImplementationOnce(
       () =>
@@ -195,7 +203,7 @@ describe("EssayCommentThread", () => {
     const user = userEvent.setup();
     renderThread();
 
-    await user.click(screen.getByRole("button", { name: "Smazat" }));
+    await confirmDelete(user);
 
     expect(screen.getByRole("button", { name: "Smazat" })).toBeDisabled();
 
