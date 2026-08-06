@@ -14,13 +14,21 @@ vi.mock('./send-email', () => ({
 import { getEssayAuthorInfo } from '@/lib/essays/queries';
 import { getProfileById } from '@/lib/komunita/queries';
 import { sendEmail } from './send-email';
-import { notifyEssayCommented, notifyEssayVoted, notifyEssayCoachRead } from './essay-notifications';
+import {
+  notifyEssayCommented,
+  notifyEssayVoted,
+  notifyEssayCoachRead,
+  notifyEssayReplied,
+} from './essay-notifications';
 
 const mockedGetEssayAuthorInfo = vi.mocked(getEssayAuthorInfo);
 const mockedGetProfileById = vi.mocked(getProfileById);
 const mockedSendEmail = vi.mocked(sendEmail);
 
-function supabaseStub(preferencesRow: Record<string, boolean> | null) {
+function supabaseStub(
+  preferencesRow: Record<string, boolean> | null,
+  parentAuthorProfileId: string | null = AUTHOR.id,
+) {
   const rpc = vi.fn(async () => ({
     data: [
       {
@@ -33,7 +41,16 @@ function supabaseStub(preferencesRow: Record<string, boolean> | null) {
     error: null,
   }));
 
-  return { client: { rpc } as unknown as SupabaseClient, rpc };
+  const maybeSingle = vi.fn(async () => ({
+    data: parentAuthorProfileId === null ? null : { author_profile_id: parentAuthorProfileId },
+    error: null,
+  }));
+  const is = vi.fn(() => ({ maybeSingle }));
+  const eq = vi.fn(() => ({ is }));
+  const select = vi.fn(() => ({ eq }));
+  const from = vi.fn(() => ({ select }));
+
+  return { client: { rpc, from } as unknown as SupabaseClient, rpc, from };
 }
 
 const ESSAY = { id: 'essay-1', title: 'Moje esej', authorProfileId: 'author-1' };
@@ -254,6 +271,57 @@ describe('notifyEssayCoachRead', () => {
       actorProfileId: ACTOR.id,
       origin: 'https://tappka.app',
     });
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('notifyEssayReplied', () => {
+  const replyParams = {
+    essayId: ESSAY.id,
+    parentId: 'comment-1',
+    actorProfileId: ACTOR.id,
+    origin: 'https://tappka.app',
+    replyBody: 'Odpovídám ti',
+  };
+
+  it('skips when the parent comment does not exist', async () => {
+    await notifyEssayReplied(supabaseStub(null, null).client, replyParams);
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
+
+  it('skips when the actor is the parent comment author', async () => {
+    await notifyEssayReplied(supabaseStub(null, ACTOR.id).client, replyParams);
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
+
+  it('skips when the preference is explicitly off', async () => {
+    await notifyEssayReplied(supabaseStub({ essay_comment_email: false }).client, replyParams);
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+  });
+
+  it('sends to the parent comment author with a link back to the essay', async () => {
+    const { client, rpc } = supabaseStub({ essay_comment_email: true });
+
+    await notifyEssayReplied(client, replyParams);
+
+    const call = mockedSendEmail.mock.calls[0][0];
+    expect(call.to).toBe(AUTHOR.work_email);
+    expect(call.html).toContain('https://tappka.app/cteni/eseje/essay-1');
+    expect(rpc).toHaveBeenCalledWith('get_notification_preferences', {
+      p_profile_id: AUTHOR.id,
+    });
+  });
+
+  it('skips when the comment author has no beta access', async () => {
+    mockedGetProfileById.mockImplementation(async (_supabase, id) =>
+      (id === AUTHOR.id ? { ...AUTHOR, beta_access_granted_at: null } : ACTOR) as never,
+    );
+
+    await notifyEssayReplied(supabaseStub(null).client, replyParams);
 
     expect(mockedSendEmail).not.toHaveBeenCalled();
   });
