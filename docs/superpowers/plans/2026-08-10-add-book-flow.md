@@ -374,6 +374,21 @@ describe('findDuplicate', () => {
     expect(findDuplicate({ title_cs: 'Sprint', author: 'Jiný Autor' }, [SPRINT_CS])).toBeNull();
   });
 
+  it('matches a multi-author string, which is how Google Books reports co-authors', () => {
+    const coAuthored: MatchableBook = {
+      id: 'book-multi',
+      title_cs: 'Sprint',
+      title_en: null,
+      author: 'Jake Knapp, John Zeratsky, Braden Kowitz',
+      isbn_13: null,
+    };
+    const hit = findDuplicate(
+      { title_cs: 'Sprint', author: 'Jake Knapp, John Zeratsky, Braden Kowitz' },
+      [coAuthored],
+    );
+    expect(hit?.id).toBe('book-multi');
+  });
+
   it('ignores a null ISBN on either side rather than treating it as equal', () => {
     const noIsbn: MatchableBook = { ...SPRINT_CS, id: 'x', isbn_13: null, title_en: null, title_cs: 'Něco' };
     expect(findDuplicate({ title_cs: 'Jiné', author: 'Jake Knapp' }, [noIsbn])).toBeNull();
@@ -466,19 +481,37 @@ Expected: PASS (7 assertions across 7 tests).
 
 - [ ] **Step 5: Use it in the create route**
 
-In `src/app/api/books/route.ts`, replace the `.or(...)` duplicate query (currently lines 58–72) with a candidate fetch plus `findDuplicate`. The old `.or()` string interpolated user input into a PostgREST filter; this also removes that.
+In `src/app/api/books/route.ts`, replace the `.or(...)` duplicate query (currently lines 58–72) with two parameter-safe candidate fetches plus `findDuplicate`. The old `.or()` string interpolated user input into a PostgREST filter, which this removes — see the comment in the code below for why an `or` string cannot be used here at all.
 
 ```typescript
     // Duplicate check: same ISBN-13, or same author with an overlapping title in
-    // either language. Fetches by author (indexed, trigram) and matches in code
-    // so `title_en` participates — a Czech record and its English twin must collide.
-    const { data: sameAuthor, error: dupeError } = await supabase
-      .from('books')
-      .select('id, title_cs, title_en, author, isbn_13')
-      .or(`author.ilike.${body.author.trim()},isbn_13.eq.${body.isbn_13 ?? 'none'}`)
-      .limit(50);
+    // either language, so a Czech record and its English twin collide.
+    //
+    // Two separate queries rather than one `.or(...)` string. A PostgREST `or`
+    // filter is comma-delimited, and `ExternalBookCandidate.author` is built by
+    // joining multiple authors with ", " — so interpolating an author into an
+    // `or` string breaks the query outright for every multi-author book, and
+    // lets a crafted value inject extra clauses. Values passed to `.ilike()` /
+    // `.eq()` are encoded as single filter params, where a comma is just data.
+    const candidateColumns = 'id, title_cs, title_en, author, isbn_13';
 
-    if (dupeError) throw dupeError;
+    const [byAuthor, byIsbn] = await Promise.all([
+      supabase
+        .from('books')
+        .select(candidateColumns)
+        .ilike('author', body.author.trim())
+        .limit(DUPLICATE_CANDIDATE_LIMIT),
+      body.isbn_13
+        ? supabase.from('books').select(candidateColumns).eq('isbn_13', body.isbn_13).limit(1)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (byAuthor.error) throw byAuthor.error;
+    if (byIsbn.error) throw byIsbn.error;
+
+    const candidatesById = new Map(
+      [...(byAuthor.data ?? []), ...(byIsbn.data ?? [])].map((book) => [book.id, book]),
+    );
 
     const existing = findDuplicate(
       {
@@ -487,7 +520,7 @@ In `src/app/api/books/route.ts`, replace the `.or(...)` duplicate query (current
         author: body.author.trim(),
         isbn_13: body.isbn_13 ?? null,
       },
-      sameAuthor ?? [],
+      [...candidatesById.values()],
     );
 
     if (existing) {
@@ -498,10 +531,15 @@ In `src/app/api/books/route.ts`, replace the `.or(...)` duplicate query (current
     }
 ```
 
-Add the import at the top of the file:
+Add the import at the top of the file, and the constant near the other module-level constants:
 
 ```typescript
 import { findDuplicate } from '@/lib/books/dedupe';
+```
+
+```typescript
+/** Books by the same author to consider when looking for a duplicate. */
+const DUPLICATE_CANDIDATE_LIMIT = 50;
 ```
 
 - [ ] **Step 6: Verify**
