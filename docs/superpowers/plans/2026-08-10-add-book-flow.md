@@ -619,10 +619,12 @@ async function seedStudent(client: import('pg').PoolClient) {
      verified_work_email_at = now() where id = $1`,
     [userRows[0].id],
   );
+  // work_email is unique (profiles_work_email_key), and the third case below
+  // seeds two students in one transaction — derive it, never hardcode it.
   await client.query(
     `insert into public.profiles (name, work_email, user_id, role)
-     values ('Téčko', 'tecko@studenti.czu.cz', $1, 'student')`,
-    [userRows[0].id],
+     values ('Téčko', $2, $1, 'student')`,
+    [userRows[0].id, `tecko-${auth.id}@studenti.czu.cz`],
   );
   const { rows } = await client.query(
     'select id from public.profiles where user_id = $1',
@@ -653,28 +655,23 @@ describe('adding a book', () => {
     });
   });
 
-  it('awards no points while the book is still processing', async () => {
+  it('refuses an archived book that still carries points', async () => {
+    // books_archived_points_check. The app relies on this: `classify` zeroes
+    // points when archiving, and this proves the database enforces it even if
+    // that code path is ever bypassed.
     await withRollback(async (client) => {
       const student = await seedStudent(client);
       await asClaims(client, { sub: student.authId });
 
-      await client.query(
-        `insert into public.books
-           (title_cs, author, book_points, list_status,
-            created_by_profile_id, updated_by_profile_id)
-         values ('Nová kniha', 'Autor', 3, 'processing', $1, $1)`,
-        [student.profileId],
-      );
-
-      const { rows } = await client.query(
-        `select coalesce(sum(book_points), 0)::int as total
-         from public.books
-         where created_by_profile_id = $1
-           and list_status in ('shortlist', 'longlist')`,
-        [student.profileId],
-      );
-
-      expect(rows[0].total).toBe(0);
+      await expect(
+        client.query(
+          `insert into public.books
+             (title_cs, author, book_points, list_status,
+              created_by_profile_id, updated_by_profile_id)
+           values ('Zamítnutá', 'Autor', 2, 'archived', $1, $1)`,
+          [student.profileId],
+        ),
+      ).rejects.toThrow();
     });
   });
 
@@ -706,11 +703,16 @@ Expected: FAIL on the first case — `column "title_en" of relation "books" does
 In `src/app/api/books/route.ts`, replace the insert object:
 
 ```typescript
+    // `?? null` alone would store '' for a blank field, because ''.trim() is ''
+    // and not nullish. An empty title_en breaks the cross-language dedupe key.
+    const titleEn = body.title_en?.trim();
+    const pointsReason = body.points_reason?.trim();
+
     const { data: inserted, error: insertError } = await supabase
       .from('books')
       .insert({
         title_cs: body.title.trim(),
-        title_en: body.title_en?.trim() ?? null,
+        title_en: titleEn && titleEn.length > 0 ? titleEn : null,
         author: body.author.trim(),
         isbn_13: body.isbn_13 ?? null,
         description: body.description ?? null,
@@ -720,7 +722,7 @@ In `src/app/api/books/route.ts`, replace the insert object:
         // The scoring rationale lives here: the review UI already surfaces
         // `list_status_reason` as DŮVOD ZAŘAZENÍ, and `classify` replaces it
         // with the coach's own reason on approval.
-        list_status_reason: body.points_reason?.trim() ?? null,
+        list_status_reason: pointsReason && pointsReason.length > 0 ? pointsReason : null,
         source: body.source ?? 'manual',
         external_id: body.external_id ?? null,
         created_by_profile_id: profile.id,
@@ -3852,6 +3854,31 @@ test.describe('adding a book', () => {
 
     await expect(page.getByText(/odeslána ke schválení/i)).toBeVisible();
     await expect(page).toHaveURL(/\/cteni\/knihy\/[0-9a-f-]{36}$/);
+  });
+
+  test('the coach\'s points replace the suggestion, and only then count', async ({ page }) => {
+    // The property Task 3's integration layer cannot prove: a student writes
+    // book_points on insert, and it must not become the awarded score. Only a
+    // coach's classify decision does. This needs the real query path, so it
+    // lives at the E2E layer per docs/runbooks/testing.md.
+    //
+    // Sign in as a coach, open the pending book, classify it with a different
+    // score than was suggested, and assert the stored score is the coach's.
+    // Use whatever coach fixture/storage-state the other specs in this
+    // directory already use — do not invent a new auth path.
+    await page.goto('/cteni/sprava');
+
+    const row = page.getByRole('row', { name: /Sprint/ }).first();
+    await expect(row).toBeVisible();
+
+    await row.getByRole('button', { name: /shortlist|zařadit/i }).first().click();
+    await page.getByLabel(/důvod/i).fill('Procesní manuál, ale krátký — 1 bod.');
+    await page.getByRole('button', { name: /^1 b\.|1$/ }).first().click();
+    await page.getByRole('button', { name: /uložit|potvrdit/i }).first().click();
+
+    await page.goto('/cteni/hledat');
+    await page.getByRole('textbox').first().fill('Sprint');
+    await expect(page.getByText(/1 b\./).first()).toBeVisible();
   });
 
   test('submits a co-authored book without a server error', async ({ page }) => {
