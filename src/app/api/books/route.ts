@@ -8,6 +8,9 @@ import { setBookTags } from '@/lib/books/tags';
 import { downloadAndStoreCover } from '@/lib/storage/service';
 import type { CreateBookInput, BookFilters, BookListStatus } from '@/lib/books/types';
 
+/** Books by the same author to consider when looking for a duplicate. */
+const DUPLICATE_CANDIDATE_LIMIT = 50;
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -57,15 +60,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Duplicate check: same ISBN-13, or same author with an overlapping title in
-    // either language. Fetches by author (indexed, trigram) and matches in code
-    // so `title_en` participates — a Czech record and its English twin must collide.
-    const { data: sameAuthor, error: dupeError } = await supabase
-      .from('books')
-      .select('id, title_cs, title_en, author, isbn_13')
-      .or(`author.ilike.${body.author.trim()},isbn_13.eq.${body.isbn_13 ?? 'none'}`)
-      .limit(50);
+    // either language. Two separate parameter-safe queries merged in code —
+    // NOT a single `.or()` string: `author` can contain commas (Google Books
+    // reports co-authors as "A, B, C"), and a comma is the clause separator in
+    // a PostgREST `or` filter, so interpolating it there would both break
+    // multi-author lookups and let a crafted value inject extra clauses.
+    // `.ilike()`/`.eq()` pass values as single filter params, where a comma is
+    // just data. Matching in code (not in the query) also lets `title_en`
+    // participate — a Czech record and its English twin must collide.
+    const candidateColumns = 'id, title_cs, title_en, author, isbn_13';
 
-    if (dupeError) throw dupeError;
+    const [byAuthor, byIsbn] = await Promise.all([
+      supabase
+        .from('books')
+        .select(candidateColumns)
+        .ilike('author', body.author.trim())
+        .limit(DUPLICATE_CANDIDATE_LIMIT),
+      body.isbn_13
+        ? supabase.from('books').select(candidateColumns).eq('isbn_13', body.isbn_13).limit(1)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (byAuthor.error) throw byAuthor.error;
+    if (byIsbn.error) throw byIsbn.error;
+
+    const candidatesById = new Map(
+      [...(byAuthor.data ?? []), ...(byIsbn.data ?? [])].map((book) => [book.id, book]),
+    );
 
     const existing = findDuplicate(
       {
@@ -74,7 +95,7 @@ export async function POST(request: NextRequest) {
         author: body.author.trim(),
         isbn_13: body.isbn_13 ?? null,
       },
-      sameAuthor ?? [],
+      [...candidatesById.values()],
     );
 
     if (existing) {

@@ -58,4 +58,19 @@ describe('findDuplicate', () => {
     const noIsbn: MatchableBook = { ...SPRINT_CS, id: 'x', isbn_13: null, title_en: null, title_cs: 'Něco' };
     expect(findDuplicate({ title_cs: 'Jiné', author: 'Jake Knapp' }, [noIsbn])).toBeNull();
   });
+
+  it('matches a multi-author string, which is how Google Books reports co-authors', () => {
+    const coAuthored: MatchableBook = {
+      id: 'book-multi',
+      title_cs: 'Sprint',
+      title_en: null,
+      author: 'Jake Knapp, John Zeratsky, Braden Kowitz',
+      isbn_13: null,
+    };
+    const hit = findDuplicate(
+      { title_cs: 'Sprint', author: 'Jake Knapp, John Zeratsky, Braden Kowitz' },
+      [coAuthored],
+    );
+    expect(hit?.id).toBe('book-multi');
+  });
 });
