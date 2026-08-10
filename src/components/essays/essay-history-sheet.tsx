@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { History, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,9 @@ import type { EssayRevisionSummary } from '@/lib/essays/types';
 interface EssayHistorySheetProps {
   essayId: string;
   className?: string;
+  /** Pass to drive the sheet from elsewhere (a menu); omit to get a trigger button. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface OpenRevision {
@@ -98,25 +101,50 @@ function buildTimeline(revisions: EssayRevisionSummary[]): RevisionDay[] {
   return days;
 }
 
-export function EssayHistorySheet({ essayId, className }: EssayHistorySheetProps) {
+export function EssayHistorySheet({
+  essayId,
+  className,
+  open: openProp,
+  onOpenChange,
+}: EssayHistorySheetProps) {
   const [revisions, setRevisions] = useState<EssayRevisionSummary[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [pendingRevisionNo, setPendingRevisionNo] = useState<number | null>(null);
   const [open, setOpen] = useState<OpenRevision | null>(null);
+  const [selfOpen, setSelfOpen] = useState(false);
 
-  // Fetched on open rather than server-rendered: autosave changes the list
-  // continuously, so anything rendered at page load would already be stale.
-  const loadRevisions = async (isOpen: boolean) => {
-    if (!isOpen) return;
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/essays/${essayId}/revisions`);
-      const { data } = await res.json();
-      setRevisions(data ?? []);
-    } finally {
-      setIsLoading(false);
-    }
+  const isSheetOpen = openProp ?? selfOpen;
+
+  const setSheetOpen = (next: boolean) => {
+    onOpenChange?.(next);
+    if (openProp === undefined) setSelfOpen(next);
   };
+
+  // Keyed on the open state rather than done in onOpenChange: Radix only fires
+  // that callback for its own interactions, so a sheet opened by a parent
+  // setting `open` would never have loaded anything.
+  //
+  // Fetched on open rather than server-rendered because autosave changes the
+  // list continuously — anything rendered at page load is already stale.
+  useEffect(() => {
+    if (!isSheetOpen) return;
+
+    let cancelled = false;
+    setIsLoading(true);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/essays/${essayId}/revisions`);
+        const { data } = await res.json();
+        if (!cancelled) setRevisions(data ?? []);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSheetOpen, essayId]);
 
   const openRevision = async (summary: EssayRevisionSummary) => {
     setPendingRevisionNo(summary.revision_no);
@@ -133,13 +161,15 @@ export function EssayHistorySheet({ essayId, className }: EssayHistorySheetProps
 
   return (
     <>
-      <Sheet onOpenChange={loadRevisions}>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="sm" className={cn('gap-2', className)}>
-            <History className="size-4" />
-            Historie
-          </Button>
-        </SheetTrigger>
+      <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
+        {openProp === undefined && (
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className={cn('gap-2', className)}>
+              <History className="size-4" />
+              Historie
+            </Button>
+          </SheetTrigger>
+        )}
         <SheetContent className="w-full gap-0 p-0 sm:max-w-md">
           <SheetHeader className="border-b px-5 py-4">
             <SheetTitle className="font-heading">Historie verzí</SheetTitle>

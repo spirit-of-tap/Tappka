@@ -3,18 +3,26 @@
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Save, Send, BookOpen, Check, CloudOff, PenLine, Globe, Search } from 'lucide-react';
+import {
+  Save, Send, BookOpen, Check, CloudOff, PenLine, Globe, Search,
+  MoreHorizontal, History, Trash2,
+} from 'lucide-react';
 import { TiptapEditor } from './tiptap-editor';
 import { EssayHistorySheet } from './essay-history-sheet';
+import { EssayDeleteButton } from './essay-delete-button';
 import { useAutosave, type AutosaveStatus } from '@/lib/essays/use-autosave';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
-import { formatPoints } from '@/lib/books/points';
+import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
 import type { Book, HighlightCategory } from '@/lib/books/types';
 import type { EssayWithDetails } from '@/lib/essays/types';
@@ -98,6 +106,8 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const [bookResults, setBookResults] = useState<BookSearchResult[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [essayId, setEssayId] = useState<string | null>(initialEssay?.id ?? null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const isDraft = initialEssay?.published_at == null;
 
   // The save closure must read the newest values, not the ones captured when
@@ -225,18 +235,21 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
             </span>
           )}
           <SaveStatus status={status} lastSavedAt={lastSavedAt} onRetry={() => void retry()} />
-          {/* Hidden once the line wraps, where a trailing separator dangles. */}
-          <span aria-hidden className="hidden text-muted-foreground/40 sm:inline">·</span>
-          <span className="text-muted-foreground">
-            {isDraft
-              ? 'Uvidíš ji jenom ty, dokud ji nezveřejníš.'
-              : 'Změny se objeví hned, jak je uložíš.'}
-          </span>
+          {/* Only the koncept case earns a sentence — that a draft is private is
+              worth teaching, whereas "saving publishes it" is self-evident. Kept
+              off small screens, where the badge alone carries it. */}
+          {isDraft && (
+            <>
+              <span aria-hidden className="hidden text-muted-foreground/40 sm:inline">·</span>
+              <span className="hidden text-muted-foreground sm:inline">
+                Uvidíš ji jenom ty, dokud ji nezveřejníš.
+              </span>
+            </>
+          )}
         </div>
 
         <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-2">
-            {essayId && <EssayHistorySheet essayId={essayId} />}
+          <div className="flex items-center gap-1.5">
             <Button
               onClick={() => void handlePrimaryAction()}
               disabled={isPublishing || needsTitle}
@@ -251,6 +264,31 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
               )}
               {isDraft ? 'Zveřejnit' : 'Uložit změny'}
             </Button>
+
+            {/* History and delete live behind one control: three buttons across
+                the top crowded the strip, and only one of them is the action an
+                author came here to take. Nothing to show before the essay
+                exists as a row. */}
+            {essayId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="size-8" aria-label="Další akce">
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setHistoryOpen(true)}>
+                    <History className="size-4" />
+                    Historie verzí
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+                    <Trash2 className="size-4" />
+                    {isDraft ? 'Smazat koncept' : 'Smazat esej'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
           {/* The publish button is disabled without a title; say why rather
               than leaving the author to guess at a dead control. */}
@@ -259,6 +297,23 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
           )}
         </div>
       </div>
+
+      {essayId && (
+        <>
+          <EssayHistorySheet
+            essayId={essayId}
+            open={historyOpen}
+            onOpenChange={setHistoryOpen}
+          />
+          <EssayDeleteButton
+            essayId={essayId}
+            isDraft={isDraft}
+            points={pointsNumber(selectedBook?.book_points)}
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+          />
+        </>
+      )}
 
       {/* The book comes first: it is the choice that decides whether the essay
           earns BookPoints, and it is the one thing an author can get wrong. */}
