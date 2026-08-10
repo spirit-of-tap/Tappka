@@ -11,6 +11,9 @@ import type { CreateBookInput, BookFilters, BookListStatus } from '@/lib/books/t
 /** Books by the same author to consider when looking for a duplicate. */
 const DUPLICATE_CANDIDATE_LIMIT = 50;
 
+/** The only point values a book may carry — mirrors the `books` check constraint. */
+const VALID_BOOK_POINTS = [1, 2, 3] as const;
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -57,6 +60,10 @@ export async function POST(request: NextRequest) {
 
     if (!body.title?.trim() || !body.author?.trim()) {
       return NextResponse.json({ error: 'Název a autor jsou povinné' }, { status: 400 });
+    }
+
+    if (body.book_points != null && !VALID_BOOK_POINTS.includes(body.book_points)) {
+      return NextResponse.json({ error: 'Neplatný počet bodů za knihu' }, { status: 400 });
     }
 
     // Duplicate check: same ISBN-13, or same author with an overlapping title in
@@ -107,11 +114,16 @@ export async function POST(request: NextRequest) {
 
     const cleanTags = (body.tags ?? []).filter((t) => t.trim().length > 0);
 
+    // `?? null` alone would store '' for a blank field, because ''.trim() is ''
+    // and not nullish. An empty title_en breaks the cross-language dedupe key.
+    const titleEn = body.title_en?.trim();
+    const pointsReason = body.points_reason?.trim();
+
     const { data: inserted, error: insertError } = await supabase
       .from('books')
       .insert({
         title_cs: body.title.trim(),
-        title_en: body.title_en?.trim() ?? null,
+        title_en: titleEn && titleEn.length > 0 ? titleEn : null,
         author: body.author.trim(),
         isbn_13: body.isbn_13 ?? null,
         description: body.description ?? null,
@@ -121,7 +133,7 @@ export async function POST(request: NextRequest) {
         // The scoring rationale lives here: the review UI already surfaces
         // `list_status_reason` as DŮVOD ZAŘAZENÍ, and `classify` replaces it
         // with the coach's own reason on approval.
-        list_status_reason: body.points_reason?.trim() ?? null,
+        list_status_reason: pointsReason && pointsReason.length > 0 ? pointsReason : null,
         source: body.source ?? 'manual',
         external_id: body.external_id ?? null,
         created_by_profile_id: profile.id,

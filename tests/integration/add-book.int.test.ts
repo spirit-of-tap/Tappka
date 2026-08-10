@@ -52,28 +52,23 @@ describe('adding a book', () => {
     });
   });
 
-  it('awards no points while the book is still processing', async () => {
+  it('refuses an archived book that still carries points', async () => {
+    // books_archived_points_check. The app relies on this: `classify` zeroes
+    // points when archiving, and this proves the database enforces it even if
+    // that code path is ever bypassed.
     await withRollback(async (client) => {
       const student = await seedStudent(client);
       await asClaims(client, { sub: student.authId });
 
-      await client.query(
-        `insert into public.books
-           (title_cs, author, book_points, list_status,
-            created_by_profile_id, updated_by_profile_id)
-         values ('Nová kniha', 'Autor', 3, 'processing', $1, $1)`,
-        [student.profileId],
-      );
-
-      const { rows } = await client.query(
-        `select coalesce(sum(book_points), 0)::int as total
-         from public.books
-         where created_by_profile_id = $1
-           and list_status in ('shortlist', 'longlist')`,
-        [student.profileId],
-      );
-
-      expect(rows[0].total).toBe(0);
+      await expect(
+        client.query(
+          `insert into public.books
+             (title_cs, author, book_points, list_status,
+              created_by_profile_id, updated_by_profile_id)
+           values ('Zamítnutá', 'Autor', 2, 'archived', $1, $1)`,
+          [student.profileId],
+        ),
+      ).rejects.toThrow();
     });
   });
 
