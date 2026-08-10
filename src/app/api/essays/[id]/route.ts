@@ -99,7 +99,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       }
 
       if (shouldCoalesceRevision(latest, profile.id, now)) {
-        const { error: coalesceError } = await supabase
+        // `.select()` is load-bearing: an UPDATE that RLS declines affects zero
+        // rows and returns no error, so without reading back what changed this
+        // route would answer 200 and the editor would show "Uloženo" for work
+        // that was never written.
+        const { data: coalesced, error: coalesceError } = await supabase
           .from('essay_revisions')
           .update({
             title: nextTitle,
@@ -108,11 +112,17 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
             updated_by_profile_id: profile.id,
           })
           .eq('essay_id', id)
-          .eq('revision_no', latest!.revision_no);
+          .eq('revision_no', latest!.revision_no)
+          .select('revision_no')
+          .maybeSingle();
 
         if (coalesceError) throw coalesceError;
-        revisionNo = latest!.revision_no;
-      } else {
+        if (coalesced) revisionNo = coalesced.revision_no;
+      }
+
+      // Either coalescing was not appropriate, or it was refused — the author's
+      // text still has to land, so cut a new revision instead of losing it.
+      if (revisionNo == null) {
         const nextNo = (latest?.revision_no ?? 0) + 1;
         const { error: insertRevError } = await supabase
           .from('essay_revisions')
