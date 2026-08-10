@@ -4,12 +4,11 @@ import { PageShell } from '@/components/ui/page-shell';
 
 export default function NovaEsejPage() {
   return (
-    <PageShell size="narrow">
+    <PageShell size="wide" className="space-y-3 sm:space-y-4">
+      {/* The visible document title is the editor's own title field, so the
+          page heading only needs to exist for assistive technology. */}
+      <h1 className="sr-only">Napsat esej</h1>
       <BackButton />
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Napsat esej</h1>
-        <p className="text-sm text-muted-foreground">Popiš, co tě kniha naučila nebo jak tě ovlivnila.</p>
-      </div>
       <EssayEditorForm />
     </PageShell>
   );

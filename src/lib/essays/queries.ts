@@ -3,6 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/supabase/database.types';
 
 import { contentTextFromJson } from './content-text';
+import { countWords } from './text-stats';
 import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
 import type { HighlightCategory } from '@/lib/books/types';
 import type {
@@ -338,7 +339,7 @@ export async function getEssayRevisions(
       title: row.title,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      word_count: text ? text.split(/\s+/).length : 0,
+      word_count: countWords(text),
       snippet: text.slice(0, REVISION_SNIPPET_LENGTH),
     };
   });

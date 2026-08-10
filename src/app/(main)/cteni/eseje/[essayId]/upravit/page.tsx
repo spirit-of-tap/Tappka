@@ -25,16 +25,11 @@ export default async function EssayEditPage({ params }: PageProps) {
   const isDraft = essay.published_at == null;
 
   return (
-    <PageShell size="narrow">
+    <PageShell size="wide" className="space-y-3 sm:space-y-4">
+      {/* The visible document title is the editor's own title field, so the
+          page heading only needs to exist for assistive technology. */}
+      <h1 className="sr-only">{isDraft ? 'Koncept eseje' : 'Upravit esej'}</h1>
       <BackButton />
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">{isDraft ? 'Koncept' : 'Upravit esej'}</h1>
-        {isDraft && (
-          <p className="text-sm text-muted-foreground">
-            Rozepsaná esej. Uvidíš ji jenom ty, dokud ji nezveřejníš.
-          </p>
-        )}
-      </div>
       <EssayEditorForm initialEssay={essay} />
     </PageShell>
   );

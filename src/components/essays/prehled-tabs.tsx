@@ -33,8 +33,8 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
       <TabsContent value="moje" className="mt-6 space-y-6">
         <PersonalProgress approved_points={stats.approved_points} pending_points={stats.pending_points} />
 
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-lg">Moje eseje</h2>
+        <div className="flex items-end justify-between gap-3 border-b pb-2">
+          <h2 className="font-heading text-lg font-semibold">Moje eseje</h2>
           <Button asChild size="sm">
             <Link href="/cteni/eseje/nova">
               <Plus className="size-4 mr-1.5" />
@@ -44,9 +44,14 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
         </div>
 
         {myEssays.length === 0 && drafts.length === 0 ? (
-          <div className="text-center py-12 space-y-3">
-            <FileText className="size-10 mx-auto text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Zatím žádné eseje. Napiš svou první!</p>
+          <div className="space-y-3 rounded-xl border border-dashed px-6 py-12 text-center">
+            <FileText className="mx-auto size-8 text-muted-foreground/50" />
+            <div className="space-y-1">
+              <p className="font-medium">Ještě tu nic není</p>
+              <p className="text-sm text-muted-foreground">
+                První esej si můžeš rozepsat a dokončit kdykoliv později.
+              </p>
+            </div>
             <Button asChild>
               <Link href="/cteni/eseje/nova">Napsat esej</Link>
             </Button>
