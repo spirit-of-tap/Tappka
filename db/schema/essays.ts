@@ -48,7 +48,7 @@ export const essays = pgTable("essays", {
 			name: "essays_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	pgPolicy("Authors can create their own essays", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(author_profile_id = current_profile_id())` }),
-	pgPolicy("Authenticated users can view all essays", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+	pgPolicy("Authenticated users can view all essays", { as: "permissive", for: "select", to: ["authenticated"], using: sql`((published_at IS NOT NULL) OR (author_profile_id = ( SELECT current_profile_id())) OR ( SELECT is_admin()))` }),
 	pgPolicy("Authors and admins can delete essays", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((author_profile_id = current_profile_id()) OR is_admin())` }),
 	pgPolicy("Authors can update their own essays", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(author_profile_id = current_profile_id())`, withCheck: sql`(author_profile_id = current_profile_id())` }),
 ]).enableRLS();
@@ -80,9 +80,11 @@ export const essayRevisions = pgTable("essay_revisions", {
 			name: "essay_revisions_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	primaryKey({ columns: [table.essayId, table.revisionNo], name: "essay_revisions_pkey" }),
-	pgPolicy("Authenticated users can view essay revisions", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
-	pgPolicy("Authors can create essay revisions", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(created_by_profile_id = current_profile_id())` }),
-	pgPolicy("Essay revisions cannot be updated", { as: "permissive", for: "update", to: ["authenticated"], using: sql`false` }),
+pgPolicy("Authenticated users can view essay revisions", { as: "permissive", for: "select", to: ["authenticated"], using: sql`(EXISTS ( SELECT 1
+   FROM essays e
+  WHERE ((e.id = essay_revisions.essay_id) AND ((e.published_at IS NOT NULL) OR (e.author_profile_id = ( SELECT current_profile_id())) OR ( SELECT is_admin())))))` }),
+pgPolicy("Authors can create essay revisions", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(created_by_profile_id = current_profile_id())` }),
+pgPolicy("Authors can update their newest recent essay revision", { as: "permissive", for: "update", to: ["authenticated"], using: sql`((created_by_profile_id = ( SELECT current_profile_id())) AND (created_at > (now() - '00:30:00'::interval)))`, withCheck: sql`(created_by_profile_id = ( SELECT current_profile_id()))` }),
 	pgPolicy("Essay revisions cannot be deleted", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`false` }),
 ]).enableRLS();
 
