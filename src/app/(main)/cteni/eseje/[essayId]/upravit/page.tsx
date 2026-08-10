@@ -1,10 +1,9 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById } from '@/lib/essays/queries';
-import { Button } from '@/components/ui/button';
+import { PageShell } from '@/components/ui/page-shell';
+import { BackButton } from '@/components/essays/back-button';
 import { EssayEditorForm } from '@/components/essays/essay-editor-form';
 
 interface PageProps {
@@ -23,18 +22,20 @@ export default async function EssayEditPage({ params }: PageProps) {
   if (!essay) notFound();
   if (essay.author_profile_id !== profile?.id) redirect(`/cteni/eseje/${essayId}`);
 
+  const isDraft = essay.published_at == null;
+
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-3xl">
-      <Button variant="ghost" asChild className="gap-2">
-        <Link href={`/cteni/eseje/${essayId}`}>
-          <ArrowLeft className="size-4" />
-          Zpět na esej
-        </Link>
-      </Button>
+    <PageShell size="narrow">
+      <BackButton />
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Upravit esej</h1>
+        <h1 className="text-2xl font-bold">{isDraft ? 'Koncept' : 'Upravit esej'}</h1>
+        {isDraft && (
+          <p className="text-sm text-muted-foreground">
+            Rozepsaná esej. Uvidíš ji jenom ty, dokud ji nezveřejníš.
+          </p>
+        )}
       </div>
       <EssayEditorForm initialEssay={essay} />
-    </div>
+    </PageShell>
   );
 }

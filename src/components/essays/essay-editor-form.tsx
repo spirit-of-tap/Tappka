@@ -3,8 +3,10 @@
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Save, BookOpen, X } from 'lucide-react';
+import { Save, Send, BookOpen, X } from 'lucide-react';
 import { TiptapEditor } from './tiptap-editor';
+import { EssayHistorySheet } from './essay-history-sheet';
+import { useAutosave } from '@/lib/essays/use-autosave';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,60 +35,111 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(initialEssay?.book as BookSearchResult | null ?? null);
   const [bookQuery, setBookQuery] = useState('');
   const [bookResults, setBookResults] = useState<BookSearchResult[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [essayId] = useState<string | null>(initialEssay?.id ?? null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [essayId, setEssayId] = useState<string | null>(initialEssay?.id ?? null);
+  const isDraft = initialEssay?.published_at == null;
 
-  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The save closure must read the newest values, not the ones captured when
+  // the debounce timer was armed.
+  const latestRef = useRef({ title, content, bookId: selectedBook?.id ?? null, essayId });
+  latestRef.current = { title, content, bookId: selectedBook?.id ?? null, essayId };
+
+  const creatingRef = useRef(false);
+
+  const persist = useCallback(async () => {
+    const { title: t, content: c, bookId, essayId: id } = latestRef.current;
+    const payload = { title: t, content_json: c.json, content_text: c.text, book_id: bookId };
+
+    if (!id) {
+      if (creatingRef.current) return;
+      creatingRef.current = true;
+      try {
+        const res = await fetch('/api/essays', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('create failed');
+        const { data } = await res.json();
+        setEssayId(data.id);
+        latestRef.current.essayId = data.id;
+        // Shallow URL swap: router.replace would remount the page and tear
+        // down Tiptap mid-sentence. Next's App Router supports the native
+        // History API and keeps usePathname in sync.
+        window.history.replaceState(null, '', `/cteni/eseje/${data.id}/upravit`);
+      } finally {
+        creatingRef.current = false;
+      }
+      return;
+    }
+
+    const res = await fetch(`/api/essays/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    });
+    if (!res.ok) throw new Error('save failed');
+  }, []);
+
+  const hasSomethingToSave = title.trim().length > 0 || content.text.trim().length > 0;
+  const { status, lastSavedAt, schedule, flush, retry } = useAutosave({
+    save: persist,
+    enabled: hasSomethingToSave,
+  });
 
   const handleContentChange = useCallback((json: object, text: string) => {
     setContent({ json, text });
+    latestRef.current.content = { json, text };
+    schedule();
+  }, [schedule]);
 
-    if (!essayId) return;
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = setTimeout(async () => {
-      await fetch(`/api/essays/${essayId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content_json: json, content_text: text }),
-      });
-    }, 5000);
-  }, [essayId]);
+  const handleTitleChange = useCallback((value: string) => {
+    setTitle(value);
+    latestRef.current.title = value;
+    schedule();
+  }, [schedule]);
+
+  const handleBookChange = useCallback((book: BookSearchResult | null) => {
+    setSelectedBook(book);
+    latestRef.current.bookId = book?.id ?? null;
+    schedule();
+  }, [schedule]);
+
+  const handlePrimaryAction = async () => {
+    setIsPublishing(true);
+    try {
+      await flush();
+      const id = latestRef.current.essayId;
+      if (!id) {
+        toast.error('Esej se zatím nepodařilo uložit.');
+        return;
+      }
+
+      if (!isDraft) {
+        toast.success('Změny uloženy.');
+        router.push(`/cteni/eseje/${id}`);
+        return;
+      }
+
+      const res = await fetch(`/api/essays/${id}/publish`, { method: 'POST' });
+      if (!res.ok) {
+        const { error } = await res.json();
+        toast.error(error ?? 'Nepodařilo se zveřejnit esej.');
+        return;
+      }
+      toast.success('Esej publikována.');
+      router.push(`/cteni/eseje/${id}`);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   const searchBooks = async (q: string) => {
     if (!q.trim()) { setBookResults([]); return; }
     const res = await fetch(`/api/books/search?q=${encodeURIComponent(q)}`);
     const { data } = await res.json();
     setBookResults(data ?? []);
-  };
-
-  const handlePublish = async () => {
-    if (!title.trim() || !content.json) return;
-    setIsSaving(true);
-    try {
-      const method = essayId ? 'PATCH' : 'POST';
-      const url = essayId ? `/api/essays/${essayId}` : '/api/essays';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          content_json: content.json,
-          content_text: content.text,
-          book_id: selectedBook?.id ?? null,
-        }),
-      });
-      if (res.ok) {
-        const { data } = await res.json();
-        if (data?.id) {
-          toast.success('Esej publikována.');
-          router.push(`/cteni/eseje/${data.id}`);
-        }
-      } else {
-        toast.error('Nepodařilo se publikovat esej.');
-      }
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   return (
@@ -96,10 +149,28 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         <Input
           id="essay-title"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Název eseje..."
           className="text-lg font-medium"
         />
+        <div className="flex min-h-5 items-center gap-2 text-xs text-muted-foreground">
+          {status === 'saving' && <span>Ukládám…</span>}
+          {status === 'saved' && lastSavedAt && (
+            <span>Uloženo {lastSavedAt.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}</span>
+          )}
+          {status === 'error' && (
+            <>
+              <span className="text-destructive">Neuloženo</span>
+              <button
+                type="button"
+                onClick={() => void retry()}
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                Zkusit znovu
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -132,7 +203,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
             )}
             <button
               type="button"
-              onClick={() => setSelectedBook(null)}
+              onClick={() => handleBookChange(null)}
               className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
               aria-label="Odebrat knihu"
             >
@@ -152,7 +223,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                   <button
                     key={book.id}
                     className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-muted"
-                    onClick={() => { setSelectedBook(book); setBookResults([]); setBookQuery(''); }}
+                    onClick={() => { handleBookChange(book); setBookResults([]); setBookQuery(''); }}
                   >
                     <div className="flex h-12 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
                       {book.google_books_cover_url ? (
@@ -195,10 +266,17 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         </div>
       </div>
 
-      <Button onClick={handlePublish} disabled={!title.trim() || isSaving} size="lg">
-        {isSaving ? <Spinner className="size-4 mr-2" /> : <Save className="size-4 mr-2" />}
-        {essayId ? 'Uložit změny' : 'Zveřejnit'}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={() => void handlePrimaryAction()}
+          disabled={isPublishing || (isDraft && !title.trim())}
+          size="lg"
+        >
+          {isPublishing ? <Spinner className="size-4 mr-2" /> : isDraft ? <Send className="size-4 mr-2" /> : <Save className="size-4 mr-2" />}
+          {isDraft ? 'Zveřejnit' : 'Uložit změny'}
+        </Button>
+        {essayId && <EssayHistorySheet essayId={essayId} />}
+      </div>
     </div>
   );
 }
