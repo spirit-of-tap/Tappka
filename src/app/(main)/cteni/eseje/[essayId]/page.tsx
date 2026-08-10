@@ -43,6 +43,10 @@ export default async function EssayDetailPage({ params }: PageProps) {
 
   if (!essay) notFound();
 
+  // A koncept has no public face — send its author to the editor. Everyone
+  // else already gets notFound() from the essays SELECT policy.
+  if (essay.published_at == null) redirect(`/cteni/eseje/${essayId}/upravit`);
+
   const isAuthor = profile?.id === essay.author_profile_id;
   const hasVoted = !!voteResult.data;
   const isCoachOrAdmin = profile?.role === 'coach' || profile?.role === 'admin';

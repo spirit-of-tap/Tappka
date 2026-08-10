@@ -1,19 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { Eye, BookOpen, MessageCircle, Sparkles, Pin } from 'lucide-react';
+import { Eye, BookOpen, MessageCircle, Sparkles, Pin, FileText } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from './essay-vote-button';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { Badge } from '@/components/ui/badge';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
 interface MyEssayListProps {
   essays: EssayWithDetails[];
+  drafts?: EssayWithDetails[];
   votedEssayIds?: Set<string>;
 }
 
-export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListProps) {
+export function MyEssayList({ essays, drafts = [], votedEssayIds = new Set() }: MyEssayListProps) {
   const bookEssays = essays.filter((e) => e.book);
   const topicEssays = essays.filter((e) => !e.book);
 
@@ -28,7 +30,39 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
   const sorted = [...bookEssays.sort(sortPinned), ...topicEssays.sort(sortPinned)];
 
   return (
-    <div className="divide-y divide-border/50">
+    <div className="space-y-6">
+      {drafts.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Koncepty ({drafts.length})
+          </h3>
+          <div className="divide-y divide-border/50">
+            {drafts.map((draft) => (
+              <Link
+                key={draft.id}
+                href={`/cteni/eseje/${draft.id}/upravit`}
+                className="group focus-ring -mx-2 flex items-start gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-muted/30"
+              >
+                <FileText className="mt-0.5 size-4 shrink-0 text-muted-foreground/50" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {draft.title.trim() ? draft.title : 'Bez názvu'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    upraveno {new Date(draft.updated_at).toLocaleDateString('cs-CZ', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </p>
+                </div>
+                <Badge variant="secondary" className="shrink-0 text-xs">Koncept</Badge>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="divide-y divide-border/50">
       {sorted.map((essay, i) => {
         const snippet = (essay.content_text ?? '').slice(0, 120).trimEnd();
         const date = new Date(essay.created_at).toLocaleDateString('cs-CZ', {
@@ -139,6 +173,7 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
           </Link>
         );
       })}
+      </div>
     </div>
   );
 }

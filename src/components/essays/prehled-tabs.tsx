@@ -14,12 +14,13 @@ interface PrehledTabsProps {
   defaultTab: string;
   stats: { approved_points: number; pending_points: number; essay_count: number };
   myEssays: EssayWithDetails[];
+  drafts: EssayWithDetails[];
   teamStats: { profile: { id: string; name: string; picture: string | null }; approved_points: number; pending_points: number }[];
   hasTeam: boolean;
   votedEssayIds: Set<string>;
 }
 
-export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, votedEssayIds }: PrehledTabsProps) {
+export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, hasTeam, votedEssayIds }: PrehledTabsProps) {
   return (
     <Tabs defaultValue={defaultTab}>
       <TabsList>
@@ -42,7 +43,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
           </Button>
         </div>
 
-        {myEssays.length === 0 ? (
+        {myEssays.length === 0 && drafts.length === 0 ? (
           <div className="text-center py-12 space-y-3">
             <FileText className="size-10 mx-auto text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Zatím žádné eseje. Napiš svou první!</p>
@@ -51,7 +52,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, teamStats, hasTeam, v
             </Button>
           </div>
         ) : (
-          <MyEssayList essays={myEssays} votedEssayIds={votedEssayIds} />
+          <MyEssayList essays={myEssays} drafts={drafts} votedEssayIds={votedEssayIds} />
         )}
       </TabsContent>
 
