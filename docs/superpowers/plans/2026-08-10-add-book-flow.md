@@ -3854,6 +3854,58 @@ test.describe('adding a book', () => {
     await expect(page).toHaveURL(/\/cteni\/knihy\/[0-9a-f-]{36}$/);
   });
 
+  test('submits a co-authored book without a server error', async ({ page }) => {
+    // Regression guard for the duplicate-check query. `ExternalBookCandidate.author`
+    // is built as `authors.join(', ')`, and a comma is the clause separator inside a
+    // PostgREST `or` filter — an interpolated `or` string 500s on every co-authored
+    // book. Task 2's unit tests cover findDuplicate's matching but cannot see the
+    // route's query, so the guard has to live here.
+    await page.route('**/api/books/external-search**', (route) =>
+      route.fulfill({
+        json: {
+          data: [{
+            title: 'Sprint',
+            author: 'Jake Knapp, John Zeratsky, Braden Kowitz',
+            isbn_13: '9781501121746',
+            description: null,
+            cover_url: null,
+            page_count: 288,
+            publisher: 'Simon & Schuster',
+            published_year: 2016,
+            preview_link: null,
+            source: 'google_books',
+            external_id: 'vol-1',
+          }],
+        },
+      }),
+    );
+    await page.route('**/api/books/enrich', (route) =>
+      route.fulfill({
+        json: {
+          ...ENRICHED,
+          data: { ...ENRICHED.data, author: 'Jake Knapp, John Zeratsky, Braden Kowitz' },
+        },
+      }),
+    );
+
+    const createResponses: number[] = [];
+    page.on('response', (response) => {
+      if (response.url().endsWith('/api/books') && response.request().method() === 'POST') {
+        createResponses.push(response.status());
+      }
+    });
+
+    await page.goto('/cteni/knihy/nova?q=sprint&from=hledat');
+    await page.getByRole('button', { name: /chci přidat/i }).click();
+    await page.getByRole('button', { name: /vybrat/i }).click();
+    await expect(page.getByLabel(/autor/i)).toHaveValue(/Zeratsky/);
+    await page.getByRole('button', { name: /odeslat ke schválení/i }).click();
+
+    await expect(page.getByText(/odeslána ke schválení/i)).toBeVisible();
+    // 201 created, or 409 if a prior run already added it — never 500.
+    expect(createResponses.every((status) => status !== 500)).toBe(true);
+  });
+
   test('falls back to manual entry when enrichment is unavailable', async ({ page }) => {
     await page.route('**/api/books/external-search**', (route) =>
       route.fulfill({ json: { data: [] } }),
