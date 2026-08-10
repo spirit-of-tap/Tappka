@@ -67,6 +67,13 @@ export interface ExternalBookCandidate {
   isbn_13: string | null;
   description: string | null;
   cover_url: string | null;
+  /** Load-bearing for the scoring rubric's extent correction. */
+  page_count: number | null;
+  /** Krok 2 display only — not persisted. */
+  publisher: string | null;
+  /** Krok 2 display only — not persisted. */
+  published_year: number | null;
+  preview_link: string | null;
   source: BookSource;
   external_id: string;
 }
