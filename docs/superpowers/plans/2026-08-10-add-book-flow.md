@@ -269,15 +269,28 @@ Inside `normalizeDoc`, add to the returned object:
 
 Replace the two hardcoded `fields:` values in `searchOpenLibrary` and `fetchOpenLibraryByIsbn` with `fields: FIELDS`.
 
-- [ ] **Step 6: Run tests and typecheck**
+- [ ] **Step 6: Allowlist the Open Library cover host**
+
+Covers are stored as remote URLs, never downloaded, and `next/image` refuses a host that is not
+in `remotePatterns`. `books.google.com` is already listed; `covers.openlibrary.org` is not, so an
+Open Library cover would fail to render. Add it to `next.config.ts`:
+
+```typescript
+      {
+        protocol: 'https',
+        hostname: 'covers.openlibrary.org',
+      },
+```
+
+- [ ] **Step 7: Run tests and typecheck**
 
 Run: `pnpm test:unit -- google-books && pnpm typecheck`
 Expected: PASS. Typecheck confirms no other call site relied on the old shape.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add src/lib/books/types.ts src/lib/books/external/
+git add src/lib/books/types.ts src/lib/books/external/ next.config.ts
 git commit -m "feat(books): map page count, publisher, year and preview link from external sources"
 ```
 
@@ -530,12 +543,13 @@ export interface CreateBookInput {
   description?: string;
   page_count?: number | null;
   preview_link?: string | null;
-  google_books_cover_url?: string;
   /**
-   * Remote cover URL. `POST /api/books` passes it to `downloadAndStoreCover`
-   * after the insert — without it, the book is stored with no cover.
+   * The cover's remote URL, stored as-is — we do not download covers.
+   * `StorageImage` passes external URLs straight through via `isExternalUrl`,
+   * and the POST route's existing `body.google_books_cover_url ?? null` branch
+   * already skips `downloadAndStoreCover` when this is set.
    */
-  cover_url?: string | null;
+  google_books_cover_url?: string | null;
   /** AI suggestion or the submitter's own pick. A coach overrides it on review. */
   book_points?: 1 | 2 | 3 | null;
   /** Scoring rationale. Stored in `list_status_reason` — see the design doc. */
@@ -2671,18 +2685,18 @@ describe('StepReview', () => {
     );
   });
 
-  it('forwards the remote cover so the route can store it', async () => {
+  it('forwards the remote cover URL unchanged rather than downloading it', async () => {
     const onSubmit = vi.fn();
     const withCover: AddBookDraft = {
       ...ENRICHED_DRAFT,
-      candidate: { ...CANDIDATE, cover_url: 'https://example.com/cover.jpg' },
+      candidate: { ...CANDIDATE, cover_url: 'https://books.google.com/cover.jpg' },
     };
     render(<StepReview draft={withCover} submitting={false} onSubmit={onSubmit} />);
 
     await userEvent.click(screen.getByRole('button', { name: /odeslat/i }));
 
     expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ cover_url: 'https://example.com/cover.jpg' }),
+      expect.objectContaining({ google_books_cover_url: 'https://books.google.com/cover.jpg' }),
     );
   });
 
@@ -2781,8 +2795,8 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
       description: description.trim(),
       page_count: pageCount ? Number.parseInt(pageCount, 10) : null,
       preview_link: candidate?.preview_link ?? null,
-      // The route downloads this into storage after the insert.
-      cover_url: candidate?.cover_url ?? null,
+      // Stored as-is; covers are not downloaded into our storage.
+      google_books_cover_url: candidate?.cover_url ?? null,
       book_points: points,
       points_reason: enriched?.points_reason ?? null,
       tags: [tag],

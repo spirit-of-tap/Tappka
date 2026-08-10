@@ -254,7 +254,7 @@ needs already exists in `books`; three columns that exist today simply start bei
 | Author, ISBN | `author`, `isbn_13` | Existing. |
 | Page count | `page_count` | **Exists, never populated today.** Load-bearing: the extent correction depends on it. |
 | Preview link | `preview_link` | **Exists, never populated today.** |
-| Cover | `google_books_cover_url` | Existing; `downloadAndStoreCover` already handles it. |
+| Cover | `google_books_cover_url` | The remote URL, stored as-is — covers are **not** downloaded into our storage. `StorageImage` already passes external URLs through via `isExternalUrl`, and `next.config.ts` already allowlists `books.google.com`; `covers.openlibrary.org` gets added alongside it. The tradeoff: a cover breaks if the upstream host drops the URL. `downloadAndStoreCover` stays in place for other callers but is no longer reached from this path. |
 | Why read + caveats + public rating | `description` | One combined field, as revised above. |
 | Suggested points | `book_points` | The AI's proposal. Coach overrides via `PointsDialog`. |
 | Points rationale | `list_status_reason` | See below. |
