@@ -274,6 +274,13 @@
       "when": 1786015152573,
       "tag": "20260806111912_fuzzy_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1786357382012,
+      "tag": "20260810102302_puzzling_meteorite",
+      "breakpoints": true
     }
   ]
 }

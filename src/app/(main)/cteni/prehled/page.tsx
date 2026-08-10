@@ -18,9 +18,10 @@ export default async function PrehledPage({ searchParams }: PageProps) {
   const profile = await getCurrentUserProfile(supabase, { user });
   if (!profile) redirect('/auth/login');
 
-  const [stats, myEssays, teamStats, votesResult] = await Promise.all([
+  const [stats, myEssays, drafts, teamStats, votesResult] = await Promise.all([
     getUserBookPointsStats(supabase, profile.id),
     getEssays(supabase, { authorProfileId: profile.id, pageSize: 50 }),
+    getEssays(supabase, { authorProfileId: profile.id, status: 'draft' }),
     profile.team_id ? getTeamBookPointsStats(supabase, profile.team_id) : Promise.resolve([]),
     supabase.from('essay_votes').select('essay_id').eq('voter_profile_id', profile.id),
   ]);
@@ -40,6 +41,7 @@ export default async function PrehledPage({ searchParams }: PageProps) {
         defaultTab={defaultTab}
         stats={stats}
         myEssays={myEssays}
+        drafts={drafts}
         teamStats={teamStats}
         hasTeam={!!profile.team_id}
         votedEssayIds={votedEssayIds}

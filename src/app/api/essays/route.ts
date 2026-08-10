@@ -3,10 +3,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getEssays, getEssaysByTeam, pickLatestRevision } from '@/lib/essays/queries';
+import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import { contentTextFromJson } from '@/lib/essays/content-text';
 import type { EssayListView, EssaySortOrder } from '@/lib/essays/types';
-import type { Database, Json } from '@/lib/supabase/database.types';
+import type { Database } from '@/lib/supabase/database.types';
 
 const MAX_TITLE_LENGTH = 500;
 const MAX_CONTENT_TEXT_LENGTH = 100_000;
@@ -27,63 +27,6 @@ async function annotateWithVoted<T extends { id: string }>(
     annotated.forEach((e, i) => { annotated[i].user_has_voted = votedIds.has(essays[i].id); });
   }
   return annotated;
-}
-
-/**
- * Loads a freshly created essay with revision + count embeds for the API response.
- */
-async function fetchCreatedEssay(
-  supabase: SupabaseClient<Database>,
-  essayId: string,
-) {
-  const { data, error } = await supabase
-    .from('essays')
-    .select(`
-      *,
-      essay_revisions(title, content_json, revision_no, invalid_since),
-      essay_votes(count),
-      essay_views(count),
-      essay_comments(count),
-      author:profiles!author_profile_id(id, name, picture, role),
-      book:books!book_id(id, title_cs, author, book_points, status, google_books_cover_url)
-    `)
-    .eq('id', essayId)
-    .single();
-
-  if (error) throw error;
-
-  const revision = pickLatestRevision(
-    data.essay_revisions as {
-      title: string;
-      content_json: Json;
-      revision_no: number;
-      invalid_since: string | null;
-    }[] | null,
-  );
-  const content_json = (revision?.content_json ?? {}) as object;
-  const {
-    essay_revisions: _revs,
-    essay_votes,
-    essay_views,
-    essay_comments,
-    created_by_profile_id: _c,
-    updated_by_profile_id: _u,
-    ...rest
-  } = data as typeof data & {
-    essay_votes?: { count: number }[];
-    essay_views?: { count: number }[];
-    essay_comments?: { count: number }[];
-  };
-
-  return {
-    ...rest,
-    title: revision?.title ?? '',
-    content_json,
-    content_text: contentTextFromJson(content_json),
-    vote_count: Number(essay_votes?.[0]?.count ?? 0),
-    view_count: Number(essay_views?.[0]?.count ?? 0),
-    comment_count: Number(essay_comments?.[0]?.count ?? 0),
-  };
 }
 
 export async function GET(request: NextRequest) {
@@ -134,31 +77,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, content_json, content_text, book_id } = body;
 
-    if (!title?.trim()) {
-      return NextResponse.json({ error: 'Název eseje je povinný' }, { status: 400 });
-    }
-    if (!content_json) {
-      return NextResponse.json({ error: 'Obsah eseje je povinný' }, { status: 400 });
-    }
-    if (title.trim().length > MAX_TITLE_LENGTH) {
+    // A koncept may be empty in every field — it exists so autosave has
+    // somewhere to write. Publishing is where the content rules apply.
+    const trimmedTitle = typeof title === 'string' ? title.trim() : '';
+    if (trimmedTitle.length > MAX_TITLE_LENGTH) {
       return NextResponse.json({ error: 'Název eseje je příliš dlouhý' }, { status: 400 });
     }
 
+    const nextContent = content_json ?? {};
     const plainText = typeof content_text === 'string'
       ? content_text
-      : contentTextFromJson(content_json);
+      : contentTextFromJson(nextContent);
     if (plainText.length > MAX_CONTENT_TEXT_LENGTH) {
       return NextResponse.json({ error: 'Esej je příliš dlouhá' }, { status: 400 });
     }
-
-    const now = new Date().toISOString();
 
     const { data: essay, error: essayError } = await supabase
       .from('essays')
       .insert({
         author_profile_id: profile.id,
         book_id: book_id ?? null,
-        published_at: now,
+        published_at: null,
         created_by_profile_id: profile.id,
         updated_by_profile_id: profile.id,
       })
@@ -172,16 +111,15 @@ export async function POST(request: NextRequest) {
       .insert({
         essay_id: essay.id,
         revision_no: 1,
-        title: title.trim(),
-        content_json,
+        title: trimmedTitle,
+        content_json: nextContent,
         created_by_profile_id: profile.id,
         updated_by_profile_id: profile.id,
       });
 
     if (revisionError) throw revisionError;
 
-    const normalized = await fetchCreatedEssay(supabase, essay.id);
-    return NextResponse.json({ data: normalized }, { status: 201 });
+    return NextResponse.json({ data: { id: essay.id } }, { status: 201 });
   } catch (error) {
     console.error('POST /api/essays error:', error);
     return NextResponse.json({ error: 'Nepodařilo se uložit esej' }, { status: 500 });
