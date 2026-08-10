@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { findDuplicate } from '@/lib/books/dedupe';
 import { getBooks } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
 import { downloadAndStoreCover } from '@/lib/storage/service';
@@ -55,20 +56,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Název a autor jsou povinné' }, { status: 400 });
     }
 
-    // Duplicate check: same ISBN, or same title+author (case-insensitive)
-    const { data: existing } = await supabase
+    // Duplicate check: same ISBN-13, or same author with an overlapping title in
+    // either language. Fetches by author (indexed, trigram) and matches in code
+    // so `title_en` participates — a Czech record and its English twin must collide.
+    const { data: sameAuthor, error: dupeError } = await supabase
       .from('books')
-      .select('id, title_cs, author')
-      .or(
-        body.isbn_13
-          ? `isbn_13.eq.${body.isbn_13},and(title_cs.ilike.${body.title.trim()},author.ilike.${body.author.trim()})`
-          : `and(title_cs.ilike.${body.title.trim()},author.ilike.${body.author.trim()})`
-      )
-      .limit(1)
-      .maybeSingle();
+      .select('id, title_cs, title_en, author, isbn_13')
+      .or(`author.ilike.${body.author.trim()},isbn_13.eq.${body.isbn_13 ?? 'none'}`)
+      .limit(50);
+
+    if (dupeError) throw dupeError;
+
+    const existing = findDuplicate(
+      {
+        title_cs: body.title.trim(),
+        title_en: body.title_en ?? null,
+        author: body.author.trim(),
+        isbn_13: body.isbn_13 ?? null,
+      },
+      sameAuthor ?? [],
+    );
 
     if (existing) {
-      return NextResponse.json({ error: 'Tato kniha již existuje v katalogu', existingId: existing.id }, { status: 409 });
+      return NextResponse.json(
+        { error: 'Tato kniha již existuje v katalogu', existingId: existing.id },
+        { status: 409 },
+      );
     }
 
     const cleanTags = (body.tags ?? []).filter((t) => t.trim().length > 0);

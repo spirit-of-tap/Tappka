@@ -34,6 +34,7 @@ export interface BookFilters {
 
 export interface CreateBookInput {
   title: string;
+  title_en?: string | null;
   author: string;
   isbn_13?: string;
   description?: string;
