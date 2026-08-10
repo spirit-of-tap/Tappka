@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { PersonalProgress } from './personal-progress';
 import { MyEssayList } from './my-essay-list';
+import { InfoCard } from './info-card';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import { MyLoansList } from '@/components/library/my-loans-list';
@@ -31,6 +32,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
 
       {/* Moje tab */}
       <TabsContent value="moje" className="mt-6 space-y-6">
+        <InfoCard />
         <PersonalProgress approved_points={stats.approved_points} pending_points={stats.pending_points} />
 
         <div className="flex items-end justify-between gap-3 border-b pb-2">
