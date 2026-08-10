@@ -111,9 +111,17 @@ export async function POST(request: NextRequest) {
       .from('books')
       .insert({
         title_cs: body.title.trim(),
+        title_en: body.title_en?.trim() ?? null,
         author: body.author.trim(),
         isbn_13: body.isbn_13 ?? null,
         description: body.description ?? null,
+        page_count: body.page_count ?? null,
+        preview_link: body.preview_link ?? null,
+        book_points: body.book_points ?? null,
+        // The scoring rationale lives here: the review UI already surfaces
+        // `list_status_reason` as DŮVOD ZAŘAZENÍ, and `classify` replaces it
+        // with the coach's own reason on approval.
+        list_status_reason: body.points_reason?.trim() ?? null,
         source: body.source ?? 'manual',
         external_id: body.external_id ?? null,
         created_by_profile_id: profile.id,

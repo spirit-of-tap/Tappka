@@ -34,11 +34,24 @@ export interface BookFilters {
 
 export interface CreateBookInput {
   title: string;
-  title_en?: string | null;
   author: string;
+  /** English/original title. Populated so cross-language duplicates collide. */
+  title_en?: string | null;
   isbn_13?: string;
   description?: string;
-  google_books_cover_url?: string;
+  page_count?: number | null;
+  preview_link?: string | null;
+  /**
+   * The cover's remote URL, stored as-is — we do not download covers.
+   * `StorageImage` passes external URLs straight through via `isExternalUrl`,
+   * and the POST route's existing `body.google_books_cover_url ?? null` branch
+   * already skips `downloadAndStoreCover` when this is set.
+   */
+  google_books_cover_url?: string | null;
+  /** AI suggestion or the submitter's own pick. A coach overrides it on review. */
+  book_points?: 1 | 2 | 3 | null;
+  /** Scoring rationale. Stored in `list_status_reason` — see the design doc. */
+  points_reason?: string | null;
   tags?: string[];
   source: BookSource;
   external_id?: string;
