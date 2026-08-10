@@ -788,14 +788,32 @@ describe('buildSystemPrompt', () => {
     }
   });
 
-  it('carries the ego/manipulation override with its canonical example', () => {
-    expect(prompt).toContain('48 zákonů moci');
-    expect(prompt).toMatch(/nikdy.*kategorie 3/i);
+  // Both overrides invert the plain category reading, so each assertion is
+  // scoped to the prompt section that carries it. A prompt-wide `toMatch` would
+  // pass on coincidental matches elsewhere and would break on a reflow.
+  const sectionContaining = (pattern: RegExp): string => {
+    const section = prompt.split('\n\n').find((part) => pattern.test(part));
+    expect(section).toBeDefined();
+    return section as string;
+  };
+
+  it('carries the ego/manipulation override, forcing category 1 not 3', () => {
+    const override = sectionContaining(/48 zákonů moci/);
+
+    expect(override).toMatch(/NIKDY/);
+    expect(override).toMatch(/Kategorie 3/);
+    expect(override).toMatch(/Kategorie 1/);
+    expect(override).toMatch(/1 bod/);
   });
 
-  it('carries the resilience override', () => {
-    expect(prompt).toMatch(/stoicis/i);
-    expect(prompt).toMatch(/odolnost/i);
+  it('carries the resilience override, awarding 2 points rather than 1', () => {
+    const override = sectionContaining(/stoicis/i);
+
+    expect(override).toMatch(/odolnost/i);
+    expect(override).toMatch(/Kategorie 1/);
+    // The whole content of this rule is the number. Without it the test would
+    // pass on a prompt that awarded 1 point.
+    expect(override).toMatch(/2 body/);
   });
 
   it('explains the extent correction with both worked examples', () => {
