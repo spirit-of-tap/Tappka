@@ -1204,7 +1204,12 @@ vi.mock('@perplexity-ai/perplexity_ai', () => ({
   },
 }));
 
-import { enrichBook, resetCircuitBreaker, CIRCUIT_BREAKER_THRESHOLD } from './enrich';
+import {
+  enrichBook,
+  resetCircuitBreaker,
+  CIRCUIT_BREAKER_THRESHOLD,
+  CIRCUIT_BREAKER_COOLDOWN_MS,
+} from './enrich';
 
 const PROBE = { title: 'Sprint', author: 'Jake Knapp', page_count: 288 };
 
@@ -1309,6 +1314,38 @@ describe('enrichBook', () => {
     create.mockResolvedValue({ choices: [{ message: { content: VALID_CONTENT } }] });
     expect((await enrichBook(PROBE)).ok).toBe(true);
   });
+
+  it('lets calls through again once the cooldown has elapsed', async () => {
+    // The only untested branch of the breaker's state machine. A flipped
+    // comparison here latches it open forever and enrichment dies silently.
+    vi.useFakeTimers();
+    try {
+      create.mockRejectedValue(new Error('500'));
+      for (let i = 0; i < CIRCUIT_BREAKER_THRESHOLD; i += 1) {
+        await enrichBook(PROBE);
+      }
+      const callsWhileOpen = create.mock.calls.length;
+
+      // Still inside the cooldown: no call reaches the API.
+      await vi.advanceTimersByTimeAsync(CIRCUIT_BREAKER_COOLDOWN_MS - 1);
+      await enrichBook(PROBE);
+      expect(create.mock.calls.length).toBe(callsWhileOpen);
+
+      // Past the cooldown: the breaker closes and the call goes through.
+      await vi.advanceTimersByTimeAsync(2);
+      create.mockResolvedValue({ choices: [{ message: { content: VALID_CONTENT } }] });
+      expect((await enrichBook(PROBE)).ok).toBe(true);
+      expect(create.mock.calls.length).toBeGreaterThan(callsWhileOpen);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports an empty completion as unavailable, so the user is offered a retry', async () => {
+    create.mockResolvedValue({ choices: [{ message: { content: '' } }] });
+
+    expect(await enrichBook(PROBE)).toMatchObject({ ok: false, reason: 'unavailable' });
+  });
 });
 ```
 
@@ -1335,15 +1372,20 @@ const SEARCH_LANGUAGES = ['cs', 'en'] as const;
 
 /** Consecutive failures before we stop trying. Per-instance and best-effort by design. */
 export const CIRCUIT_BREAKER_THRESHOLD = 3;
-const CIRCUIT_BREAKER_COOLDOWN_MS = 60_000;
+export const CIRCUIT_BREAKER_COOLDOWN_MS = 60_000;
+
+/** Why the breaker last tripped. Logged so an outage is not confused with a schema drift. */
+type FailureCause = 'api' | 'payload';
 
 let consecutiveFailures = 0;
 let circuitOpenedAt: number | null = null;
+let lastFailureCause: FailureCause | null = null;
 
 /** Test seam — clears breaker state between cases. */
 export function resetCircuitBreaker(): void {
   consecutiveFailures = 0;
   circuitOpenedAt = null;
+  lastFailureCause = null;
 }
 
 function circuitIsOpen(): boolean {
@@ -1355,10 +1397,16 @@ function circuitIsOpen(): boolean {
   return true;
 }
 
-function recordFailure(): void {
+function recordFailure(cause: FailureCause): void {
   consecutiveFailures += 1;
+  lastFailureCause = cause;
   if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD && circuitOpenedAt === null) {
     circuitOpenedAt = Date.now();
+    // Both causes trip the same breaker — every failed call is billed — but an
+    // outage and a prompt/schema drift need different responses, so say which.
+    console.error(
+      `Perplexity enrichment circuit opened after ${consecutiveFailures} consecutive failures (cause: ${cause}).`,
+    );
   }
 }
 
@@ -1380,9 +1428,9 @@ function buildUserPrompt(probe: EnrichmentProbe): string {
     `Název: ${probe.title}`,
     `Autor: ${probe.author}`,
     probe.isbn_13 ? `ISBN-13: ${probe.isbn_13}` : null,
-    probe.page_count ? `Počet stran: ${probe.page_count}` : null,
+    probe.page_count != null ? `Počet stran: ${probe.page_count}` : null,
     probe.publisher ? `Vydavatel: ${probe.publisher}` : null,
-    probe.published_year ? `Rok vydání: ${probe.published_year}` : null,
+    probe.published_year != null ? `Rok vydání: ${probe.published_year}` : null,
   ]
     .filter((line): line is string => line !== null)
     .join('\n');
@@ -1397,7 +1445,10 @@ export async function enrichBook(probe: EnrichmentProbe): Promise<EnrichmentOutc
   }
 
   if (circuitIsOpen()) {
-    return { ok: false, reason: 'unavailable', message: 'Perplexity opakovaně neodpovídá.' };
+    const message = lastFailureCause === 'payload'
+      ? 'Automatické doplnění teď nefunguje.'
+      : 'Perplexity opakovaně neodpovídá.';
+    return { ok: false, reason: 'unavailable', message };
   }
 
   const client = new Perplexity({ apiKey });
@@ -1423,27 +1474,29 @@ export async function enrichBook(probe: EnrichmentProbe): Promise<EnrichmentOutc
     content = response.choices?.[0]?.message?.content;
     citations = response.citations ?? [];
   } catch (error) {
-    recordFailure();
+    recordFailure('api');
     console.error('Perplexity enrichment failed:', error);
     return { ok: false, reason: 'unavailable', message: 'Perplexity teď neodpovídá.' };
   }
 
   if (!content) {
-    recordFailure();
-    return { ok: false, reason: 'invalid', message: 'Perplexity vrátila prázdnou odpověď.' };
+    // A 200 with no text is a hiccup, not a malformed shape — retrying is the
+    // right advice, so this is `unavailable`, unlike the two parse failures below.
+    recordFailure('api');
+    return { ok: false, reason: 'unavailable', message: 'Perplexity vrátila prázdnou odpověď.' };
   }
 
   let payload: unknown;
   try {
     payload = JSON.parse(content);
   } catch {
-    recordFailure();
+    recordFailure('payload');
     return { ok: false, reason: 'invalid', message: 'Odpověď nešla přečíst jako JSON.' };
   }
 
   const parsed = parseEnrichment(payload);
   if (!parsed.ok) {
-    recordFailure();
+    recordFailure('payload');
     return { ok: false, reason: 'invalid', message: parsed.error };
   }
 
