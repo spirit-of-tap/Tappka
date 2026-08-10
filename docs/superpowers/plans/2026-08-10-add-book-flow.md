@@ -531,6 +531,11 @@ export interface CreateBookInput {
   page_count?: number | null;
   preview_link?: string | null;
   google_books_cover_url?: string;
+  /**
+   * Remote cover URL. `POST /api/books` passes it to `downloadAndStoreCover`
+   * after the insert — without it, the book is stored with no cover.
+   */
+  cover_url?: string | null;
   /** AI suggestion or the submitter's own pick. A coach overrides it on review. */
   book_points?: 1 | 2 | 3 | null;
   /** Scoring rationale. Stored in `list_status_reason` — see the design doc. */
@@ -2661,7 +2666,23 @@ describe('StepReview', () => {
         points_reason: 'Kategorie 2 — procesní manuál, 288 stran.',
         tags: ['Inovace & kreativita'],
         source: 'google_books',
+        preview_link: 'https://books.google.com/x',
       }),
+    );
+  });
+
+  it('forwards the remote cover so the route can store it', async () => {
+    const onSubmit = vi.fn();
+    const withCover: AddBookDraft = {
+      ...ENRICHED_DRAFT,
+      candidate: { ...CANDIDATE, cover_url: 'https://example.com/cover.jpg' },
+    };
+    render(<StepReview draft={withCover} submitting={false} onSubmit={onSubmit} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /odeslat/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ cover_url: 'https://example.com/cover.jpg' }),
     );
   });
 
@@ -2760,12 +2781,14 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
       description: description.trim(),
       page_count: pageCount ? Number.parseInt(pageCount, 10) : null,
       preview_link: candidate?.preview_link ?? null,
-      google_books_cover_url: undefined,
+      // The route downloads this into storage after the insert.
+      cover_url: candidate?.cover_url ?? null,
       book_points: points,
       points_reason: enriched?.points_reason ?? null,
       tags: [tag],
       source: candidate?.source ?? 'manual',
-      external_id: candidate?.external_id,
+      // Manual candidates carry no external id; send undefined, not ''.
+      external_id: candidate?.external_id ? candidate.external_id : undefined,
     });
   };
 
