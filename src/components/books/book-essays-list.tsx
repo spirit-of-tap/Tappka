@@ -1,24 +1,16 @@
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronUp, Eye, MessageCircle } from 'lucide-react';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import type { EssayWithDetails } from '@/lib/essays/types';
-
-const INITIAL_COUNT = 8;
 
 function Avatar({ picture, name }: { picture?: string | null; name?: string | null }) {
   return <ProfileAvatar picture={picture} name={name} size={28} />;
 }
 
 export function BookEssaysList({ essays }: { essays: EssayWithDetails[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? essays : essays.slice(0, INITIAL_COUNT);
-
   return (
     <div className="space-y-0.5">
-      {visible.map((essay) => (
+      {essays.map((essay) => (
         <Link
           key={essay.id}
           href={`/cteni/eseje/${essay.id}`}
@@ -55,16 +47,6 @@ export function BookEssaysList({ essays }: { essays: EssayWithDetails[] }) {
           </div>
         </Link>
       ))}
-
-      {essays.length > INITIAL_COUNT && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="mt-1 w-full rounded-lg py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {expanded ? 'Zobrazit méně' : `Zobrazit všech ${essays.length} esejí`}
-        </button>
-      )}
     </div>
   );
 }
