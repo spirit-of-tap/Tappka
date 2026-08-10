@@ -8,7 +8,12 @@ vi.mock('@perplexity-ai/perplexity_ai', () => ({
   },
 }));
 
-import { enrichBook, resetCircuitBreaker, CIRCUIT_BREAKER_THRESHOLD } from './enrich';
+import {
+  enrichBook,
+  resetCircuitBreaker,
+  CIRCUIT_BREAKER_THRESHOLD,
+  CIRCUIT_BREAKER_COOLDOWN_MS,
+} from './enrich';
 
 const PROBE = { title: 'Sprint', author: 'Jake Knapp', page_count: 288 };
 
@@ -112,5 +117,37 @@ describe('enrichBook', () => {
 
     create.mockResolvedValue({ choices: [{ message: { content: VALID_CONTENT } }] });
     expect((await enrichBook(PROBE)).ok).toBe(true);
+  });
+
+  it('lets calls through again once the cooldown has elapsed', async () => {
+    // The only untested branch of the breaker's state machine. A flipped
+    // comparison here latches it open forever and enrichment dies silently.
+    vi.useFakeTimers();
+    try {
+      create.mockRejectedValue(new Error('500'));
+      for (let i = 0; i < CIRCUIT_BREAKER_THRESHOLD; i += 1) {
+        await enrichBook(PROBE);
+      }
+      const callsWhileOpen = create.mock.calls.length;
+
+      // Still inside the cooldown: no call reaches the API.
+      await vi.advanceTimersByTimeAsync(CIRCUIT_BREAKER_COOLDOWN_MS - 1);
+      await enrichBook(PROBE);
+      expect(create.mock.calls.length).toBe(callsWhileOpen);
+
+      // Past the cooldown: the breaker closes and the call goes through.
+      await vi.advanceTimersByTimeAsync(2);
+      create.mockResolvedValue({ choices: [{ message: { content: VALID_CONTENT } }] });
+      expect((await enrichBook(PROBE)).ok).toBe(true);
+      expect(create.mock.calls.length).toBeGreaterThan(callsWhileOpen);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports an empty completion as unavailable, so the user is offered a retry', async () => {
+    create.mockResolvedValue({ choices: [{ message: { content: '' } }] });
+
+    expect(await enrichBook(PROBE)).toMatchObject({ ok: false, reason: 'unavailable' });
   });
 });

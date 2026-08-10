@@ -11,15 +11,20 @@ const SEARCH_LANGUAGES = ['cs', 'en'] as const;
 
 /** Consecutive failures before we stop trying. Per-instance and best-effort by design. */
 export const CIRCUIT_BREAKER_THRESHOLD = 3;
-const CIRCUIT_BREAKER_COOLDOWN_MS = 60_000;
+export const CIRCUIT_BREAKER_COOLDOWN_MS = 60_000;
+
+/** Why the breaker last tripped. Logged so an outage is not confused with a schema drift. */
+type FailureCause = 'api' | 'payload';
 
 let consecutiveFailures = 0;
 let circuitOpenedAt: number | null = null;
+let lastFailureCause: FailureCause | null = null;
 
 /** Test seam — clears breaker state between cases. */
 export function resetCircuitBreaker(): void {
   consecutiveFailures = 0;
   circuitOpenedAt = null;
+  lastFailureCause = null;
 }
 
 function circuitIsOpen(): boolean {
@@ -31,10 +36,16 @@ function circuitIsOpen(): boolean {
   return true;
 }
 
-function recordFailure(): void {
+function recordFailure(cause: FailureCause): void {
   consecutiveFailures += 1;
+  lastFailureCause = cause;
   if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD && circuitOpenedAt === null) {
     circuitOpenedAt = Date.now();
+    // Both causes trip the same breaker — every failed call is billed — but an
+    // outage and a prompt/schema drift need different responses, so say which.
+    console.error(
+      `Perplexity enrichment circuit opened after ${consecutiveFailures} consecutive failures (cause: ${cause}).`,
+    );
   }
 }
 
@@ -56,9 +67,9 @@ function buildUserPrompt(probe: EnrichmentProbe): string {
     `Název: ${probe.title}`,
     `Autor: ${probe.author}`,
     probe.isbn_13 ? `ISBN-13: ${probe.isbn_13}` : null,
-    probe.page_count ? `Počet stran: ${probe.page_count}` : null,
+    probe.page_count != null ? `Počet stran: ${probe.page_count}` : null,
     probe.publisher ? `Vydavatel: ${probe.publisher}` : null,
-    probe.published_year ? `Rok vydání: ${probe.published_year}` : null,
+    probe.published_year != null ? `Rok vydání: ${probe.published_year}` : null,
   ]
     .filter((line): line is string => line !== null)
     .join('\n');
@@ -73,7 +84,11 @@ export async function enrichBook(probe: EnrichmentProbe): Promise<EnrichmentOutc
   }
 
   if (circuitIsOpen()) {
-    return { ok: false, reason: 'unavailable', message: 'Perplexity opakovaně neodpovídá.' };
+    const message =
+      lastFailureCause === 'payload'
+        ? 'Automatické doplnění teď nefunguje.'
+        : 'Perplexity opakovaně neodpovídá.';
+    return { ok: false, reason: 'unavailable', message };
   }
 
   const client = new Perplexity({ apiKey });
@@ -103,27 +118,30 @@ export async function enrichBook(probe: EnrichmentProbe): Promise<EnrichmentOutc
     content = typeof rawContent === 'string' ? rawContent : null;
     citations = response.citations ?? [];
   } catch (error) {
-    recordFailure();
+    recordFailure('api');
     console.error('Perplexity enrichment failed:', error);
     return { ok: false, reason: 'unavailable', message: 'Perplexity teď neodpovídá.' };
   }
 
   if (!content) {
-    recordFailure();
-    return { ok: false, reason: 'invalid', message: 'Perplexity vrátila prázdnou odpověď.' };
+    // A 200 with no text is a hiccup on Perplexity's side, not a malformed
+    // shape — report it the same as an outage so the caller knows a retry
+    // may help, unlike the two schema/parse failures below.
+    recordFailure('api');
+    return { ok: false, reason: 'unavailable', message: 'Perplexity vrátila prázdnou odpověď.' };
   }
 
   let payload: unknown;
   try {
     payload = JSON.parse(content);
   } catch {
-    recordFailure();
+    recordFailure('payload');
     return { ok: false, reason: 'invalid', message: 'Odpověď nešla přečíst jako JSON.' };
   }
 
   const parsed = parseEnrichment(payload);
   if (!parsed.ok) {
-    recordFailure();
+    recordFailure('payload');
     return { ok: false, reason: 'invalid', message: parsed.error };
   }
 
