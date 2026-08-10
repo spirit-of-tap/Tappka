@@ -12,9 +12,13 @@ import type {
   EssayCoachReadWithProfile,
   CoachReviewEssay,
   EssayFilters,
+  EssayRevisionSummary,
 } from './types';
 
 const PAGE_SIZE_DEFAULT = 20;
+/** How many revisions the history panel shows. Older ones are reachable only by scrolling the DB. */
+const REVISION_HISTORY_LIMIT = 50;
+const REVISION_SNIPPET_LENGTH = 160;
 /** Candidate pool size for popularity ranking — big enough to rank properly, small enough to stay cheap. */
 const POPULAR_CANDIDATE_LIMIT = 200;
 const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
@@ -306,6 +310,34 @@ export async function getEssayById(
 
   const rows = mapEssayRows([data as unknown as EssayRawRow]);
   return rows[0] ?? null;
+}
+
+export async function getEssayRevisions(
+  supabase: SupabaseClient<Database>,
+  essayId: string,
+  limit: number = REVISION_HISTORY_LIMIT,
+): Promise<EssayRevisionSummary[]> {
+  const { data, error } = await supabase
+    .from('essay_revisions')
+    .select('revision_no, title, content_json, created_at, updated_at')
+    .eq('essay_id', essayId)
+    .is('invalid_since', null)
+    .order('revision_no', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const text = contentTextFromJson(row.content_json);
+    return {
+      revision_no: row.revision_no,
+      title: row.title,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      word_count: text ? text.split(/\s+/).length : 0,
+      snippet: text.slice(0, REVISION_SNIPPET_LENGTH),
+    };
+  });
 }
 
 export async function getEssayAuthorInfo(

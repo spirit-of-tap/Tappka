@@ -72,6 +72,15 @@ export interface CoachReviewEssay extends EssayWithDetails {
   read_at: string | null;
 }
 
+export interface EssayRevisionSummary {
+  revision_no: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  word_count: number;
+  snippet: string;
+}
+
 export type EssayListView = 'moje' | 'tym' | 'vse';
 
 export type EssaySortOrder = 'recent' | 'month' | 'best';
