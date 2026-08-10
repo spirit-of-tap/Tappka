@@ -102,6 +102,87 @@ export async function optimizeImage(
   });
 }
 
+export interface FitOptimizationOptions {
+  /** Longest edge of the output, in pixels. Smaller images are never upscaled. */
+  maxEdge: number;
+  quality: number;
+  format: 'image/webp' | 'image/jpeg';
+}
+
+/**
+ * Scales dimensions to fit inside a square box without distorting or upscaling.
+ * Pure, so the sizing rule is testable without a canvas.
+ */
+export function fitWithinBox(
+  width: number,
+  height: number,
+  maxEdge: number,
+): { width: number; height: number } {
+  const longest = Math.max(width, height);
+  if (longest <= maxEdge || longest === 0) return { width, height };
+
+  const scale = maxEdge / longest;
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+/**
+ * Optimize an image while keeping its proportions.
+ *
+ * Unlike `optimizeImage`, which centre-crops to a square for avatars, this
+ * shrinks the whole picture to fit a box — what you want for a photo dropped
+ * into prose, where cropping would eat the subject.
+ */
+export async function optimizeImageToFit(
+  file: File,
+  options: FitOptimizationOptions,
+): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      try {
+        const { width, height } = fitWithinBox(img.width, img.height, options.maxEdge);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Could not get canvas context');
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('Failed to convert image to blob'));
+              return;
+            }
+            const ext = options.format === 'image/webp' ? 'webp' : 'jpg';
+            resolve(new File([blob], `image.${ext}`, { type: options.format }));
+          },
+          options.format,
+          options.quality,
+        );
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load image'));
+    };
+
+    img.src = objectUrl;
+  });
+}
+
 /**
  * Check if browser supports WebP format
  */
