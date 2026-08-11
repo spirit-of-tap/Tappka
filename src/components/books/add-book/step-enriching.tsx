@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, PencilLine, RotateCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -35,29 +35,37 @@ export function StepEnriching({ probe, onDone, onManual }: StepEnrichingProps) {
   const [phase, setPhase] = useState(0);
   const [attempt, setAttempt] = useState(0);
 
-  const run = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/books/enrich', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(probe),
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setError(json.error ?? 'Údaje se nepodařilo dohledat.');
+          return;
+        }
+        onDone(json.data as EnrichedBook, json.citations ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Nepodařilo se připojit k serveru.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [probe, attempt, onDone]);
+
+  // The phase only moves on while a request is in flight; the counter resets
+  // it after a retry so the message reads as "trying again".
+  const handleRetry = () => {
     setError(null);
     setPhase(0);
-    try {
-      const res = await fetch('/api/books/enrich', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(probe),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? 'Údaje se nepodařilo dohledat.');
-        return;
-      }
-      onDone(json.data as EnrichedBook, json.citations ?? []);
-    } catch {
-      setError('Nepodařilo se připojit k serveru.');
-    }
-  }, [probe, onDone]);
-
-  useEffect(() => {
-    void run();
-  }, [run, attempt]);
+    setAttempt((n) => n + 1);
+  };
 
   useEffect(() => {
     if (error) return;
@@ -81,7 +89,7 @@ export function StepEnriching({ probe, onDone, onManual }: StepEnrichingProps) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => setAttempt((n) => n + 1)}>
+          <Button variant="outline" className="gap-2" onClick={handleRetry}>
             <RotateCw className="size-4" />
             Zkusit znovu
           </Button>
