@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { EssayEditorForm } from '@/components/essays/essay-editor-form';
 
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace: vi.fn() }) }));
+const mockSearchParams = new URLSearchParams();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push, replace: vi.fn() }),
+  useSearchParams: () => mockSearchParams,
+}));
 
 vi.mock('@/components/essays/tiptap-editor', () => ({
   TiptapEditor: ({ onChange }: { onChange: (json: object, text: string) => void }) => (
@@ -133,5 +137,32 @@ describe('EssayEditorForm — publishing', () => {
   it('labels the action Uložit změny for a published essay', () => {
     render(<EssayEditorForm initialEssay={publishedEssay} />);
     expect(screen.getByRole('button', { name: 'Uložit změny' })).toBeInTheDocument();
+  });
+});
+
+describe('EssayEditorForm — book preselect', () => {
+  it('selects the book named in ?book= after returning from the add-book flow', async () => {
+    mockSearchParams.set('book', 'new-1');
+    fetchSpy.mockResolvedValue(
+      jsonResponse({
+        data: {
+          id: 'new-1',
+          title_cs: 'Sprint',
+          author: 'Jake Knapp',
+          book_points: 2,
+          list_status: 'processing',
+          is_rocket_model: false,
+          google_books_cover_url: null,
+          highlight_category: null,
+        },
+      }),
+    );
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await waitFor(() => expect(screen.getByText('Sprint')).toBeInTheDocument());
+    expect(
+      fetchSpy.mock.calls.some(([url]) => url === '/api/books/new-1'),
+    ).toBe(true);
   });
 });

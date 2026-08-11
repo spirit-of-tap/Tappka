@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Save, Send, BookOpen, Check, CloudOff, PenLine, Globe, Search,
@@ -177,6 +177,26 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     latestRef.current.bookId = book?.id ?? null;
     schedule();
   }, [schedule]);
+
+  const searchParams = useSearchParams();
+  const preselectBookId = searchParams.get('book');
+
+  // Returning from /cteni/knihy/nova: attach the book the author just created.
+  useEffect(() => {
+    if (!preselectBookId || selectedBook) return;
+
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch(`/api/books/${preselectBookId}`);
+      if (!res.ok) return;
+      const { data } = await res.json();
+      if (!cancelled && data) handleBookChange(data as BookSearchResult);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preselectBookId, selectedBook, handleBookChange]);
 
   const handlePrimaryAction = async () => {
     setIsPublishing(true);
