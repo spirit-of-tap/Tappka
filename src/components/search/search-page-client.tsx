@@ -11,6 +11,7 @@ import { ProfileAvatar } from '@/components/profile-avatar';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { BookCard } from '@/components/books/book-card';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { BookNotFoundCard } from '@/components/books/book-not-found-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 import { formatPoints, formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
@@ -157,7 +158,7 @@ export function SearchPageClient({
       <div className="space-y-10">
         {hasQuery ? (
           results ? (
-            <SearchResultsView essays={results.essays} books={results.books} />
+            <SearchResultsView essays={results.essays} books={results.books} query={query} />
           ) : (
             <p className="text-center text-muted-foreground text-sm py-12">Hledám…</p>
           )
@@ -578,12 +579,15 @@ function CategoryBooksView({
 
 // ─── Search results ─────────────────────────────────────────────────────────────
 
-function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books: BookResult[] }) {
+function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[]; books: BookResult[]; query: string }) {
   if (essays.length === 0 && books.length === 0) {
     return (
-      <div className="text-center py-16 space-y-2">
-        <Search className="size-10 mx-auto text-muted-foreground/40" />
-        <p className="text-muted-foreground text-sm">Žádné výsledky</p>
+      <div className="space-y-4">
+        <div className="space-y-2 py-12 text-center">
+          <Search className="mx-auto size-10 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">Žádné výsledky</p>
+        </div>
+        <BookNotFoundCard query={query} from="hledat" />
       </div>
     );
   }
@@ -626,6 +630,8 @@ function SearchResultsView({ essays, books }: { essays: EssayWithVoted[]; books:
           </div>
         </section>
       )}
+
+      <BookNotFoundCard query={query} from="hledat" />
 
       {essays.length > 0 && (
         <section className="space-y-2">

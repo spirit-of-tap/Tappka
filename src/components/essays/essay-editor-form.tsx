@@ -22,6 +22,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { BookNotFoundCard } from '@/components/books/book-not-found-card';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
 import type { Book, HighlightCategory } from '@/lib/books/types';
@@ -435,6 +436,8 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                   Píšeš o něčem mimo seznam? Nech pole prázdné — esej se počítá jako četba nad
                   rámec.
                 </p>
+
+                {essayId && <BookNotFoundCard query={bookQuery} from="esej" essayId={essayId} />}
               </div>
             </div>
           </div>
