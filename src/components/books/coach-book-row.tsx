@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, ExternalLink, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react';
+import { BookOpen, ExternalLink, RefreshCw, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ import { BookDescription } from './book-description';
 import { DeleteBookDialog } from './delete-book-dialog';
 import { RocketBadge, ListStatusBadge } from './book-status-badges';
 import type { BookWithProfiles } from '@/lib/books/types';
+import type { EnrichedBook } from '@/lib/books/enrichment/schema';
 
 interface CoachProcessingRowProps {
   book: BookWithProfiles;
@@ -41,6 +43,42 @@ export function CoachProcessingRow({
     } catch {
       setBusyAction(null);
     }
+  };
+
+  const reEnrich = async (): Promise<boolean> => {
+    const enrichRes = await fetch('/api/books/enrich', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: book.title_cs,
+        author: book.author,
+        page_count: book.page_count,
+      }),
+    });
+    if (!enrichRes.ok) {
+      const { error } = await enrichRes.json();
+      toast.error(error ?? 'Nepodařilo se dohledat údaje.');
+      return false;
+    }
+    const { data } = (await enrichRes.json()) as { data: EnrichedBook };
+
+    const patchRes = await fetch(`/api/books/${book.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'edit',
+        title: data.title_cs,
+        author: data.author,
+        description: data.description,
+      }),
+    });
+    if (!patchRes.ok) {
+      const { error } = await patchRes.json();
+      toast.error(error ?? 'Nepodařilo se uložit dohledané údaje.');
+      return false;
+    }
+    toast.success('Údaje o knize byly dohledány.');
+    return true;
   };
 
   const googleBooksUrl = book.source === 'google_books' && book.external_id
@@ -132,6 +170,19 @@ export function CoachProcessingRow({
                 </Button>
               ))}
             </div>
+            {book.list_status === 'processing' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => run('re-enrich', reEnrich)}
+                disabled={busyAction !== null}
+                className="gap-1"
+                title="Znovu dohledat údaje o knize (při neúspěchu automatiky)"
+              >
+                {busyAction === 're-enrich' ? <Spinner className="size-3" /> : <RefreshCw className="size-3" />}
+                Dohledat údaje
+              </Button>
+            )}
             <Button
               size="sm"
               variant="default"
