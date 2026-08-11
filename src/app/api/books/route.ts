@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { findDuplicate } from '@/lib/books/dedupe';
 import { getBooks } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
+import { notifyBookSubmitted } from '@/lib/notifications/book-notifications';
 import { downloadAndStoreCover } from '@/lib/storage/service';
 import type { CreateBookInput, BookFilters, BookListStatus } from '@/lib/books/types';
 
@@ -161,6 +162,17 @@ export async function POST(request: NextRequest) {
 
     if (cleanTags.length > 0) {
       await setBookTags(supabase, inserted.id, cleanTags, profile.id);
+    }
+
+    // A failed email must never fail the submission.
+    try {
+      await notifyBookSubmitted(supabase, {
+        bookId: inserted.id,
+        submitterProfileId: profile.id,
+        origin: new URL(request.url).origin,
+      });
+    } catch (notifyError) {
+      console.error('notifyBookSubmitted failed:', notifyError);
     }
 
     return NextResponse.json(
