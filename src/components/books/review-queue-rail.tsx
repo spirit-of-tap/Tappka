@@ -2,7 +2,6 @@
 
 import { BookOpen } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
-import { formatPoints } from '@/lib/books/points';
 import { cn } from '@/lib/utils';
 import type { BookWithProfiles } from '@/lib/books/types';
 
@@ -78,12 +77,6 @@ export function ReviewQueueRail({ books, selectedId, onSelect, className }: Revi
                     {book.title_cs}
                   </span>
                   <span className="block truncate text-xs text-muted-foreground">{book.author}</span>
-                </span>
-                <span
-                  className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground"
-                  title={book.book_points === null ? 'AI knihu neohodnotila' : 'Návrh AI'}
-                >
-                  {book.book_points === null ? '—' : `${formatPoints(book.book_points)} b.`}
                 </span>
               </button>
             </li>
