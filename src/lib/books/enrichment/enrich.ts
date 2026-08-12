@@ -74,7 +74,7 @@ function buildUserPrompt(probe: EnrichmentProbe): string {
     .filter((line): line is string => line !== null)
     .join('\n');
 
-  return `Dohledej informace o této knize a ohodnoť ji podle rubriky.\n\n${known}\n\nPokud si u některého údaje nejsi jistý, nastav confidence na "low".`;
+  return `Dohledej informace o této knize a ohodnoť ji podle rubriky.\n\n${known}\n\nPokud si u některého údaje nejsi jistý, nastav confidence na "low" a vypiš ho do "low_confidence_fields".`;
 }
 
 export async function enrichBook(probe: EnrichmentProbe): Promise<EnrichmentOutcome> {

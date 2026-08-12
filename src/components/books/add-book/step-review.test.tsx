@@ -32,6 +32,7 @@ const ENRICHED_DRAFT: AddBookDraft = {
     suggested_points: 2,
     points_reason: 'Kategorie 2 — procesní manuál, 288 stran.',
     confidence: 'high',
+    low_confidence_fields: [],
   },
   citations: ['https://goodreads.com/sprint'],
   manual: false,
@@ -116,6 +117,16 @@ describe('StepReview', () => {
     expect(screen.getByRole('button', { name: /odeslat/i })).toBeDisabled();
   });
 
+  it('offers a 0-point rejection option and submits it', async () => {
+    const onSubmit = vi.fn();
+    render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={onSubmit} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /0 b\./i }));
+    await userEvent.click(screen.getByRole('button', { name: /odeslat/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ book_points: 0 }));
+  });
+
   it('warns about unverified fields when confidence is low', () => {
     render(
       <StepReview
@@ -126,5 +137,49 @@ describe('StepReview', () => {
     );
 
     expect(screen.getByText(/nejsme jist/i)).toBeInTheDocument();
+  });
+
+  it('names the uncertain fields in the banner and highlights their inputs', () => {
+    render(
+      <StepReview
+        draft={{
+          ...ENRICHED_DRAFT,
+          enriched: {
+            ...ENRICHED_DRAFT.enriched!,
+            confidence: 'low',
+            low_confidence_fields: ['author', 'page_count', 'isbn_13'],
+          },
+        }}
+        submitting={false}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/nejsme si jistí těmito údaji:/i)).toBeInTheDocument();
+    expect(screen.getByText(/autor, isbn, počet stran/i)).toBeInTheDocument();
+
+    expect(screen.getByLabelText(/autor/i)).toHaveAttribute('data-uncertain', 'true');
+    expect(screen.getByLabelText(/počet stran/i)).toHaveAttribute('data-uncertain', 'true');
+    expect(screen.getByLabelText(/český název/i)).not.toHaveAttribute('data-uncertain');
+  });
+
+  it('does not highlight inputs the model is certain about', () => {
+    render(
+      <StepReview
+        draft={{
+          ...ENRICHED_DRAFT,
+          enriched: {
+            ...ENRICHED_DRAFT.enriched!,
+            confidence: 'low',
+            low_confidence_fields: ['title_cs'],
+          },
+        }}
+        submitting={false}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/český název/i)).toHaveAttribute('data-uncertain', 'true');
+    expect(screen.getByLabelText(/autor/i)).not.toHaveAttribute('data-uncertain');
   });
 });

@@ -35,8 +35,9 @@ describe('parseEnrichment', () => {
     if (!result.ok) expect(result.error).toMatch(/tag/);
   });
 
-  it('rejects points outside 1-3', () => {
-    expect(parseEnrichment({ ...VALID, suggested_points: 0 }).ok).toBe(false);
+  it('accepts 0 for irrelevant books and rejects values outside 0-3', () => {
+    expect(parseEnrichment({ ...VALID, suggested_points: 0 }).ok).toBe(true);
+    expect(parseEnrichment({ ...VALID, suggested_points: -1 }).ok).toBe(false);
     expect(parseEnrichment({ ...VALID, suggested_points: 4 }).ok).toBe(false);
   });
 
@@ -54,5 +55,23 @@ describe('parseEnrichment', () => {
     const result = parseEnrichment({ ...VALID, confidence: 'medium' });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.confidence).toBe('low');
+  });
+
+  it('collects the uncertain fields, deduped and filtered to known names', () => {
+    const result = parseEnrichment({
+      ...VALID,
+      confidence: 'low',
+      low_confidence_fields: ['author', 'author', 'page_count', 'made_up_field'],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.low_confidence_fields).toEqual(['author', 'page_count']);
+    }
+  });
+
+  it('defaults low_confidence_fields to an empty list when the model omits it', () => {
+    const result = parseEnrichment(VALID);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.low_confidence_fields).toEqual([]);
   });
 });

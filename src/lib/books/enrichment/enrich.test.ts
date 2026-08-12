@@ -28,6 +28,7 @@ const VALID_CONTENT = JSON.stringify({
   suggested_points: 2,
   points_reason: 'Kategorie 2 — procesní manuál, 288 stran.',
   confidence: 'high',
+  low_confidence_fields: [],
 });
 
 beforeEach(() => {

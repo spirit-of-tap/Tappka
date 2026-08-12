@@ -46,6 +46,14 @@ Knihy zaměřené na prosazování individuálního ega, manipulaci a machiaveli
 const OVERRIDE_RESILIENCE = `Výjimka B (odolnost a disciplína):
 Pokud kniha spadá do Kategorie 1, ale prokazatelně trénuje osobní disciplínu, hlubokou koncentraci a psychickou odolnost (například stoicismus nebo překonávání krizí), doporuč 2 body jako odměnu za budování klíčových kompetencí pro 21. století.`;
 
+const OVERRIDE_IRRELEVANT = `Výjimka C (Nerelevantní obsah a čistá beletrie):
+- Čistá beletrie, divadelní hry, poezie, fantasy a jiná umělecká díla se do BOBa NIKDY nezařazují, ani když tematicky souvisí s podnikáním, technologiemi nebo prací. Rozhodující je žánr, ne téma.
+- Ne-beletrie, která absolutně nesouvisí s podnikáním, managementem, týmovou spoluprací, aplikovaným osobním rozvojem nebo systémovým myšlením (např. kuchařky, nesouvisející koníčky), se rovněž zamítá.
+V obou případech MUSÍŠ knihu nekompromisně zamítnout; tato výjimka má přednost před kategoriemi 1–3 i před Výjimkou B. Přiděl 0 bodů, do pole "description" napiš pouze: "ZAMÍTNUTO: Kniha nesouvisí se zaměřením programu TAP." a do pole "points_reason" napiš stručný důvod zamítnutí. Nesnaž se uměle vymýšlet, co by se z ní Téčko mohlo okrajově naučit.`;
+
+const OVERRIDE_UNSCIENTIFIC = `Výjimka D (Pseudověda, dezinformace a nízká kvalita):
+Knihy, které odporují vědeckým poznatkům, šíří dezinformace, konspirační teorie nebo nepravdivé narativy (např. popírání klimatu, pseudověda typu "zákon přitažlivosti", homeopatie prezentovaná jako medicína), NIKDY nezařazuj, i kdyby jinak zapadaly do kategorie. Stejně tak zamítni knihy s jednoznačně špatným veřejným hodnocením (na Goodreads nebo databazeknih.cz přibližně pod 3,5) a knihy nízké kvality — povrchní, bez dat a frameworků, jen motivační fráze. Pokud veřejné hodnocení neexistuje, nezamítej jen kvůli jeho absenci. Takové knize přiděl 0 bodů a do pole "description" napiš pouze: "ZAMÍTNUTO: Kniha je v rozporu s vědeckými poznatky nebo má nízkou kvalitu." Do pole "points_reason" napiš stručný důvod zamítnutí. Tato výjimka má přednost před kategoriemi 1–3 i před Výjimkou B.`;
+
 const VOICE = `Jak psát pole "description":
 Píšeš česky, ve druhé osobě, pro Téčko. Struktura: nejdřív jednou nebo dvěma větami, co kniha je a co si z ní Téčko odnese konkrétně — co bude po přečtení umět, ne jaká témata kniha „pokrývá“. Pak upřímně to, co může Téčko od čtení odradit: příliš velký rozsah, hustý text, slabá opora v datech, příklady jen z USA, velký překryv s knihami, které v BOBovi už jsou. Pokud najdeš veřejné hodnocení (přednostně Goodreads, jinak databazeknih.cz), uveď ho na konci včetně zdroje.
 Nepiš marketingový blurb z přebalu. Nepiš, že kniha je „must-read“. Nevymýšlej si.`;
@@ -57,7 +65,7 @@ const RULES = `Další pravidla:
 - title_cs je český název, title_en anglický (originální). Vyplň oba; pokud český překlad neexistuje, dej do title_cs anglický název.
 - Pozor na podtitul: skutečný název knihy nemusí být to, co vyhledávač zobrazí jako první (kniha Tiimiakatemia se často uvádí pod svým podtitulem How to Grow into a Teampreneur).
 - page_count potřebujeme pro korekci rozsahem. Když ho nenajdeš, vrať null a nastav confidence na "low".
-- Když si nejsi jistý autorem, rozsahem nebo obsahem knihy, nastav confidence na "low". Nikdy si nevymýšlej fakta, abys pole zaplnil.`;
+- Když si nejsi jistý autorem, rozsahem nebo obsahem knihy, vypiš ta pole do "low_confidence_fields" a nastav confidence na "low". Možné hodnoty: title_cs, title_en, author, isbn_13, page_count, description, tag, suggested_points. Nikdy si nevymýšlej fakta, abys pole zaplnil.`;
 
 /** The full system prompt. Stable across every book — Perplexity has no prompt caching, so keep it tight. */
 export function buildSystemPrompt(): string {
@@ -72,6 +80,8 @@ export function buildSystemPrompt(): string {
     EXTENT_CORRECTION,
     OVERRIDE_EGO,
     OVERRIDE_RESILIENCE,
+    OVERRIDE_IRRELEVANT,
+    OVERRIDE_UNSCIENTIFIC,
     TAGS,
     VOICE,
     RULES,

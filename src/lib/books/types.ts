@@ -49,7 +49,7 @@ export interface CreateBookInput {
    */
   google_books_cover_url?: string | null;
   /** AI suggestion or the submitter's own pick. A coach overrides it on review. */
-  book_points?: 1 | 2 | 3 | null;
+  book_points?: 0 | 1 | 2 | 3 | null;
   /** Scoring rationale. Stored in `list_status_reason` — see the design doc. */
   points_reason?: string | null;
   tags?: string[];

@@ -1,7 +1,20 @@
 import { BOOK_CATEGORIES } from '@/lib/books/types';
 
-export const SUGGESTED_POINTS_VALUES = [1, 2, 3] as const;
+export const SUGGESTED_POINTS_VALUES = [0, 1, 2, 3] as const;
 export type SuggestedPoints = (typeof SUGGESTED_POINTS_VALUES)[number];
+
+/** Fields the model may declare uncertain about; surfaced in Krok 4 for verification. */
+export const LOW_CONFIDENCE_FIELDS = [
+  'title_cs',
+  'title_en',
+  'author',
+  'isbn_13',
+  'page_count',
+  'description',
+  'tag',
+  'suggested_points',
+] as const;
+export type LowConfidenceField = (typeof LOW_CONFIDENCE_FIELDS)[number];
 
 export interface EnrichedBook {
   title_cs: string;
@@ -14,6 +27,7 @@ export interface EnrichedBook {
   suggested_points: SuggestedPoints;
   points_reason: string;
   confidence: 'high' | 'low';
+  low_confidence_fields: LowConfidenceField[];
 }
 
 /** Passed as `response_format.json_schema.schema`. Perplexity enforces the shape server-side. */
@@ -30,6 +44,10 @@ export const ENRICHMENT_JSON_SCHEMA = {
     suggested_points: { type: 'integer', enum: [...SUGGESTED_POINTS_VALUES] },
     points_reason: { type: 'string' },
     confidence: { type: 'string', enum: ['high', 'low'] },
+    low_confidence_fields: {
+      type: 'array',
+      items: { type: 'string', enum: [...LOW_CONFIDENCE_FIELDS] },
+    },
   },
   required: [
     'title_cs',
@@ -92,6 +110,15 @@ export function parseEnrichment(raw: unknown): ParseResult {
     return { ok: false, error: `Neplatné suggested_points: ${String(points)}` };
   }
 
+  const lowConfidenceFields = Array.isArray(source.low_confidence_fields)
+    ? [...new Set(
+        (source.low_confidence_fields as unknown[]).filter(
+          (field): field is LowConfidenceField =>
+            typeof field === 'string' && LOW_CONFIDENCE_FIELDS.includes(field as LowConfidenceField),
+        ),
+      )]
+    : [];
+
   return {
     ok: true,
     value: {
@@ -106,6 +133,7 @@ export function parseEnrichment(raw: unknown): ParseResult {
       points_reason: pointsReason,
       // Anything we don't recognise is treated as uncertain, so Krok 4 flags it.
       confidence: source.confidence === 'high' ? 'high' : 'low',
+      low_confidence_fields: lowConfidenceFields,
     },
   };
 }

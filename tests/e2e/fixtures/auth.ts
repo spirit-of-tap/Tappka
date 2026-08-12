@@ -165,7 +165,10 @@ export async function getSessionCookie(): Promise<string> {
  * instead of reusing/creating a shared one — needed whenever a test relies
  * on team-scoped uniqueness or doesn't want to pollute real team data.
  */
-export async function getSetupSessionCookie(teamId?: string): Promise<{
+export async function getSetupSessionCookie(
+  teamId?: string,
+  role: "student" | "coach" | "admin" = "student",
+): Promise<{
   cookie: string;
   userId: string;
   email: string;
@@ -212,7 +215,7 @@ export async function getSetupSessionCookie(teamId?: string): Promise<{
     work_email: email,
     user_id: internalUserId,
     team_id: resolvedTeamId,
-    role: "student",
+    role,
   })) as { id: string }[];
 
   const profileId = profiles[0]?.id;
@@ -323,7 +326,8 @@ export async function seedTeamReflection(
 /** Create a seeded book for E2E tests. */
 export async function seedBook(profileId: string): Promise<{ bookId: string }> {
   const books = (await restFetch("/books", "POST", {
-    title: "E2E Test Book",
+    title_cs: "E2E Test Book",
+    title_en: "E2E Test Book",
     author: "E2E Test Author",
     book_points: 1,
     list_status: "longlist",

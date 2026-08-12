@@ -13,7 +13,7 @@ import type { CreateBookInput, BookFilters, BookListStatus } from '@/lib/books/t
 const DUPLICATE_CANDIDATE_LIMIT = 50;
 
 /** The only point values a book may carry — mirrors the `books` check constraint. */
-const VALID_BOOK_POINTS = [1, 2, 3] as const;
+const VALID_BOOK_POINTS = [0, 1, 2, 3] as const;
 
 export async function GET(request: NextRequest) {
   try {
