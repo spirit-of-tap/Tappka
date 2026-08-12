@@ -190,6 +190,70 @@ export function bookLoanEmail(ctx: BookLoanEmailContext): EmailContent {
   };
 }
 
+export interface BookSubmittedEmailContext {
+  bookTitle: string;
+  bookAuthor: string;
+  submitterName: string;
+  suggestedPoints: number | null;
+  pointsReason: string | null;
+  reviewUrl: string;
+}
+
+export interface BookDecisionEmailContext {
+  bookTitle: string;
+  approved: boolean;
+  points: number | null;
+  reason: string;
+  bookUrl: string;
+}
+
+export function bookSubmittedEmail(ctx: BookSubmittedEmailContext): EmailContent {
+  const points = ctx.suggestedPoints === null ? 'bez návrhu' : `${ctx.suggestedPoints} b.`;
+  return {
+    subject: `Nová kniha ke schválení: ${ctx.bookTitle}`,
+    html: brandWrapper(`
+      <h2 style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:600;color:#2c1a1d;line-height:1.3;">
+        Nová kniha ke schválení
+      </h2>
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
+        <strong>${ctx.submitterName}</strong> přidal knihu do BOBa a čeká na schválení.
+      </p>
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
+        <strong>${ctx.bookTitle}</strong><br />${ctx.bookAuthor}
+      </p>
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
+        Navržené hodnocení: <strong>${points}</strong>
+      </p>
+      ${ctx.pointsReason ? `<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#2c1a1d;opacity:0.7;">${ctx.pointsReason}</p>` : ''}
+      <div style="margin:32px 0;">
+        ${ctaButton(ctx.reviewUrl, 'Zkontrolovat knihu')}
+      </div>
+    `),
+  };
+}
+
+export function bookDecisionEmail(ctx: BookDecisionEmailContext): EmailContent {
+  const verdict = ctx.approved ? 'schválena' : 'zamítnuta';
+  return {
+    subject: `Kniha ${ctx.bookTitle} byla ${verdict}`,
+    html: brandWrapper(`
+      <h2 style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:600;color:#2c1a1d;line-height:1.3;">
+        Kniha ${verdict}
+      </h2>
+      <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
+        Kniha <strong>${ctx.bookTitle}</strong>, kterou jsi přidal do BOBa, byla ${verdict}.
+      </p>
+      ${ctx.approved && ctx.points !== null ? `<p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">Přidělené body: <strong>${ctx.points}</strong></p>` : ''}
+      <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#2c1a1d;opacity:0.7;">
+        <strong>Důvod:</strong> ${ctx.reason}
+      </p>
+      <div style="margin:32px 0;">
+        ${ctaButton(ctx.bookUrl, 'Zobrazit knihu')}
+      </div>
+    `),
+  };
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')

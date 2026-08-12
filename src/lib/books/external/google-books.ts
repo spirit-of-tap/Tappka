@@ -6,6 +6,10 @@ interface GoogleBooksVolume {
     title?: string;
     authors?: string[];
     description?: string;
+    publisher?: string;
+    publishedDate?: string;
+    pageCount?: number;
+    previewLink?: string;
     industryIdentifiers?: Array<{ type: string; identifier: string }>;
     imageLinks?: { thumbnail?: string; smallThumbnail?: string };
   };
@@ -17,6 +21,13 @@ interface GoogleBooksResponse {
 
 const BASE_URL = 'https://www.googleapis.com/books/v1/volumes';
 const MAX_RESULTS = 10;
+
+/** Google Books returns `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. */
+function parseYear(publishedDate: string | undefined): number | null {
+  if (!publishedDate) return null;
+  const year = Number.parseInt(publishedDate.slice(0, 4), 10);
+  return Number.isFinite(year) ? year : null;
+}
 
 function normalizeVolume(volume: GoogleBooksVolume): ExternalBookCandidate | null {
   const info = volume.volumeInfo;
@@ -32,6 +43,10 @@ function normalizeVolume(volume: GoogleBooksVolume): ExternalBookCandidate | nul
     isbn_13: isbn13,
     description: info.description ?? null,
     cover_url: coverUrl,
+    page_count: info.pageCount ?? null,
+    publisher: info.publisher ?? null,
+    published_year: parseYear(info.publishedDate),
+    preview_link: info.previewLink ?? null,
     source: 'google_books',
     external_id: volume.id,
   };

@@ -19,7 +19,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
   const preview = essays.slice(0, 3);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Inbox className="size-4 text-muted-foreground" />

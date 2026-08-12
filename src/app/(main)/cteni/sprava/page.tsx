@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { CoachDashboard } from '@/components/books/coach-dashboard';
 import { PageShell } from '@/components/ui/page-shell';
+import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 
 export default async function SpravaKnihovnyPage() {
@@ -29,19 +30,19 @@ export default async function SpravaKnihovnyPage() {
   ]);
 
   return (
-    <PageShell size="wide">
-      <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold">Správa knihovny</h1>
-          <p className="text-muted-foreground text-sm">Zařaď knihy do seznamů a spravuj výběr knih.</p>
-        </div>
-        <Button asChild size="sm" className="gap-2 shrink-0">
-          <Link href="/cteni/knihy/nova">
-            <Plus className="size-4" />
-            Přidat knihu
-          </Link>
-        </Button>
-      </div>
+    <PageShell size="full">
+      <PageHeader
+        title="Správa knihovny"
+        description="Zařaď knihy do seznamů a spravuj výběr knih."
+        action={
+          <Button asChild size="sm" className="gap-2 shrink-0">
+            <Link href="/cteni/knihy/nova">
+              <Plus className="size-4" />
+              Přidat knihu
+            </Link>
+          </Button>
+        }
+      />
       <CoachDashboard
         initialProcessing={processingBooks}
         initialArchived={archivedBooks}

@@ -359,6 +359,16 @@ mark[data-color="orange"] { background-color: #fdba74; }
   .focus-ring {
     @apply outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px];
   }
+
+  /* Scroll without a visible track — for strips (tab bars, chip rows) where the
+     bar itself is the affordance and a scrollbar under it reads as a fault. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* ── Essay vote-button celebration animation ──────────────────────────────── */

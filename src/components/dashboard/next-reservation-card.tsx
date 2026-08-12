@@ -36,7 +36,7 @@ function relativeDayLabel(startTime: string): string {
 
 export function NextReservationCard({ reservation }: NextReservationCardProps) {
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarClock className="size-4 text-muted-foreground" />

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Inbox } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { Archive, Inbox, MessageSquare } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
 import { NewFeedbackForm } from './new-feedback-form';
 import { FeedbackNoteCard } from './feedback-note-card';
@@ -76,21 +75,15 @@ export function FeedbackBoard({ initialActive, initialArchived, isAdmin }: Feedb
 
       <Tabs defaultValue="active">
         <TabsList>
-          <TabsTrigger value="active" className="gap-2">
+          <TabsTrigger value="active">
+            <MessageSquare />
             Aktivní
-            {active.length > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-5 p-0 px-1 text-xs">
-                {active.length}
-              </Badge>
-            )}
+            <TabsTriggerCount count={active.length} />
           </TabsTrigger>
-          <TabsTrigger value="archived" className="gap-2">
+          <TabsTrigger value="archived">
+            <Archive />
             Archiv
-            {archived.length > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-5 p-0 px-1 text-xs">
-                {archived.length}
-              </Badge>
-            )}
+            <TabsTriggerCount count={archived.length} />
           </TabsTrigger>
         </TabsList>
 

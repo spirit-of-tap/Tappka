@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, FileQuestion, Inbox, MessageCircle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { BookOpen, CheckCheck, FileQuestion, Inbox, MessageCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { CoachReadButton } from './coach-read-button';
 import { ProfileAvatar } from '@/components/profile-avatar';
@@ -37,15 +36,16 @@ export function CoachReviewList({ initialUnread, initialRead }: CoachReviewListP
   return (
     <Tabs defaultValue="unread">
       <TabsList>
-        <TabsTrigger value="unread" className="gap-2">
+        <TabsTrigger value="unread">
+          <Inbox />
           Nepřečtené
-          {unread.length > 0 && (
-            <Badge variant="destructive" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">
-              {unread.length}
-            </Badge>
-          )}
+          <TabsTriggerCount count={unread.length} tone="attention" />
         </TabsTrigger>
-        <TabsTrigger value="read">Přečtené</TabsTrigger>
+        <TabsTrigger value="read">
+          <CheckCheck />
+          Přečtené
+          <TabsTriggerCount count={read.length} />
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="unread" className="mt-4">

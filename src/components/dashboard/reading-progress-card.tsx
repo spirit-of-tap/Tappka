@@ -16,7 +16,7 @@ interface ReadingProgressCardProps {
 
 export function ReadingProgressCard({ stats }: ReadingProgressCardProps) {
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BookOpen className="size-4 text-muted-foreground" />

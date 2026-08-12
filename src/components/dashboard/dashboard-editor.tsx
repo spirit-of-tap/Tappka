@@ -202,7 +202,7 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
               </div>
             )}
             {nodes[id] ?? (
-              <Card>
+              <Card className="h-full">
                 <CardContent>
                   <Skeleton className="h-4 w-1/3 mb-3" />
                   <Skeleton className="h-3 w-2/3" />

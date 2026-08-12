@@ -24,7 +24,7 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
   const top = [...stats].sort((a, b) => b.approved_points - a.approved_points).slice(0, 3);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="size-4 text-muted-foreground" />

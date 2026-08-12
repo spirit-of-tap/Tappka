@@ -19,6 +19,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.71.1(react@19.2.3))
+      '@perplexity-ai/perplexity_ai':
+        specifier: 0.38.1
+        version: 0.38.1
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.9))(@types/react@19.2.9)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1417,6 +1420,9 @@ packages:
 
   '@oxc-project/types@0.139.0':
     resolution: {integrity: sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw==}
+
+  '@perplexity-ai/perplexity_ai@0.38.1':
+    resolution: {integrity: sha512-5WAdFKr746bHq9Jdw6+ctL04+Fby2Pt/QZWg5Vshn8f1Zuym5MOXQ4ydnIxRxUUmBHoXMcUNlK2WrVEPglCoxg==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -7164,6 +7170,8 @@ snapshots:
   '@opentelemetry/semantic-conventions@1.39.0': {}
 
   '@oxc-project/types@0.139.0': {}
+
+  '@perplexity-ai/perplexity_ai@0.38.1': {}
 
   '@pkgjs/parseargs@0.11.0':
     optional: true

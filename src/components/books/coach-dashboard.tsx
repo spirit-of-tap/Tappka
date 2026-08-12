@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { BookOpen, Trash2 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CoachProcessingRow } from './coach-book-row';
+import { Trash2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
+import { ReviewWorkbench } from './review-workbench';
 import { CoachListTable, type ListKind } from './coach-list-table';
 import { CategoryManager } from './category-manager';
 import { DeleteBookDialog } from './delete-book-dialog';
@@ -12,8 +12,8 @@ import { BookRowHeader } from './book-row-header';
 import { ListStatusBadge } from './book-status-badges';
 import { RocketModelManager } from './rocket-model-manager';
 import { LibraryImportScanner } from '@/components/library/library-import-scanner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { suggestedBookPoints, type ReviewPoints } from '@/lib/books/points';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 
 interface CoachDashboardProps {
@@ -87,20 +87,29 @@ export function CoachDashboard({
     return true;
   };
 
-  const handleApprove = (book: BookWithProfiles, points: 1 | 2 | 3, reason: string): Promise<boolean> =>
-    classify(book, 'longlist', points, reason).then((ok) => {
-      if (ok) toast.success('Kniha schválena do longlistu.');
+  /**
+   * On review the score carries the verdict: 0 archives the book, 1–3 approve it
+   * into the longlist. The classify route enforces the same pairing server-side.
+   */
+  const handleDecide = (
+    book: BookWithProfiles,
+    points: ReviewPoints,
+    reason: string,
+  ): Promise<boolean> => {
+    if (points === 0) {
+      return classify(book, 'archived', 0, reason).then((ok) => {
+        if (ok) toast.success('Kniha zamítnuta (0 bodů).');
+        return ok;
+      });
+    }
+    return classify(book, 'longlist', points, reason).then((ok) => {
+      if (ok) toast.success(`Kniha schválena do longlistu (${points} b.).`);
       return ok;
     });
-
-  const handleReject = (book: BookWithProfiles, reason: string): Promise<boolean> =>
-    classify(book, 'archived', 0, reason).then((ok) => {
-      if (ok) toast.success('Kniha odmítnuta (archivováno).');
-      return ok;
-    });
+  };
 
   const handleMove = (book: BookWithProfiles, targetStatus: ListKind): Promise<boolean> => {
-    const points = Math.round(Number(book.book_points ?? 1)) as 1 | 2 | 3;
+    const points = suggestedBookPoints(book.book_points);
     return classify(book, targetStatus, points, book.list_status_reason ?? '').then((ok) => {
       if (ok) toast.success(targetStatus === 'shortlist' ? 'Přesunuto do shortlistu.' : 'Přesunuto zpět do longlistu.');
       return ok;
@@ -287,57 +296,39 @@ export function CoachDashboard({
     return true;
   };
 
+  /**
+   * `attention` is deliberately spent on one tab only — the review queue is the
+   * single count that means someone is waiting on a coach. Make every count red
+   * and none of them reads as urgent.
+   */
+  const tabs = [
+    { value: 'processing', label: 'Ke zpracování', count: processing.length, tone: 'attention' as const },
+    { value: 'shortlist', label: 'Shortlist', count: shortlisted.length },
+    { value: 'longlist', label: 'Longlist', count: longlisted.length },
+    { value: 'highlighted', label: 'Výběr', count: highlighted.length },
+    { value: 'archived', label: 'Zamítnuté', count: archived.length },
+    { value: 'rocket-model', label: 'Raketový model', count: rocketModel.length },
+    { value: 'import', label: 'Import', count: 0 },
+  ];
+
   return (
     <Tabs defaultValue="processing">
-      <TabsList>
-        <TabsTrigger value="processing" className="gap-2">
-          Ke zpracování
-          {processing.length > 0 && <Badge variant="destructive" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{processing.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="shortlist" className="gap-2">
-          Shortlist
-          {shortlisted.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{shortlisted.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="longlist" className="gap-2">
-          Longlist
-          {longlisted.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{longlisted.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="highlighted" className="gap-2">
-          Výběr
-          {highlighted.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{highlighted.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="archived" className="gap-2">
-          Zamítnuté
-          {archived.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{archived.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="rocket-model" className="gap-2">
-          Raketový model
-          {rocketModel.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{rocketModel.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="import" className="gap-2">
-          Import
-        </TabsTrigger>
+      <TabsList variant="line">
+        {tabs.map(({ value, label, count, tone }) => (
+          <TabsTrigger key={value} value={value}>
+            {label}
+            <TabsTriggerCount count={count} tone={tone} />
+          </TabsTrigger>
+        ))}
       </TabsList>
 
       <TabsContent value="processing" className="mt-4">
-        {processing.length === 0 ? (
-          <div className="text-center py-12 space-y-2">
-            <BookOpen className="size-10 mx-auto text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Žádné knihy ke zpracování</p>
-          </div>
-        ) : (
-          <div>
-            {processing.map((book) => (
-              <CoachProcessingRow
-                key={book.id}
-                book={book}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                onDeleted={handleDeleted}
-              />
-            ))}
-          </div>
-        )}
+        <ReviewWorkbench
+          books={processing}
+          onDecide={handleDecide}
+          onEdited={handleEdited}
+          onDeleted={handleDeleted}
+        />
       </TabsContent>
 
       <TabsContent value="shortlist" className="mt-4">

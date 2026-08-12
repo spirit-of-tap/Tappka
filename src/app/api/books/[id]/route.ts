@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
+import { notifyBookDecided } from '@/lib/notifications/book-notifications';
 import type { ClassifyBookInput, SetBookHighlightInput } from '@/lib/books/types';
 
 interface RouteContext {
@@ -91,6 +92,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
       if (error) throw error;
       if (!data) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
+
+      // A failed email must never fail the decision.
+      try {
+        await notifyBookDecided(supabase, {
+          bookId: id,
+          origin: new URL(request.url).origin,
+        });
+      } catch (notifyError) {
+        console.error('notifyBookDecided failed:', notifyError);
+      }
 
       return NextResponse.json({ data });
     }

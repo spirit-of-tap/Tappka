@@ -18,6 +18,25 @@ if (!window.matchMedia) {
   }));
 }
 
+// Radix popper-based primitives (DropdownMenu, Select, Popover) measure and
+// capture pointers on open. jsdom implements none of it, so opening one throws
+// before the test can assert on its contents.
+if (!globalThis.ResizeObserver) {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.setPointerCapture = () => {};
+  Element.prototype.releasePointerCapture = () => {};
+}
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 afterEach(() => {
   cleanup();
 });
