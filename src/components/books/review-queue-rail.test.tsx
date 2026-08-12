@@ -30,11 +30,11 @@ describe('ReviewQueueRail', () => {
     expect(screen.getByText('Ikigai')).toBeInTheDocument();
   });
 
-  it("shows the AI's score, and a dash for books it never scored", () => {
+  it("does not show the AI score on the rail", () => {
     render(<ReviewQueueRail books={BOOKS} selectedId="b1" onSelect={vi.fn()} />);
 
-    expect(screen.getByText('2 b.')).toBeInTheDocument();
-    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.queryByText('2 b.')).not.toBeInTheDocument();
+    expect(screen.queryByText('—')).not.toBeInTheDocument();
   });
 
   it('marks only the selected book as current', () => {

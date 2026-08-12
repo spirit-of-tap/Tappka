@@ -107,6 +107,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const [bookQuery, setBookQuery] = useState('');
   const [bookResults, setBookResults] = useState<BookSearchResult[]>([]);
   const [isSearchingBooks, setIsSearchingBooks] = useState(false);
+  const [isPreselectingBook, setIsPreselectingBook] = useState(false);
   // A keystroke fires a fresh request; only the newest one may write state, or
   // a stale empty response would flash the "Nenašel jsi knihu?" card wrongly.
   const bookSearchRef = useRef(0);
@@ -160,7 +161,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   }, []);
 
   const hasSomethingToSave = title.trim().length > 0 || content.text.trim().length > 0;
-  const { status, lastSavedAt, schedule, flush, retry } = useAutosave({
+  const { status, lastSavedAt, statusRef, schedule, flush, retry } = useAutosave({
     save: persist,
     enabled: hasSomethingToSave,
   });
@@ -191,11 +192,21 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     if (!preselectBookId || selectedBook) return;
 
     let cancelled = false;
+    setIsPreselectingBook(true);
     void (async () => {
-      const res = await fetch(`/api/books/${preselectBookId}`);
-      if (!res.ok) return;
-      const { data } = await res.json();
-      if (!cancelled && data) handleBookChange(data as BookSearchResult);
+      try {
+        const res = await fetch(`/api/books/${preselectBookId}`);
+        if (!res.ok) {
+          toast.error('Knihu se nepodařilo načíst.');
+          return;
+        }
+        const { data } = await res.json();
+        if (!cancelled && data) handleBookChange(data as BookSearchResult);
+      } catch {
+        if (!cancelled) toast.error('Knihu se nepodařilo načíst.');
+      } finally {
+        if (!cancelled) setIsPreselectingBook(false);
+      }
     })();
 
     return () => {
@@ -204,9 +215,15 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   }, [preselectBookId, selectedBook, handleBookChange]);
 
   const handlePrimaryAction = async () => {
+    if (isPublishing) return;
     setIsPublishing(true);
     try {
       await flush();
+      // Autosave exhausted its retries — publishing would ship stale content.
+      if (statusRef.current === 'error') {
+        toast.error('Automatické ukládání selhalo. Zkus uložit znovu a pak publikuj.');
+        return;
+      }
       const id = latestRef.current.essayId;
       if (!id) {
         toast.error('Esej se zatím nepodařilo uložit.');
@@ -416,7 +433,14 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
               </span>
               <div className="min-w-0 flex-1 space-y-3">
                 <div>
-                  <p className="font-medium">Vyber knihu, ke které esej patří</p>
+                  {isPreselectingBook ? (
+                    <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Spinner className="size-3.5" />
+                      Načítám knihu…
+                    </p>
+                  ) : (
+                    <p className="font-medium">Vyber knihu, ke které esej patří</p>
+                  )}
                 </div>
 
                 <div className="relative">
@@ -426,8 +450,11 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                     aria-label="Hledat knihu"
                     onChange={(e) => { setBookQuery(e.target.value); searchBooks(e.target.value); }}
                     placeholder="Hledat knihu podle názvu nebo autora…"
-                    className="h-10 bg-background pl-9"
+                    className="h-10 bg-background pr-9 pl-9"
                   />
+                  {isSearchingBooks && (
+                    <Spinner className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  )}
                 </div>
 
                 {/* Capped so a broad query does not shove the title and the

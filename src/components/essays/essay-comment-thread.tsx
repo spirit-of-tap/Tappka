@@ -134,7 +134,7 @@ function CommentComposer({
           autoFocus={replyToName != null}
           className="min-h-0 resize-none border-0 bg-transparent p-1 text-sm shadow-none focus-visible:ring-0"
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && e.metaKey) onSubmit();
+            if (e.key === 'Enter' && e.metaKey && !isPosting) onSubmit();
           }}
         />
         <Button
@@ -335,7 +335,7 @@ export function EssayCommentThread({
                 autoFocus
                 className="text-sm"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.metaKey) handleSaveEdit();
+                  if (e.key === 'Enter' && e.metaKey && !isSavingEdit) handleSaveEdit();
                 }}
               />
               <div className="flex gap-2">
@@ -390,6 +390,7 @@ export function EssayCommentThread({
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             disabled={isDeleting}
                           >
+                            {isDeleting && <Spinner className="mr-2 size-3.5" />}
                             Smazat komentář
                           </AlertDialogAction>
                         </AlertDialogFooter>
