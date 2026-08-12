@@ -6,6 +6,24 @@
 - **React**: default to Server Components; use `"use client"` only for interactivity, browser APIs, or third-party init
 - **Constants**: never hardcode magic values - extract to named constants or `as const` objects
 
+## Design
+
+- **Follow `DESIGN.md`** (repo root) for all UI work: colors, typography,
+  theming, shadcn/ui conventions, motion, and accessibility.
+- Use semantic color tokens from `src/app/globals.css` — never hardcoded hex
+  or Tailwind colors in components; text on tinted surfaces uses the
+  `-strong` variants.
+- Use the shared primitives (`Button`, responsive `AlertDialog`,
+  `Empty*`, `PageHeader`/`PageShell`, sonner `toast`) — never raw
+  `<button>`, `window.confirm()`, or bespoke empty states.
+- **Czech copy must be gender-neutral** (genericky míněné maskulinum is
+  forbidden): `:` separator only (`autor:ka`, `čtenář:ka`, `kouči:ky`),
+  never parentheses or slashes; prefer present tense, neutralization, and
+  participles (`studující`); use colon pairs for past tense only when the
+  past meaning is required. See `DESIGN.md` → "Czech copy" and the
+  `inclusive-czech-writing` skill.
+- Verify both light and dark themes for every UI change.
+
 ## Database Migrations
 
 **CRITICAL**: Whenever a user asks you to edit the schema prompt the user to run `pnpm db:migrate` to apply the changes to the database and then make sure to ask the user to check the migrations for any drops.
