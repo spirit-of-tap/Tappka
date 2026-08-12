@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 
 import {
@@ -25,6 +25,7 @@ interface BookEditDialogProps {
 
 export function BookEditDialog({ book, open, onOpenChange, onSaved }: BookEditDialogProps) {
   const [replacing, setReplacing] = useState(false);
+  const replaceButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
     <Dialog open={open} onOpenChange={(next) => {
@@ -50,7 +51,13 @@ export function BookEditDialog({ book, open, onOpenChange, onSaved }: BookEditDi
             }}
           />
           <div className="mt-6 border-t pt-4">
-            <Button variant="outline" size="sm" onClick={() => setReplacing(true)} className="gap-2">
+            <Button
+              ref={replaceButtonRef}
+              variant="outline"
+              size="sm"
+              onClick={() => setReplacing(true)}
+              className="gap-2"
+            >
               <RefreshCw className="size-4" />
               Nahradit záznam…
             </Button>
@@ -64,7 +71,10 @@ export function BookEditDialog({ book, open, onOpenChange, onSaved }: BookEditDi
           <ReplaceRecordFlow
             key={String(replacing)}
             book={book}
-            onBack={() => setReplacing(false)}
+            onBack={() => {
+              setReplacing(false);
+              requestAnimationFrame(() => replaceButtonRef.current?.focus());
+            }}
             onReplaced={(updated) => {
               onSaved(updated);
               onOpenChange(false);
