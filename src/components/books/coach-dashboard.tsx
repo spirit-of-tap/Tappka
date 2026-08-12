@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Trash2 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { ReviewWorkbench } from './review-workbench';
 import { CoachListTable, type ListKind } from './coach-list-table';
 import { CategoryManager } from './category-manager';
@@ -12,7 +12,6 @@ import { BookRowHeader } from './book-row-header';
 import { ListStatusBadge } from './book-status-badges';
 import { RocketModelManager } from './rocket-model-manager';
 import { LibraryImportScanner } from '@/components/library/library-import-scanner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { suggestedBookPoints, type ReviewPoints } from '@/lib/books/points';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
@@ -297,36 +296,30 @@ export function CoachDashboard({
     return true;
   };
 
+  /**
+   * `attention` is deliberately spent on one tab only — the review queue is the
+   * single count that means someone is waiting on a coach. Make every count red
+   * and none of them reads as urgent.
+   */
+  const tabs = [
+    { value: 'processing', label: 'Ke zpracování', count: processing.length, tone: 'attention' as const },
+    { value: 'shortlist', label: 'Shortlist', count: shortlisted.length },
+    { value: 'longlist', label: 'Longlist', count: longlisted.length },
+    { value: 'highlighted', label: 'Výběr', count: highlighted.length },
+    { value: 'archived', label: 'Zamítnuté', count: archived.length },
+    { value: 'rocket-model', label: 'Raketový model', count: rocketModel.length },
+    { value: 'import', label: 'Import', count: 0 },
+  ];
+
   return (
     <Tabs defaultValue="processing">
-      <TabsList className="max-w-full justify-start overflow-x-auto">
-        <TabsTrigger value="processing" className="gap-2">
-          Ke zpracování
-          {processing.length > 0 && <Badge variant="destructive" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{processing.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="shortlist" className="gap-2">
-          Shortlist
-          {shortlisted.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{shortlisted.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="longlist" className="gap-2">
-          Longlist
-          {longlisted.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{longlisted.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="highlighted" className="gap-2">
-          Výběr
-          {highlighted.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{highlighted.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="archived" className="gap-2">
-          Zamítnuté
-          {archived.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{archived.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="rocket-model" className="gap-2">
-          Raketový model
-          {rocketModel.length > 0 && <Badge variant="secondary" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{rocketModel.length}</Badge>}
-        </TabsTrigger>
-        <TabsTrigger value="import" className="gap-2">
-          Import
-        </TabsTrigger>
+      <TabsList variant="line">
+        {tabs.map(({ value, label, count, tone }) => (
+          <TabsTrigger key={value} value={value}>
+            {label}
+            <TabsTriggerCount count={count} tone={tone} />
+          </TabsTrigger>
+        ))}
       </TabsList>
 
       <TabsContent value="processing" className="mt-4">

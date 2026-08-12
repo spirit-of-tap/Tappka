@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, FileText } from 'lucide-react';
+import { BookMarked, Plus, FileText, User, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { PersonalProgress } from './personal-progress';
@@ -25,9 +25,18 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
   return (
     <Tabs defaultValue={defaultTab}>
       <TabsList>
-        <TabsTrigger value="moje">Moje</TabsTrigger>
-        <TabsTrigger value="tym">Tým</TabsTrigger>
-        <TabsTrigger value="vypujcky">Výpůjčky</TabsTrigger>
+        <TabsTrigger value="moje">
+          <User />
+          Moje
+        </TabsTrigger>
+        <TabsTrigger value="tym">
+          <Users />
+          Tým
+        </TabsTrigger>
+        <TabsTrigger value="vypujcky">
+          <BookMarked />
+          Výpůjčky
+        </TabsTrigger>
       </TabsList>
 
       {/* Moje tab */}

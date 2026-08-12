@@ -193,7 +193,9 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
         {/* View mode toggle - hide week tab on mobile */}
         {!isMobile && (
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-            <TabsList>
+            {/* A true either/or over the same content, so it stays a segmented
+                toggle rather than becoming section navigation. */}
+            <TabsList variant="segmented">
               <TabsTrigger value="day">Den</TabsTrigger>
               <TabsTrigger value="week">Týden</TabsTrigger>
             </TabsList>

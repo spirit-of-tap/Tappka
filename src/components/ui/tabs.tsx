@@ -26,23 +26,40 @@ function Tabs({
 }
 
 const tabsListVariants = cva(
-  "rounded-lg p-[3px] group-data-[orientation=horizontal]/tabs:h-9 data-[variant=line]:rounded-none group/tabs-list text-muted-foreground inline-flex w-fit items-center justify-center group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col",
+  [
+    "group/tabs-list text-muted-foreground flex items-center",
+    // A tab bar must never widen its container. Past that it scrolls, without a
+    // track: a visible scrollbar under a row of tabs reads as a rendering fault.
+    "max-w-full overflow-x-auto no-scrollbar",
+    "group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col group-data-[orientation=vertical]/tabs:overflow-visible",
+  ],
   {
     variants: {
       variant: {
-        default: "bg-muted",
-        line: "gap-1 bg-transparent",
+        // The default: an underline bar. Reads as page navigation, survives long
+        // labels and any number of sections, and does not box the content in.
+        line: [
+          "w-full justify-start gap-1 rounded-none bg-transparent",
+          "group-data-[orientation=horizontal]/tabs:border-b",
+          "group-data-[orientation=vertical]/tabs:border-l group-data-[orientation=vertical]/tabs:items-stretch",
+        ],
+        // Segmented control. For a true either/or toggle over the *same* content —
+        // day vs week, list vs grid — not for navigating between sections. Sized by
+        // its own padding rather than a fixed height, so a trigger carrying a count
+        // is not squeezed into 36px.
+        segmented:
+          "w-fit justify-center rounded-lg bg-muted p-[3px] group-data-[orientation=horizontal]/tabs:min-h-9",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "line",
     },
   }
 )
 
 function TabsList({
   className,
-  variant = "default",
+  variant = "line",
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.List> &
   VariantProps<typeof tabsListVariants>) {
@@ -64,14 +81,75 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring text-foreground/60 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-all group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 group-data-[variant=default]/tabs-list:data-[state=active]:shadow-sm group-data-[variant=line]/tabs-list:data-[state=active]:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent",
-        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 data-[state=active]:text-foreground",
-        "after:bg-foreground after:absolute after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100",
+        // Shared: typography, focus, disabled, icon sizing.
+        "group/tabs-trigger relative inline-flex shrink-0 items-center justify-center gap-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+        "text-foreground/60 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground data-[state=active]:text-foreground",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring focus-visible:ring-[3px] focus-visible:outline-1",
+        "disabled:pointer-events-none disabled:opacity-50",
+        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start",
+
+        // Segmented: a raised chip filling the muted track. `self-stretch` replaces
+        // the old `h-[calc(100%-1px)]`, which needed the list to keep a fixed height.
+        "group-data-[variant=segmented]/tabs-list:flex-1 group-data-[variant=segmented]/tabs-list:self-stretch group-data-[variant=segmented]/tabs-list:rounded-md group-data-[variant=segmented]/tabs-list:border group-data-[variant=segmented]/tabs-list:border-transparent group-data-[variant=segmented]/tabs-list:px-2 group-data-[variant=segmented]/tabs-list:py-1",
+        "group-data-[variant=segmented]/tabs-list:data-[state=active]:bg-background group-data-[variant=segmented]/tabs-list:data-[state=active]:shadow-sm",
+        "dark:group-data-[variant=segmented]/tabs-list:data-[state=active]:border-input dark:group-data-[variant=segmented]/tabs-list:data-[state=active]:bg-input/30",
+
+        // Line: the indicator sits *on* the list's border rather than floating a
+        // magic number of pixels below the trigger, so it lines up at any padding.
+        "group-data-[variant=line]/tabs-list:rounded-none group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:px-3 group-data-[variant=line]/tabs-list:pb-2.5 group-data-[variant=line]/tabs-list:pt-1.5",
+        "group-data-[variant=line]/tabs-list:after:bg-primary group-data-[variant=line]/tabs-list:after:absolute group-data-[variant=line]/tabs-list:after:rounded-full group-data-[variant=line]/tabs-list:after:opacity-0 group-data-[variant=line]/tabs-list:after:transition-opacity",
+        "group-data-[orientation=horizontal]/tabs:group-data-[variant=line]/tabs-list:after:inset-x-0 group-data-[orientation=horizontal]/tabs:group-data-[variant=line]/tabs-list:after:-bottom-px group-data-[orientation=horizontal]/tabs:group-data-[variant=line]/tabs-list:after:h-0.5",
+        "group-data-[orientation=vertical]/tabs:group-data-[variant=line]/tabs-list:after:inset-y-0 group-data-[orientation=vertical]/tabs:group-data-[variant=line]/tabs-list:after:-left-px group-data-[orientation=vertical]/tabs:group-data-[variant=line]/tabs-list:after:w-0.5",
+        "group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100",
+
         className
       )}
       {...props}
     />
+  )
+}
+
+const tabsCountVariants = cva(
+  "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums transition-colors",
+  {
+    variants: {
+      tone: {
+        /** Ambient — how many things are in there. */
+        default:
+          "bg-muted text-muted-foreground group-data-[variant=segmented]/tabs-list:bg-foreground/10 group-data-[state=active]/tabs-trigger:bg-primary/10 group-data-[state=active]/tabs-trigger:text-primary",
+        /** Someone is waiting on you. Reserve it for one tab at most. */
+        attention: "bg-destructive text-white",
+      },
+    },
+    defaultVariants: {
+      tone: "default",
+    },
+  }
+)
+
+/**
+ * Count pill for a tab label. Every call site was otherwise rebuilding the same
+ * `Badge` with four class overrides, and none of them agreed on the sizing.
+ * Renders nothing at zero — an empty list is not news.
+ */
+function TabsTriggerCount({
+  count,
+  tone,
+  className,
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof tabsCountVariants> & { count: number }) {
+  if (count <= 0) return null
+
+  return (
+    <span
+      data-slot="tabs-trigger-count"
+      className={cn(tabsCountVariants({ tone }), className)}
+      {...props}
+    >
+      {count}
+    </span>
   )
 }
 
@@ -88,4 +166,11 @@ function TabsContent({
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }
+export {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsTriggerCount,
+  TabsContent,
+  tabsListVariants,
+}

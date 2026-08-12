@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users } from 'lucide-react';
+import { ArrowLeft, ChartColumn, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getTeamById, getTeamPictureUrl, getProfilePictureUrl } from '@/lib/komunita/queries';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -81,8 +81,14 @@ export default async function TeamPage({ params }: PageProps) {
       {/* Tabs */}
       <Tabs defaultValue="clenove">
         <TabsList>
-          <TabsTrigger value="clenove">Členové</TabsTrigger>
-          <TabsTrigger value="statistiky">Statistiky</TabsTrigger>
+          <TabsTrigger value="clenove">
+            <Users />
+            Členové
+          </TabsTrigger>
+          <TabsTrigger value="statistiky">
+            <ChartColumn />
+            Statistiky
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="clenove" className="mt-4 space-y-6">

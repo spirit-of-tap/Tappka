@@ -64,10 +64,14 @@ student's book proposal enters BOB. It is rendered by `CoachProcessingRow`, a fl
 
 `src/components/books/coach-dashboard.tsx`:
 
-- `TabsList` gains `overflow-x-auto` with no wrapping. Seven triggers overflow on any
-  narrow viewport today.
-- Count badges keep their current logic. `destructive` remains on `Ke zpracování` alone —
-  it is the only count that means *someone is waiting on you*.
+- The tab bar switches to `variant="line"`. A segmented pill container holding seven
+  long labels is a wall; an underline bar reads as page navigation and survives any
+  number of sections. `TabsList` now owns its own overflow (`max-w-full overflow-x-auto
+  no-scrollbar`), so the bar scrolls without the visible track the first build showed.
+- The seven near-identical `TabsTrigger` blocks collapse into a `tabs` array, and the
+  six hand-tuned count `Badge`s become `TabsTriggerCount`. `tone="attention"` is spent
+  on `Ke zpracování` alone — it is the only count that means *someone is waiting on you*,
+  and making every count red would mean none of them reads as urgent.
 - The `processing` `TabsContent` renders `<ReviewWorkbench>` instead of mapping
   `CoachProcessingRow`. Its empty state moves into the workbench.
 
