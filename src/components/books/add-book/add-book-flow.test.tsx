@@ -51,7 +51,7 @@ afterEach(() => {
 
 describe('AddBookFlow', () => {
   it('starts on the gate and does not search until it is affirmed', async () => {
-    render(<AddBookFlow initialQuery="sprint" returnTo={null} />);
+    render(<AddBookFlow initialQuery="sprint" returnTo={null} discardHref="/cteni/hledat" />);
 
     expect(screen.getByRole('heading', { name: /co patří do boba/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/najdi knihu/i)).not.toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('AddBookFlow', () => {
   });
 
   it('tracks progress on the same flow map the gate taught', async () => {
-    render(<AddBookFlow initialQuery="" returnTo={null} />);
+    render(<AddBookFlow initialQuery="" returnTo={null} discardHref="/cteni/hledat" />);
 
     const map = screen.getByRole('list', { name: /postup přidání knihy/i });
     expect(map).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe('AddBookFlow', () => {
       appealing: false,
     });
 
-    render(<AddBookFlow initialQuery="" returnTo={null} />);
+    render(<AddBookFlow initialQuery="" returnTo={null} discardHref="/cteni/hledat" />);
 
     expect(await screen.findByLabelText(/český název/i)).toHaveValue('Sprint');
   });
@@ -100,7 +100,7 @@ describe('AddBookFlow', () => {
       manual: false,
     });
 
-    render(<AddBookFlow initialQuery="" returnTo={null} />);
+    render(<AddBookFlow initialQuery="" returnTo={null} discardHref="/cteni/hledat" />);
 
     expect(await screen.findByLabelText(/popis — proč to číst/i)).toHaveValue('Naučíš se…');
   });
@@ -125,32 +125,34 @@ describe('AddBookFlow', () => {
         manual: false,
         appealing: false,
       });
-      render(<AddBookFlow initialQuery="" returnTo={null} />);
+      render(<AddBookFlow initialQuery="" returnTo={null} discardHref="/cteni/hledat" />);
     }
 
     it('dead-ends instead of dropping into the form', async () => {
       renderAfterRejection();
 
       expect(
-        await screen.findByRole('heading', { name: /nezapíšeme/i }),
+        await screen.findByRole('heading', { name: /nemyslí, že tahle kniha/i }),
       ).toBeInTheDocument();
       expect(screen.getByText('Beletrie — rozhoduje žánr, ne téma.')).toBeInTheDocument();
       expect(screen.queryByLabelText(/český název/i)).not.toBeInTheDocument();
     });
 
-    it('returns to search with a clean draft', async () => {
+    it('discards the draft from the rejected window', async () => {
       renderAfterRejection();
 
-      await userEvent.click(await screen.findByRole('button', { name: /zkusit jinou knihu/i }));
+      await screen.findByRole('heading', { name: /nemyslí, že tahle kniha/i });
+      await userEvent.click(screen.getByRole('button', { name: /zrušit přidávání/i }));
+      await userEvent.click(await screen.findByRole('button', { name: /zahodit/i }));
 
-      expect(await screen.findByLabelText(/najdi knihu/i)).toBeInTheDocument();
-      expect(screen.queryByText(/nezapíšeme/i)).not.toBeInTheDocument();
+      expect(sessionStorage.getItem('tappka:add-book-draft')).toBeNull();
+      await waitFor(() => expect(push).toHaveBeenCalledWith('/cteni/hledat'));
     });
 
     it('reaches the coach through the appeal path', async () => {
       renderAfterRejection();
 
-      await userEvent.click(await screen.findByRole('button', { name: /pošli to kouči/i }));
+      await userEvent.click(await screen.findByRole('button', { name: /pokračovat přesto/i }));
 
       expect(
         await screen.findByLabelText(/proč kniha do boba patří/i),
@@ -173,7 +175,7 @@ describe('AddBookFlow', () => {
       json: async () => ({ error: 'Tato kniha již existuje v katalogu', existingId: 'dup-1' }),
     }));
 
-    render(<AddBookFlow initialQuery="" returnTo={null} />);
+    render(<AddBookFlow initialQuery="" returnTo={null} discardHref="/cteni/hledat" />);
     await userEvent.click(await screen.findByRole('button', { name: /odeslat/i }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/cteni/knihy/dup-1'));
@@ -193,11 +195,54 @@ describe('AddBookFlow', () => {
       json: async () => ({ data: { id: 'new-1' } }),
     }));
 
-    render(<AddBookFlow initialQuery="" returnTo="/cteni/eseje/e1/upravit" />);
+    render(<AddBookFlow initialQuery="" returnTo="/cteni/eseje/e1/upravit" discardHref="/cteni/eseje/e1/upravit" />);
     await userEvent.click(await screen.findByRole('button', { name: /odeslat/i }));
 
     await waitFor(() =>
       expect(push).toHaveBeenCalledWith('/cteni/eseje/e1/upravit?book=new-1'),
     );
+  });
+
+  describe('discarding the draft', () => {
+    const DRAFT = {
+      candidate: { ...CANDIDATE, source: 'google_books' },
+      enriched: null,
+      citations: [],
+      manual: true,
+      appealing: false,
+    };
+
+    function renderWithDraft() {
+      persist('review', DRAFT);
+      render(<AddBookFlow initialQuery="" returnTo={null} discardHref="/cteni/hledat" />);
+    }
+
+    it('clears the draft and navigates back when confirmed', async () => {
+      renderWithDraft();
+
+      await userEvent.click(await screen.findByRole('button', { name: /zrušit přidávání/i }));
+      await userEvent.click(await screen.findByRole('button', { name: /zahodit/i }));
+
+      expect(sessionStorage.getItem('tappka:add-book-draft')).toBeNull();
+      await waitFor(() => expect(push).toHaveBeenCalledWith('/cteni/hledat'));
+    });
+
+    it('keeps the draft when the dialog is cancelled', async () => {
+      renderWithDraft();
+
+      await userEvent.click(await screen.findByRole('button', { name: /zrušit přidávání/i }));
+      await userEvent.click(screen.getByRole('button', { name: 'Zrušit' }));
+
+      expect(push).not.toHaveBeenCalled();
+      expect(sessionStorage.getItem('tappka:add-book-draft')).not.toBeNull();
+    });
+
+    it('is not offered while there is nothing to discard', async () => {
+      render(<AddBookFlow initialQuery="" returnTo={null} discardHref="/cteni/hledat" />);
+
+      expect(
+        screen.queryByRole('button', { name: /zrušit přidávání/i }),
+      ).not.toBeInTheDocument();
+    });
   });
 });

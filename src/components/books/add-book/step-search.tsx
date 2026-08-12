@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
+import { looksLikeIsbn } from '@/lib/books/external';
 import type { ExternalBookCandidate } from '@/lib/books/types';
 
 const DEBOUNCE_MS = 350;
@@ -53,13 +54,36 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
       setSearching(true);
       try {
         const q = encodeURIComponent(query.trim());
-        const [localRes, externalRes] = await Promise.all([
-          fetch(`/api/books/search?q=${q}`),
-          fetch(`/api/books/external-search?q=${q}`),
-        ]);
-        const [localJson, externalJson] = await Promise.all([localRes.json(), externalRes.json()]);
-        setCatalogue(localJson.data ?? []);
-        setExternal(externalJson.data ?? []);
+
+        if (looksLikeIsbn(query)) {
+          // An ISBN identifies an edition: the record in BOB may carry a
+          // different ISBN (translation, reprint). Resolve the work through
+          // the external provider first, then look the title up in the
+          // catalogue so the duplicate gate fires for the same book.
+          const externalRes = await fetch(`/api/books/external-search?q=${q}`);
+          const externalJson = await externalRes.json();
+          const hits = (externalJson.data ?? []) as ExternalBookCandidate[];
+          setExternal(hits);
+
+          const probeTitle = hits[0]?.title;
+          if (probeTitle) {
+            const localRes = await fetch(
+              `/api/books/search?q=${encodeURIComponent(probeTitle)}`,
+            );
+            const localJson = await localRes.json();
+            setCatalogue(localJson.data ?? []);
+          } else {
+            setCatalogue([]);
+          }
+        } else {
+          const [localRes, externalRes] = await Promise.all([
+            fetch(`/api/books/search?q=${q}`),
+            fetch(`/api/books/external-search?q=${q}`),
+          ]);
+          const [localJson, externalJson] = await Promise.all([localRes.json(), externalRes.json()]);
+          setCatalogue(localJson.data ?? []);
+          setExternal(externalJson.data ?? []);
+        }
       } finally {
         setSearching(false);
       }
@@ -116,7 +140,10 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
             paused={false}
             onCapture={(barcodes) => {
               const code = barcodes[0]?.rawValue;
-              if (code) setQuery(code);
+              if (code) {
+                setShowScanner(false);
+                setQuery(code);
+              }
             }}
           />
           <p className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs text-white">
@@ -224,7 +251,7 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
       {!manualOpen ? (
         <Button variant="outline" className="gap-2" onClick={() => setManualOpen(true)}>
           <Plus className="size-4" />
-          Nenašel jsi ji? Zadat ručně
+          Nemůžeš ji najít? Zadat ručně
         </Button>
       ) : (
         <section className="space-y-3 rounded-xl border bg-muted/40 p-4">

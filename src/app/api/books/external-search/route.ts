@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { searchExternalBooks, searchExternalByIsbn } from '@/lib/books/external';
+import { searchExternal, searchExternalByIsbn } from '@/lib/books/external';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,12 +14,14 @@ export async function GET(request: NextRequest) {
 
     if (!q && !isbn) return NextResponse.json({ data: [] });
 
+    // A bare ISBN query (scanned barcode or typed code) is routed to the
+    // exact-match providers; keyword search does not hit ISBNs reliably.
     let results;
     if (isbn) {
       const result = await searchExternalByIsbn(isbn);
       results = result ? [result] : [];
     } else {
-      results = await searchExternalBooks(q);
+      results = await searchExternal(q);
     }
 
     return NextResponse.json({ data: results });

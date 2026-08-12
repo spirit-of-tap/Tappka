@@ -23,7 +23,7 @@ export interface AddBookDraft {
   /** True when the submitter is filling the record in by hand. */
   manual: boolean;
   /**
-   * True when the AI refused the book and the submitter chose to send it anyway.
+   * True when Tappka refused the book and the submitter chose to send it anyway.
    * Krok 4 then asks for an argument instead of a description.
    */
   appealing: boolean;

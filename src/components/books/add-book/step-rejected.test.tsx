@@ -35,16 +35,20 @@ const REJECTED: EnrichedBook = {
   low_confidence_fields: [],
 };
 
+function renderStep(onAppeal = vi.fn(), onDiscard = vi.fn()) {
+  render(
+    <StepRejected
+      candidate={CANDIDATE}
+      enriched={REJECTED}
+      onAppeal={onAppeal}
+      onDiscard={onDiscard}
+    />,
+  );
+}
+
 describe('StepRejected', () => {
   it('names the book and why it was refused', () => {
-    render(
-      <StepRejected
-        candidate={CANDIDATE}
-        enriched={REJECTED}
-        onSearchAgain={vi.fn()}
-        onAppeal={vi.fn()}
-      />,
-    );
+    renderStep();
 
     expect(screen.getByText('Harry Potter a Kámen mudrců')).toBeInTheDocument();
     expect(screen.getByText('J. K. Rowling')).toBeInTheDocument();
@@ -52,59 +56,44 @@ describe('StepRejected', () => {
   });
 
   it('does not repeat the flat ZAMÍTNUTO sentence', () => {
-    render(
-      <StepRejected
-        candidate={CANDIDATE}
-        enriched={REJECTED}
-        onSearchAgain={vi.fn()}
-        onAppeal={vi.fn()}
-      />,
-    );
+    renderStep();
 
     expect(screen.queryByText(/ZAMÍTNUTO/)).not.toBeInTheDocument();
   });
 
-  it('offers searching for another book as the main way out', async () => {
-    const onSearchAgain = vi.fn();
-    render(
-      <StepRejected
-        candidate={CANDIDATE}
-        enriched={REJECTED}
-        onSearchAgain={onSearchAgain}
-        onAppeal={vi.fn()}
-      />,
-    );
+  it('frames the refusal as Tappka doubting, not as a ban', () => {
+    renderStep();
 
-    await userEvent.click(screen.getByRole('button', { name: /zkusit jinou knihu/i }));
+    expect(
+      screen.getByRole('heading', { name: /nemyslí, že tahle kniha do boba patří/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/nezapíšeme/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /zkusit jinou knihu/i })).not.toBeInTheDocument();
+  });
 
-    expect(onSearchAgain).toHaveBeenCalledTimes(1);
+  it('makes discarding the main action', async () => {
+    const onDiscard = vi.fn();
+    renderStep(vi.fn(), onDiscard);
+
+    const discard = screen.getByRole('button', { name: /zrušit přidávání/i });
+    expect(discard).toHaveClass('bg-primary');
+
+    await userEvent.click(discard);
+
+    expect(onDiscard).toHaveBeenCalledTimes(1);
   });
 
   it('lets the submitter appeal to the coach', async () => {
     const onAppeal = vi.fn();
-    render(
-      <StepRejected
-        candidate={CANDIDATE}
-        enriched={REJECTED}
-        onSearchAgain={vi.fn()}
-        onAppeal={onAppeal}
-      />,
-    );
+    renderStep(onAppeal);
 
-    await userEvent.click(screen.getByRole('button', { name: /pošli to kouči/i }));
+    await userEvent.click(screen.getByRole('button', { name: /pokračovat přesto/i }));
 
     expect(onAppeal).toHaveBeenCalledTimes(1);
   });
 
   it('has no submit control of its own — the refusal holds by default', () => {
-    render(
-      <StepRejected
-        candidate={CANDIDATE}
-        enriched={REJECTED}
-        onSearchAgain={vi.fn()}
-        onAppeal={vi.fn()}
-      />,
-    );
+    renderStep();
 
     expect(screen.queryByRole('button', { name: /odeslat/i })).not.toBeInTheDocument();
   });

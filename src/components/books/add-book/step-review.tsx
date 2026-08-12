@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, BookOpen, Lock, Send } from 'lucide-react';
+import { AlertTriangle, BookOpen, Lock, Send, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,9 +45,11 @@ interface StepReviewProps {
   draft: AddBookDraft;
   submitting: boolean;
   onSubmit: (input: CreateBookInput) => void;
+  /** Opens the discard confirmation; the flow owns the draft and navigation. */
+  onDiscard: () => void;
 }
 
-export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
+export function StepReview({ draft, submitting, onSubmit, onDiscard }: StepReviewProps) {
   const { candidate, enriched, appealing } = draft;
 
   const [titleCs, setTitleCs] = useState(enriched?.title_cs ?? candidate?.title ?? '');
@@ -115,7 +117,7 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
         />
       ) : (
         <p className="rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
-          Body přidělí kouč.
+          Body přidělí kouč:ka.
         </p>
       )}
 
@@ -130,7 +132,7 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
 
       <section className="space-y-4">
         <h2 className="font-heading text-base font-semibold">
-          {appealing ? 'Zkontroluj údaje' : 'Oprav, co AI spletla'}
+          {appealing ? 'Zkontroluj údaje' : 'Oprav, co Tappka spletla'}
         </h2>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -196,7 +198,7 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
 
         <div className="space-y-1">
           <Label htmlFor="review-description">
-            {appealing ? 'Napiš kouči, proč kniha do BOBa patří' : 'Popis — proč to číst'}
+            {appealing ? 'Napiš kouči:ce, proč kniha do BOBa patří' : 'Popis — proč to číst'}
           </Label>
           <Textarea
             id="review-description"
@@ -205,7 +207,7 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
             onChange={(e) => setDescription(e.target.value)}
             placeholder={
               appealing
-                ? 'Co si z knihy Téčko odnese, co AI přehlédla.'
+                ? 'Co si z knihy Téčko odnese, co Tappka přehlédla.'
                 : 'Co si Téčko z knihy odnese, a co ho může od čtení odradit.'
             }
             {...uncertain('description')}
@@ -237,17 +239,28 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
 
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Kniha půjde kouči ke schválení — dostane e-mail.
+          Kniha půjde ke schválení — kouč:ka dostane e-mail.
         </p>
-        <Button
-          disabled={!ready || submitting}
-          onClick={handleSubmit}
-          size="lg"
-          className="w-full gap-2 sm:w-auto"
-        >
-          {submitting ? <Spinner className="size-4" /> : <Send className="size-4" />}
-          Odeslat kouči
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            disabled={!ready || submitting}
+            onClick={handleSubmit}
+            size="lg"
+            className="gap-2"
+          >
+            {submitting ? <Spinner className="size-4" /> : <Send className="size-4" />}
+            Odeslat ke schválení
+          </Button>
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={onDiscard}
+            className="gap-1.5 text-muted-foreground"
+          >
+            <X className="size-4" />
+            Zrušit přidávání
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -308,13 +321,13 @@ function VerdictCard({
 
       {scoreUncertain && (
         <p className="text-sm text-amber-700 dark:text-amber-400">
-          Hodnocením si AI nebyla jistá.
+          Hodnocením si Tappka nebyla jistá.
         </p>
       )}
 
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Lock className="size-3 shrink-0" />
-        Návrh AI pro kouče. Kouč ho může změnit.
+        Návrh Tappky ke schválení. Kouč:ka ho může změnit.
       </p>
     </section>
   );

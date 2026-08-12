@@ -2,6 +2,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('react-barcode-scanner', () => ({
+  BarcodeScanner: ({ onCapture }: { onCapture: (barcodes: { rawValue: string }[]) => void }) => (
+    <button type="button" onClick={() => onCapture([{ rawValue: '9781501121746' }])}>
+      scan-test
+    </button>
+  ),
+}));
+
 import { StepSearch } from './step-search';
 
 const CATALOGUE_HIT = { id: 'existing-1', title_cs: 'Sprint', author: 'Jake Knapp' };
@@ -82,6 +90,30 @@ describe('StepSearch', () => {
     expect(screen.getByRole('button', { name: /Jake Knapp/ })).toBeInTheDocument();
   });
 
+  it('surfaces a catalogue record when an ISBN resolves to a known title', async () => {
+    mockRoutes({ local: [CATALOGUE_HIT], external: [EXTERNAL_HIT] });
+    render(<StepSearch initialQuery="9781501121746" onSelect={vi.fn()} onManual={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText(/už v bobovi/i)).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /Sprint/ })).toHaveAttribute(
+      'href',
+      '/cteni/knihy/existing-1',
+    );
+    expect(screen.queryByText(/mimo katalog/i)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /přesto přidat jinou verzi/i }));
+    expect(screen.getByRole('button', { name: /Jake Knapp/ })).toBeInTheDocument();
+  });
+
+  it('does not search the catalogue by title when the ISBN resolves to nothing', async () => {
+    mockRoutes({ local: [CATALOGUE_HIT], external: [] });
+    render(<StepSearch initialQuery="9780000000000" onSelect={vi.fn()} onManual={vi.fn()} />);
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('external-search'));
+    expect(screen.queryByText(/už v bobovi/i)).not.toBeInTheDocument();
+  });
+
   it('offers manual entry and requires both title and author', async () => {
     const onManual = vi.fn();
     mockRoutes({});
@@ -104,5 +136,19 @@ describe('StepSearch', () => {
     render(<StepSearch initialQuery="" onSelect={vi.fn()} onManual={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: /naskenovat/i })).toBeInTheDocument();
+  });
+
+  it('closes the scanner and searches when a barcode is captured', async () => {
+    mockRoutes({ external: [EXTERNAL_HIT] });
+    render(<StepSearch initialQuery="" onSelect={vi.fn()} onManual={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /naskenovat/i }));
+    expect(screen.getByText(/namiř kameru/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /scan-test/i }));
+
+    expect(screen.queryByText(/namiř kameru/i)).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue('9781501121746')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/Simon & Schuster/)).toBeInTheDocument());
   });
 });

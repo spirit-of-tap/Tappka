@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Search, ShieldX } from 'lucide-react';
+import { BookOpen, Send, ShieldX, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import type { EnrichedBook } from '@/lib/books/enrichment/schema';
@@ -9,10 +9,10 @@ import type { ExternalBookCandidate } from '@/lib/books/types';
 interface StepRejectedProps {
   candidate: ExternalBookCandidate;
   enriched: EnrichedBook;
-  /** Start over from the search step with a clean draft. */
-  onSearchAgain: () => void;
   /** Send it to the coach anyway, as an appeal against the model's refusal. */
   onAppeal: () => void;
+  /** Discard the whole adding process; the flow clears the draft and navigates back. */
+  onDiscard: () => void;
 }
 
 /**
@@ -25,15 +25,17 @@ interface StepRejectedProps {
 export function StepRejected({
   candidate,
   enriched,
-  onSearchAgain,
   onAppeal,
+  onDiscard,
 }: StepRejectedProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-4 rounded-xl border border-destructive/25 bg-destructive/5 p-5">
         <div className="flex items-center gap-2.5">
           <ShieldX className="size-5 shrink-0 text-destructive" />
-          <h2 className="font-heading text-lg font-bold">Tuhle knihu do BOBa nezapíšeme</h2>
+          <h2 className="font-heading text-lg font-bold">
+            Tappka si nemyslí, že tahle kniha do BOBa patří
+          </h2>
         </div>
 
         <div className="flex gap-4">
@@ -59,21 +61,15 @@ export function StepRejected({
         <p className="text-sm leading-relaxed">{enriched.points_reason}</p>
       </div>
 
-      <div className="space-y-3">
-        <Button onClick={onSearchAgain} size="lg" className="w-full gap-2 sm:w-auto">
-          <Search className="size-4" />
-          Zkusit jinou knihu
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={onDiscard} size="lg" className="gap-2">
+          <X className="size-4" />
+          Zrušit přidávání
         </Button>
-        <p className="text-sm text-muted-foreground">
-          Myslíš, že se AI mýlí?{' '}
-          <button
-            type="button"
-            onClick={onAppeal}
-            className="focus-ring rounded font-medium text-primary underline underline-offset-2"
-          >
-            Pošli to kouči přesto
-          </button>
-        </p>
+        <Button variant="outline" size="lg" className="gap-2" onClick={onAppeal}>
+          <Send className="size-4" />
+          Pokračovat přesto
+        </Button>
       </div>
     </div>
   );

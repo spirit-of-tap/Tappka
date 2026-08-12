@@ -23,8 +23,8 @@ interface NodeSpec {
 const NODES: readonly NodeSpec[] = [
   { node: 'gate', icon: ShieldCheck, label: 'Pravidla', detail: 'Co do BOBa patří' },
   { node: 'search', icon: Search, label: 'Najdi knihu', detail: 'Podle názvu nebo ISBN' },
-  { node: 'enriching', icon: Sparkles, label: 'AI to doplní', detail: 'Popis, údaje a body' },
-  { node: 'review', icon: Send, label: 'Odeslat kouči', detail: 'Kouč knihu schválí' },
+  { node: 'enriching', icon: Sparkles, label: 'Tappka to doplní', detail: 'Popis, údaje a body' },
+  { node: 'review', icon: Send, label: 'Odeslat ke schválení', detail: 'Kouč:ka knihu schválí' },
 ] as const;
 
 const NODE_INDEX: Record<FlowNode, number> = {

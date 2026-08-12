@@ -30,7 +30,7 @@ export function StepGate({ onContinue }: { onContinue: () => void }) {
 
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Nejsi si jistý? Přidej ji — kouč rozhodne.
+          Váháš? Přidej ji — kouč:ka rozhodne.
         </p>
         <Button onClick={onContinue} size="lg" className="w-full gap-2 sm:w-auto">
           Pojďme na to

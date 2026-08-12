@@ -138,7 +138,7 @@ test.describe('adding a book', () => {
     await expect(page.getByLabel('Knižní body: 2')).toBeVisible();
     await expect(page.getByRole('button', { name: /\d\s*b\./i })).toHaveCount(0);
 
-    await page.getByRole('button', { name: /odeslat kouči/i }).click();
+    await page.getByRole('button', { name: /odeslat ke schválení/i }).click();
 
     // The POST can be slow (notification emails run inside the route), so wait
     // for the redirect rather than racing a toast against a 5s default. The
@@ -167,7 +167,7 @@ test.describe('adding a book', () => {
 
     await page.goto('/cteni/knihy/nova?q=sprint&from=hledat');
     await passGateAndPick(page);
-    await page.getByRole('button', { name: /odeslat kouči/i }).click();
+    await page.getByRole('button', { name: /odeslat ke schválení/i }).click();
     await page.waitForURL(/\/cteni\/knihy\/[0-9a-f-]{36}$/);
     const bookId = new URL(page.url()).pathname.split('/').pop()!;
 
@@ -240,7 +240,7 @@ test.describe('adding a book', () => {
     await page.goto('/cteni/knihy/nova?q=sprint&from=hledat');
     await passGateAndPick(page);
     await expect(page.getByLabel(/autor/i)).toHaveValue(/Zeratsky/);
-    await page.getByRole('button', { name: /odeslat kouči/i }).click();
+    await page.getByRole('button', { name: /odeslat ke schválení/i }).click();
 
     await page.waitForURL(/\/cteni\/knihy\/[0-9a-f-]{36}$/);
     // 201 created — never 500 (the comma-separated author kept the route from
@@ -272,7 +272,7 @@ test.describe('adding a book', () => {
 
     // The record is still completable by hand, and still gated. Without an
     // enrichment there is no score to show, so the coach assigns one.
-    const submit = page.getByRole('button', { name: /odeslat kouči/i });
+    const submit = page.getByRole('button', { name: /odeslat ke schválení/i });
     await expect(submit).toBeDisabled();
     await expect(page.getByText('Body přidělí kouč.')).toBeVisible();
 
@@ -306,14 +306,14 @@ test.describe('adding a book', () => {
     await passGateAndPick(page);
 
     // The refusal holds: no form, no submit button.
-    await expect(page.getByRole('heading', { name: /nezapíšeme/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /nemyslí, že tahle kniha/i })).toBeVisible();
     await expect(page.getByText('Beletrie — rozhoduje žánr, ne téma.')).toBeVisible();
     await expect(page.getByLabel(/český název/i)).toHaveCount(0);
     await expect(page.getByRole('button', { name: /odeslat/i })).toHaveCount(0);
 
     // Appealing asks for an argument, and will not submit without one.
-    await page.getByRole('button', { name: /pošli to kouči/i }).click();
-    const submit = page.getByRole('button', { name: /odeslat kouči/i });
+    await page.getByRole('button', { name: /pokračovat přesto/i }).click();
+    const submit = page.getByRole('button', { name: /odeslat ke schválení/i });
     await expect(submit).toBeDisabled();
     await expect(page.getByLabel('Knižní body: 0')).toBeVisible();
 
@@ -345,6 +345,30 @@ test.describe('adding a book', () => {
 
     await page.getByRole('button', { name: /přesto přidat jinou verzi/i }).click();
     await expect(page.getByText(/mimo katalog/i)).toBeVisible();
+  });
+
+  test('warns about a duplicate found through an ISBN query', async ({ page }) => {
+    const { cookie } = await getSetupSessionCookie();
+    await setAuthCookie(page.context(), cookie);
+    const isbn = uniqueIsbn();
+
+    // The ISBN resolves externally to "Sprint"; the catalogue has the same
+    // work under a different ISBN — the record must still surface as a
+    // duplicate via its title.
+    await page.route('**/api/books/external-search**', (route) =>
+      route.fulfill({ json: { data: [sprintCandidate(isbn)] } }),
+    );
+    await page.route('**/api/books/search**', (route) =>
+      route.fulfill({
+        json: { data: [{ id: 'existing-1', title_cs: 'Sprint', author: 'Jake Knapp' }] },
+      }),
+    );
+
+    await page.goto(`/cteni/knihy/nova?q=${isbn}&from=hledat`);
+    await page.getByRole('button', { name: /pojďme na to/i }).click();
+
+    await expect(page.getByText(/už v BOBovi máme/i)).toBeVisible();
+    await expect(page.getByText(/mimo katalog/i)).toHaveCount(0);
   });
 });
 

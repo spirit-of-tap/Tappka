@@ -57,7 +57,9 @@ export async function getBooks(
 
   if (filters?.search?.trim()) {
     const q = filters.search.trim();
-    query = query.or(`title_cs.ilike.%${q}%,title_en.ilike.%${q}%,author.ilike.%${q}%`);
+    query = query.or(
+      `title_cs.ilike.%${q}%,title_en.ilike.%${q}%,author.ilike.%${q}%,isbn_13.ilike.%${q}%`,
+    );
   }
 
   if (filters?.tags && filters.tags.length > 0) {

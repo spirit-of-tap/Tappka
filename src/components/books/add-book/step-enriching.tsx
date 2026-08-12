@@ -14,7 +14,7 @@ import type { EnrichedBook } from '@/lib/books/enrichment/schema';
  * than four hollow rings.
  */
 const ENRICH_PHASES = [
-  'Našel jsem knihu',
+  'Mám knihu',
   'Hledám český popis',
   'Porovnávám s BOBem',
   'Hodnotím body',
@@ -92,7 +92,7 @@ export function StepEnriching({ probe, coverUrl, onDone, onManual }: StepEnrichi
           <div className="space-y-1">
             <p className="font-medium">{error}</p>
             <p className="text-sm text-muted-foreground">
-              Zkus to znovu, nebo údaje vyplň sám.
+              Zkus to znovu, nebo údaje vyplň ručně.
             </p>
           </div>
         </div>

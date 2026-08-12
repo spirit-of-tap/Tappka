@@ -53,7 +53,7 @@ describe('StepGate', () => {
   it('encourages adding a book when the submitter is unsure', () => {
     render(<StepGate onContinue={vi.fn()} />);
 
-    expect(screen.getByText(/kouč rozhodne/i)).toBeInTheDocument();
+    expect(screen.getByText(/kouč:ka rozhodne/i)).toBeInTheDocument();
   });
 
   it('continues only when the button is pressed', async () => {

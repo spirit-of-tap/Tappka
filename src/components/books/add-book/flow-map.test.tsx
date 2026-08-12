@@ -34,7 +34,7 @@ describe('FlowMap', () => {
   it('names every stage even when only the current one is visible', () => {
     render(<FlowMap active="search" variant="compact" />);
 
-    for (const label of ['Pravidla', 'Najdi knihu', 'AI to doplní', 'Odeslat kouči']) {
+    for (const label of ['Pravidla', 'Najdi knihu', 'Tappka to doplní', 'Odeslat ke schválení']) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });

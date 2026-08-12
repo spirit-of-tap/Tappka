@@ -50,8 +50,58 @@ describe('findDuplicate', () => {
     expect(hit?.id).toBe('book-en');
   });
 
-  it('does not match when the author differs', () => {
-    expect(findDuplicate({ title_cs: 'Sprint', author: 'Jiný Autor' }, [SPRINT_CS])).toBeNull();
+  it('matches on title even when the author string differs', () => {
+    const hit = findDuplicate({ title_cs: 'Sprint', author: 'Jiný Autor' }, [SPRINT_CS]);
+    expect(hit?.id).toBe('book-cs');
+  });
+
+  it('matches a title with a subtitle against a shorter submitted title', () => {
+    const hit = findDuplicate(
+      { title_cs: 'Sprint', title_en: null, author: 'Někdo' },
+      [
+        {
+          id: 'book-sub',
+          title_cs: 'Sprint: Jak vyřešit velké problémy za pět dní',
+          title_en: null,
+          author: 'Jake Knapp',
+          isbn_13: null,
+        },
+      ],
+    );
+    expect(hit?.id).toBe('book-sub');
+  });
+
+  it('matches via title_en when the probe only carries the Czech title', () => {
+    const hit = findDuplicate(
+      { title_cs: 'Sprint', author: 'Někdo' },
+      [
+        {
+          id: 'book-en',
+          title_cs: 'Úplně jiný název',
+          title_en: 'Sprint',
+          author: 'Jake Knapp',
+          isbn_13: null,
+        },
+      ],
+    );
+    expect(hit?.id).toBe('book-en');
+  });
+
+  it('does not treat a two-letter title as contained in another title', () => {
+    expect(
+      findDuplicate(
+        { title_cs: 'IT', author: 'Někdo' },
+        [
+          {
+            id: 'book-it',
+            title_cs: 'IT služby pro malé firmy',
+            title_en: null,
+            author: 'Někdo Jiný',
+            isbn_13: null,
+          },
+        ],
+      ),
+    ).toBeNull();
   });
 
   it('ignores a null ISBN on either side rather than treating it as equal', () => {

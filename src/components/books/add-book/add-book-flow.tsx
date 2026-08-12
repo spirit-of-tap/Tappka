@@ -3,7 +3,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { X } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/responsive-alert-dialog';
 import type { CreateBookInput, ExternalBookCandidate } from '@/lib/books/types';
 import type { EnrichedBook } from '@/lib/books/enrichment/schema';
 
@@ -50,15 +62,18 @@ interface AddBookFlowProps {
   initialQuery: string;
   /** Where to go after a successful submit; the new book id is appended as `?book=`. */
   returnTo: string | null;
+  /** Where to go when the submitter discards the in-progress draft. */
+  discardHref: string;
 }
 
-export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
+export function AddBookFlow({ initialQuery, returnTo, discardHref }: AddBookFlowProps) {
   const router = useRouter();
   const persisted = readPersisted();
 
   const [step, setStep] = useState<Step>(persisted?.step ?? 'gate');
   const [draft, setDraft] = useState<AddBookDraft>(persisted?.draft ?? EMPTY_DRAFT);
   const [submitting, setSubmitting] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
 
   // Survive a refresh so an enrichment already paid for is not thrown away.
   useEffect(() => {
@@ -105,11 +120,6 @@ export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
     setStep('review');
   }, []);
 
-  const handleSearchAgain = useCallback(() => {
-    setDraft(EMPTY_DRAFT);
-    setStep('search');
-  }, []);
-
   const handleAppeal = useCallback(() => {
     setDraft((current) => ({ ...current, appealing: true }));
     setStep('review');
@@ -153,12 +163,32 @@ export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
     [returnTo, router],
   );
 
+  const handleDiscard = useCallback(() => {
+    window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+    setDiscardOpen(false);
+    router.push(discardHref);
+  }, [discardHref, router]);
+
   return (
     <div className="space-y-7">
       <FlowMap
         active={STEP_NODE[step]}
         variant={step === 'gate' ? 'expanded' : 'compact'}
       />
+
+      {step !== 'gate' && step !== 'review' && step !== 'rejected' && (
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setDiscardOpen(true)}
+            className="gap-1.5 text-muted-foreground"
+          >
+            <X className="size-3.5" />
+            Zrušit přidávání
+          </Button>
+        </div>
+      )}
 
       {step === 'gate' && <StepGate onContinue={() => setStep('search')} />}
 
@@ -190,14 +220,41 @@ export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
         <StepRejected
           candidate={draft.candidate}
           enriched={draft.enriched}
-          onSearchAgain={handleSearchAgain}
           onAppeal={handleAppeal}
+          onDiscard={() => setDiscardOpen(true)}
         />
       )}
 
       {step === 'review' && (
-        <StepReview draft={draft} submitting={submitting} onSubmit={handleSubmit} />
+        <StepReview
+          draft={draft}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          onDiscard={() => setDiscardOpen(true)}
+        />
       )}
+
+      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Zrušit přidávání knihy?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Rozepsané údaje se zahodí a vrátíš se zpět.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDiscard();
+              }}
+            >
+              Zahodit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -31,6 +31,7 @@ export default async function NovaKnihaPage({ searchParams }: NovaKnihaPageProps
       <AddBookFlow
         initialQuery={q ?? ''}
         returnTo={cameFromEssay ? `/cteni/eseje/${essayId}/upravit` : null}
+        discardHref={backHref}
       />
     </PageShell>
   );

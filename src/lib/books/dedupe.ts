@@ -22,6 +22,12 @@ export interface DuplicateProbe {
 const DIACRITIC_RANGE = /[̀-ͯ]/g;
 const NON_ALPHANUMERIC = /[^\p{L}\p{N}]+/gu;
 
+/**
+ * Titles shorter than this are never treated as contained in another title —
+ * two-letter keys like "IT" would match any title mentioning the letters.
+ */
+const MIN_CONTAINED_TITLE_LENGTH = 4;
+
 /** Lowercases, strips diacritics and punctuation, collapses whitespace. */
 export function normalizeTitleKey(value: string): string {
   return value
@@ -40,14 +46,34 @@ function titleKeys(titleCs: string, titleEn: string | null | undefined): Set<str
 }
 
 /**
+ * True when one normalized title equals or contains the other. Cross-pairs
+ * probe and stored keys, so a Czech title matches an English one (and vice
+ * versa) whenever the record stores both languages.
+ */
+function titlesOverlap(probeKeys: Set<string>, storedKey: string): boolean {
+  if (probeKeys.has(storedKey)) return true;
+
+  for (const probeKey of probeKeys) {
+    const shorter = probeKey.length <= storedKey.length ? probeKey : storedKey;
+    const longer = probeKey.length <= storedKey.length ? storedKey : probeKey;
+    if (shorter.length >= MIN_CONTAINED_TITLE_LENGTH && longer.includes(shorter)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Returns the first book the probe duplicates: same ISBN-13 when both sides
- * have one, otherwise same author and an overlapping title in either language.
+ * have one, otherwise an overlapping title in either language (author is not
+ * part of the match — editions and translations differ in how they spell it,
+ * but the same work carries the same title).
  */
 export function findDuplicate(
   probe: DuplicateProbe,
   books: MatchableBook[],
 ): MatchableBook | null {
-  const probeAuthor = normalizeTitleKey(probe.author);
   const probeTitles = titleKeys(probe.title_cs, probe.title_en);
 
   for (const book of books) {
@@ -55,10 +81,8 @@ export function findDuplicate(
       return book;
     }
 
-    if (normalizeTitleKey(book.author) !== probeAuthor) continue;
-
-    for (const key of titleKeys(book.title_cs, book.title_en)) {
-      if (probeTitles.has(key)) return book;
+    for (const storedKey of titleKeys(book.title_cs, book.title_en)) {
+      if (titlesOverlap(probeTitles, storedKey)) return book;
     }
   }
 
