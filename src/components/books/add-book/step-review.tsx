@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Send } from 'lucide-react';
+import { AlertTriangle, BookOpen, Lock, Send } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
-import { BOOK_POINT_CATEGORIES } from '@/lib/books/enrichment/rubric';
-import { LOW_CONFIDENCE_FIELDS, type LowConfidenceField, type SuggestedPoints } from '@/lib/books/enrichment/schema';
+import {
+  LOW_CONFIDENCE_FIELDS,
+  type LowConfidenceField,
+} from '@/lib/books/enrichment/schema';
 import { cn } from '@/lib/utils';
 import { BOOK_CATEGORIES, type CreateBookInput } from '@/lib/books/types';
 
@@ -28,6 +30,13 @@ const LOW_CONFIDENCE_LABELS: Record<LowConfidenceField, string> = {
   suggested_points: 'knižní body',
 };
 
+/**
+ * Fields the banner must never name, because the submitter has no control for
+ * them: the score is the model's verdict and ISBN is carried silently. An
+ * uncertain score surfaces as a caveat on the verdict card instead.
+ */
+const FIELDS_WITHOUT_CONTROLS: readonly LowConfidenceField[] = ['suggested_points', 'isbn_13'];
+
 /** Amber ring + underline hint for a field the model flagged as uncertain. */
 const UNCERTAIN_CLASSES =
   'border-amber-400 focus-visible:ring-amber-400/40 dark:border-amber-600';
@@ -39,24 +48,27 @@ interface StepReviewProps {
 }
 
 export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
-  const { candidate, enriched } = draft;
+  const { candidate, enriched, appealing } = draft;
 
   const [titleCs, setTitleCs] = useState(enriched?.title_cs ?? candidate?.title ?? '');
   const [titleEn, setTitleEn] = useState(enriched?.title_en ?? '');
   const [author, setAuthor] = useState(enriched?.author ?? candidate?.author ?? '');
-  const [description, setDescription] = useState(enriched?.description ?? '');
+  // An appeal argues with the model, so it starts from a blank page rather than
+  // from the "ZAMÍTNUTO" sentence the submitter is disagreeing with.
+  const [description, setDescription] = useState(appealing ? '' : enriched?.description ?? '');
   const [tag, setTag] = useState(enriched?.tag ?? '');
-  const [points, setPoints] = useState<SuggestedPoints | null>(enriched?.suggested_points ?? null);
   const [pageCount, setPageCount] = useState(
     String(enriched?.page_count ?? candidate?.page_count ?? ''),
   );
+
+  // The score is the model's judgement for the coach, never the submitter's pick.
+  const points = enriched?.suggested_points ?? null;
 
   const ready =
     titleCs.trim().length > 0 &&
     author.trim().length > 0 &&
     description.trim().length > 0 &&
-    tag.length > 0 &&
-    points !== null;
+    tag.length > 0;
 
   const lowFields = new Set(enriched?.low_confidence_fields ?? []);
   const uncertain = (field: LowConfidenceField) =>
@@ -64,7 +76,9 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
       ? { 'data-uncertain': true as const, className: cn(UNCERTAIN_CLASSES) }
       : undefined;
 
-  const uncertainNames = LOW_CONFIDENCE_FIELDS.filter((field) => lowFields.has(field))
+  const uncertainNames = LOW_CONFIDENCE_FIELDS.filter(
+    (field) => lowFields.has(field) && !FIELDS_WITHOUT_CONTROLS.includes(field),
+  )
     .map((field) => LOW_CONFIDENCE_LABELS[field])
     .join(', ');
 
@@ -90,30 +104,35 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold">Zkontroluj a odešli</h2>
-        <p className="text-sm text-muted-foreground">
-          Tohle se uloží do BOBa. Cokoli můžeš přepsat.
+      {enriched ? (
+        <VerdictCard
+          title={enriched.title_cs}
+          author={enriched.author}
+          coverUrl={candidate?.cover_url ?? null}
+          points={enriched.suggested_points}
+          reason={enriched.points_reason}
+          scoreUncertain={lowFields.has('suggested_points')}
+        />
+      ) : (
+        <p className="rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+          Body přidělí kouč.
         </p>
-      </div>
+      )}
 
-      {enriched?.confidence === 'low' && (
+      {uncertainNames.length > 0 && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-300/50 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <p className="text-sm">
-            {uncertainNames.length > 0 ? (
-              <>
-                <span className="font-semibold">Nejsme si jistí těmito údaji:</span>{' '}
-                {uncertainNames}. Zkontroluj je prosím, než knihu odešleš.
-              </>
-            ) : (
-              'U některých údajů si nejsme jistí — zkontroluj je prosím, než knihu odešleš.'
-            )}
+            <span className="font-semibold">Zkontroluj:</span> {uncertainNames}.
           </p>
         </div>
       )}
 
-      <div className="space-y-4 rounded-xl border bg-card p-4">
+      <section className="space-y-4">
+        <h2 className="font-heading text-base font-semibold">
+          {appealing ? 'Zkontroluj údaje' : 'Oprav, co AI spletla'}
+        </h2>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
             <Label htmlFor="review-title-cs">Český název</Label>
@@ -155,18 +174,6 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="review-description">Popis — proč to číst</Label>
-          <Textarea
-            id="review-description"
-            rows={DESCRIPTION_ROWS}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Co si Téčko z knihy odnese, a co ho může od čtení odradit."
-            {...uncertain('description')}
-          />
-        </div>
-
-        <div className="space-y-1">
           <Label htmlFor="review-tag">Oblast</Label>
           <select
             id="review-tag"
@@ -187,66 +194,128 @@ export function StepReview({ draft, submitting, onSubmit }: StepReviewProps) {
           </select>
         </div>
 
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">Knižní body</legend>
-          <div className="flex flex-wrap gap-2">
-            {BOOK_POINT_CATEGORIES.map((category) => (
-              <Button
-                key={category.points}
-                type="button"
-                variant={points === category.points ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPoints(category.points)}
-              >
-                {category.points} b. — {category.name}
-              </Button>
-            ))}
-            <Button
-              type="button"
-              variant={points === 0 ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPoints(0)}
-            >
-              0 b. — Nesouvisí s programem
-            </Button>
-          </div>
-          {enriched?.points_reason && (
-            <p className="text-sm text-muted-foreground italic">{enriched.points_reason}</p>
-          )}
-        </fieldset>
-      </div>
+        <div className="space-y-1">
+          <Label htmlFor="review-description">
+            {appealing ? 'Napiš kouči, proč kniha do BOBa patří' : 'Popis — proč to číst'}
+          </Label>
+          <Textarea
+            id="review-description"
+            rows={DESCRIPTION_ROWS}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={
+              appealing
+                ? 'Co si z knihy Téčko odnese, co AI přehlédla.'
+                : 'Co si Téčko z knihy odnese, a co ho může od čtení odradit.'
+            }
+            {...uncertain('description')}
+          />
+        </div>
+      </section>
 
       {draft.citations.length > 0 && (
-        <div className="space-y-1">
-          <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            Zdroje
-          </h3>
-          <ul className="space-y-0.5 text-sm">
+        <details className="rounded-xl border bg-card px-4 py-3">
+          <summary className="focus-ring cursor-pointer rounded text-sm font-medium">
+            Zdroje ({draft.citations.length})
+          </summary>
+          <ul className="mt-2 space-y-1">
             {draft.citations.map((url) => (
-              <li key={url}>
+              <li key={url} className="truncate">
                 <a
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-sm text-primary hover:underline"
                 >
                   {url}
                 </a>
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       )}
 
-      <div className="space-y-2 rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">
-        <p>Kniha půjde ke schválení kouči. Bodové hodnocení je návrh — kouč ho může změnit.</p>
-        <p>Tvému kouči odejde e-mail.</p>
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Kniha půjde kouči ke schválení — dostane e-mail.
+        </p>
+        <Button
+          disabled={!ready || submitting}
+          onClick={handleSubmit}
+          size="lg"
+          className="w-full gap-2 sm:w-auto"
+        >
+          {submitting ? <Spinner className="size-4" /> : <Send className="size-4" />}
+          Odeslat kouči
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+interface VerdictCardProps {
+  title: string;
+  author: string;
+  coverUrl: string | null;
+  points: number;
+  reason: string;
+  scoreUncertain: boolean;
+}
+
+/**
+ * What the model decided, stated once and not editable. There is no control
+ * here on purpose — the score reaches the coach as an objective suggestion,
+ * and the coach is the one who can change it.
+ */
+function VerdictCard({
+  title,
+  author,
+  coverUrl,
+  points,
+  reason,
+  scoreUncertain,
+}: VerdictCardProps) {
+  return (
+    <section className="space-y-4 rounded-xl border bg-card p-5">
+      <div className="flex items-center gap-4">
+        <div className="flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ring-1 ring-border">
+          {coverUrl ? (
+            // Remote cover, not yet in storage — plain img is correct here.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverUrl} alt={title} className="h-full w-full object-cover" />
+          ) : (
+            <BookOpen className="size-5 text-muted-foreground/40" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="font-heading font-semibold">{title}</p>
+          <p className="truncate text-sm text-muted-foreground">{author}</p>
+        </div>
+
+        <div
+          className="flex size-16 shrink-0 flex-col items-center justify-center rounded-xl bg-primary text-primary-foreground"
+          aria-label={`Knižní body: ${points}`}
+        >
+          <span className="font-heading text-2xl leading-none font-bold tabular-nums">
+            {points}
+          </span>
+          <span className="text-[0.625rem] leading-tight opacity-80">body</span>
+        </div>
       </div>
 
-      <Button disabled={!ready || submitting} onClick={handleSubmit} className="w-full gap-2 sm:w-auto">
-        {submitting ? <Spinner className="size-4" /> : <Send className="size-4" />}
-        Odeslat ke schválení
-      </Button>
-    </div>
+      <p className="text-sm leading-relaxed">{reason}</p>
+
+      {scoreUncertain && (
+        <p className="text-sm text-amber-700 dark:text-amber-400">
+          Hodnocením si AI nebyla jistá.
+        </p>
+      )}
+
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Lock className="size-3 shrink-0" />
+        Návrh AI pro kouče. Kouč ho může změnit.
+      </p>
+    </section>
   );
 }

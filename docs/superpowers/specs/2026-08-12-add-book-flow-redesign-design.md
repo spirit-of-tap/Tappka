@@ -166,10 +166,23 @@ export async function getGateExemplarBooks(
 ```
 
 Selects the four fields above from `books` where `list_status` is in
-`POINTS_ELIGIBLE_LIST_STATUSES` and `google_books_cover_url` is not null, ordered
+`POINTS_ELIGIBLE_LIST_STATUSES`, `google_books_cover_url` is not null, and the book is
+**curated** — `is_rocket_model = true OR highlight_category_id IS NOT NULL`. Ordered
 `is_rocket_model desc, book_points desc nullslast`, limited to `GATE_EXEMPLAR_COUNT = 5`.
-The two ordering columns need not be selected. One round trip; rocket models naturally sort
-to the front and shortlisted high scorers fill any gap.
+The two ordering columns need not be selected. One round trip.
+
+The curation filter is not optional, and this was corrected after seeing the screen
+against real data: ordering approved books by `book_points` alone put *Farma zvířat*
+(Animal Farm, 3 points, approved before the current rubric) on the shelf directly above the
+chip saying beletrie does not belong. A shelf that contradicts the chips beneath it teaches
+the opposite of what the gate is for. Restricted to rocket models and Top BOB highlights,
+the same query returns *Atomové návyky*, *Prodejce vyzyvatel* and *Radikální otevřenost* —
+all defensible examples.
+
+The trade is that the shelf now depends entirely on curation: if fewer than
+`MIN_EXEMPLARS` curated books have covers, the shelf disappears. That is the correct
+failure — no examples beats wrong examples — and the fix is to flag more rocket models,
+not to loosen the filter.
 
 `book_points` is `numeric` and therefore arrives as a string from supabase-js. It is only
 ever used for ordering here, never rendered, so no parsing is involved — the pattern in
@@ -399,11 +412,10 @@ than the integration layer. No schema change means nothing for `bootstrap.sql`.
 
 ## Risks
 
-**The exemplar shelf depends on curated data.** If no book has `is_rocket_model` set and
-`book_points` is sparse, the shelf shows whatever sorts first, which may not be exemplary.
-Mitigated by requiring a cover and points-eligible status, and by degrading to
-chips-only below two rows. If the ordering proves wrong in practice, the fix is curation
-(set rocket models), not code.
+**The exemplar shelf depends on curated data.** It draws only from rocket models and Top BOB
+highlights, so as curation thins the shelf shrinks and eventually vanishes. The dev database
+has exactly three qualifying books, one above the two-book floor. Adding a rocket model is
+the lever; loosening the filter is not, for the reason recorded under the exemplar query.
 
 **Removing the points picker removes an escape hatch.** If Perplexity scores a book badly
 and the submitter cannot correct it, a wrong number reaches the coach. This is the intended

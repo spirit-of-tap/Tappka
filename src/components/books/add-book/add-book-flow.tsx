@@ -4,28 +4,29 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-import { cn } from '@/lib/utils';
-import type { CreateBookInput, ExternalBookCandidate } from '@/lib/books/types';
+import type { CreateBookInput, ExternalBookCandidate, GateExemplar } from '@/lib/books/types';
 import type { EnrichedBook } from '@/lib/books/enrichment/schema';
 
+import { FlowMap, type FlowNode } from './flow-map';
 import { StepEnriching } from './step-enriching';
 import { StepGate } from './step-gate';
+import { StepRejected } from './step-rejected';
 import { StepReview } from './step-review';
 import { StepSearch } from './step-search';
 import { EMPTY_DRAFT, type AddBookDraft } from './types';
 
 const DRAFT_STORAGE_KEY = 'tappka:add-book-draft';
 
-type Step = 'gate' | 'search' | 'enriching' | 'review';
+type Step = 'gate' | 'search' | 'enriching' | 'rejected' | 'review';
 
-const STEP_LABELS: Record<Step, string> = {
-  gate: 'Patří do BOBa?',
-  search: 'Najdi knihu',
-  enriching: 'Doplňujeme údaje',
-  review: 'Zkontroluj a odešli',
+/** A refusal happens while the model is working, so the map still points there. */
+const STEP_NODE: Record<Step, FlowNode> = {
+  gate: 'gate',
+  search: 'search',
+  enriching: 'enriching',
+  rejected: 'enriching',
+  review: 'review',
 };
-
-const STEP_ORDER: Step[] = ['gate', 'search', 'enriching', 'review'];
 
 interface PersistedFlow {
   step: Step;
@@ -37,7 +38,9 @@ function readPersisted(): PersistedFlow | null {
   const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as PersistedFlow;
+    const parsed = JSON.parse(raw) as PersistedFlow;
+    // Fill in fields a draft written by an earlier version would not have.
+    return { ...parsed, draft: { ...EMPTY_DRAFT, ...parsed.draft } };
   } catch {
     return null;
   }
@@ -45,11 +48,13 @@ function readPersisted(): PersistedFlow | null {
 
 interface AddBookFlowProps {
   initialQuery: string;
+  /** Books to show on the gate as examples of what belongs. May be empty. */
+  exemplars: GateExemplar[];
   /** Where to go after a successful submit; the new book id is appended as `?book=`. */
   returnTo: string | null;
 }
 
-export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
+export function AddBookFlow({ initialQuery, exemplars, returnTo }: AddBookFlowProps) {
   const router = useRouter();
   const persisted = readPersisted();
 
@@ -93,11 +98,22 @@ export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
 
   const handleEnriched = useCallback((enriched: EnrichedBook, citations: string[]) => {
     setDraft((current) => ({ ...current, enriched, citations, manual: false }));
-    setStep('review');
+    // A zero is the rubric's refusal, not a low score — it never reaches the form.
+    setStep(enriched.suggested_points === 0 ? 'rejected' : 'review');
   }, []);
 
   const handleFillManually = useCallback(() => {
     setDraft((current) => ({ ...current, enriched: null, citations: [], manual: true }));
+    setStep('review');
+  }, []);
+
+  const handleSearchAgain = useCallback(() => {
+    setDraft(EMPTY_DRAFT);
+    setStep('search');
+  }, []);
+
+  const handleAppeal = useCallback(() => {
+    setDraft((current) => ({ ...current, appealing: true }));
     setStep('review');
   }, []);
 
@@ -140,24 +156,15 @@ export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
   );
 
   return (
-    <div className="space-y-6">
-      <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-        {STEP_ORDER.map((candidateStep, index) => (
-          <li
-            key={candidateStep}
-            aria-current={candidateStep === step ? 'step' : undefined}
-            className={cn(
-              'flex items-center gap-1.5',
-              candidateStep === step ? 'font-semibold text-foreground' : 'text-muted-foreground',
-            )}
-          >
-            <span className="tabular-nums">{index + 1}.</span>
-            {STEP_LABELS[candidateStep]}
-          </li>
-        ))}
-      </ol>
+    <div className="space-y-7">
+      <FlowMap
+        active={STEP_NODE[step]}
+        variant={step === 'gate' ? 'expanded' : 'compact'}
+      />
 
-      {step === 'gate' && <StepGate onContinue={() => setStep('search')} />}
+      {step === 'gate' && (
+        <StepGate exemplars={exemplars} onContinue={() => setStep('search')} />
+      )}
 
       {step === 'search' && (
         <StepSearch
@@ -177,8 +184,18 @@ export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
             publisher: draft.candidate.publisher,
             published_year: draft.candidate.published_year,
           }}
+          coverUrl={draft.candidate.cover_url}
           onDone={handleEnriched}
           onManual={handleFillManually}
+        />
+      )}
+
+      {step === 'rejected' && draft.candidate && draft.enriched && (
+        <StepRejected
+          candidate={draft.candidate}
+          enriched={draft.enriched}
+          onSearchAgain={handleSearchAgain}
+          onAppeal={handleAppeal}
         />
       )}
 

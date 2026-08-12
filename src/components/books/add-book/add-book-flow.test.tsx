@@ -5,7 +5,56 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 
+import type { GateExemplar } from '@/lib/books/types';
+
 import { AddBookFlow } from './add-book-flow';
+
+const EXEMPLARS: GateExemplar[] = [
+  {
+    id: 'b1',
+    title_cs: 'Sprint',
+    author: 'Jake Knapp',
+    google_books_cover_url: 'https://books.google.com/sprint.jpg',
+  },
+  {
+    id: 'b2',
+    title_cs: 'Dialog',
+    author: 'William Isaacs',
+    google_books_cover_url: 'https://books.google.com/dialog.jpg',
+  },
+];
+
+const CANDIDATE = {
+  title: 'Sprint',
+  author: 'Jake Knapp',
+  isbn_13: null,
+  description: null,
+  cover_url: null,
+  page_count: 288,
+  publisher: null,
+  published_year: null,
+  preview_link: null,
+  source: 'google_books',
+  external_id: 'vol-1',
+};
+
+const ENRICHED = {
+  title_cs: 'Sprint',
+  title_en: null,
+  author: 'Jake Knapp',
+  isbn_13: null,
+  page_count: 288,
+  description: 'Naučíš se…',
+  tag: 'Leadership',
+  suggested_points: 2,
+  points_reason: 'Kategorie 2.',
+  confidence: 'high',
+  low_confidence_fields: [],
+};
+
+function persist(step: string, draft: Record<string, unknown>) {
+  sessionStorage.setItem('tappka:add-book-draft', JSON.stringify({ step, draft }));
+}
 
 beforeEach(() => {
   push.mockReset();
@@ -19,72 +68,121 @@ afterEach(() => {
 
 describe('AddBookFlow', () => {
   it('starts on the gate and does not search until it is affirmed', async () => {
-    render(<AddBookFlow initialQuery="sprint" returnTo={null} />);
+    render(<AddBookFlow initialQuery="sprint" exemplars={EXEMPLARS} returnTo={null} />);
 
-    expect(screen.getByRole('heading', { name: /patří ta kniha do boba/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /co patří do boba/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/najdi knihu/i)).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /chci přidat/i }));
+    await userEvent.click(screen.getByRole('button', { name: /pojďme na to/i }));
 
     expect(await screen.findByLabelText(/najdi knihu/i)).toBeInTheDocument();
   });
 
-  it('restores a draft from sessionStorage instead of starting over', async () => {
-    sessionStorage.setItem(
-      'tappka:add-book-draft',
-      JSON.stringify({
-        step: 'review',
-        draft: {
-          candidate: {
-            title: 'Sprint',
-            author: 'Jake Knapp',
-            isbn_13: null,
-            description: null,
-            cover_url: null,
-            page_count: 288,
-            publisher: null,
-            published_year: null,
-            preview_link: null,
-            source: 'google_books',
-            external_id: 'vol-1',
-          },
-          enriched: null,
-          citations: [],
-          manual: true,
-        },
-      }),
-    );
+  it('tracks progress on the same flow map the gate taught', async () => {
+    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
 
-    render(<AddBookFlow initialQuery="" returnTo={null} />);
+    const map = screen.getByRole('list', { name: /postup přidání knihy/i });
+    expect(map).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')[0]).toHaveAttribute('aria-current', 'step');
+
+    await userEvent.click(screen.getByRole('button', { name: /pojďme na to/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('list', { name: /postup přidání knihy/i }).children[1],
+      ).toHaveAttribute('aria-current', 'step'),
+    );
+  });
+
+  it('restores a draft from sessionStorage instead of starting over', async () => {
+    persist('review', {
+      candidate: { ...CANDIDATE, source: 'google_books' },
+      enriched: null,
+      citations: [],
+      manual: true,
+      appealing: false,
+    });
+
+    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
 
     expect(await screen.findByLabelText(/český název/i)).toHaveValue('Sprint');
   });
 
+  it('restores a draft written before appeals existed', async () => {
+    // No `appealing` key — an older session must not land on the appeal wording.
+    persist('review', {
+      candidate: { ...CANDIDATE, source: 'google_books' },
+      enriched: ENRICHED,
+      citations: [],
+      manual: false,
+    });
+
+    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
+
+    expect(await screen.findByLabelText(/popis — proč to číst/i)).toHaveValue('Naučíš se…');
+  });
+
+  describe('a refused book', () => {
+    const REJECTED = {
+      ...ENRICHED,
+      suggested_points: 0,
+      description: 'ZAMÍTNUTO: Kniha nesouvisí se zaměřením programu TAP.',
+      points_reason: 'Beletrie — rozhoduje žánr, ne téma.',
+    };
+
+    function renderAfterRejection() {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: REJECTED, citations: [] }) }),
+      );
+      persist('enriching', {
+        candidate: { ...CANDIDATE, source: 'google_books' },
+        enriched: null,
+        citations: [],
+        manual: false,
+        appealing: false,
+      });
+      render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
+    }
+
+    it('dead-ends instead of dropping into the form', async () => {
+      renderAfterRejection();
+
+      expect(
+        await screen.findByRole('heading', { name: /nezapíšeme/i }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Beletrie — rozhoduje žánr, ne téma.')).toBeInTheDocument();
+      expect(screen.queryByLabelText(/český název/i)).not.toBeInTheDocument();
+    });
+
+    it('returns to search with a clean draft', async () => {
+      renderAfterRejection();
+
+      await userEvent.click(await screen.findByRole('button', { name: /zkusit jinou knihu/i }));
+
+      expect(await screen.findByLabelText(/najdi knihu/i)).toBeInTheDocument();
+      expect(screen.queryByText(/nezapíšeme/i)).not.toBeInTheDocument();
+    });
+
+    it('reaches the coach through the appeal path', async () => {
+      renderAfterRejection();
+
+      await userEvent.click(await screen.findByRole('button', { name: /pošli to kouči/i }));
+
+      expect(
+        await screen.findByLabelText(/proč kniha do boba patří/i),
+      ).toHaveValue('');
+    });
+  });
+
   it('navigates to the existing book when the API reports a duplicate', async () => {
-    sessionStorage.setItem(
-      'tappka:add-book-draft',
-      JSON.stringify({
-        step: 'review',
-        draft: {
-          candidate: null,
-          enriched: {
-            title_cs: 'Sprint',
-            title_en: null,
-            author: 'Jake Knapp',
-            isbn_13: null,
-            page_count: 288,
-            description: 'Naučíš se…',
-            tag: 'Leadership',
-            suggested_points: 2,
-            points_reason: 'Kategorie 2.',
-            confidence: 'high',
-            low_confidence_fields: [],
-          },
-          citations: [],
-          manual: false,
-        },
-      }),
-    );
+    persist('review', {
+      candidate: null,
+      enriched: ENRICHED,
+      citations: [],
+      manual: false,
+      appealing: false,
+    });
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,
@@ -92,44 +190,27 @@ describe('AddBookFlow', () => {
       json: async () => ({ error: 'Tato kniha již existuje v katalogu', existingId: 'dup-1' }),
     }));
 
-    render(<AddBookFlow initialQuery="" returnTo={null} />);
+    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
     await userEvent.click(await screen.findByRole('button', { name: /odeslat/i }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/cteni/knihy/dup-1'));
   });
 
   it('returns to the essay editor with the new book preselected', async () => {
-    sessionStorage.setItem(
-      'tappka:add-book-draft',
-      JSON.stringify({
-        step: 'review',
-        draft: {
-          candidate: null,
-          enriched: {
-            title_cs: 'Sprint',
-            title_en: null,
-            author: 'Jake Knapp',
-            isbn_13: null,
-            page_count: 288,
-            description: 'Naučíš se…',
-            tag: 'Leadership',
-            suggested_points: 2,
-            points_reason: 'Kategorie 2.',
-            confidence: 'high',
-            low_confidence_fields: [],
-          },
-          citations: [],
-          manual: false,
-        },
-      }),
-    );
+    persist('review', {
+      candidate: null,
+      enriched: ENRICHED,
+      citations: [],
+      manual: false,
+      appealing: false,
+    });
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: { id: 'new-1' } }),
     }));
 
-    render(<AddBookFlow initialQuery="" returnTo="/cteni/eseje/e1/upravit" />);
+    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo="/cteni/eseje/e1/upravit" />);
     await userEvent.click(await screen.findByRole('button', { name: /odeslat/i }));
 
     await waitFor(() =>

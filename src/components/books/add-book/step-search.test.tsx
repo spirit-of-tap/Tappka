@@ -58,15 +58,28 @@ describe('StepSearch', () => {
     expect(screen.getByText(/Simon & Schuster/)).toBeInTheDocument();
   });
 
-  it('passes the chosen candidate up', async () => {
+  it('passes the chosen candidate up when its row is pressed', async () => {
     const onSelect = vi.fn();
     mockRoutes({ external: [EXTERNAL_HIT] });
     render(<StepSearch initialQuery="sprint" onSelect={onSelect} onManual={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /vybrat/i })).toBeInTheDocument());
-    await userEvent.click(screen.getByRole('button', { name: /vybrat/i }));
+    const row = await waitFor(() => screen.getByRole('button', { name: /Jake Knapp/ }));
+    await userEvent.click(row);
 
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ external_id: 'vol-1' }));
+  });
+
+  it('hides the external results behind a confirmation when BOB already has the book', async () => {
+    mockRoutes({ local: [CATALOGUE_HIT], external: [EXTERNAL_HIT] });
+    render(<StepSearch initialQuery="sprint" onSelect={vi.fn()} onManual={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText(/už v bobovi/i)).toBeInTheDocument());
+    expect(screen.queryByText(/mimo katalog/i)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /přesto přidat jinou verzi/i }));
+
+    expect(screen.getByText(/mimo katalog/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Jake Knapp/ })).toBeInTheDocument();
   });
 
   it('offers manual entry and requires both title and author', async () => {

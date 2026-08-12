@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { StepReview } from './step-review';
-import type { AddBookDraft } from './types';
+import { EMPTY_DRAFT, type AddBookDraft } from './types';
 
 const CANDIDATE = {
   title: 'Sprint',
@@ -20,6 +20,7 @@ const CANDIDATE = {
 };
 
 const ENRICHED_DRAFT: AddBookDraft = {
+  ...EMPTY_DRAFT,
   candidate: CANDIDATE,
   enriched: {
     title_cs: 'Sprint',
@@ -35,13 +36,11 @@ const ENRICHED_DRAFT: AddBookDraft = {
     low_confidence_fields: [],
   },
   citations: ['https://goodreads.com/sprint'],
-  manual: false,
 };
 
 const MANUAL_DRAFT: AddBookDraft = {
+  ...EMPTY_DRAFT,
   candidate: CANDIDATE,
-  enriched: null,
-  citations: [],
   manual: true,
 };
 
@@ -57,11 +56,11 @@ describe('StepReview', () => {
   it('states that a coach reviews it and gets an email', () => {
     render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={vi.fn()} />);
 
-    expect(screen.getByText(/schválení kouči/i)).toBeInTheDocument();
+    expect(screen.getByText(/schválení/i)).toBeInTheDocument();
     expect(screen.getByText(/e-mail/i)).toBeInTheDocument();
   });
 
-  it('submits the edited record with points and rationale', async () => {
+  it('submits the edited record with the points and rationale the model chose', async () => {
     const onSubmit = vi.fn();
     render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={onSubmit} />);
 
@@ -97,18 +96,6 @@ describe('StepReview', () => {
     );
   });
 
-  it('blocks submission until description and tag are filled in manual mode', async () => {
-    render(<StepReview draft={MANUAL_DRAFT} submitting={false} onSubmit={vi.fn()} />);
-
-    expect(screen.getByRole('button', { name: /odeslat/i })).toBeDisabled();
-
-    await userEvent.type(screen.getByLabelText(/popis/i), 'Proč to číst: naučíš se…');
-    await userEvent.selectOptions(screen.getByLabelText(/oblast/i), 'Leadership');
-    await userEvent.click(screen.getByRole('button', { name: /1 b\./i }));
-
-    expect(screen.getByRole('button', { name: /odeslat/i })).toBeEnabled();
-  });
-
   it('blocks submission when the title is cleared', async () => {
     render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={vi.fn()} />);
 
@@ -117,69 +104,217 @@ describe('StepReview', () => {
     expect(screen.getByRole('button', { name: /odeslat/i })).toBeDisabled();
   });
 
-  it('offers a 0-point rejection option and submits it', async () => {
-    const onSubmit = vi.fn();
-    render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={onSubmit} />);
+  describe('the score belongs to the model, not the submitter', () => {
+    it('shows the score as a read-only verdict with its reason', () => {
+      render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={vi.fn()} />);
 
-    await userEvent.click(screen.getByRole('button', { name: /0 b\./i }));
-    await userEvent.click(screen.getByRole('button', { name: /odeslat/i }));
+      expect(screen.getByLabelText('Knižní body: 2')).toBeInTheDocument();
+      expect(screen.getByText(/návrh ai pro kouče/i)).toBeInTheDocument();
+    });
 
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ book_points: 0 }));
+    it('offers no control that could change the score', () => {
+      render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={vi.fn()} />);
+
+      // The old picker rendered one button per category plus a 0-point option.
+      expect(screen.queryByRole('button', { name: /\d\s*b\./i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: /knižní body/i })).not.toBeInTheDocument();
+      // Submit is the only button left on the screen.
+      expect(screen.getAllByRole('button')).toHaveLength(1);
+    });
+
+    it('never names the scoring categories', () => {
+      render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={vi.fn()} />);
+
+      expect(screen.queryByText(/inspirace/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/změna paradigmatu/i)).not.toBeInTheDocument();
+    });
+
+    it('submits without any points interaction at all', async () => {
+      const onSubmit = vi.fn();
+      render(<StepReview draft={ENRICHED_DRAFT} submitting={false} onSubmit={onSubmit} />);
+
+      await userEvent.click(screen.getByRole('button', { name: /odeslat/i }));
+
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ book_points: 2 }));
+    });
   });
 
-  it('warns about unverified fields when confidence is low', () => {
-    render(
-      <StepReview
-        draft={{ ...ENRICHED_DRAFT, enriched: { ...ENRICHED_DRAFT.enriched!, confidence: 'low' } }}
-        submitting={false}
-        onSubmit={vi.fn()}
-      />,
-    );
+  describe('the manual path', () => {
+    it('leaves the score to the coach instead of asking the submitter', () => {
+      render(<StepReview draft={MANUAL_DRAFT} submitting={false} onSubmit={vi.fn()} />);
 
-    expect(screen.getByText(/nejsme jist/i)).toBeInTheDocument();
+      expect(screen.getByText('Body přidělí kouč.')).toBeInTheDocument();
+      expect(screen.queryByLabelText(/knižní body/i)).not.toBeInTheDocument();
+    });
+
+    it('blocks submission until description and tag are filled in', async () => {
+      render(<StepReview draft={MANUAL_DRAFT} submitting={false} onSubmit={vi.fn()} />);
+
+      expect(screen.getByRole('button', { name: /odeslat/i })).toBeDisabled();
+
+      await userEvent.type(screen.getByLabelText(/popis/i), 'Proč to číst: naučíš se…');
+      await userEvent.selectOptions(screen.getByLabelText(/oblast/i), 'Leadership');
+
+      expect(screen.getByRole('button', { name: /odeslat/i })).toBeEnabled();
+    });
+
+    it('submits a null score so the coach assigns one', async () => {
+      const onSubmit = vi.fn();
+      render(<StepReview draft={MANUAL_DRAFT} submitting={false} onSubmit={onSubmit} />);
+
+      await userEvent.type(screen.getByLabelText(/popis/i), 'Naučíš se…');
+      await userEvent.selectOptions(screen.getByLabelText(/oblast/i), 'Leadership');
+      await userEvent.click(screen.getByRole('button', { name: /odeslat/i }));
+
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ book_points: null, points_reason: null }),
+      );
+    });
   });
 
-  it('names the uncertain fields in the banner and highlights their inputs', () => {
-    render(
-      <StepReview
-        draft={{
-          ...ENRICHED_DRAFT,
-          enriched: {
-            ...ENRICHED_DRAFT.enriched!,
-            confidence: 'low',
-            low_confidence_fields: ['author', 'page_count', 'isbn_13'],
-          },
-        }}
-        submitting={false}
-        onSubmit={vi.fn()}
-      />,
-    );
+  describe('the appeal path', () => {
+    const APPEAL_DRAFT: AddBookDraft = {
+      ...ENRICHED_DRAFT,
+      appealing: true,
+      enriched: {
+        ...ENRICHED_DRAFT.enriched!,
+        description: 'ZAMÍTNUTO: Kniha nesouvisí se zaměřením programu TAP.',
+        suggested_points: 0,
+        points_reason: 'Beletrie — rozhoduje žánr, ne téma.',
+      },
+    };
 
-    expect(screen.getByText(/nejsme si jistí těmito údaji:/i)).toBeInTheDocument();
-    expect(screen.getByText(/autor, isbn, počet stran/i)).toBeInTheDocument();
+    it('asks for an argument instead of prefilling the refusal', () => {
+      render(<StepReview draft={APPEAL_DRAFT} submitting={false} onSubmit={vi.fn()} />);
 
-    expect(screen.getByLabelText(/autor/i)).toHaveAttribute('data-uncertain', 'true');
-    expect(screen.getByLabelText(/počet stran/i)).toHaveAttribute('data-uncertain', 'true');
-    expect(screen.getByLabelText(/český název/i)).not.toHaveAttribute('data-uncertain');
+      expect(screen.getByLabelText(/proč kniha do boba patří/i)).toHaveValue('');
+      expect(screen.queryByText(/ZAMÍTNUTO/)).not.toBeInTheDocument();
+    });
+
+    it('requires the argument before it can be sent', async () => {
+      render(<StepReview draft={APPEAL_DRAFT} submitting={false} onSubmit={vi.fn()} />);
+
+      expect(screen.getByRole('button', { name: /odeslat/i })).toBeDisabled();
+
+      await userEvent.type(
+        screen.getByLabelText(/proč kniha do boba patří/i),
+        'Je to případová studie, ne beletrie.',
+      );
+
+      expect(screen.getByRole('button', { name: /odeslat/i })).toBeEnabled();
+    });
+
+    it("carries the model's refusal to the coach alongside the appeal", async () => {
+      const onSubmit = vi.fn();
+      render(<StepReview draft={APPEAL_DRAFT} submitting={false} onSubmit={onSubmit} />);
+
+      await userEvent.type(
+        screen.getByLabelText(/proč kniha do boba patří/i),
+        'Je to případová studie.',
+      );
+      await userEvent.click(screen.getByRole('button', { name: /odeslat/i }));
+
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          book_points: 0,
+          points_reason: 'Beletrie — rozhoduje žánr, ne téma.',
+          description: 'Je to případová studie.',
+        }),
+      );
+    });
+
+    it('still shows the verdict the submitter is arguing against', () => {
+      render(<StepReview draft={APPEAL_DRAFT} submitting={false} onSubmit={vi.fn()} />);
+
+      expect(screen.getByLabelText('Knižní body: 0')).toBeInTheDocument();
+      expect(screen.getByText('Beletrie — rozhoduje žánr, ne téma.')).toBeInTheDocument();
+    });
   });
 
-  it('does not highlight inputs the model is certain about', () => {
-    render(
-      <StepReview
-        draft={{
-          ...ENRICHED_DRAFT,
-          enriched: {
-            ...ENRICHED_DRAFT.enriched!,
-            confidence: 'low',
-            low_confidence_fields: ['title_cs'],
-          },
-        }}
-        submitting={false}
-        onSubmit={vi.fn()}
-      />,
-    );
+  describe('uncertain fields', () => {
+    it('names them in the banner and highlights their inputs', () => {
+      render(
+        <StepReview
+          draft={{
+            ...ENRICHED_DRAFT,
+            enriched: {
+              ...ENRICHED_DRAFT.enriched!,
+              confidence: 'low',
+              low_confidence_fields: ['author', 'page_count'],
+            },
+          }}
+          submitting={false}
+          onSubmit={vi.fn()}
+        />,
+      );
 
-    expect(screen.getByLabelText(/český název/i)).toHaveAttribute('data-uncertain', 'true');
-    expect(screen.getByLabelText(/autor/i)).not.toHaveAttribute('data-uncertain');
+      expect(screen.getByText(/zkontroluj:/i)).toBeInTheDocument();
+      expect(screen.getByText(/autor, počet stran/i)).toBeInTheDocument();
+
+      expect(screen.getByLabelText(/autor/i)).toHaveAttribute('data-uncertain', 'true');
+      expect(screen.getByLabelText(/počet stran/i)).toHaveAttribute('data-uncertain', 'true');
+      expect(screen.getByLabelText(/český název/i)).not.toHaveAttribute('data-uncertain');
+    });
+
+    it('does not highlight inputs the model is certain about', () => {
+      render(
+        <StepReview
+          draft={{
+            ...ENRICHED_DRAFT,
+            enriched: {
+              ...ENRICHED_DRAFT.enriched!,
+              confidence: 'low',
+              low_confidence_fields: ['title_cs'],
+            },
+          }}
+          submitting={false}
+          onSubmit={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByLabelText(/český název/i)).toHaveAttribute('data-uncertain', 'true');
+      expect(screen.getByLabelText(/autor/i)).not.toHaveAttribute('data-uncertain');
+    });
+
+    it('puts an uncertain score on the verdict card, never in the banner', () => {
+      render(
+        <StepReview
+          draft={{
+            ...ENRICHED_DRAFT,
+            enriched: {
+              ...ENRICHED_DRAFT.enriched!,
+              confidence: 'low',
+              low_confidence_fields: ['suggested_points'],
+            },
+          }}
+          submitting={false}
+          onSubmit={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText(/hodnocením si ai nebyla jistá/i)).toBeInTheDocument();
+      // Asking someone to check a field they cannot edit is nonsense.
+      expect(screen.queryByText(/zkontroluj:/i)).not.toBeInTheDocument();
+    });
+
+    it('never asks the submitter to check the ISBN, which has no control', () => {
+      render(
+        <StepReview
+          draft={{
+            ...ENRICHED_DRAFT,
+            enriched: {
+              ...ENRICHED_DRAFT.enriched!,
+              confidence: 'low',
+              low_confidence_fields: ['isbn_13', 'author'],
+            },
+          }}
+          submitting={false}
+          onSubmit={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText('autor.')).toBeInTheDocument();
+      expect(screen.queryByText(/ISBN/)).not.toBeInTheDocument();
+    });
   });
 });

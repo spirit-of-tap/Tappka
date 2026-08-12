@@ -54,6 +54,51 @@ describe('StepEnriching', () => {
     expect(screen.getByText(/hledám/i)).toBeInTheDocument();
   });
 
+  it('opens with the found book already ticked off and the next task running', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+
+    render(<StepEnriching probe={PROBE} onDone={vi.fn()} onManual={vi.fn()} />);
+
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(4);
+    expect(items[0]).toHaveAttribute('data-state', 'done');
+    expect(items[1]).toHaveAttribute('data-state', 'running');
+    expect(items[1]).toHaveAttribute('aria-current', 'step');
+    expect(items[3]).toHaveAttribute('data-state', 'upcoming');
+  });
+
+  it('never ticks off the last task, so a slow call does not look finished', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+
+    render(<StepEnriching probe={PROBE} onDone={vi.fn()} onManual={vi.fn()} />);
+
+    // Well past every phase interval — the checklist must still be working.
+    await vi.advanceTimersByTimeAsync(60_000);
+
+    const items = screen.getAllByRole('listitem');
+    expect(items[3]).toHaveAttribute('data-state', 'running');
+    vi.useRealTimers();
+  });
+
+  it('shows the cover when the candidate came with one', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+
+    render(
+      <StepEnriching
+        probe={PROBE}
+        coverUrl="https://books.google.com/sprint.jpg"
+        onDone={vi.fn()}
+        onManual={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: 'Sprint' })).toHaveAttribute(
+      'src',
+      'https://books.google.com/sprint.jpg',
+    );
+  });
+
   it('offers retry and manual entry when enrichment fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,

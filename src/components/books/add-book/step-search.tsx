@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BarcodeScanner } from 'react-barcode-scanner';
 import 'react-barcode-scanner/polyfill';
-import { BookOpen, Camera, Plus, Search, X } from 'lucide-react';
+import { BookOpen, Camera, ChevronRight, Library, Plus, Search, X } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +38,7 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
   const [manualTitle, setManualTitle] = useState('');
   const [manualAuthor, setManualAuthor] = useState('');
   const [showScanner, setShowScanner] = useState(false);
+  const [showDespiteDuplicate, setShowDespiteDuplicate] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -70,7 +70,14 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
     };
   }, [query]);
 
+  // A new query is a new question — the duplicate warning must not stay dismissed.
+  useEffect(() => {
+    setShowDespiteDuplicate(false);
+  }, [query]);
+
   const manualReady = manualTitle.trim().length > 0 && manualAuthor.trim().length > 0;
+  const hasDuplicate = catalogue.length > 0;
+  const externalVisible = external.length > 0 && (!hasDuplicate || showDespiteDuplicate);
 
   return (
     <div className="space-y-5">
@@ -83,22 +90,23 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Název knihy nebo jméno autora…"
-            className="h-11 pr-24 pl-9"
+            className="h-11 pr-20 pl-9"
           />
-          {searching && (
-            <Spinner className="absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-          )}
+          <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
+            {searching && <Spinner className="size-4" />}
+            {/* Scanning is another way to type the query, so it belongs in the field. */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label={showScanner ? 'Zavřít skener' : 'Naskenovat ISBN'}
+              onClick={() => setShowScanner((open) => !open)}
+            >
+              {showScanner ? <X className="size-4" /> : <Camera className="size-4" />}
+            </Button>
+          </div>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() => setShowScanner((open) => !open)}
-        >
-          {showScanner ? <X className="size-4" /> : <Camera className="size-4" />}
-          {showScanner ? 'Zavřít skener' : 'Naskenovat ISBN'}
-        </Button>
       </div>
 
       {showScanner && (
@@ -117,17 +125,21 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
         </div>
       )}
 
-      {catalogue.length > 0 && (
-        <section className="space-y-2">
-          <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            Už v BOBovi
+      {hasDuplicate && (
+        <section className="space-y-3 rounded-xl border border-info bg-info/10 p-4">
+          {/* `--info-foreground` is white — it is the colour for text *on* an info
+              fill, not on a 10% tint. The border and tint carry the notice; the
+              icon just has to stay legible in both themes. */}
+          <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <Library className="size-4 shrink-0" />
+            Tuhle knihu už v BOBovi máme
           </h3>
-          <div className="divide-y overflow-hidden rounded-xl border bg-card">
+          <div className="divide-y overflow-hidden rounded-lg border bg-card">
             {catalogue.map((book) => (
               <Link
                 key={book.id}
                 href={`/cteni/knihy/${book.id}`}
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50"
               >
                 <div className="flex h-11 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
                   {book.google_books_cover_url ? (
@@ -146,25 +158,34 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
                   <p className="truncate text-sm font-medium">{book.title_cs}</p>
                   <p className="truncate text-xs text-muted-foreground">{book.author}</p>
                 </div>
-                <Badge variant="secondary" className="shrink-0 text-xs">
-                  Zobrazit
-                </Badge>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
               </Link>
             ))}
           </div>
+          {external.length > 0 && !showDespiteDuplicate && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDespiteDuplicate(true)}
+            >
+              Přesto přidat jinou verzi
+            </Button>
+          )}
         </section>
       )}
 
-      {external.length > 0 && (
+      {externalVisible && (
         <section className="space-y-2">
           <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             Mimo katalog
           </h3>
           <div className="space-y-2">
             {external.map((candidate) => (
-              <div
+              <button
                 key={`${candidate.source}-${candidate.external_id}`}
-                className="flex gap-3 rounded-xl border bg-card p-3"
+                type="button"
+                onClick={() => onSelect(candidate)}
+                className="focus-ring flex w-full gap-3 rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/50"
               >
                 <div className="flex h-20 w-14 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
                   {candidate.cover_url ? (
@@ -193,14 +214,8 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
                       .join(' · ')}
                   </p>
                 </div>
-                <Button
-                  size="sm"
-                  className="shrink-0 self-center"
-                  onClick={() => onSelect(candidate)}
-                >
-                  Vybrat
-                </Button>
-              </div>
+                <ChevronRight className="size-4 shrink-0 self-center text-muted-foreground" />
+              </button>
             ))}
           </div>
         </section>
@@ -213,9 +228,7 @@ export function StepSearch({ initialQuery, onSelect, onManual }: StepSearchProps
         </Button>
       ) : (
         <section className="space-y-3 rounded-xl border bg-muted/40 p-4">
-          <p className="text-sm text-muted-foreground">
-            Zadej název a autora. Ostatní údaje se pokusíme dohledat.
-          </p>
+          <p className="text-sm text-muted-foreground">Doplníme, co půjde.</p>
           <div className="space-y-1">
             <Label htmlFor="manual-title">Název</Label>
             <Input

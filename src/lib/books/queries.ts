@@ -10,10 +10,14 @@ import type {
   BookWithProfiles,
   BookFilters,
   BookListStatus,
+  GateExemplar,
 } from './types';
 import { POINTS_ELIGIBLE_LIST_STATUSES } from './types';
 
 const PAGE_SIZE_DEFAULT = 20;
+
+/** How many covers the Krok 1 shelf shows. Below two, the shelf is not drawn at all. */
+export const GATE_EXEMPLAR_COUNT = 5;
 
 const BOOK_PROFILES_SELECT = `*, ${BOOK_JOIN_FIELDS}`;
 
@@ -203,6 +207,36 @@ export async function getRocketModelBooks(
 
   if (error) throw error;
   return ((data ?? []) as unknown as BookQueryRow[]).map(mapBookRow);
+}
+
+/**
+ * Books to show as examples of what belongs in BOB, for the Krok 1 shelf.
+ *
+ * Only **curated** books qualify — rocket models and the Top BOB highlights.
+ * Sorting approved books by `book_points` is not enough: BOB contains
+ * high-scored titles a submitter must not read as exemplary (fiction that
+ * predates the current rubric, for one), and putting those on a shelf directly
+ * above "beletrie nepatří" teaches the opposite of what the gate is for.
+ *
+ * A cover is required — the shelf is covers, and a placeholder tile teaches
+ * nothing. When curation is too thin to fill it, the caller drops the shelf
+ * rather than padding it: no examples beats wrong examples.
+ */
+export async function getGateExemplarBooks(
+  supabase: SupabaseClient<Database>,
+): Promise<GateExemplar[]> {
+  const { data, error } = await supabase
+    .from('books')
+    .select('id, title_cs, author, google_books_cover_url')
+    .in('list_status', POINTS_ELIGIBLE_LIST_STATUSES)
+    .not('google_books_cover_url', 'is', null)
+    .or('is_rocket_model.eq.true,highlight_category_id.not.is.null')
+    .order('is_rocket_model', { ascending: false })
+    .order('book_points', { ascending: false, nullsFirst: false })
+    .limit(GATE_EXEMPLAR_COUNT);
+
+  if (error) throw error;
+  return (data ?? []) as GateExemplar[];
 }
 
 export async function getHighlightCategories(

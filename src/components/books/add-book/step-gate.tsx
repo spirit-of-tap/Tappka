@@ -1,56 +1,100 @@
 'use client';
 
-import { ArrowRight, Ban } from 'lucide-react';
+import { ArrowRight, Ban, CircleCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { BOOK_POINT_CATEGORIES } from '@/lib/books/enrichment/rubric';
+import { StorageImage } from '@/components/storage/storage-image';
+import type { GateExemplar } from '@/lib/books/types';
 
-import { DOES_NOT_BELONG } from './types';
+import { DOES_NOT_BELONG_CHIPS } from './types';
 
-export function StepGate({ onContinue }: { onContinue: () => void }) {
+/** Below this, the shelf is one lonely cover and reads as an accident. */
+const MIN_EXEMPLARS = 2;
+
+const COVER_WIDTH = 96;
+const COVER_HEIGHT = 144;
+
+interface StepGateProps {
+  exemplars: GateExemplar[];
+  onContinue: () => void;
+}
+
+export function StepGate({ exemplars, onContinue }: StepGateProps) {
+  const showShelf = exemplars.length >= MIN_EXEMPLARS;
+
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold">Patří ta kniha do BOBa?</h2>
-        <p className="text-sm text-muted-foreground">
-          BOB je naše knihovna doporučené literatury. Než knihu přidáš, projdi si, co do ní patří —
-          kouč ji potom schvaluje a přiděluje body.
-        </p>
-      </div>
+    <div className="space-y-7">
+      <h2 className="font-heading text-xl font-bold">Co patří do BOBa?</h2>
 
-      <div className="space-y-3">
-        {BOOK_POINT_CATEGORIES.map((category) => (
-          <div key={category.points} className="rounded-xl border bg-card p-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="font-semibold">{category.name}</h3>
-              <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                {category.points} b.
-              </span>
-            </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-              {category.description}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground/80">Např. {category.examples}</p>
-          </div>
-        ))}
-      </div>
+      {showShelf && (
+        <section className="space-y-3">
+          <ShelfLabel
+            icon={<CircleCheck className="size-4 text-success-strong" />}
+            text="Tyhle knihy hledáme"
+          />
+          {/* One shelf that scrolls, never two rows that wrap — a wrapped shelf
+              stops looking like a shelf. Negative margin lets it bleed to the
+              screen edge inside the page's padding. */}
+          <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+            {exemplars.map((book) => (
+              <li key={book.id} className="w-24 shrink-0 snap-start space-y-1.5">
+                <StorageImage
+                  storageKey={book.google_books_cover_url}
+                  alt={book.title_cs}
+                  width={COVER_WIDTH}
+                  height={COVER_HEIGHT}
+                  className="h-36 w-24 rounded-md object-cover shadow-sm ring-1 ring-border"
+                />
+                <div>
+                  <p className="truncate text-xs font-medium" title={book.title_cs}>
+                    {book.title_cs}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground" title={book.author}>
+                    {book.author}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-        <div className="flex items-center gap-2">
-          <Ban className="size-4 text-destructive" />
-          <h3 className="text-sm font-semibold">Do BOBa naopak nepatří</h3>
-        </div>
-        <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-          {DOES_NOT_BELONG.map((item) => (
-            <li key={item}>{item}</li>
+      <section className="space-y-3">
+        <ShelfLabel
+          icon={<Ban className="size-4 text-destructive" />}
+          text="Tyhle ne"
+        />
+        <ul className="flex flex-wrap gap-2">
+          {DOES_NOT_BELONG_CHIPS.map(({ icon: Icon, label }) => (
+            <li
+              key={label}
+              className="flex items-center gap-1.5 rounded-full border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground"
+            >
+              <Icon className="size-3.5 shrink-0" />
+              {label}
+            </li>
           ))}
         </ul>
-      </div>
+      </section>
 
-      <Button onClick={onContinue} className="w-full gap-2 sm:w-auto">
-        Ano, tuhle knihu tam chci přidat
-        <ArrowRight className="size-4" />
-      </Button>
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Nejsi si jistý? Přidej ji — kouč rozhodne.
+        </p>
+        <Button onClick={onContinue} size="lg" className="w-full gap-2 sm:w-auto">
+          Pojďme na to
+          <ArrowRight className="size-4" />
+        </Button>
+      </div>
     </div>
+  );
+}
+
+function ShelfLabel({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <h3 className="flex items-center gap-2 text-sm font-semibold">
+      {icon}
+      {text}
+    </h3>
   );
 }

@@ -1,17 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertTriangle, PencilLine, RotateCw } from 'lucide-react';
+import { AlertTriangle, BookOpen, Check, PencilLine, RotateCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 import type { EnrichedBook } from '@/lib/books/enrichment/schema';
 
-/** Named so the wait reads as progress rather than a hang. */
-const PHASES = [
-  'Hledám český popis a hodnocení…',
-  'Porovnávám s knihami v BOBovi…',
-  'Hodnotím podle kritérií…',
+/**
+ * The work, in the order it happens. Item 0 is already done on arrival — the
+ * candidate came from Krok 2 — which makes the list start with a win rather
+ * than four hollow rings.
+ */
+const ENRICH_PHASES = [
+  'Našel jsem knihu',
+  'Hledám český popis',
+  'Porovnávám s BOBem',
+  'Hodnotím body',
 ] as const;
 const PHASE_INTERVAL_MS = 6_000;
 
@@ -26,11 +32,13 @@ interface EnrichProbe {
 
 interface StepEnrichingProps {
   probe: EnrichProbe;
+  /** Remote Google Books cover, when the candidate came with one. */
+  coverUrl?: string | null;
   onDone: (enriched: EnrichedBook, citations: string[]) => void;
   onManual: () => void;
 }
 
-export function StepEnriching({ probe, onDone, onManual }: StepEnrichingProps) {
+export function StepEnriching({ probe, coverUrl, onDone, onManual }: StepEnrichingProps) {
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState(0);
   const [attempt, setAttempt] = useState(0);
@@ -60,7 +68,7 @@ export function StepEnriching({ probe, onDone, onManual }: StepEnrichingProps) {
   }, [probe, attempt, onDone]);
 
   // The phase only moves on while a request is in flight; the counter resets
-  // it after a retry so the message reads as "trying again".
+  // it after a retry so the list reads as "trying again".
   const handleRetry = () => {
     setError(null);
     setPhase(0);
@@ -70,7 +78,7 @@ export function StepEnriching({ probe, onDone, onManual }: StepEnrichingProps) {
   useEffect(() => {
     if (error) return;
     const id = setInterval(
-      () => setPhase((current) => Math.min(current + 1, PHASES.length - 1)),
+      () => setPhase((current) => Math.min(current + 1, ENRICH_PHASES.length - 2)),
       PHASE_INTERVAL_MS,
     );
     return () => clearInterval(id);
@@ -84,7 +92,7 @@ export function StepEnriching({ probe, onDone, onManual }: StepEnrichingProps) {
           <div className="space-y-1">
             <p className="font-medium">{error}</p>
             <p className="text-sm text-muted-foreground">
-              Můžeš to zkusit znovu, nebo údaje vyplnit sám — kniha se dá odeslat i tak.
+              Zkus to znovu, nebo údaje vyplň sám.
             </p>
           </div>
         </div>
@@ -103,14 +111,59 @@ export function StepEnriching({ probe, onDone, onManual }: StepEnrichingProps) {
   }
 
   return (
-    <div className="space-y-4 py-10 text-center">
-      <Spinner className="mx-auto size-6" />
-      <div className="space-y-1">
-        <p className="font-medium">{PHASES[phase]}</p>
-        <p className="text-sm text-muted-foreground">
-          {probe.title} — může to trvat půl minuty.
-        </p>
+    <div className="space-y-5 rounded-xl border bg-card p-5">
+      <div className="flex gap-5">
+        <div className="flex h-32 w-22 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ring-1 ring-border">
+          {coverUrl ? (
+            // Remote cover, not yet in storage — plain img is correct here.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverUrl} alt={probe.title} className="h-full w-full object-cover" />
+          ) : (
+            <BookOpen className="size-6 text-muted-foreground/40" />
+          )}
+        </div>
+
+        <ol className="flex-1 space-y-2.5">
+          {ENRICH_PHASES.map((label, index) => {
+            const done = index <= phase;
+            const running = index === phase + 1;
+
+            return (
+              <li
+                key={label}
+                aria-current={running ? 'step' : undefined}
+                data-state={done ? 'done' : running ? 'running' : 'upcoming'}
+                className="flex items-center gap-2.5 text-sm"
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center">
+                  {done ? (
+                    <Check className="size-4 text-success-strong" />
+                  ) : running ? (
+                    <Spinner className="size-4 text-primary" />
+                  ) : (
+                    <span
+                      aria-hidden
+                      className="size-2.5 rounded-full ring-1 ring-border ring-inset"
+                    />
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    running && 'font-medium',
+                    !done && !running && 'text-muted-foreground/60',
+                  )}
+                >
+                  {label}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
       </div>
+
+      <p className="text-sm text-muted-foreground">
+        {probe.title} · {probe.author} — chvilku to trvá, asi půl minuty.
+      </p>
     </div>
   );
 }

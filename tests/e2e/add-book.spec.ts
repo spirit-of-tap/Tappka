@@ -87,7 +87,17 @@ async function stubFlow(page: Page, candidate: BookCandidate, enriched: Enriched
   await page.route('**/api/books/external-search**', (route) =>
     route.fulfill({ json: { data: [candidate] } }),
   );
+  // The catalogue search runs against the real DB, and `q=sprint` matches the
+  // Sprint already in it. A hit now collapses the external results behind a
+  // confirmation, so stub it empty and let one dedicated test cover that guard.
+  await page.route('**/api/books/search**', (route) => route.fulfill({ json: { data: [] } }));
   await page.route('**/api/books/enrich', (route) => route.fulfill({ json: enriched }));
+}
+
+/** Krok 1 → Krok 2: affirm the gate, then pick the only external candidate. */
+async function passGateAndPick(page: Page) {
+  await page.getByRole('button', { name: /pojďme na to/i }).click();
+  await page.getByRole('button', { name: /Jake Knapp/ }).click();
 }
 
 test.describe('adding a book', () => {
@@ -112,20 +122,23 @@ test.describe('adding a book', () => {
 
     await page.goto('/cteni/knihy/nova?q=sprint&from=hledat');
 
-    // Krok 1 — the gate must be affirmed before search appears.
-    await expect(page.getByText(/do BOBa naopak nepatří/i)).toBeVisible();
-    await page.getByRole('button', { name: /chci přidat/i }).click();
+    // Krok 1 — the gate shows what does not belong, and must be affirmed.
+    await expect(page.getByText('Tyhle ne')).toBeVisible();
+    // The rubric is for the model; it must never be on this screen.
+    await expect(page.getByText(/Inspirace/)).toHaveCount(0);
+    await page.getByRole('button', { name: /pojďme na to/i }).click();
 
     // Krok 2 — the candidate card carries the metadata the rubric needs.
     await expect(page.getByText(/288/)).toBeVisible();
-    await page.getByRole('button', { name: /vybrat/i }).click();
+    await page.getByRole('button', { name: /Jake Knapp/ }).click();
 
-    // Krok 4 — the enriched record, editable.
+    // Krok 4 — the score is the model's verdict, with no control to change it.
     await expect(page.getByLabel(/český název/i)).toHaveValue(title);
     await expect(page.getByText(/procesní manuál/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /2 b\./i })).toBeVisible();
+    await expect(page.getByLabel('Knižní body: 2')).toBeVisible();
+    await expect(page.getByRole('button', { name: /\d\s*b\./i })).toHaveCount(0);
 
-    await page.getByRole('button', { name: /odeslat ke schválení/i }).click();
+    await page.getByRole('button', { name: /odeslat kouči/i }).click();
 
     // The POST can be slow (notification emails run inside the route), so wait
     // for the redirect rather than racing a toast against a 5s default. The
@@ -153,9 +166,8 @@ test.describe('adding a book', () => {
     });
 
     await page.goto('/cteni/knihy/nova?q=sprint&from=hledat');
-    await page.getByRole('button', { name: /chci přidat/i }).click();
-    await page.getByRole('button', { name: /vybrat/i }).click();
-    await page.getByRole('button', { name: /odeslat ke schválení/i }).click();
+    await passGateAndPick(page);
+    await page.getByRole('button', { name: /odeslat kouči/i }).click();
     await page.waitForURL(/\/cteni\/knihy\/[0-9a-f-]{36}$/);
     const bookId = new URL(page.url()).pathname.split('/').pop()!;
 
@@ -226,10 +238,9 @@ test.describe('adding a book', () => {
     });
 
     await page.goto('/cteni/knihy/nova?q=sprint&from=hledat');
-    await page.getByRole('button', { name: /chci přidat/i }).click();
-    await page.getByRole('button', { name: /vybrat/i }).click();
+    await passGateAndPick(page);
     await expect(page.getByLabel(/autor/i)).toHaveValue(/Zeratsky/);
-    await page.getByRole('button', { name: /odeslat ke schválení/i }).click();
+    await page.getByRole('button', { name: /odeslat kouči/i }).click();
 
     await page.waitForURL(/\/cteni\/knihy\/[0-9a-f-]{36}$/);
     // 201 created — never 500 (the comma-separated author kept the route from
@@ -249,7 +260,7 @@ test.describe('adding a book', () => {
     );
 
     await page.goto('/cteni/knihy/nova?from=hledat');
-    await page.getByRole('button', { name: /chci přidat/i }).click();
+    await page.getByRole('button', { name: /pojďme na to/i }).click();
 
     await page.getByRole('button', { name: /zadat ručně/i }).click();
     await page.getByLabel(/^název$/i).fill('Tiimiakatemia');
@@ -259,15 +270,81 @@ test.describe('adding a book', () => {
     await expect(page.getByText(/neodpovídá/i)).toBeVisible();
     await page.getByRole('button', { name: /vyplnit ručně/i }).click();
 
-    // The record is still completable by hand, and still gated.
-    const submit = page.getByRole('button', { name: /odeslat ke schválení/i });
+    // The record is still completable by hand, and still gated. Without an
+    // enrichment there is no score to show, so the coach assigns one.
+    const submit = page.getByRole('button', { name: /odeslat kouči/i });
     await expect(submit).toBeDisabled();
+    await expect(page.getByText('Body přidělí kouč.')).toBeVisible();
 
     await page.getByLabel(/popis/i).fill('Naučíš se, jak funguje týmové podnikání na Tiimi.');
     await page.getByLabel(/oblast/i).selectOption('Leadership');
-    await page.getByRole('button', { name: /1 b\./i }).click();
 
     await expect(submit).toBeEnabled();
+  });
+
+  test('a book the model refuses dead-ends, and the appeal still reaches the coach', async ({
+    page,
+  }) => {
+    const { cookie } = await getSetupSessionCookie();
+    await setAuthCookie(page.context(), cookie);
+    const isbn = uniqueIsbn();
+    const title = uniqueTitle('E2E Refused Manual', isbn);
+
+    await stubFlow(page, { ...sprintCandidate(isbn), title }, {
+      data: {
+        ...ENRICHED(isbn).data,
+        title_cs: title,
+        title_en: title,
+        description: 'ZAMÍTNUTO: Kniha nesouvisí se zaměřením programu TAP.',
+        suggested_points: 0,
+        points_reason: 'Beletrie — rozhoduje žánr, ne téma.',
+      },
+      citations: [],
+    });
+
+    await page.goto('/cteni/knihy/nova?q=sprint&from=hledat');
+    await passGateAndPick(page);
+
+    // The refusal holds: no form, no submit button.
+    await expect(page.getByRole('heading', { name: /nezapíšeme/i })).toBeVisible();
+    await expect(page.getByText('Beletrie — rozhoduje žánr, ne téma.')).toBeVisible();
+    await expect(page.getByLabel(/český název/i)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /odeslat/i })).toHaveCount(0);
+
+    // Appealing asks for an argument, and will not submit without one.
+    await page.getByRole('button', { name: /pošli to kouči/i }).click();
+    const submit = page.getByRole('button', { name: /odeslat kouči/i });
+    await expect(submit).toBeDisabled();
+    await expect(page.getByLabel('Knižní body: 0')).toBeVisible();
+
+    await page
+      .getByLabel(/proč kniha do boba patří/i)
+      .fill('Je to případová studie o týmovém podnikání, ne beletrie.');
+    await expect(submit).toBeEnabled();
+  });
+
+  test('warns instead of quietly offering a duplicate', async ({ page }) => {
+    const { cookie } = await getSetupSessionCookie();
+    await setAuthCookie(page.context(), cookie);
+    const isbn = uniqueIsbn();
+
+    await page.route('**/api/books/external-search**', (route) =>
+      route.fulfill({ json: { data: [sprintCandidate(isbn)] } }),
+    );
+    await page.route('**/api/books/search**', (route) =>
+      route.fulfill({
+        json: { data: [{ id: 'existing-1', title_cs: 'Sprint', author: 'Jake Knapp' }] },
+      }),
+    );
+
+    await page.goto('/cteni/knihy/nova?q=sprint&from=hledat');
+    await page.getByRole('button', { name: /pojďme na to/i }).click();
+
+    await expect(page.getByText(/už v BOBovi máme/i)).toBeVisible();
+    await expect(page.getByText(/mimo katalog/i)).toHaveCount(0);
+
+    await page.getByRole('button', { name: /přesto přidat jinou verzi/i }).click();
+    await expect(page.getByText(/mimo katalog/i)).toBeVisible();
   });
 });
 
