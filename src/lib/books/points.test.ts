@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatPoints, formatPointsWithLabel, pointsNumber, suggestedBookPoints } from './points';
+import {
+  formatPoints,
+  formatPointsWithLabel,
+  pointsNumber,
+  suggestedBookPoints,
+  suggestedReviewPoints,
+} from './points';
 
 describe('pointsNumber', () => {
   it('coerces the string PostgREST returns for a numeric column', () => {
@@ -29,8 +35,35 @@ describe('formatPointsWithLabel', () => {
   });
 });
 
+describe('suggestedReviewPoints', () => {
+  it('has no suggestion for a book nothing scored', () => {
+    expect(suggestedReviewPoints(null)).toBeNull();
+    expect(suggestedReviewPoints(undefined)).toBeNull();
+  });
+
+  it("keeps a stored 0, because 0 is the AI's rejection", () => {
+    expect(suggestedReviewPoints(0)).toBe(0);
+    expect(suggestedReviewPoints('0.00')).toBe(0);
+  });
+
+  it('reads the string form the DB actually returns', () => {
+    expect(suggestedReviewPoints('2.00')).toBe(2);
+    expect(suggestedReviewPoints('3.00')).toBe(3);
+  });
+
+  it('rounds legacy fractional scores without inventing a rejection', () => {
+    expect(suggestedReviewPoints(0.33)).toBe(0);
+    expect(suggestedReviewPoints(1.5)).toBe(2);
+  });
+
+  it('clamps out-of-range scores instead of leaking them to the classify route', () => {
+    expect(suggestedReviewPoints(5)).toBe(3);
+    expect(suggestedReviewPoints(-1)).toBe(0);
+  });
+});
+
 describe('suggestedBookPoints', () => {
-  it('falls back to 1 when the book carries no score', () => {
+  it('never offers 0 — a list move cannot reject a book', () => {
     expect(suggestedBookPoints(null)).toBe(1);
     expect(suggestedBookPoints(undefined)).toBe(1);
     expect(suggestedBookPoints(0)).toBe(1);

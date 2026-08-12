@@ -31,28 +31,27 @@ function book(overrides: Partial<BookWithProfiles>): BookWithProfiles {
   } as unknown as BookWithProfiles;
 }
 
+// Both carry a complete AI suggestion, so the bar opens in confirm mode and a
+// decision is a single click — the queue's normal case.
 const BOOKS = [
-  book({ id: 'b1', title_cs: 'Sprint' }),
-  book({ id: 'b2', title_cs: 'Ikigai' }),
+  book({ id: 'b1', title_cs: 'Sprint', book_points: 2, list_status_reason: 'Kategorie 2.' }),
+  book({ id: 'b2', title_cs: 'Ikigai', book_points: 1, list_status_reason: 'Kategorie 1.' }),
 ];
 
-function renderWorkbench(books: BookWithProfiles[]) {
-  const onApprove = vi.fn().mockResolvedValue(true);
-  const onReject = vi.fn().mockResolvedValue(true);
+function renderWorkbench(books: BookWithProfiles[], onDecide = vi.fn().mockResolvedValue(true)) {
   const onEdited = vi.fn();
   const onDeleted = vi.fn();
 
   render(
     <ReviewWorkbench
       books={books}
-      onApprove={onApprove}
-      onReject={onReject}
+      onDecide={onDecide}
       onEdited={onEdited}
       onDeleted={onDeleted}
     />,
   );
 
-  return { onApprove, onReject, onEdited, onDeleted };
+  return { onDecide, onEdited, onDeleted };
 }
 
 /** The detail panel renders the title as a link; the queue rail renders plain text. */
@@ -74,31 +73,24 @@ describe('ReviewWorkbench', () => {
   });
 
   it('advances to the next book once one is decided', async () => {
-    const { onApprove } = renderWorkbench(BOOKS);
+    const { onDecide } = renderWorkbench(BOOKS);
 
-    await userEvent.type(screen.getByLabelText(/důvod rozhodnutí/i), 'Patří do longlistu.');
     await userEvent.click(screen.getByRole('button', { name: /schválit do longlistu/i }));
 
-    await waitFor(() => expect(onApprove).toHaveBeenCalled());
+    await waitFor(() => expect(onDecide).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'b1' }),
+      2,
+      'Kategorie 2.',
+    ));
     await waitFor(() => expect(detailTitle('Ikigai')).toBeInTheDocument());
   });
 
   it('stays put when the decision fails, so nothing is silently skipped', async () => {
-    const onApprove = vi.fn().mockResolvedValue(false);
-    render(
-      <ReviewWorkbench
-        books={BOOKS}
-        onApprove={onApprove}
-        onReject={vi.fn()}
-        onEdited={vi.fn()}
-        onDeleted={vi.fn()}
-      />,
-    );
+    const { onDecide } = renderWorkbench(BOOKS, vi.fn().mockResolvedValue(false));
 
-    await userEvent.type(screen.getByLabelText(/důvod rozhodnutí/i), 'Patří do longlistu.');
     await userEvent.click(screen.getByRole('button', { name: /schválit do longlistu/i }));
 
-    await waitFor(() => expect(onApprove).toHaveBeenCalled());
+    await waitFor(() => expect(onDecide).toHaveBeenCalled());
     expect(detailTitle('Sprint')).toBeInTheDocument();
   });
 
@@ -106,6 +98,6 @@ describe('ReviewWorkbench', () => {
     renderWorkbench([]);
 
     expect(screen.getByText('Fronta je prázdná')).toBeInTheDocument();
-    expect(screen.queryByLabelText(/důvod rozhodnutí/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /schválit do longlistu/i })).not.toBeInTheDocument();
   });
 });

@@ -187,11 +187,13 @@ test.describe('adding a book', () => {
     // Pick this book out of the queue rail — parallel specs leave their own
     // books pending, so the workbench's default selection is not ours.
     await coachPage.getByRole('navigation', { name: /fronta/i }).getByText(title).click();
+    // The bar opens on the AI's suggestion, read-only. Overriding it is the point
+    // of the test, so switch to editing rather than confirming.
+    await coachPage.getByRole('button', { name: /upravit rozhodnutí/i }).click();
     const reason = coachPage.locator(`#reason-${bookId}`);
     await expect(reason).toBeVisible();
-
-    // The picker opens on the AI's suggestion; overriding it is the point of the test.
     await expect(coachPage.getByRole('radio', { name: '2 body' })).toHaveAttribute('data-state', 'on');
+
     await reason.fill('Procesní manuál, ale krátký — 1 bod.');
     await coachPage.getByRole('radio', { name: '1 bod' }).click();
     await coachPage.getByRole('button', { name: /schválit do longlistu/i }).click();

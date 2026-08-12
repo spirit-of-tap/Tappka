@@ -1,18 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { ReviewDetailPanel } from './review-detail-panel';
 import { ReviewQueueRail } from './review-queue-rail';
 import { cn } from '@/lib/utils';
-import type { CoachPoints } from '@/lib/books/points';
+import type { ReviewPoints } from '@/lib/books/points';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 interface ReviewWorkbenchProps {
   books: BookWithProfiles[];
-  onApprove: (book: BookWithProfiles, bookPoints: CoachPoints, reason: string) => Promise<boolean>;
-  onReject: (book: BookWithProfiles, reason: string) => Promise<boolean>;
+  /** 0 archives the book, 1–3 approve it into the longlist. */
+  onDecide: (book: BookWithProfiles, points: ReviewPoints, reason: string) => Promise<boolean>;
   onEdited: (book: BookWithProfiles) => void;
   onDeleted: (bookId: string) => void;
 }
@@ -21,18 +21,26 @@ interface ReviewWorkbenchProps {
  * Master–detail review of the pending queue. Owns nothing but the selection —
  * the book lists and every mutation still live in `CoachDashboard`.
  */
-export function ReviewWorkbench({
-  books,
-  onApprove,
-  onReject,
-  onEdited,
-  onDeleted,
-}: ReviewWorkbenchProps) {
+export function ReviewWorkbench({ books, onDecide, onEdited, onDeleted }: ReviewWorkbenchProps) {
   // `null` means "no explicit pick": on wide viewports the panel falls through to
   // the head of the queue, on narrow ones the queue is what you see.
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const selected = books.find((book) => book.id === selectedId) ?? books[0] ?? null;
+
+  /**
+   * The decision bar sits at the foot of a tall panel, so a coach who just decided
+   * is parked at the bottom of the page. Bring the incoming book's header back into
+   * view — and on narrow screens, where selecting swaps the queue out for the panel,
+   * do the same so the panel does not open mid-scroll.
+   */
+  const revealPanel = () => panelRef.current?.scrollIntoView({ block: 'start' });
+
+  const handleSelect = (bookId: string) => {
+    setSelectedId(bookId);
+    if (!window.matchMedia('(min-width: 1024px)').matches) revealPanel();
+  };
 
   /**
    * A decided book leaves the queue, so the selection has to move before the
@@ -44,13 +52,17 @@ export function ReviewWorkbench({
     return (books[index + 1] ?? books[index - 1])?.id ?? null;
   };
 
-  const advanceAfter = async (
+  const handleDecide = async (
     book: BookWithProfiles,
-    decide: () => Promise<boolean>,
+    points: ReviewPoints,
+    reason: string,
   ): Promise<boolean> => {
     const next = neighbourOf(book.id);
-    const ok = await decide();
-    if (ok) setSelectedId(next);
+    const ok = await onDecide(book, points, reason);
+    if (ok) {
+      setSelectedId(next);
+      revealPanel();
+    }
     return ok;
   };
 
@@ -78,20 +90,17 @@ export function ReviewWorkbench({
       <ReviewQueueRail
         books={books}
         selectedId={selected?.id ?? null}
-        onSelect={setSelectedId}
+        onSelect={handleSelect}
         // The app header scrolls away with the page, so the rail only needs
         // enough offset to clear the viewport edge.
         className={cn('lg:sticky lg:top-4 lg:self-start', selectedId && 'hidden lg:block')}
       />
       {selected && (
-        <div className={cn('min-w-0', !selectedId && 'hidden lg:block')}>
+        <div ref={panelRef} className={cn('min-w-0 scroll-mt-4', !selectedId && 'hidden lg:block')}>
           <ReviewDetailPanel
             key={selected.id}
             book={selected}
-            onApprove={(book, points, reason) =>
-              advanceAfter(book, () => onApprove(book, points, reason))
-            }
-            onReject={(book, reason) => advanceAfter(book, () => onReject(book, reason))}
+            onDecide={handleDecide}
             onEdited={onEdited}
             onDeleted={handleDeleted}
             onBack={() => setSelectedId(null)}

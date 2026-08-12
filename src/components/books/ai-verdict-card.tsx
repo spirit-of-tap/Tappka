@@ -1,33 +1,44 @@
 import { Sparkles } from 'lucide-react';
-import { COACH_POINT_VALUES, formatPointsWithLabel, suggestedBookPoints } from '@/lib/books/points';
+import { COACH_POINT_VALUES, formatPointsWithLabel, suggestedReviewPoints } from '@/lib/books/points';
 import { cn } from '@/lib/utils';
 
 interface AiVerdictCardProps {
-  /** `books.book_points` — a numeric column, so PostgREST hands it over as a string. */
+  /** `books.book_points` — a numeric column, so PostgREST may hand it over as a string. */
   points: number | string | null;
   /** `books.list_status_reason`, which holds the AI's rationale until a coach decides. */
   reason: string | null;
+  className?: string;
 }
 
 /**
- * The AI's suggestion, shown read-only. It exists so the coach can see what was
- * proposed and why before overriding it — previously both values reached this
- * screen and neither was rendered.
+ * The AI's suggestion, read-only. A coach either confirms it as-is or switches to
+ * editing — so this never appears alongside an input carrying the same text.
  */
-export function AiVerdictCard({ points, reason }: AiVerdictCardProps) {
-  const hasPoints = points !== null && points !== undefined && Number(points) > 0;
-  if (!hasPoints && !reason?.trim()) return null;
+export function AiVerdictCard({ points, reason, className }: AiVerdictCardProps) {
+  const suggested = suggestedReviewPoints(points);
+  if (suggested === null && !reason?.trim()) return null;
 
-  const filled = suggestedBookPoints(points);
+  const isRejection = suggested === 0;
 
   return (
-    <div className="rounded-lg border border-primary/15 bg-primary/5 p-4 space-y-2.5">
-      <div className="flex items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+    <div
+      className={cn(
+        'rounded-lg border p-4 space-y-2.5',
+        isRejection ? 'border-destructive/20 bg-destructive/5' : 'border-primary/15 bg-primary/5',
+        className,
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide',
+            isRejection ? 'text-destructive' : 'text-primary',
+          )}
+        >
           <Sparkles className="size-3.5" />
           Návrh AI
         </span>
-        {hasPoints && (
+        {suggested !== null && (
           <span className="flex items-center gap-2">
             <span aria-hidden className="flex items-center gap-1">
               {COACH_POINT_VALUES.map((value) => (
@@ -35,14 +46,17 @@ export function AiVerdictCard({ points, reason }: AiVerdictCardProps) {
                   key={value}
                   className={cn(
                     'h-1.5 w-5 rounded-full',
-                    value <= filled ? 'bg-primary' : 'bg-primary/20',
+                    value <= suggested ? 'bg-primary' : 'bg-foreground/10',
                   )}
                 />
               ))}
             </span>
             <span className="text-sm font-semibold tabular-nums">
-              {formatPointsWithLabel(points)}
+              {formatPointsWithLabel(suggested)}
             </span>
+            {isRejection && (
+              <span className="text-xs font-medium text-destructive">— zamítnout</span>
+            )}
           </span>
         )}
       </div>

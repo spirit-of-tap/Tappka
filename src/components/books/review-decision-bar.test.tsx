@@ -27,97 +27,153 @@ const PROCESSING_BOOK = {
   highlight_category: null,
 } as unknown as BookWithProfiles;
 
+/** A book carrying a complete AI suggestion — score plus rationale. */
+const SUGGESTED = { book_points: 2, list_status_reason: 'Kategorie 2 — 288 stran.' };
+
 function renderBar(book: Partial<BookWithProfiles> = {}, props: Record<string, unknown> = {}) {
-  const onApprove = vi.fn().mockResolvedValue(true);
-  const onReject = vi.fn().mockResolvedValue(true);
+  const onDecide = vi.fn().mockResolvedValue(true);
   const onEnriched = vi.fn();
   const onDeleted = vi.fn();
 
   render(
     <ReviewDecisionBar
       book={{ ...PROCESSING_BOOK, ...book }}
-      onApprove={onApprove}
-      onReject={onReject}
+      onDecide={onDecide}
       onEnriched={onEnriched}
       onDeleted={onDeleted}
       {...props}
     />,
   );
 
-  return { onApprove, onReject, onEnriched, onDeleted };
+  return { onDecide, onEnriched, onDeleted };
 }
+
+const cta = () => screen.getByRole('button', { name: /schválit do longlistu|zamítnout knihu/i });
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('ReviewDecisionBar points', () => {
-  it("opens on the AI's suggestion rather than a hardcoded 1", () => {
-    renderBar({ book_points: 3 });
+describe('ReviewDecisionBar confirm mode', () => {
+  it("opens on the AI's suggestion, read-only, with no duplicate input", () => {
+    renderBar(SUGGESTED);
 
-    expect(screen.getByRole('radio', { name: '3 body' })).toHaveAttribute('data-state', 'on');
-    expect(screen.getByText('shodné s návrhem AI')).toBeInTheDocument();
+    expect(screen.getByText('Návrh AI')).toBeInTheDocument();
+    expect(screen.getByText('Kategorie 2 — 288 stran.')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/důvod rozhodnutí/i)).not.toBeInTheDocument();
   });
 
-  it('falls back to 1 when the AI never scored the book', () => {
-    renderBar({ book_points: null });
+  it("confirms the AI's score and rationale in one click", async () => {
+    const { onDecide } = renderBar(SUGGESTED);
 
-    expect(screen.getByRole('radio', { name: '1 bod' })).toHaveAttribute('data-state', 'on');
-    expect(screen.queryByText('shodné s návrhem AI')).not.toBeInTheDocument();
+    await userEvent.click(cta());
+
+    expect(onDecide).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'b1' }),
+      2,
+      'Kategorie 2 — 288 stran.',
+    );
   });
 
+  it('goes straight to editing when there is nothing to confirm', () => {
+    renderBar({ book_points: null, list_status_reason: null });
 
-  it('flags an override once the coach moves off the suggestion', async () => {
-    renderBar({ book_points: 3 });
-
-    await userEvent.click(screen.getByRole('radio', { name: '1 bod' }));
-
-    expect(screen.getByText('návrh AI: 3')).toBeInTheDocument();
+    expect(screen.getByLabelText(/důvod rozhodnutí/i)).toBeInTheDocument();
+    expect(screen.queryByText('Návrh AI')).not.toBeInTheDocument();
   });
 
-  it('submits the points the coach picked', async () => {
-    const { onApprove } = renderBar({ book_points: 1 });
+  it('refuses to call a score with no rationale a confirmable suggestion', () => {
+    renderBar({ book_points: 2, list_status_reason: null });
 
-    await userEvent.type(screen.getByLabelText(/důvod rozhodnutí/i), 'Sedí do longlistu.');
-    await userEvent.click(screen.getByRole('radio', { name: '2 body' }));
-    await userEvent.click(screen.getByRole('button', { name: /schválit do longlistu/i }));
-
-    expect(onApprove).toHaveBeenCalledWith(expect.objectContaining({ id: 'b1' }), 2, 'Sedí do longlistu.');
+    expect(screen.getByLabelText(/důvod rozhodnutí/i)).toBeInTheDocument();
   });
 });
 
-describe('ReviewDecisionBar reason', () => {
-  it("prefills from the AI's stored rationale and says so", () => {
-    renderBar({ list_status_reason: 'Kategorie 2 — 288 stran.' });
+describe('ReviewDecisionBar zero points', () => {
+  it("keeps the AI's 0 as a rejection rather than rounding it up to 1", () => {
+    renderBar({ book_points: 0, list_status_reason: 'ZAMÍTNUTO: mimo záběr BOBa.' });
+
+    expect(screen.getByRole('button', { name: /zamítnout knihu/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /schválit do longlistu/i })).not.toBeInTheDocument();
+  });
+
+  it('submits 0 so the dashboard archives the book', async () => {
+    const { onDecide } = renderBar({
+      book_points: 0,
+      list_status_reason: 'ZAMÍTNUTO: mimo záběr BOBa.',
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: /zamítnout knihu/i }));
+
+    expect(onDecide).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'b1' }),
+      0,
+      'ZAMÍTNUTO: mimo záběr BOBa.',
+    );
+  });
+
+  it('flips the call to action as soon as the coach picks 0', async () => {
+    renderBar(SUGGESTED);
+
+    await userEvent.click(screen.getByRole('button', { name: /upravit rozhodnutí/i }));
+    expect(screen.getByRole('button', { name: /schválit do longlistu/i })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: /0 — zamítnout/i }));
+
+    expect(screen.getByRole('button', { name: /zamítnout knihu/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /schválit do longlistu/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('ReviewDecisionBar edit mode', () => {
+  it("carries the AI's text into the editor so it can be adjusted, not retyped", async () => {
+    renderBar(SUGGESTED);
+
+    await userEvent.click(screen.getByRole('button', { name: /upravit rozhodnutí/i }));
 
     expect(screen.getByLabelText(/důvod rozhodnutí/i)).toHaveValue('Kategorie 2 — 288 stran.');
-    expect(screen.getByText(/odešle se studentovi/i)).toHaveTextContent(/předvyplněn návrhem AI/);
+    expect(screen.getByRole('radio', { name: '2 body' })).toHaveAttribute('data-state', 'on');
   });
 
-  it('drops the AI-prefill claim for a book the AI never wrote about', () => {
-    renderBar({ list_status_reason: null });
+  it('submits the coach\'s override', async () => {
+    const { onDecide } = renderBar(SUGGESTED);
 
-    expect(screen.getByLabelText(/důvod rozhodnutí/i)).toHaveValue('');
-    expect(screen.getByText(/odešle se studentovi/i)).not.toHaveTextContent(/předvyplněn/);
+    await userEvent.click(screen.getByRole('button', { name: /upravit rozhodnutí/i }));
+    await userEvent.click(screen.getByRole('radio', { name: '3 body' }));
+    await userEvent.clear(screen.getByLabelText(/důvod rozhodnutí/i));
+    await userEvent.type(screen.getByLabelText(/důvod rozhodnutí/i), 'Zásadní kniha.');
+    await userEvent.click(cta());
+
+    expect(onDecide).toHaveBeenCalledWith(expect.objectContaining({ id: 'b1' }), 3, 'Zásadní kniha.');
   });
 
-  it('blocks both decisions until a reason is written', async () => {
+  it('can be abandoned back to the untouched suggestion', async () => {
+    renderBar(SUGGESTED);
+
+    await userEvent.click(screen.getByRole('button', { name: /upravit rozhodnutí/i }));
+    await userEvent.click(screen.getByRole('radio', { name: '3 body' }));
+    await userEvent.click(screen.getByRole('button', { name: /zpět k návrhu AI/i }));
+
+    expect(screen.getByText('Kategorie 2 — 288 stran.')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/důvod rozhodnutí/i)).not.toBeInTheDocument();
+  });
+
+  it('blocks the decision until a reason is written', async () => {
     renderBar();
 
-    expect(screen.getByRole('button', { name: /schválit do longlistu/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /odmítnout/i })).toBeDisabled();
+    expect(cta()).toBeDisabled();
 
-    await userEvent.type(screen.getByLabelText(/důvod rozhodnutí/i), 'Mimo záběr BOBa.');
+    await userEvent.click(screen.getByRole('radio', { name: '1 bod' }));
+    expect(cta()).toBeDisabled();
 
-    expect(screen.getByRole('button', { name: /schválit do longlistu/i })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /odmítnout/i })).toBeEnabled();
+    await userEvent.type(screen.getByLabelText(/důvod rozhodnutí/i), 'Sedí do longlistu.');
+    expect(cta()).toBeEnabled();
   });
 
-  it('blocks decisions while the facts form is open', () => {
-    renderBar({ list_status_reason: 'Hotový důvod.' }, { blocked: true });
+  it('blocks the decision while the facts form is open', () => {
+    renderBar(SUGGESTED, { blocked: true });
 
-    expect(screen.getByRole('button', { name: /schválit do longlistu/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /odmítnout/i })).toBeDisabled();
+    expect(cta()).toBeDisabled();
   });
 });
 

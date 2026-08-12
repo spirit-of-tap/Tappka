@@ -14,7 +14,7 @@ import { RocketModelManager } from './rocket-model-manager';
 import { LibraryImportScanner } from '@/components/library/library-import-scanner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { suggestedBookPoints, type CoachPoints } from '@/lib/books/points';
+import { suggestedBookPoints, type ReviewPoints } from '@/lib/books/points';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 
 interface CoachDashboardProps {
@@ -88,17 +88,26 @@ export function CoachDashboard({
     return true;
   };
 
-  const handleApprove = (book: BookWithProfiles, points: CoachPoints, reason: string): Promise<boolean> =>
-    classify(book, 'longlist', points, reason).then((ok) => {
-      if (ok) toast.success('Kniha schválena do longlistu.');
+  /**
+   * On review the score carries the verdict: 0 archives the book, 1–3 approve it
+   * into the longlist. The classify route enforces the same pairing server-side.
+   */
+  const handleDecide = (
+    book: BookWithProfiles,
+    points: ReviewPoints,
+    reason: string,
+  ): Promise<boolean> => {
+    if (points === 0) {
+      return classify(book, 'archived', 0, reason).then((ok) => {
+        if (ok) toast.success('Kniha zamítnuta (0 bodů).');
+        return ok;
+      });
+    }
+    return classify(book, 'longlist', points, reason).then((ok) => {
+      if (ok) toast.success(`Kniha schválena do longlistu (${points} b.).`);
       return ok;
     });
-
-  const handleReject = (book: BookWithProfiles, reason: string): Promise<boolean> =>
-    classify(book, 'archived', 0, reason).then((ok) => {
-      if (ok) toast.success('Kniha odmítnuta (archivováno).');
-      return ok;
-    });
+  };
 
   const handleMove = (book: BookWithProfiles, targetStatus: ListKind): Promise<boolean> => {
     const points = suggestedBookPoints(book.book_points);
@@ -323,8 +332,7 @@ export function CoachDashboard({
       <TabsContent value="processing" className="mt-4">
         <ReviewWorkbench
           books={processing}
-          onApprove={handleApprove}
-          onReject={handleReject}
+          onDecide={handleDecide}
           onEdited={handleEdited}
           onDeleted={handleDeleted}
         />

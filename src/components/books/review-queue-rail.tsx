@@ -50,7 +50,9 @@ export function ReviewQueueRail({ books, selectedId, onSelect, className }: Revi
         </span>
       </div>
 
-      <ul className="max-h-[calc(100vh-10rem)] overflow-y-auto">
+      {/* The inner scroller only makes sense beside the panel — on a narrow
+          screen the rail is the page, so it scrolls with it. */}
+      <ul className="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
         {books.map((book) => {
           const isSelected = book.id === selectedId;
           return (
