@@ -21,7 +21,7 @@ interface MetricsCardProps {
 
 export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BarChart3 className="size-4 text-muted-foreground" />
