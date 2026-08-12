@@ -6,12 +6,12 @@ export function InfoCard() {
       <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground/50" />
       <div className="space-y-1">
         <p>
-          <strong>Individuální koučování</strong> je 1:1 sezení s týmovým koučem. Cílem je
+          <strong>Individuální koučování</strong> je 1:1 sezení s týmovým:ou koučem:kou. Cílem je
           reflektovat svůj rozvoj a najít konkrétní kroky k dalšímu růstu.
         </p>
         <p>
-          Zapiš si, co sis z koučování odnesl a jaké akční kroky z něj vyplynuly —{" "}
-          <strong>alespoň jedno sezení za semestr</strong> je očekáváno od každého studenta.
+          Zapiš si, co si z koučování odnášíš a jaké akční kroky z něj vyplynuly —{" "}
+          <strong>alespoň jedno sezení za semestr</strong> je očekáváno od každé:ho studenta:ky.
         </p>
       </div>
     </div>

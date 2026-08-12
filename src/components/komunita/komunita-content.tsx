@@ -97,7 +97,7 @@ export function KomunitaContent({
       {filtered.length === 0 ? (
         <div className="text-center py-12 space-y-3">
           <Users className="size-12 mx-auto text-muted-foreground" />
-          <h3 className="font-semibold text-lg">Nikdo nebyl nalezen</h3>
+          <h3 className="font-semibold text-lg">Nikoho jsme nenašli</h3>
           <p className="text-sm text-muted-foreground">Zkuste upravit vyhledávání</p>
           {query && (
             <Button variant="outline" size="sm" onClick={() => setQuery('')}>

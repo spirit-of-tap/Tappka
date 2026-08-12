@@ -171,7 +171,7 @@ export function EssayCommentThread({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const threads = buildThreads(comments);
-  const replyName = replyTarget?.author?.name ?? 'uživatele';
+  const replyName = replyTarget?.author?.name ?? 'uživatele:ky';
 
   const handlePost = async () => {
     if (!body.trim()) return;
@@ -414,7 +414,7 @@ export function EssayCommentThread({
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-8 text-center">
           <MessageSquare className="size-5 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            Zatím tu nikdo nekomentoval. Začni diskuzi.
+            Zatím tu nejsou žádné komentáře. Začni diskuzi.
           </p>
         </div>
       ) : (

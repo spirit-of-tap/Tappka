@@ -52,7 +52,7 @@ export default async function Home({ searchParams }: LoginPageProps) {
               Tappka
             </h1>
             <p className="text-muted-foreground">
-              Pro Téčka a kouče Tiimiakatemia Prague
+              Pro Téčka a kouče:ky Tiimiakatemia Prague
             </p>
           </div>
 
@@ -64,7 +64,7 @@ export default async function Home({ searchParams }: LoginPageProps) {
                   <Sparkles className="h-6 w-6 text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <h2 className="font-heading text-xl font-semibold">Už jsi přihlášený!</h2>
+                  <h2 className="font-heading text-xl font-semibold">Už jsi přihlášený:á!</h2>
                   <p className="text-sm text-muted-foreground">
                     Pokračuj do aplikace
                   </p>
@@ -88,7 +88,7 @@ export default async function Home({ searchParams }: LoginPageProps) {
           © Tiimiakatemia Prague {new Date().getFullYear()}
         </p>
         <p className="text-xs text-muted-foreground">
-          Vlastník: Spirit of TAP | Tvůrce: IT House | Financováno z komunitní kasy
+          Vlastnictví: Spirit of TAP | Vývoj: IT House | Financováno z komunitní kasy
         </p>
       </footer>
     </main>

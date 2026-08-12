@@ -47,8 +47,8 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
     e.preventDefault()
     setError(null)
 
-    if (!coachSelection) { setError("Vyber kouče"); return }
-    if (isExternal && !externalCoachName.trim()) { setError("Zadej jméno externího kouče"); return }
+    if (!coachSelection) { setError("Vyber kouče:ku"); return }
+    if (isExternal && !externalCoachName.trim()) { setError("Zadej jméno externí:ho kouče:ky"); return }
 
     setLoading(true)
     try {
@@ -109,7 +109,7 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
           <Label htmlFor="coach-select">Kouč *</Label>
           <Select value={coachSelection} onValueChange={setCoachSelection}>
             <SelectTrigger id="coach-select">
-              <SelectValue placeholder="Vyber kouče" />
+              <SelectValue placeholder="Vyber kouče:ku" />
             </SelectTrigger>
             <SelectContent>
               {coachProfiles.map((coach) => (
@@ -120,7 +120,7 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
                   </div>
                 </SelectItem>
               ))}
-              <SelectItem value={EXTERNAL_COACH_VALUE}>Externí kouč</SelectItem>
+              <SelectItem value={EXTERNAL_COACH_VALUE}>Externí kouč:ka</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -137,7 +137,7 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
 
       {isExternal && (
         <div className="space-y-2">
-          <Label htmlFor="external-coach-name">Jméno externího kouče *</Label>
+          <Label htmlFor="external-coach-name">Jméno externí:ho kouče:ky *</Label>
           <Input
             id="external-coach-name"
             value={externalCoachName}
@@ -148,7 +148,7 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="key-takeaways">Co jsem si odnesl / uvědomění</Label>
+        <Label htmlFor="key-takeaways">Co si odnáším / uvědomění</Label>
         <Textarea
           id="key-takeaways"
           value={keyTakeaways}

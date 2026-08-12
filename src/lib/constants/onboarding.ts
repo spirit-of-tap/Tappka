@@ -6,7 +6,7 @@
 export const ONBOARDING_TEXT = {
   welcome: {
     title: "Vítej v Tappce!",
-    subtitle: "Aplikace vytvořená studenty, pro studenty (a kouče).",
+    subtitle: "Aplikace vytvořená studujícími, pro studující (a kouče:ky).",
     description: "Pro dokončení registrace je potřeba:",
     steps: [
       "Ověřit tvůj ČZU email",
@@ -45,7 +45,7 @@ export const ONBOARDING_TEXT = {
     stepIndicator: "Krok 3: Čeká na schválení",
     title: "Čekáme na schválení",
     successMessage: "Email byl úspěšně ověřen",
-    mainText: "Váš účet nyní čeká na schválení administrátorem.",
+    mainText: "Váš účet nyní čeká na schválení.",
     processTitle: "Co se děje teď:",
     processList: [
       "Admin obdrží oznámení o vaší registraci",

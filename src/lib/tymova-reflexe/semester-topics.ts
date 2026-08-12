@@ -32,9 +32,9 @@ export const SEMESTER_REFLECTION_TOPICS: readonly SemesterTopicDefinition[] = [
   },
   {
     key: "kouci_a_mentori",
-    label: "Kouči, asistent kouči a mentoři",
+    label: "Kouči:ky, asistenti:ky kouče:ky a mentoři:ky",
     description:
-      "Reflektujte na spolupráci a komunikaci se svým týmovým koučem, jeho přínos vašemu týmu a týmové společnosti, reflektujte zároveň i spolupráci a komunikaci s ostatními kouči a mentory jednotlivě, popř. s týmem koučů jako celkem, atd.",
+      "Reflektujte na spolupráci a komunikaci se svým:ou týmovým:ou koučem:kou, jeho:její přínos vašemu týmu a týmové společnosti, reflektujte zároveň i spolupráci a komunikaci s ostatními kouči:kami a mentory:kami jednotlivě, popř. s týmem koučů:ek jako celkem, atd.",
   },
   {
     key: "tymy_a_tymove_spolecnosti",

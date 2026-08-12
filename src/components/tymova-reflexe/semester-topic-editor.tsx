@@ -74,7 +74,7 @@ export function SemesterTopicEditor({
   const onConflict = useCallback(
     (fields: EditableSemesterEntryField[]) => {
       const labels = fields.map((field) => FIELD_LABELS[field]).join(", ")
-      toast.warning(`Pole „${labels}“ u tématu „${topicDef.label}“ mezitím upravil někdo jiný.`)
+      toast.warning(`Pole „${labels}“ u tématu „${topicDef.label}“ mezitím upravila jiná osoba.`)
     },
     [topicDef.label],
   )
@@ -126,7 +126,7 @@ export function SemesterTopicEditor({
           <InlineSaveStatus saving={saving} dirty={dirtyFields.size > 0} />
           {data.updated_by && (
             <span>
-              Naposledy upravil/a {data.updated_by.name}{" "}
+              Naposledy upravil:la {data.updated_by.name}{" "}
               {formatDistanceToNow(new Date(data.updated_at), { locale: cs, addSuffix: true })}
             </span>
           )}

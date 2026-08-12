@@ -294,7 +294,7 @@ describe("EssayCommentThread", () => {
 
   it("renders an empty state when there are no comments", () => {
     renderThread([]);
-    expect(screen.getByText("Zatím tu nikdo nekomentoval. Začni diskuzi.")).toBeInTheDocument();
+    expect(screen.getByText("Zatím tu nejsou žádné komentáře. Začni diskuzi.")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Přidat komentář...")).toBeInTheDocument();
   });
 

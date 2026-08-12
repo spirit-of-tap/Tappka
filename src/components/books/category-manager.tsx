@@ -99,7 +99,7 @@ export function CategoryManager({
         <div className="space-y-2 rounded-md border p-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Název</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Např. Koučem doporučené" className="text-sm h-8" autoFocus />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Např. Koučem:kou doporučené" className="text-sm h-8" autoFocus />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Popis (volitelné)</Label>

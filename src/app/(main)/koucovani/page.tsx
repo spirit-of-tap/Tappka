@@ -68,7 +68,7 @@ export default async function KoucovaniPage() {
     <div className="container mx-auto max-w-5xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
       <PageHeader
         title="Individuální koučování"
-        description="Záznamník koučovacích sezení s týmovým koučem"
+        description="Záznamník koučovacích sezení s týmovým:ou koučem:kou"
         count={{ value: sessions.length, label: pluralizeCz(sessions.length, ["sezení", "sezení", "sezení"]) }}
         action={
           <Badge variant={sessionsThisSemester > 0 ? "secondary" : "outline"}>

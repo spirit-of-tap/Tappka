@@ -109,7 +109,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const [isSearchingBooks, setIsSearchingBooks] = useState(false);
   const [isPreselectingBook, setIsPreselectingBook] = useState(false);
   // A keystroke fires a fresh request; only the newest one may write state, or
-  // a stale empty response would flash the "Nenašel jsi knihu?" card wrongly.
+  // a stale empty response would flash the "Nemůžeš najít knihu?" card wrongly.
   const bookSearchRef = useRef(0);
   const [isPublishing, setIsPublishing] = useState(false);
   const [essayId, setEssayId] = useState<string | null>(initialEssay?.id ?? null);
@@ -416,7 +416,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Nenašel jsi tu správnou knihu?{' '}
+              Nemůžeš najít tu správnou knihu?{' '}
               <Link
                 href={`/cteni/knihy/nova?from=esej${essayId ? `&essayId=${essayId}` : ''}`}
                 className="focus-ring rounded underline underline-offset-2 hover:text-foreground"

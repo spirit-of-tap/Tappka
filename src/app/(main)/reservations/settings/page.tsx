@@ -101,7 +101,7 @@ export default async function ReservationSettingsPage() {
             <CardHeader>
               <CardTitle>Training Sessions</CardTitle>
               <CardDescription>
-                Opakované rezervace pro týmy. TS blokují místnost pro ostatní uživatele.
+                Opakované rezervace pro týmy. TS blokují místnost pro ostatní.
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -29,7 +29,7 @@ describe("FeedbackNoteCard", () => {
     render(<FeedbackNoteCard feedback={base} isAdmin={false} onChanged={noop} onDeleted={noop} />);
     expect(screen.getByText("Přidejte tmavý režim")).toBeInTheDocument();
     expect(screen.getByText("Jan Novák")).toBeInTheDocument();
-    expect(screen.getByText("Student")).toBeInTheDocument();
+    expect(screen.getByText("Student:ka")).toBeInTheDocument();
   });
 
   it("hides admin actions for non-admins", () => {

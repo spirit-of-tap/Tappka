@@ -21,7 +21,7 @@ interface TeamCoachingSessionsChartProps {
 
 export function TeamCoachingSessionsChart({ stats }: TeamCoachingSessionsChartProps) {
   if (stats.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-8">Tým nemá žádné členy</p>
+    return <p className="text-sm text-muted-foreground text-center py-8">Tým nemá žádné členy:ky</p>
   }
 
   const data = [...stats]

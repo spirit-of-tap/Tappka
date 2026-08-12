@@ -17,7 +17,7 @@ interface NotificationPreferencesFormProps {
 type ToggleKey = "essay_coach_read_email" | "essay_comment_email" | "essay_vote_email" | "book_submitted_email"
 
 const TOGGLES: { key: ToggleKey; label: string }[] = [
-  { key: "essay_coach_read_email", label: "Kouč přečetl tvou esej" },
+  { key: "essay_coach_read_email", label: "Kouč:ka přečetl:a tvou esej" },
   { key: "essay_comment_email", label: "Nový komentář na tvou esej" },
   { key: "essay_vote_email", label: "Nový like na tvou esej" },
   { key: "book_submitted_email", label: "Nová kniha ke schválení" },

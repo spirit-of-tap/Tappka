@@ -168,7 +168,7 @@ export function IndividualCoachingSessionCard({
       {session.key_takeaways || session.action_steps ? (
         <div className="border-t pt-4 space-y-4">
           {session.key_takeaways && (
-            <Field icon={Lightbulb} label="Co jsem si odnesl / uvědomění">
+            <Field icon={Lightbulb} label="Co si odnáším / uvědomění">
               <p className="whitespace-pre-wrap">{session.key_takeaways}</p>
             </Field>
           )}
@@ -181,7 +181,7 @@ export function IndividualCoachingSessionCard({
       ) : (
         <div className="border-t pt-4">
           <p className="text-sm text-muted-foreground">
-            Zatím žádné poznámky — uprav sezení a doplň, co sis odnesl.
+            Zatím žádné poznámky — uprav sezení a doplň, co si odnášíš.
           </p>
         </div>
       )}

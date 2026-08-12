@@ -54,7 +54,7 @@ export function ForgotPasswordForm({
           </div>
 
           <p className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-xl">
-            Pokud jsi se registroval/a pomocí e-mailu a hesla, obdržíš
+            Pokud jsi se registroval:la pomocí e-mailu a hesla, obdržíš
             e-mail s instrukcemi pro reset hesla.
           </p>
 

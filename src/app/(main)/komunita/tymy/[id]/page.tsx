@@ -72,7 +72,7 @@ export default async function TeamPage({ params }: PageProps) {
               <Badge variant="outline">{YEAR_LABELS[team.onboardingYear]}</Badge>
             )}
             <span className="text-sm text-muted-foreground">
-              {team.profiles.length} {team.profiles.length === 1 ? 'člen' : team.profiles.length < 5 ? 'členové' : 'členů'}
+              {team.profiles.length} {team.profiles.length === 1 ? 'člen:ka' : team.profiles.length < 5 ? 'členové:ky' : 'členů:ek'}
             </span>
           </div>
         </div>
@@ -156,9 +156,9 @@ export default async function TeamPage({ params }: PageProps) {
       {team.profiles.length === 0 && (
         <div className="text-center py-12 space-y-2">
           <Users className="size-12 mx-auto text-muted-foreground" />
-          <h3 className="font-semibold text-lg">Tým nemá žádné členy</h3>
+          <h3 className="font-semibold text-lg">Tým nemá žádné členy:ky</h3>
           <p className="text-sm text-muted-foreground">
-            V tomto týmu zatím nejsou žádní členové
+            V tomto týmu zatím nikdo není
           </p>
         </div>
       )}
@@ -181,14 +181,14 @@ export default async function TeamPage({ params }: PageProps) {
             <TabsContent value="schuzky" className="mt-4 space-y-4">
               <div>
                 <h2 className="text-lg font-semibold">Zákaznické schůzky — přehled týmu</h2>
-                <p className="text-sm text-muted-foreground">Počet schůzek napříč členy týmu</p>
+                <p className="text-sm text-muted-foreground">Počet schůzek napříč členy:ky týmu</p>
               </div>
               <TeamCustomerMeetingsChart stats={meetingStats} />
             </TabsContent>
             <TabsContent value="koucovani" className="mt-4 space-y-4">
               <div>
                 <h2 className="text-lg font-semibold">Individuální koučování — přehled týmu</h2>
-                <p className="text-sm text-muted-foreground">Počet koučovacích sezení napříč členy týmu</p>
+                <p className="text-sm text-muted-foreground">Počet koučovacích sezení napříč členy:ky týmu</p>
               </div>
               <TeamCoachingSessionsChart stats={coachingStats} />
             </TabsContent>

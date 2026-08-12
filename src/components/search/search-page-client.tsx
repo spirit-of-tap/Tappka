@@ -273,11 +273,11 @@ function TopPicksCard({ groups }: { groups: HighlightedGroup[] }) {
   return (
     <section className="rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-background to-background p-5 dark:border-amber-900/40 dark:from-amber-950/20">
       <div className="flex h-full flex-col gap-3">
-        <InviteCardEyebrow icon={Medal} label="Doporučení koučů a komunity" tone="amber" />
+        <InviteCardEyebrow icon={Medal} label="Doporučení koučů:ek a komunity" tone="amber" />
         <div className="space-y-1.5">
           <h2 className="text-lg font-bold leading-snug">TOP BOB</h2>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Zlato celé knihovny — {totalBooks} knih, na kterých se shodli kouči i komunita.
+            Zlato celé knihovny — {totalBooks} knih, na kterých se shodli kouči:ky i komunita.
             Když nevíš, co číst dál, začni tady: tady nešlápneš vedle.
           </p>
         </div>

@@ -61,7 +61,7 @@ export function BookCopiesList({ copies }: BookCopiesListProps) {
               <span className="inline-flex flex-wrap items-center gap-1.5 text-sm text-destructive">
                 <BorrowerAvatar picture={copy.borrower.picture} name={copy.borrower.name} />
                 <AlertTriangle className="size-3.5 shrink-0" />
-                <span className="font-medium">{copy.borrower.name ?? 'Neznámý uživatel'}</span>
+                <span className="font-medium">{copy.borrower.name ?? 'Neznámý:á uživatel:ka'}</span>
                 <span>
                   · po termínu {overdueDays} {dayLabel(overdueDays)} (mělo být vráceno {formatDueDate(copy.dueAt!)})
                 </span>
@@ -69,7 +69,7 @@ export function BookCopiesList({ copies }: BookCopiesListProps) {
             ) : (
               <span className="inline-flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <BorrowerAvatar picture={copy.borrower.picture} name={copy.borrower.name} />
-                <span className="font-medium text-foreground">{copy.borrower.name ?? 'Neznámý uživatel'}</span>
+                <span className="font-medium text-foreground">{copy.borrower.name ?? 'Neznámý:á uživatel:ka'}</span>
                 {copy.dueAt && <span>· do {formatDueDate(copy.dueAt)}</span>}
               </span>
             )}

@@ -62,7 +62,7 @@ export function CoachReviewList({ initialUnread, initialRead }: CoachReviewListP
 
       <TabsContent value="read" className="mt-4">
         {read.length === 0 ? (
-          <EmptyState label="Zatím jste nic neoznačil/a jako přečtené" />
+          <EmptyState label="Zatím nemáte nic označené jako přečtené" />
         ) : (
           <div className="space-y-3">
             {read.map((essay) => (

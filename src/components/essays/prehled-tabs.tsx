@@ -76,7 +76,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
       <TabsContent value="tym" className="mt-6">
         {!hasTeam ? (
           <div className="text-center py-12">
-            <p className="text-sm text-muted-foreground">Nejsi zařazen/a do žádného týmu.</p>
+            <p className="text-sm text-muted-foreground">Nejsi v žádném týmu.</p>
           </div>
         ) : (
           <div className="space-y-4">

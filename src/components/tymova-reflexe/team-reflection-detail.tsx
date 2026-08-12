@@ -72,7 +72,7 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
 
   const onConflict = useCallback((fields: EditableReflectionField[]) => {
     const labels = fields.map((field) => FIELD_LABELS[field]).join(", ")
-    toast.warning(`Pole „${labels}“ mezitím upravil někdo jiný. Zkontrolujte obsah před uložením.`)
+    toast.warning(`Pole „${labels}“ mezitím upravila jiná osoba. Zkontrolujte obsah před uložením.`)
   }, [])
 
   const { data, setField, dirtyFields, saving, applyIncoming } = useFieldAutosave<
@@ -128,7 +128,7 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
           </h1>
           {data.updated_by && (
             <p className="text-xs text-muted-foreground">
-              Naposledy upravil/a {data.updated_by.name}{" "}
+              Naposledy upravil:la {data.updated_by.name}{" "}
               {formatDistanceToNow(new Date(data.updated_at), { locale: cs, addSuffix: true })}
             </p>
           )}
@@ -190,7 +190,7 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
               id="responsible-person"
               value={data.responsible_person ?? ""}
               onChange={(e) => setField("responsible_person", e.target.value)}
-              placeholder="Jméno člena týmu"
+              placeholder="Jméno člena:ky týmu"
             />
           </div>
         </div>

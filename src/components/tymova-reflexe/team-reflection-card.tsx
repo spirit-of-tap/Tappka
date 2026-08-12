@@ -136,7 +136,7 @@ export function TeamReflectionCard({
 
       <div className="relative z-10 flex items-center justify-between gap-3 border-t pt-3 text-xs text-muted-foreground pointer-events-none">
         <span className="truncate">
-          {reflection.created_by && `Vytvořil/a: ${reflection.created_by.name}`}
+          {reflection.created_by && `Vytvořil:la: ${reflection.created_by.name}`}
         </span>
         {reflection.responsible_person && (
           <span className="flex items-center gap-1 shrink-0">
