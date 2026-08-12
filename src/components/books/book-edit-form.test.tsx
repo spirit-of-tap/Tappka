@@ -57,4 +57,14 @@ describe('BookEditForm AI fetch', () => {
     await waitFor(() => expect(screen.getByText(/zkusil jsi to příliš mnohokrát/i)).toBeInTheDocument());
     expect(screen.getByLabelText(/název/i)).toHaveValue('Sprint');
   });
+
+  it('shows a generic error and leaves fields untouched when the fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+    render(<BookEditForm book={book()} />);
+    await userEvent.click(screen.getByRole('button', { name: /dohledat údaje přes ai/i }));
+
+    await waitFor(() => expect(screen.getByText(/nepodařilo se dohledat údaje/i)).toBeInTheDocument());
+    expect(screen.getByLabelText(/název/i)).toHaveValue('Sprint');
+  });
 });

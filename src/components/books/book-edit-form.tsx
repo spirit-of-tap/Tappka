@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Spinner } from '@/components/ui/spinner';
 import { CategoryPicker } from './category-picker';
+import type { EnrichedBook } from '@/lib/books/enrichment/schema';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 interface BookEditFormProps {
@@ -51,14 +52,17 @@ export function BookEditForm({ book, onSaved, onCancel }: BookEditFormProps) {
           page_count: book.page_count,
         }),
       });
-      const json = await res.json();
       if (!res.ok) {
+        const json = await res.json();
         setEnrichError(json.error ?? 'Nepodařilo se dohledat údaje');
         return;
       }
-      setTitle(json.data.title_cs);
-      setAuthor(json.data.author);
-      setDescription(json.data.description ?? '');
+      const { data } = (await res.json()) as { data: EnrichedBook };
+      setTitle(data.title_cs);
+      setAuthor(data.author);
+      setDescription(data.description);
+    } catch {
+      setEnrichError('Nepodařilo se dohledat údaje');
     } finally {
       setIsEnriching(false);
     }
