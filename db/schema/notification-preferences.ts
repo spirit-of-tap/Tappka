@@ -10,6 +10,8 @@ export const notificationPreferences = pgTable("notification_preferences", {
 	essayCoachReadEmail: boolean("essay_coach_read_email").default(true).notNull(),
 	essayCommentEmail: boolean("essay_comment_email").default(true).notNull(),
 	essayVoteEmail: boolean("essay_vote_email").default(true).notNull(),
+	// Opt-in (default false): coaches only get submission emails when enabled.
+	bookSubmittedEmail: boolean("book_submitted_email").default(false).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdByProfileId: uuid("created_by_profile_id").notNull(),

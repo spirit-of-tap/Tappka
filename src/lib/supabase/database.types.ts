@@ -979,6 +979,7 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          book_submitted_email: boolean
           created_at: string
           created_by_profile_id: string
           essay_coach_read_email: boolean
@@ -989,6 +990,7 @@ export type Database = {
           updated_by_profile_id: string
         }
         Insert: {
+          book_submitted_email?: boolean
           created_at?: string
           created_by_profile_id: string
           essay_coach_read_email?: boolean
@@ -999,6 +1001,7 @@ export type Database = {
           updated_by_profile_id: string
         }
         Update: {
+          book_submitted_email?: boolean
           created_at?: string
           created_by_profile_id?: string
           essay_coach_read_email?: boolean
@@ -1769,6 +1772,7 @@ export type Database = {
       get_notification_preferences: {
         Args: { p_profile_id: string }
         Returns: {
+          book_submitted_email: boolean
           essay_coach_read_email: boolean
           essay_comment_email: boolean
           essay_vote_email: boolean

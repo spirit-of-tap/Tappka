@@ -183,6 +183,7 @@ describe("get_notification_preferences RPC", () => {
       );
 
       expect(rows[0]).toEqual({
+        book_submitted_email: false,
         essay_coach_read_email: true,
         essay_comment_email: true,
         essay_vote_email: true,
@@ -196,8 +197,8 @@ describe("get_notification_preferences RPC", () => {
 
       await client.query(
         `insert into public.notification_preferences
-           (profile_id, essay_comment_email, created_by_profile_id, updated_by_profile_id)
-         values ($1, false, $1, $1)`,
+           (profile_id, essay_comment_email, book_submitted_email, created_by_profile_id, updated_by_profile_id)
+         values ($1, false, true, $1, $1)`,
         [ownerProfileId],
       );
 
@@ -207,6 +208,7 @@ describe("get_notification_preferences RPC", () => {
       );
 
       expect(rows[0]).toEqual({
+        book_submitted_email: true,
         essay_coach_read_email: true,
         essay_comment_email: false,
         essay_vote_email: true,
@@ -240,6 +242,7 @@ describe("get_notification_preferences RPC", () => {
         [ownerProfileId],
       );
       expect(rows[0]).toEqual({
+        book_submitted_email: false,
         essay_coach_read_email: true,
         essay_comment_email: true,
         essay_vote_email: false,

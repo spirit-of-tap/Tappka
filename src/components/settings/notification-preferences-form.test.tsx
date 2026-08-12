@@ -21,6 +21,7 @@ const defaultProps = {
   initialCoachReadEmail: true,
   initialCommentEmail: true,
   initialVoteEmail: false,
+  initialBookSubmittedEmail: false,
   hasBetaAccess: true,
 }
 
@@ -60,7 +61,7 @@ describe("NotificationPreferencesForm", () => {
     render(<NotificationPreferencesForm {...defaultProps} hasBetaAccess={false} />)
 
     const switches = screen.getAllByRole("switch")
-    expect(switches).toHaveLength(3)
+    expect(switches).toHaveLength(4)
     for (const toggle of switches) {
       expect(toggle).not.toBeChecked()
       expect(toggle).toBeDisabled()
