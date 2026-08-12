@@ -5,24 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 
-import type { GateExemplar } from '@/lib/books/types';
-
 import { AddBookFlow } from './add-book-flow';
-
-const EXEMPLARS: GateExemplar[] = [
-  {
-    id: 'b1',
-    title_cs: 'Sprint',
-    author: 'Jake Knapp',
-    google_books_cover_url: 'https://books.google.com/sprint.jpg',
-  },
-  {
-    id: 'b2',
-    title_cs: 'Dialog',
-    author: 'William Isaacs',
-    google_books_cover_url: 'https://books.google.com/dialog.jpg',
-  },
-];
 
 const CANDIDATE = {
   title: 'Sprint',
@@ -68,7 +51,7 @@ afterEach(() => {
 
 describe('AddBookFlow', () => {
   it('starts on the gate and does not search until it is affirmed', async () => {
-    render(<AddBookFlow initialQuery="sprint" exemplars={EXEMPLARS} returnTo={null} />);
+    render(<AddBookFlow initialQuery="sprint" returnTo={null} />);
 
     expect(screen.getByRole('heading', { name: /co patří do boba/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/najdi knihu/i)).not.toBeInTheDocument();
@@ -79,7 +62,7 @@ describe('AddBookFlow', () => {
   });
 
   it('tracks progress on the same flow map the gate taught', async () => {
-    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
+    render(<AddBookFlow initialQuery="" returnTo={null} />);
 
     const map = screen.getByRole('list', { name: /postup přidání knihy/i });
     expect(map).toBeInTheDocument();
@@ -103,7 +86,7 @@ describe('AddBookFlow', () => {
       appealing: false,
     });
 
-    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
+    render(<AddBookFlow initialQuery="" returnTo={null} />);
 
     expect(await screen.findByLabelText(/český název/i)).toHaveValue('Sprint');
   });
@@ -117,7 +100,7 @@ describe('AddBookFlow', () => {
       manual: false,
     });
 
-    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
+    render(<AddBookFlow initialQuery="" returnTo={null} />);
 
     expect(await screen.findByLabelText(/popis — proč to číst/i)).toHaveValue('Naučíš se…');
   });
@@ -142,7 +125,7 @@ describe('AddBookFlow', () => {
         manual: false,
         appealing: false,
       });
-      render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
+      render(<AddBookFlow initialQuery="" returnTo={null} />);
     }
 
     it('dead-ends instead of dropping into the form', async () => {
@@ -190,7 +173,7 @@ describe('AddBookFlow', () => {
       json: async () => ({ error: 'Tato kniha již existuje v katalogu', existingId: 'dup-1' }),
     }));
 
-    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo={null} />);
+    render(<AddBookFlow initialQuery="" returnTo={null} />);
     await userEvent.click(await screen.findByRole('button', { name: /odeslat/i }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/cteni/knihy/dup-1'));
@@ -210,7 +193,7 @@ describe('AddBookFlow', () => {
       json: async () => ({ data: { id: 'new-1' } }),
     }));
 
-    render(<AddBookFlow initialQuery="" exemplars={EXEMPLARS} returnTo="/cteni/eseje/e1/upravit" />);
+    render(<AddBookFlow initialQuery="" returnTo="/cteni/eseje/e1/upravit" />);
     await userEvent.click(await screen.findByRole('button', { name: /odeslat/i }));
 
     await waitFor(() =>

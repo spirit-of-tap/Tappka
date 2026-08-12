@@ -18,17 +18,6 @@ export interface BookWithProfiles extends Book {
   highlight_category: HighlightCategory | null;
 }
 
-/**
- * A cover to show on the Krok 1 shelf of books that belong in BOB. Only the
- * fields the shelf renders — the cover is required, so the shape is non-null.
- */
-export interface GateExemplar {
-  id: string;
-  title_cs: string;
-  author: string;
-  google_books_cover_url: string;
-}
-
 export interface BookFilters {
   listStatus?: BookListStatus;
   /** When set, filters to any of these list statuses (takes precedence over `listStatus`). */

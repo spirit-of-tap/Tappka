@@ -63,15 +63,15 @@ refusal survives a refresh like any other state.
 | File | Change |
 | --- | --- |
 | `flow-map.tsx` | **New.** The four-node journey strip. `variant="expanded" \| "compact"`. |
-| `step-gate.tsx` | Rewritten. Takes `exemplars: GateExemplar[]` as a prop. |
+| `step-gate.tsx` | Rewritten as two badge groups. Takes only `onContinue`. |
 | `step-search.tsx` | Reworked layout; duplicate block promoted, scanner moved into the input. |
 | `step-enriching.tsx` | Phase text becomes a ticking checklist beside the cover. |
 | `step-rejected.tsx` | **New.** Terminal refusal screen with the appeal escape. |
 | `step-review.tsx` | Split into a read-only verdict card and an editable facts form. |
-| `add-book-flow.tsx` | Routes to `rejected`, threads `exemplars`, renders the compact flow map. |
-| `types.ts` | `DOES_NOT_BELONG` replaced by `DOES_NOT_BELONG_CHIPS`; `appealing` added to the draft. |
-| `page.tsx` | Server-fetches exemplars; subtitle drops (the flow map says it better). |
-| `queries.ts` | New `getGateExemplarBooks()`. |
+| `add-book-flow.tsx` | Routes to `rejected`, renders the flow map in both variants. |
+| `types.ts` | `DOES_NOT_BELONG` replaced by `DOES_NOT_BELONG_CHIPS`, `BELONGS_CHIPS` added; `appealing` added to the draft. |
+| `page.tsx` | Subtitle drops (the flow map says it better). No new data fetching. |
+| `queries.ts` | Unchanged. |
 
 ## The flow map
 
@@ -98,7 +98,8 @@ check, so the accessible reading is unchanged from the current list.
 
 ## Krok 1 — the gate
 
-Prose budget: the heading, two shelf labels, and one closing line. Nothing else.
+Two groups of badges, no imagery. Prose budget: the heading, two group labels, and one
+closing line.
 
 ```
 ┌────────────────────────────────────────────┐
@@ -109,21 +110,23 @@ Prose budget: the heading, two shelf labels, and one closing line. Nothing else.
 │  Co patří do BOBa?                         │
 │                                            │
 │  ✅ Tyhle knihy hledáme                    │
-│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐       │
-│  │cover│ │cover│ │cover│ │cover│ │cover│   │
-│  └────┘ └────┘ └────┘ └────┘ └────┘       │
-│  Sprint  Dialog 5.disc  Voss   Grit        │
+│  ╭───────────────────────────╮ ╭─────────╮ │
+│  │🔧 Praktické manuály a how-to│ │🧩 Systém…│ │
+│  ╰───────────────────────────╯ ╰─────────╯ │
+│  ╭────────────────────────────╮ ╭────────╮ │
+│  │👥 Vedení a týmová spolupráce │ │📈 Byznys│ │
+│  ╰────────────────────────────╯ ╰────────╯ │
+│  ╭─────────────────────────╮               │
+│  │🧠 Disciplína a odolnost   │               │
+│  ╰─────────────────────────╯               │
 │                                            │
 │  ⛔ Tyhle ne                               │
 │  ╭──────────╮ ╭────────────╮               │
 │  │📖 Beletrie│ │🔮 Pseudověda│              │
 │  ╰──────────╯ ╰────────────╯               │
-│  ╭─────────────────────────╮               │
-│  │🍳 Nesouvisí s podnikáním │               │
-│  ╰─────────────────────────╯               │
-│  ╭──────────────────────╮                  │
-│  │📄 Články, kurzy, PDF  │                  │
-│  ╰──────────────────────╯                  │
+│  ╭─────────────────────────╮ ╭───────────╮ │
+│  │🍳 Nesouvisí s podnikáním │ │📄 Články…  │ │
+│  ╰─────────────────────────╯ ╰───────────╯ │
 │  ╭──────────────────────────────╮          │
 │  │💢 V rozporu s našimi hodnotami│          │
 │  ╰──────────────────────────────╯          │
@@ -134,10 +137,26 @@ Prose budget: the heading, two shelf labels, and one closing line. Nothing else.
 └────────────────────────────────────────────┘
 ```
 
-The five chips replace the five-item `DOES_NOT_BELONG` list one-for-one, except that
-*Duplicity* moves out — Krok 2 handles duplicates far better than a warning ever could:
+An earlier revision put five real covers from BOB on the wanted side. It was built, seen in
+the browser, and dropped: covers made the screen an image gallery that pushed the button
+below the fold on mobile, and sourcing them safely meant depending on curation the database
+does not reliably have. Badges say the same thing in one screen with no query behind them.
+
+Both groups are the same component with a `tone`, because when both sides are chips the
+tones have to carry the difference. Wanted chips sit forward — `border-success/30
+bg-success/10`, `text-sm font-medium`, larger padding. Unwanted chips recede — `border-border
+bg-muted/40`, `text-xs text-muted-foreground`. Telling the groups apart must not require
+reading a word.
 
 ```ts
+export const BELONGS_CHIPS = [
+  { icon: Wrench, label: 'Praktické manuály a how-to' },
+  { icon: Puzzle, label: 'Systémové myšlení' },
+  { icon: Users, label: 'Vedení a týmová spolupráce' },
+  { icon: TrendingUp, label: 'Byznys a inovace' },
+  { icon: Brain, label: 'Disciplína a odolnost' },
+] as const;
+
 export const DOES_NOT_BELONG_CHIPS = [
   { icon: BookMarked, label: 'Beletrie' },
   { icon: Wand2, label: 'Pseudověda' },
@@ -147,57 +166,17 @@ export const DOES_NOT_BELONG_CHIPS = [
 ] as const;
 ```
 
-The shelf is scrollable on narrow screens (`overflow-x-auto`, snap points) rather than
-wrapping to two rows, so it always reads as one shelf.
+`BELONGS_CHIPS` describes books the way a submitter would describe one to a teammate. It is
+deliberately **not** the three rubric categories: those exist so the model can pick a
+number, and naming them here invites an argument about scoring on the one screen whose job
+is to filter by subject.
 
-### Exemplar query
+The five unwanted chips replace the old five-item `DOES_NOT_BELONG` list one-for-one, except
+that *Duplicity* moves out — Krok 2 handles duplicates far better than a warning ever could.
 
-```ts
-export interface GateExemplar {
-  id: string;
-  title_cs: string;
-  author: string;
-  google_books_cover_url: string;
-}
+`StepGate` takes no props but `onContinue`. Nothing on this screen is fetched, so the gate
+renders instantly and cannot fail.
 
-export async function getGateExemplarBooks(
-  supabase: SupabaseClient<Database>,
-): Promise<GateExemplar[]>
-```
-
-Selects the four fields above from `books` where `list_status` is in
-`POINTS_ELIGIBLE_LIST_STATUSES`, `google_books_cover_url` is not null, and the book is
-**curated** — `is_rocket_model = true OR highlight_category_id IS NOT NULL`. Ordered
-`is_rocket_model desc, book_points desc nullslast`, limited to `GATE_EXEMPLAR_COUNT = 5`.
-The two ordering columns need not be selected. One round trip.
-
-The curation filter is not optional, and this was corrected after seeing the screen
-against real data: ordering approved books by `book_points` alone put *Farma zvířat*
-(Animal Farm, 3 points, approved before the current rubric) on the shelf directly above the
-chip saying beletrie does not belong. A shelf that contradicts the chips beneath it teaches
-the opposite of what the gate is for. Restricted to rocket models and Top BOB highlights,
-the same query returns *Atomové návyky*, *Prodejce vyzyvatel* and *Radikální otevřenost* —
-all defensible examples.
-
-The trade is that the shelf now depends entirely on curation: if fewer than
-`MIN_EXEMPLARS` curated books have covers, the shelf disappears. That is the correct
-failure — no examples beats wrong examples — and the fix is to flag more rocket models,
-not to loosen the filter.
-
-`book_points` is `numeric` and therefore arrives as a string from supabase-js. It is only
-ever used for ordering here, never rendered, so no parsing is involved — the pattern in
-`row-mapper.ts` is not needed for this query.
-
-Called in `page.tsx` (a Server Component) and passed to `AddBookFlow` → `StepGate` as a
-prop. No client fetch, no skeleton. When the query returns fewer than two rows — a fresh
-database — the shelf and its label are omitted and only the chips render; the screen still
-makes its point.
-
-A failing query must not take the page down. `page.tsx` catches, logs, and renders with an
-empty exemplar list: not being able to show examples is not a reason to block adding a book.
-
-Covers render through `StorageImage`, which already passes external Google Books URLs
-straight through via `isExternalUrl`.
 
 ## Krok 2 — search
 
@@ -400,22 +379,21 @@ Component tests sit next to their components; the E2E spec covers the flow end t
 | Test | Change |
 | --- | --- |
 | `flow-map.test.tsx` | **New.** Both variants render four nodes; the active node carries `aria-current="step"`. |
-| `step-gate.test.tsx` | Rewritten. Asserts no rubric category name or description appears; renders passed exemplars; renders all five chips; omits the shelf when given fewer than two exemplars. |
+| `step-gate.test.tsx` | Rewritten. Asserts no rubric category name or description appears, both groups render their full chip list as separate lists, and the screen contains no images at all. |
 | `step-enriching.test.tsx` | Keeps its success, failure and network-rejection cases; phase assertions move to checklist state. |
 | `step-rejected.test.tsx` | **New.** Shows `points_reason`; `Zkusit jinou knihu` returns to search with a cleared draft; the appeal path reaches review with `appealing: true`. |
 | `step-review.test.tsx` | The 0-point picker test is deleted — that behaviour is now `step-rejected`'s. New: the score renders read-only with no control able to change it; submit succeeds without any points interaction; the manual path submits `book_points: null`; the appeal path requires a non-empty note; a `suggested_points` uncertainty flag renders on the verdict card and never in the banner list. |
 | `add-book-flow.test.tsx` | New: a 0-point enrichment routes to `rejected`, not `review`. |
 | `tests/e2e/add-book.spec.ts` | Updated for the new labels and the removed points picker; a rejection path case added against a stubbed enrich response. |
 
-`getGateExemplarBooks` is a PostgREST query, so per `CLAUDE.md` it is covered by E2E rather
-than the integration layer. No schema change means nothing for `bootstrap.sql`.
+Nothing in this change touches the database, so there is no new query to cover and nothing
+for `bootstrap.sql`.
 
 ## Risks
 
-**The exemplar shelf depends on curated data.** It draws only from rocket models and Top BOB
-highlights, so as curation thins the shelf shrinks and eventually vanishes. The dev database
-has exactly three qualifying books, one above the two-book floor. Adding a rocket model is
-the lever; loosening the filter is not, for the reason recorded under the exemplar query.
+**The wanted badges are a fixed list in code.** If what BOB is looking for shifts, the chips
+go stale silently — there is no data behind them to drift with the catalogue. That is the
+accepted cost of a screen that cannot fail to load; the list is five lines in `types.ts`.
 
 **Removing the points picker removes an escape hatch.** If Perplexity scores a book badly
 and the submitter cannot correct it, a wrong number reaches the coach. This is the intended

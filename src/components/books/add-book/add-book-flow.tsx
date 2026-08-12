@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-import type { CreateBookInput, ExternalBookCandidate, GateExemplar } from '@/lib/books/types';
+import type { CreateBookInput, ExternalBookCandidate } from '@/lib/books/types';
 import type { EnrichedBook } from '@/lib/books/enrichment/schema';
 
 import { FlowMap, type FlowNode } from './flow-map';
@@ -48,13 +48,11 @@ function readPersisted(): PersistedFlow | null {
 
 interface AddBookFlowProps {
   initialQuery: string;
-  /** Books to show on the gate as examples of what belongs. May be empty. */
-  exemplars: GateExemplar[];
   /** Where to go after a successful submit; the new book id is appended as `?book=`. */
   returnTo: string | null;
 }
 
-export function AddBookFlow({ initialQuery, exemplars, returnTo }: AddBookFlowProps) {
+export function AddBookFlow({ initialQuery, returnTo }: AddBookFlowProps) {
   const router = useRouter();
   const persisted = readPersisted();
 
@@ -162,9 +160,7 @@ export function AddBookFlow({ initialQuery, exemplars, returnTo }: AddBookFlowPr
         variant={step === 'gate' ? 'expanded' : 'compact'}
       />
 
-      {step === 'gate' && (
-        <StepGate exemplars={exemplars} onContinue={() => setStep('search')} />
-      )}
+      {step === 'gate' && <StepGate onContinue={() => setStep('search')} />}
 
       {step === 'search' && (
         <StepSearch
