@@ -40,6 +40,7 @@ export function ReplaceRecordFlow({ book, onBack, onReplaced }: ReplaceRecordFlo
     if (query.trim().length < MIN_QUERY_LENGTH) {
       setResults([]);
       setSearchError(null);
+      setSearching(false);
       return;
     }
     if (timer.current) clearTimeout(timer.current);
@@ -174,7 +175,7 @@ export function ReplaceRecordFlow({ book, onBack, onReplaced }: ReplaceRecordFlo
       {searchError && <p className="text-sm text-destructive">{searchError}</p>}
 
       <div className="max-h-[60vh] space-y-2 overflow-y-auto">
-        {results.length === 0 && !searching && query.trim().length >= MIN_QUERY_LENGTH && (
+        {results.length === 0 && !searching && !searchError && query.trim().length >= MIN_QUERY_LENGTH && (
           <p className="text-sm text-muted-foreground">Žádné výsledky</p>
         )}
         {results.map((hit) => (

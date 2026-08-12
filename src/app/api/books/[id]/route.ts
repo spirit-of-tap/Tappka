@@ -198,14 +198,15 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
       const coverUrl = body.cover_url?.trim() ? body.cover_url.trim().replace(/^http:\/\//, 'https://') : null;
       const isbn = body.isbn_13?.trim() || null;
+      const externalId = body.external_id.trim();
 
       // The table has no UNIQUE constraint on isbn_13 (an ISBN identifies an
       // edition, not a work), so the duplicate guard is app-level.
       // PostgREST rejects `eq.` with an empty value, so the ISBN clause is only
       // included when the record actually carries an ISBN.
       const duplicateFilters = isbn
-        ? `isbn_13.eq.${isbn},and(source.eq.${source},external_id.eq.${body.external_id})`
-        : `and(source.eq.${source},external_id.eq.${body.external_id})`;
+        ? `isbn_13.eq.${isbn},and(source.eq.${source},external_id.eq.${externalId})`
+        : `and(source.eq.${source},external_id.eq.${externalId})`;
       const { data: existing, error: existingError } = await supabase
         .from('books')
         .select('id')
@@ -222,7 +223,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         .update({
           google_books_cover_url: coverUrl,
           isbn_13: isbn,
-          external_id: body.external_id,
+          external_id: externalId,
           source,
           updated_by_profile_id: profile.id,
         })
