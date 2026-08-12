@@ -33,8 +33,10 @@ export function ReplaceRecordFlow({ book, onBack, onReplaced }: ReplaceRecordFlo
   const [candidate, setCandidate] = useState<ExternalBookCandidate | null>(null);
   const [saving, setSaving] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryRef = useRef(query);
 
   useEffect(() => {
+    queryRef.current = query;
     if (query.trim().length < MIN_QUERY_LENGTH) {
       setResults([]);
       setSearchError(null);
@@ -42,11 +44,14 @@ export function ReplaceRecordFlow({ book, onBack, onReplaced }: ReplaceRecordFlo
     }
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
+      const q = query.trim();
+      if (q !== queryRef.current) return;
       setSearching(true);
       setSearchError(null);
       try {
-        const res = await fetch(`/api/books/external-search?q=${encodeURIComponent(query.trim())}`);
+        const res = await fetch(`/api/books/external-search?q=${encodeURIComponent(q)}`);
         const json = await res.json();
+        if (q !== queryRef.current) return;
         if (!res.ok) {
           setSearchError(json.error ?? 'Externí hledání selhalo');
           setResults([]);
@@ -54,10 +59,11 @@ export function ReplaceRecordFlow({ book, onBack, onReplaced }: ReplaceRecordFlo
         }
         setResults((json.data ?? []) as ExternalBookCandidate[]);
       } catch {
+        if (q !== queryRef.current) return;
         setSearchError('Externí hledání selhalo');
         setResults([]);
       } finally {
-        setSearching(false);
+        if (q === queryRef.current) setSearching(false);
       }
     }, DEBOUNCE_MS);
     return () => { if (timer.current) clearTimeout(timer.current); };
@@ -176,7 +182,7 @@ export function ReplaceRecordFlow({ book, onBack, onReplaced }: ReplaceRecordFlo
             key={`${hit.source}:${hit.external_id}`}
             type="button"
             onClick={() => { setCandidate(hit); setStep('confirm'); }}
-            className="flex w-full items-center gap-3 rounded-md border p-2 text-left transition-colors hover:bg-muted/50"
+            className="focus-ring flex w-full items-center gap-3 rounded-md border p-2 text-left transition-colors hover:bg-muted/50"
           >
             <CoverOrMissing url={hit.cover_url} size="sm" />
             <div className="min-w-0 flex-1">

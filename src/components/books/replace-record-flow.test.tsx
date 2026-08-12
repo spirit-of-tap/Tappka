@@ -5,6 +5,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ReplaceRecordFlow } from './replace-record-flow';
 import type { BookWithProfiles } from '@/lib/books/types';
 
+const { error: toastError } = vi.hoisted(() => ({ error: vi.fn() }));
+
+vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
+
 function book(overrides: Partial<BookWithProfiles> = {}): BookWithProfiles {
   return {
     id: 'b1', title_cs: 'Sprint', title_en: null, author: 'Jake Knapp',
@@ -26,7 +30,10 @@ const CANDIDATE = {
   source: 'google_books', external_id: 'v2',
 };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  toastError.mockReset();
+});
 
 describe('ReplaceRecordFlow', () => {
   it('searches, picks a record and PATCHes replace-record with the correct payload', async () => {
@@ -80,5 +87,21 @@ describe('ReplaceRecordFlow', () => {
     await userEvent.click(screen.getByRole('button', { name: /zpět/i }));
 
     expect(screen.getByPlaceholderText(/hledat podle názvu, autora nebo isbn/i)).toBeInTheDocument();
+  });
+
+  it('does not replace the record when the PATCH fails', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [CANDIDATE] }) }) // external-search
+      .mockRejectedValueOnce(new Error('network down'))); // PATCH
+
+    const onReplaced = vi.fn();
+    render(<ReplaceRecordFlow book={book()} onBack={vi.fn()} onReplaced={onReplaced} />);
+
+    await userEvent.type(screen.getByPlaceholderText(/hledat podle názvu, autora nebo isbn/i), 'sprint');
+    await userEvent.click(await screen.findByText('Sprint (CZ)'));
+    await userEvent.click(screen.getByRole('button', { name: /potvrdit náhradu/i }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('Nepodařilo se nahradit záznam'));
+    expect(onReplaced).not.toHaveBeenCalled();
   });
 });
