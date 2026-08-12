@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
@@ -27,18 +28,19 @@ export function NewFeedbackForm({ onCreated }: NewFeedbackFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body: trimmed }),
       });
+      if (!res.ok) throw new Error();
       const { data } = await res.json();
-      if (data) {
-        onCreated(data);
-        setBody('');
-      }
+      onCreated(data);
+      setBody('');
+    } catch {
+      toast.error('Nepodařilo se odeslat zpětnou vazbu.');
     } finally {
       setIsPosting(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+    <div className="flex flex-col gap-3 rounded-xl border-2 border-primary/20 bg-card p-4 shadow-sm">
       <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}

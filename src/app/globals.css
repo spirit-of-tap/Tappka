@@ -41,12 +41,22 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-strong: var(--success-strong);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-strong: var(--warning-strong);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
+  --color-chart-2-strong: var(--chart-2-strong);
   --color-chart-3: var(--chart-3);
+  --color-chart-3-strong: var(--chart-3-strong);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --color-sidebar: var(--sidebar);
@@ -98,6 +108,23 @@
   --destructive: oklch(0.581 0.223 27.9); /* Destructive red */
   --destructive-foreground: oklch(1 0 0);
 
+  --success: oklch(0.6 0.14 145); /* Positive/available status */
+  --success-foreground: oklch(1 0 0);
+  /* Text-safe darkened variant of --success: clears WCAG AA 4.5:1 for
+     normal text (--success itself is a surface/accent tone at ~3.7:1 on
+     --background, and only ~4.4:1 on its own bg-success/10 tint, and is
+     not safe as a standalone text color). ~5.2:1 on bg-success/10,
+     ~5.8:1 on --background. */
+  --success-strong: oklch(0.489 0.14 145);
+  --warning: oklch(0.758 0.152 69.3); /* Same hue as --chart-2 Amber */
+  --warning-foreground: oklch(0.145 0 0);
+  /* Text-safe darkened variant of --warning: --warning itself is only
+     ~2.2:1 on --background. ~5.4:1 on bg-warning/10, ~5.9:1 on
+     --background. */
+  --warning-strong: oklch(0.51 0.152 69.3);
+  --info: oklch(0.635 0.089 195.1); /* Same hue as --chart-3 Teal */
+  --info-foreground: oklch(1 0 0);
+
   --border: oklch(0.877 0.013 5.8); /* Light warm border */
   --input: oklch(0.918 0.008 5.7); /* Light input background */
   --ring: oklch(0.484 0.184 27.7); /* TAP Red for focus rings */
@@ -105,7 +132,15 @@
   /* Chart Colors - distinct hues for categorical data */
   --chart-1: oklch(0.537 0.206 27.8); /* TAP Red */
   --chart-2: oklch(0.758 0.152 69.3); /* Amber */
+  /* Text-safe darkened variant, same hue as --chart-2 — used when chart-2
+     is a text color (e.g. role badges) rather than a surface/bg accent.
+     ~5.2:1 on bg-chart-2/15, ~5.9:1 on --background. Same value as
+     --warning-strong (chart-2 and warning share a hue). */
+  --chart-2-strong: oklch(0.51 0.152 69.3);
   --chart-3: oklch(0.635 0.089 195.1); /* Teal */
+  /* Text-safe darkened variant, same hue as --chart-3. ~5.1:1 on
+     bg-chart-3/15, ~6.0:1 on --background. */
+  --chart-3-strong: oklch(0.483 0.089 195.1);
   --chart-4: oklch(0.628 0.183 327.5); /* Magenta */
   --chart-5: oklch(0.554 0.16 287.7); /* Violet */
 
@@ -146,6 +181,18 @@
   --destructive: oklch(0.602 0.21 26.3); /* Destructive red */
   --destructive-foreground: oklch(1 0 0);
 
+  --success: oklch(0.72 0.15 145); /* Brightened for dark, same pattern as --primary/--destructive above */
+  --success-foreground: oklch(1 0 0);
+  /* Dark mode already clears WCAG AA (~8:1) as plain --success, so the
+     text-safe variant is identical here — only light mode needs darkening. */
+  --success-strong: oklch(0.72 0.15 145);
+  --warning: oklch(0.792 0.137 72.4); /* Same hue as dark --chart-2 */
+  --warning-foreground: oklch(0.145 0 0);
+  /* Dark mode already clears WCAG AA (~9.6:1) as plain --warning. */
+  --warning-strong: oklch(0.792 0.137 72.4);
+  --info: oklch(0.761 0.103 195.2); /* Same hue as dark --chart-3 */
+  --info-foreground: oklch(1 0 0);
+
   --border: oklch(0.303 0.041 8.9); /* Dark border */
   --input: oklch(0.265 0.034 8.7); /* Dark input */
   --ring: oklch(0.537 0.206 27.8); /* TAP Red for focus rings */
@@ -153,7 +200,11 @@
   /* Chart Colors - distinct hues for categorical data */
   --chart-1: oklch(0.631 0.192 24.5); /* TAP Red */
   --chart-2: oklch(0.792 0.137 72.4); /* Amber */
+  /* Dark mode already clears WCAG AA (~9.6:1) as plain --chart-2. */
+  --chart-2-strong: oklch(0.792 0.137 72.4);
   --chart-3: oklch(0.761 0.103 195.2); /* Teal */
+  /* Dark mode already clears WCAG AA (~9.1:1) as plain --chart-3. */
+  --chart-3-strong: oklch(0.761 0.103 195.2);
   --chart-4: oklch(0.704 0.158 327.1); /* Magenta */
   --chart-5: oklch(0.653 0.132 289.9); /* Violet */
 
@@ -303,3 +354,59 @@ mark[data-color="orange"] { background-color: #fdba74; }
 .dark mark[data-color="green"]  { background-color: #14532d; color: #dcfce7; }
 .dark mark[data-color="blue"]   { background-color: #1e3a8a; color: #dbeafe; }
 .dark mark[data-color="orange"] { background-color: #7c2d12; color: #ffedd5; }
+
+@layer utilities {
+  .focus-ring {
+    @apply outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px];
+  }
+
+  /* Scroll without a visible track — for strips (tab bars, chip rows) where the
+     bar itself is the affordance and a scrollbar under it reads as a fault. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── Essay vote-button celebration animation ──────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes vote-pop {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.35); }
+    60%  { transform: scale(0.92); }
+    80%  { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  @keyframes count-up {
+    0%   { transform: translateY(0); opacity: 1; }
+    50%  { transform: translateY(-8px); opacity: 1; }
+    100% { transform: translateY(-16px); opacity: 0; }
+  }
+  @keyframes particle {
+    0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: var(--tx, 0) var(--ty, -20px) scale(0); opacity: 0; }
+  }
+
+  .vote-pop { animation: vote-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  .count-float { animation: count-up 0.5s ease-out forwards; }
+  .particle { animation: particle 0.5s ease-out forwards; }
+}
+
+/* ── Book borrow success animation ────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes borrow-check-pop {
+    0%   { transform: scale(0); opacity: 0; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes borrow-fade-up {
+    0%   { transform: translateY(8px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  .borrow-check-pop { animation: borrow-check-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  .borrow-fade-up { animation: borrow-fade-up 0.4s ease-out 0.15s both; }
+}

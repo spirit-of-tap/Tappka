@@ -22,7 +22,7 @@ export function UserCard({ profile, pictureUrl, from }: UserCardProps) {
     : `/komunita/profil/${profile.id}`;
 
   return (
-    <Link href={href} className="group">
+    <Link href={href} className="group focus-ring rounded-xl">
       <Card className="h-full py-0 border-border/60 shadow-none transition-colors group-hover:border-border group-hover:bg-muted/40">
         <CardContent className="flex items-center gap-3 p-3">
           {/* Avatar with team-colored ring */}

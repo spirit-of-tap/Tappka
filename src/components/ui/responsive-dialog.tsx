@@ -35,6 +35,15 @@ const ResponsiveDialogContext = React.createContext<ResponsiveDialogContextValue
   isMobile: false,
 })
 
+/**
+ * Signals to descendants (e.g. a `ResponsiveAlertDialog` nested inside this
+ * dialog's content, like a delete/cancel confirmation) that they are being
+ * rendered inside an already-open mobile Drawer. Consumers use this to pick
+ * `Drawer.NestedRoot` over a second independent `Drawer.Root` — vaul
+ * requires `NestedRoot` for correct stacking of one drawer above another.
+ */
+export const DrawerNestingContext = React.createContext(false)
+
 function ResponsiveDialog({
   children,
   ...props
@@ -44,7 +53,9 @@ function ResponsiveDialog({
   if (isMobile) {
     return (
       <ResponsiveDialogContext.Provider value={{ isMobile: true }}>
-        <Drawer {...props}>{children}</Drawer>
+        <DrawerNestingContext.Provider value={true}>
+          <Drawer {...props}>{children}</Drawer>
+        </DrawerNestingContext.Provider>
       </ResponsiveDialogContext.Provider>
     )
   }

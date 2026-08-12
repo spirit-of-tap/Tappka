@@ -1,7 +1,7 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getPublicStorageUrl, isExternalUrl } from '@/lib/storage/public-url';
+import { getAvatarUrl } from '@/lib/storage/public-url';
 
 interface StorageAvatarProps {
   storageKey: string | null;
@@ -27,9 +27,7 @@ export function StorageAvatar({
   size,
   className,
 }: StorageAvatarProps) {
-  const src = storageKey
-    ? (isExternalUrl(storageKey) ? storageKey : getPublicStorageUrl('avatars', storageKey))
-    : null;
+  const src = getAvatarUrl(storageKey);
 
   return (
     <Avatar size={size} className={className}>

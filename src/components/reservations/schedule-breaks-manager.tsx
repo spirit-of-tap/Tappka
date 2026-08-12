@@ -16,6 +16,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/responsive-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/responsive-alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import {
@@ -38,6 +48,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ScheduleBreak | null>(null);
 
   // Form state
   const [name, setName] = useState("");
@@ -97,10 +108,8 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
     }
   };
 
-  /** Asks for confirmation and deletes the given schedule break via DELETE /api/schedule-breaks/:id. */
+  /** Deletes the given schedule break via DELETE /api/schedule-breaks/:id. */
   const handleDelete = async (breakId: string) => {
-    if (!confirm("Opravdu chceš smazat tuto výjimku?")) return;
-
     try {
       const response = await fetch(`/api/schedule-breaks/${breakId}`, {
         method: "DELETE",
@@ -115,6 +124,8 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Něco se pokazilo");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -252,7 +263,7 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => handleDelete(breakItem.id)}
+                onClick={() => setDeleteTarget(breakItem)}
                 className="text-destructive hover:text-destructive self-end sm:self-auto"
               >
                 <Trash2 className="size-4" />
@@ -261,6 +272,29 @@ export function ScheduleBreaksManager({ breaks }: ScheduleBreaksManagerProps) {
           ))}
         </div>
       )}
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat výjimku?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Opravdu chceš smazat výjimku &quot;{deleteTarget?.name}&quot;? Tato akce
+              nelze vrátit zpět.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Ne, ponechat</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
+            >
+              Ano, smazat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

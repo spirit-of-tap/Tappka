@@ -39,3 +39,20 @@ export function getTransformedImageUrl(
 export function isExternalUrl(path: string): boolean {
   return path.startsWith('http://') || path.startsWith('https://');
 }
+
+/**
+ * Resolve a stored avatar reference to a renderable URL.
+ * `profiles.picture` (and `teams.picture`) store either a storage key in the
+ * `avatars` bucket (e.g. `profile/{id}/{ts}-{uuid}.webp`) or an external URL
+ * (e.g. Google OAuth avatar). Always run raw refs through this before passing
+ * them to an `<img>`/`<Image>` `src`, otherwise the browser requests the key
+ * as a relative path and the avatar silently fails to load.
+ */
+export function getAvatarUrl(
+  storageKey: string | null | undefined,
+): string | null {
+  if (!storageKey) return null;
+  return isExternalUrl(storageKey)
+    ? storageKey
+    : getPublicStorageUrl('avatars', storageKey);
+}

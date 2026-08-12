@@ -7,6 +7,9 @@ interface OpenLibraryDoc {
   isbn?: string[];
   first_sentence?: { value: string } | string;
   cover_i?: number;
+  number_of_pages_median?: number;
+  publisher?: string[];
+  first_publish_year?: number;
 }
 
 interface OpenLibrarySearchResponse {
@@ -16,6 +19,7 @@ interface OpenLibrarySearchResponse {
 const SEARCH_URL = 'https://openlibrary.org/search.json';
 const COVER_URL = 'https://covers.openlibrary.org/b/id';
 const MAX_RESULTS = 10;
+const FIELDS = 'key,title,author_name,isbn,cover_i,first_sentence,number_of_pages_median,publisher,first_publish_year';
 
 function normalizeDoc(doc: OpenLibraryDoc): ExternalBookCandidate | null {
   if (!doc.title || !doc.key) return null;
@@ -38,13 +42,17 @@ function normalizeDoc(doc: OpenLibraryDoc): ExternalBookCandidate | null {
     isbn_13: isbn13,
     description,
     cover_url: coverUrl,
+    page_count: doc.number_of_pages_median ?? null,
+    publisher: doc.publisher?.[0] ?? null,
+    published_year: doc.first_publish_year ?? null,
+    preview_link: `https://openlibrary.org${doc.key}`,
     source: 'open_library',
     external_id: doc.key,
   };
 }
 
 export async function searchOpenLibrary(query: string): Promise<ExternalBookCandidate[]> {
-  const params = new URLSearchParams({ q: query, limit: String(MAX_RESULTS), fields: 'key,title,author_name,isbn,cover_i,first_sentence' });
+  const params = new URLSearchParams({ q: query, limit: String(MAX_RESULTS), fields: FIELDS });
   const res = await fetch(`${SEARCH_URL}?${params}`, { next: { revalidate: 60 } });
   if (!res.ok) return [];
 
@@ -53,7 +61,7 @@ export async function searchOpenLibrary(query: string): Promise<ExternalBookCand
 }
 
 export async function fetchOpenLibraryByIsbn(isbn: string): Promise<ExternalBookCandidate | null> {
-  const params = new URLSearchParams({ q: `isbn:${isbn}`, limit: '1', fields: 'key,title,author_name,isbn,cover_i,first_sentence' });
+  const params = new URLSearchParams({ q: `isbn:${isbn}`, limit: '1', fields: FIELDS });
   const res = await fetch(`${SEARCH_URL}?${params}`, { next: { revalidate: 300 } });
   if (!res.ok) return null;
 

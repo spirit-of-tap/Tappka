@@ -152,18 +152,28 @@ export async function getSessionCookie(): Promise<string> {
     email_confirm: true,
   })) as { id: string };
 
+  _trackedUsers.add(userData.id);
+
   return makeSessionCookie(userData.id, email);
 }
 
 /**
  * Creates a complete user with team + profile and returns a session cookie.
  * Needed for pages that check current_profile_id().
+ *
+ * Pass `teamId` to place the user in a specific (e.g. test-isolated) team
+ * instead of reusing/creating a shared one — needed whenever a test relies
+ * on team-scoped uniqueness or doesn't want to pollute real team data.
  */
-export async function getSetupSessionCookie(): Promise<{
+export async function getSetupSessionCookie(
+  teamId?: string,
+  role: "student" | "coach" | "admin" = "student",
+): Promise<{
   cookie: string;
   userId: string;
   email: string;
   profileId: string;
+  teamId: string;
 }> {
   const email = `e2e-test-${randomUUID().slice(0, 8)}@studenti.czu.cz`;
 
@@ -193,48 +203,134 @@ export async function getSetupSessionCookie(): Promise<{
     { verified_work_email: email },
   );
 
-  // Ensure a team exists
-  const teams = (await restFetch(
-    `/teams?select=id&limit=1`,
-    "GET",
-  )) as { id: string }[];
+  _trackedUsers.add(userId);
 
-  let teamId: string;
-  if (teams.length > 0) {
-    teamId = teams[0].id;
-  } else {
-    const newTeams = (await restFetch(
-      "/teams",
-      "POST",
-      { name: "E2E Test Team" },
-    )) as { id: string }[];
-    teamId = newTeams[0].id;
-  }
+  // Always create a fresh team so each test group owns its data and can
+  // safely clean up without affecting other groups.
+  const resolvedTeamId = teamId ?? await createTestTeam();
 
   // Create profile
   const profiles = (await restFetch("/profiles", "POST", {
     name: "E2E Test User",
     work_email: email,
     user_id: internalUserId,
-    team_id: teamId,
-    role: "student",
+    team_id: resolvedTeamId,
+    role,
   })) as { id: string }[];
 
   const profileId = profiles[0]?.id;
   if (!profileId) {
     throw new Error("Failed to create profile");
   }
+  _trackedProfiles.add(profileId);
 
-  return { cookie: makeSessionCookie(userId, email), userId, email, profileId };
+  return { cookie: makeSessionCookie(userId, email), userId, email, profileId, teamId: resolvedTeamId };
+}
+
+/** Track created resources per worker so afterAll can clean them up. */
+const _trackedTeams = new Set<string>();
+const _trackedUsers = new Set<string>();
+const _trackedProfiles = new Set<string>();
+
+/** Creates a brand new, isolated team — for tests that must not touch real team data. */
+export async function createTestTeam(onboardingYear?: number): Promise<string> {
+  const newTeams = (await restFetch(
+    "/teams",
+    "POST",
+    {
+      name: `E2E Team ${randomUUID().slice(0, 8)}`,
+      ...(onboardingYear !== undefined && { onboardingYear }),
+    },
+  )) as { id: string }[];
+  const id = newTeams[0].id;
+  _trackedTeams.add(id);
+  return id;
+}
+
+/** Deletes all data created by the current worker's E2E tests.
+ *
+ *  Must be called from test.afterAll (or a global teardown). Safe to call
+ *  multiple times — subsequent calls are no-ops once the sets are empty.
+ *  Within each phase, deletions run in parallel (Promise.all) for speed.
+ */
+export async function cleanupTestData(): Promise<void> {
+  const teamIds = [..._trackedTeams];
+  const userIds = [..._trackedUsers];
+  const profileIds = [..._trackedProfiles];
+
+  if (teamIds.length === 0 && userIds.length === 0 && profileIds.length === 0) return;
+
+  // Phase 1 — delete profile-owned data (CASCADE on author FKs handles
+  // essays → essay_revisions, essay_comments, etc.)
+  await Promise.all(profileIds.flatMap((pid) => [
+    restFetch(`/feedback?author_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
+    restFetch(`/essays?author_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
+    restFetch(`/books?created_by_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
+  ]));
+
+  // Phase 2 — delete team-scoped data
+  await Promise.all(teamIds.flatMap((tid) => [
+    restFetch(`/recurring_schedules?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+    restFetch(`/team_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+    restFetch(`/team_semester_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+  ]));
+
+  // Phase 3 — delete profiles
+  await Promise.all(profileIds.map((pid) =>
+    restFetch(`/profiles?id=eq.${pid}`, "DELETE").catch(() => {}),
+  ));
+
+  // Phase 4 — delete teams
+  await Promise.all(teamIds.map((tid) =>
+    restFetch(`/teams?id=eq.${tid}`, "DELETE").catch(() => {}),
+  ));
+
+  // Phase 5 — delete auth users
+  await Promise.all(userIds.map((uid) =>
+    fetch(`${GOTRUE_URL}/admin/users/${uid}`, {
+      method: "DELETE",
+      headers: {
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
+    }).catch(() => {}),
+  ));
+
+  _trackedTeams.clear();
+  _trackedUsers.clear();
+  _trackedProfiles.clear();
+}
+
+/** Grants beta access, needed for pages gated on profile.beta_access_granted_at. */
+export async function grantBetaAccess(profileId: string): Promise<void> {
+  await restFetch(`/profiles?id=eq.${profileId}`, "PATCH", {
+    beta_access_granted_at: new Date().toISOString(),
+  });
+}
+
+/** Seeds a team reflection row directly, bypassing the UI. */
+export async function seedTeamReflection(
+  teamId: string,
+  profileId: string,
+  month: string,
+): Promise<{ reflectionId: string }> {
+  const rows = (await restFetch("/team_reflections", "POST", {
+    team_id: teamId,
+    month,
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
+  })) as { id: string }[];
+  return { reflectionId: rows[0].id };
 }
 
 /** Create a seeded book for E2E tests. */
 export async function seedBook(profileId: string): Promise<{ bookId: string }> {
   const books = (await restFetch("/books", "POST", {
-    title: "E2E Test Book",
+    title_cs: "E2E Test Book",
+    title_en: "E2E Test Book",
     author: "E2E Test Author",
     book_points: 1,
-    status: "approved",
+    list_status: "longlist",
     source: "manual",
     created_by_profile_id: profileId,
     updated_by_profile_id: profileId,

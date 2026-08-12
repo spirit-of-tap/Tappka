@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById } from '@/lib/essays/queries';
 import { contentTextFromJson } from '@/lib/essays/content-text';
+import { shouldCoalesceRevision } from '@/lib/essays/revisions';
 
 const MAX_TITLE_LENGTH = 500;
 const MAX_CONTENT_TEXT_LENGTH = 100_000;
@@ -50,7 +51,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     const { data: existing, error: existingError } = await supabase
       .from('essays')
-      .select('id, author_profile_id, removed_at')
+      .select('id, author_profile_id, removed_at, published_at')
       .eq('id', id)
       .eq('author_profile_id', profile.id)
       .maybeSingle();
@@ -60,30 +61,20 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Esej nenalezena nebo nemáš oprávnění' }, { status: 404 });
     }
 
+    const now = new Date().toISOString();
+    let revisionNo: number | null = null;
+    let revisionUpdatedAt = now;
+
     if (hasContentUpdate) {
-      const [{ data: maxRow, error: maxError }, { data: latestRows, error: latestError }] =
-        await Promise.all([
-          supabase
-            .from('essay_revisions')
-            .select('revision_no')
-            .eq('essay_id', id)
-            .order('revision_no', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-          supabase
-            .from('essay_revisions')
-            .select('title, content_json, revision_no, invalid_since')
-            .eq('essay_id', id)
-            .is('invalid_since', null)
-            .order('revision_no', { ascending: false })
-            .limit(1),
-        ]);
+      const { data: latest, error: latestError } = await supabase
+        .from('essay_revisions')
+        .select('revision_no, title, content_json, created_at, created_by_profile_id')
+        .eq('essay_id', id)
+        .order('revision_no', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (maxError) throw maxError;
       if (latestError) throw latestError;
-
-      const latest = latestRows?.[0];
-      const nextNo = (maxRow?.revision_no ?? 0) + 1;
 
       const nextTitle = body.title !== undefined
         ? String(body.title).trim()
@@ -92,7 +83,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         ? body.content_json
         : (latest?.content_json ?? {});
 
-      if (!nextTitle) {
+      // A koncept is allowed to be untitled; a published essay is not.
+      if (existing.published_at != null && !nextTitle) {
         return NextResponse.json({ error: 'Název eseje je povinný' }, { status: 400 });
       }
       if (nextTitle.length > MAX_TITLE_LENGTH) {
@@ -106,18 +98,47 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         return NextResponse.json({ error: 'Esej je příliš dlouhá' }, { status: 400 });
       }
 
-      const { error: insertRevError } = await supabase
-        .from('essay_revisions')
-        .insert({
-          essay_id: id,
-          revision_no: nextNo,
-          title: nextTitle,
-          content_json: nextContent,
-          created_by_profile_id: profile.id,
-          updated_by_profile_id: profile.id,
-        });
+      if (shouldCoalesceRevision(latest, profile.id, now)) {
+        // `.select()` is load-bearing: an UPDATE that RLS declines affects zero
+        // rows and returns no error, so without reading back what changed this
+        // route would answer 200 and the editor would show "Uloženo" for work
+        // that was never written.
+        const { data: coalesced, error: coalesceError } = await supabase
+          .from('essay_revisions')
+          .update({
+            title: nextTitle,
+            content_json: nextContent,
+            updated_at: now,
+            updated_by_profile_id: profile.id,
+          })
+          .eq('essay_id', id)
+          .eq('revision_no', latest!.revision_no)
+          .select('revision_no')
+          .maybeSingle();
 
-      if (insertRevError) throw insertRevError;
+        if (coalesceError) throw coalesceError;
+        if (coalesced) revisionNo = coalesced.revision_no;
+      }
+
+      // Either coalescing was not appropriate, or it was refused — the author's
+      // text still has to land, so cut a new revision instead of losing it.
+      if (revisionNo == null) {
+        const nextNo = (latest?.revision_no ?? 0) + 1;
+        const { error: insertRevError } = await supabase
+          .from('essay_revisions')
+          .insert({
+            essay_id: id,
+            revision_no: nextNo,
+            title: nextTitle,
+            content_json: nextContent,
+            created_by_profile_id: profile.id,
+            updated_by_profile_id: profile.id,
+          });
+
+        if (insertRevError) throw insertRevError;
+        revisionNo = nextNo;
+      }
+      revisionUpdatedAt = now;
     }
 
     const essayUpdates: {
@@ -126,7 +147,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       book_id?: string | null;
     } = {
       updated_by_profile_id: profile.id,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     };
 
     if (hasBookUpdate) {
@@ -141,8 +162,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     if (updateError) throw updateError;
 
-    const essay = await getEssayById(supabase, id);
-    return NextResponse.json({ data: essay });
+    return NextResponse.json({ data: { revision_no: revisionNo, updated_at: revisionUpdatedAt } });
   } catch (error) {
     console.error('PATCH /api/essays/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se aktualizovat esej' }, { status: 500 });

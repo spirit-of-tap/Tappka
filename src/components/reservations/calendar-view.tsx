@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ReservationWithDetails, ScheduleBreak } from "@/lib/reservations/types";
 import { DAY_NAMES_CS } from "@/lib/reservations/types";
+import { isDayInPast } from "@/lib/reservations/utils";
 
 interface CalendarViewProps {
   reservations: ReservationWithDetails[];
@@ -193,7 +194,9 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
         {/* View mode toggle - hide week tab on mobile */}
         {!isMobile && (
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-            <TabsList>
+            {/* A true either/or over the same content, so it stays a segmented
+                toggle rather than becoming section navigation. */}
+            <TabsList variant="segmented">
               <TabsTrigger value="day">Den</TabsTrigger>
               <TabsTrigger value="week">Týden</TabsTrigger>
             </TabsList>
@@ -235,6 +238,7 @@ export function CalendarView({ reservations, scheduleBreaks = [], availableDays,
                   onSelect={handleDateSelect}
                   defaultMonth={currentDate}
                   locale={cs}
+                  disabled={(d) => isDayInPast(d)}
                   initialFocus
                 />
               </PopoverContent>

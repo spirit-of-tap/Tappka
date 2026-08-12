@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Users } from 'lucide-react';
+import { ArrowLeft, ChartColumn, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getTeamById, getTeamPictureUrl, getProfilePictureUrl } from '@/lib/komunita/queries';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,9 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserCard } from '@/components/komunita/user-card';
+import { PageShell } from '@/components/ui/page-shell';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
+import { TeamCustomerMeetingsChart } from '@/components/teams/team-customer-meetings-chart';
+import { TeamCoachingSessionsChart } from '@/components/teams/team-coaching-sessions-chart';
 import { YEAR_LABELS, ROLE_LABELS } from '@/lib/komunita/types';
 import { getTeamBookPointsStats } from '@/lib/essays/queries';
+import { getTeamCustomerMeetingsStats } from '@/lib/customer-meetings/queries';
+import { getTeamCoachingSessionStats } from '@/lib/individual-coaching-sessions/queries';
 
 interface PageProps {
   params: Promise<{
@@ -22,9 +27,11 @@ export default async function TeamPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [team, bookStats] = await Promise.all([
+  const [team, bookStats, meetingStats, coachingStats] = await Promise.all([
     getTeamById(supabase, id),
-    getTeamBookPointsStats(supabase, id),
+    getTeamBookPointsStats(supabase, id).catch(() => []),
+    getTeamCustomerMeetingsStats(id).catch(() => []),
+    getTeamCoachingSessionStats(id).catch(() => []),
   ]);
 
   if (!team) {
@@ -41,7 +48,7 @@ export default async function TeamPage({ params }: PageProps) {
   const backHref = `/komunita/tymy/${team.id}`;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <PageShell>
       {/* Back Button */}
       <Button variant="ghost" size="sm" asChild>
         <Link href="/komunita">
@@ -74,8 +81,14 @@ export default async function TeamPage({ params }: PageProps) {
       {/* Tabs */}
       <Tabs defaultValue="clenove">
         <TabsList>
-          <TabsTrigger value="clenove">Členové</TabsTrigger>
-          <TabsTrigger value="statistiky">Statistiky</TabsTrigger>
+          <TabsTrigger value="clenove">
+            <Users />
+            Členové
+          </TabsTrigger>
+          <TabsTrigger value="statistiky">
+            <ChartColumn />
+            Statistiky
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="clenove" className="mt-4 space-y-6">
@@ -152,15 +165,36 @@ export default async function TeamPage({ params }: PageProps) {
         </TabsContent>
 
         <TabsContent value="statistiky" className="mt-4">
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold">BookPoints — přehled týmu</h2>
-              <p className="text-sm text-muted-foreground">Schválené a čekající knihy na cestu k cíli 120 bodů</p>
-            </div>
-            <TeamBookPointsChart stats={bookStats} />
-          </div>
+          <Tabs defaultValue="bookpoints">
+            <TabsList>
+              <TabsTrigger value="bookpoints">Knižní body</TabsTrigger>
+              <TabsTrigger value="schuzky">Zákaznické schůzky</TabsTrigger>
+              <TabsTrigger value="koucovani">Koučování</TabsTrigger>
+            </TabsList>
+            <TabsContent value="bookpoints" className="mt-4 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Knižní body — přehled týmu</h2>
+                <p className="text-sm text-muted-foreground">Schválené a čekající knihy na cestu k cíli 120 bodů</p>
+              </div>
+              <TeamBookPointsChart stats={bookStats} />
+            </TabsContent>
+            <TabsContent value="schuzky" className="mt-4 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Zákaznické schůzky — přehled týmu</h2>
+                <p className="text-sm text-muted-foreground">Počet schůzek napříč členy týmu</p>
+              </div>
+              <TeamCustomerMeetingsChart stats={meetingStats} />
+            </TabsContent>
+            <TabsContent value="koucovani" className="mt-4 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Individuální koučování — přehled týmu</h2>
+                <p className="text-sm text-muted-foreground">Počet koučovacích sezení napříč členy týmu</p>
+              </div>
+              <TeamCoachingSessionsChart stats={coachingStats} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }

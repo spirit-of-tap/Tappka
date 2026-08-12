@@ -7,9 +7,12 @@ import {
   getUnreadTeamEssaysForCoach,
   getTeamBookPointsStats,
 } from "@/lib/essays/queries";
+import { countCustomerMeetings } from "@/lib/customer-meetings/queries";
 import {
   sanitizeWidgetIds,
   widgetsForRole,
+  availableWidgetIds,
+  availableWidgets,
   type DashboardWidgetId,
 } from "@/lib/dashboard/types";
 import { FirstLoginConfetti } from "@/components/first-login-confetti";
@@ -22,6 +25,7 @@ import {
 } from "@/components/dashboard/next-reservation-card";
 import { CoachReviewCard } from "@/components/dashboard/coach-review-card";
 import { TeamSnapshotCard } from "@/components/dashboard/team-snapshot-card";
+import { MetricsCard } from "@/components/dashboard/metrics-card";
 import { MessageCircleQuestion, ExternalLink } from "lucide-react";
 
 const TEAMS_SUPPORT_URL =
@@ -64,15 +68,20 @@ export default async function DashboardPage() {
     .select("widgets")
     .eq("profile_id", profile.id)
     .maybeSingle();
-  const layout = sanitizeWidgetIds(layoutRow?.widgets, profile.role);
+  const hasMetricsAccess = !!profile.beta_access_granted_at;
+  const layout = availableWidgetIds(
+    sanitizeWidgetIds(layoutRow?.widgets, profile.role),
+    hasMetricsAccess,
+  );
 
   const has = (id: DashboardWidgetId) => layout.includes(id);
   const needsUnread =
     isCoach && !!profile.team_id && (has("ke-kontrole") || has("quick-actions"));
 
   // Only fetch data for widgets the user actually placed on the dashboard.
-  const [stats, reservation, unreadEssays, teamStats] = await Promise.all([
-    has("reading")
+  const needsStats = has("reading") || has("metrics");
+  const [stats, reservation, unreadEssays, teamStats, meetingCount] = await Promise.all([
+    needsStats
       ? getUserBookPointsStats(supabase, profile.id).catch(() => EMPTY_STATS)
       : null,
     has("reservation") ? getNextReservation(supabase, profile.id) : null,
@@ -84,6 +93,7 @@ export default async function DashboardPage() {
     has("team-snapshot") && profile.team_id
       ? getTeamBookPointsStats(supabase, profile.team_id).catch(() => [])
       : [],
+    has("metrics") ? countCustomerMeetings(supabase, profile.id).catch(() => 0) : 0,
   ]);
 
   const nodes: Partial<Record<DashboardWidgetId, ReactNode>> = {};
@@ -112,13 +122,21 @@ export default async function DashboardPage() {
       />
     );
   }
+  if (has("metrics") && stats && profile.beta_access_granted_at) {
+    nodes["metrics"] = (
+      <MetricsCard
+        bookPoints={stats.approved_points}
+        meetingCount={meetingCount}
+      />
+    );
+  }
 
   return (
     <>
       <FirstLoginConfetti />
 
       {/* Hero greeting */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h2 className="text-3xl font-heading font-bold tracking-tight">
           {firstName ? `Vítej, ${firstName}!` : "Vítej!"}
         </h2>
@@ -129,12 +147,12 @@ export default async function DashboardPage() {
 
       <DashboardEditor
         initialLayout={layout}
-        catalog={widgetsForRole(profile.role)}
+        catalog={availableWidgets(widgetsForRole(profile.role), hasMetricsAccess)}
         nodes={nodes}
       />
 
       {/* Support */}
-      <div className="mt-10 flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
         <MessageCircleQuestion className="size-4 shrink-0" />
         <span>Potřebuješ pomoc?</span>
         <a

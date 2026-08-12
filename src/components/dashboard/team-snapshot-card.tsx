@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ProfileAvatar } from '@/components/profile-avatar';
 
 interface TeamSnapshotCardProps {
   stats: {
@@ -24,7 +24,7 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
   const top = [...stats].sort((a, b) => b.approved_points - a.approved_points).slice(0, 3);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="size-4 text-muted-foreground" />
@@ -33,7 +33,7 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
         <CardDescription>Nejlepší čtenáři podle BookPoints</CardDescription>
         <CardAction>
           <Link
-            href="/prehled?tab=tym"
+            href="/cteni/prehled?tab=tym"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
           >
             Celý tým
@@ -49,20 +49,22 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
         ) : (
           <ul className="space-y-3">
             {top.map((row, i) => (
-              <li key={row.profile.id} className="flex items-center gap-3">
-                <span className="w-4 text-sm tabular-nums text-muted-foreground">
-                  {i + 1}.
-                </span>
-                <Avatar className="size-7">
-                  <AvatarImage src={row.profile.picture ?? undefined} alt={row.profile.name} />
-                  <AvatarFallback className="text-xs">
-                    {row.profile.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="flex-1 truncate text-sm">{row.profile.name}</span>
-                <span className="text-sm font-medium tabular-nums">
-                  {row.approved_points} b.
-                </span>
+              <li key={row.profile.id}>
+                <Link
+                  href={`/komunita/profil/${row.profile.id}`}
+                  className="group focus-ring flex items-center gap-3 rounded-md"
+                >
+                  <span className="w-4 text-sm tabular-nums text-muted-foreground">
+                    {i + 1}.
+                  </span>
+                  <ProfileAvatar picture={row.profile.picture} name={row.profile.name} size={28} />
+                  <span className="flex-1 truncate text-sm group-hover:underline underline-offset-4">
+                    {row.profile.name}
+                  </span>
+                  <span className="text-sm font-medium tabular-nums">
+                    {row.approved_points} b.
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>

@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { Archive, ArchiveRestore, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Spinner } from '@/components/ui/spinner';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
 import type { FeedbackWithAuthor } from '@/lib/feedback/types';
@@ -37,8 +39,11 @@ export function FeedbackNoteCard({ feedback, isAdmin, onChanged, onDeleted }: Fe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (!res.ok) throw new Error();
       const { data } = await res.json();
-      if (data) onChanged(data);
+      onChanged(data);
+    } catch {
+      toast.error('Nepodařilo se uložit změnu.');
     } finally {
       setIsSaving(false);
     }
@@ -48,7 +53,10 @@ export function FeedbackNoteCard({ feedback, isAdmin, onChanged, onDeleted }: Fe
     setIsSaving(true);
     try {
       const res = await fetch(`/api/feedback/${feedback.id}`, { method: 'DELETE' });
-      if (res.ok) onDeleted(feedback.id);
+      if (!res.ok) throw new Error();
+      onDeleted(feedback.id);
+    } catch {
+      toast.error('Nepodařilo se smazat příspěvek.');
     } finally {
       setIsSaving(false);
     }
@@ -60,8 +68,7 @@ export function FeedbackNoteCard({ feedback, isAdmin, onChanged, onDeleted }: Fe
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 rounded-lg border border-amber-200/60 bg-amber-50 p-4 shadow-sm transition-transform',
-        'dark:border-amber-900/40 dark:bg-amber-950/30',
+        'flex flex-col gap-3 rounded-lg border border-l-4 border-l-warning bg-card p-4 shadow-sm transition-transform',
         tiltFor(feedback.id),
       )}
     >
@@ -86,11 +93,17 @@ export function FeedbackNoteCard({ feedback, isAdmin, onChanged, onDeleted }: Fe
             disabled={isSaving}
             className="gap-1"
           >
-            {isResolved ? <ArchiveRestore className="size-3" /> : <Archive className="size-3" />}
+            {isSaving ? (
+              <Spinner className="size-3" />
+            ) : isResolved ? (
+              <ArchiveRestore className="size-3" />
+            ) : (
+              <Archive className="size-3" />
+            )}
             {isResolved ? 'Obnovit' : 'Archivovat'}
           </Button>
           <Button size="sm" variant="ghost" onClick={handleDelete} disabled={isSaving} className="gap-1 text-destructive">
-            <Trash2 className="size-3" />
+            {isSaving ? <Spinner className="size-3" /> : <Trash2 className="size-3" />}
             Smazat
           </Button>
         </div>

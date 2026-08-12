@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getProfiles, getTeamsWithCount, getProfilePictureUrl } from '@/lib/komunita/queries';
 import { KomunitaContent } from '@/components/komunita/komunita-content';
+import { PageShell } from '@/components/ui/page-shell';
 
 interface PageProps {
   searchParams: Promise<{
@@ -24,7 +25,7 @@ export default async function KomunitaPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <PageShell>
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Komunita</h1>
@@ -39,6 +40,6 @@ export default async function KomunitaPage({ searchParams }: PageProps) {
         teams={teamsWithCount}
         initialQuery={params.search}
       />
-    </div>
+    </PageShell>
   );
 }

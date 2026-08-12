@@ -11,6 +11,20 @@ function Drawer({
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />
 }
 
+/**
+ * Use instead of `Drawer` when this drawer is rendered inside the content of
+ * an already-open parent `Drawer` (e.g. a confirmation drawer opened from
+ * within a detail drawer). vaul requires `Drawer.NestedRoot` for correct
+ * stacking — a naive second `Drawer.Root` doesn't coordinate scale/position
+ * with the parent and can render broken/non-interactive on mobile.
+ * See https://vaul.emilkowal.ski (Nested drawers).
+ */
+function DrawerNestedRoot({
+  ...props
+}: React.ComponentProps<typeof DrawerPrimitive.NestedRoot>) {
+  return <DrawerPrimitive.NestedRoot data-slot="drawer-nested-root" {...props} />
+}
+
 function DrawerTrigger({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Trigger>) {
@@ -123,6 +137,7 @@ function DrawerDescription({
 
 export {
   Drawer,
+  DrawerNestedRoot,
   DrawerPortal,
   DrawerOverlay,
   DrawerTrigger,

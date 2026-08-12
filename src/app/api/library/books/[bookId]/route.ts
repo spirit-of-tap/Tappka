@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+import { createClient } from '@/lib/supabase/server';
+import { getBookLibraryInfo } from '@/lib/library/queries';
+
+interface RouteContext {
+  params: Promise<{ bookId: string }>;
+}
+
+export async function GET(_request: NextRequest, { params }: RouteContext) {
+  try {
+    const { bookId } = await params;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
+
+    const info = await getBookLibraryInfo(supabase, bookId);
+
+    return NextResponse.json({ data: info });
+  } catch (error) {
+    console.error('GET /api/library/books/[bookId] error:', error);
+    return NextResponse.json({ error: 'Nepodařilo se načíst informace o knize' }, { status: 500 });
+  }
+}

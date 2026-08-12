@@ -41,8 +41,8 @@ async function seed(client: import("pg").PoolClient) {
   );
 
   const { rows: books } = await client.query(
-    `insert into public.books (title, author, created_by_profile_id, updated_by_profile_id, status, book_points)
-     values ('Book', 'Author', $1, $1, 'approved', 2) returning id`,
+    `insert into public.books (title_cs, author, created_by_profile_id, updated_by_profile_id, list_status, book_points)
+     values ('Book', 'Author', $1, $1, 'longlist', 2) returning id`,
     [authorProfiles[0].id],
   );
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { doTimesOverlap, isRoomAvailableOnDay } from "@/lib/reservations/utils";
-import type { Room } from "@/lib/reservations/types";
+import {
+  ALLOWED_PAST_MS,
+  doTimesOverlap,
+  getFirstBookableRange,
+  isDayInPast,
+  isRoomAvailableOnDay,
+  isSlotInPast,
+} from "@/lib/reservations/utils";
+import type { Reservation, Room } from "@/lib/reservations/types";
 
 describe("doTimesOverlap", () => {
   const at = (h: number) => new Date(`2026-07-09T${String(h).padStart(2, "0")}:00:00Z`);
@@ -29,5 +36,102 @@ describe("isRoomAvailableOnDay", () => {
 
   it("returns false when the weekday is not in available_days", () => {
     expect(isRoomAvailableOnDay(room([1, 2, 3]), new Date("2026-07-09T09:00:00Z"))).toBe(false);
+  });
+});
+
+describe("isSlotInPast", () => {
+  const now = new Date("2026-07-09T10:00:00Z");
+
+  it("keeps the current 15-min slot bookable (grace window)", () => {
+    expect(isSlotInPast(new Date("2026-07-09T09:45:00Z"), now)).toBe(false);
+  });
+
+  it("rejects slots older than the grace window", () => {
+    expect(isSlotInPast(new Date("2026-07-09T09:44:59Z"), now)).toBe(true);
+  });
+
+  it("keeps future times bookable", () => {
+    expect(isSlotInPast(new Date("2026-07-09T10:00:00Z"), now)).toBe(false);
+  });
+
+  it("matches the API threshold exactly", () => {
+    const threshold = new Date(now.getTime() - ALLOWED_PAST_MS);
+    expect(isSlotInPast(threshold, now)).toBe(false);
+    expect(isSlotInPast(new Date(threshold.getTime() - 1), now)).toBe(true);
+  });
+});
+
+describe("isDayInPast", () => {
+  // Local-time constructors: the schedule views work in local time.
+  const now = new Date(2026, 6, 9, 10, 0, 0, 0); // today, 10:00
+
+  it("keeps today bookable", () => {
+    expect(isDayInPast(new Date(2026, 6, 9, 0, 0, 0, 0), now)).toBe(false);
+  });
+
+  it("keeps future days bookable", () => {
+    expect(isDayInPast(new Date(2026, 6, 10, 0, 0, 0, 0), now)).toBe(false);
+  });
+
+  it("blocks any day before today", () => {
+    expect(isDayInPast(new Date(2026, 6, 8, 23, 59, 59, 0), now)).toBe(true);
+  });
+});
+
+describe("getFirstBookableRange", () => {
+  // Local-time constructors: the schedule views position everything in local time.
+  const day = new Date(2026, 6, 9); // Thursday 2026-07-09
+  const at = (hour: number, minute = 0) => new Date(2026, 6, 9, hour, minute, 0, 0);
+  const beforeOpening = new Date(2026, 6, 9, 5, 0, 0, 0);
+
+  const reservation = (startHour: number, startMinute: number, endHour: number, endMinute: number) =>
+    ({
+      start_at: at(startHour, startMinute).toISOString(),
+      end_at: at(endHour, endMinute).toISOString(),
+    }) as unknown as Reservation;
+
+  it("returns the first hour of operating hours for an empty day", () => {
+    const { startTime, endTime } = getFirstBookableRange(day, [], 60, beforeOpening);
+    expect(startTime).toEqual(at(7));
+    expect(endTime).toEqual(at(8));
+  });
+
+  it("skips past existing reservations", () => {
+    const { startTime, endTime } = getFirstBookableRange(
+      day,
+      [reservation(7, 0, 9, 0)],
+      60,
+      beforeOpening
+    );
+    expect(startTime).toEqual(at(9));
+    expect(endTime).toEqual(at(10));
+  });
+
+  it("skips gaps shorter than the requested duration", () => {
+    // 7:30–8:00 is free but too short for a 60 minute window.
+    const { startTime } = getFirstBookableRange(
+      day,
+      [reservation(7, 0, 7, 30), reservation(8, 0, 9, 0)],
+      60,
+      beforeOpening
+    );
+    expect(startTime).toEqual(at(9));
+  });
+
+  it("starts at the next slot after now when the day is today", () => {
+    const { startTime, endTime } = getFirstBookableRange(day, [], 60, at(10, 7));
+    expect(startTime).toEqual(at(10, 15));
+    expect(endTime).toEqual(at(11, 15));
+  });
+
+  it("falls back to the last window of the day when fully booked", () => {
+    const { startTime, endTime } = getFirstBookableRange(
+      day,
+      [reservation(7, 0, 22, 0)],
+      60,
+      beforeOpening
+    );
+    expect(startTime).toEqual(at(21));
+    expect(endTime).toEqual(at(22));
   });
 });

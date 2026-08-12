@@ -1,6 +1,6 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import { BubbleMenuPlugin } from '@tiptap/extension-bubble-menu';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
@@ -16,15 +16,22 @@ import {
   Heading1, Heading2, Heading3,
   Quote, List, ListOrdered, Code, Minus,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Link as LinkIcon, ImageIcon, Pencil, Trash2, ExternalLink,
+  Link as LinkIcon, ImageIcon, Pencil, Trash2, ExternalLink, Camera,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { PENDING_IMAGE_ATTR, stripPendingImages } from '@/lib/essays/pending-images';
+import { prepareEssayImage, uploadEssayImage, validateEssayImage } from '@/lib/essays/image-upload';
 
 const MultiHighlight = Highlight.extend({
   addAttributes() {
@@ -37,6 +44,70 @@ const MultiHighlight = Highlight.extend({
     };
   },
 });
+
+/**
+ * A doc with no content renders zero nodes, so there is no paragraph for the
+ * placeholder to attach to until the first click. Start with one empty
+ * paragraph instead, the way ProseMirror's own empty document looks.
+ */
+const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] } as const;
+
+/**
+ * Carries the in-flight marker into the DOM as `data-uploading`, which the
+ * stylesheet uses to dim the picture while it uploads. Autosave never sees it:
+ * `stripPendingImages` removes these nodes on the way out.
+ */
+const UploadableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      [PENDING_IMAGE_ATTR]: {
+        default: null,
+        parseHTML: (el) => el.getAttribute('data-uploading'),
+        renderHTML: (attrs) =>
+          attrs[PENDING_IMAGE_ATTR] == null ? {} : { 'data-uploading': attrs[PENDING_IMAGE_ATTR] },
+      },
+    };
+  },
+});
+
+/** Position of the image node currently showing `src`, or null if it is gone. */
+function findImagePos(editor: Editor, src: string): number | null {
+  let match: number | null = null;
+  editor.state.doc.descendants((node, pos) => {
+    if (match != null) return false;
+    if (node.type.name === 'image' && node.attrs.src === src) {
+      match = pos;
+      return false;
+    }
+    return true;
+  });
+  return match;
+}
+
+/**
+ * Swaps a finished upload's placeholder for the stored URL, or drops the node
+ * when the upload failed. A no-op if the author deleted the image meanwhile.
+ */
+function settlePendingImage(editor: Editor, placeholderSrc: string, uploadedSrc: string | null) {
+  const pos = findImagePos(editor, placeholderSrc);
+  if (pos == null) return;
+
+  const node = editor.state.doc.nodeAt(pos);
+  if (!node) return;
+
+  const tr = editor.state.tr;
+  if (uploadedSrc == null) {
+    tr.delete(pos, pos + node.nodeSize);
+  } else {
+    tr.setNodeMarkup(pos, undefined, {
+      ...node.attrs,
+      src: uploadedSrc,
+      [PENDING_IMAGE_ATTR]: null,
+    });
+  }
+  editor.view.dispatch(tr);
+}
 
 const HIGHLIGHT_COLORS: Record<string, string> = {
   yellow: '#fef08a',
@@ -88,8 +159,10 @@ export function TiptapEditor({
   const [activeColor, setActiveColor] = useState('yellow');
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
+  const [hasCoarsePointer, setHasCoarsePointer] = useState(false);
   const bubbleMenuRef = useRef<HTMLDivElement>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
@@ -106,15 +179,20 @@ export function TiptapEditor({
       }),
       MultiHighlight.configure({ multicolor: true }),
       Underline,
-      Placeholder.configure({ placeholder }),
+      // showOnlyCurrent defaults to true, which hides the placeholder until the
+      // editor has focus — a blank essay would open as an empty box. Our CSS
+      // only styles `p.is-editor-empty:first-child`, so turning it off shows
+      // the prompt on an untouched document without littering empty paragraphs.
+      Placeholder.configure({ placeholder, showOnlyCurrent: false }),
       Link.configure({ openOnClick: false, HTMLAttributes: { rel: 'noopener noreferrer' } }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Typography,
-      Image.configure({ inline: false, allowBase64: false }),
+      UploadableImage.configure({ inline: false, allowBase64: false }),
     ],
-    content: initialContent ?? { type: 'doc', content: [] },
+    content: initialContent ?? EMPTY_DOC,
     onUpdate: ({ editor }) => {
-      onChangeRef.current?.(editor.getJSON(), editor.getText());
+      // Stripped, not raw: a blob: URL saved to the database is a dead image.
+      onChangeRef.current?.(stripPendingImages(editor.getJSON()), editor.getText());
     },
   });
 
@@ -132,6 +210,12 @@ export function TiptapEditor({
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Offering "Vyfotit" only where there is realistically a camera. Read after
+  // mount so the server and the client render the same markup.
+  useEffect(() => {
+    setHasCoarsePointer(window.matchMedia('(pointer: coarse)').matches);
   }, []);
 
   useEffect(() => {
@@ -211,19 +295,37 @@ export function TiptapEditor({
     }
   };
 
+  /**
+   * Shows the picture in the document straight away from a local blob URL, then
+   * swaps in the stored URL once it lands. The author sees where the image will
+   * sit while it uploads, and a failure removes it again with a real message
+   * instead of vanishing into the console.
+   */
   const handleImageUpload = async (file: File) => {
-    setUploading(true);
+    const problem = validateEssayImage(file);
+    if (problem) {
+      toast.error(problem);
+      return;
+    }
+
+    const placeholderSrc = URL.createObjectURL(file);
+    editor
+      .chain()
+      .focus()
+      .insertContent({ type: 'image', attrs: { src: placeholderSrc, [PENDING_IMAGE_ATTR]: 'true' } })
+      .run();
+    setUploadPercent(0);
+
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const res = await fetch('/api/essays/upload-image', { method: 'POST', body: form });
-      const { src, error } = await res.json();
-      if (error) throw new Error(error);
-      editor.chain().focus().setImage({ src }).run();
-    } catch (e) {
-      console.error('Image upload failed:', e);
+      const prepared = await prepareEssayImage(file);
+      const uploadedSrc = await uploadEssayImage(prepared, setUploadPercent);
+      settlePendingImage(editor, placeholderSrc, uploadedSrc);
+    } catch (error) {
+      settlePendingImage(editor, placeholderSrc, null);
+      toast.error(error instanceof Error ? error.message : 'Nahrání obrázku selhalo.');
     } finally {
-      setUploading(false);
+      URL.revokeObjectURL(placeholderSrc);
+      setUploadPercent(null);
     }
   };
 
@@ -231,10 +333,13 @@ export function TiptapEditor({
     <div className={cn('flex flex-col', className)}>
       {editable && (
         <>
+          {/* `image/*` rather than a MIME list: an explicit list makes iOS and
+              Android narrow the share sheet to file browsing and drop the
+              camera entry. The type is validated in JS instead. */}
           <input
-            ref={fileInputRef}
+            ref={galleryInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/*"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -242,7 +347,21 @@ export function TiptapEditor({
               e.target.value = '';
             }}
           />
-          <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b bg-muted/30 sticky top-0 z-10">
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImageUpload(file);
+              e.target.value = '';
+            }}
+          />
+          {/* Sticky so the toolbar stays reachable in a long essay. Needs an
+              ancestor chain without `overflow: hidden`, which would pin it. */}
+          <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 rounded-t-xl border-b bg-card/95 px-2 py-1.5 backdrop-blur supports-[backdrop-filter]:bg-card/80">
             {/* Headings */}
             <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} title="Nadpis 1"><Heading1 className="size-4" /></ToolbarButton>
             <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title="Nadpis 2"><Heading2 className="size-4" /></ToolbarButton>
@@ -298,19 +417,60 @@ export function TiptapEditor({
 
             {/* Link & image */}
             <ToolbarButton onClick={openLinkDialog} isActive={editor.isActive('link')} title="Odkaz"><LinkIcon className="size-4" /></ToolbarButton>
-            <button
-              type="button"
-              onMouseDown={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
-              disabled={uploading}
-              title="Vložit obrázek"
-              className="p-1.5 rounded transition-colors text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
-            >
-              <ImageIcon className="size-4" />
-            </button>
+            {hasCoarsePointer ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  disabled={uploadPercent != null}
+                  title="Vložit obrázek"
+                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+                >
+                  <ImageIcon className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onSelect={() => cameraInputRef.current?.click()}>
+                    <Camera className="size-4" />
+                    Vyfotit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => galleryInputRef.current?.click()}>
+                    <ImageIcon className="size-4" />
+                    Vybrat obrázek
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); galleryInputRef.current?.click(); }}
+                disabled={uploadPercent != null}
+                title="Vložit obrázek"
+                className="p-1.5 rounded transition-colors text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+              >
+                <ImageIcon className="size-4" />
+              </button>
+            )}
 
             <Divider />
 
             <ToolbarButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Oddělovač"><Minus className="size-4" /></ToolbarButton>
+
+            {/* Lives in the sticky toolbar, not under the editor: a tall photo
+                pushes the bottom of the card off-screen exactly when the author
+                most wants to know the upload is moving. */}
+            {uploadPercent != null && (
+              <span
+                role="status"
+                className="ml-auto flex items-center gap-1.5 pr-1 text-xs text-muted-foreground"
+              >
+                <Spinner className="size-3" />
+                Nahrávám obrázek…
+                {/* Only once there is a real figure: on a fast connection the
+                    body is gone before the first progress event, and a frozen
+                    "0 %" reads as a stall. */}
+                {uploadPercent > 0 && (
+                  <span className="tabular-nums">{uploadPercent} %</span>
+                )}
+              </span>
+            )}
           </div>
         </>
       )}
@@ -346,10 +506,12 @@ export function TiptapEditor({
         </button>
       </div>
 
-      <div className="px-5 py-4">
+      {/* flex-1 + h-full on the ProseMirror node: clicking the empty space
+          under the last paragraph should place the caret, not do nothing. */}
+      <div className="flex flex-1 flex-col px-5 py-4 sm:px-8 sm:py-6">
         <EditorContent
           editor={editor}
-          className="[&_.tiptap]:outline-none [&_.tiptap]:min-h-64 [&_.tiptap_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.tiptap_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.tiptap_p.is-editor-empty:first-child]:before:float-left [&_.tiptap_p.is-editor-empty:first-child]:before:h-0 [&_.tiptap_p.is-editor-empty:first-child]:before:pointer-events-none [&_.tiptap_img]:max-w-full [&_.tiptap_img]:rounded-lg [&_.tiptap_img]:my-3 [&_.tiptap_a]:text-primary [&_.tiptap_a]:underline"
+          className="flex-1 [&_.tiptap]:h-full [&_.tiptap]:outline-none [&_.tiptap]:min-h-64 [&_.tiptap_img[data-uploading]]:opacity-40 [&_.tiptap_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.tiptap_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.tiptap_p.is-editor-empty:first-child]:before:float-left [&_.tiptap_p.is-editor-empty:first-child]:before:h-0 [&_.tiptap_p.is-editor-empty:first-child]:before:pointer-events-none [&_.tiptap_img]:max-w-full [&_.tiptap_img]:rounded-lg [&_.tiptap_img]:my-3 [&_.tiptap_a]:text-primary [&_.tiptap_a]:underline"
         />
       </div>
 

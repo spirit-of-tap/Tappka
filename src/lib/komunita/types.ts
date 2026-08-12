@@ -46,11 +46,15 @@ export const ROLE_LABELS: Record<ProfileRole, string> = {
 };
 
 // Role badge colors
+// student/coach use the "-strong" text variants: bare text-chart-3/text-chart-2
+// measure below WCAG AA 4.5:1 as standalone text on their own tinted badge
+// background. text-chart-5 (mentor, ~5.0:1) and text-destructive (admin, ~4.7:1
+// on --background) already clear AA and are left as-is.
 export const ROLE_COLORS: Record<ProfileRole, string> = {
-  student: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  mentor: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  coach: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  student: 'bg-chart-3/15 text-chart-3-strong',
+  mentor: 'bg-chart-5/15 text-chart-5',
+  coach: 'bg-chart-2/15 text-chart-2-strong',
+  admin: 'bg-destructive/15 text-destructive',
 };
 
 // Year labels

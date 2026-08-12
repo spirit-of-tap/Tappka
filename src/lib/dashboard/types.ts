@@ -5,7 +5,8 @@ export type DashboardWidgetId =
   | 'reading'
   | 'reservation'
   | 'ke-kontrole'
-  | 'team-snapshot';
+  | 'team-snapshot'
+  | 'metrics';
 
 export interface DashboardWidgetMeta {
   id: DashboardWidgetId;
@@ -46,6 +47,12 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
     description: 'Nejlepší čtenáři tvého týmu podle BookPoints.',
     roles: ['student', 'mentor', 'coach', 'admin'],
   },
+  {
+    id: 'metrics',
+    label: 'Metriky',
+    description: 'Knižní body a počet zákaznických schůzek na jednom místě.',
+    roles: ['student', 'mentor', 'coach', 'admin'],
+  },
 ];
 
 export function widgetsForRole(role: ProfileRole): DashboardWidgetMeta[] {
@@ -63,4 +70,17 @@ export function sanitizeWidgetIds(ids: unknown, role: ProfileRole): DashboardWid
     }
   }
   return result;
+}
+
+/**
+ * Drops widgets whose extra precondition isn't met (currently: 'metrics'
+ * requires beta access), so a stale saved layout can't reference a widget
+ * that will never get a node and render as a permanent loading skeleton.
+ */
+export function availableWidgetIds(ids: DashboardWidgetId[], hasMetricsAccess: boolean): DashboardWidgetId[] {
+  return hasMetricsAccess ? ids : ids.filter((id) => id !== 'metrics');
+}
+
+export function availableWidgets(widgets: DashboardWidgetMeta[], hasMetricsAccess: boolean): DashboardWidgetMeta[] {
+  return hasMetricsAccess ? widgets : widgets.filter((w) => w.id !== 'metrics');
 }

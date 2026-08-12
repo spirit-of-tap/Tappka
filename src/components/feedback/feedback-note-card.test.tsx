@@ -1,10 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { FeedbackNoteCard } from "@/components/feedback/feedback-note-card";
 import type { FeedbackWithAuthor } from "@/lib/feedback/types";
 
+const fetchSpy = vi.spyOn(globalThis, "fetch");
+
 beforeEach(() => {
-  vi.spyOn(globalThis, "fetch").mockReset();
+  fetchSpy.mockReset();
 });
 
 const base: FeedbackWithAuthor = {
@@ -38,5 +41,16 @@ describe("FeedbackNoteCard", () => {
     render(<FeedbackNoteCard feedback={base} isAdmin={true} onChanged={noop} onDeleted={noop} />);
     expect(screen.getByRole("button", { name: /Archivovat/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Smazat/i })).toBeInTheDocument();
+  });
+
+  it("shows an error toast when archiving fails", async () => {
+    const toastModule = await import("sonner");
+    const errorSpy = vi.spyOn(toastModule.toast, "error").mockImplementation(() => "");
+    fetchSpy.mockResolvedValueOnce({ ok: false, json: async () => ({}) } as Response);
+
+    render(<FeedbackNoteCard feedback={base} isAdmin onChanged={vi.fn()} onDeleted={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: /Archivovat/i }));
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
   });
 });

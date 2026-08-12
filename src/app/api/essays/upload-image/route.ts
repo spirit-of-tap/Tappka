@@ -11,7 +11,14 @@ const ALLOWED_TYPES: Record<string, string> = {
   'image/webp': 'webp',
   'image/gif': 'gif',
 };
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+/**
+ * A backstop, not the limit the author is told about: the editor optimizes to
+ * WebP before uploading, so a real photo arrives well under a megabyte. This
+ * only has to stop something absurd reaching storage.
+ */
+const MAX_BYTES = 8 * 1024 * 1024;
+/** GIFs skip optimization to keep their animation, so they get a tighter cap. */
+const MAX_GIF_BYTES = 5 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +37,13 @@ export async function POST(request: NextRequest) {
     if (!ext) return NextResponse.json({ error: 'Nepodporovaný formát' }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    if (buffer.byteLength > MAX_BYTES) return NextResponse.json({ error: 'Soubor je příliš velký (max 5 MB)' }, { status: 400 });
+    const limit = file.type === 'image/gif' ? MAX_GIF_BYTES : MAX_BYTES;
+    if (buffer.byteLength > limit) {
+      return NextResponse.json(
+        { error: `Soubor je příliš velký (max ${Math.round(limit / 1024 / 1024)} MB)` },
+        { status: 400 },
+      );
+    }
 
     const key = generateFileKey('essay-images', profile.id, ext);
     await uploadFile('images', key, buffer, file.type);

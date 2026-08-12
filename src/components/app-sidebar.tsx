@@ -12,6 +12,9 @@ import {
   ChevronRight,
   Heart,
   BookOpen,
+  Handshake,
+  GraduationCap,
+  NotebookPen,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -78,11 +81,26 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           url: "/komunita",
           icon: Users,
         },
-{
-  title: "Čtení",
-  url: "/prehled",
-  icon: BookOpen,
-},
+        {
+          title: "Zák. schůzky",
+          url: "/schuzky",
+          icon: Handshake,
+        },
+        {
+          title: "Koučování",
+          url: "/koucovani",
+          icon: GraduationCap,
+        },
+        {
+          title: "Týmová reflexe",
+          url: "/tymova-reflexe",
+          icon: NotebookPen,
+        },
+        {
+          title: "Čtení",
+          url: "/cteni/prehled",
+          icon: BookOpen,
+        },
       ],
     },
     ...(isDevelopment
@@ -126,14 +144,17 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isBeta = user?.beta_access ?? false
   const isReservationsActive = pathname.startsWith("/reservations")
-  const isCteniActive = pathname === "/prehled" || pathname === "/hledat" || pathname.startsWith("/eseje") || pathname.startsWith("/knihovna") || pathname.startsWith("/settings/kniha-knih")
+  const isSchuzkyActive = pathname.startsWith("/schuzky")
+  const isKoucovaniActive = pathname.startsWith("/koucovani")
+  const isTymovaReflexeActive = pathname.startsWith("/tymova-reflexe")
+  const isCteniActive = pathname.startsWith("/cteni")
   const cteniSubItems = [
-    { title: "Přehled", url: "/prehled" },
-    { title: "Hledat", url: "/hledat" },
+    { title: "Přehled", url: "/cteni/prehled" },
+    { title: "Hledat", url: "/cteni/hledat" },
     ...(isCoachOrAdmin
       ? [
-        { title: "Ke kontrole", url: "/eseje/ke-kontrole", badge: reviewCount },
-        { title: "Nastavení", url: "/settings/kniha-knih" },
+        { title: "Ke kontrole", url: "/cteni/eseje/ke-kontrole", badge: reviewCount },
+        { title: "Správa knihovny", url: "/cteni/sprava" },
       ]
       : []),
   ]
@@ -209,6 +230,84 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                           </CollapsibleContent>
                         </SidebarMenuItem>
                       </Collapsible>
+                    )
+                  }
+
+                  // Zák. schůzky — beta-only
+                  if (item.title === "Zák. schůzky") {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isSchuzkyActive}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Koučování — beta-only
+                  if (item.title === "Koučování") {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isKoucovaniActive}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Týmová reflexe — beta-only
+                  if (item.title === "Týmová reflexe") {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isTymovaReflexeActive}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
                     )
                   }
 

@@ -46,6 +46,27 @@ export function isRoomAvailableOnDay(room: Room, date: Date): boolean {
   return room.available_days.includes(weekdayNumber);
 }
 
+/** Grace window: allow booking the current 15-min slot (mirrors the API). */
+export const ALLOWED_PAST_MS = TIME_SLOT_MINUTES * 60 * 1000;
+
+/**
+ * Check if a start time is older than the past-reservation grace window.
+ * Mirrors the API rule: `start < now - ALLOWED_PAST_MS` is rejected.
+ */
+export function isSlotInPast(date: Date, now: Date = new Date()): boolean {
+  return date.getTime() < now.getTime() - ALLOWED_PAST_MS;
+}
+
+/**
+ * Check if a whole day is in the past (i.e. before the grace window),
+ * meaning no bookable slot remains on it.
+ */
+export function isDayInPast(date: Date, now: Date = new Date()): boolean {
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+  return endOfDay.getTime() < now.getTime() - ALLOWED_PAST_MS;
+}
+
 const PRAGUE_TZ = "Europe/Prague";
 
 /**
@@ -304,6 +325,66 @@ export function getNextAvailableTime(
   return currentTime;
 }
 
+/** Duration used when a reservation is started without an explicit time range. */
+export const DEFAULT_RESERVATION_MINUTES = 60;
+
+/**
+ * Find the first bookable time range on a given day.
+ *
+ * Walks the day's slots from the start of operating hours (or from the next
+ * slot after `now` when `day` is today) and returns the first window of
+ * `durationMinutes` that does not overlap any of `reservations`.
+ *
+ * Used by the keyboard-reachable "add reservation" affordance in the schedule
+ * views: the quick-reservation dialog always renders a start/end pair, so a
+ * concrete range is required to open it.
+ *
+ * When the whole day is taken it returns the last window of the day, which
+ * lets the caller's normal conflict-resolution flow offer alternatives.
+ */
+export function getFirstBookableRange(
+  day: Date,
+  reservations: Reservation[],
+  durationMinutes: number = DEFAULT_RESERVATION_MINUTES,
+  now: Date = new Date()
+): { startTime: Date; endTime: Date } {
+  const dayStart = new Date(day);
+  dayStart.setHours(OPERATING_HOURS.start, 0, 0, 0);
+
+  const dayEnd = new Date(day);
+  dayEnd.setHours(OPERATING_HOURS.end, 0, 0, 0);
+
+  const durationMs = durationMinutes * 60_000;
+  const slotMs = TIME_SLOT_MINUTES * 60_000;
+  const lastStartMs = dayEnd.getTime() - durationMs;
+
+  // On today's schedule, skip slots that have already started.
+  const firstStartMs =
+    now > dayStart && now < dayEnd
+      ? roundToSlot(now, "ceil").getTime()
+      : dayStart.getTime();
+
+  for (let startMs = firstStartMs; startMs <= lastStartMs; startMs += slotMs) {
+    const startTime = new Date(startMs);
+    const endTime = new Date(startMs + durationMs);
+
+    const isFree = !reservations.some((reservation) =>
+      doTimesOverlap(
+        startTime,
+        endTime,
+        new Date(reservation.start_at),
+        new Date(reservation.end_at)
+      )
+    );
+
+    if (isFree) {
+      return { startTime, endTime };
+    }
+  }
+
+  return { startTime: new Date(lastStartMs), endTime: new Date(dayEnd) };
+}
+
 /**
  * Check if a reservation is currently active (happening now)
  */
@@ -343,11 +424,11 @@ export function getDurationHours(startTime: string, endTime: string): number {
 export function getReservationColorClasses(kind: ReservationKind | string): string {
   switch (kind) {
     case "training_session":
-      return "bg-red-100 dark:bg-red-950/50 border-red-500 text-red-900 dark:text-red-100";
+      return "bg-chart-1/10 border-chart-1 text-chart-1";
     case "houston_calling":
-      return "bg-purple-100 dark:bg-purple-950/50 border-purple-500 text-purple-900 dark:text-purple-100";
+      return "bg-chart-4/10 border-chart-4 text-chart-4";
     default:
-      return "bg-blue-100 dark:bg-blue-950/50 border-blue-500 text-blue-900 dark:text-blue-100";
+      return "bg-chart-3/10 border-chart-3 text-chart-3";
   }
 }
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { widgetsForRole, sanitizeWidgetIds } from "@/lib/dashboard/types";
+import {
+  widgetsForRole,
+  sanitizeWidgetIds,
+  availableWidgetIds,
+  availableWidgets,
+  DASHBOARD_WIDGETS,
+} from "@/lib/dashboard/types";
 
 describe("widgetsForRole", () => {
   it("returns reading and team-snapshot widgets for student", () => {
@@ -52,5 +58,27 @@ describe("sanitizeWidgetIds", () => {
   it("preserves order of first occurrence", () => {
     const result = sanitizeWidgetIds(["team-snapshot", "reading"], "student");
     expect(result).toEqual(["team-snapshot", "reading"]);
+  });
+});
+
+describe("availableWidgetIds", () => {
+  it("keeps metrics when the user has beta access", () => {
+    expect(availableWidgetIds(["quick-actions", "metrics"], true)).toEqual(["quick-actions", "metrics"]);
+  });
+
+  it("drops a stale 'metrics' entry when beta access is missing, so it can never render as a permanent skeleton", () => {
+    expect(availableWidgetIds(["quick-actions", "metrics"], false)).toEqual(["quick-actions"]);
+  });
+});
+
+describe("availableWidgets", () => {
+  it("excludes the metrics catalog entry when beta access is missing", () => {
+    const ids = availableWidgets(DASHBOARD_WIDGETS, false).map((w) => w.id);
+    expect(ids).not.toContain("metrics");
+  });
+
+  it("includes the metrics catalog entry when beta access is present", () => {
+    const ids = availableWidgets(DASHBOARD_WIDGETS, true).map((w) => w.id);
+    expect(ids).toContain("metrics");
   });
 });

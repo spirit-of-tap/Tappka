@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { Archive, Inbox, MessageSquare } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
+import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
 import { NewFeedbackForm } from './new-feedback-form';
 import { FeedbackNoteCard } from './feedback-note-card';
 import type { FeedbackWithAuthor } from '@/lib/feedback/types';
@@ -41,7 +42,17 @@ export function FeedbackBoard({ initialActive, initialArchived, isAdmin }: Feedb
 
   const renderGrid = (notes: FeedbackWithAuthor[], emptyText: string) => {
     if (notes.length === 0) {
-      return <p className="py-10 text-center text-sm text-muted-foreground">{emptyText}</p>;
+      return (
+        <Empty>
+          <EmptyMedia variant="icon">
+            <Inbox className="size-6" />
+          </EmptyMedia>
+          <EmptyHeader>
+            <EmptyTitle>Žádné příspěvky</EmptyTitle>
+            <EmptyDescription>{emptyText}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      );
     }
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -64,15 +75,16 @@ export function FeedbackBoard({ initialActive, initialArchived, isAdmin }: Feedb
 
       <Tabs defaultValue="active">
         <TabsList>
-          <TabsTrigger value="active" className="gap-2">
+          <TabsTrigger value="active">
+            <MessageSquare />
             Aktivní
-            {active.length > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-5 p-0 px-1 text-xs">
-                {active.length}
-              </Badge>
-            )}
+            <TabsTriggerCount count={active.length} />
           </TabsTrigger>
-          <TabsTrigger value="archived">Archiv</TabsTrigger>
+          <TabsTrigger value="archived">
+            <Archive />
+            Archiv
+            <TabsTriggerCount count={archived.length} />
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="mt-4">

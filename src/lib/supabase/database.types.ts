@@ -9,74 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      book_comments: {
+      book_loans: {
         Row: {
-          author_profile_id: string
-          body: string
-          book_id: string
+          borrowed_at: string
+          borrower_id: string
           created_at: string
-          created_by_profile_id: string
+          due_at: string
           id: string
-          removed_at: string | null
+          library_book_id: string
+          returned_at: string | null
           updated_at: string
-          updated_by_profile_id: string
         }
         Insert: {
-          author_profile_id: string
-          body: string
-          book_id: string
+          borrowed_at: string
+          borrower_id: string
           created_at?: string
-          created_by_profile_id: string
+          due_at: string
           id?: string
-          removed_at?: string | null
+          library_book_id: string
+          returned_at?: string | null
           updated_at?: string
-          updated_by_profile_id: string
         }
         Update: {
-          author_profile_id?: string
-          body?: string
-          book_id?: string
+          borrowed_at?: string
+          borrower_id?: string
           created_at?: string
-          created_by_profile_id?: string
+          due_at?: string
           id?: string
-          removed_at?: string | null
+          library_book_id?: string
+          returned_at?: string | null
           updated_at?: string
-          updated_by_profile_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "book_comments_author_profile_id_fkey"
-            columns: ["author_profile_id"]
+            foreignKeyName: "book_loans_borrower_id_fkey"
+            columns: ["borrower_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "book_comments_book_id_fkey"
-            columns: ["book_id"]
+            foreignKeyName: "book_loans_library_book_id_fkey"
+            columns: ["library_book_id"]
             isOneToOne: false
-            referencedRelation: "books"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "book_comments_book_id_fkey"
-            columns: ["book_id"]
-            isOneToOne: false
-            referencedRelation: "books_with_essay_count"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "book_comments_created_by_profile_id_fkey"
-            columns: ["created_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "book_comments_updated_by_profile_id_fkey"
-            columns: ["updated_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "library_books"
             referencedColumns: ["id"]
           },
         ]
@@ -153,15 +129,17 @@ export type Database = {
           description: string | null
           external_id: string | null
           google_books_cover_url: string | null
+          highlight_category_id: string | null
           id: string
+          is_rocket_model: boolean
           isbn_13: string | null
+          list_status: Database["public"]["Enums"]["book_list_status"]
+          list_status_changed_at: string | null
+          list_status_changed_by_profile_id: string | null
+          list_status_reason: string | null
           page_count: number | null
           preview_link: string | null
           source: Database["public"]["Enums"]["book_source"]
-          status: Database["public"]["Enums"]["book_status"]
-          status_changed_at: string | null
-          status_changed_by_profile_id: string | null
-          status_reason: string | null
           title_cs: string
           title_en: string | null
           updated_at: string
@@ -175,15 +153,17 @@ export type Database = {
           description?: string | null
           external_id?: string | null
           google_books_cover_url?: string | null
+          highlight_category_id?: string | null
           id?: string
+          is_rocket_model?: boolean
           isbn_13?: string | null
+          list_status?: Database["public"]["Enums"]["book_list_status"]
+          list_status_changed_at?: string | null
+          list_status_changed_by_profile_id?: string | null
+          list_status_reason?: string | null
           page_count?: number | null
           preview_link?: string | null
           source?: Database["public"]["Enums"]["book_source"]
-          status?: Database["public"]["Enums"]["book_status"]
-          status_changed_at?: string | null
-          status_changed_by_profile_id?: string | null
-          status_reason?: string | null
           title_cs: string
           title_en?: string | null
           updated_at?: string
@@ -197,15 +177,17 @@ export type Database = {
           description?: string | null
           external_id?: string | null
           google_books_cover_url?: string | null
+          highlight_category_id?: string | null
           id?: string
+          is_rocket_model?: boolean
           isbn_13?: string | null
+          list_status?: Database["public"]["Enums"]["book_list_status"]
+          list_status_changed_at?: string | null
+          list_status_changed_by_profile_id?: string | null
+          list_status_reason?: string | null
           page_count?: number | null
           preview_link?: string | null
           source?: Database["public"]["Enums"]["book_source"]
-          status?: Database["public"]["Enums"]["book_status"]
-          status_changed_at?: string | null
-          status_changed_by_profile_id?: string | null
-          status_reason?: string | null
           title_cs?: string
           title_en?: string | null
           updated_at?: string
@@ -220,14 +202,94 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "books_status_changed_by_profile_id_fkey"
-            columns: ["status_changed_by_profile_id"]
+            foreignKeyName: "books_highlight_category_id_fkey"
+            columns: ["highlight_category_id"]
+            isOneToOne: false
+            referencedRelation: "highlight_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_list_status_changed_by_profile_id_fkey"
+            columns: ["list_status_changed_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "books_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_meetings: {
+        Row: {
+          company: string
+          contact_person: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          meeting_at: string | null
+          objective: string
+          position: string
+          post_mortem: string | null
+          profile_id: string
+          removed_at: string | null
+          team_share: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          company: string
+          contact_person: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          meeting_at?: string | null
+          objective: string
+          position: string
+          post_mortem?: string | null
+          profile_id: string
+          removed_at?: string | null
+          team_share?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          company?: string
+          contact_person?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          meeting_at?: string | null
+          objective?: string
+          position?: string
+          post_mortem?: string | null
+          profile_id?: string
+          removed_at?: string | null
+          team_share?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_meetings_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_meetings_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_meetings_updated_by_profile_id_fkey"
             columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -351,6 +413,7 @@ export type Database = {
           created_by_profile_id: string
           essay_id: string
           id: string
+          parent_id: string | null
           removed_at: string | null
           updated_at: string
           updated_by_profile_id: string
@@ -362,6 +425,7 @@ export type Database = {
           created_by_profile_id: string
           essay_id: string
           id?: string
+          parent_id?: string | null
           removed_at?: string | null
           updated_at?: string
           updated_by_profile_id: string
@@ -373,6 +437,7 @@ export type Database = {
           created_by_profile_id?: string
           essay_id?: string
           id?: string
+          parent_id?: string | null
           removed_at?: string | null
           updated_at?: string
           updated_by_profile_id?: string
@@ -397,6 +462,13 @@ export type Database = {
             columns: ["essay_id"]
             isOneToOne: false
             referencedRelation: "essays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essay_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "essay_comments"
             referencedColumns: ["id"]
           },
           {
@@ -720,6 +792,239 @@ export type Database = {
           },
           {
             foreignKeyName: "feedback_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      highlight_categories: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlight_categories_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlight_categories_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      individual_coaching_sessions: {
+        Row: {
+          action_steps: string | null
+          coach_profile_id: string | null
+          created_at: string
+          created_by_profile_id: string
+          external_coach_name: string | null
+          id: string
+          key_takeaways: string | null
+          profile_id: string
+          removed_at: string | null
+          session_at: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          action_steps?: string | null
+          coach_profile_id?: string | null
+          created_at?: string
+          created_by_profile_id: string
+          external_coach_name?: string | null
+          id?: string
+          key_takeaways?: string | null
+          profile_id: string
+          removed_at?: string | null
+          session_at?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          action_steps?: string | null
+          coach_profile_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string
+          external_coach_name?: string | null
+          id?: string
+          key_takeaways?: string | null
+          profile_id?: string
+          removed_at?: string | null
+          session_at?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "individual_coaching_sessions_coach_profile_id_fkey"
+            columns: ["coach_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "individual_coaching_sessions_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "individual_coaching_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "individual_coaching_sessions_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_books: {
+        Row: {
+          book_id: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          isbn_13: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          isbn_13?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          isbn_13?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books_with_essay_count"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_books_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_books_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          essay_coach_read_email: boolean
+          essay_comment_email: boolean
+          essay_vote_email: boolean
+          profile_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          essay_coach_read_email?: boolean
+          essay_comment_email?: boolean
+          essay_vote_email?: boolean
+          profile_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          essay_coach_read_email?: boolean
+          essay_comment_email?: boolean
+          essay_vote_email?: boolean
+          profile_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_updated_by_profile_id_fkey"
             columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1134,6 +1439,179 @@ export type Database = {
           },
         ]
       }
+      team_reflections: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          month: string
+          planned_action_steps: string | null
+          removed_at: string | null
+          responsible_person: string | null
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+          what_didnt_go_well: string | null
+          what_we_do_differently: string | null
+          what_went_well: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          month: string
+          planned_action_steps?: string | null
+          removed_at?: string | null
+          responsible_person?: string | null
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+          what_didnt_go_well?: string | null
+          what_we_do_differently?: string | null
+          what_went_well?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          month?: string
+          planned_action_steps?: string | null
+          removed_at?: string | null
+          responsible_person?: string | null
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+          what_didnt_go_well?: string | null
+          what_we_do_differently?: string | null
+          what_went_well?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_reflections_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_reflections_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_reflections_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_semester_reflection_entries: {
+        Row: {
+          id: string
+          semester_reflection_id: string
+          topic: Database["public"]["Enums"]["semester_reflection_topic"]
+          updated_at: string
+          updated_by_profile_id: string
+          what_didnt_go_well: string | null
+          what_next_time: string | null
+          what_went_well: string | null
+        }
+        Insert: {
+          id?: string
+          semester_reflection_id: string
+          topic: Database["public"]["Enums"]["semester_reflection_topic"]
+          updated_at?: string
+          updated_by_profile_id: string
+          what_didnt_go_well?: string | null
+          what_next_time?: string | null
+          what_went_well?: string | null
+        }
+        Update: {
+          id?: string
+          semester_reflection_id?: string
+          topic?: Database["public"]["Enums"]["semester_reflection_topic"]
+          updated_at?: string
+          updated_by_profile_id?: string
+          what_didnt_go_well?: string | null
+          what_next_time?: string | null
+          what_went_well?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_semester_reflection_entries_semester_reflection_id_fkey"
+            columns: ["semester_reflection_id"]
+            isOneToOne: false
+            referencedRelation: "team_semester_reflections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_semester_reflection_entries_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_semester_reflections: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          removed_at: string | null
+          semester_month: string
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          removed_at?: string | null
+          semester_month: string
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          removed_at?: string | null
+          semester_month?: string
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_semester_reflections_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_semester_reflections_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_semester_reflections_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           color: string | null
@@ -1221,15 +1699,17 @@ export type Database = {
           essay_count: number | null
           external_id: string | null
           google_books_cover_url: string | null
+          highlight_category_id: string | null
           id: string | null
+          is_rocket_model: boolean | null
           isbn_13: string | null
+          list_status: Database["public"]["Enums"]["book_list_status"] | null
+          list_status_changed_at: string | null
+          list_status_changed_by_profile_id: string | null
+          list_status_reason: string | null
           page_count: number | null
           preview_link: string | null
           source: Database["public"]["Enums"]["book_source"] | null
-          status: Database["public"]["Enums"]["book_status"] | null
-          status_changed_at: string | null
-          status_changed_by_profile_id: string | null
-          status_reason: string | null
           title_cs: string | null
           title_en: string | null
           updated_at: string | null
@@ -1244,8 +1724,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "books_status_changed_by_profile_id_fkey"
-            columns: ["status_changed_by_profile_id"]
+            foreignKeyName: "books_highlight_category_id_fkey"
+            columns: ["highlight_category_id"]
+            isOneToOne: false
+            referencedRelation: "highlight_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_list_status_changed_by_profile_id_fkey"
+            columns: ["list_status_changed_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1279,6 +1766,14 @@ export type Database = {
           title: string
         }[]
       }
+      get_notification_preferences: {
+        Args: { p_profile_id: string }
+        Returns: {
+          essay_coach_read_email: boolean
+          essay_comment_email: boolean
+          essay_vote_email: boolean
+        }[]
+      }
       get_teams_with_member_stats: {
         Args: never
         Returns: {
@@ -1293,15 +1788,35 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_coach_or_admin: { Args: never; Returns: boolean }
+      reassign_essays_to_book: {
+        Args: {
+          p_source_book_id: string
+          p_target_book_id: string
+          p_updated_by_profile_id: string
+        }
+        Returns: number
+      }
       record_essay_view: { Args: { p_essay_id: string }; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      book_list_status: "processing" | "shortlist" | "longlist" | "archived"
       book_source: "manual" | "google_books" | "open_library"
-      book_status: "pending" | "approved" | "rejected"
       profile_role: "student" | "mentor" | "coach" | "admin"
       schedule_type: "training_session" | "houston_calling"
+      semester_reflection_topic:
+        | "predmety_zkousky_vyucujici"
+        | "metodika_a_metriky"
+        | "kouci_a_mentori"
+        | "tymy_a_tymove_spolecnosti"
+        | "individualni_prinos"
+        | "komunita"
+        | "komunitni_role"
+        | "komunitni_akce"
+        | "komunitni_a_cross_projekty"
+        | "zacleneni_tucnaku"
+        | "dalsi"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1429,10 +1944,23 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      book_list_status: ["processing", "shortlist", "longlist", "archived"],
       book_source: ["manual", "google_books", "open_library"],
-      book_status: ["pending", "approved", "rejected"],
       profile_role: ["student", "mentor", "coach", "admin"],
       schedule_type: ["training_session", "houston_calling"],
+      semester_reflection_topic: [
+        "predmety_zkousky_vyucujici",
+        "metodika_a_metriky",
+        "kouci_a_mentori",
+        "tymy_a_tymove_spolecnosti",
+        "individualni_prinos",
+        "komunita",
+        "komunitni_role",
+        "komunitni_akce",
+        "komunitni_a_cross_projekty",
+        "zacleneni_tucnaku",
+        "dalsi",
+      ],
     },
   },
 } as const

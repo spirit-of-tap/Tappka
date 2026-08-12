@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, FileQuestion, Inbox, MessageCircle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { BookOpen, CheckCheck, FileQuestion, Inbox, MessageCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { CoachReadButton } from './coach-read-button';
-import { ProfilePicture } from '@/components/profile-picture';
+import { ProfileAvatar } from '@/components/profile-avatar';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
 interface CoachReviewListProps {
@@ -36,15 +36,16 @@ export function CoachReviewList({ initialUnread, initialRead }: CoachReviewListP
   return (
     <Tabs defaultValue="unread">
       <TabsList>
-        <TabsTrigger value="unread" className="gap-2">
+        <TabsTrigger value="unread">
+          <Inbox />
           Nepřečtené
-          {unread.length > 0 && (
-            <Badge variant="destructive" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">
-              {unread.length}
-            </Badge>
-          )}
+          <TabsTriggerCount count={unread.length} tone="attention" />
         </TabsTrigger>
-        <TabsTrigger value="read">Přečtené</TabsTrigger>
+        <TabsTrigger value="read">
+          <CheckCheck />
+          Přečtené
+          <TabsTriggerCount count={read.length} />
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="unread" className="mt-4">
@@ -96,10 +97,10 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
   return (
     <Card className="py-0">
       <CardContent className="p-4 flex flex-col sm:flex-row gap-4">
-        <Link href={`/eseje/${essay.id}`} className="group flex-1 min-w-0 space-y-2">
+        <Link href={`/cteni/eseje/${essay.id}`} className="group flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2">
             {essay.author?.picture ? (
-              <ProfilePicture src={essay.author.picture} alt={essay.author.name ?? ''} size={24} className="size-6 rounded-full object-cover shrink-0" />
+              <ProfileAvatar picture={essay.author.picture} name={essay.author.name} size={24} />
             ) : (
               <div className="size-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold shrink-0">
                 {authorInitial}
@@ -122,6 +123,7 @@ function ReviewRow({ essay, read, onToggled }: ReviewRowProps) {
               <>
                 <BookOpen className="size-3 shrink-0" />
                 <span className="truncate">{essay.book.title_cs}</span>
+                <BookStatusBadges book={essay.book} />
               </>
             ) : (
               <>

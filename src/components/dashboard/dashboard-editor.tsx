@@ -16,6 +16,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from '@/components/ui/empty';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -53,6 +61,7 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
       });
       if (!res.ok) throw new Error();
       router.refresh();
+      toast.success('Rozložení uloženo.');
     } catch {
       setLayout(previous);
       toast.error('Nepodařilo se uložit rozložení.');
@@ -77,36 +86,38 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
 
   if (layout.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed p-8">
-        <div className="mb-6 text-center">
-          <LayoutDashboard className="size-8 mx-auto mb-3 text-muted-foreground" />
-          <h3 className="font-medium">Tvůj dashboard je zatím prázdný</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Vyber si widgety, které tu chceš mít.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 max-w-2xl mx-auto">
-          {catalog.map((w) => (
-            <button
-              key={w.id}
-              onClick={() => add(w.id)}
-              className="flex items-start gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
-            >
-              <Plus className="size-4 mt-0.5 shrink-0 text-primary" />
-              <span>
-                <span className="block text-sm font-medium">{w.label}</span>
-                <span className="block text-xs text-muted-foreground">{w.description}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <Empty>
+        <EmptyMedia variant="icon">
+          <LayoutDashboard className="size-6" />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>Tvůj dashboard je zatím prázdný</EmptyTitle>
+          <EmptyDescription>Vyber si widgety, které tu chceš mít.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <div className="grid gap-3 sm:grid-cols-2 max-w-2xl mx-auto w-full">
+            {catalog.map((w) => (
+              <button
+                key={w.id}
+                onClick={() => add(w.id)}
+                className="focus-ring flex items-start gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50"
+              >
+                <Plus className="size-4 mt-0.5 shrink-0 text-primary" />
+                <span>
+                  <span className="block text-sm font-medium">{w.label}</span>
+                  <span className="block text-xs text-muted-foreground">{w.description}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </EmptyContent>
+      </Empty>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 sm:-mt-2">
         {editing && (
           <Popover>
             <PopoverTrigger asChild>
@@ -121,7 +132,7 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
                   <button
                     key={w.id}
                     onClick={() => add(w.id)}
-                    className="w-full rounded-md p-2 text-left transition-colors hover:bg-muted"
+                    className="focus-ring w-full rounded-md p-2 text-left transition-colors hover:bg-muted"
                   >
                     <p className="text-sm font-medium">{w.label}</p>
                     <p className="text-xs text-muted-foreground">{w.description}</p>
@@ -163,8 +174,7 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
                 </span>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="size-6"
+                  size="icon-sm"
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
                   aria-label="Posunout výš"
@@ -173,8 +183,7 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
                 </Button>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="size-6"
+                  size="icon-sm"
                   disabled={index === layout.length - 1}
                   onClick={() => move(index, 1)}
                   aria-label="Posunout níž"
@@ -183,8 +192,8 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
                 </Button>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="size-6 text-destructive hover:text-destructive"
+                  size="icon-sm"
+                  className="text-destructive hover:text-destructive"
                   onClick={() => remove(id)}
                   aria-label="Odebrat widget"
                 >
@@ -193,7 +202,7 @@ export function DashboardEditor({ initialLayout, catalog, nodes }: DashboardEdit
               </div>
             )}
             {nodes[id] ?? (
-              <Card>
+              <Card className="h-full">
                 <CardContent>
                   <Skeleton className="h-4 w-1/3 mb-3" />
                   <Skeleton className="h-3 w-2/3" />

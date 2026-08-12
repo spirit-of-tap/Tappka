@@ -1,3 +1,4 @@
+import { CalendarOff, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
@@ -82,16 +83,17 @@ export default async function ReservationSettingsPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="training-sessions" className="space-y-4">
-        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-full md:w-auto">
-            <TabsTrigger value="training-sessions" className="flex-1 md:flex-initial text-xs sm:text-sm">
-              Training Sessions
-            </TabsTrigger>
-            <TabsTrigger value="schedule-breaks" className="flex-1 md:flex-initial text-xs sm:text-sm">
-              Volno a výjimky
-            </TabsTrigger>
-          </TabsList>
-        </div>
+        {/* The wrapper's own overflow handling is gone — TabsList scrolls itself now. */}
+        <TabsList>
+          <TabsTrigger value="training-sessions">
+            <GraduationCap />
+            Training Sessions
+          </TabsTrigger>
+          <TabsTrigger value="schedule-breaks">
+            <CalendarOff />
+            Volno a výjimky
+          </TabsTrigger>
+        </TabsList>
 
         {/* Training Sessions Tab */}
         <TabsContent value="training-sessions" className="space-y-4">

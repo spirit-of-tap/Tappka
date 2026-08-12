@@ -3,6 +3,9 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/supabase/database.types';
 
 import { contentTextFromJson } from './content-text';
+import { countWords } from './text-stats';
+import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
+import type { HighlightCategory } from '@/lib/books/types';
 import type {
   EssayWithDetails,
   EssayCommentWithAuthor,
@@ -10,10 +13,16 @@ import type {
   EssayCoachReadWithProfile,
   CoachReviewEssay,
   EssayFilters,
+  EssayRevisionSummary,
 } from './types';
 
 const PAGE_SIZE_DEFAULT = 20;
-const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+/** How many revisions the history panel shows. Older ones are reachable only by scrolling the DB. */
+const REVISION_HISTORY_LIMIT = 50;
+const REVISION_SNIPPET_LENGTH = 160;
+/** Candidate pool size for popularity ranking — big enough to rank properly, small enough to stay cheap. */
+const POPULAR_CANDIDATE_LIMIT = 200;
+const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
 
 const ESSAY_DETAIL_SELECT = `
   *,
@@ -22,7 +31,7 @@ const ESSAY_DETAIL_SELECT = `
   essay_views(count),
   essay_comments(count),
   author:profiles!author_profile_id(id, name, picture, role),
-  book:books!book_id(id, title_cs, author, book_points, status, google_books_cover_url)
+  book:books!book_id(id, title_cs, author, book_points, list_status, is_rocket_model, google_books_cover_url, highlight_category:highlight_categories(*))
 `;
 
 interface EssayRevisionEmbed {
@@ -53,15 +62,17 @@ interface EssayRawRow {
   essay_views?: CountEmbed[] | null;
   essay_comments?: CountEmbed[] | null;
   author: EssayWithDetails['author'];
-  book: EssayWithDetails['book'];
+  book: (Omit<NonNullable<EssayWithDetails['book']>, 'highlight_category'> & {
+    highlight_category?: HighlightCategory | HighlightCategory[] | null;
+  }) | null;
 }
 
 /**
  * Picks the latest non-invalid essay revision (highest revision_no).
  */
-export function pickLatestRevision(
-  revisions: EssayRevisionEmbed[] | null | undefined,
-): EssayRevisionEmbed | null {
+export function pickLatestRevision<
+  T extends { revision_no: number; invalid_since: string | null },
+>(revisions: T[] | null | undefined): T | null {
   const valid = (revisions ?? []).filter((r) => r.invalid_since == null);
   if (valid.length === 0) return null;
 
@@ -80,6 +91,7 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
       essay_comments,
       created_by_profile_id: _createdBy,
       updated_by_profile_id: _updatedBy,
+      book,
       ...rest
     } = row;
 
@@ -88,6 +100,9 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
 
     return {
       ...rest,
+      book: book
+        ? { ...book, highlight_category: Array.isArray(book.highlight_category) ? book.highlight_category[0] ?? null : book.highlight_category ?? null }
+        : null,
       title: revision?.title ?? '',
       content_json,
       content_text: contentTextFromJson(content_json),
@@ -99,11 +114,15 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
 }
 
 /**
- * Sorts essays by vote_count desc, then created_at desc (within current page).
+ * Popularity score: votes are the stronger quality signal, so they're
+ * weighted 3x over views (mirrors the essay_count*3 + book_points weighting
+ * used for book rankings elsewhere). Ties break to the newer essay.
  */
-function sortByVotesThenCreated(essays: EssayWithDetails[]): EssayWithDetails[] {
+function sortByPopularity(essays: EssayWithDetails[]): EssayWithDetails[] {
   return [...essays].sort((a, b) => {
-    if (b.vote_count !== a.vote_count) return b.vote_count - a.vote_count;
+    const scoreA = a.vote_count * 3 + a.view_count;
+    const scoreB = b.vote_count * 3 + b.view_count;
+    if (scoreB !== scoreA) return scoreB - scoreA;
     return b.created_at.localeCompare(a.created_at);
   });
 }
@@ -181,45 +200,54 @@ export async function getEssays(
     if (searchEssayIds.length === 0) return [];
   }
 
-  let query = supabase
-    .from('essays')
-    .select(ESSAY_DETAIL_SELECT)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .range(from, to);
+  const isPopularSort = sort === 'best' || sort === 'month';
 
-  if (sort === 'week') {
-    const oneWeekAgo = new Date(Date.now() - MS_PER_WEEK).toISOString();
-    query = query
-      .gte('created_at', oneWeekAgo)
+  // Popularity ranking needs its own candidate pool: pagination by recency
+  // has to happen *after* ranking by votes/views, not before, or the ranking
+  // only ever reorders whatever page of recent rows happened to be fetched.
+  const buildQuery = (sinceIso?: string) => {
+    const status = filters?.status ?? 'published';
+    let q = supabase
+      .from('essays')
+      .select(ESSAY_DETAIL_SELECT)
+      .is('removed_at', null)
       .order('created_at', { ascending: false });
-  } else {
-    query = query.order('created_at', { ascending: false });
-  }
 
-  if (filters?.authorProfileId) {
-    query = query.eq('author_profile_id', filters.authorProfileId);
-  }
+    q = status === 'draft'
+      ? q.is('published_at', null)
+      : q.not('published_at', 'is', null);
 
-  if (filters?.bookId) {
-    query = query.eq('book_id', filters.bookId);
-  }
+    if (isPopularSort) {
+      if (sinceIso) q = q.gte('created_at', sinceIso);
+      q = q.limit(POPULAR_CANDIDATE_LIMIT);
+    } else {
+      q = q.range(from, to);
+    }
 
-  if (tagBookIds) {
-    query = query.in('book_id', tagBookIds);
-  }
+    if (filters?.authorProfileId) q = q.eq('author_profile_id', filters.authorProfileId);
+    if (filters?.bookId) q = q.eq('book_id', filters.bookId);
+    if (tagBookIds) q = q.in('book_id', tagBookIds);
+    if (searchEssayIds) q = q.in('id', searchEssayIds);
 
-  if (searchEssayIds) {
-    query = query.in('id', searchEssayIds);
-  }
+    return q;
+  };
 
-  const { data, error } = await query;
+  const monthAgo = new Date(Date.now() - MS_PER_MONTH).toISOString();
+  const { data, error } = await buildQuery(sort === 'month' ? monthAgo : undefined);
   if (error) throw error;
 
-  const essays = mapEssayRows((data ?? []) as unknown as EssayRawRow[]);
+  let essays = mapEssayRows((data ?? []) as unknown as EssayRawRow[]);
 
-  if (sort === 'best' || sort === 'week') {
-    return sortByVotesThenCreated(essays);
+  // A quiet month shouldn't leave the section empty — widen to the most
+  // recent candidates regardless of date if the month's pool is too thin.
+  if (sort === 'month' && essays.length < pageSize) {
+    const { data: fallbackData, error: fallbackError } = await buildQuery();
+    if (fallbackError) throw fallbackError;
+    essays = mapEssayRows((fallbackData ?? []) as unknown as EssayRawRow[]);
+  }
+
+  if (isPopularSort) {
+    return sortByPopularity(essays).slice(from, to + 1);
   }
 
   return essays;
@@ -287,6 +315,58 @@ export async function getEssayById(
 
   const rows = mapEssayRows([data as unknown as EssayRawRow]);
   return rows[0] ?? null;
+}
+
+export async function getEssayRevisions(
+  supabase: SupabaseClient<Database>,
+  essayId: string,
+  limit: number = REVISION_HISTORY_LIMIT,
+): Promise<EssayRevisionSummary[]> {
+  const { data, error } = await supabase
+    .from('essay_revisions')
+    .select('revision_no, title, content_json, created_at, updated_at')
+    .eq('essay_id', essayId)
+    .is('invalid_since', null)
+    .order('revision_no', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => {
+    const text = contentTextFromJson(row.content_json);
+    return {
+      revision_no: row.revision_no,
+      title: row.title,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      word_count: countWords(text),
+      snippet: text.slice(0, REVISION_SNIPPET_LENGTH),
+    };
+  });
+}
+
+export async function getEssayAuthorInfo(
+  supabase: SupabaseClient<Database>,
+  essayId: string,
+): Promise<{ id: string; title: string; authorProfileId: string } | null> {
+  const { data, error } = await supabase
+    .from('essays')
+    .select('id, author_profile_id, essay_revisions(title, revision_no, invalid_since)')
+    .eq('id', essayId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const revision = pickLatestRevision(
+    data.essay_revisions as { title: string; revision_no: number; invalid_since: string | null }[] | null,
+  );
+
+  return {
+    id: data.id as string,
+    title: revision?.title ?? '',
+    authorProfileId: data.author_profile_id as string,
+  };
 }
 
 export async function getEssayComments(
@@ -449,7 +529,7 @@ export async function getUserBookPointsStats(
 ): Promise<{ approved_points: number; pending_points: number; essay_count: number }> {
   const { data: essays, error } = await supabase
     .from('essays')
-    .select('book_id, books!inner(book_points, status)')
+    .select('book_id, books!inner(book_points, list_status)')
     .eq('author_profile_id', profileId)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -457,16 +537,17 @@ export async function getUserBookPointsStats(
 
   if (error) throw error;
 
-  type Row = { book_id: string; books: { book_points: number; status: string } };
+  type Row = { book_id: string; books: { book_points: number; list_status: string } };
 
+  const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const approved = new Map<string, number>();
   const pending = new Set<string>();
 
   for (const row of (essays ?? []) as unknown as Row[]) {
     if (!row.book_id) continue;
-    if (row.books.status === 'approved') {
+    if (ELIGIBLE.has(row.books.list_status)) {
       approved.set(row.book_id, Number(row.books.book_points));
-    } else if (row.books.status === 'pending') {
+    } else if (row.books.list_status === 'processing') {
       pending.add(row.book_id);
     }
   }
@@ -500,7 +581,7 @@ export async function getTeamBookPointsStats(
 
   const { data: essays, error: essayError } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, books!inner(book_points, status)')
+    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
     .in('author_profile_id', profileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -511,9 +592,10 @@ export async function getTeamBookPointsStats(
   type EssayRow = {
     author_profile_id: string;
     book_id: string;
-    books: { book_points: number; status: string };
+    books: { book_points: number; list_status: string };
   };
 
+  const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const byProfile: Record<string, { approved: Set<string>; pending: Set<string> }> = {};
   for (const profileId of profileIds) {
     byProfile[profileId] = { approved: new Set(), pending: new Set() };
@@ -522,9 +604,9 @@ export async function getTeamBookPointsStats(
   for (const essay of (essays ?? []) as unknown as EssayRow[]) {
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.book_id) continue;
-    if (essay.books.status === 'approved') {
+    if (ELIGIBLE.has(essay.books.list_status)) {
       bucket.approved.add(essay.book_id);
-    } else if (essay.books.status === 'pending') {
+    } else if (essay.books.list_status === 'processing') {
       bucket.pending.add(essay.book_id);
     }
   }
@@ -532,7 +614,7 @@ export async function getTeamBookPointsStats(
   const { data: approvedBooks, error: booksError } = await supabase
     .from('books')
     .select('id, book_points')
-    .eq('status', 'approved');
+    .in('list_status', ['shortlist', 'longlist']);
 
   if (booksError) throw booksError;
 

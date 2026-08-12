@@ -95,10 +95,15 @@ export function KomunitaContent({
 
       {/* People Grid */}
       {filtered.length === 0 ? (
-        <div className="text-center py-12 space-y-2">
+        <div className="text-center py-12 space-y-3">
           <Users className="size-12 mx-auto text-muted-foreground" />
           <h3 className="font-semibold text-lg">Nikdo nebyl nalezen</h3>
           <p className="text-sm text-muted-foreground">Zkuste upravit vyhledávání</p>
+          {query && (
+            <Button variant="outline" size="sm" onClick={() => setQuery('')}>
+              Vymazat hledání
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">

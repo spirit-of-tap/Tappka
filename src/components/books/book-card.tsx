@@ -1,21 +1,23 @@
 import Link from 'next/link';
-import { BookOpen, FileText, ExternalLink } from 'lucide-react';
+import { BookOpen, FileText, ExternalLink, Library } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StorageImage } from '@/components/storage/storage-image';
+import { BookStatusBadges } from './book-status-badges';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 interface BookCardProps {
   book: BookWithProfiles;
+  libraryInfo?: { totalCopies: number; availableCopies: number; inLibrary: boolean } | null;
 }
 
-export function BookCard({ book }: BookCardProps) {
+export function BookCard({ book, libraryInfo }: BookCardProps) {
   const pointsLabel = formatPointsWithLabel(book.book_points);
 
   return (
     <div className="flex gap-3 px-3 py-2.5 rounded-xl border bg-card hover:shadow-sm transition-shadow group">
-      <Link href={`/knihovna/${book.id}`} className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+      <Link href={`/cteni/knihy/${book.id}`} className="focus-ring shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
         {book.google_books_cover_url ? (
           <StorageImage
             storageKey={book.google_books_cover_url}
@@ -30,10 +32,11 @@ export function BookCard({ book }: BookCardProps) {
       </Link>
 
       <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-        <Link href={`/knihovna/${book.id}`}>
+        <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5">
           <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
             {book.title_cs}
           </p>
+          <BookStatusBadges book={book} />
         </Link>
         <p className="text-xs text-muted-foreground truncate">{book.author}</p>
 
@@ -53,6 +56,14 @@ export function BookCard({ book }: BookCardProps) {
             <span className="text-xs text-muted-foreground">{book.page_count} str.</span>
           )}
           <span className="text-xs font-medium text-foreground">{pointsLabel}</span>
+          {libraryInfo?.inLibrary && (
+            <span className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400">
+              <Library className="size-3" />
+              TAP Knihovna
+              <span className="text-indigo-400 dark:text-indigo-500">·</span>
+              {libraryInfo.availableCopies} dostupných kopií
+            </span>
+          )}
           {book.preview_link && (
             <a
               href={book.preview_link}

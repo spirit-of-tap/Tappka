@@ -34,7 +34,7 @@ export function BookDeleteButton({ bookId, bookTitle }: BookDeleteButtonProps) {
     try {
       const res = await fetch(`/api/books/${bookId}`, { method: 'DELETE' });
       if (res.ok) {
-        router.push('/knihovna');
+        router.push('/cteni/hledat');
       } else {
         const json = await res.json().catch(() => ({}));
         setError(json.error ?? `Chyba ${res.status}`);

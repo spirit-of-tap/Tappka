@@ -61,28 +61,6 @@ export function EssayVoteButton({
   if (size === 'lg') {
     return (
       <div className="flex items-center gap-4">
-        <style>{`
-          @keyframes vote-pop {
-            0%   { transform: scale(1); }
-            30%  { transform: scale(1.35); }
-            60%  { transform: scale(0.92); }
-            80%  { transform: scale(1.1); }
-            100% { transform: scale(1); }
-          }
-          @keyframes count-up {
-            0%   { transform: translateY(0); opacity: 1; }
-            50%  { transform: translateY(-8px); opacity: 1; }
-            100% { transform: translateY(-16px); opacity: 0; }
-          }
-          @keyframes particle {
-            0%   { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: var(--tx, 0) var(--ty, -20px) scale(0); opacity: 0; }
-          }
-          .vote-pop { animation: vote-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-          .count-float { animation: count-up 0.5s ease-out forwards; }
-          .particle { animation: particle 0.5s ease-out forwards; }
-        `}</style>
-
         <div className="relative">
           {/* Burst particles */}
           {burst && (

@@ -11,6 +11,13 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { BOOK_POINTS_GOAL, BOOK_POINTS_PER_YEAR } from '@/lib/books/types';
+import {
+  MEMBER_CHART_LEGEND_HEIGHT,
+  MEMBER_CHART_NAME_WIDTH,
+  MEMBER_CHART_REFERENCE_LABEL_HEIGHT,
+  memberChartHeight,
+} from '@/lib/charts/member-chart-layout';
+import { shortName } from '@/lib/string-utils';
 
 interface MemberStats {
   profile: { id: string; name: string; picture: string | null };
@@ -20,16 +27,6 @@ interface MemberStats {
 
 interface TeamBookPointsChartProps {
   stats: MemberStats[];
-}
-
-const SHORT_NAME_MAX = 12;
-
-function shortName(name: string): string {
-  const parts = name.split(' ');
-  const first = parts[0] ?? '';
-  const last = parts[parts.length - 1] ?? '';
-  const result = parts.length > 1 ? `${first} ${last.charAt(0)}.` : first;
-  return result.length > SHORT_NAME_MAX ? result.slice(0, SHORT_NAME_MAX - 1) + '…' : result;
 }
 
 export function TeamBookPointsChart({ stats }: TeamBookPointsChartProps) {
@@ -53,17 +50,32 @@ export function TeamBookPointsChart({ stats }: TeamBookPointsChartProps) {
       <p className="text-xs text-muted-foreground">
         Cíl: {BOOK_POINTS_GOAL} bodů celkem · čáry 40 / 80 / 120
       </p>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-          <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-          <YAxis domain={[0, BOOK_POINTS_GOAL + 10]} tick={{ fontSize: 11 }} />
+      <ResponsiveContainer
+        width="100%"
+        height={memberChartHeight(
+          data.length,
+          MEMBER_CHART_LEGEND_HEIGHT + MEMBER_CHART_REFERENCE_LABEL_HEIGHT,
+        )}
+      >
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ top: MEMBER_CHART_REFERENCE_LABEL_HEIGHT, right: 16, left: 0, bottom: 0 }}
+        >
+          <XAxis type="number" domain={[0, BOOK_POINTS_GOAL + 10]} tick={{ fontSize: 11 }} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={MEMBER_CHART_NAME_WIDTH}
+            tick={{ fontSize: 11 }}
+          />
           <Tooltip />
           <Legend />
-          <ReferenceLine y={BOOK_POINTS_PER_YEAR} stroke="#f59e0b" strokeDasharray="4 2" label={{ value: '40', fontSize: 11, fill: '#f59e0b' }} />
-          <ReferenceLine y={BOOK_POINTS_PER_YEAR * 2} stroke="#f97316" strokeDasharray="4 2" label={{ value: '80', fontSize: 11, fill: '#f97316' }} />
-          <ReferenceLine y={BOOK_POINTS_GOAL} stroke="#22c55e" strokeDasharray="4 2" label={{ value: '120', fontSize: 11, fill: '#22c55e' }} />
+          <ReferenceLine x={BOOK_POINTS_PER_YEAR} stroke="#f59e0b" strokeDasharray="4 2" label={{ value: '40', fontSize: 11, fill: '#f59e0b', position: 'top' }} />
+          <ReferenceLine x={BOOK_POINTS_PER_YEAR * 2} stroke="#f97316" strokeDasharray="4 2" label={{ value: '80', fontSize: 11, fill: '#f97316', position: 'top' }} />
+          <ReferenceLine x={BOOK_POINTS_GOAL} stroke="#22c55e" strokeDasharray="4 2" label={{ value: '120', fontSize: 11, fill: '#22c55e', position: 'top' }} />
           <Bar dataKey="Schválené" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
-          <Bar dataKey="Čeká" stackId="a" fill="#93c5fd" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="Čeká" stackId="a" fill="#93c5fd" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

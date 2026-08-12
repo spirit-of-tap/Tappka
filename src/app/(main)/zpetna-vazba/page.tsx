@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { listActiveFeedback, listArchivedFeedback } from '@/lib/feedback/queries';
 import { FeedbackBoard } from '@/components/feedback/feedback-board';
+import { PageShell } from '@/components/ui/page-shell';
 
 export default async function ZpetnaVazbaPage() {
   const supabase = await createClient();
@@ -18,15 +19,15 @@ export default async function ZpetnaVazbaPage() {
   ]);
 
   return (
-    <div className="container mx-auto max-w-5xl py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Zpětná vazba</h1>
+    <PageShell size="wide">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Zpětná vazba</h1>
         <p className="text-sm text-muted-foreground">
           Napiš nám, co máš na srdci. Čteme všechno a snažíme se s tím pracovat.
         </p>
       </div>
 
       <FeedbackBoard initialActive={active} initialArchived={archived} isAdmin={isAdmin} />
-    </div>
+    </PageShell>
   );
 }

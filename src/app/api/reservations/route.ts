@@ -2,10 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   OPERATING_HOURS,
-  TIME_SLOT_MINUTES,
   type CreateReservationInput,
 } from "@/lib/reservations/types";
-import { isRoomAvailableOnDay } from "@/lib/reservations/utils";
+import { ALLOWED_PAST_MS, isRoomAvailableOnDay } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 
 const PRAGUE_TZ = "Europe/Prague";
@@ -132,7 +131,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Check: not too far in the past (allow current 15-min slot)
-    const ALLOWED_PAST_MS = TIME_SLOT_MINUTES * 60 * 1000;
     if (startDate.getTime() < now.getTime() - ALLOWED_PAST_MS) {
       return NextResponse.json(
         { error: "Nelze rezervovat v minulosti" },

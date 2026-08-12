@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
-import type { ApproveBookInput, RejectBookInput } from '@/lib/books/types';
+import { notifyBookDecided } from '@/lib/notifications/book-notifications';
+import type { ClassifyBookInput, SetBookHighlightInput } from '@/lib/books/types';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -42,64 +43,112 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Nemáš oprávnění' }, { status: 403 });
     }
 
-    const body: { action: 'approve' | 'reject' | 'edit' } & Partial<ApproveBookInput & RejectBookInput> & {
-      title?: string; author?: string; description?: string; tags?: string[];
-      /** @deprecated use status_reason */
-      rejection_reason?: string;
+    const body: { action: 'classify' | 'highlight' | 'unhighlight' | 'edit' | 'points' } & Partial<ClassifyBookInput> & SetBookHighlightInput & {
+      title?: string; author?: string; description?: string; tags?: string[]; is_rocket_model?: boolean;
     } = await request.json();
 
     const now = new Date().toISOString();
 
-    if (body.action === 'approve') {
-      const points = body.book_points;
-      if (!points || ![1, 2, 3].includes(points)) {
-        return NextResponse.json({ error: 'Neplatný počet bodů (1–3)' }, { status: 400 });
+    if (body.action === 'classify') {
+      const listStatus = body.list_status;
+      if (!listStatus || !['processing', 'shortlist', 'longlist', 'archived'].includes(listStatus)) {
+        return NextResponse.json({ error: 'Neplatný seznam' }, { status: 400 });
+      }
+
+      const { data: current, error: currentError } = await supabase
+        .from('books')
+        .select('list_status, list_status_reason')
+        .eq('id', id)
+        .maybeSingle();
+      if (currentError) throw currentError;
+      if (!current) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
+
+      // New books (processing) and archived books must always carry a reason.
+      const needsReason = current.list_status === 'processing' || listStatus === 'archived';
+      if (needsReason && !body.status_reason?.trim()) {
+        return NextResponse.json({ error: 'Důvod zařazení je povinný' }, { status: 400 });
+      }
+
+      if (listStatus !== 'archived') {
+        const points = body.book_points;
+        if (points === undefined || points === null || ![1, 2, 3].includes(points)) {
+          return NextResponse.json({ error: 'Neplatný počet bodů (1–3)' }, { status: 400 });
+        }
       }
 
       const { data, error } = await supabase
         .from('books')
         .update({
-          status: 'approved',
-          book_points: points,
-          status_changed_by_profile_id: profile.id,
-          status_changed_at: now,
-          status_reason: null,
+          list_status: listStatus,
+          book_points: listStatus === 'archived' ? 0 : body.book_points,
+          list_status_changed_by_profile_id: profile.id,
+          list_status_changed_at: now,
+          list_status_reason: body.status_reason?.trim() || current.list_status_reason || null,
           updated_by_profile_id: profile.id,
         })
         .eq('id', id)
-        .eq('status', 'pending')
         .select()
         .single();
 
       if (error) throw error;
-      if (!data) return NextResponse.json({ error: 'Kniha nenalezena nebo není ve stavu čekání' }, { status: 404 });
+      if (!data) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
+
+      // A failed email must never fail the decision.
+      try {
+        await notifyBookDecided(supabase, {
+          bookId: id,
+          origin: new URL(request.url).origin,
+        });
+      } catch (notifyError) {
+        console.error('notifyBookDecided failed:', notifyError);
+      }
 
       return NextResponse.json({ data });
     }
 
-    if (body.action === 'reject') {
-      const reason = (body.status_reason ?? body.rejection_reason)?.trim();
-      if (!reason) {
-        return NextResponse.json({ error: 'Důvod zamítnutí je povinný' }, { status: 400 });
+    if (body.action === 'highlight') {
+      if (!body.highlight_category_id) {
+        return NextResponse.json({ error: 'Chybí kategorie' }, { status: 400 });
       }
+
+      const { data: category, error: categoryError } = await supabase
+        .from('highlight_categories')
+        .select('id')
+        .eq('id', body.highlight_category_id)
+        .maybeSingle();
+
+      if (categoryError) throw categoryError;
+      if (!category) return NextResponse.json({ error: 'Kategorie nenalezena' }, { status: 404 });
 
       const { data, error } = await supabase
         .from('books')
         .update({
-          status: 'rejected',
-          book_points: null,
-          status_reason: reason,
-          status_changed_by_profile_id: profile.id,
-          status_changed_at: now,
+          highlight_category_id: body.highlight_category_id,
           updated_by_profile_id: profile.id,
         })
         .eq('id', id)
-        .eq('status', 'pending')
         .select()
         .single();
 
       if (error) throw error;
-      if (!data) return NextResponse.json({ error: 'Kniha nenalezena nebo není ve stavu čekání' }, { status: 404 });
+      if (!data) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
+
+      return NextResponse.json({ data });
+    }
+
+    if (body.action === 'unhighlight') {
+      const { data, error } = await supabase
+        .from('books')
+        .update({
+          highlight_category_id: null,
+          updated_by_profile_id: profile.id,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
 
       return NextResponse.json({ data });
     }
@@ -111,8 +160,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       if (body.title?.trim()) updates.title_cs = body.title.trim();
       if (body.author?.trim()) updates.author = body.author.trim();
       if (body.description !== undefined) updates.description = body.description?.trim() || null;
+      if (body.is_rocket_model !== undefined) updates.is_rocket_model = body.is_rocket_model;
 
-      const hasFieldUpdates = body.title?.trim() || body.author?.trim() || body.description !== undefined;
+      const hasFieldUpdates = body.title?.trim() || body.author?.trim() || body.description !== undefined || body.is_rocket_model !== undefined;
       const hasTagUpdates = body.tags !== undefined;
 
       if (!hasFieldUpdates && !hasTagUpdates) {
@@ -136,6 +186,28 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ data: book });
     }
 
+    if (body.action === 'points') {
+      const points = body.book_points;
+      if (points === undefined || points === null || ![1, 2, 3].includes(points)) {
+        return NextResponse.json({ error: 'Neplatný počet bodů (1–3)' }, { status: 400 });
+      }
+
+      const { data, error } = await supabase
+        .from('books')
+        .update({
+          book_points: points,
+          updated_by_profile_id: profile.id,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
+
+      return NextResponse.json({ data });
+    }
+
     return NextResponse.json({ error: 'Neplatná akce' }, { status: 400 });
   } catch (error) {
     console.error('PATCH /api/books/[id] error:', error);
@@ -143,7 +215,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
     const supabase = await createClient();
@@ -156,6 +228,29 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     const isCoachOrAdmin = profile.role === 'coach' || profile.role === 'admin';
     if (!isCoachOrAdmin) {
       return NextResponse.json({ error: 'Nemáš oprávnění' }, { status: 403 });
+    }
+
+    const body: { reroute_to_book_id?: string } = await request.json().catch(() => ({}));
+
+    if (body.reroute_to_book_id) {
+      if (body.reroute_to_book_id === id) {
+        return NextResponse.json({ error: 'Nelze přesměrovat eseje na stejnou knihu' }, { status: 400 });
+      }
+
+      const { data: target, error: targetError } = await supabase
+        .from('books')
+        .select('id')
+        .eq('id', body.reroute_to_book_id)
+        .maybeSingle();
+      if (targetError) throw targetError;
+      if (!target) return NextResponse.json({ error: 'Cílová kniha nenalezena' }, { status: 404 });
+
+      const { error: rerouteError } = await supabase.rpc('reassign_essays_to_book', {
+        p_source_book_id: id,
+        p_target_book_id: body.reroute_to_book_id,
+        p_updated_by_profile_id: profile.id,
+      });
+      if (rerouteError) throw rerouteError;
     }
 
     const { error } = await supabase.from('books').delete().eq('id', id);

@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       author: book?.author ?? '',
       essayId: essay.id,
       essayTitle,
-      essayUrl: `${origin}/eseje/${essay.id}`,
+      essayUrl: `${origin}/cteni/eseje/${essay.id}`,
       category,
       source: 'Kniha',
       points: Number(book?.book_points ?? 0),

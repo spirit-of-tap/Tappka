@@ -9,6 +9,7 @@ import {
   User as UserIcon,
   BriefcaseBusiness,
   FlaskConical,
+  Bell,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
@@ -114,6 +115,10 @@ export function NavUser({ user }: NavUserProps) {
               <DropdownMenuItem onClick={() => router.push(`/komunita/profil/${user.id}`)}>
                 <UserIcon className="mr-2 h-4 w-4" />
                 Profil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/settings/notifikace")}>
+                <Bell className="mr-2 h-4 w-4" />
+                Notifikace
               </DropdownMenuItem>
               {user.beta_access && (
                 <DropdownMenuItem onClick={() => router.push("/portfolio")}>
