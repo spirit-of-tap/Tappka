@@ -79,15 +79,24 @@ existing handlers. It owns exactly one piece of state: `selectedId`.
 ```
 lg:grid-cols-[minmax(240px,300px)_1fr]  gap-6
 ┌── ReviewQueueRail ──┬── ReviewDetailPanel ──────────────┐
-│ sticky, own scroll  │  hero / AI verdict / facts /      │
-│                     │  sticky decision bar              │
+│ stretches to match, │  hero / facts / decision bar      │
+│ scrolls inside      │  (AI verdict lives in the bar)    │
 └─────────────────────┴───────────────────────────────────┘
 ```
 
 ### Queue rail — `review-queue-rail.tsx`
 
-`lg:sticky lg:top-20 lg:self-start`, with `max-h-[calc(100vh-8rem)] overflow-y-auto` so
-a long queue scrolls inside the rail rather than pushing the panel down.
+The two columns share one height. Grid items stretch by default, so the rail is left to
+stretch rather than ending wherever the queue runs out — a five-book rail beside a
+full-height panel reads as a rendering accident, not a design. The rail is a flex column
+whose list takes `flex-1 min-h-0 overflow-y-auto`, so it fills the row and scrolls
+inside itself. `lg:max-h-[calc(100vh-8rem)]` caps what the rail contributes to the row,
+so a long queue cannot drive the row taller than the panel. In the other direction the
+panel takes `h-full`, so a short book still fills a row a long queue set, with the
+decision bar anchored to the bottom of the card instead of floating mid-column.
+
+Below `lg` none of this applies: the column has no imposed height, `flex-1` resolves to
+the list's own height, and the rail scrolls with the page.
 
 - Header: `Fronta · {n} knih` with a muted `nejstarší první` hint, which is what
   `getProcessingBooks` actually orders by (`created_at` ascending).

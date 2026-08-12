@@ -40,8 +40,11 @@ function QueueThumb({ book }: { book: BookWithProfiles }) {
  */
 export function ReviewQueueRail({ books, selectedId, onSelect, className }: ReviewQueueRailProps) {
   return (
-    <nav aria-label="Fronta knih ke zpracování" className={cn('rounded-lg border bg-card', className)}>
-      <div className="flex items-baseline justify-between gap-2 border-b px-3 py-2.5">
+    <nav
+      aria-label="Fronta knih ke zpracování"
+      className={cn('flex flex-col overflow-hidden rounded-lg border bg-card', className)}
+    >
+      <div className="flex shrink-0 items-baseline justify-between gap-2 border-b px-3 py-2.5">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Fronta
         </span>
@@ -50,9 +53,10 @@ export function ReviewQueueRail({ books, selectedId, onSelect, className }: Revi
         </span>
       </div>
 
-      {/* The inner scroller only makes sense beside the panel — on a narrow
-          screen the rail is the page, so it scrolls with it. */}
-      <ul className="lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto">
+      {/* Fills whatever height the grid row hands the rail and scrolls inside it.
+          On a narrow screen the column has no imposed height, so this resolves to
+          the list's own height and never becomes a scroll trap inside the page. */}
+      <ul className="min-h-0 flex-1 overflow-y-auto">
         {books.map((book) => {
           const isSelected = book.id === selectedId;
           return (

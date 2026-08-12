@@ -103,7 +103,7 @@ export function ReviewDecisionBar({
   };
 
   return (
-    <div className="space-y-3 border-t bg-muted/30 p-4 sm:p-5">
+    <div className="shrink-0 space-y-3 border-t bg-muted/30 p-4 sm:p-5">
       <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Rozhodnutí kouče
       </span>

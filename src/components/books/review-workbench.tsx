@@ -91,9 +91,14 @@ export function ReviewWorkbench({ books, onDecide, onEdited, onDeleted }: Review
         books={books}
         selectedId={selected?.id ?? null}
         onSelect={handleSelect}
-        // The app header scrolls away with the page, so the rail only needs
-        // enough offset to clear the viewport edge.
-        className={cn('lg:sticky lg:top-4 lg:self-start', selectedId && 'hidden lg:block')}
+        // Grid items stretch by default, so the rail matches the panel's height
+        // instead of ending wherever the queue happens to run out. The cap keeps a
+        // long queue from driving the row taller than the panel — past that the
+        // list scrolls inside the rail.
+        className={cn(
+          'lg:h-full lg:max-h-[calc(100vh-8rem)]',
+          selectedId && 'hidden lg:flex',
+        )}
       />
       {selected && (
         <div ref={panelRef} className={cn('min-w-0 scroll-mt-4', !selectedId && 'hidden lg:block')}>

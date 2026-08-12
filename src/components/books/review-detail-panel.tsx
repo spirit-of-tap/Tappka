@@ -75,8 +75,10 @@ export function ReviewDetailPanel({
     year: 'numeric',
   });
 
+  // `h-full` so a short book still fills the row a long queue sets, which keeps the
+  // decision bar anchored to the bottom of the card rather than floating mid-column.
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg border bg-card">
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border bg-card">
       {onBack && (
         <div className="border-b p-3 lg:hidden">
           <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 gap-2">
@@ -86,7 +88,7 @@ export function ReviewDetailPanel({
         </div>
       )}
 
-      <div className="space-y-6 p-4 sm:p-6">
+      <div className="flex-1 space-y-6 p-4 sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:gap-7">
           <div className="mx-auto shrink-0 sm:mx-0">
             <div className="flex aspect-[2/3] w-32 items-center justify-center overflow-hidden rounded-xl bg-muted shadow-lg ring-1 ring-border/50 sm:w-40">
