@@ -23,3 +23,20 @@ export function pointsLabel(p: number | string | null | undefined): string {
 export function formatPointsWithLabel(p: number | string | null | undefined): string {
   return `${formatPoints(p)} ${pointsLabel(p)}`;
 }
+
+/** The only values a coach may assign on review — the classify route rejects anything else. */
+export const COACH_POINT_VALUES = [1, 2, 3] as const;
+
+export type CoachPoints = (typeof COACH_POINT_VALUES)[number];
+
+/**
+ * Opening value for a coach's points picker: the AI's stored suggestion rounded
+ * into the 1–3 range the classify route accepts. Falls back to 1 for books that
+ * arrived without a score (manual entry) or were scored 0.
+ */
+export function suggestedBookPoints(p: number | string | null | undefined): CoachPoints {
+  const n = Math.round(pointsNumber(p));
+  if (n <= 1) return 1;
+  if (n >= 3) return 3;
+  return 2;
+}

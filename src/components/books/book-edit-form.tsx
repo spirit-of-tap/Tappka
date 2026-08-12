@@ -16,9 +16,15 @@ interface BookEditFormProps {
   book: BookWithProfiles;
   /** When provided, called with the saved book instead of navigating to the detail page. */
   onSaved?: (book: BookWithProfiles) => void;
+  /**
+   * When provided, a Zrušit button sits beside Uložit and the footer switches to
+   * the compact size — for the form embedded in a surface the user can back out of
+   * (the review workbench) rather than a page they navigated to.
+   */
+  onCancel?: () => void;
 }
 
-export function BookEditForm({ book, onSaved }: BookEditFormProps) {
+export function BookEditForm({ book, onSaved, onCancel }: BookEditFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState(book.title_cs);
   const [author, setAuthor] = useState(book.author);
@@ -86,10 +92,21 @@ export function BookEditForm({ book, onSaved }: BookEditFormProps) {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button onClick={handleSave} disabled={!title.trim() || !author.trim() || isSaving} size="lg">
-        {isSaving ? <Spinner className="size-4 mr-2" /> : <Save className="size-4 mr-2" />}
-        Uložit změny
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={handleSave}
+          disabled={!title.trim() || !author.trim() || isSaving}
+          size={onCancel ? 'default' : 'lg'}
+        >
+          {isSaving ? <Spinner className="size-4 mr-2" /> : <Save className="size-4 mr-2" />}
+          Uložit změny
+        </Button>
+        {onCancel && (
+          <Button variant="ghost" onClick={onCancel} disabled={isSaving}>
+            Zrušit
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -184,14 +184,17 @@ test.describe('adding a book', () => {
     const coachPage = await coachContext.newPage();
 
     await coachPage.goto('/cteni/sprava');
-    const row = coachPage
-      .locator(`#reason-${bookId}`)
-      .locator('..')
-      .locator('..');
-    await expect(row.getByRole('button', { name: '1', exact: true })).toBeVisible();
-    await row.getByLabel(/důvod/i).fill('Procesní manuál, ale krátký — 1 bod.');
-    await row.getByRole('button', { name: '1', exact: true }).click();
-    await row.getByRole('button', { name: /schválit do longlistu/i }).click();
+    // Pick this book out of the queue rail — parallel specs leave their own
+    // books pending, so the workbench's default selection is not ours.
+    await coachPage.getByRole('navigation', { name: /fronta/i }).getByText(title).click();
+    const reason = coachPage.locator(`#reason-${bookId}`);
+    await expect(reason).toBeVisible();
+
+    // The picker opens on the AI's suggestion; overriding it is the point of the test.
+    await expect(coachPage.getByRole('radio', { name: '2 body' })).toHaveAttribute('data-state', 'on');
+    await reason.fill('Procesní manuál, ale krátký — 1 bod.');
+    await coachPage.getByRole('radio', { name: '1 bod' }).click();
+    await coachPage.getByRole('button', { name: /schválit do longlistu/i }).click();
 
     // Wait for the classify PATCH to finish before reading the book back —
     // the toast only fires after the response, so it also proves the commit.

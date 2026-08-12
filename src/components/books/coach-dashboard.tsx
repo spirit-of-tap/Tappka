@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { BookOpen, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CoachProcessingRow } from './coach-book-row';
+import { ReviewWorkbench } from './review-workbench';
 import { CoachListTable, type ListKind } from './coach-list-table';
 import { CategoryManager } from './category-manager';
 import { DeleteBookDialog } from './delete-book-dialog';
@@ -14,6 +14,7 @@ import { RocketModelManager } from './rocket-model-manager';
 import { LibraryImportScanner } from '@/components/library/library-import-scanner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { suggestedBookPoints, type CoachPoints } from '@/lib/books/points';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 
 interface CoachDashboardProps {
@@ -87,7 +88,7 @@ export function CoachDashboard({
     return true;
   };
 
-  const handleApprove = (book: BookWithProfiles, points: 1 | 2 | 3, reason: string): Promise<boolean> =>
+  const handleApprove = (book: BookWithProfiles, points: CoachPoints, reason: string): Promise<boolean> =>
     classify(book, 'longlist', points, reason).then((ok) => {
       if (ok) toast.success('Kniha schválena do longlistu.');
       return ok;
@@ -100,7 +101,7 @@ export function CoachDashboard({
     });
 
   const handleMove = (book: BookWithProfiles, targetStatus: ListKind): Promise<boolean> => {
-    const points = Math.round(Number(book.book_points ?? 1)) as 1 | 2 | 3;
+    const points = suggestedBookPoints(book.book_points);
     return classify(book, targetStatus, points, book.list_status_reason ?? '').then((ok) => {
       if (ok) toast.success(targetStatus === 'shortlist' ? 'Přesunuto do shortlistu.' : 'Přesunuto zpět do longlistu.');
       return ok;
@@ -289,7 +290,7 @@ export function CoachDashboard({
 
   return (
     <Tabs defaultValue="processing">
-      <TabsList>
+      <TabsList className="max-w-full justify-start overflow-x-auto">
         <TabsTrigger value="processing" className="gap-2">
           Ke zpracování
           {processing.length > 0 && <Badge variant="destructive" className="h-5 min-w-5 p-0 flex items-center justify-center text-xs">{processing.length}</Badge>}
@@ -320,24 +321,13 @@ export function CoachDashboard({
       </TabsList>
 
       <TabsContent value="processing" className="mt-4">
-        {processing.length === 0 ? (
-          <div className="text-center py-12 space-y-2">
-            <BookOpen className="size-10 mx-auto text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Žádné knihy ke zpracování</p>
-          </div>
-        ) : (
-          <div>
-            {processing.map((book) => (
-              <CoachProcessingRow
-                key={book.id}
-                book={book}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                onDeleted={handleDeleted}
-              />
-            ))}
-          </div>
-        )}
+        <ReviewWorkbench
+          books={processing}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          onEdited={handleEdited}
+          onDeleted={handleDeleted}
+        />
       </TabsContent>
 
       <TabsContent value="shortlist" className="mt-4">
