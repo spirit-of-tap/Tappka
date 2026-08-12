@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import {
   Save, Send, BookOpen, Check, CloudOff, PenLine, Globe, Search,
@@ -105,6 +106,10 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(initialEssay?.book as BookSearchResult | null ?? null);
   const [bookQuery, setBookQuery] = useState('');
   const [bookResults, setBookResults] = useState<BookSearchResult[]>([]);
+  const [isSearchingBooks, setIsSearchingBooks] = useState(false);
+  // A keystroke fires a fresh request; only the newest one may write state, or
+  // a stale empty response would flash the "Nenašel jsi knihu?" card wrongly.
+  const bookSearchRef = useRef(0);
   const [isPublishing, setIsPublishing] = useState(false);
   const [essayId, setEssayId] = useState<string | null>(initialEssay?.id ?? null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -229,9 +234,15 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
 
   const searchBooks = async (q: string) => {
     if (!q.trim()) { setBookResults([]); return; }
-    const res = await fetch(`/api/books/search?q=${encodeURIComponent(q)}`);
-    const { data } = await res.json();
-    setBookResults(data ?? []);
+    const requestId = ++bookSearchRef.current;
+    setIsSearchingBooks(true);
+    try {
+      const res = await fetch(`/api/books/search?q=${encodeURIComponent(q)}`);
+      const { data } = await res.json();
+      if (requestId === bookSearchRef.current) setBookResults(data ?? []);
+    } finally {
+      if (requestId === bookSearchRef.current) setIsSearchingBooks(false);
+    }
   };
 
   const wordCount = countWords(content.text);
@@ -344,46 +355,58 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         </h2>
 
         {selectedBook ? (
-          <div className="flex items-center gap-4 rounded-xl border bg-card p-3 sm:p-4">
-            <div className="flex h-[68px] w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border/40 bg-muted">
-              {selectedBook.google_books_cover_url ? (
-                <StorageImage
-                  storageKey={selectedBook.google_books_cover_url}
-                  alt={selectedBook.title_cs}
-                  width={48}
-                  height={68}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <BookOpen className="size-5 text-muted-foreground/60" />
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <p className="truncate font-heading font-semibold">{selectedBook.title_cs}</p>
-                <BookStatusBadges book={selectedBook} />
+          <div className="space-y-2 rounded-xl border bg-card p-3 sm:p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-[68px] w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border/40 bg-muted">
+                {selectedBook.google_books_cover_url ? (
+                  <StorageImage
+                    storageKey={selectedBook.google_books_cover_url}
+                    alt={selectedBook.title_cs}
+                    width={48}
+                    height={68}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <BookOpen className="size-5 text-muted-foreground/60" />
+                )}
               </div>
-              <p className="truncate text-sm text-muted-foreground">{selectedBook.author}</p>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="truncate font-heading font-semibold">{selectedBook.title_cs}</p>
+                  <BookStatusBadges book={selectedBook} />
+                </div>
+                <p className="truncate text-sm text-muted-foreground">{selectedBook.author}</p>
+              </div>
+
+              {selectedBook.list_status !== 'archived' && (
+                <p className="shrink-0 text-right leading-none">
+                  <span className="font-heading text-2xl font-bold tabular-nums text-primary">
+                    {formatPoints(selectedBook.book_points)}
+                  </span>
+                  <span className="ml-1 text-xs text-muted-foreground">b.</span>
+                </p>
+              )}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={() => handleBookChange(null)}
+              >
+                Změnit
+              </Button>
             </div>
 
-            {selectedBook.list_status !== 'archived' && (
-              <p className="shrink-0 text-right leading-none">
-                <span className="font-heading text-2xl font-bold tabular-nums text-primary">
-                  {formatPoints(selectedBook.book_points)}
-                </span>
-                <span className="ml-1 text-xs text-muted-foreground">b.</span>
-              </p>
-            )}
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0"
-              onClick={() => handleBookChange(null)}
-            >
-              Změnit
-            </Button>
+            <p className="text-xs text-muted-foreground">
+              Nenašel jsi tu správnou knihu?{' '}
+              <Link
+                href={`/cteni/knihy/nova?from=esej${essayId ? `&essayId=${essayId}` : ''}`}
+                className="focus-ring rounded underline underline-offset-2 hover:text-foreground"
+              >
+                Přidat novou do BOBa
+              </Link>
+            </p>
           </div>
         ) : (
           <div className="rounded-xl border bg-muted/40 p-3 sm:p-4">
@@ -394,9 +417,6 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
               <div className="min-w-0 flex-1 space-y-3">
                 <div>
                   <p className="font-medium">Vyber knihu, ke které esej patří</p>
-                  <p className="text-sm text-muted-foreground">
-                    Kniha rozhoduje o tom, kolik BookPoints ti esej přinese.
-                  </p>
                 </div>
 
                 <div className="relative">
@@ -457,7 +477,12 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                   rámec.
                 </p>
 
-                {essayId && <BookNotFoundCard query={bookQuery} from="esej" essayId={essayId} />}
+                {/* Only a search that came up empty deserves the invitation to
+                    add the book — it is the moment the author is stuck, not a
+                    standing banner. */}
+                {bookQuery.trim() && bookResults.length === 0 && !isSearchingBooks && (
+                  <BookNotFoundCard query={bookQuery} from="esej" essayId={essayId ?? undefined} />
+                )}
               </div>
             </div>
           </div>

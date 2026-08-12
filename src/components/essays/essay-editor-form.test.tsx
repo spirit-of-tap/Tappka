@@ -54,6 +54,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   fetchSpy.mockReset();
   push.mockReset();
+  mockSearchParams.delete('book');
 });
 
 afterEach(() => {
@@ -164,5 +165,55 @@ describe('EssayEditorForm — book preselect', () => {
     expect(
       fetchSpy.mock.calls.some(([url]) => url === '/api/books/new-1'),
     ).toBe(true);
+  });
+});
+
+describe('EssayEditorForm — add-book entry', () => {
+  const searchHit = {
+    id: 'b1',
+    title_cs: 'Atomic Habits',
+    author: 'James Clear',
+    book_points: 3,
+    list_status: 'shortlist' as const,
+    is_rocket_model: false,
+    google_books_cover_url: null,
+    highlight_category: null,
+  };
+
+  it('does not show Nenašel jsi knihu? before the author searches', () => {
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+    expect(screen.queryByText('Nenašel jsi knihu?')).not.toBeInTheDocument();
+  });
+
+  it('shows Nenašel jsi knihu? only when a search comes up empty', async () => {
+    fetchSpy.mockImplementation(() => Promise.resolve(jsonResponse({ data: [] })));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm />);
+    await user.type(screen.getByLabelText('Hledat knihu'), 'kniha co neexistuje');
+
+    await waitFor(() => expect(screen.getByText('Nenašel jsi knihu?')).toBeInTheDocument());
+  });
+
+  it('keeps Nenašel jsi knihu? hidden while the search has matches', async () => {
+    fetchSpy.mockImplementation(() => Promise.resolve(jsonResponse({ data: [searchHit] })));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm />);
+    await user.type(screen.getByLabelText('Hledat knihu'), 'Atomic');
+
+    expect(await screen.findByText('Atomic Habits')).toBeInTheDocument();
+    expect(screen.queryByText('Nenašel jsi knihu?')).not.toBeInTheDocument();
+  });
+
+  it('offers adding a new book even when a book is already selected', () => {
+    render(
+      <EssayEditorForm
+        initialEssay={{ ...publishedEssay, book: { ...searchHit, book_points: 3 } }}
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: /Přidat novou do BOBa/ });
+    expect(link).toHaveAttribute('href', '/cteni/knihy/nova?from=esej&essayId=essay-1');
   });
 });
