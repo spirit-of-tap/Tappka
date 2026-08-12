@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  ALLOWED_PAST_MS,
   doTimesOverlap,
   getFirstBookableRange,
+  isDayInPast,
   isRoomAvailableOnDay,
+  isSlotInPast,
 } from "@/lib/reservations/utils";
 import type { Reservation, Room } from "@/lib/reservations/types";
 
@@ -33,6 +36,45 @@ describe("isRoomAvailableOnDay", () => {
 
   it("returns false when the weekday is not in available_days", () => {
     expect(isRoomAvailableOnDay(room([1, 2, 3]), new Date("2026-07-09T09:00:00Z"))).toBe(false);
+  });
+});
+
+describe("isSlotInPast", () => {
+  const now = new Date("2026-07-09T10:00:00Z");
+
+  it("keeps the current 15-min slot bookable (grace window)", () => {
+    expect(isSlotInPast(new Date("2026-07-09T09:45:00Z"), now)).toBe(false);
+  });
+
+  it("rejects slots older than the grace window", () => {
+    expect(isSlotInPast(new Date("2026-07-09T09:44:59Z"), now)).toBe(true);
+  });
+
+  it("keeps future times bookable", () => {
+    expect(isSlotInPast(new Date("2026-07-09T10:00:00Z"), now)).toBe(false);
+  });
+
+  it("matches the API threshold exactly", () => {
+    const threshold = new Date(now.getTime() - ALLOWED_PAST_MS);
+    expect(isSlotInPast(threshold, now)).toBe(false);
+    expect(isSlotInPast(new Date(threshold.getTime() - 1), now)).toBe(true);
+  });
+});
+
+describe("isDayInPast", () => {
+  // Local-time constructors: the schedule views work in local time.
+  const now = new Date(2026, 6, 9, 10, 0, 0, 0); // today, 10:00
+
+  it("keeps today bookable", () => {
+    expect(isDayInPast(new Date(2026, 6, 9, 0, 0, 0, 0), now)).toBe(false);
+  });
+
+  it("keeps future days bookable", () => {
+    expect(isDayInPast(new Date(2026, 6, 10, 0, 0, 0, 0), now)).toBe(false);
+  });
+
+  it("blocks any day before today", () => {
+    expect(isDayInPast(new Date(2026, 6, 8, 23, 59, 59, 0), now)).toBe(true);
   });
 });
 

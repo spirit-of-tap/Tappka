@@ -12,9 +12,12 @@ import {
   type ScheduleBreak,
 } from "@/lib/reservations/types";
 import {
+  ALLOWED_PAST_MS,
   formatTime,
   getFirstBookableRange,
+  isDayInPast,
   isReservationActive,
+  isSlotInPast,
   getReservationColorClasses,
   inferReservationKind,
 } from "@/lib/reservations/utils";
@@ -92,6 +95,16 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
     return availableDays.includes(date.getDay());
   };
 
+  // Past days keep their reservations visible but can't be booked
+  const isDayBookable = (date: Date): boolean =>
+    isDayAvailable(date) && !isDayInPast(date);
+
+  const getBlockReason = (date: Date): string | undefined => {
+    if (!isDayAvailable(date)) return "Místnost není v tento den dostupná";
+    if (isDayInPast(date)) return "V minulosti nelze rezervovat";
+    return undefined;
+  };
+
   // Convert pixel position to time
   const pixelToTime = useCallback((day: Date, pixelY: number): Date => {
     const totalHeight = (OPERATING_HOURS.end - OPERATING_HOURS.start) * hourHeight;
@@ -126,11 +139,14 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
     if ((e.target as HTMLElement).closest('[data-reservation]')) return;
     
     const y = getRelativeY(dayIndex, e.clientY);
+    // Don't start a drag on a past slot (today's past hours stay bookable-free)
+    if (isSlotInPast(pixelToTime(weekDays[dayIndex], y))) return;
+
     setIsDragging(true);
     setDragDayIndex(dayIndex);
     setDragStart(y);
     setDragEnd(y);
-  }, [getRelativeY]);
+  }, [getRelativeY, pixelToTime, weekDays]);
 
   // Global mouse handlers
   const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
@@ -156,11 +172,26 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
     if (endY - startY < slotHeight / 2) {
       // Treat as click - create 1 hour slot
       const clickTime = pixelToTime(day, startY);
+      if (isSlotInPast(clickTime)) {
+        setIsDragging(false);
+        setDragDayIndex(null);
+        setDragStart(null);
+        setDragEnd(null);
+        return;
+      }
       onSlotClick?.(day, clickTime.getHours());
     } else {
       // Treat as drag - create reservation
       const startTime = pixelToTime(day, startY);
       const endTime = pixelToTime(day, endY + slotHeight);
+      // Dragging up into the past would produce a rejected start — no-op
+      if (isSlotInPast(startTime)) {
+        setIsDragging(false);
+        setDragDayIndex(null);
+        setDragStart(null);
+        setDragEnd(null);
+        return;
+      }
       onDragCreate?.(startTime, endTime);
     }
 
@@ -220,35 +251,36 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
           const isToday = isSameDay(day, today);
           const breakInfo = getBreakForDate(day);
           const hasBreak = !!breakInfo;
-          const isAvailable = isDayAvailable(day);
+          const isBookable = isDayBookable(day);
+          const blockReason = getBlockReason(day);
           return (
             <div
               key={day.toISOString()}
               className={cn(
                 "flex-1 text-center py-2 border-r last:border-r-0",
-                isToday && isAvailable && "bg-primary/10",
-                hasBreak && isAvailable && "bg-warning/10 border-warning",
-                !isAvailable && "bg-muted/60"
+                isToday && isBookable && "bg-primary/10",
+                hasBreak && isBookable && "bg-warning/10 border-warning",
+                !isBookable && "bg-muted/60"
               )}
-              title={!isAvailable ? "Místnost není v tento den dostupná" : hasBreak ? breakInfo.name : undefined}
+              title={!isBookable ? blockReason : hasBreak ? breakInfo.name : undefined}
             >
               <div className="text-xs text-muted-foreground">
                 {DAY_NAMES_CS[day.getDay()]}
               </div>
               <div className={cn(
                 "text-sm font-medium",
-                isToday && isAvailable && "text-primary",
-                !isAvailable && "text-muted-foreground"
+                isToday && isBookable && "text-primary",
+                !isBookable && "text-muted-foreground"
               )}>
                 {format(day, "d.M.")}
               </div>
-              {hasBreak && isAvailable && (
+              {hasBreak && isBookable && (
                 <div className="text-[10px] text-warning-strong truncate px-1">
                   {breakInfo.name}
                 </div>
               )}
               {/* Keyboard-reachable alternative to drag-to-create */}
-              {isAvailable && onDragCreate && (
+              {isBookable && onDragCreate && (
                 <button
                   type="button"
                   onClick={() => handleCreateClick(day)}
@@ -286,7 +318,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
           const dayReservations = reservationsByDay.get(dayKey) || [];
           const isToday = isSameDay(day, today);
           const hasBreak = !!getBreakForDate(day);
-          const isAvailable = isDayAvailable(day);
+          const isBookable = isDayBookable(day);
 
           return (
             <div
@@ -294,32 +326,53 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
               ref={(el) => { dayRefs.current[dayIndex] = el; }}
               className={cn(
                 "flex-1 relative border-r last:border-r-0 select-none",
-                isAvailable && isToday && "bg-primary/5",
-                isAvailable && hasBreak && "bg-warning/10 border-warning",
-                !isAvailable && "bg-muted/40 cursor-not-allowed",
-                isAvailable && isDragging && dragDayIndex === dayIndex && "cursor-grabbing"
+                isBookable && isToday && "bg-primary/5",
+                isBookable && hasBreak && "bg-warning/10 border-warning",
+                !isBookable && "bg-muted/40 cursor-not-allowed",
+                isBookable && isDragging && dragDayIndex === dayIndex && "cursor-grabbing"
               )}
-              onMouseDown={(e) => isAvailable && handleMouseDown(e, dayIndex)}
+              onMouseDown={(e) => isBookable && handleMouseDown(e, dayIndex)}
             >
-              {/* Hour grid lines - only for available days */}
-              {isAvailable ? (
-                hours.map((hour) => (
-                  <div
-                    key={hour}
-                    className="border-b last:border-b-0 hover:bg-muted/30 cursor-cell transition-colors"
-                    style={{ height: `${hourHeight}px` }}
-                  />
-                ))
+              {/* Hour grid lines - only for bookable days; past slots today and
+                  past/unavailable days get a solid background */}
+              {isBookable ? (
+                <>
+                  {(() => {
+                    const dayStartMs = new Date(day).setHours(OPERATING_HOURS.start, 0, 0, 0);
+                    const slotMs = TIME_SLOT_MINUTES * 60_000;
+                    const boundaryMs = now.getTime() - ALLOWED_PAST_MS;
+                    // Solid region ends at the start of the first slot that is
+                    // still bookable (keeps the current 15-min slot clickable)
+                    const solidEndMs = dayStartMs + Math.floor((boundaryMs - dayStartMs) / slotMs) * slotMs + slotMs;
+                    const solidHeight = Math.min(
+                      Math.max(((solidEndMs - dayStartMs) / 3_600_000) * hourHeight, 0),
+                      hours.length * hourHeight
+                    );
+                    return solidHeight > 0 ? (
+                      <div
+                        className="bg-muted/40 cursor-not-allowed"
+                        style={{ height: `${solidHeight}px` }}
+                      />
+                    ) : null;
+                  })()}
+                  {hours.map((hour) => (
+                    <div
+                      key={hour}
+                      className="border-b last:border-b-0 hover:bg-muted/30 cursor-cell transition-colors"
+                      style={{ height: `${hourHeight}px` }}
+                    />
+                  ))}
+                </>
               ) : (
-                // Unavailable day - no grid, just solid background
+                // Unavailable/past day - no grid, just solid background
                 <div 
                   className="h-full"
                   style={{ height: `${hours.length * hourHeight}px` }}
                 />
               )}
 
-              {/* Drag selection preview - only for available days */}
-              {isAvailable && dragSelection && dragSelection.dayIndex === dayIndex && (
+              {/* Drag selection preview - only for bookable days */}
+              {isBookable && dragSelection && dragSelection.dayIndex === dayIndex && (
                 <div
                   className="absolute left-0.5 right-0.5 bg-primary/20 border-2 border-dashed border-primary rounded pointer-events-none z-10"
                   style={{
@@ -333,8 +386,8 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
                 </div>
               )}
 
-              {/* Reservations - only show on available days */}
-              {isAvailable && dayReservations.map((reservation) => {
+              {/* Reservations - past days stay visible for history */}
+              {dayReservations.map((reservation) => {
                 const start = new Date(reservation.start_at);
                 const end = new Date(reservation.end_at);
                 const startHour = start.getHours() + start.getMinutes() / 60;
@@ -356,7 +409,7 @@ export function WeekSchedule({ startDate, reservations, scheduleBreaks = [], ava
               })}
 
               {/* Current time indicator — only in today's column */}
-              {isAvailable && isToday && (() => {
+              {isBookable && isToday && (() => {
                 const nowHour = now.getHours() + now.getMinutes() / 60;
                 if (nowHour < OPERATING_HOURS.start || nowHour > OPERATING_HOURS.end) return null;
                 const top = (nowHour - OPERATING_HOURS.start) * hourHeight;

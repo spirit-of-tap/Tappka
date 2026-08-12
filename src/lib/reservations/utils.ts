@@ -46,6 +46,27 @@ export function isRoomAvailableOnDay(room: Room, date: Date): boolean {
   return room.available_days.includes(weekdayNumber);
 }
 
+/** Grace window: allow booking the current 15-min slot (mirrors the API). */
+export const ALLOWED_PAST_MS = TIME_SLOT_MINUTES * 60 * 1000;
+
+/**
+ * Check if a start time is older than the past-reservation grace window.
+ * Mirrors the API rule: `start < now - ALLOWED_PAST_MS` is rejected.
+ */
+export function isSlotInPast(date: Date, now: Date = new Date()): boolean {
+  return date.getTime() < now.getTime() - ALLOWED_PAST_MS;
+}
+
+/**
+ * Check if a whole day is in the past (i.e. before the grace window),
+ * meaning no bookable slot remains on it.
+ */
+export function isDayInPast(date: Date, now: Date = new Date()): boolean {
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+  return endOfDay.getTime() < now.getTime() - ALLOWED_PAST_MS;
+}
+
 const PRAGUE_TZ = "Europe/Prague";
 
 /**

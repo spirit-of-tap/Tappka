@@ -12,9 +12,12 @@ import {
   type ScheduleBreak,
 } from "@/lib/reservations/types";
 import {
+  ALLOWED_PAST_MS,
   formatTime,
   getFirstBookableRange,
+  isDayInPast,
   isReservationActive,
+  isSlotInPast,
   getReservationColorClasses,
   inferReservationKind,
 } from "@/lib/reservations/utils";
@@ -121,10 +124,13 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     if ((e.target as HTMLElement).closest('[data-reservation]')) return;
     
     const y = getRelativeY(e.clientY);
+    // Don't start a drag on a past slot
+    if (isSlotInPast(pixelToTime(y))) return;
+
     setIsDragging(true);
     setDragStart(y);
     setDragEnd(y);
-  }, [getRelativeY]);
+  }, [getRelativeY, pixelToTime]);
 
   // Keep refs for callbacks that need current values
   const pixelToTimeRef = useRef(pixelToTime);
@@ -164,6 +170,8 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
       touchStartX = touch.clientX;
       touchStartY = touch.clientY;
       const y = getRelativeYRef.current(touch.clientY);
+      // Don't start a long-press drag on a past slot
+      if (isSlotInPast(pixelToTimeRef.current(y))) return;
       const ts = touchStateRef.current;
 
       // Clear any previous timer
@@ -247,6 +255,18 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
 
         const startTime = pixelToTimeRef.current(startY);
         const endTime = pixelToTimeRef.current(endY + slotHeightRef.current);
+        // Dragging up into the past would produce a rejected start — no-op
+        if (isSlotInPast(startTime)) {
+          ts.isLongPress = false;
+          ts.isDragging = false;
+          ts.dragStart = null;
+          ts.dragEnd = null;
+          setIsDragging(false);
+          setIsLongPress(false);
+          setDragStart(null);
+          setDragEnd(null);
+          return;
+        }
         onDragCreateRef.current?.(startTime, endTime);
       }
 
@@ -318,16 +338,24 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
 
     const startY = Math.min(dragStart, dragEnd);
     const endY = Math.max(dragStart, dragEnd);
-    
+
+    const startTime = pixelToTime(startY);
+    const endTime = pixelToTime(endY + slotHeight);
+
+    // Dragging up into the past would produce a rejected start — no-op
+    if (isSlotInPast(startTime)) {
+      setIsDragging(false);
+      setDragStart(null);
+      setDragEnd(null);
+      return;
+    }
+
     // Minimum drag distance (at least one slot)
     if (endY - startY < slotHeight / 2) {
       // Treat as click
-      const clickTime = pixelToTime(startY);
-      onSlotClick?.(clickTime);
+      onSlotClick?.(startTime);
     } else {
       // Treat as drag - create reservation
-      const startTime = pixelToTime(startY);
-      const endTime = pixelToTime(endY + slotHeight);
       onDragCreate?.(startTime, endTime);
     }
 
@@ -372,6 +400,7 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     if (!onSlotClick || isDragging) return;
     const clickedTime = new Date(date);
     clickedTime.setHours(hour, 0, 0, 0);
+    if (isSlotInPast(clickedTime)) return;
     onSlotClick(clickedTime);
   };
 
@@ -388,6 +417,8 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
     month: "numeric",
   });
 
+  const dayInPast = isDayInPast(date);
+
   return (
     <div className="relative border rounded-lg overflow-hidden bg-card">
       {/* Schedule break banner */}
@@ -403,7 +434,7 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
       )}
 
       {/* Column header — keyboard-reachable alternative to drag-to-create */}
-      {onDragCreate && (
+      {onDragCreate && !dayInPast && (
         <div className="flex border-b bg-muted/30">
           <div className="flex-shrink-0 w-12 md:w-16 border-r" />
           <div className="flex-1 flex items-center justify-end px-2 py-1.5">
@@ -441,22 +472,60 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
           ref={scheduleRef}
           className={cn(
             "flex-1 relative select-none",
+            dayInPast && "bg-muted/40 cursor-not-allowed",
             isDragging && "cursor-grabbing"
           )}
           style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
           onMouseDown={handleMouseDown}
         >
-          {/* Hour grid lines */}
-          {hours.map((hour) => (
+          {/* Hour grid lines - past days get a solid background, and today
+              shows a solid block for slots that have already passed */}
+          {dayInPast ? (
             <div
-              key={hour}
-              className={cn(
-                "h-[60px] border-b last:border-b-0 transition-colors",
-                !isDragging && "hover:bg-muted/30 cursor-cell"
-              )}
-              onClick={() => handleSlotClick(hour)}
+              className="h-full"
+              style={{ height: `${hours.length * hourHeight}px` }}
             />
-          ))}
+          ) : (
+            <>
+              {(() => {
+                const dayStartMs = new Date(date).setHours(OPERATING_HOURS.start, 0, 0, 0);
+                const slotMs = TIME_SLOT_MINUTES * 60_000;
+                const boundaryMs = now.getTime() - ALLOWED_PAST_MS;
+                // Solid region ends at the start of the first slot that is
+                // still bookable (keeps the current 15-min slot clickable)
+                const solidEndMs = dayStartMs + Math.floor((boundaryMs - dayStartMs) / slotMs) * slotMs + slotMs;
+                const solidHeight = Math.min(
+                  Math.max(((solidEndMs - dayStartMs) / 3_600_000) * hourHeight, 0),
+                  hours.length * hourHeight
+                );
+                return solidHeight > 0 ? (
+                  <div
+                    className="bg-muted/40 cursor-not-allowed"
+                    style={{ height: `${solidHeight}px` }}
+                  />
+                ) : null;
+              })()}
+              {hours.map((hour) => (
+                <div
+                  key={hour}
+                  className={cn(
+                    "h-[60px] border-b last:border-b-0 transition-colors",
+                    !isDragging && "hover:bg-muted/30 cursor-cell"
+                  )}
+                  onClick={() => handleSlotClick(hour)}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Past-day notice — reservations stay visible underneath */}
+          {dayInPast && (
+            <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+              <span className="text-sm text-muted-foreground bg-card/80 px-3 py-1.5 rounded-md">
+                V minulosti nelze rezervovat
+              </span>
+            </div>
+          )}
 
           {/* Drag selection preview */}
           {dragSelection && (
