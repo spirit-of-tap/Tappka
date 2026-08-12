@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserProfile } from "@/lib/auth-helpers"
 
-const TOGGLE_KEYS = ["essay_coach_read_email", "essay_comment_email", "essay_vote_email"] as const
+const TOGGLE_KEYS = ["essay_coach_read_email", "essay_comment_email", "essay_vote_email", "book_submitted_email"] as const
 type ToggleKey = (typeof TOGGLE_KEYS)[number]
 
 export async function PATCH(request: NextRequest) {
@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: existing } = await supabase
       .from("notification_preferences")
-      .select("essay_coach_read_email, essay_comment_email, essay_vote_email, created_by_profile_id")
+      .select("essay_coach_read_email, essay_comment_email, essay_vote_email, book_submitted_email, created_by_profile_id")
       .eq("profile_id", profile.id)
       .maybeSingle()
 
@@ -46,6 +46,7 @@ export async function PATCH(request: NextRequest) {
           essay_coach_read_email: existing?.essay_coach_read_email ?? true,
           essay_comment_email: existing?.essay_comment_email ?? true,
           essay_vote_email: existing?.essay_vote_email ?? true,
+          book_submitted_email: existing?.book_submitted_email ?? false,
           ...updates,
           created_by_profile_id: existing?.created_by_profile_id ?? profile.id,
           updated_by_profile_id: profile.id,

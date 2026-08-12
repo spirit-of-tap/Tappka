@@ -14,7 +14,7 @@ export default async function NotificationSettingsPage() {
 
   const { data: preferences } = await supabase
     .from('notification_preferences')
-    .select('essay_coach_read_email, essay_comment_email, essay_vote_email')
+    .select('essay_coach_read_email, essay_comment_email, essay_vote_email, book_submitted_email')
     .eq('profile_id', profile.id)
     .maybeSingle();
 
@@ -28,6 +28,7 @@ export default async function NotificationSettingsPage() {
         initialCoachReadEmail={preferences?.essay_coach_read_email ?? true}
         initialCommentEmail={preferences?.essay_comment_email ?? true}
         initialVoteEmail={preferences?.essay_vote_email ?? true}
+        initialBookSubmittedEmail={preferences?.book_submitted_email ?? false}
         hasBetaAccess={Boolean(profile.beta_access_granted_at)}
       />
     </div>

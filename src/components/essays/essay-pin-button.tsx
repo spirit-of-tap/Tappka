@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Pin } from 'lucide-react';
+import { toast } from 'sonner';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 interface EssayPinButtonProps {
@@ -17,9 +19,14 @@ export function EssayPinButton({ essayId, isPinned: initialPinned }: EssayPinBut
     setLoading(true);
     try {
       const res = await fetch(`/api/essays/${essayId}/pin`, { method: 'POST' });
-      if (!res.ok) return;
+      if (!res.ok) {
+        toast.error('Nepodařilo se změnit stav připnutí.');
+        return;
+      }
       const { data } = await res.json();
       setPinned(data.pinned_at != null);
+    } catch {
+      toast.error('Nepodařilo se změnit stav připnutí.');
     } finally {
       setLoading(false);
     }
@@ -37,7 +44,11 @@ export function EssayPinButton({ essayId, isPinned: initialPinned }: EssayPinBut
       )}
       title={pinned ? 'Odepnout' : 'Připnout'}
     >
-      <Pin className={cn('size-3', pinned && 'fill-primary')} />
+      {loading ? (
+        <Spinner className="size-3" />
+      ) : (
+        <Pin className={cn('size-3', pinned && 'fill-primary')} />
+      )}
       {pinned ? 'Připnuto' : 'Připnout'}
     </button>
   );

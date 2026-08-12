@@ -20,33 +20,33 @@ describe("TopicPills", () => {
   it("renders all topic categories", async () => {
     const { TopicPills } = await import("@/components/essays/topic-pills");
     render(<TopicPills />);
-    expect(screen.getByText("Podnikání")).toBeInTheDocument();
-    expect(screen.getByText("Učení")).toBeInTheDocument();
+    expect(screen.getByText("Finance & ekonomika")).toBeInTheDocument();
+    expect(screen.getByText("Osobní rozvoj")).toBeInTheDocument();
     expect(screen.getByText("Leadership")).toBeInTheDocument();
   });
 
   it("highlights the active tag from search params", async () => {
-    mockSearchParams.set("tag", "uceni");
+    mockSearchParams.set("tag", "Leadership");
     const { TopicPills } = await import("@/components/essays/topic-pills");
     render(<TopicPills />);
-    const uceniBtn = screen.getByText("Učení");
-    expect(uceniBtn.className).toContain("bg-primary");
+    const leadershipBtn = screen.getByText("Leadership");
+    expect(leadershipBtn.className).toContain("bg-primary");
   });
 
   it("calls router.push with tag param on pill click", async () => {
     const { TopicPills } = await import("@/components/essays/topic-pills");
     const user = userEvent.setup();
     render(<TopicPills />);
-    await user.click(screen.getByText("Podnikání"));
-    expect(mockPush).toHaveBeenCalledWith("?tag=podnikani");
+    await user.click(screen.getByText("Leadership"));
+    expect(mockPush).toHaveBeenCalledWith("?tag=Leadership");
   });
 
   it("removes tag when active pill is clicked", async () => {
-    mockSearchParams.set("tag", "uceni");
+    mockSearchParams.set("tag", "Leadership");
     const { TopicPills } = await import("@/components/essays/topic-pills");
     const user = userEvent.setup();
     render(<TopicPills />);
-    await user.click(screen.getByText("Učení"));
+    await user.click(screen.getByText("Leadership"));
     expect(mockPush).toHaveBeenCalledWith("?");
   });
 });

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
 
 /** Quiet period after the last keystroke before a save fires. */
 const AUTOSAVE_DEBOUNCE_MS = 2000;
@@ -19,6 +20,8 @@ interface UseAutosaveOptions {
 export interface UseAutosaveResult {
   status: AutosaveStatus;
   lastSavedAt: Date | null;
+  /** Live mirror of `status` for reading right after an `await`. */
+  statusRef: MutableRefObject<AutosaveStatus>;
   /** Marks the document dirty and (re)starts the debounce. */
   schedule: () => void;
   /** Saves immediately if dirty. Awaits the result. */
@@ -38,10 +41,19 @@ export function useAutosave({ save, enabled }: UseAutosaveOptions): UseAutosaveR
   const [status, setStatus] = useState<AutosaveStatus>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
+  // Live mirror of `status` for event handlers that need to read it after an
+  // `await` (state closures would hold the value from render time).
+  const statusRef = useRef<AutosaveStatus>('idle');
+  const setStatusBoth = useCallback((next: AutosaveStatus) => {
+    statusRef.current = next;
+    setStatus(next);
+  }, []);
+
   const saveRef = useRef(save);
 
   const dirtyRef = useRef(false);
   const inFlightRef = useRef(false);
+  const inFlightPromiseRef = useRef<Promise<void> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const maxWaitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -54,34 +66,44 @@ export function useAutosave({ save, enabled }: UseAutosaveOptions): UseAutosaveR
 
   const runSaveRef = useRef<() => Promise<void>>(async () => {});
 
-  const runSave = useCallback(async () => {
-    if (!dirtyRef.current || inFlightRef.current) return;
+  const runSave = useCallback((): Promise<void> => {
+    // An in-flight save already covers the dirty content (the document is
+    // snapshotted when the request starts); callers that need certainty, e.g.
+    // flush() before publish, await the same promise instead of firing a
+    // duplicate request.
+    if (!dirtyRef.current || inFlightRef.current) return inFlightPromiseRef.current ?? Promise.resolve();
 
     clearTimers();
     inFlightRef.current = true;
     dirtyRef.current = false;
-    setStatus('saving');
+    setStatusBoth('saving');
 
-    for (let attempt = 1; attempt <= AUTOSAVE_MAX_ATTEMPTS; attempt += 1) {
-      try {
-        await saveRef.current();
-        setStatus('saved');
-        setLastSavedAt(new Date());
-        inFlightRef.current = false;
-        // Changes that arrived mid-flight are still unsaved.
-        if (dirtyRef.current) void runSaveRef.current();
-        return;
-      } catch {
-        if (attempt === AUTOSAVE_MAX_ATTEMPTS) {
-          dirtyRef.current = true;
+    const task = (async () => {
+      for (let attempt = 1; attempt <= AUTOSAVE_MAX_ATTEMPTS; attempt += 1) {
+        try {
+          await saveRef.current();
+          setStatusBoth('saved');
+          setLastSavedAt(new Date());
           inFlightRef.current = false;
-          setStatus('error');
+          inFlightPromiseRef.current = null;
+          // Changes that arrived mid-flight are still unsaved.
+          if (dirtyRef.current) void runSaveRef.current();
           return;
+        } catch {
+          if (attempt === AUTOSAVE_MAX_ATTEMPTS) {
+            dirtyRef.current = true;
+            inFlightRef.current = false;
+            inFlightPromiseRef.current = null;
+            setStatusBoth('error');
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_RETRY_BASE_MS * attempt));
         }
-        await new Promise((resolve) => setTimeout(resolve, AUTOSAVE_RETRY_BASE_MS * attempt));
       }
-    }
-  }, [clearTimers]);
+    })();
+    inFlightPromiseRef.current = task;
+    return task;
+  }, [clearTimers, setStatusBoth]);
 
   // Latest-value refs are synced after commit, never during render: a render-time
   // write is unsafe under concurrent rendering and both refs are only ever read
@@ -107,6 +129,11 @@ export function useAutosave({ save, enabled }: UseAutosaveOptions): UseAutosaveR
   const flush = useCallback(async () => {
     clearTimers();
     await runSave();
+    // A save that was already in flight when flush() ran may have queued a
+    // follow-up for changes that arrived mid-flight — drain the whole chain.
+    while (inFlightRef.current) {
+      await inFlightPromiseRef.current;
+    }
   }, [clearTimers, runSave]);
 
   const retry = useCallback(async () => {
@@ -134,5 +161,5 @@ export function useAutosave({ save, enabled }: UseAutosaveOptions): UseAutosaveR
 
   useEffect(() => clearTimers, [clearTimers]);
 
-  return { status, lastSavedAt, schedule, flush, retry };
+  return { status, lastSavedAt, statusRef, schedule, flush, retry };
 }

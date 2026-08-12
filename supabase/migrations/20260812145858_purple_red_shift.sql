@@ -1,0 +1,1 @@
+ALTER TABLE "notification_preferences" ADD COLUMN "book_submitted_email" boolean DEFAULT false NOT NULL;

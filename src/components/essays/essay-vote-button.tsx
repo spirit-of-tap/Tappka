@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { ChevronUp, ThumbsUp } from 'lucide-react';
+import { toast } from 'sonner';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 interface EssayVoteButtonProps {
@@ -43,7 +45,11 @@ export function EssayVoteButton({
             setTimeout(() => setBurst(false), 600);
           }
         }
+      } else {
+        toast.error('Nepodařilo se hlasovat. Zkus to znovu.');
       }
+    } catch {
+      toast.error('Nepodařilo se hlasovat. Zkus to znovu.');
     } finally {
       setLoading(false);
     }
@@ -101,7 +107,11 @@ export function EssayVoteButton({
                 : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
             )}
           >
-            <ThumbsUp className={cn('transition-transform', voted ? 'size-5' : 'size-4')} />
+            {loading ? (
+              <Spinner className="size-4" />
+            ) : (
+              <ThumbsUp className={cn('transition-transform', voted ? 'size-5' : 'size-4')} />
+            )}
             <span className="text-sm font-semibold">
               {voted ? 'Líbilo se mi to' : 'Líbí se mi to'}
             </span>
@@ -130,7 +140,7 @@ export function EssayVoteButton({
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
-      <ChevronUp className="size-3" />
+      {loading ? <Spinner className="size-3" /> : <ChevronUp className="size-3" />}
       <span className="tabular-nums">{count}</span>
     </button>
   );

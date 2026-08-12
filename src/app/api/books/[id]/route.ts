@@ -43,8 +43,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Nemáš oprávnění' }, { status: 403 });
     }
 
-    const body: { action: 'classify' | 'highlight' | 'unhighlight' | 'edit' | 'points' } & Partial<ClassifyBookInput> & SetBookHighlightInput & {
+    const body: { action: 'classify' | 'highlight' | 'unhighlight' | 'edit' | 'points' | 'replace-record' } & Partial<ClassifyBookInput> & SetBookHighlightInput & {
       title?: string; author?: string; description?: string; tags?: string[]; is_rocket_model?: boolean;
+      cover_url?: string | null; isbn_13?: string | null; external_id?: string | null; source?: string;
     } = await request.json();
 
     const now = new Date().toISOString();
@@ -183,6 +184,54 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       }
 
       const book = await getBookById(supabase, id);
+      return NextResponse.json({ data: book });
+    }
+
+    if (body.action === 'replace-record') {
+      const source = body.source;
+      if (source !== 'google_books' && source !== 'open_library') {
+        return NextResponse.json({ error: 'Neplatný zdroj záznamu' }, { status: 400 });
+      }
+      if (!body.external_id?.trim()) {
+        return NextResponse.json({ error: 'Chybí identifikátor záznamu' }, { status: 400 });
+      }
+
+      const coverUrl = body.cover_url?.trim() ? body.cover_url.trim().replace(/^http:\/\//, 'https://') : null;
+      const isbn = body.isbn_13?.trim() || null;
+      const externalId = body.external_id.trim();
+
+      // The table has no UNIQUE constraint on isbn_13 (an ISBN identifies an
+      // edition, not a work), so the duplicate guard is app-level.
+      // PostgREST rejects `eq.` with an empty value, so the ISBN clause is only
+      // included when the record actually carries an ISBN.
+      const duplicateFilters = isbn
+        ? `isbn_13.eq.${isbn},and(source.eq.${source},external_id.eq.${externalId})`
+        : `and(source.eq.${source},external_id.eq.${externalId})`;
+      const { data: existing, error: existingError } = await supabase
+        .from('books')
+        .select('id')
+        .or(duplicateFilters)
+        .neq('id', id)
+        .limit(1);
+      if (existingError) throw existingError;
+      if (existing && existing.length > 0) {
+        return NextResponse.json({ error: 'Tento záznam už má jiná kniha' }, { status: 409 });
+      }
+
+      const { error } = await supabase
+        .from('books')
+        .update({
+          google_books_cover_url: coverUrl,
+          isbn_13: isbn,
+          external_id: externalId,
+          source,
+          updated_by_profile_id: profile.id,
+        })
+        .eq('id', id);
+      if (error) throw error;
+
+      const book = await getBookById(supabase, id);
+      if (!book) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
       return NextResponse.json({ data: book });
     }
 

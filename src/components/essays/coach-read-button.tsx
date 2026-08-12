@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { Check, CheckCheck } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 interface CoachReadButtonProps {
@@ -34,11 +36,13 @@ export function CoachReadButton({
         });
         if (!res.ok) {
           setRead(!next); // revert
+          toast.error('Nepodařilo se uložit stav přečtení.');
           return;
         }
         onToggled?.(next);
       } catch {
         setRead(!next); // revert
+        toast.error('Nepodařilo se uložit stav přečtení.');
       }
     });
   };
@@ -52,7 +56,13 @@ export function CoachReadButton({
       disabled={isPending}
       className={cn('gap-2', className)}
     >
-      {read ? <CheckCheck className="size-4" /> : <Check className="size-4" />}
+      {isPending ? (
+        <Spinner className="size-4" />
+      ) : read ? (
+        <CheckCheck className="size-4" />
+      ) : (
+        <Check className="size-4" />
+      )}
       {read ? 'Přečteno' : 'Označit jako přečtené'}
     </Button>
   );

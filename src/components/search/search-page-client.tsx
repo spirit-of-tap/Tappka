@@ -57,6 +57,10 @@ export function SearchPageClient({
   const [libraryFilterEnabled, setLibraryFilterEnabled] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Only the newest request may write state; a slow earlier response must not
+  // overwrite the results of a newer query.
+  const searchIdRef = useRef(0);
+  const categoryIdRef = useRef(0);
 
   // Focus the search box on pointer devices only — on touch it would pop up the
   // on-screen keyboard and cover the page the moment it opens.
@@ -65,8 +69,13 @@ export function SearchPageClient({
   }, []);
 
   useEffect(() => {
-    if (!query.trim()) { setResults(null); return; }
+    if (!query.trim()) {
+      searchIdRef.current += 1;
+      setResults(null);
+      return;
+    }
     if (timer.current) clearTimeout(timer.current);
+    const requestId = ++searchIdRef.current;
     timer.current = setTimeout(async () => {
       setLoading(true);
       try {
@@ -76,9 +85,11 @@ export function SearchPageClient({
           fetch(`/api/books/search?q=${q}`),
         ]);
         const [{ data: essays }, { data: books }] = await Promise.all([eRes.json(), bRes.json()]);
-        setResults({ essays: essays ?? [], books: books ?? [] });
+        if (requestId === searchIdRef.current) {
+          setResults({ essays: essays ?? [], books: books ?? [] });
+        }
       } finally {
-        setLoading(false);
+        if (requestId === searchIdRef.current) setLoading(false);
       }
     }, 350);
     return () => { if (timer.current) clearTimeout(timer.current); };
@@ -86,6 +97,7 @@ export function SearchPageClient({
 
   useEffect(() => {
     if (!selectedCategory) { setCategoryBooks([]); return; }
+    const requestId = ++categoryIdRef.current;
     setCategoryLoading(true);
     const params = new URLSearchParams({
       tag: selectedCategory,
@@ -95,8 +107,12 @@ export function SearchPageClient({
     if (libraryFilterEnabled) params.set('library_only', 'true');
     fetch(`/api/books?${params}`)
       .then((r) => r.json())
-      .then(({ data }) => setCategoryBooks(data ?? []))
-      .finally(() => setCategoryLoading(false));
+      .then(({ data }) => {
+        if (requestId === categoryIdRef.current) setCategoryBooks(data ?? []);
+      })
+      .finally(() => {
+        if (requestId === categoryIdRef.current) setCategoryLoading(false);
+      });
   }, [selectedCategory, libraryFilterEnabled]);
 
   const hasQuery = query.trim().length > 0;
