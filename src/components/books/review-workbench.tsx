@@ -87,19 +87,22 @@ export function ReviewWorkbench({ books, onDecide, onEdited, onDeleted }: Review
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(240px,300px)_1fr] lg:gap-6">
-      <ReviewQueueRail
-        books={books}
-        selectedId={selected?.id ?? null}
-        onSelect={handleSelect}
-        // Grid items stretch by default, so the rail matches the panel's height
-        // instead of ending wherever the queue happens to run out. The cap keeps a
-        // long queue from driving the row taller than the panel — past that the
-        // list scrolls inside the rail.
-        className={cn(
-          'lg:h-full lg:max-h-[calc(100vh-8rem)]',
-          selectedId && 'hidden lg:flex',
-        )}
-      />
+      {/*
+        The panel is the only thing that sets the row height. Taking the rail out
+        of flow (`absolute inset-0` over a `relative` grid cell) means its own
+        length never contributes: however many books are queued, it renders exactly
+        as tall as the panel beside it and scrolls inside itself past that. A
+        `max-h` cap instead of this made the rail *shorter* than the panel — the
+        mismatch you'd otherwise still see.
+      */}
+      <div className={cn('lg:relative', selectedId && 'hidden lg:block')}>
+        <ReviewQueueRail
+          books={books}
+          selectedId={selected?.id ?? null}
+          onSelect={handleSelect}
+          className="lg:absolute lg:inset-0"
+        />
+      </div>
       {selected && (
         <div ref={panelRef} className={cn('min-w-0 scroll-mt-4', !selectedId && 'hidden lg:block')}>
           <ReviewDetailPanel

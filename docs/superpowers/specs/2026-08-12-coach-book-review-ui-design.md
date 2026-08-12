@@ -86,17 +86,20 @@ lg:grid-cols-[minmax(240px,300px)_1fr]  gap-6
 
 ### Queue rail — `review-queue-rail.tsx`
 
-The two columns share one height. Grid items stretch by default, so the rail is left to
-stretch rather than ending wherever the queue runs out — a five-book rail beside a
-full-height panel reads as a rendering accident, not a design. The rail is a flex column
-whose list takes `flex-1 min-h-0 overflow-y-auto`, so it fills the row and scrolls
-inside itself. `lg:max-h-[calc(100vh-8rem)]` caps what the rail contributes to the row,
-so a long queue cannot drive the row taller than the panel. In the other direction the
-panel takes `h-full`, so a short book still fills a row a long queue set, with the
-decision bar anchored to the bottom of the card instead of floating mid-column.
+The two columns are exactly the same height, and **the panel is the only thing that sets
+it**. From `lg` up the rail's grid cell is `relative` and the rail itself is
+`absolute inset-0`, so the rail is out of flow and its own length never contributes to
+the row: 5 books or 500, it renders as tall as the panel beside it. The rail is a flex
+column whose list takes `flex-1 min-h-0 overflow-y-auto`, so it scrolls inside itself
+past that point. The panel takes `h-full` for the reverse case, keeping the decision bar
+at the bottom of the card rather than floating mid-column when a book is short.
 
-Below `lg` none of this applies: the column has no imposed height, `flex-1` resolves to
-the list's own height, and the rail scrolls with the page.
+A `max-h` cap on the rail was tried first and is wrong: it bounds the rail *below* the
+row height, so a panel taller than the cap leaves the rail visibly short — the same
+mismatch, plus an inner scrollbar the panel does not have.
+
+Below `lg` none of this applies: the rail is static, the column has no imposed height,
+`flex-1` resolves to the list's own height, and the rail scrolls with the page.
 
 - Header: `Fronta · {n} knih` with a muted `nejstarší první` hint, which is what
   `getProcessingBooks` actually orders by (`created_at` ascending).
