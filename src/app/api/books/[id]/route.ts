@@ -230,6 +230,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       if (error) throw error;
 
       const book = await getBookById(supabase, id);
+      if (!book) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
       return NextResponse.json({ data: book });
     }
 
