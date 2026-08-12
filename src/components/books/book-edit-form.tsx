@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Rocket, Save } from 'lucide-react';
+import { Rocket, Save, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +33,36 @@ export function BookEditForm({ book, onSaved, onCancel }: BookEditFormProps) {
   const [isRocketModel, setIsRocketModel] = useState(book.is_rocket_model);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichError, setEnrichError] = useState<string | null>(null);
+
+  const handleEnrich = async () => {
+    if (!title.trim() || !author.trim()) return;
+    setIsEnriching(true);
+    setEnrichError(null);
+    try {
+      const res = await fetch('/api/books/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          author: author.trim(),
+          isbn_13: book.isbn_13,
+          page_count: book.page_count,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setEnrichError(json.error ?? 'Nepodařilo se dohledat údaje');
+        return;
+      }
+      setTitle(json.data.title_cs);
+      setAuthor(json.data.author);
+      setDescription(json.data.description ?? '');
+    } finally {
+      setIsEnriching(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!title.trim() || !author.trim()) return;
@@ -72,6 +102,21 @@ export function BookEditForm({ book, onSaved, onCancel }: BookEditFormProps) {
       <div className="space-y-2">
         <Label htmlFor="description">Popis</Label>
         <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="O čem je tato kniha..." />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleEnrich}
+          disabled={!title.trim() || !author.trim() || isEnriching}
+          className="gap-2"
+        >
+          {isEnriching ? <Spinner className="size-4" /> : <Sparkles className="size-4" />}
+          Dohledat údaje přes AI
+        </Button>
+        {enrichError && <p className="text-sm text-destructive">{enrichError}</p>}
       </div>
 
       <div className="flex items-center justify-between gap-4 rounded-md border p-3">
