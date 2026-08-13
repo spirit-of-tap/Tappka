@@ -30,7 +30,7 @@ export default function NotFound() {
           {/* Funny message */}
           <div className="space-y-4">
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
-              Oh noo, asi jsi tappnul vedle...
+              Oh noo, asi jsi tappnul:la vedle...
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground max-w-md mx-auto">
               Tady nic není. Stránka neexistuje nebo se ztratila někde v TAPu.

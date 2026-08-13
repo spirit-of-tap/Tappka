@@ -9,7 +9,6 @@ import { CoachListTable, type ListKind } from './coach-list-table';
 import { CategoryManager } from './category-manager';
 import { DeleteBookDialog } from './delete-book-dialog';
 import { BookRowHeader } from './book-row-header';
-import { ListStatusBadge } from './book-status-badges';
 import { RocketModelManager } from './rocket-model-manager';
 import { LibraryImportScanner } from '@/components/library/library-import-scanner';
 import { Button } from '@/components/ui/button';
@@ -382,7 +381,6 @@ export function CoachDashboard({
                     {book.list_status_reason && (
                       <p className="text-xs text-muted-foreground mt-1">Důvod: {book.list_status_reason}</p>
                     )}
-                    <ListStatusBadge status={book.list_status} className="mt-1" />
                   </BookRowHeader>
                 </div>
                 <Button

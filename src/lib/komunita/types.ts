@@ -39,9 +39,9 @@ export interface ProfileFilters {
 
 // Role labels in Czech
 export const ROLE_LABELS: Record<ProfileRole, string> = {
-  student: 'Student',
-  mentor: 'Mentor',
-  coach: 'Kouč',
+  student: 'Student:ka',
+  mentor: 'Mentor:ka',
+  coach: 'Kouč:ka',
   admin: 'Admin',
 };
 

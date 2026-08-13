@@ -18,7 +18,7 @@ export function SemesterInfoCard() {
         <p>
           Semestrální reflexi doplňujte <strong>nejméně jednou za semestr</strong> po ukončení
           zkouškového období — průběžné vyplňování ale napomůže větší konkrétnosti a rychlejšímu
-          rozvoji. Konkrétní deadline se dozvíte s předstihem od koučů, případně od CIO.
+          rozvoji. Konkrétní deadline se dozvíte s předstihem od koučů:ek, případně od CIO.
         </p>
         <p>
           Výjimkou je reflexe v březnu 3. ročníku, kdy probíhá celostudijní reflexe — ta zatím není

@@ -39,7 +39,7 @@ export default async function CoachReviewPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Ke kontrole</h1>
         <p className="text-sm text-muted-foreground">
-          Nové eseje od studentů ve vašem týmu. Označte je jako přečtené, jakmile je zkontrolujete.
+          Nové eseje od studujících ve vašem týmu. Označte je jako přečtené, jakmile je zkontrolujete.
         </p>
       </div>
 

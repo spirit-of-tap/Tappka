@@ -34,12 +34,12 @@ export default async function TopBobPage() {
             <Medal className="size-5" />
           </span>
           <span className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-            Doporučení koučů a komunity
+            Doporučení koučů:ek a komunity
           </span>
         </div>
         <h1 className="mb-2 text-3xl font-bold tracking-tight">TOP BOB</h1>
         <p className="max-w-2xl leading-relaxed text-muted-foreground">
-          Zlato celé knihovny — {totalBooks} knih, na kterých se shodli kouči i komunita. Nejde o povinný
+          Zlato celé knihovny — {totalBooks} knih, na kterých se shodli kouči:ky i komunita. Nejde o povinný
           seznam, ale o mapu: když nevíš, co číst dál, tady nešlápneš vedle.
         </p>
       </div>

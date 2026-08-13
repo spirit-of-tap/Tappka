@@ -64,7 +64,7 @@ export function VerifiedBadge({ status, className }: { status: BookListStatus; c
       <IconBadge
         icon={XCircle}
         label="Zamítnuto"
-        tooltip="Zamítnutá kniha — kouči ji z výběru vyřadili."
+        tooltip="Zamítnutá kniha — kouči:ky ji z výběru vyřadili."
         className={cn('text-destructive', className)}
       />
     );

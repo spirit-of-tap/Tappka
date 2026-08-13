@@ -58,7 +58,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
                     {essay.title}
                   </p>
                   <p className="text-xs text-muted-foreground line-clamp-1">
-                    {essay.author?.name ?? 'Neznámý autor'}
+                    {essay.author?.name ?? 'Neznámý:á autor:ka'}
                     {essay.book && ` · ${essay.book.title_cs}`}
                     {' · '}
                     {new Date(essay.created_at).toLocaleDateString('cs-CZ', {

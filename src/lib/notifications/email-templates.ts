@@ -216,7 +216,7 @@ export function bookSubmittedEmail(ctx: BookSubmittedEmailContext): EmailContent
         Nová kniha ke schválení
       </h2>
       <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
-        <strong>${ctx.submitterName}</strong> přidal knihu do BOBa a čeká na schválení.
+        <strong>${ctx.submitterName}</strong> přidal:a knihu do BOBa a čeká na schválení.
       </p>
       <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
         <strong>${ctx.bookTitle}</strong><br />${ctx.bookAuthor}
@@ -241,7 +241,7 @@ export function bookDecisionEmail(ctx: BookDecisionEmailContext): EmailContent {
         Kniha ${verdict}
       </h2>
       <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
-        Kniha <strong>${ctx.bookTitle}</strong>, kterou jsi přidal do BOBa, byla ${verdict}.
+        Kniha <strong>${ctx.bookTitle}</strong>, přidaná do BOBa, byla ${verdict}.
       </p>
       ${ctx.approved && ctx.points !== null ? `<p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">Přidělené body: <strong>${ctx.points}</strong></p>` : ''}
       <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#2c1a1d;opacity:0.7;">

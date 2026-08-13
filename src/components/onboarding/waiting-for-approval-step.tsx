@@ -28,11 +28,11 @@ export function WaitingForApprovalStep({
           </div>
         </div>
         <h1 className="text-2xl font-bold tracking-tight">
-          Čekáme na adminy
+          Čekáme na schválení
         </h1>
         <p className="text-sm text-muted-foreground">
           Tvůj email je ověřený, ale tvůj profil zatím není v systému.
-          Admini tě musí přidat ručně.
+          Musíme ti ho přidat ručně.
         </p>
       </div>
 
@@ -52,7 +52,7 @@ export function WaitingForApprovalStep({
       {/* Admin contacts */}
       <div className="space-y-3">
         <p className="text-sm font-medium">
-          Pokud si myslíš, že jsi v systému být měl/a, ozvi se někomu z adminů:
+          Pokud si myslíš, že do systému patříš, ozvi se nám:
         </p>
         <ul className="space-y-1.5 text-sm text-muted-foreground">
           <li>Ondřej Schlossár</li>
@@ -70,7 +70,7 @@ export function WaitingForApprovalStep({
             <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
           </span>
           <p className="text-sm text-muted-foreground">
-            Jakmile tě admini přidají, automaticky tě přesměrujeme. Tuhle stránku klidně nech otevřenou.
+            Jakmile tě přidáme, automaticky tě přesměrujeme. Tuhle stránku klidně nech otevřenou.
           </p>
         </div>
       </div>

@@ -105,7 +105,7 @@ export function ReviewDecisionBar({
   return (
     <div className="shrink-0 space-y-3 border-t bg-muted/30 p-4 sm:p-5">
       <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Rozhodnutí kouče
+        Rozhodnutí o knize
       </span>
 
       {isEditing ? (
@@ -172,7 +172,7 @@ export function ReviewDecisionBar({
               maxLength={REASON_MAX_LENGTH}
               disabled={isBusy}
             />
-            <p className="text-xs text-muted-foreground">Odešle se studentovi e-mailem.</p>
+            <p className="text-xs text-muted-foreground">Odešle se studentovi:ce e-mailem.</p>
           </div>
         </div>
       ) : (

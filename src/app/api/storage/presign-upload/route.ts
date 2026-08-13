@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       // Membership lives on profiles.team_id (there is no team_members table).
       if (profile.team_id !== entityId) {
         return NextResponse.json(
-          { error: "Nejsi členem tohoto týmu" },
+          { error: "Nejsi členem:kou tohoto týmu" },
           { status: 403 }
         );
       }

@@ -143,7 +143,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
 
     const occupantName = currentReservation.user?.name ??
       currentReservation.title ??
-      "Neznámý";
+      "Neznámá osoba";
 
     currentReservationData = {
       title: currentReservation.title,
@@ -161,7 +161,7 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
 
     const occupantName = nextReservation.user?.name ??
       nextReservation.title ??
-      "Neznámý";
+      "Neznámá osoba";
 
     currentReservationData = {
       title: nextReservation.title,

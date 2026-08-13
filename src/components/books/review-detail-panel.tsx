@@ -160,7 +160,7 @@ export function ReviewDetailPanel({
                   <User className="size-4 shrink-0 text-muted-foreground/70" />
                 )}
                 <span className="truncate">
-                  {book.created_by?.name ?? 'Neznámý student'} · {submittedAt}
+                  {book.created_by?.name ?? 'Neznámý:á student:ka'} · {submittedAt}
                 </span>
               </div>
             </div>

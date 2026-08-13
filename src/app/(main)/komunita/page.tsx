@@ -30,7 +30,7 @@ export default async function KomunitaPage({ searchParams }: PageProps) {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Komunita</h1>
         <p className="text-muted-foreground">
-          Prohlížejte a kontaktujte členy komunity
+          Prohlížejte a kontaktujte členy:ky komunity
         </p>
       </div>
 

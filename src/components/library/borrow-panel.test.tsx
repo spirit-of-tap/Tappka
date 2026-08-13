@@ -7,6 +7,14 @@ vi.mock('@/components/ui/confetti', () => ({
 }));
 
 import { BorrowPanel } from './borrow-panel';
+import { TooltipProvider } from '@/components/ui/tooltip';
+
+const renderPanel = (props: Partial<Parameters<typeof BorrowPanel>[0]> = {}) =>
+  render(
+    <TooltipProvider>
+      <BorrowPanel {...base} {...props} />
+    </TooltipProvider>,
+  );
 
 const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
@@ -30,6 +38,20 @@ describe('BorrowPanel', () => {
     expect(screen.getByText('James Clear')).toBeInTheDocument();
     expect(screen.getByText('2 z 3 kopií je teď k dispozici.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Půjčit si/i })).toBeEnabled();
+  });
+
+  it('shows status badges next to the title when book status fields are passed', () => {
+    renderPanel({
+      book: { list_status: 'shortlist', is_rocket_model: true, highlight_category: null },
+    });
+    expect(screen.getByLabelText('Ověřená kniha')).toBeInTheDocument();
+    expect(screen.getByLabelText('Raketový model')).toBeInTheDocument();
+  });
+
+  it('hides status badges when book status fields are not passed', () => {
+    renderPanel({});
+    expect(screen.queryByLabelText('Ověřená kniha')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Raketový model')).not.toBeInTheDocument();
   });
 
   it('disables the borrow button when no copies are available', () => {

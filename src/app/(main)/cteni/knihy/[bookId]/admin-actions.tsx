@@ -76,7 +76,7 @@ export function BookAdminActions({
           {isCoachOrAdmin && createdByName && (
             <>
               <DropdownMenuLabel className="font-normal text-muted-foreground">
-                Přidal/a {createdByName}
+                Přidal:a {createdByName}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
             </>

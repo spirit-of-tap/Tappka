@@ -26,7 +26,7 @@ export function LoginForm({
       {/* Agreement info */}
       <p className="text-xs text-center text-muted-foreground">
         Přihlášením souhlasíš s použitím Google účtu pro přístup do Tappky.
-        Pro nové uživatele se automaticky vytvoří účet.
+        Při prvním přihlášení se účet vytvoří automaticky.
       </p>
     </div>
   );

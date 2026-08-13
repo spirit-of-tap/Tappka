@@ -22,7 +22,7 @@ export function BookNotFoundCard({ query, from, essayId }: BookNotFoundCardProps
         <Plus className="size-4" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium">Nenašel jsi knihu?</span>
+        <span className="block text-sm font-medium">Nemůžeš najít knihu?</span>
         <span className="block text-xs text-muted-foreground">
           Najdi ji mimo katalog a přidej do BOBa.
         </span>

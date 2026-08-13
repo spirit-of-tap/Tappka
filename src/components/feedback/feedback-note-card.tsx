@@ -75,7 +75,7 @@ export function FeedbackNoteCard({ feedback, isAdmin, onChanged, onDeleted }: Fe
       <p className="whitespace-pre-wrap text-sm text-foreground">{feedback.body}</p>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{feedback.author?.name ?? 'Neznámý'}</span>
+        <span className="font-medium text-foreground">{feedback.author?.name ?? 'Neznámý:á'}</span>
         {role && (
           <Badge variant="secondary" className={cn('px-1.5 py-0 text-[10px]', ROLE_COLORS[role])}>
             {ROLE_LABELS[role]}

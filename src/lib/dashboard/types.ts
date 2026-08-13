@@ -44,7 +44,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   {
     id: 'team-snapshot',
     label: 'Tým',
-    description: 'Nejlepší čtenáři tvého týmu podle BookPoints.',
+    description: 'Nejlepší čtenáři:ky tvého týmu podle BookPoints.',
     roles: ['student', 'mentor', 'coach', 'admin'],
   },
   {

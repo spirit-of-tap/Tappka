@@ -180,22 +180,22 @@ describe('EssayEditorForm — add-book entry', () => {
     highlight_category: null,
   };
 
-  it('does not show Nenašel jsi knihu? before the author searches', () => {
+  it('does not show Nemůžeš najít knihu? before the author searches', () => {
     render(<EssayEditorForm initialEssay={draftEssay} />);
-    expect(screen.queryByText('Nenašel jsi knihu?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nemůžeš najít knihu?')).not.toBeInTheDocument();
   });
 
-  it('shows Nenašel jsi knihu? only when a search comes up empty', async () => {
+  it('shows Nemůžeš najít knihu? only when a search comes up empty', async () => {
     fetchSpy.mockImplementation(() => Promise.resolve(jsonResponse({ data: [] })));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<EssayEditorForm />);
     await user.type(screen.getByLabelText('Hledat knihu'), 'kniha co neexistuje');
 
-    await waitFor(() => expect(screen.getByText('Nenašel jsi knihu?')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Nemůžeš najít knihu?')).toBeInTheDocument());
   });
 
-  it('keeps Nenašel jsi knihu? hidden while the search has matches', async () => {
+  it('keeps Nemůžeš najít knihu? hidden while the search has matches', async () => {
     fetchSpy.mockImplementation(() => Promise.resolve(jsonResponse({ data: [searchHit] })));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
@@ -203,7 +203,7 @@ describe('EssayEditorForm — add-book entry', () => {
     await user.type(screen.getByLabelText('Hledat knihu'), 'Atomic');
 
     expect(await screen.findByText('Atomic Habits')).toBeInTheDocument();
-    expect(screen.queryByText('Nenašel jsi knihu?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nemůžeš najít knihu?')).not.toBeInTheDocument();
   });
 
   it('offers adding a new book even when a book is already selected', () => {

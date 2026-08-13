@@ -28,7 +28,7 @@ const defaultProps = {
 describe("NotificationPreferencesForm", () => {
   it("renders a switch per notification type with the initial state", () => {
     render(<NotificationPreferencesForm {...defaultProps} />)
-    expect(screen.getByRole("switch", { name: "Kouč přečetl tvou esej" })).toBeChecked()
+    expect(screen.getByRole("switch", { name: "Kouč:ka přečetl:a tvou esej" })).toBeChecked()
     expect(screen.getByRole("switch", { name: "Nový like na tvou esej" })).not.toBeChecked()
   })
 

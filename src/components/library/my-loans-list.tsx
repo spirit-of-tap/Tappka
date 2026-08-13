@@ -5,11 +5,16 @@ import { BookOpen, CalendarDays } from 'lucide-react';
 
 import { Spinner } from '@/components/ui/spinner';
 import { ReturnButton } from './return-button';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
+import type { BookListStatus, HighlightCategory } from '@/lib/books/types';
 
 interface LoanBook {
   id: string;
   title_cs: string;
   author: string;
+  list_status: BookListStatus;
+  is_rocket_model: boolean;
+  highlight_category: HighlightCategory | null;
 }
 
 interface LoanLibraryBook {
@@ -87,9 +92,12 @@ export function MyLoansList() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-card"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm leading-snug truncate">
-                    {loan.library_book.book.title_cs}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-semibold text-sm leading-snug truncate">
+                      {loan.library_book.book.title_cs}
+                    </p>
+                    <BookStatusBadges book={loan.library_book.book} />
+                  </div>
                   <p className="text-xs text-muted-foreground truncate">
                     {loan.library_book.book.author}
                   </p>
@@ -121,9 +129,12 @@ export function MyLoansList() {
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl border bg-card opacity-60"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm leading-snug truncate">
-                    {loan.library_book.book.title_cs}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-semibold text-sm leading-snug truncate">
+                      {loan.library_book.book.title_cs}
+                    </p>
+                    <BookStatusBadges book={loan.library_book.book} />
+                  </div>
                   <p className="text-xs text-muted-foreground truncate">
                     {loan.library_book.book.author}
                   </p>

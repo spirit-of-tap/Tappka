@@ -12,7 +12,7 @@ export function InfoCard() {
         </p>
         <p>
           Po schůzce reflektuješ, co z toho využiješ v praxi.{" "}
-          <strong>Nejde o prodej</strong>, ale o učení se od zkušenějších.
+          <strong>Nejde o prodej</strong>, ale o učení se od zkušenějších lidí.
         </p>
       </div>
     </div>

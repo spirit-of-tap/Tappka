@@ -102,7 +102,7 @@ export function SemesterReflectionCard({ reflection, onDeleted }: SemesterReflec
           {reflection.filledTopicsCount}/{reflection.totalTopicsCount} témat vyplněno
         </span>
         {reflection.created_by && (
-          <span className="truncate">Vytvořil/a: {reflection.created_by.name}</span>
+          <span className="truncate">Vytvořil:la: {reflection.created_by.name}</span>
         )}
       </div>
     </Card>
