@@ -7,6 +7,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
 import { getBookLibraryInfo, getUserActiveLoanDetails } from '@/lib/library/queries';
 import { BorrowPanel } from '@/components/library/borrow-panel';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { PageShell } from '@/components/ui/page-shell';
 
 interface PageProps {
@@ -32,7 +33,10 @@ export default async function BorrowBookPage({ params }: PageProps) {
   if (!libraryInfo.inLibrary) {
     return (
       <PageShell size="narrow" className="flex flex-col items-center gap-2 py-16 text-center">
-        <h1 className="text-xl font-bold">{book.title_cs}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold">{book.title_cs}</h1>
+          <BookStatusBadges book={book} />
+        </div>
         <p className="text-muted-foreground">Tato kniha není dostupná v TAP Knihovně.</p>
       </PageShell>
     );
@@ -57,6 +61,11 @@ export default async function BorrowBookPage({ params }: PageProps) {
         availableCopies={libraryInfo.availableCopies}
         totalCopies={libraryInfo.totalCopies}
         initialDueAt={activeLoan?.due_at ?? null}
+        book={{
+          list_status: book.list_status,
+          is_rocket_model: book.is_rocket_model,
+          highlight_category: book.highlight_category,
+        }}
       />
     </PageShell>
   );

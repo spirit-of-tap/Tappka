@@ -30,7 +30,7 @@ type BookResult = {
   is_rocket_model: boolean;
   highlight_category: HighlightCategory | null;
 };
-type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number };
+type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number; list_status: BookListStatus; is_rocket_model: boolean; highlight_category: HighlightCategory | null };
 type TeamMember = { profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
 type TeamWithMembers = { id: string; name: string; members: TeamMember[] };
 
@@ -504,11 +504,14 @@ function CategoryBestBooksSection({
                       )}
                     </Link>
                     <div className="flex-1 min-w-0 py-0.5 space-y-1">
-                      <Link href={`/cteni/knihy/${book.id}`}>
-                        <p className="font-medium text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
-                          {book.title}
-                        </p>
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <Link href={`/cteni/knihy/${book.id}`}>
+                          <p className="font-medium text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+                            {book.title}
+                          </p>
+                        </Link>
+                        <BookStatusBadges book={book} />
+                      </div>
                       {book.description && (
                         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{book.description}</p>
                       )}

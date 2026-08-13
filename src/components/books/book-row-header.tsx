@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
-import { RocketBadge } from './book-status-badges';
+import { BookStatusBadges } from './book-status-badges';
 import { cn } from '@/lib/utils';
 import type { BookWithProfiles } from '@/lib/books/types';
 
@@ -13,7 +13,7 @@ const COVER_SIZES = {
 } as const;
 
 interface BookRowHeaderProps {
-  book: Pick<BookWithProfiles, 'id' | 'title_cs' | 'author' | 'google_books_cover_url' | 'is_rocket_model'>;
+  book: Pick<BookWithProfiles, 'id' | 'title_cs' | 'author' | 'google_books_cover_url' | 'list_status' | 'is_rocket_model' | 'highlight_category'>;
   coverSize?: keyof typeof COVER_SIZES;
   showAuthor?: boolean;
   titleClassName?: string;
@@ -24,7 +24,7 @@ interface BookRowHeaderProps {
 }
 
 /**
- * Cover thumbnail + title link + rocket badge (+ author line) — renders as
+ * Cover thumbnail + title link + status badges (+ author line) — renders as
  * two adjacent fragment children (cover, text), meant to sit directly inside
  * a `flex` row alongside any trailing actions. Was copy-pasted near-verbatim
  * across coach-highlight-row, coach-dashboard's archived block, and
@@ -57,7 +57,7 @@ export function BookRowHeader({
           >
             {book.title_cs}
           </Link>
-          {book.is_rocket_model && <RocketBadge />}
+          <BookStatusBadges book={book} />
         </div>
         {showAuthor && <p className="truncate text-xs text-muted-foreground">{book.author}</p>}
         {children}

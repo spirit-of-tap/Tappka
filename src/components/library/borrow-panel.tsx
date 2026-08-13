@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Confetti } from '@/components/ui/confetti';
 import { StorageImage } from '@/components/storage/storage-image';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ReturnButton } from './return-button';
+import type { BookWithProfiles } from '@/lib/books/types';
 
 interface BorrowPanelProps {
   bookId: string;
@@ -19,6 +21,8 @@ interface BorrowPanelProps {
   availableCopies: number;
   totalCopies: number;
   initialDueAt?: string | null;
+  /** Status fields for the badge row next to the title — omit to hide badges. */
+  book?: Pick<BookWithProfiles, 'list_status' | 'is_rocket_model' | 'highlight_category'>;
 }
 
 function formatDueDate(iso: string): string {
@@ -33,6 +37,7 @@ export function BorrowPanel({
   availableCopies,
   totalCopies,
   initialDueAt = null,
+  book,
 }: BorrowPanelProps) {
   const [borrowing, setBorrowing] = useState(false);
   const [dueAt, setDueAt] = useState(initialDueAt);
@@ -81,7 +86,10 @@ export function BorrowPanel({
           <h1 className="text-2xl font-bold tracking-tight">
             {justBorrowed ? 'Kniha vypůjčena!' : 'Tuto knihu už máš vypůjčenou'}
           </h1>
-          <p className="text-muted-foreground">{title}</p>
+          <div className="flex items-center justify-center gap-1.5">
+            <p className="text-muted-foreground">{title}</p>
+            {book && <BookStatusBadges book={book} />}
+          </div>
         </div>
         <div className="borrow-fade-up rounded-xl bg-muted px-6 py-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Vrať do</p>
@@ -118,6 +126,11 @@ export function BorrowPanel({
 
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        {book && (
+          <div className="flex items-center justify-center">
+            <BookStatusBadges book={book} />
+          </div>
+        )}
         <p className="text-muted-foreground">{author}</p>
       </div>
 
