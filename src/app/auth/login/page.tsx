@@ -33,6 +33,26 @@ export default async function Home({ searchParams }: LoginPageProps) {
         <ThemeSwitcher />
       </header>
 
+      {/* PEF logo */}
+      <div className="absolute top-0 left-0 p-4 md:p-6">
+        <Image
+          src="/pef_logo/CZU_PEF_cerna_RGB.png"
+          alt="ČZU PEF"
+          width={140}
+          height={40}
+          className="object-contain dark:hidden"
+          priority
+        />
+        <Image
+          src="/pef_logo/CZU_PEF_bila_RGB.png"
+          alt="ČZU PEF"
+          width={140}
+          height={40}
+          className="hidden object-contain dark:block"
+          priority
+        />
+      </div>
+
       {/* Main content */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8">
