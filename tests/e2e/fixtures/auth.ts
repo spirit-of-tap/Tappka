@@ -272,6 +272,7 @@ export async function cleanupTestData(): Promise<void> {
   await Promise.all(teamIds.flatMap((tid) => [
     restFetch(`/recurring_schedules?team_id=eq.${tid}`, "DELETE").catch(() => {}),
     restFetch(`/team_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+    restFetch(`/team_activities?team_id=eq.${tid}`, "DELETE").catch(() => {}),
     restFetch(`/team_semester_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
   ]));
 
@@ -321,6 +322,22 @@ export async function seedTeamReflection(
     updated_by_profile_id: profileId,
   })) as { id: string }[];
   return { reflectionId: rows[0].id };
+}
+
+/** Seeds a team activity row directly, bypassing the UI. */
+export async function seedTeamActivity(
+  teamId: string,
+  profileId: string,
+  occurredAt: string,
+): Promise<{ activityId: string }> {
+  const rows = (await restFetch("/team_activities", "POST", {
+    team_id: teamId,
+    occurred_at: occurredAt,
+    activity_type: "E2E team building",
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
+  })) as { id: string }[];
+  return { activityId: rows[0].id };
 }
 
 /** Create a seeded book for E2E tests. */

@@ -1442,6 +1442,73 @@ export type Database = {
           },
         ]
       }
+      team_activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          occurred_at: string
+          participants: string | null
+          reason: string | null
+          reflection: string | null
+          removed_at: string | null
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          occurred_at: string
+          participants?: string | null
+          reason?: string | null
+          reflection?: string | null
+          removed_at?: string | null
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          occurred_at?: string
+          participants?: string | null
+          reason?: string | null
+          reflection?: string | null
+          removed_at?: string | null
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_activities_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activities_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activities_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_reflections: {
         Row: {
           created_at: string
