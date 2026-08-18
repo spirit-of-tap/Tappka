@@ -169,7 +169,16 @@ function assertExistingMigrationsImmutable() {
   try {
     diff = run("git", ["diff", "--name-status", `${base}...HEAD`, "--", "supabase/migrations"]);
   } catch (error) {
-    fail(`git diff against ${base} failed: ${error instanceof Error ? error.message : error}`);
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("no merge base")) {
+      fail(`git diff against ${base} failed: ${message}`);
+    }
+    console.log(`No merge base for ${base}...HEAD, falling back to two-dot diff`);
+    try {
+      diff = run("git", ["diff", "--name-status", base, "HEAD", "--", "supabase/migrations"]);
+    } catch (error2) {
+      fail(`git diff against ${base} failed: ${error2 instanceof Error ? error2.message : error2}`);
+    }
   }
 
   if (!diff) {
