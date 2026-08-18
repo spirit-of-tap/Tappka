@@ -53,7 +53,11 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
   }
 
   function handleUpdated(activity: TeamActivityWithCreator) {
-    setItems((prev) => prev.map((a) => (a.id === activity.id ? activity : a)))
+    setItems((prev) =>
+      prev
+        .map((a) => (a.id === activity.id ? activity : a))
+        .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)),
+    )
   }
 
   function handleDeleted(id: string) {
