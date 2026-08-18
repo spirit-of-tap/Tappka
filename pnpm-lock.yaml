@@ -184,6 +184,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      nextjs-toploader:
+        specifier: ^3.9.17
+        version: 3.9.17(next@16.3.1(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.61.1)(@types/node@24.10.9)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       posthog-js:
         specifier: ^1.418.1
         version: 1.418.1
@@ -322,7 +325,7 @@ importers:
         version: 5.9.3
       vitepress:
         specifier: 2.0.0-alpha.18
-        version: 2.0.0-alpha.18(@types/node@24.10.9)(esbuild@0.28.1)(jiti@2.6.1)(postcss@8.5.6)(qrcode@1.5.4)(tsx@4.22.4)(typescript@5.9.3)(yaml@2.9.0)
+        version: 2.0.0-alpha.18(@types/node@24.10.9)(esbuild@0.28.1)(jiti@2.6.1)(nprogress@0.2.0)(postcss@8.5.6)(qrcode@1.5.4)(tsx@4.22.4)(typescript@5.9.3)(yaml@2.9.0)
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.10.9)(@vitest/coverage-v8@4.1.10)(happy-dom@20.9.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(vite@8.1.4(@types/node@24.10.9)(esbuild@0.28.1)(jiti@2.6.1)(tsx@4.22.4)(yaml@2.9.0))
@@ -4872,6 +4875,13 @@ packages:
       sass:
         optional: true
 
+  nextjs-toploader@3.9.17:
+    resolution: {integrity: sha512-9OF0KSSLtoSAuNg2LZ3aTl4hR9mBDj5L9s9DZiFCbMlXehyICGjkIz5dVGzuATU2bheJZoBdFgq9w07AKSuQQw==}
+    peerDependencies:
+      next: '>= 6.0.0'
+      react: '>= 16.0.0'
+      react-dom: '>= 16.0.0'
+
   nice-try@1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
 
@@ -4892,6 +4902,9 @@ packages:
     resolution: {integrity: sha512-Oo82gJDAVcaMdi3nuoKFavkIHBRVqQ1qvMb+9LHk/cF4P6B2m8aP04hGf7oL6wZ9BuGwX1onlLhpuoofSyoQDQ==}
     engines: {node: '>= 4'}
     hasBin: true
+
+  nprogress@0.2.0:
+    resolution: {integrity: sha512-I19aIingLgR1fmhftnbWWO3dXc0hSxqHQHQb3H8m+K3TnEn/iSeTZZOyvKXWqQESMwuUVnatlCnZdLBZZt2VSA==}
 
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
@@ -8718,13 +8731,14 @@ snapshots:
       '@vueuse/shared': 14.3.0(vue@3.5.40(typescript@5.9.3))
       vue: 3.5.40(typescript@5.9.3)
 
-  '@vueuse/integrations@14.3.0(focus-trap@8.2.2)(qrcode@1.5.4)(vue@3.5.40(typescript@5.9.3))':
+  '@vueuse/integrations@14.3.0(focus-trap@8.2.2)(nprogress@0.2.0)(qrcode@1.5.4)(vue@3.5.40(typescript@5.9.3))':
     dependencies:
       '@vueuse/core': 14.3.0(vue@3.5.40(typescript@5.9.3))
       '@vueuse/shared': 14.3.0(vue@3.5.40(typescript@5.9.3))
       vue: 3.5.40(typescript@5.9.3)
     optionalDependencies:
       focus-trap: 8.2.2
+      nprogress: 0.2.0
       qrcode: 1.5.4
 
   '@vueuse/metadata@14.3.0': {}
@@ -10722,6 +10736,14 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
+  nextjs-toploader@3.9.17(next@16.3.1(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.61.1)(@types/node@24.10.9)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+    dependencies:
+      next: 16.3.1(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.61.1)(@types/node@24.10.9)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      nprogress: 0.2.0
+      prop-types: 15.8.1
+      react: 19.2.3
+      react-dom: 19.2.3(react@19.2.3)
+
   nice-try@1.0.5: {}
 
   node-releases@2.0.27: {}
@@ -10748,6 +10770,8 @@ snapshots:
       read-pkg: 3.0.0
       shell-quote: 1.8.3
       string.prototype.padend: 3.1.6
+
+  nprogress@0.2.0: {}
 
   object-assign@4.1.1: {}
 
@@ -12113,7 +12137,7 @@ snapshots:
       tsx: 4.22.4
       yaml: 2.9.0
 
-  vitepress@2.0.0-alpha.18(@types/node@24.10.9)(esbuild@0.28.1)(jiti@2.6.1)(postcss@8.5.6)(qrcode@1.5.4)(tsx@4.22.4)(typescript@5.9.3)(yaml@2.9.0):
+  vitepress@2.0.0-alpha.18(@types/node@24.10.9)(esbuild@0.28.1)(jiti@2.6.1)(nprogress@0.2.0)(postcss@8.5.6)(qrcode@1.5.4)(tsx@4.22.4)(typescript@5.9.3)(yaml@2.9.0):
     dependencies:
       '@docsearch/css': 4.6.3
       '@docsearch/js': 4.6.3
@@ -12127,7 +12151,7 @@ snapshots:
       '@vue/devtools-api': 8.1.5
       '@vue/shared': 3.5.40
       '@vueuse/core': 14.3.0(vue@3.5.40(typescript@5.9.3))
-      '@vueuse/integrations': 14.3.0(focus-trap@8.2.2)(qrcode@1.5.4)(vue@3.5.40(typescript@5.9.3))
+      '@vueuse/integrations': 14.3.0(focus-trap@8.2.2)(nprogress@0.2.0)(qrcode@1.5.4)(vue@3.5.40(typescript@5.9.3))
       focus-trap: 8.2.2
       mark.js: 8.11.1
       minisearch: 7.2.0

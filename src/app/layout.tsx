@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Poppins, Roboto, Pacifico } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "@/components/ui/sonner";
 import { PostHogProvider } from "./posthog-provider";
 import { PostHogPageView } from "./posthog-pageview";
@@ -75,6 +76,7 @@ export default function RootLayout({
       <body
         className={`${roboto.variable} ${poppins.variable} ${pacifico.variable} font-body antialiased`}
       >
+        <NextTopLoader color="#b31b1b" showSpinner={false} height={3} />
         <PostHogProvider>
           <ThemeProvider
             attribute="class"
