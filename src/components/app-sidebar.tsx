@@ -15,6 +15,7 @@ import {
   Handshake,
   GraduationCap,
   NotebookPen,
+  Activity,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -97,6 +98,11 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           icon: NotebookPen,
         },
         {
+          title: "Týmový deník",
+          url: "/tymovy-denik",
+          icon: Activity,
+        },
+        {
           title: "Čtení",
           url: "/cteni/prehled",
           icon: BookOpen,
@@ -147,6 +153,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const isSchuzkyActive = pathname.startsWith("/schuzky")
   const isKoucovaniActive = pathname.startsWith("/koucovani")
   const isTymovaReflexeActive = pathname.startsWith("/tymova-reflexe")
+  const isTymovyDenikActive = pathname.startsWith("/tymovy-denik")
   const isCteniActive = pathname.startsWith("/cteni")
   const cteniSubItems = [
     { title: "Přehled", url: "/cteni/prehled" },
@@ -294,6 +301,32 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                         <SidebarMenuButton
                           asChild
                           isActive={isTymovaReflexeActive}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Týmový deník — beta-only
+                  if (item.title === "Týmový deník") {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isTymovyDenikActive}
                           tooltip={item.title}
                         >
                           <Link href={item.url} onClick={closeSidebarOnMobile}>
