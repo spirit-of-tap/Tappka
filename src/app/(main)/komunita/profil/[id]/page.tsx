@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin } from 'lucide-react';
+import { ArrowLeft, Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin, UserRound, Brain } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getUserBookPointsStats } from '@/lib/essays/queries';
 import { countCustomerMeetings } from '@/lib/customer-meetings/queries';
 import { countIndividualCoachingSessions } from '@/lib/individual-coaching-sessions/queries';
+import { listPersonalityTests } from '@/lib/personality-tests/queries';
 import { ProfilePictureSection } from '@/components/komunita/profile-picture-section';
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
@@ -14,18 +15,21 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/ui/page-shell';
+import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
+import { InfoCard } from '@/components/personality-tests/info-card';
+import { PersonalityTestTimeline } from '@/components/personality-tests/personality-test-timeline';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
 import { formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<{ from?: string; tab?: string }>;
 }
 
 export default async function ProfilePage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { from } = await searchParams;
+  const { from, tab } = await searchParams;
   const supabase = await createClient();
 
   const [profile, currentUserProfile] = await Promise.all([
@@ -35,11 +39,12 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
   if (!profile) notFound();
 
-  const [essays, stats, meetingCount, coachingSessionCount] = await Promise.all([
+  const [essays, stats, meetingCount, coachingSessionCount, personalityTests] = await Promise.all([
     getEssays(supabase, { authorProfileId: id, sort: 'best', pageSize: 100 }),
     getUserBookPointsStats(supabase, id),
     countCustomerMeetings(supabase, id).catch(() => 0),
     countIndividualCoachingSessions(supabase, id).catch(() => 0),
+    listPersonalityTests(supabase, id),
   ]);
 
   const votedIds = new Set<string>();
@@ -58,6 +63,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
   const isOwnProfile = currentUserProfile?.id === profile.id;
   const teamColor = profile.team?.color ?? null;
+  const activeTab = tab === 'eseje' || tab === 'osobnostni-testy' ? tab : 'prehled';
 
   const pts   = (n: number) => n === 1 ? 'bod' : n >= 2 && n <= 4 ? 'body' : 'bodů';
   const eseje = (n: number) => n === 1 ? 'esej' : n >= 2 && n <= 4 ? 'eseje' : 'esejí';
@@ -118,53 +124,74 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           </div>
         </div>
 
-        {/* Stats + contact row */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-4 border-y">
-          {/* Stats */}
-          <div className="flex items-center gap-6">
-            {[
-              { value: stats.approved_points, label: pts(stats.approved_points) },
-              { value: stats.essay_count,    label: eseje(stats.essay_count) },
-              { value: totalVotes,           label: hlasy(totalVotes) },
-              { value: meetingCount,         label: schuzky(meetingCount) },
-              { value: coachingSessionCount, label: koucovaniLabel },
-            ].map(({ value, label }) => (
-              <div key={label} className="text-center">
-                <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+        <Tabs defaultValue={activeTab} className="mt-4">
+          <TabsList>
+            <TabsTrigger value="prehled">
+              <UserRound />
+              Přehled
+            </TabsTrigger>
+            <TabsTrigger value="eseje">
+              <BookOpen />
+              Eseje
+              <TabsTriggerCount count={essays.length} />
+            </TabsTrigger>
+            <TabsTrigger value="osobnostni-testy">
+              <Brain />
+              Osobnostní testy
+              <TabsTriggerCount count={personalityTests.length} />
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Stats + contact */}
+          <TabsContent value="prehled">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-4">
+              {/* Stats */}
+              <div className="flex items-center gap-6">
+                {[
+                  { value: stats.approved_points, label: pts(stats.approved_points) },
+                  { value: stats.essay_count,    label: eseje(stats.essay_count) },
+                  { value: totalVotes,           label: hlasy(totalVotes) },
+                  { value: meetingCount,         label: schuzky(meetingCount) },
+                  { value: coachingSessionCount, label: koucovaniLabel },
+                ].map(({ value, label }) => (
+                  <div key={label} className="text-center">
+                    <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Divider */}
-          <div className="h-8 w-px bg-border hidden sm:block" />
+              {/* Divider */}
+              <div className="h-8 w-px bg-border hidden sm:block" />
 
-          {/* Contact */}
-          <div className="flex flex-wrap gap-x-5 gap-y-1.5 min-w-0">
-            <a href={`mailto:${profile.work_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
-              <Mail className="size-3.5 shrink-0" /><span className="truncate">{profile.work_email}</span>
-            </a>
-            {profile.personal_email && (
-              <a href={`mailto:${profile.personal_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
-                <Mail className="size-3.5 shrink-0" /><span className="truncate">{profile.personal_email}</span>
-              </a>
-            )}
-            {profile.phone_number && (
-              <a href={`tel:${profile.phone_number}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                <Phone className="size-3.5" />{profile.phone_number}
-              </a>
-            )}
-            {profile.date_of_birth && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Cake className="size-3.5" />
-                {new Date(profile.date_of_birth).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </span>
-            )}
-          </div>
-        </div>
+              {/* Contact */}
+              <div className="flex flex-wrap gap-x-5 gap-y-1.5 min-w-0">
+                <a href={`mailto:${profile.work_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
+                  <Mail className="size-3.5 shrink-0" /><span className="truncate">{profile.work_email}</span>
+                </a>
+                {profile.personal_email && (
+                  <a href={`mailto:${profile.personal_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
+                    <Mail className="size-3.5 shrink-0" /><span className="truncate">{profile.personal_email}</span>
+                  </a>
+                )}
+                {profile.phone_number && (
+                  <a href={`tel:${profile.phone_number}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                    <Phone className="size-3.5" />{profile.phone_number}
+                  </a>
+                )}
+                {profile.date_of_birth && (
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Cake className="size-3.5" />
+                    {new Date(profile.date_of_birth).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </TabsContent>
 
-        {/* ── Essays ── */}
-        <div className="py-8 space-y-4">
+          {/* Essays */}
+          <TabsContent value="eseje" className="mt-4">
+            <div className="space-y-4">
           <h2 className="font-semibold text-base">
             Eseje
             {essays.length > 0 && <span className="ml-2 font-normal text-muted-foreground text-sm">{essays.length}</span>}
@@ -261,7 +288,19 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               )}
             </>
           )}
-        </div>
+            </div>
+          </TabsContent>
+
+          {/* Personality tests */}
+          <TabsContent value="osobnostni-testy" className="mt-4 space-y-4">
+            <InfoCard />
+            <PersonalityTestTimeline
+              initialTests={personalityTests}
+              profileId={profile.id}
+              isOwnProfile={isOwnProfile}
+            />
+          </TabsContent>
+        </Tabs>
       </PageShell>
     </>
   );
