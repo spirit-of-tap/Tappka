@@ -44,7 +44,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
     getUserBookPointsStats(supabase, id),
     countCustomerMeetings(supabase, id).catch(() => 0),
     countIndividualCoachingSessions(supabase, id).catch(() => 0),
-    listPersonalityTests(supabase, id),
+    listPersonalityTests(supabase, id).catch(() => []),
   ]);
 
   const votedIds = new Set<string>();
