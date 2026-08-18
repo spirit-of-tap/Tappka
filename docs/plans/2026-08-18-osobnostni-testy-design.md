@@ -16,7 +16,8 @@ sledují svůj vývoj. Aplikace umožní:
    nahoře, vzor feedů a týmového deníku).
 3. Zobrazit testy **na profilu osoby v komunitě** — profil dostane taby
    `Přehled / Eseje / Osobnostní testy` a soubory si může otevřít každý ověřený
-   uživatel.
+   uživatel. Zkratka v **sidebaru** (beta-gate, „Hlavní" sekce) vede na vlastní
+   profil s `?tab=osobnostni-testy`.
 4. **Upravit a smazat** vlastní záznamy (soft-delete + smazání souboru).
 
 **Mimo rozsah** (vědomě, proti textu issue): pole `Výsledek`, `Reflexe`,
