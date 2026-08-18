@@ -40,6 +40,8 @@ async function deleteOnlyTest(page: import("@playwright/test").Page) {
 }
 
 test.describe("osobnostní testy - single user", () => {
+  test.describe.configure({ mode: "serial" });
+
   let cookieValue: string;
   let profileId: string;
 
