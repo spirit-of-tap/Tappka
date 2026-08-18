@@ -247,6 +247,23 @@ export async function createTestTeam(onboardingYear?: number): Promise<string> {
   return id;
 }
 
+/** Deletes a single storage object using the service role (used by cleanupTestData). */
+async function storageRemoveFile(bucket: string, key: string): Promise<void> {
+  const res = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/${bucket}/${key.split("/").map(encodeURIComponent).join("/")}`,
+    {
+      method: "DELETE",
+      headers: {
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
+    },
+  );
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`storage remove ${bucket}/${key} failed: ${res.status}`);
+  }
+}
+
 /** Deletes all data created by the current worker's E2E tests.
  *
  *  Must be called from test.afterAll (or a global teardown). Safe to call
@@ -267,6 +284,20 @@ export async function cleanupTestData(): Promise<void> {
     restFetch(`/essays?author_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
     restFetch(`/books?created_by_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
   ]));
+
+  // Delete personality tests together with their files — the created_by /
+  // updated_by FKs are RESTRICT, so any leftover row (including soft-deleted
+  // `removed_at` ones) blocks the profile DELETE in phase 3.
+  await Promise.all(profileIds.map(async (pid) => {
+    const rows = (await restFetch(
+      `/personality_tests?profile_id=eq.${pid}&select=file_path`,
+      "GET",
+    ).catch(() => [] as { file_path: string }[])) as { file_path: string }[];
+    await Promise.all(rows.map(({ file_path: key }) =>
+      storageRemoveFile("documents", key).catch(() => {})
+    ));
+    await restFetch(`/personality_tests?profile_id=eq.${pid}`, "DELETE").catch(() => {});
+  }));
 
   // Phase 2 — delete team-scoped data
   await Promise.all(teamIds.flatMap((tid) => [
