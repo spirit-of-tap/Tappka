@@ -2,7 +2,6 @@ import { redirect } from "next/navigation"
 import { Files } from "lucide-react"
 
 import { TeamDocuments } from "@/components/team-documents/team-documents"
-import { Card } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
@@ -33,18 +32,18 @@ export default async function TeamDocumentsPage() {
         count={{ value: documents.length, label: "dokumentů" }}
       />
 
-      <Card className="flex-row items-start gap-3 p-4 sm:p-5">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <aside className="flex items-start gap-3 text-sm">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
           <Files className="size-5" />
         </div>
         <div className="space-y-1">
           <p className="font-medium">Každé nahrání vytváří novou verzi</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground">
             Nahrajte hotové PDF. Předchozí verze zůstávají dostupné, takže tým vždy dohledá,
             co platilo dříve.
           </p>
         </div>
-      </Card>
+      </aside>
 
       <TeamDocuments teamId={profile.team_id} initialDocuments={documents} />
     </PageShell>

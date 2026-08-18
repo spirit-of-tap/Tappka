@@ -26,7 +26,6 @@ import {
   type TeamDocumentType,
   type TeamDocumentWithVersions,
 } from "@/lib/team-documents/types"
-import { cn } from "@/lib/utils"
 
 interface TeamDocumentCardProps {
   document: TeamDocumentWithVersions | null
@@ -54,16 +53,17 @@ export function TeamDocumentCard({
   const title = document
     ? getTeamDocumentTitle(document)
     : getTeamDocumentTitle({ doc_type: documentType, title: null })
+  const Heading = featured ? "h2" : "h3"
 
-  return (
-    <Card className={cn("gap-4 py-5", featured && "bg-accent/40")}>
+  const content = (
+    <>
       <CardHeader className="flex-row items-start justify-between gap-4 px-5">
         <div className="flex min-w-0 gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <FileText className="size-5" />
           </div>
           <div className="min-w-0 space-y-1">
-            <h2 className="font-heading text-lg font-semibold">{title}</h2>
+            <Heading className="font-heading text-lg font-semibold">{title}</Heading>
             {FEATURED_DESCRIPTIONS[documentType] && (
               <p className="text-sm text-muted-foreground">
                 {FEATURED_DESCRIPTIONS[documentType]}
@@ -76,7 +76,7 @@ export function TeamDocumentCard({
 
       <CardContent className="space-y-4 px-5">
         {latestVersion ? (
-          <div className="rounded-lg border bg-background/80 p-4">
+          <div className="py-2">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{latestVersion.file_name}</p>
@@ -99,13 +99,13 @@ export function TeamDocumentCard({
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          <div className="rounded-md bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
             Zatím není nahraná žádná verze.
           </div>
         )}
 
         {document && document.versions.length > 1 && (
-          <details className="rounded-lg border px-4 py-3">
+          <details className="border-t pt-3">
             <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium">
               <FileClock className="size-4" />
               Historie verzí ({document.versions.length})
@@ -167,6 +167,12 @@ export function TeamDocumentCard({
           )}
         </div>
       </CardContent>
-    </Card>
+    </>
+  )
+
+  return featured ? (
+    <Card className="gap-4 bg-accent/40 py-5">{content}</Card>
+  ) : (
+    <article className="py-5">{content}</article>
   )
 }

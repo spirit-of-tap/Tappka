@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { DocumentUploadForm } from "./document-upload-form"
 import { TeamDocumentCard } from "./team-document-card"
 import { Button } from "@/components/ui/button"
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -132,7 +133,7 @@ export function TeamDocuments({ initialDocuments }: TeamDocumentsProps) {
         </div>
 
         {customDocuments.length ? (
-          <div className="grid gap-4">
+          <div className="divide-y">
             {customDocuments.map((document) => (
               <TeamDocumentCard
                 key={document.id}
@@ -148,12 +149,14 @@ export function TeamDocuments({ initialDocuments }: TeamDocumentsProps) {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed p-8 text-center">
-            <p className="font-medium">Zatím žádné další dokumenty</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+          <Empty className="bg-muted/40 py-10">
+            <EmptyHeader>
+              <EmptyTitle>Zatím žádné další dokumenty</EmptyTitle>
+              <EmptyDescription>
               Přidejte první PDF, které má mít tým po ruce.
-            </p>
-          </div>
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         )}
       </section>
 

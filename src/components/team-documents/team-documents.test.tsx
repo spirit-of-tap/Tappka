@@ -47,17 +47,26 @@ afterEach(() => {
 
 describe("TeamDocuments", () => {
   it("always renders the two featured document slots", () => {
-    render(<TeamDocuments initialDocuments={[]} teamId="team-1" />)
+    const { container } = render(<TeamDocuments initialDocuments={[]} teamId="team-1" />)
 
     expect(screen.getByRole("heading", { name: "Týmová smlouva" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Finanční směrnice" })).toBeInTheDocument()
     expect(screen.getAllByRole("button", { name: "Nahrát první verzi" })).toHaveLength(2)
     expect(screen.queryByRole("button", { name: "Přejmenovat" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Archivovat" })).not.toBeInTheDocument()
+    expect(container.querySelectorAll('[data-slot="card"]')).toHaveLength(2)
+    const customEmptyState = screen.getByText("Zatím žádné další dokumenty").closest(
+      '[data-slot="empty"]',
+    )
+    expect(customEmptyState).toBeInTheDocument()
+    expect(customEmptyState).not.toHaveClass("border")
+    for (const emptyVersion of screen.getAllByText("Zatím není nahraná žádná verze.")) {
+      expect(emptyVersion).not.toHaveClass("border", "border-dashed")
+    }
   })
 
   it("lists custom documents and their immutable versions newest first", () => {
-    render(
+    const { container } = render(
       <TeamDocuments
         teamId="team-1"
         initialDocuments={[
@@ -95,12 +104,14 @@ describe("TeamDocuments", () => {
       />,
     )
 
-    expect(screen.getByRole("heading", { name: "Pravidla porad" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Pravidla porad", level: 3 })).toBeInTheDocument()
     expect(screen.getAllByText("Verze 2").length).toBeGreaterThan(0)
     expect(screen.getByRole("link", { name: "Otevřít aktuální verzi" })).toHaveAttribute(
       "href",
       "/api/team-documents/versions/version-2/open",
     )
+    expect(container.querySelectorAll("div.border")).toHaveLength(2)
+    expect(screen.getByText("Historie verzí (2)").closest("details")).not.toHaveClass("border")
     expect(screen.getByRole("button", { name: "Přejmenovat" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Archivovat" })).toBeInTheDocument()
   })
