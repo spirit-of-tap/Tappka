@@ -155,9 +155,9 @@ export function PersonalityTestForm({ profileId, initial, onSuccess, onCancel }:
       )}
 
       <div className="space-y-2">
-        <Label>Typ testu</Label>
+        <Label htmlFor="test-type">Typ testu</Label>
         <Select value={testType} onValueChange={setTestType}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger id="test-type" className="w-full">
             <SelectValue placeholder="Vyberte typ testu" />
           </SelectTrigger>
           <SelectContent>
@@ -203,7 +203,7 @@ export function PersonalityTestForm({ profileId, initial, onSuccess, onCancel }:
         <p className="text-xs text-muted-foreground">
           {initial?.file_name
             ? `Aktuální soubor: ${initial.file_name} — nový soubor ho nahradí.`
-            : "PDF, PNG, JPEG nebo WebP · max 20 MB"}
+            : `PDF, PNG, JPEG nebo WebP · max ${MAX_DOCUMENT_SIZE / 1024 / 1024} MB`}
         </p>
       </div>
 
