@@ -54,8 +54,12 @@ Tabulka `personality_tests` (Drizzle, `db/schema/personality-tests.ts`):
 Index `(profile_id, tested_on)`.
 
 RLS (helper `current_profile_id()`):
-- select: `removed_at IS NULL` + ověřený uživatel (stejná podmínka jako
-  `profiles`: `users.verified_work_email IS NOT NULL`)
+- select: ověřený uživatel (stejná podmínka jako
+  `profiles`: `users.verified_work_email IS NOT NULL`). **Bez `removed_at IS NULL`**
+  — Postgres aplikuje SELECT policy jako kontrolu na NOVÉM řádku při UPDATE,
+  takže `removed_at IS NULL` v select policy by rozbil soft-delete
+  (`update ... set removed_at = now()` by skončil RLS chybou, 403). Soft-deleted
+  řádky filtrují dotazy aplikace (`queries.ts` provádí `.is("removed_at", null)`).
 - insert/update/delete: jen vlastník (`profile_id = current_profile_id()`)
 
 Úložiště: existující private bucket **`documents`** (migrace
@@ -120,7 +124,7 @@ Writes: presigned URL (service role, vzor avatarů). Reads: `getSignedStorageUrl
 
 ## Testování
 
-- **Unit**: `format.ts` (datum, měsíční klíč, velikost souboru) + štítky typů.
+- **Unit**: `format.ts` (datum, velikost souboru) + štítky typů.
 - **Integrace** (`tests/integration/personality-tests.int.test.ts`): RLS —
   vlastník insert + ověřený select, neověřený nevidí, cizí insert/update/delete
   zamítnut, soft-delete, check `other` bez textu, cascade při smazání profilu.

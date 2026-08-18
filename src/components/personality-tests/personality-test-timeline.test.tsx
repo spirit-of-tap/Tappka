@@ -18,7 +18,7 @@ function testRow(overrides: Partial<PersonalityTest> = {}): PersonalityTest {
     test_type: 'mbti',
     test_type_other: null,
     tested_on: '2026-03-15',
-    file_path: 'personality-tests/test-1/report.pdf',
+    file_path: 'personality-test/test-1/report.pdf',
     file_name: 'mbti-report.pdf',
     file_size: 1_500_000,
     created_at: '2026-03-16T10:00:00Z',

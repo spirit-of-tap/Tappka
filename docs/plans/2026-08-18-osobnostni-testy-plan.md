@@ -85,12 +85,14 @@ export const personalityTests = pgTable("personality_tests", {
     name: "personality_tests_updated_by_profile_id_fkey"
   }).onDelete("restrict"),
   check("personality_tests_other_type_required", sql`(test_type <> 'other' OR (test_type_other IS NOT NULL AND length(trim(test_type_other)) > 0))`),
-  pgPolicy("Verified users can view personality tests", { as: "permissive", for: "select", to: ["authenticated"], using: sql`(removed_at IS NULL) AND (EXISTS (SELECT 1 FROM users WHERE (users.auth_user_id = (SELECT auth.uid()) AND users.verified_work_email IS NOT NULL)))` }),
+  pgPolicy("Verified users can view personality tests", { as: "permissive", for: "select", to: ["authenticated"], using: sql`(EXISTS (SELECT 1 FROM users WHERE (users.auth_user_id = (SELECT auth.uid()) AND users.verified_work_email IS NOT NULL)))` }),
   pgPolicy("Users can create their own personality tests", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(profile_id = current_profile_id())` }),
   pgPolicy("Users can update their own personality tests", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(profile_id = current_profile_id())`, withCheck: sql`(profile_id = current_profile_id())` }),
   pgPolicy("Users can delete their own personality tests", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`(profile_id = current_profile_id())` }),
 ]).enableRLS()
 ```
+
+Note: the select policy deliberately omits `removed_at IS NULL` — Postgres applies a select policy's `using` as a check on the NEW row during UPDATE, so filtering `removed_at` there would make every soft-delete (`update ... set removed_at = now()`) fail with an RLS error (403). Soft-deleted rows are filtered by the app's queries instead (`listPersonalityTests` does `.is("removed_at", null)`).
 
 **Step 2: Generate the table migration**
 
