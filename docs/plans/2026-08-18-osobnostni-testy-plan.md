@@ -481,7 +481,7 @@ export async function POST(request: NextRequest) {
     if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > MAX_DOCUMENT_SIZE) {
       return NextResponse.json({ error: "Neplatná velikost souboru" }, { status: 400 });
     }
-    if (!key.startsWith(`personality-tests/${profileId}/`)) {
+    if (!key.startsWith(`personality-test/${profileId}/`)) {
       return NextResponse.json({ error: "Neplatný klíč souboru" }, { status: 400 });
     }
 
@@ -581,7 +581,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Neplatné datum" }, { status: 400 });
     }
     if (newKey !== undefined) {
-      if (!newKey.startsWith(`personality-tests/${existing.data.profile_id}/`)) {
+      if (!newKey.startsWith(`personality-test/${existing.data.profile_id}/`)) {
         return NextResponse.json({ error: "Neplatný klíč souboru" }, { status: 400 });
       }
       if (!fileName?.trim() || fileName.length > 255) {
@@ -1606,7 +1606,7 @@ async function insertTest(
   const { rows } = await client.query(
     `insert into public.personality_tests
        (profile_id, test_type, test_type_other, tested_on, file_path, file_name, file_size, created_by_profile_id, updated_by_profile_id)
-     values ($1, $2, $3, '2026-03-10', 'personality-tests/p1/x.pdf', 'x.pdf', 1024, $4, $4)
+     values ($1, $2, $3, '2026-03-10', 'personality-test/p1/x.pdf', 'x.pdf', 1024, $4, $4)
      returning id`,
     [profileId, testType, overrides.testTypeOther ?? null, profileId],
   );
@@ -1656,7 +1656,7 @@ describe("personality_tests RLS", () => {
         client.query(
           `insert into public.personality_tests
              (profile_id, test_type, tested_on, file_path, file_name, file_size, created_by_profile_id, updated_by_profile_id)
-           values ($1, 'mbti', '2026-03-10', 'personality-tests/p1/x.pdf', 'x.pdf', 1024, $2, $2)`,
+           values ($1, 'mbti', '2026-03-10', 'personality-test/p1/x.pdf', 'x.pdf', 1024, $2, $2)`,
           [ownerProfileId, otherAuthId],
         ),
       ).rejects.toThrow();
@@ -1719,7 +1719,7 @@ describe("personality_tests RLS", () => {
         client.query(
           `insert into public.personality_tests
              (profile_id, test_type, tested_on, file_path, file_name, file_size, created_by_profile_id, updated_by_profile_id)
-           values ($1, 'other', '2026-03-10', 'personality-tests/p1/x.pdf', 'x.pdf', 1024, $2, $2)`,
+           values ($1, 'other', '2026-03-10', 'personality-test/p1/x.pdf', 'x.pdf', 1024, $2, $2)`,
           [ownerProfileId, ownerAuthId],
         ),
       ).rejects.toThrow();

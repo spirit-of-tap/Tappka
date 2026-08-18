@@ -60,7 +60,7 @@ RLS (helper `current_profile_id()`):
 
 Úložiště: existující private bucket **`documents`** (migrace
 `20260709120000_add_avatars_documents_buckets.sql` ho připravila přesně pro
-tento účel). Klíč `personality-tests/{profileId}/{timestamp}-{uuid}.{ext}`.
+tento účel). Klíč `personality-test/{profileId}/{timestamp}-{uuid}.{ext}`.
 Writes: presigned URL (service role, vzor avatarů). Reads: `getSignedStorageUrl`
 (1 h). Žádné storage RLS — veškerý přístup je serverem zprostředkovaný.
 
