@@ -235,7 +235,10 @@ export function PersonalityTestTimeline({ initialTests, profileId, isOwnProfile 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deletingId !== null}>Zrušit</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.preventDefault()
+                void handleDelete()
+              }}
               disabled={deletingId !== null}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
