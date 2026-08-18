@@ -1035,6 +1035,76 @@ export type Database = {
           },
         ]
       }
+      personality_tests: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          profile_id: string
+          removed_at: string | null
+          test_type: Database["public"]["Enums"]["personality_test_type"]
+          test_type_other: string | null
+          tested_on: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          profile_id: string
+          removed_at?: string | null
+          test_type: Database["public"]["Enums"]["personality_test_type"]
+          test_type_other?: string | null
+          tested_on: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          profile_id?: string
+          removed_at?: string | null
+          test_type?: Database["public"]["Enums"]["personality_test_type"]
+          test_type_other?: string | null
+          tested_on?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personality_tests_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personality_tests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personality_tests_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           access_removed_at: string | null
@@ -1935,6 +2005,14 @@ export type Database = {
     Enums: {
       book_list_status: "processing" | "shortlist" | "longlist" | "archived"
       book_source: "manual" | "google_books" | "open_library"
+      personality_test_type:
+        | "gallup"
+        | "mbti"
+        | "disc"
+        | "big_five"
+        | "enneagram"
+        | "belbin"
+        | "other"
       profile_role: "student" | "mentor" | "coach" | "admin"
       schedule_type: "training_session" | "houston_calling"
       semester_reflection_topic:
@@ -2079,6 +2157,15 @@ export const Constants = {
     Enums: {
       book_list_status: ["processing", "shortlist", "longlist", "archived"],
       book_source: ["manual", "google_books", "open_library"],
+      personality_test_type: [
+        "gallup",
+        "mbti",
+        "disc",
+        "big_five",
+        "enneagram",
+        "belbin",
+        "other",
+      ],
       profile_role: ["student", "mentor", "coach", "admin"],
       schedule_type: ["training_session", "houston_calling"],
       semester_reflection_topic: [
