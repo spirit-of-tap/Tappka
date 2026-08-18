@@ -136,7 +136,7 @@ describe("personality_tests RLS", () => {
       );
 
       const { rows } = await client.query(
-        "select tested_on, removed_at from public.personality_tests where id = $1",
+        "select to_char(tested_on, 'YYYY-MM-DD') as tested_on, removed_at from public.personality_tests where id = $1",
         [testId],
       );
       expect(rows[0].tested_on).toBe("2026-04-01");
