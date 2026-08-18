@@ -13,6 +13,13 @@ export function authorizeAction(
   entityId: string,
   profile: AuthProfile,
 ): string | null {
+  if (context === "personality-test") {
+    if (entityId !== profile.id) {
+      return "Nemůžeš nahrát soubor pro jinou osobu";
+    }
+    return null;
+  }
+
   if (context === "profile") {
     if (entityId !== profile.id) {
       return "Nemáš oprávnění provést tuto akci";

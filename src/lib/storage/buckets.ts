@@ -37,5 +37,7 @@ export function contextToBucket(context: StorageContext): BucketId {
       return "avatars";
     case "book":
       return "images";
+    case "personality-test":
+      return "documents";
   }
 }
