@@ -52,8 +52,8 @@ test.describe("týmový deník - single user", () => {
     // Scope to the dialog: the empty-state also renders a "Přidat akci" trigger.
     await page.getByRole("dialog").getByRole("button", { name: "Přidat akci" }).click();
 
-    // Wait for the dialog to unmount — until then, getByText also matches the
-    // form fields' values inside it (e.g. the "Teambuilding" textarea).
+    // Wait for the insert to settle — the dialog unmounts after save; asserting
+    // it closed gives a clearer failure if the insert fails than racing the feed.
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByText(activityType)).toBeVisible();
     await expect(page.getByText("Teambuilding")).toBeVisible();
@@ -68,7 +68,8 @@ test.describe("týmový deník - single user", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByText(activityType)).toBeVisible();
 
-    await page.getByRole("button", { name: /Smazat/i }).click();
+    const card = page.locator("[data-slot='card']").filter({ hasText: activityType });
+    await card.getByRole("button", { name: /Smazat/i }).click();
     await page.getByRole("button", { name: "Odstranit" }).click();
     await expect(page.getByText(activityType)).toHaveCount(0);
   });
