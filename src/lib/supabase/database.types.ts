@@ -1721,6 +1721,67 @@ export type Database = {
         }
         Relationships: []
       }
+      tools_techniques: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          name: string
+          profile_id: string
+          reflection: string
+          removed_at: string | null
+          tool_type: Database["public"]["Enums"]["tool_type"]
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          name: string
+          profile_id: string
+          reflection: string
+          removed_at?: string | null
+          tool_type: Database["public"]["Enums"]["tool_type"]
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          name?: string
+          profile_id?: string
+          reflection?: string
+          removed_at?: string | null
+          tool_type?: Database["public"]["Enums"]["tool_type"]
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tools_techniques_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tools_techniques_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tools_techniques_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           auth_user_id: string | null
@@ -1888,6 +1949,7 @@ export type Database = {
         | "komunitni_a_cross_projekty"
         | "zacleneni_tucnaku"
         | "dalsi"
+      tool_type: "model" | "technique" | "tool"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2032,6 +2094,7 @@ export const Constants = {
         "zacleneni_tucnaku",
         "dalsi",
       ],
+      tool_type: ["model", "technique", "tool"],
     },
   },
 } as const
