@@ -217,7 +217,7 @@ export function PersonalityTestTimeline({ initialTests, profileId, isOwnProfile 
       <AlertDialog
         open={deleting !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleting(null)
+          if (!open && deletingId === null) setDeleting(null)
         }}
       >
         <AlertDialogContent>
