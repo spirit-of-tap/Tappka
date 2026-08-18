@@ -83,7 +83,8 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
   const topic = `team:${data.team_id}:reflection`
 
   useEffect(() => {
-    const channel = supabase.current
+    const client = supabase.current
+    const channel = client
       .channel(topic, {
         config: {
           broadcast: { self: false, ack: true },
@@ -96,7 +97,7 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
 
     channelRef.current = channel
 
-    supabase.current.realtime.setAuth().then(() => {
+    client.realtime.setAuth().then(() => {
       channel.subscribe((status, err) => {
         if (status === "CHANNEL_ERROR") {
           console.error("Reflection channel error:", err)
@@ -108,7 +109,7 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
 
     return () => {
       channelRef.current = null
-      supabase.current.removeChannel(channel)
+      client.removeChannel(channel)
     }
   }, [topic, applyIncoming])
 

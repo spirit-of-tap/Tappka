@@ -31,7 +31,8 @@ export function SemesterReflectionDetail({ reflection, entries, profileId }: Sem
   const topic = `team:${reflection.team_id}:semester-reflection:${reflection.id}`
 
   useEffect(() => {
-    const channel = supabase.current
+    const client = supabase.current
+    const channel = client
       .channel(topic, {
         config: {
           broadcast: { self: false, ack: true },
@@ -45,7 +46,7 @@ export function SemesterReflectionDetail({ reflection, entries, profileId }: Sem
 
     channelRef.current = channel
 
-    supabase.current.realtime.setAuth().then(() => {
+    client.realtime.setAuth().then(() => {
       channel.subscribe((status, err) => {
         if (status === "CHANNEL_ERROR") {
           console.error("Semester reflection channel error:", err)
@@ -57,7 +58,7 @@ export function SemesterReflectionDetail({ reflection, entries, profileId }: Sem
 
     return () => {
       channelRef.current = null
-      supabase.current.removeChannel(channel)
+      client.removeChannel(channel)
     }
   }, [topic])
 
