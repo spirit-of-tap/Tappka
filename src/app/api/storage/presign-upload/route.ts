@@ -12,6 +12,7 @@ import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { generatePresignedUpload } from "@/lib/storage/service";
 import {
   validateImageUpload,
+  validatePersonalityTestUpload,
   getFileExtension,
 } from "@/lib/storage/validation";
 import type { StorageContext } from "@/lib/storage/types";
@@ -46,7 +47,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type and size
-    const validationError = validateImageUpload(contentType, fileSize);
+    const validationError =
+      context === "personality-test"
+        ? validatePersonalityTestUpload(contentType, fileSize)
+        : validateImageUpload(contentType, fileSize);
     if (validationError) {
       return NextResponse.json(
         { error: validationError.message },
@@ -64,7 +68,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Authorization checks
-    if (context === "profile") {
+    if (context === "personality-test") {
+      // Users can only upload to their own profile
+      if (entityId !== profile.id) {
+        return NextResponse.json(
+          { error: "Nemůžeš nahrát soubor pro jinou osobu" },
+          { status: 403 }
+        );
+      }
+    } else if (context === "profile") {
       // Users can only upload to their own profile
       if (entityId !== profile.id) {
         return NextResponse.json(

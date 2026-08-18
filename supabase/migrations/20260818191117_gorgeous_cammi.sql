@@ -1,0 +1,1 @@
+ALTER POLICY "Verified users can view personality tests" ON "personality_tests" TO authenticated USING ((EXISTS (SELECT 1 FROM users WHERE (users.auth_user_id = (SELECT auth.uid()) AND users.verified_work_email IS NOT NULL))));

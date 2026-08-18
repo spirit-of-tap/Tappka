@@ -55,6 +55,7 @@ Místnosti                 (unchanged)
 
 **Not in the sidebar — profile-page cards (individual):**
 Osobnostní test (T11), Learning Contract (T08), Skill Profile (T06, may also need a team-comparison tab), Birth Giving (T10), Rocket Model personal half (T07).
+> **Override (18. 8. 2026, issue #59):** Osobnostní test (T11) gets a **sidebar shortcut** after all — a beta-gated „Osobnostní testy" item in the Hlavní section linking to the user's own profile tests tab (`/komunita/profil/{id}?tab=osobnostni-testy`). The feature itself still lives on the profile page.
 
 **Not in the sidebar — team-page cards:**
 Team Contract & Leading Thoughts (I03), Finanční směrnice (I11), Týmové role (I04), Semestrální reflexe (I07, confirm cadence), Rocket Model team half (I09), Crossfertilizace (T05, confirm cadence — could be a repeated log instead if sessions are frequent).
