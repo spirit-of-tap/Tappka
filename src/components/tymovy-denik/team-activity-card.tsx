@@ -81,7 +81,7 @@ export function TeamActivityCard({
         <div className="flex items-center gap-2 min-w-0">
           <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
           <span className="font-semibold text-sm">{formatActivityDate(activity.occurred_at)}</span>
-          <span className="text-sm text-muted-foreground">· {activity.activity_type}</span>
+          <span className="text-sm text-muted-foreground truncate">· {activity.activity_type}</span>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -137,16 +137,24 @@ export function TeamActivityCard({
         </div>
       </div>
 
-      <div className="border-t pt-4 space-y-4">
-        {activity.participants && (
-          <div className="flex items-start gap-2">
-            <Users className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            <Field label="Účast">{activity.participants}</Field>
-          </div>
-        )}
-        {activity.reason && <Field label="Proč jsme tam byli">{activity.reason}</Field>}
-        {activity.reflection && <Field label="Co jsme si odnesli?">{activity.reflection}</Field>}
-      </div>
+      {activity.participants || activity.reason || activity.reflection ? (
+        <div className="border-t pt-4 space-y-4">
+          {activity.participants && (
+            <div className="flex items-start gap-2">
+              <Users className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <Field label="Účast">{activity.participants}</Field>
+            </div>
+          )}
+          {activity.reason && <Field label="Proč jsme tam byli">{activity.reason}</Field>}
+          {activity.reflection && <Field label="Co jsme si odnesli?">{activity.reflection}</Field>}
+        </div>
+      ) : (
+        <div className="border-t pt-4">
+          <p className="text-sm text-muted-foreground">
+            Zatím nevyplněno — upravte akci a doplňte podrobnosti.
+          </p>
+        </div>
+      )}
 
       {activity.created_by && (
         <div className="border-t pt-3 text-xs text-muted-foreground">
