@@ -102,7 +102,7 @@ describe("personality_tests RLS", () => {
 
   it("does not let another user insert a test for someone else", async () => {
     await withRollback(async (client) => {
-      const { ownerProfileId, otherAuthId } = await seed(client);
+      const { ownerProfileId, otherProfileId, otherAuthId } = await seed(client);
 
       await asClaims(client, { sub: otherAuthId });
       await expect(
@@ -110,7 +110,7 @@ describe("personality_tests RLS", () => {
           `insert into public.personality_tests
              (profile_id, test_type, tested_on, file_path, file_name, file_size, created_by_profile_id, updated_by_profile_id)
            values ($1, 'mbti', '2026-03-10', 'personality-test/p1/x.pdf', 'x.pdf', 1024, $2, $2)`,
-          [ownerProfileId, otherAuthId],
+          [ownerProfileId, otherProfileId],
         ),
       ).rejects.toThrow();
     });
