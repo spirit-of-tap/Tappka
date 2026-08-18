@@ -188,8 +188,8 @@ describe("team_activities RLS", () => {
       await insertActivity(client, teamId, ownerProfileId);
 
       // no authenticated delete policy on teams, and the profiles update guard
-      // blocks regular roles, so simulate an elevated (service_role) session
-      await asClaims(client, { role: "service_role" });
+      // blocks regular roles, so run as service_role (bypassrls trigger bypass)
+      await client.query("set local role service_role");
       await client.query("delete from public.teams where id = $1", [teamId]);
 
       const { rows } = await client.query(
