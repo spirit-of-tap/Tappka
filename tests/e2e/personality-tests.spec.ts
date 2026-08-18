@@ -12,16 +12,6 @@ const TEST_PDF = {
   buffer: Buffer.from("%PDF-1.4 test"),
 };
 
-async function uploadTest(page: import("@playwright/test").Page, typeLabel: string) {
-  await page.getByRole("button", { name: /Nahrát test/i }).first().click();
-  const dialog = page.getByRole("dialog");
-  await dialog.getByRole("combobox").click();
-  await page.getByRole("option", { name: typeLabel }).click();
-  await dialog.getByLabel("Soubor s výsledky").setInputFiles(TEST_PDF);
-  await dialog.getByRole("button", { name: "Nahrát test" }).click();
-  await expect(dialog).toHaveCount(0);
-}
-
 async function uploadCustomTest(page: import("@playwright/test").Page, testName: string) {
   await page.getByRole("button", { name: /Nahrát test/i }).first().click();
   const dialog = page.getByRole("dialog");
@@ -159,14 +149,11 @@ test.describe("osobnostní testy - two users", () => {
     await expect(page.getByText(testName)).toBeVisible();
     await expect(page.getByText("mbti-vysledky.pdf")).toBeVisible();
 
-    const popupPromise = page.waitForEvent("popup");
-    const downloadPromise = page.waitForEvent("download");
+    const downloadPromise = context.waitForEvent("download");
     await page.getByRole("link", { name: /Otevřít/ }).click();
-    const popup = await popupPromise;
     const download = await downloadPromise;
-    await expect
-      .poll(() => download.url(), { timeout: 15000 })
-      .toMatch(/\/storage\/v1\/object\/sign\//);
-    popup.close();
+    expect(await download.failure()).toBeNull();
+    expect(download.url()).toMatch(/\/storage\/v1\/object\/sign\//);
+    expect(download.suggestedFilename()).toMatch(/\.pdf$/);
   });
 });

@@ -259,7 +259,7 @@ async function storageRemoveFile(bucket: string, key: string): Promise<void> {
       },
     },
   );
-  if (!res.ok && res.status !== 404) {
+  if (!res.ok && res.status !== 404 && res.status !== 400) {
     throw new Error(`storage remove ${bucket}/${key} failed: ${res.status}`);
   }
 }
@@ -294,7 +294,9 @@ export async function cleanupTestData(): Promise<void> {
       "GET",
     ).catch(() => [] as { file_path: string }[])) as { file_path: string }[];
     await Promise.all(rows.map(({ file_path: key }) =>
-      storageRemoveFile("documents", key).catch(() => {})
+      storageRemoveFile("documents", key).catch((err) => {
+        console.error(`E2E cleanup: failed to remove storage file ${key}`, err);
+      })
     ));
     await restFetch(`/personality_tests?profile_id=eq.${pid}`, "DELETE").catch(() => {});
   }));
