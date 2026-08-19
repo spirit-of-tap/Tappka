@@ -421,6 +421,13 @@
       "when": 1787104127612,
       "tag": "20260819014847_fearless_snowbird",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1787104787599,
+      "tag": "20260819015947_light_namora",
+      "breakpoints": true
     }
   ]
 }
