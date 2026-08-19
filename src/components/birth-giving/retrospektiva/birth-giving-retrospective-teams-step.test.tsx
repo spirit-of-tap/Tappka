@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BirthGivingRetrospectiveTeamsStep } from "@/components/birth-giving/retrospektiva/birth-giving-retrospective-teams-step";
@@ -7,6 +7,7 @@ import {
   makeAllProfiles,
   makeDraftEvent,
   makeMemberWithProfile,
+  makeResultFile,
   makeTeam,
   NOW,
 } from "@/tests/component/birth-giving-fixtures";
@@ -27,7 +28,7 @@ function json(body: unknown, status = 200): Response {
   } as unknown as Response;
 }
 
-function stubFetch(stub: (url: string, init: Init) => Response) {
+function stubFetch(stub: (url: string, init: Init) => Response | Promise<Response>) {
   fetchSpy.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const method = (init?.method ?? "GET") as string;
@@ -251,5 +252,74 @@ describe("BirthGivingRetrospectiveTeamsStep", () => {
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
     const [, init] = fetchSpy.mock.calls[0];
     expect(JSON.parse(String(init?.body))).toMatchObject({ resultState: "present" });
+  });
+
+  it("ignores a second rapid submit of the create form so a team is not double-created", async () => {
+    const user = userEvent.setup();
+    const event = makeDraftEvent({ teams: [] });
+    const onEventChange = vi.fn();
+    const created: string[] = [];
+    stubFetch((url, init) => {
+      if (url === "/api/birth-giving/events/event-1/historical-teams" && init.method === "POST") {
+        created.push(url);
+        return json(
+          {
+            data: {
+              ...event,
+              teams: [makeTeam({ id: "team-new", name: "Tým Nový", members: [makeMemberWithProfile({ profile_id: "candidate-2" })] })],
+            },
+          },
+          201,
+        );
+      }
+      throw new Error(`Unexpected fetch: ${init.method} ${url}`);
+    });
+
+    renderStep(event, onEventChange);
+    await user.click(screen.getByRole("button", { name: "Přidat tým" }));
+    await user.type(screen.getByLabelText("Název týmu"), "Tým Nový");
+    await user.click(screen.getByRole("button", { name: "Člen:ky týmu" }));
+    await user.click(await screen.findByText("Candidate Two"));
+
+    const form = screen.getByRole("button", { name: "Vytvořit tým" }).closest("form");
+    fireEvent.submit(form!);
+    fireEvent.submit(form!);
+
+    await waitFor(() => expect(created).toHaveLength(1));
+  });
+
+  it("disables result-file mutations while the team editor save is in flight", async () => {
+    const user = userEvent.setup();
+    const event = eventWithTeam({ result_files: [makeResultFile()] });
+    const onEventChange = vi.fn();
+    const deferred: { resolve: ((value: Response) => void) | null } = { resolve: null };
+    stubFetch((url, init) => {
+      if (url.endsWith("/historical-teams/team-1") && init.method === "PATCH") {
+        return new Promise<Response>((resolve) => {
+          deferred.resolve = resolve;
+        });
+      }
+      throw new Error(`Unexpected fetch: ${init.method} ${url}`);
+    });
+
+    renderStep(event, onEventChange);
+
+    const deleteButton = screen.getByRole("button", { name: "Smazat soubor vysledky.pdf" });
+    const uploadButton = screen.getByRole("button", { name: "Nahrát soubory" });
+    expect(deleteButton).toBeEnabled();
+    expect(uploadButton).toBeEnabled();
+
+    const nameInput = screen.getByLabelText("Název týmu");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Tým Beta");
+    await user.tab();
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+    expect(deleteButton).toBeDisabled();
+    expect(uploadButton).toBeDisabled();
+
+    deferred.resolve?.(json({ data: event }));
+    await waitFor(() => expect(deleteButton).toBeEnabled());
+    expect(uploadButton).toBeEnabled();
   });
 });

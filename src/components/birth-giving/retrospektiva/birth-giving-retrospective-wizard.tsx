@@ -45,6 +45,8 @@ export function BirthGivingRetrospectiveWizard({
   const [exactDuplicate, setExactDuplicate] = useState<BirthGivingDuplicateCandidateItem | null>(
     null,
   );
+  const [identityCollision, setIdentityCollision] = useState(false);
+  const [hiddenConflict, setHiddenConflict] = useState(false);
   const [resumeDraftId, setResumeDraftId] = useState<string | null>(null);
   const [pendingPayload, setPendingPayload] = useState<BirthGivingRetrospectiveEventPayload | null>(
     null,
@@ -99,7 +101,9 @@ export function BirthGivingRetrospectiveWizard({
         setDuplicates([]);
         setDuplicateConfirmed(false);
         setExactDuplicate(null);
+        setIdentityCollision(false);
         setResumeDraftId(null);
+        setHiddenConflict(false);
         setPendingPayload(null);
         return;
       }
@@ -114,18 +118,33 @@ export function BirthGivingRetrospectiveWizard({
   }
 
   function handleDuplicateConflict(data: unknown) {
-    const conflict = parseDuplicateConflict(data);
-    if (conflict?.status === "draft") {
-      setResumeDraftId(conflict.id);
+    const conflict = parseDuplicateConflict(data, event?.id ?? null);
+    if (conflict.kind === "draft-resume") {
+      setResumeDraftId(conflict.candidate.id);
       setDuplicates([]);
       setExactDuplicate(null);
+      setIdentityCollision(false);
+      setHiddenConflict(false);
       return;
     }
-    if (conflict) {
-      setExactDuplicate(conflict);
+    if (conflict.kind === "published-exact") {
+      setExactDuplicate(conflict.candidate);
       setDuplicates([]);
       setDuplicateConfirmed(false);
+      setIdentityCollision(false);
+      setHiddenConflict(false);
+      return;
     }
+    setDuplicates([]);
+    setExactDuplicate(null);
+    setResumeDraftId(null);
+    if (conflict.kind === "identity-collision") {
+      setHiddenConflict(false);
+      setIdentityCollision(true);
+      return;
+    }
+    setIdentityCollision(false);
+    setHiddenConflict(true);
   }
 
   async function resumeDraft() {
@@ -141,6 +160,8 @@ export function BirthGivingRetrospectiveWizard({
         setResumeDraftId(null);
         setDuplicates([]);
         setExactDuplicate(null);
+        setIdentityCollision(false);
+        setHiddenConflict(false);
         setPendingPayload(null);
         return;
       }
@@ -154,6 +175,8 @@ export function BirthGivingRetrospectiveWizard({
     setDuplicates([]);
     setResumeDraftId(null);
     setExactDuplicate(null);
+    setIdentityCollision(false);
+    setHiddenConflict(false);
     setPendingPayload(null);
   }
 
@@ -269,6 +292,8 @@ export function BirthGivingRetrospectiveWizard({
             duplicates={duplicates}
             exactDuplicate={exactDuplicate}
             resumeDraftId={resumeDraftId}
+            identityCollision={identityCollision}
+            hiddenConflict={hiddenConflict}
             onSubmit={(payload) => void handleEventStepSubmit(payload)}
             onConfirmDuplicate={confirmDuplicate}
             onCancelDuplicate={cancelDuplicateGate}
@@ -322,20 +347,36 @@ export function BirthGivingRetrospectiveWizard({
   );
 }
 
-function parseDuplicateConflict(data: unknown): BirthGivingDuplicateCandidateItem | null {
-  if (typeof data !== "object" || data === null || !("id" in data)) return null;
+type DuplicateConflictParseResult =
+  | { kind: "draft-resume"; candidate: BirthGivingDuplicateCandidateItem }
+  | { kind: "published-exact"; candidate: BirthGivingDuplicateCandidateItem }
+  | { kind: "identity-collision" }
+  | { kind: "hidden" };
+
+function parseDuplicateConflict(
+  data: unknown,
+  currentEventId: string | null,
+): DuplicateConflictParseResult {
+  if (typeof data !== "object" || data === null || !("id" in data)) {
+    return { kind: "hidden" };
+  }
   const raw = data as {
     id?: unknown;
     status?: unknown;
     identity?: { eventName?: unknown; customer?: unknown; startsAt?: unknown };
   };
-  if (typeof raw.id !== "string") return null;
+  if (typeof raw.id !== "string") return { kind: "hidden" };
+  if (raw.id === currentEventId) return { kind: "identity-collision" };
   const identity = raw.identity;
-  return {
+  const candidate: BirthGivingDuplicateCandidateItem = {
     id: raw.id,
     status: raw.status === "draft" ? "draft" : "published",
     name: typeof identity?.eventName === "string" ? identity.eventName : "",
     customer: typeof identity?.customer === "string" ? identity.customer : "",
     starts_at: typeof identity?.startsAt === "string" ? identity.startsAt : "",
+  };
+  return {
+    kind: candidate.status === "draft" ? "draft-resume" : "published-exact",
+    candidate,
   };
 }

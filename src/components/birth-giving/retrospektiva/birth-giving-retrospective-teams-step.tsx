@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Loader2, Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,12 +49,10 @@ export function BirthGivingRetrospectiveTeamsStep({
   onEventChange,
 }: BirthGivingRetrospectiveTeamsStepProps) {
   const [adding, setAdding] = useState(false);
-  const [busy, setBusy] = useState(false);
   const teams = event.teams.filter(({ status }) => status !== "cancelled");
 
-  async function refreshAfterMutation(updated: BirthGivingEventDetail | null) {
+  function refreshAfterMutation(updated: BirthGivingEventDetail | null) {
     onEventChange(updated);
-    setBusy(false);
   }
 
   return (
@@ -97,10 +95,9 @@ export function BirthGivingRetrospectiveTeamsStep({
         <BirthGivingRetrospectiveTeamCreate
           event={event}
           organizerProfiles={organizerProfiles}
-          busy={busy}
           onCreated={(updated) => {
             setAdding(false);
-            void refreshAfterMutation(updated);
+            refreshAfterMutation(updated);
           }}
           onCancel={() => setAdding(false)}
         />
@@ -109,7 +106,6 @@ export function BirthGivingRetrospectiveTeamsStep({
           type="button"
           variant="outline"
           size="sm"
-          disabled={busy}
           onClick={() => setAdding(true)}
         >
           <Plus className="size-4" />
@@ -243,6 +239,7 @@ function BirthGivingRetrospectiveTeamEditor({
           team={team}
           profileId={profileId}
           now={now}
+          disabled={saving}
           onEventChange={onEventChange}
         />
       )}
@@ -253,7 +250,6 @@ function BirthGivingRetrospectiveTeamEditor({
 interface BirthGivingRetrospectiveTeamCreateProps {
   event: BirthGivingEventDetail;
   organizerProfiles: BirthGivingProfileSummary[];
-  busy: boolean;
   onCreated: (event: BirthGivingEventDetail | null) => void;
   onCancel: () => void;
 }
@@ -261,7 +257,6 @@ interface BirthGivingRetrospectiveTeamCreateProps {
 function BirthGivingRetrospectiveTeamCreate({
   event,
   organizerProfiles,
-  busy,
   onCreated,
   onCancel,
 }: BirthGivingRetrospectiveTeamCreateProps) {
@@ -270,6 +265,7 @@ function BirthGivingRetrospectiveTeamCreate({
   const [resultState, setResultState] = useState<BirthGivingTeamResultState>("present");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
   const excludedIds = useMemo(() => otherTeamMemberProfileIds(event, ""), [event]);
 
   async function handleSubmit(formEvent: React.FormEvent) {
@@ -284,6 +280,8 @@ function BirthGivingRetrospectiveTeamCreate({
       setError("Vyberte alespoň jednu osobu do týmu");
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
     setSaving(true);
     try {
       const result = await birthGivingMutationRequest(
@@ -304,6 +302,7 @@ function BirthGivingRetrospectiveTeamCreate({
       toast.error(result.body.error ?? "Tým se nepodařilo vytvořit");
       onCreated(result.body.data ?? null);
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   }
@@ -322,7 +321,7 @@ function BirthGivingRetrospectiveTeamCreate({
             <Input
               id="bg-historical-team-create-name"
               value={name}
-              disabled={busy || saving}
+              disabled={saving}
               onChange={(changeEvent) => setName(changeEvent.target.value)}
               placeholder="Např. Tým Alfa"
             />
@@ -332,7 +331,7 @@ function BirthGivingRetrospectiveTeamCreate({
             <Select
               value={resultState}
               onValueChange={(value) => setResultState(value as BirthGivingTeamResultState)}
-              disabled={busy || saving}
+              disabled={saving}
             >
               <SelectTrigger aria-label="Stav výsledku">
                 <SelectValue />
@@ -352,15 +351,15 @@ function BirthGivingRetrospectiveTeamCreate({
           label="Člen:ky týmu"
           placeholder="Vyberte osoby"
           excludeIds={excludedIds}
-          disabled={busy || saving}
+          disabled={saving}
         />
 
         <div className="flex items-center justify-end gap-2">
-          <Button type="button" variant="outline" disabled={busy || saving} onClick={onCancel}>
+          <Button type="button" variant="outline" disabled={saving} onClick={onCancel}>
             Zrušit
           </Button>
-          <Button type="submit" disabled={busy || saving}>
-            {(busy || saving) && (
+          <Button type="submit" disabled={saving}>
+            {saving && (
               <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
             )}
             Vytvořit tým

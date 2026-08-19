@@ -40,6 +40,7 @@ interface BirthGivingResultFileListProps {
   team: BirthGivingTeamDetail;
   profileId: string;
   now: string;
+  disabled?: boolean;
   onEventChange: (event: BirthGivingEventDetail | null) => void;
 }
 
@@ -52,6 +53,7 @@ export function BirthGivingResultFileList({
   team,
   profileId,
   now,
+  disabled = false,
   onEventChange,
 }: BirthGivingResultFileListProps) {
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
@@ -133,7 +135,7 @@ export function BirthGivingResultFileList({
                   size="xs"
                   variant="outline"
                   aria-label={`Smazat soubor ${file.original_file_name}`}
-                  disabled={busy}
+                  disabled={busy || disabled}
                   onClick={() => setPendingRemoval({ file })}
                 >
                   <Trash2 className="size-3" />
@@ -160,13 +162,20 @@ export function BirthGivingResultFileList({
           kind="results"
           eventId={event.id}
           teamId={team.id}
+          disabled={disabled}
           onUploaded={() => onEventChange(null)}
         />
       )}
 
       {canMarkMissing && team.result_state !== "missing" && (
         <AlertDialog open={missingConfirmOpen} onOpenChange={setMissingConfirmOpen}>
-          <Button type="button" variant="outline" size="sm" onClick={() => setMissingConfirmOpen(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={busy || disabled}
+            onClick={() => setMissingConfirmOpen(true)}
+          >
             Označit výsledek jako nedohledaný
           </Button>
           <AlertDialogContent>

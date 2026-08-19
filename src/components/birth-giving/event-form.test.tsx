@@ -266,4 +266,49 @@ describe("BirthGivingEventForm", () => {
     );
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
+
+  it("treats a PATCH identity collision against the edited event as a terminal error and keeps the typed identity", async () => {
+    const user = userEvent.setup();
+    fetchSpy.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        code: "DUPLICATE_EVENT",
+        error: "Stejná Birth Giving událost už existuje.",
+        data: {
+          id: "event-1",
+          status: "draft",
+          identity: {
+            eventName: "Nová událost",
+            customer: "Zákazník A",
+            startsAt: "2026-08-19T08:00:00.000Z",
+          },
+        },
+      }),
+    } as Response);
+
+    render(
+      <BirthGivingEventForm
+        event={makeEvent({ id: "event-1", name: "Stará událost" })}
+        profileId="org-1"
+        organizerProfiles={makeOrganizerSummaries()}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const nameInput = screen.getByLabelText("Název události");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Nová událost");
+    await user.click(screen.getByRole("button", { name: "Uložit změny" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Stejná událost s těmito údaji už existuje",
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: "Je to jiná událost. Pokračovat" }),
+    ).not.toBeInTheDocument();
+    expect((screen.getByLabelText("Název události") as HTMLInputElement).value).toBe("Nová událost");
+  });
 });

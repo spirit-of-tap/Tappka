@@ -46,6 +46,8 @@ interface BirthGivingRetrospectiveEventStepProps {
   duplicates: BirthGivingDuplicateCandidateItem[];
   exactDuplicate: BirthGivingDuplicateCandidateItem | null;
   resumeDraftId: string | null;
+  identityCollision: boolean;
+  hiddenConflict: boolean;
   onSubmit: (payload: BirthGivingRetrospectiveEventPayload) => void;
   onConfirmDuplicate: () => void;
   onCancelDuplicate: () => void;
@@ -60,6 +62,8 @@ export function BirthGivingRetrospectiveEventStep({
   duplicates,
   exactDuplicate,
   resumeDraftId,
+  identityCollision,
+  hiddenConflict,
   onSubmit,
   onConfirmDuplicate,
   onCancelDuplicate,
@@ -145,7 +149,7 @@ export function BirthGivingRetrospectiveEventStep({
   return (
     <div className="space-y-4">
       {resumeDraftId && (
-        <Alert className="border-info/40 bg-info/5 text-info-strong">
+        <Alert className="border-info/40 bg-info/5 text-chart-3-strong">
           <AlertTitle>Rozepsaný koncept existuje</AlertTitle>
           <AlertDescription>
             <p>
@@ -162,6 +166,55 @@ export function BirthGivingRetrospectiveEventStep({
                 {busy && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
                 Pokračovat v rozepsaném konceptu
               </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={onCancelDuplicate}
+              >
+                Vrátit se k údajům
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {identityCollision && (
+        <Alert role="alert" className="border-destructive/40 bg-destructive/10 text-destructive">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Změny identity se nepodařilo uložit</AlertTitle>
+          <AlertDescription>
+            <p>
+              Událost se stejnými údaji (název, zákazník a začátek) už existuje.
+              Změňte údaje v konceptu, nebo pokračujte v původní události.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={onCancelDuplicate}
+              >
+                Vrátit se k údajům
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {hiddenConflict && (
+        <Alert className="border-warning/40 bg-warning/5 text-warning-strong">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Stejná událost už existuje</AlertTitle>
+          <AlertDescription>
+            <p>
+              Událost se stejnými údaji (název, zákazník a začátek) už existuje,
+              ale není k dispozici k otevření. Upravte údaje, nebo pokračujte
+              v původní události.
+            </p>
+            <div className="mt-3">
               <Button
                 type="button"
                 size="sm"

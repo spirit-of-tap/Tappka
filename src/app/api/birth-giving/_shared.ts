@@ -4,12 +4,19 @@ import { z } from "zod";
 
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import {
+  BIRTH_GIVING_ERROR_CODES,
   mapBirthGivingPostgresError,
   type BirthGivingPostgresError,
 } from "@/lib/birth-giving/api";
 import { getBirthGivingEvent } from "@/lib/birth-giving/queries";
 import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+
+export interface BirthGivingIdentity {
+  eventName: string;
+  customer: string;
+  startsAt: string;
+}
 
 interface BirthGivingApiContext {
   profileId: string;
@@ -56,6 +63,41 @@ export function isBirthGivingApiGateFailure(
 
 export function invalidPayloadResponse(): NextResponse {
   return NextResponse.json({ error: "Neplatná data požadavku" }, { status: 400 });
+}
+
+export async function birthGivingIdentityConflictResponse(
+  supabase: SupabaseClient<Database>,
+  identity: BirthGivingIdentity | null,
+): Promise<NextResponse> {
+  if (identity) {
+    const { data } = await supabase.rpc("birth_giving_find_event_conflict", {
+      p_normalized_customer: identity.customer,
+      p_normalized_name: identity.eventName,
+      p_starts_at: identity.startsAt,
+    });
+    const conflict = data?.[0];
+    if (conflict?.id) {
+      return NextResponse.json(
+        {
+          code: BIRTH_GIVING_ERROR_CODES.duplicateEvent,
+          error: "Stejná Birth Giving událost už existuje.",
+          data: {
+            id: conflict.id,
+            status: conflict.status,
+            identity,
+          },
+        },
+        { status: 409 },
+      );
+    }
+  }
+  return NextResponse.json(
+    {
+      code: BIRTH_GIVING_ERROR_CODES.duplicateEvent,
+      error: "Stejná událost s těmito údaji už existuje.",
+    },
+    { status: 409 },
+  );
 }
 
 export function validateBirthGivingRouteIds(...ids: string[]): NextResponse | null {

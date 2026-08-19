@@ -435,6 +435,149 @@ describe("BirthGivingRetrospectiveWizard", () => {
     );
   });
 
+  it("degrades a hidden PATCH identity collision to a generic duplicate message without offering a resume", async () => {
+    const user = userEvent.setup();
+    const draft = makeDraftEvent({ id: "event-1" });
+    stubFetch((url, init) => {
+      if (url === "/api/birth-giving/events/duplicate-candidates") return json({ data: [] });
+      if (url === "/api/birth-giving/events" && init.method === "POST") {
+        return json({ data: draft }, 201);
+      }
+      if (url === "/api/birth-giving/events/event-1" && init.method === "PATCH") {
+        return json(
+          {
+            code: "DUPLICATE_EVENT",
+            error: "Stejná událost s těmito údaji už existuje.",
+          },
+          409,
+        );
+      }
+      throw new Error(`Unexpected fetch: ${init.method} ${url}`);
+    });
+
+    renderWizard();
+    await fillEventStep(user);
+    await user.click(screen.getByRole("button", { name: "Vytvořit koncept" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Uložit koncept" })).toBeEnabled(),
+    );
+
+    await user.clear(screen.getByLabelText("Název události"));
+    await user.type(screen.getByLabelText("Název události"), "Letní BG");
+    await user.click(screen.getByRole("button", { name: "Uložit koncept" }));
+
+    expect(await screen.findByText("Stejná událost už existuje")).toBeInTheDocument();
+    expect(screen.queryByText("Rozepsaný koncept existuje")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Pokračovat v rozepsaném konceptu" }),
+    ).not.toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "/api/birth-giving/events/event-1",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("treats a self-referential PATCH identity collision as a terminal error instead of a resume dead-end", async () => {
+    const user = userEvent.setup();
+    const draft = makeDraftEvent({ id: "event-1" });
+    stubFetch((url, init) => {
+      if (url === "/api/birth-giving/events/duplicate-candidates") return json({ data: [] });
+      if (url === "/api/birth-giving/events" && init.method === "POST") {
+        return json({ data: draft }, 201);
+      }
+      if (url === "/api/birth-giving/events/event-1" && init.method === "PATCH") {
+        return json(
+          {
+            code: "DUPLICATE_EVENT",
+            error: "Stejná Birth Giving událost už existuje.",
+            data: {
+              id: "event-1",
+              status: "draft",
+              identity: {
+                eventName: "Letní BG",
+                customer: "Zákazník A",
+                startsAt: "2024-08-19T08:00:00.000Z",
+              },
+            },
+          },
+          409,
+        );
+      }
+      throw new Error(`Unexpected fetch: ${init.method} ${url}`);
+    });
+
+    renderWizard();
+    await fillEventStep(user);
+    await user.click(screen.getByRole("button", { name: "Vytvořit koncept" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Uložit koncept" })).toBeEnabled(),
+    );
+
+    const nameInput = screen.getByLabelText("Název události");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Letní BG");
+    await user.click(screen.getByRole("button", { name: "Uložit koncept" }));
+
+    expect(await screen.findByText("Změny identity se nepodařilo uložit")).toBeInTheDocument();
+    expect(screen.queryByText("Rozepsaný koncept existuje")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Pokračovat v rozepsaném konceptu" }),
+    ).not.toBeInTheDocument();
+    expect((screen.getByLabelText("Název události") as HTMLInputElement).value).toBe("Letní BG");
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      "/api/birth-giving/events/event-1",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("surfaces the real published conflict when a PATCH identity edit collides", async () => {
+    const user = userEvent.setup();
+    const draft = makeDraftEvent({ id: "event-1" });
+    stubFetch((url, init) => {
+      if (url === "/api/birth-giving/events/duplicate-candidates") return json({ data: [] });
+      if (url === "/api/birth-giving/events" && init.method === "POST") {
+        return json({ data: draft }, 201);
+      }
+      if (url === "/api/birth-giving/events/event-1" && init.method === "PATCH") {
+        return json(
+          {
+            code: "DUPLICATE_EVENT",
+            error: "Stejná Birth Giving událost už existuje.",
+            data: {
+              id: "other-9",
+              status: "published",
+              identity: {
+                eventName: "Letní BG",
+                customer: "Zákazník A",
+                startsAt: "2024-08-19T08:00:00.000Z",
+              },
+            },
+          },
+          409,
+        );
+      }
+      throw new Error(`Unexpected fetch: ${init.method} ${url}`);
+    });
+
+    renderWizard();
+    await fillEventStep(user);
+    await user.click(screen.getByRole("button", { name: "Vytvořit koncept" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Uložit koncept" })).toBeEnabled(),
+    );
+
+    await user.clear(screen.getByLabelText("Název události"));
+    await user.type(screen.getByLabelText("Název události"), "Letní BG");
+    await user.click(screen.getByRole("button", { name: "Uložit koncept" }));
+
+    expect(await screen.findByText("Tato událost už existuje")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otevřít událost" })).toHaveAttribute(
+      "href",
+      "/birth-giving/other-9",
+    );
+    expect(screen.queryByText("Rozepsaný koncept existuje")).not.toBeInTheDocument();
+  });
+
   it("navigates to the published event after a successful publish", async () => {
     const user = userEvent.setup();
     const draft = makeDraftEvent({

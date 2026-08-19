@@ -144,8 +144,12 @@ export function BirthGivingEventForm({
       return;
     }
     if (result.body.code === "DUPLICATE_EVENT") {
-      const candidate = toDuplicateCandidate(result.body.data);
-      if (candidate) setDuplicates([candidate]);
+      const candidate = toDuplicateCandidate(result.body.data, isEdit ? event.id : null);
+      if (candidate) {
+        setDuplicates([candidate]);
+        return;
+      }
+      setError("Stejná událost s těmito údaji už existuje. Zkontrolujte údaje.");
       return;
     }
     toast.error(result.body.error ?? "Událost se nepodařilo uložit");
@@ -298,6 +302,7 @@ export function BirthGivingEventForm({
 
 function toDuplicateCandidate(
   data: unknown,
+  currentEventId: string | null,
 ): BirthGivingDuplicateCandidateItem | null {
   if (typeof data !== "object" || data === null) return null;
   const candidate = data as {
@@ -309,6 +314,7 @@ function toDuplicateCandidate(
     starts_at?: string;
   };
   if (typeof candidate.id !== "string") return null;
+  if (candidate.id === currentEventId) return null;
   const identity = candidate.identity;
   const name = identity?.eventName ?? candidate.name ?? "";
   const customer = identity?.customer ?? candidate.customer ?? "";

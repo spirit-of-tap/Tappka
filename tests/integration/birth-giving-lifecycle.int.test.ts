@@ -185,7 +185,7 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
-  it("reveals only exact conflict metadata for another organizer's private draft", async () => {
+  it("reports only an identity-taken marker for another organizer's private draft without leaking its id", async () => {
     await withRollback(async (client) => {
       const { organizer, other } = await actors(client);
       const startsAt = timestamp(DAY_MS);
@@ -204,7 +204,7 @@ describe("Birth Giving lifecycle RPCs", () => {
          )`,
         [startsAt],
       );
-      expect(conflictRows).toEqual([{ id: eventId, status: "draft" }]);
+      expect(conflictRows).toEqual([{ id: null, status: null }]);
 
       const { rows: nearMatchRows } = await client.query(
         `select * from public.birth_giving_find_event_conflict(

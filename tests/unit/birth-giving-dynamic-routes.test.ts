@@ -45,7 +45,7 @@ describe("Birth Giving dynamic routes", () => {
   const from = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     rpc.mockResolvedValue({ data: EVENT_ID, error: null });
     mocks.requireBirthGivingApiContext.mockResolvedValue({ supabase: { from, rpc } });
     mocks.refreshedEventResponse.mockResolvedValue(SUCCESS_RESPONSE);
@@ -104,6 +104,82 @@ describe("Birth Giving dynamic routes", () => {
     });
   });
 
+  it("surfaces the real conflicting event when a PATCH identity collides instead of echoing the edited draft", async () => {
+    const conflictingId = "20000000-0000-4000-8000-000000000002";
+    rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: "23505",
+          message: "duplicate key value violates unique constraint birth_giving_events_identity_key",
+        },
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: conflictingId, status: "published" }],
+        error: null,
+      });
+    mocks.getBirthGivingEvent.mockResolvedValue({
+      id: EVENT_ID,
+      name: "Current name",
+      customer: "Current customer",
+      starts_at: "2026-09-01T08:00:00.000Z",
+    } as never);
+
+    const response = await patchEvent(request({ name: "Changed" }) as never, {
+      params: Promise.resolve({ eventId: EVENT_ID }),
+    });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      code: "DUPLICATE_EVENT",
+      error: "Stejná Birth Giving událost už existuje.",
+      data: {
+        id: conflictingId,
+        status: "published",
+        identity: {
+          eventName: "changed",
+          customer: "current customer",
+          startsAt: "2026-09-01T08:00:00.000Z",
+        },
+      },
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "birth_giving_find_event_conflict", {
+      p_normalized_customer: "current customer",
+      p_normalized_name: "changed",
+      p_starts_at: "2026-09-01T08:00:00.000Z",
+    });
+    expect(mocks.refreshedEventResponse).not.toHaveBeenCalled();
+  });
+
+  it("degrades a hidden 23505 PATCH identity collision to a generic duplicate error without an id", async () => {
+    rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: "23505",
+          message: "duplicate key value violates unique constraint birth_giving_events_identity_key",
+        },
+      })
+      .mockResolvedValueOnce({ data: [{ id: null, status: null }], error: null });
+    mocks.getBirthGivingEvent.mockResolvedValue({
+      id: EVENT_ID,
+      name: "Current name",
+      customer: "Current customer",
+      starts_at: "2026-09-01T08:00:00.000Z",
+    } as never);
+
+    const response = await patchEvent(request({ name: "Changed" }) as never, {
+      params: Promise.resolve({ eventId: EVENT_ID }),
+    });
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      code: "DUPLICATE_EVENT",
+      error: "Stejná událost s těmito údaji už existuje.",
+    });
+    expect(mocks.refreshedEventResponse).not.toHaveBeenCalled();
+  });
+
   it("recovers an exact private draft duplicate through metadata-only RPC", async () => {
     rpc
       .mockResolvedValueOnce({
@@ -152,7 +228,7 @@ describe("Birth Giving dynamic routes", () => {
 
 describe("Birth Giving canonical event refresh route", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mocks.requireBirthGivingApiContext.mockResolvedValue({ supabase: { from: vi.fn(), rpc: vi.fn() } });
   });
 

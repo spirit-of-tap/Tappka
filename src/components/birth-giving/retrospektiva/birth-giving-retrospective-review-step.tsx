@@ -181,7 +181,7 @@ export function BirthGivingRetrospectiveReviewStep({
       </Card>
 
       {publishError && (
-        <Alert role="alert" className="border-destructive/40 bg-destructive/10 text-destructive-strong">
+        <Alert role="alert" className="border-destructive/40 bg-destructive/10 text-destructive">
           <AlertTriangle className="size-4" />
           <AlertTitle>Zveřejnění se nezdařilo</AlertTitle>
           <AlertDescription>{publishError}</AlertDescription>

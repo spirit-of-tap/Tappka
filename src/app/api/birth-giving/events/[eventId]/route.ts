@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { birthGivingEventPatchSchema } from "@/lib/birth-giving/api";
+import { normalizeEventIdentity } from "@/lib/birth-giving/identity";
 import { getBirthGivingEvent } from "@/lib/birth-giving/queries";
 
 import {
+  birthGivingIdentityConflictResponse,
   birthGivingMutationErrorResponse,
   invalidPayloadResponse,
   isBirthGivingApiGateFailure,
@@ -48,6 +50,20 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     p_organizer_profile_ids: payload.organizerProfileIds,
     p_starts_at: payload.startsAt,
   });
-  if (error) return birthGivingMutationErrorResponse(error, context.supabase, eventId);
+  if (error) {
+    if (error.code === "23505") {
+      const current = await getBirthGivingEvent(context.supabase, eventId).catch(() => null);
+      if (current) {
+        const identity = normalizeEventIdentity({
+          eventName: payload.name ?? current.name,
+          customer: payload.customer ?? current.customer,
+          startsAt: new Date(payload.startsAt ?? current.starts_at),
+        });
+        return birthGivingIdentityConflictResponse(context.supabase, identity);
+      }
+      return birthGivingIdentityConflictResponse(context.supabase, null);
+    }
+    return birthGivingMutationErrorResponse(error, context.supabase, eventId);
+  }
   return refreshedEventResponse(context.supabase, eventId);
 }

@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-import { birthGivingDraftSchema, BIRTH_GIVING_ERROR_CODES } from "@/lib/birth-giving/api";
+import { birthGivingDraftSchema } from "@/lib/birth-giving/api";
 import { normalizeEventIdentity } from "@/lib/birth-giving/identity";
 
 import {
+  birthGivingIdentityConflictResponse,
   birthGivingMutationErrorResponse,
   invalidPayloadResponse,
   isBirthGivingApiGateFailure,
@@ -36,26 +37,7 @@ export async function POST(request: NextRequest) {
         customer: payload.customer,
         startsAt: new Date(payload.startsAt),
       });
-      const { data } = await context.supabase.rpc("birth_giving_find_event_conflict", {
-        p_normalized_customer: identity.customer,
-        p_normalized_name: identity.eventName,
-        p_starts_at: identity.startsAt,
-      });
-      const conflict = data?.[0];
-      if (conflict) {
-        return NextResponse.json(
-          {
-            code: BIRTH_GIVING_ERROR_CODES.duplicateEvent,
-            error: "Stejná Birth Giving událost už existuje.",
-            data: {
-              id: conflict.id,
-              status: conflict.status,
-              identity,
-            },
-          },
-          { status: 409 },
-        );
-      }
+      return birthGivingIdentityConflictResponse(context.supabase, identity);
     }
     return birthGivingMutationErrorResponse(error, context.supabase);
   }
