@@ -277,8 +277,9 @@ export function makeHistoryItem(overrides: Partial<BirthGivingProfileHistoryItem
     updated_at: "2026-08-19T06:00:00.000Z",
     created_by_profile_id: "org-1",
     updated_by_profile_id: "org-1",
-    membership: makeMember(),
+    membership: makeMember({ frozen_at: STARTS_AT }),
     team: { id: "team-1", name: "Tým Alfa", status: "confirmed" },
+    organizers: [makeOrganizer()],
     ...overrides,
   } as unknown as BirthGivingProfileHistoryItem;
 }

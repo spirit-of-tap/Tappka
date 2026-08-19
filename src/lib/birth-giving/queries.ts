@@ -7,6 +7,7 @@ import type {
   BirthGivingEvent,
   BirthGivingEventDetail,
   BirthGivingEventIndexItem,
+  BirthGivingOrganizerWithProfile,
   BirthGivingProfileHistoryItem,
   BirthGivingProfileSummary,
   BirthGivingProposalWithProfiles,
@@ -263,7 +264,10 @@ export async function listProfileBirthGivingHistory(
         id,
         name,
         status,
-        event:birth_giving_events!inner(*)
+        event:birth_giving_events!inner(
+          *,
+          organizers:birth_giving_event_organizers(profile:profiles!birth_giving_event_organizers_profile_id_fkey(id, name, picture))
+        )
       )
     `)
     .eq("profile_id", profileId);
@@ -277,7 +281,7 @@ export async function listProfileBirthGivingHistory(
       id: string;
       name: string;
       status: BirthGivingTeamStatus;
-      event: BirthGivingEvent;
+      event: BirthGivingEvent & { organizers: BirthGivingOrganizerWithProfile[] };
     };
   }
 
@@ -286,6 +290,7 @@ export async function listProfileBirthGivingHistory(
       ...team.event,
       membership: membership as BirthGivingProfileHistoryItem["membership"],
       team: { id: team.id, name: team.name, status: team.status },
+      organizers: team.event.organizers,
     }))
     .sort((left, right) => Date.parse(right.starts_at) - Date.parse(left.starts_at));
 }

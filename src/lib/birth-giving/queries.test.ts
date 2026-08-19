@@ -6,9 +6,11 @@ import type { Database } from "@/lib/supabase/database.types";
 import {
   applyBirthGivingParticipationValidityFilters,
   buildBirthGivingEventIndexWindow,
+  countProfileBirthGivingParticipations,
   getBirthGivingEvent,
   listBirthGivingEvents,
   listPendingBirthGivingEventProposals,
+  listProfileBirthGivingHistory,
 } from "./queries";
 
 interface RecordedCall {
@@ -19,11 +21,13 @@ interface RecordedCall {
 class FakeChain {
   readonly calls: RecordedCall[] = [];
   data: unknown;
+  count: unknown;
   error: unknown;
 
-  constructor(data: unknown = [], error: unknown = null) {
+  constructor(data: unknown = [], error: unknown = null, count: unknown = null) {
     this.data = data;
     this.error = error;
+    this.count = count;
   }
 
   select(select: string): this {
@@ -38,6 +42,11 @@ class FakeChain {
 
   is(column: string, value: unknown): this {
     this.calls.push({ method: "is", args: [column, value] });
+    return this;
+  }
+
+  not(column: string, operator: string, value: unknown): this {
+    this.calls.push({ method: "not", args: [column, operator, value] });
     return this;
   }
 
@@ -66,19 +75,19 @@ class FakeChain {
     return this;
   }
 
-  then<T>(onFulfilled: (result: { data: unknown; error: unknown }) => T): Promise<T> {
-    return Promise.resolve(onFulfilled({ data: this.data, error: this.error }));
+  then<T>(onFulfilled: (result: { data: unknown; error: unknown; count: unknown }) => T): Promise<T> {
+    return Promise.resolve(onFulfilled({ data: this.data, error: this.error, count: this.count }));
   }
 }
 
 function fakeSupabase(
-  queues: Record<string, { data?: unknown; error?: unknown }[]> = {},
+  queues: Record<string, { data?: unknown; error?: unknown; count?: unknown }[]> = {},
 ) {
   const chains: { table: string; chain: FakeChain }[] = [];
   const client = {
     from(table: string) {
       const entry = queues[table]?.shift() ?? {};
-      const chain = new FakeChain(entry.data, entry.error);
+      const chain = new FakeChain(entry.data, entry.error, entry.count);
       chains.push({ table, chain });
       return chain;
     },
@@ -126,6 +135,114 @@ describe("applyBirthGivingParticipationValidityFilters", () => {
       "eq:team.event.status:published",
       "is:team.event.removed_at:null",
     ]);
+  });
+});
+
+describe("listProfileBirthGivingHistory", () => {
+  it("selects memberships with nested event, team and organizer profiles, filtered to valid participation", async () => {
+    const { client, chains } = fakeSupabase();
+
+    const items = await listProfileBirthGivingHistory(client, "profile-1");
+
+    expect(items).toEqual([]);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].table).toBe("birth_giving_team_members");
+    const chain = chains[0].chain;
+
+    expect(callsOf(chain, "eq")).toEqual([
+      ["profile_id", "profile-1"],
+      ["team.status", "confirmed"],
+      ["team.event.status", "published"],
+    ]);
+    expect(callsOf(chain, "not")).toEqual([["frozen_at", "is", null]]);
+    expect(callsOf(chain, "is")).toEqual([["team.event.removed_at", null]]);
+
+    const select = selectOf(chain);
+    expect(select).toContain("team:birth_giving_teams!inner");
+    expect(select).toContain("event:birth_giving_events!inner");
+    expect(select).toContain(
+      "organizers:birth_giving_event_organizers(profile:profiles!birth_giving_event_organizers_profile_id_fkey(id, name, picture))",
+    );
+    expect(callsOf(chain, "order")).toEqual([["confirmed_at", { ascending: false }]]);
+  });
+
+  it("maps rows into profile history items with team and organizers", async () => {
+    const { client } = fakeSupabase({
+      birth_giving_team_members: [
+        {
+          data: [
+            {
+              id: "member-1",
+              team_id: "team-1",
+              profile_id: "profile-1",
+              confirmed_at: "2026-08-19T07:00:00.000Z",
+              frozen_at: "2026-08-19T08:00:00.000Z",
+              team: {
+                id: "team-1",
+                name: "Tým Alfa",
+                status: "confirmed",
+                event: {
+                  id: "event-1",
+                  name: "First BG",
+                  customer: "Zákazník A",
+                  starts_at: "2026-08-19T08:00:00.000Z",
+                  duration: "8h",
+                  status: "published",
+                  organizers: [
+                    {
+                      event_id: "event-1",
+                      profile_id: "org-1",
+                      profile: { id: "org-1", name: "Org One", picture: null },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const items = await listProfileBirthGivingHistory(client, "profile-1");
+
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe("First BG");
+    expect(items[0].customer).toBe("Zákazník A");
+    expect(items[0].team).toEqual({ id: "team-1", name: "Tým Alfa", status: "confirmed" });
+    expect(items[0].membership.frozen_at).toBe("2026-08-19T08:00:00.000Z");
+    expect(items[0].organizers).toHaveLength(1);
+    expect(items[0].organizers[0].profile.name).toBe("Org One");
+  });
+
+  it("returns an empty list for an unknown profile", async () => {
+    const { client } = fakeSupabase();
+
+    const items = await listProfileBirthGivingHistory(client, "nobody");
+
+    expect(items).toEqual([]);
+  });
+});
+
+describe("countProfileBirthGivingParticipations", () => {
+  it("counts only valid published participations for the profile", async () => {
+    const { client, chains } = fakeSupabase({
+      birth_giving_team_members: [{ data: [], count: 3 }],
+    });
+
+    const count = await countProfileBirthGivingParticipations(client, "profile-1");
+
+    expect(count).toBe(3);
+    expect(chains).toHaveLength(1);
+    expect(chains[0].table).toBe("birth_giving_team_members");
+    const chain = chains[0].chain;
+    expect(selectOf(chain)).toContain("team:birth_giving_teams!inner(status, event:birth_giving_events!inner(status, removed_at))");
+    expect(callsOf(chain, "eq")).toEqual([
+      ["profile_id", "profile-1"],
+      ["team.status", "confirmed"],
+      ["team.event.status", "published"],
+    ]);
+    expect(callsOf(chain, "not")).toEqual([["frozen_at", "is", null]]);
+    expect(callsOf(chain, "is")).toEqual([["team.event.removed_at", null]]);
   });
 });
 

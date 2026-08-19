@@ -111,4 +111,5 @@ export interface BirthGivingParticipationCandidate {
 export interface BirthGivingProfileHistoryItem extends BirthGivingEvent {
   membership: BirthGivingTeamMember;
   team: Pick<BirthGivingTeam, "id" | "name" | "status">;
+  organizers: BirthGivingOrganizerWithProfile[];
 }
