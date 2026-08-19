@@ -107,7 +107,7 @@ export function BirthGivingRetrospectiveZadaniStep({
         />
       )}
 
-      {canMarkMissing && !assignment && (
+      {canMarkMissing && (!assignment || assignment.state === "present") && (
         <AlertDialog open={missingOpen} onOpenChange={setMissingOpen}>
           <Button
             type="button"

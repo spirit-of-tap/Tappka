@@ -42,6 +42,9 @@ export function BirthGivingRetrospectiveWizard({
   const [busy, setBusy] = useState(false);
   const [duplicates, setDuplicates] = useState<BirthGivingDuplicateCandidateItem[]>([]);
   const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
+  const [exactDuplicate, setExactDuplicate] = useState<BirthGivingDuplicateCandidateItem | null>(
+    null,
+  );
   const [resumeDraftId, setResumeDraftId] = useState<string | null>(null);
   const [pendingPayload, setPendingPayload] = useState<BirthGivingRetrospectiveEventPayload | null>(
     null,
@@ -63,7 +66,13 @@ export function BirthGivingRetrospectiveWizard({
   ): Promise<boolean> {
     const check = await birthGivingMutationRequest<BirthGivingDuplicateCandidateItem[]>(
       "/api/birth-giving/events/duplicate-candidates",
-      { body: payload },
+      {
+        body: {
+          name: payload.name,
+          customer: payload.customer,
+          startsAt: payload.startsAt,
+        },
+      },
     );
     if (!check.ok) {
       toast.error(check.body.error ?? "Kontrolu podobných událostí se nepodařilo dokončit");
@@ -89,6 +98,7 @@ export function BirthGivingRetrospectiveWizard({
         setEvent(result.body.data);
         setDuplicates([]);
         setDuplicateConfirmed(false);
+        setExactDuplicate(null);
         setResumeDraftId(null);
         setPendingPayload(null);
         return;
@@ -108,14 +118,13 @@ export function BirthGivingRetrospectiveWizard({
     if (conflict?.status === "draft") {
       setResumeDraftId(conflict.id);
       setDuplicates([]);
+      setExactDuplicate(null);
       return;
     }
     if (conflict) {
-      setDuplicates((current) =>
-        current.some((candidate) => candidate.id === conflict.id)
-          ? current
-          : [conflict, ...current],
-      );
+      setExactDuplicate(conflict);
+      setDuplicates([]);
+      setDuplicateConfirmed(false);
     }
   }
 
@@ -131,6 +140,7 @@ export function BirthGivingRetrospectiveWizard({
         setEvent(result.body.data);
         setResumeDraftId(null);
         setDuplicates([]);
+        setExactDuplicate(null);
         setPendingPayload(null);
         return;
       }
@@ -143,6 +153,7 @@ export function BirthGivingRetrospectiveWizard({
   function cancelDuplicateGate() {
     setDuplicates([]);
     setResumeDraftId(null);
+    setExactDuplicate(null);
     setPendingPayload(null);
   }
 
@@ -256,6 +267,7 @@ export function BirthGivingRetrospectiveWizard({
             organizerProfiles={organizerProfiles}
             busy={busy}
             duplicates={duplicates}
+            exactDuplicate={exactDuplicate}
             resumeDraftId={resumeDraftId}
             onSubmit={(payload) => void handleEventStepSubmit(payload)}
             onConfirmDuplicate={confirmDuplicate}

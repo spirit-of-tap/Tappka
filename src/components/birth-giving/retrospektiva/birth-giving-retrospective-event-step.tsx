@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -43,6 +44,7 @@ interface BirthGivingRetrospectiveEventStepProps {
   organizerProfiles: BirthGivingProfileSummary[];
   busy: boolean;
   duplicates: BirthGivingDuplicateCandidateItem[];
+  exactDuplicate: BirthGivingDuplicateCandidateItem | null;
   resumeDraftId: string | null;
   onSubmit: (payload: BirthGivingRetrospectiveEventPayload) => void;
   onConfirmDuplicate: () => void;
@@ -56,6 +58,7 @@ export function BirthGivingRetrospectiveEventStep({
   organizerProfiles,
   busy,
   duplicates,
+  exactDuplicate,
   resumeDraftId,
   onSubmit,
   onConfirmDuplicate,
@@ -158,6 +161,39 @@ export function BirthGivingRetrospectiveEventStep({
               >
                 {busy && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
                 Pokračovat v rozepsaném konceptu
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={onCancelDuplicate}
+              >
+                Vrátit se k údajům
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {exactDuplicate && (
+        <Alert className="border-warning/40 bg-warning/5 text-warning-strong">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Tato událost už existuje</AlertTitle>
+          <AlertDescription>
+            <p>
+              Přesně stejná událost už je zveřejněná. Otevřete ji a pokračujte
+              v původní události.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button asChild size="sm">
+                <Link
+                  href={`/birth-giving/${exactDuplicate.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Otevřít událost
+                </Link>
               </Button>
               <Button
                 type="button"

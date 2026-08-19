@@ -1061,6 +1061,27 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
+  it("rejects a deactivated profile in historical team selection", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member } = await actors(client);
+      const eventId = await createDraft(client, organizer, {
+        startsAt: timestamp(-2 * DAY_MS),
+        joiningOpen: false,
+      });
+      await revoke(client, member, organizer.profileId);
+      await asClaims(client, { sub: organizer.authUserId });
+
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_create_historical_team($1, 'History', $2::uuid[], 'missing')",
+          [eventId, [member.profileId]],
+        ),
+        /distinct existing profiles/i,
+      );
+    });
+  });
+
   it("rejects a processed historical correction that underfills another frozen team", async () => {
     await withRollback(async (client) => {
       const { organizer, member, candidate, other } = await actors(client);

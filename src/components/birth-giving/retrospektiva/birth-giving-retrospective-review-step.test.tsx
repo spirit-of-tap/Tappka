@@ -127,8 +127,18 @@ describe("BirthGivingRetrospectiveReviewStep", () => {
     expect(screen.getByText("Zadání nedohledáno")).toBeInTheDocument();
     expect(screen.getByText("Výsledek nedohledán")).toBeInTheDocument();
     expect(screen.queryByText("Zatím chybí alespoň jeden tým.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Tým Beta je přítomný, ale zatím nemá žádný soubor."),
+    ).not.toBeInTheDocument();
     const review = screen.getAllByText("Member One");
     expect(review.length).toBeGreaterThanOrEqual(1);
+
+    await waitFor(() =>
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/birth-giving/events/duplicate-candidates",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
   });
 
   it("reports a draft without any team as blocked", async () => {

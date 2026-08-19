@@ -108,7 +108,13 @@ export function BirthGivingEventForm({
       if (!isEdit && !duplicateConfirmed) {
         const check = await birthGivingMutationRequest<BirthGivingDuplicateCandidateItem[]>(
           "/api/birth-giving/events/duplicate-candidates",
-          { body: payload },
+          {
+            body: {
+              name: payload.name,
+              customer: payload.customer,
+              startsAt: payload.startsAt,
+            },
+          },
         );
         if (!check.ok) {
           toast.error(check.body.error ?? "Kontrolu podobných událostí se nepodařilo dokončit");

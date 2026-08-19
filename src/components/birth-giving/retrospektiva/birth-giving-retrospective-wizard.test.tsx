@@ -329,6 +329,112 @@ describe("BirthGivingRetrospectiveWizard", () => {
     );
   });
 
+  it("posts only the identity fields to the near-duplicate gate", async () => {
+    const user = userEvent.setup();
+    let gateBody: string | undefined;
+    const draft = makeDraftEvent();
+    stubFetch((url, init) => {
+      if (url === "/api/birth-giving/events/duplicate-candidates") {
+        gateBody = init.body;
+        return json({ data: [] });
+      }
+      if (url === "/api/birth-giving/events" && init.method === "POST") {
+        return json({ data: draft }, 201);
+      }
+      throw new Error(`Unexpected fetch: ${init.method} ${url}`);
+    });
+
+    renderWizard();
+    await fillEventStep(user);
+    await user.click(screen.getByRole("button", { name: "Vytvořit koncept" }));
+
+    await waitFor(() =>
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/birth-giving/events",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    expect(gateBody).toBeDefined();
+    const body = JSON.parse(gateBody!) as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["customer", "name", "startsAt"]);
+    expect(body).toMatchObject({ name: "Letní BG", customer: "Zákazník A" });
+  });
+
+  it("shows a terminal state instead of an endless confirm loop for an exact published duplicate", async () => {
+    const user = userEvent.setup();
+    const created: string[] = [];
+    stubFetch((url, init) => {
+      if (url === "/api/birth-giving/events/duplicate-candidates") return json({ data: [] });
+      if (url === "/api/birth-giving/events" && init.method === "POST") {
+        created.push(url);
+        return json(
+          {
+            code: "DUPLICATE_EVENT",
+            error: "Stejná Birth Giving událost už existuje.",
+            data: {
+              id: "exact-1",
+              status: "published",
+              identity: {
+                eventName: "Letní BG",
+                customer: "Zákazník A",
+                startsAt: "2024-08-19T08:00:00.000Z",
+              },
+            },
+          },
+          409,
+        );
+      }
+      throw new Error(`Unexpected fetch: ${init.method} ${url}`);
+    });
+
+    renderWizard();
+    await fillEventStep(user);
+    await user.click(screen.getByRole("button", { name: "Vytvořit koncept" }));
+
+    expect(await screen.findByText("Tato událost už existuje")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otevřít událost" })).toHaveAttribute(
+      "href",
+      "/birth-giving/exact-1",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Je to jiná událost. Pokračovat" }),
+    ).not.toBeInTheDocument();
+    expect(created).toHaveLength(1);
+  });
+
+  it("allows flipping an uploaded assignment to missing", async () => {
+    const user = userEvent.setup();
+    const draft = makeDraftEvent({ assignment: makeAssignment({ state: "present" }) });
+    const withMissingAssignment = makeDraftEvent({
+      assignment: makeAssignment({ state: "missing" }),
+    });
+    stubFetch((url, init) => {
+      if (url === "/api/birth-giving/events/duplicate-candidates") return json({ data: [] });
+      if (url === "/api/birth-giving/events" && init.method === "POST") {
+        return json({ data: draft }, 201);
+      }
+      if (url === "/api/birth-giving/events/event-1/assignment/missing") {
+        return json({ data: { state: "missing" } });
+      }
+      if (url === "/api/birth-giving/events/event-1" && init.method === "GET") {
+        return json({ data: withMissingAssignment });
+      }
+      throw new Error(`Unexpected fetch: ${init.method} ${url}`);
+    });
+
+    renderWizard();
+    await createDraftAndReachZadani(user);
+
+    await user.click(screen.getByRole("button", { name: "Označit zadání jako nedohledané" }));
+    await user.click(screen.getByRole("button", { name: "Potvrdit" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Zadání nedohledáno"),
+      ).toBeInTheDocument(),
+    );
+  });
+
   it("navigates to the published event after a successful publish", async () => {
     const user = userEvent.setup();
     const draft = makeDraftEvent({

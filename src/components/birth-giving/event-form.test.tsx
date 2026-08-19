@@ -70,6 +70,10 @@ describe("BirthGivingEventForm", () => {
         expect.objectContaining({ method: "POST" }),
       );
     });
+    const gateBody = JSON.parse(
+      (fetchSpy.mock.calls[0][1] as { body: string }).body,
+    ) as Record<string, unknown>;
+    expect(Object.keys(gateBody).sort()).toEqual(["customer", "name", "startsAt"]);
     const { body } = fetchSpy.mock.calls[1][1] as { body: string };
     const payload = JSON.parse(body) as Record<string, unknown>;
     expect(payload).toEqual(
