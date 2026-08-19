@@ -10,11 +10,19 @@ import type {
   BirthGivingProfileHistoryItem,
   BirthGivingProfileSummary,
   BirthGivingProposalState,
+  BirthGivingTeamProposal,
   BirthGivingTeamStatus,
 } from "./types";
 
 const DUPLICATE_SEARCH_WINDOW_DAYS = 14;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+interface BirthGivingParticipationValidityQuery<Query> {
+  not(column: "frozen_at", operator: "is", value: null): Query;
+  eq(column: "team.status", value: "confirmed"): Query;
+  eq(column: "team.event.status", value: "published"): Query;
+  is(column: "team.event.removed_at", value: null): Query;
+}
 
 const EVENT_INDEX_SELECT = `
   *,
@@ -56,6 +64,22 @@ interface EventIndexQueryRow extends BirthGivingEvent {
     members: { profile_id: string }[];
     proposals: { candidate_profile_id: string; state: BirthGivingProposalState }[];
   }[];
+}
+
+export function filterPendingBirthGivingProposals<
+  Proposal extends Pick<BirthGivingTeamProposal, "state">,
+>(proposals: readonly Proposal[]): Proposal[] {
+  return proposals.filter(({ state }) => state === "pending");
+}
+
+export function applyBirthGivingParticipationValidityFilters<
+  Query extends BirthGivingParticipationValidityQuery<Query>,
+>(query: Query): Query {
+  return query
+    .not("frozen_at", "is", null)
+    .eq("team.status", "confirmed")
+    .eq("team.event.status", "published")
+    .is("team.event.removed_at", null);
 }
 
 export async function listBirthGivingEvents(
@@ -105,7 +129,16 @@ export async function getBirthGivingEvent(
     .maybeSingle();
 
   if (error) throw error;
-  return data as unknown as BirthGivingEventDetail | null;
+  const event = data as unknown as BirthGivingEventDetail | null;
+  if (event === null) return null;
+
+  return {
+    ...event,
+    teams: event.teams.map((team) => ({
+      ...team,
+      proposals: filterPendingBirthGivingProposals(team.proposals),
+    })),
+  };
 }
 
 export async function findBirthGivingDuplicateCandidates(
@@ -155,7 +188,7 @@ export async function listProfileBirthGivingHistory(
   supabase: SupabaseClient<Database>,
   profileId: string,
 ): Promise<BirthGivingProfileHistoryItem[]> {
-  const { data, error } = await supabase
+  const query = supabase
     .from("birth_giving_team_members")
     .select(`
       *,
@@ -166,11 +199,8 @@ export async function listProfileBirthGivingHistory(
         event:birth_giving_events!inner(*)
       )
     `)
-    .eq("profile_id", profileId)
-    .not("frozen_at", "is", null)
-    .eq("team.status", "confirmed")
-    .eq("team.event.status", "published")
-    .is("team.event.removed_at", null)
+    .eq("profile_id", profileId);
+  const { data, error } = await applyBirthGivingParticipationValidityFilters(query)
     .order("confirmed_at", { ascending: false });
 
   if (error) throw error;
@@ -197,17 +227,14 @@ export async function countProfileBirthGivingParticipations(
   supabase: SupabaseClient<Database>,
   profileId: string,
 ): Promise<number> {
-  const { count, error } = await supabase
+  const query = supabase
     .from("birth_giving_team_members")
     .select(
       "event_id, team:birth_giving_teams!inner(status, event:birth_giving_events!inner(status, removed_at))",
       { count: "exact", head: true },
     )
-    .eq("profile_id", profileId)
-    .not("frozen_at", "is", null)
-    .eq("team.status", "confirmed")
-    .eq("team.event.status", "published")
-    .is("team.event.removed_at", null);
+    .eq("profile_id", profileId);
+  const { count, error } = await applyBirthGivingParticipationValidityFilters(query);
 
   if (error) throw error;
   return count ?? 0;

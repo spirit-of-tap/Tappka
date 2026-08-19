@@ -57,6 +57,24 @@ describe("groupBirthGivingEvents", () => {
     expect(grouped.history.map(({ id }) => id)).toEqual(["newer", "older"]);
   });
 
+  it("does not prioritize a stale open flag after an event has started", () => {
+    const grouped = groupBirthGivingEvents(
+      [
+        event("stale-open-active", "2026-08-19T08:00:00.000Z", { joiningOpen: true }),
+        event("open-future", "2026-08-20T08:00:00.000Z", { joiningOpen: true }),
+        event("closed-active", "2026-08-19T10:00:00.000Z"),
+      ],
+      "profile-1",
+      NOW,
+    );
+
+    expect(grouped.upcoming.map(({ id }) => id)).toEqual([
+      "open-future",
+      "stale-open-active",
+      "closed-active",
+    ]);
+  });
+
   it("includes organized, joined, and pending-proposal events in my events once", () => {
     const grouped = groupBirthGivingEvents(
       [

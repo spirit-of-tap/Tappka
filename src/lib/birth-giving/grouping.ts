@@ -33,8 +33,10 @@ export function groupBirthGivingEvents<T extends GroupableBirthGivingEvent>(
   }
 
   upcoming.sort((left, right) => {
-    if (left.joining_open !== right.joining_open) {
-      return left.joining_open ? -1 : 1;
+    const leftJoiningOpen = left.joining_open && now.getTime() < Date.parse(left.starts_at);
+    const rightJoiningOpen = right.joining_open && now.getTime() < Date.parse(right.starts_at);
+    if (leftJoiningOpen !== rightJoiningOpen) {
+      return leftJoiningOpen ? -1 : 1;
     }
     return Date.parse(left.starts_at) - Date.parse(right.starts_at);
   });
