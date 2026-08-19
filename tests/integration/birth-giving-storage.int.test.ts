@@ -15,13 +15,54 @@ async function insertStoredObject(
   storagePath: string,
   mimeType = "application/pdf",
   fileSize = 1_000,
+  createdAt?: string,
 ): Promise<void> {
   await client.query("reset role");
   await client.query(
-    `insert into storage.objects (bucket_id, name, metadata)
-     values ('documents', $1, jsonb_build_object('size', $2::bigint, 'mimetype', $3::text))`,
-    [storagePath, fileSize, mimeType],
+    `insert into storage.objects (bucket_id, name, metadata, created_at)
+     values ('documents', $1, jsonb_build_object('size', $2::bigint, 'mimetype', $3::text), coalesce($4::timestamptz, now()))`,
+    [storagePath, fileSize, mimeType, createdAt ?? null],
   );
+}
+
+async function asServiceRole(client: PoolClient): Promise<void> {
+  await client.query("reset role");
+  await client.query("set local role service_role");
+}
+
+async function confirmAssignment(
+  client: PoolClient,
+  actorProfileId: string,
+  eventId: string,
+  storagePath: string,
+  originalFileName: string,
+  mimeType: string,
+  fileSize: number,
+): Promise<string | null> {
+  await asServiceRole(client);
+  const result = await client.query<{ value: string | null }>(
+    "select public.birth_giving_confirm_assignment($1, $2, $3, $4, $5, $6) as value",
+    [actorProfileId, eventId, storagePath, originalFileName, mimeType, fileSize],
+  );
+  return result.rows[0].value;
+}
+
+async function confirmResultFile(
+  client: PoolClient,
+  actorProfileId: string,
+  eventId: string,
+  teamId: string,
+  storagePath: string,
+  originalFileName: string,
+  mimeType: string,
+  fileSize: number,
+): Promise<string> {
+  await asServiceRole(client);
+  const result = await client.query<{ value: string }>(
+    "select public.birth_giving_confirm_result_file($1, $2, $3, $4, $5, $6, $7) as value",
+    [actorProfileId, eventId, teamId, storagePath, originalFileName, mimeType, fileSize],
+  );
+  return result.rows[0].value;
 }
 
 async function expectDatabaseError(
@@ -93,16 +134,8 @@ describe("Birth Giving storage RPCs", () => {
       await insertStoredObject(client, secondPath, "application/pdf", 2_000);
       await asClaims(client, { sub: organizer.authUserId });
 
-      const first = await client.query<{ old_storage_path: string | null }>(
-        "select public.birth_giving_confirm_assignment($1, $2, $3, $4, $5) as old_storage_path",
-        [eventId, firstPath, "first.pdf", "application/pdf", 1_000],
-      );
-      expect(first.rows[0].old_storage_path).toBeNull();
-      const second = await client.query<{ old_storage_path: string | null }>(
-        "select public.birth_giving_confirm_assignment($1, $2, $3, $4, $5) as old_storage_path",
-        [eventId, secondPath, "second.pdf", "application/pdf", 2_000],
-      );
-      expect(second.rows[0].old_storage_path).toBe(`birth-giving/assignments/${eventId}/first.pdf`);
+      expect(await confirmAssignment(client, organizer.profileId, eventId, firstPath, "first.pdf", "application/pdf", 1_000)).toBeNull();
+      expect(await confirmAssignment(client, organizer.profileId, eventId, secondPath, "second.pdf", "application/pdf", 2_000)).toBe(firstPath);
 
       const assignment = await client.query("select * from public.birth_giving_assignments where event_id = $1", [eventId]);
       expect(assignment.rows[0]).toMatchObject({
@@ -132,14 +165,8 @@ describe("Birth Giving storage RPCs", () => {
       await insertStoredObject(client, oldPath);
       await insertStoredObject(client, retryPath, "application/pdf", 2_000);
       await asClaims(client, { sub: organizer.authUserId });
-      await client.query(
-        "select public.birth_giving_confirm_assignment($1, $2, 'old.pdf', 'application/pdf', 1000)",
-        [eventId, oldPath],
-      );
-      const first = await client.query<{ old_path: string | null }>(
-        "select public.birth_giving_confirm_assignment($1, $2, 'retry.pdf', 'application/pdf', 2000) as old_path",
-        [eventId, retryPath],
-      );
+      await confirmAssignment(client, organizer.profileId, eventId, oldPath, "old.pdf", "application/pdf", 1_000);
+      const first = await confirmAssignment(client, organizer.profileId, eventId, retryPath, "retry.pdf", "application/pdf", 2_000);
       const beforeRetry = await client.query<{ replacement_id: string }>(
         "select replacement_id from public.birth_giving_assignments where event_id = $1",
         [eventId],
@@ -149,10 +176,7 @@ describe("Birth Giving storage RPCs", () => {
         [eventId],
       );
 
-      const retry = await client.query<{ old_path: string | null }>(
-        "select public.birth_giving_confirm_assignment($1, $2, 'retry.pdf', 'application/pdf', 2000) as old_path",
-        [eventId, retryPath],
-      );
+      const retry = await confirmAssignment(client, organizer.profileId, eventId, retryPath, "retry.pdf", "application/pdf", 2_000);
       const afterRetry = await client.query<{ replacement_id: string }>(
         "select replacement_id from public.birth_giving_assignments where event_id = $1",
         [eventId],
@@ -162,8 +186,8 @@ describe("Birth Giving storage RPCs", () => {
         [eventId],
       );
 
-      expect(first.rows[0].old_path).toBe(oldPath);
-      expect(retry.rows[0].old_path).toBeNull();
+      expect(first).toBe(oldPath);
+      expect(retry).toBeNull();
       expect(afterRetry.rows[0].replacement_id).toBe(beforeRetry.rows[0].replacement_id);
       expect(deliveriesAfter.rows[0].count).toBe(deliveriesBefore.rows[0].count);
     });
@@ -177,7 +201,7 @@ describe("Birth Giving storage RPCs", () => {
       const missingPath = `birth-giving/assignments/${eventId}/missing.pdf`;
       await expectDatabaseError(
         client,
-        () => client.query("select public.birth_giving_confirm_assignment($1, $2, 'missing.pdf', 'application/pdf', 1000)", [eventId, missingPath]),
+        () => confirmAssignment(client, organizer.profileId, eventId, missingPath, "missing.pdf", "application/pdf", 1_000),
         /storage object|metadata/i,
       );
 
@@ -186,7 +210,7 @@ describe("Birth Giving storage RPCs", () => {
       await asClaims(client, { sub: organizer.authUserId });
       await expectDatabaseError(
         client,
-        () => client.query("select public.birth_giving_confirm_assignment($1, $2, 'mismatch.pdf', 'application/pdf', 1000)", [eventId, mismatchPath]),
+        () => confirmAssignment(client, organizer.profileId, eventId, mismatchPath, "mismatch.pdf", "application/pdf", 1_000),
         /storage object|metadata/i,
       );
 
@@ -195,7 +219,7 @@ describe("Birth Giving storage RPCs", () => {
       await asClaims(client, { sub: organizer.authUserId });
       await expectDatabaseError(
         client,
-        () => client.query("select public.birth_giving_confirm_assignment($1, $2, 'payload.exe', 'application/x-msdownload', 100)", [eventId, unsafePath]),
+        () => confirmAssignment(client, organizer.profileId, eventId, unsafePath, "payload.exe", "application/x-msdownload", 100),
         /invalid assignment file metadata/i,
       );
     });
@@ -212,10 +236,7 @@ describe("Birth Giving storage RPCs", () => {
       await asClaims(client, { sub: organizer.authUserId });
       await expectDatabaseError(
         client,
-        () => client.query(
-          "select public.birth_giving_confirm_assignment($1, $2, 'x.pdf', 'application/pdf', 1)",
-          [eventId, storagePath],
-        ),
+        () => confirmAssignment(client, organizer.profileId, eventId, storagePath, "x.pdf", "application/pdf", 1),
         /locked|ended/i,
       );
       await asClaims(client, { sub: other.authUserId });
@@ -232,10 +253,8 @@ describe("Birth Giving storage RPCs", () => {
       const oldPath = `birth-giving/assignments/${eventId}/old.pdf`;
       await insertStoredObject(client, oldPath, "application/pdf", 100);
       await asClaims(client, { sub: organizer.authUserId });
-      await client.query(
-        "select public.birth_giving_confirm_assignment($1, $2, 'old.pdf', 'application/pdf', 100)",
-        [eventId, oldPath],
-      );
+      await confirmAssignment(client, organizer.profileId, eventId, oldPath, "old.pdf", "application/pdf", 100);
+      await asClaims(client, { sub: organizer.authUserId });
       const { rows } = await client.query<{ birth_giving_mark_assignment_missing: string }>(
         "select public.birth_giving_mark_assignment_missing($1)", [eventId],
       );
@@ -255,17 +274,14 @@ describe("Birth Giving storage RPCs", () => {
         const storagePath = `birth-giving/results/${eventId}/${teamId}/${name}.pdf`;
         await insertStoredObject(client, storagePath, "application/pdf", 25 * MIB);
         await asClaims(client, { sub: member.authUserId });
-        await client.query(
-          "select public.birth_giving_confirm_result_file($1, $2, $3, $4, 'application/pdf', $5)",
-          [eventId, teamId, storagePath, `${name}.pdf`, 25 * MIB],
-        );
+        await confirmResultFile(client, member.profileId, eventId, teamId, storagePath, `${name}.pdf`, "application/pdf", 25 * MIB);
       }
       const fifthPath = `birth-giving/results/${eventId}/${teamId}/five.pdf`;
       await insertStoredObject(client, fifthPath, "application/pdf", 1);
       await asClaims(client, { sub: member.authUserId });
       await expectDatabaseError(
         client,
-        () => client.query("select public.birth_giving_confirm_result_file($1, $2, $3, 'five.pdf', 'application/pdf', 1)", [eventId, teamId, `birth-giving/results/${eventId}/${teamId}/five.pdf`]),
+        () => confirmResultFile(client, member.profileId, eventId, teamId, fifthPath, "five.pdf", "application/pdf", 1),
         /100 MiB|storage limit/i,
       );
       const files = await client.query("select * from public.birth_giving_team_result_files where team_id = $1 and removed_at is null", [teamId]);
@@ -284,17 +300,16 @@ describe("Birth Giving storage RPCs", () => {
       await insertStoredObject(client, onePath, "application/pdf", 10);
       await insertStoredObject(client, twoPath, "application/pdf", 10);
       await asClaims(client, { sub: member.authUserId });
-      const inserted = await client.query<{ birth_giving_confirm_result_file: string }>(
-        "select public.birth_giving_confirm_result_file($1, $2, $3, 'one.pdf', 'application/pdf', 10)",
-        [eventId, teamId, `birth-giving/results/${eventId}/${teamId}/one.pdf`],
-      );
+      const insertedId = await confirmResultFile(client, member.profileId, eventId, teamId, onePath, "one.pdf", "application/pdf", 10);
+      await asClaims(client, { sub: member.authUserId });
       const removed = await client.query<{ birth_giving_remove_result_file: string }>(
-        "select public.birth_giving_remove_result_file($1)", [inserted.rows[0].birth_giving_confirm_result_file],
+        "select public.birth_giving_remove_result_file($1)", [insertedId],
       );
       expect(removed.rows[0].birth_giving_remove_result_file).toContain("one.pdf");
       expect((await client.query("select result_state from public.birth_giving_teams where id = $1", [teamId])).rows[0].result_state).toBe("pending");
 
-      await client.query("select public.birth_giving_confirm_result_file($1, $2, $3, 'two.pdf', 'application/pdf', 10)", [eventId, teamId, `birth-giving/results/${eventId}/${teamId}/two.pdf`]);
+      await confirmResultFile(client, member.profileId, eventId, teamId, twoPath, "two.pdf", "application/pdf", 10);
+      await asClaims(client, { sub: member.authUserId });
       const missing = await client.query<{ birth_giving_mark_result_missing: string[] }>(
         "select public.birth_giving_mark_result_missing($1, $2)", [eventId, teamId],
       );
@@ -313,7 +328,7 @@ describe("Birth Giving storage RPCs", () => {
       const missingPath = `birth-giving/results/${eventId}/${teamId}/missing.pdf`;
       await expectDatabaseError(
         client,
-        () => client.query("select public.birth_giving_confirm_result_file($1, $2, $3, 'missing.pdf', 'application/pdf', 10)", [eventId, teamId, missingPath]),
+        () => confirmResultFile(client, member.profileId, eventId, teamId, missingPath, "missing.pdf", "application/pdf", 10),
         /storage object|metadata/i,
       );
       const unsafePath = `birth-giving/results/${eventId}/${teamId}/unsafe.svg`;
@@ -321,7 +336,7 @@ describe("Birth Giving storage RPCs", () => {
       await asClaims(client, { sub: member.authUserId });
       await expectDatabaseError(
         client,
-        () => client.query("select public.birth_giving_confirm_result_file($1, $2, $3, 'unsafe.svg', 'image/svg+xml', 10)", [eventId, teamId, unsafePath]),
+        () => confirmResultFile(client, member.profileId, eventId, teamId, unsafePath, "unsafe.svg", "image/svg+xml", 10),
         /invalid result file metadata/i,
       );
     });
@@ -336,12 +351,9 @@ describe("Birth Giving storage RPCs", () => {
       await insertStoredObject(client, storagePath, "application/pdf", 10);
       await asClaims(client, { sub: organizer.authUserId });
 
-      const result = await client.query<{ id: string }>(
-        "select public.birth_giving_confirm_result_file($1, $2, $3, 'organizer.pdf', 'application/pdf', 10) as id",
-        [eventId, teamId, storagePath],
-      );
+      const resultId = await confirmResultFile(client, organizer.profileId, eventId, teamId, storagePath, "organizer.pdf", "application/pdf", 10);
 
-      expect(result.rows[0].id).toBeTypeOf("string");
+      expect(resultId).toBeTypeOf("string");
     });
   });
 
@@ -357,15 +369,105 @@ describe("Birth Giving storage RPCs", () => {
       await asClaims(client, { sub: organizer.authUserId });
       await expectDatabaseError(
         client,
-        () => client.query(
-          "select public.birth_giving_confirm_result_file($1, $2, $3, 'x.pdf', 'application/pdf', 1)",
-          [first.eventId, second.teamId, storagePath],
-        ),
+        () => confirmResultFile(client, organizer.profileId, first.eventId, second.teamId, storagePath, "x.pdf", "application/pdf", 1),
         /belong|relation/i,
       );
       await asClaims(client, { sub: other.authUserId });
       await expect(client.query("select public.birth_giving_mark_result_missing($1, $2)", [first.eventId, first.teamId]))
         .rejects.toThrow(/member|organizer|authorized/i);
+    });
+  });
+
+  it("does not expose file confirmation RPCs to authenticated clients", async () => {
+    await withRollback(async (client) => {
+      const privileges = await client.query<{ assignment: boolean; result: boolean }>(
+        `select
+          has_function_privilege('authenticated', 'public.birth_giving_confirm_assignment(uuid,uuid,text,text,text,bigint)', 'EXECUTE') as assignment,
+          has_function_privilege('authenticated', 'public.birth_giving_confirm_result_file(uuid,uuid,uuid,text,text,text,bigint)', 'EXECUTE') as result`,
+      );
+      expect(privileges.rows[0]).toEqual({ assignment: false, result: false });
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const member = await insertVerifiedProfile(client, { name: "Member" });
+      const { eventId } = await seedEvent(client, organizer, member, new Date().toISOString(), "draft");
+      const storagePath = `birth-giving/assignments/${eventId}/private.pdf`;
+      await insertStoredObject(client, storagePath);
+      await asClaims(client, { sub: organizer.authUserId });
+
+      await expect(client.query(
+        "select public.birth_giving_confirm_assignment($1::uuid, $2::uuid, $3::text, 'private.pdf'::text, 'application/pdf'::text, 1000::bigint)",
+        [organizer.profileId, eventId, storagePath],
+      )).rejects.toThrow(/permission denied/i);
+    });
+  });
+
+  it("returns the existing result file on exact active-path replay without charging quota twice", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const member = await insertVerifiedProfile(client, { name: "Member" });
+      const { eventId, teamId } = await seedEvent(client, organizer, member, new Date(Date.now() - 9 * HOUR_MS).toISOString());
+      const replayPath = `birth-giving/results/${eventId}/${teamId}/replay.pdf`;
+      await insertStoredObject(client, replayPath, "application/pdf", 25 * MIB);
+      for (const name of ["two", "three", "four"]) {
+        await insertStoredObject(client, `birth-giving/results/${eventId}/${teamId}/${name}.pdf`, "application/pdf", 25 * MIB);
+      }
+      const firstId = await confirmResultFile(client, member.profileId, eventId, teamId, replayPath, "replay.pdf", "application/pdf", 25 * MIB);
+      for (const name of ["two", "three", "four"]) {
+        await confirmResultFile(client, member.profileId, eventId, teamId, `birth-giving/results/${eventId}/${teamId}/${name}.pdf`, `${name}.pdf`, "application/pdf", 25 * MIB);
+      }
+
+      const retryId = await confirmResultFile(client, member.profileId, eventId, teamId, replayPath, "replay.pdf", "application/pdf", 25 * MIB);
+      expect(retryId).toBe(firstId);
+      const files = await client.query<{ count: number }>(
+        "select count(*)::int as count from public.birth_giving_team_result_files where team_id = $1 and removed_at is null",
+        [teamId],
+      );
+      expect(files.rows[0].count).toBe(4);
+    });
+  });
+
+  it("selects only aged unreferenced BG objects and rechecks references at cleanup time", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const member = await insertVerifiedProfile(client, { name: "Member" });
+      const { eventId, teamId } = await seedEvent(client, organizer, member, new Date(Date.now() - HOUR_MS).toISOString());
+      const agedAt = new Date(Date.now() - 2 * HOUR_MS).toISOString();
+      const orphanPath = `birth-giving/assignments/${eventId}/orphan.pdf`;
+      const newlyReferencedPath = `birth-giving/assignments/${eventId}/current.pdf`;
+      const resultPath = `birth-giving/results/${eventId}/${teamId}/current.pdf`;
+      const recentPath = `birth-giving/assignments/${eventId}/recent.pdf`;
+      await insertStoredObject(client, orphanPath, "application/pdf", 1_000, agedAt);
+      await insertStoredObject(client, newlyReferencedPath, "application/pdf", 1_000, agedAt);
+      await insertStoredObject(client, resultPath, "application/pdf", 1_000, agedAt);
+      await insertStoredObject(client, recentPath);
+      await confirmAssignment(client, organizer.profileId, eventId, newlyReferencedPath, "current.pdf", "application/pdf", 1_000);
+      await confirmResultFile(client, member.profileId, eventId, teamId, resultPath, "current.pdf", "application/pdf", 1_000);
+
+      const cleanup = await client.query<{ storage_path: string }>(
+        "select path as storage_path from public.birth_giving_unreferenced_storage_paths(interval '1 hour') as path",
+      );
+      expect(cleanup.rows.map(({ storage_path: path }) => path)).toContain(orphanPath);
+      expect(cleanup.rows.map(({ storage_path: path }) => path)).not.toContain(newlyReferencedPath);
+      expect(cleanup.rows.map(({ storage_path: path }) => path)).not.toContain(resultPath);
+      expect(cleanup.rows.map(({ storage_path: path }) => path)).not.toContain(recentPath);
+    });
+  });
+
+  it("configures the shared documents bucket for the complete safe 25 MiB allowlist", async () => {
+    await withRollback(async (client) => {
+      const bucket = await client.query<{ allowed_mime_types: string[]; file_size_limit: string }>(
+        "select allowed_mime_types, file_size_limit::text from storage.buckets where id = 'documents'",
+      );
+      expect(bucket.rows[0].file_size_limit).toBe(String(25 * MIB));
+      expect(bucket.rows[0].allowed_mime_types).toEqual(expect.arrayContaining([
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+      ]));
+      expect(bucket.rows[0].allowed_mime_types).toHaveLength(7);
     });
   });
 });

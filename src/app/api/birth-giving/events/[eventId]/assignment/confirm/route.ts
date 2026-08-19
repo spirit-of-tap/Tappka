@@ -4,7 +4,10 @@ import {
   assignmentStoragePrefix,
   birthGivingConfirmedFileSchema,
 } from "@/lib/birth-giving/files";
-import { deleteFile, inspectStorageObject } from "@/lib/storage/service";
+import { BIRTH_GIVING_MAX_FILE_SIZE_BYTES } from "@/lib/birth-giving/constants";
+import { validateBirthGivingFileContent } from "@/lib/birth-giving/file-signature";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { downloadStorageObject, inspectStorageObject } from "@/lib/storage/service";
 
 import {
   birthGivingMutationErrorResponse,
@@ -30,7 +33,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   if (!object || object.size !== parsed.data.fileSize || object.contentType !== parsed.data.mimeType) {
     return NextResponse.json({ error: "Nahraný soubor neodpovídá potvrzeným údajům" }, { status: 409 });
   }
-  const { data: oldPath, error } = await context.supabase.rpc("birth_giving_confirm_assignment", {
+  const content = await downloadStorageObject("documents", parsed.data.storagePath, BIRTH_GIVING_MAX_FILE_SIZE_BYTES);
+  if (!content || !await validateBirthGivingFileContent(content, parsed.data.mimeType)) {
+    return NextResponse.json({ error: "Obsah nahraného souboru neodpovídá jeho typu" }, { status: 409 });
+  }
+  const { error } = await createAdminClient().rpc("birth_giving_confirm_assignment", {
+    p_actor_profile_id: context.profileId,
     p_event_id: eventId,
     p_file_size: parsed.data.fileSize,
     p_mime_type: parsed.data.mimeType,
@@ -38,10 +46,5 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     p_storage_path: parsed.data.storagePath,
   });
   if (error) return birthGivingMutationErrorResponse(error, context.supabase, eventId);
-  if (oldPath && oldPath !== parsed.data.storagePath) {
-    await deleteFile("documents", oldPath).catch((deleteError: unknown) => {
-      console.error("Failed to delete replaced BG assignment object:", deleteError);
-    });
-  }
   return NextResponse.json({ data: { storagePath: parsed.data.storagePath } });
 }

@@ -74,6 +74,19 @@ export async function inspectStorageObject(
     : null;
 }
 
+export async function downloadStorageObject(
+  bucket: BucketId,
+  key: string,
+  maxBytes: number,
+): Promise<Buffer | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage.from(BUCKETS[bucket].name).download(key);
+  if (error) throw new Error(`Failed to download storage object: ${error.message}`);
+  if (!data || data.size > maxBytes) return null;
+  const content = Buffer.from(await data.arrayBuffer());
+  return content.byteLength <= maxBytes ? content : null;
+}
+
 export async function uploadFile(
   bucket: BucketId,
   key: string,

@@ -2820,6 +2820,7 @@ export type Database = {
       }
       birth_giving_confirm_assignment: {
         Args: {
+          p_actor_profile_id: string
           p_event_id: string
           p_file_size: number
           p_mime_type: string
@@ -2830,6 +2831,7 @@ export type Database = {
       }
       birth_giving_confirm_result_file: {
         Args: {
+          p_actor_profile_id: string
           p_event_id: string
           p_file_size: number
           p_mime_type: string
@@ -2927,6 +2929,10 @@ export type Database = {
       birth_giving_set_looking_for_team: {
         Args: { p_event_id: string; p_looking: boolean }
         Returns: undefined
+      }
+      birth_giving_unreferenced_storage_paths: {
+        Args: { p_grace_period: string }
+        Returns: string[]
       }
       birth_giving_update_event: {
         Args: {

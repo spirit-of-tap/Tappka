@@ -13,7 +13,7 @@ import {
 } from "@/lib/birth-giving/files";
 
 const EXTERNAL_LINK_WARNING = "Nahrajte exportovanou kopii souboru. Odkazy na Canvu, Google Drive a další služby mohou později ztratit přístup, takže nejsou spolehlivým výsledkem BG.";
-const ASSIGNMENT_RELEASE_WARNING = "Po zveřejnění zadání se soubor zpřístupní týmům. Pokud ho během BG nahradíte, odešleme týmům e-mail s upozorněním.";
+const ASSIGNMENT_RELEASE_WARNING = "Soubor se zadáním bude týmům dostupný až od začátku BG. Pokud ho během BG nahradíte, odešleme týmům e-mail s upozorněním.";
 
 interface AssignmentFileUploadProps {
   kind: "assignment";

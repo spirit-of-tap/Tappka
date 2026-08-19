@@ -12,6 +12,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 
 interface BirthGivingApiContext {
+  profileId: string;
   supabase: SupabaseClient<Database>;
 }
 
@@ -44,7 +45,7 @@ export async function requireBirthGivingApiContext(): Promise<
     };
   }
 
-  return { supabase };
+  return { profileId: profile.id, supabase };
 }
 
 export function isBirthGivingApiGateFailure(
