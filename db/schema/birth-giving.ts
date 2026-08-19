@@ -33,9 +33,12 @@ export const birthGivingEmailMessageType = pgEnum("birth_giving_email_message_ty
 export const birthGivingDeliveryStatus = pgEnum("birth_giving_delivery_status", ["pending", "processing", "sent", "failed"])
 
 const verifiedCommunity = sql`EXISTS (
-  SELECT 1 FROM users
+  SELECT 1
+  FROM users
+  JOIN profiles caller_profile ON caller_profile.user_id = users.id
   WHERE users.auth_user_id = (SELECT auth.uid())
     AND users.verified_work_email IS NOT NULL
+    AND caller_profile.access_removed_at IS NULL
 )`
 
 export const birthGivingEvents = pgTable("birth_giving_events", {
@@ -70,9 +73,9 @@ export const birthGivingEvents = pgTable("birth_giving_events", {
   check("birth_giving_events_normalized_customer_check", sql`normalized_customer = lower(regexp_replace(trim(customer), '[[:space:]]+', ' ', 'g'))`),
   check("birth_giving_events_team_sizes_check", sql`minimum_team_size >= ${sql.raw(String(MINIMUM_TEAM_SIZE))} AND maximum_team_size >= minimum_team_size`),
   check("birth_giving_events_removed_check", sql`(removed_at IS NULL) = (removed_by_profile_id IS NULL)`),
-  pgPolicy("Verified community can view published BG events", { for: "select", to: ["authenticated"], using: sql`removed_at IS NULL AND ((${verifiedCommunity} AND status = 'published') OR EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = id AND o.profile_id = current_profile_id()))` }),
-  pgPolicy("Profiles can create BG event drafts", { for: "insert", to: ["authenticated"], withCheck: sql`status = 'draft' AND created_by_profile_id = current_profile_id() AND updated_by_profile_id = current_profile_id()` }),
-  pgPolicy("BG organizers can update events", { for: "update", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = id AND o.profile_id = current_profile_id())`, withCheck: sql`EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = id AND o.profile_id = current_profile_id()) AND updated_by_profile_id = current_profile_id()` }),
+  pgPolicy("Verified community can view published BG events", { for: "select", to: ["authenticated"], using: sql`removed_at IS NULL AND can_view_birth_giving_event_organizers(id)` }),
+  pgPolicy("Profiles can create BG event drafts", { for: "insert", to: ["authenticated"], withCheck: sql`false` }),
+  pgPolicy("BG organizers can update events", { for: "update", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
   pgPolicy("BG events cannot be directly deleted", { for: "delete", to: ["authenticated"], using: sql`false` }),
 ]).enableRLS()
 
@@ -90,7 +93,7 @@ export const birthGivingEventOrganizers = pgTable("birth_giving_event_organizers
   foreignKey({ columns: [table.profileId], foreignColumns: [profiles.id], name: "birth_giving_event_organizers_profile_id_fkey" }).onDelete("cascade"),
   foreignKey({ columns: [table.createdByProfileId], foreignColumns: [profiles.id], name: "birth_giving_event_organizers_created_by_profile_id_fkey" }).onDelete("restrict"),
   foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "birth_giving_event_organizers_updated_by_profile_id_fkey" }).onDelete("restrict"),
-  pgPolicy("BG organizers can view their organizer rows", { for: "select", to: ["authenticated"], using: sql`profile_id = current_profile_id()` }),
+  pgPolicy("BG organizers can view their organizer rows", { for: "select", to: ["authenticated"], using: sql`can_view_birth_giving_event_organizers(event_id)` }),
   pgPolicy("BG organizer changes use lifecycle RPCs", { for: "all", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
 ]).enableRLS()
 
@@ -115,8 +118,8 @@ export const birthGivingAssignments = pgTable("birth_giving_assignments", {
   foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "birth_giving_assignments_updated_by_profile_id_fkey" }).onDelete("restrict"),
   check("birth_giving_assignments_metadata_check", sql`(state = 'present' AND storage_path IS NOT NULL AND length(trim(storage_path)) > 0 AND original_file_name IS NOT NULL AND length(trim(original_file_name)) > 0 AND mime_type IS NOT NULL AND length(trim(mime_type)) > 0 AND file_size > 0 AND uploaded_by_profile_id IS NOT NULL AND uploaded_at IS NOT NULL) OR (state = 'missing' AND storage_path IS NULL AND original_file_name IS NULL AND mime_type IS NULL AND file_size IS NULL AND uploaded_by_profile_id IS NULL AND uploaded_at IS NULL)`),
   pgPolicy("Community can view released BG assignments", { for: "select", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND e.starts_at <= now() AND ${verifiedCommunity}) OR EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id())))` }),
-  pgPolicy("BG organizers can insert assignments", { for: "insert", to: ["authenticated"], withCheck: sql`EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = event_id AND o.profile_id = current_profile_id()) AND created_by_profile_id = current_profile_id() AND updated_by_profile_id = current_profile_id()` }),
-  pgPolicy("BG organizers can update assignments", { for: "update", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = event_id AND o.profile_id = current_profile_id())`, withCheck: sql`EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = event_id AND o.profile_id = current_profile_id()) AND updated_by_profile_id = current_profile_id()` }),
+  pgPolicy("BG organizers can insert assignments", { for: "insert", to: ["authenticated"], withCheck: sql`false` }),
+  pgPolicy("BG organizers can update assignments", { for: "update", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
   pgPolicy("BG assignments cannot be directly deleted", { for: "delete", to: ["authenticated"], using: sql`false` }),
 ]).enableRLS()
 

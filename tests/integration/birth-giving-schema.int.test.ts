@@ -286,10 +286,10 @@ describe("Birth Giving RLS", () => {
     });
   });
 
-  it("allows organizers, but not other community members, to update their event", async () => {
+  it("denies direct event creation and mutation, including publication", async () => {
     await withRollback(async (client) => {
       const { organizer, other } = await seedActors(client);
-      const eventId = await insertEvent(client, organizer);
+      const eventId = await insertEvent(client, organizer, "draft");
 
       await asClaims(client, { sub: other.authUserId });
       const denied = await client.query(
@@ -299,11 +299,104 @@ describe("Birth Giving RLS", () => {
       expect(denied.rowCount).toBe(0);
 
       await asClaims(client, { sub: organizer.authUserId });
-      const allowed = await client.query(
-        "update public.birth_giving_events set customer = 'Allowed', normalized_customer = 'allowed', updated_by_profile_id = $2 where id = $1",
+      const publication = await client.query(
+        "update public.birth_giving_events set status = 'published', updated_by_profile_id = $2 where id = $1",
         [eventId, organizer.profileId],
       );
-      expect(allowed.rowCount).toBe(1);
+      expect(publication.rowCount).toBe(0);
+      await expect(
+        client.query(
+          `insert into public.birth_giving_events
+             (name, normalized_name, customer, normalized_customer, starts_at, duration,
+              minimum_team_size, maximum_team_size, joining_open, status,
+              created_by_profile_id, updated_by_profile_id)
+           values ('Direct', 'direct', 'Customer', 'customer', '2026-10-01T08:00:00Z',
+                   '8h', 1, 4, true, 'draft', $1, $1)`,
+          [organizer.profileId],
+        ),
+      ).rejects.toThrow(/row-level security/i);
+    });
+  });
+
+  it("denies all direct assignment mutations", async () => {
+    await withRollback(async (client) => {
+      const { organizer } = await seedActors(client);
+      const eventId = await insertEvent(client, organizer);
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `insert into public.birth_giving_assignments
+             (event_id, state, created_by_profile_id, updated_by_profile_id)
+           values ($1, 'missing', $2, $2)`,
+          [eventId, organizer.profileId],
+        ),
+        /row-level security/i,
+      );
+
+      await client.query("reset role");
+      await client.query(
+        `insert into public.birth_giving_assignments
+           (event_id, state, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'missing', $2, $2)`,
+        [eventId, organizer.profileId],
+      );
+      await asClaims(client, { sub: organizer.authUserId });
+      const update = await client.query(
+        "update public.birth_giving_assignments set replacement_id = gen_random_uuid() where event_id = $1",
+        [eventId],
+      );
+      expect(update.rowCount).toBe(0);
+      const deletion = await client.query(
+        "delete from public.birth_giving_assignments where event_id = $1",
+        [eventId],
+      );
+      expect(deletion.rowCount).toBe(0);
+    });
+  });
+
+  it("denies published event reads after the caller profile is revoked", async () => {
+    await withRollback(async (client) => {
+      const { organizer, other } = await seedActors(client);
+      const eventId = await insertEvent(client, organizer);
+      await client.query("alter table public.profiles disable trigger enforce_picture_only_update");
+      await client.query(
+        "update public.profiles set access_removed_at = now(), access_removed_by_profile_id = $2 where id = $1",
+        [other.profileId, organizer.profileId],
+      );
+      await client.query("alter table public.profiles enable trigger enforce_picture_only_update");
+
+      await asClaims(client, { sub: other.authUserId });
+      const { rows } = await client.query(
+        "select id from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(rows).toEqual([]);
+    });
+  });
+
+  it("shows all organizer rows to co-organizers and published-event community", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member, other } = await seedActors(client);
+      const eventId = await insertEvent(client, organizer);
+      await client.query(
+        `insert into public.birth_giving_event_organizers
+           (event_id, profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, $3, $3)`,
+        [eventId, member.profileId, organizer.profileId],
+      );
+
+      for (const actor of [organizer, member, other]) {
+        await asClaims(client, { sub: actor.authUserId });
+        const { rows } = await client.query(
+          "select profile_id from public.birth_giving_event_organizers where event_id = $1 order by profile_id",
+          [eventId],
+        );
+        expect(rows.map((row) => row.profile_id)).toEqual(
+          [organizer.profileId, member.profileId].sort(),
+        );
+      }
     });
   });
 
