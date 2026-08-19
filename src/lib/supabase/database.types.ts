@@ -2840,7 +2840,7 @@ export type Database = {
         Returns: boolean
       }
       birth_giving_claim_storage_cleanup: {
-        Args: { p_grace_period: string; p_limit: number; p_stale_after: string }
+        Args: { p_grace_period: string; p_limit: number }
         Returns: {
           claim_id: string
           storage_path: string

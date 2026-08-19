@@ -33,6 +33,10 @@ describe("cleanupBirthGivingStorage", () => {
       .mockRejectedValueOnce(new Error("storage unavailable"));
 
     await expect(cleanupBirthGivingStorage()).resolves.toEqual({ claimed: 2, deleted: 1, failed: 1 });
+    expect(mocks.adminRpc).toHaveBeenNthCalledWith(1, "birth_giving_claim_storage_cleanup", {
+      p_grace_period: "1 hour",
+      p_limit: 100,
+    });
     expect(mocks.adminRpc).toHaveBeenNthCalledWith(2, "birth_giving_finalize_storage_cleanup", {
       p_claim_id: "00000000-0000-4000-8000-000000000001",
       p_storage_path: "birth-giving/one.pdf",

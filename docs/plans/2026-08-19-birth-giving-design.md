@@ -342,4 +342,6 @@ The schema source of truth is `db/schema/*.ts`. Atomic multi-table transitions, 
 
 Scheduled start processing requires an authenticated cron endpoint or equivalent worker. It must claim due events and email deliveries idempotently and tolerate retries or delayed execution. Time-based assignment access remains enforced independently by the download route.
 
+Storage cleanup runs daily through the authenticated Vercel cron GET endpoint. A cleanup claim is exclusive until its token finalizes or releases it; claims never expire or transfer automatically because an external Storage deletion cannot fence a stalled worker. A failed deletion may be released immediately by the active worker, while a crashed worker's claim requires manual reconciliation. Confirmation and claiming serialize on the same `storage.objects` row, and claiming rechecks assignment and result references after acquiring that lock.
+
 Schema implementation will require running `pnpm db:migrate` and reviewing the generated migration carefully for unintended drops before applying or committing it.

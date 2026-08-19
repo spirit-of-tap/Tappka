@@ -3,10 +3,14 @@ import { describe, expect, it } from "vitest";
 
 import { insertVerifiedProfile } from "@/tests/setup/factories";
 import { asClaims } from "@/tests/setup/rls";
+import { getPool } from "@/tests/setup/testdb";
 import { withRollback } from "@/tests/setup/tx";
 
 const HOUR_MS = 60 * 60 * 1_000;
+const LOCK_WAIT_POLL_MS = 10;
+const LOCK_WAIT_TIMEOUT_MS = 5_000;
 const MIB = 1024 * 1024;
+const RACE_STATEMENT_TIMEOUT_MS = 3_000;
 
 interface Actor { authUserId: string; profileId: string }
 
@@ -81,6 +85,22 @@ async function expectDatabaseError(
   } finally {
     await client.query("release savepoint expected_storage_error");
   }
+}
+
+async function waitForBlockedConnection(applicationName: string): Promise<void> {
+  const deadline = Date.now() + LOCK_WAIT_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const { rows } = await getPool().query<{ blocked: boolean }>(
+      `select exists (
+         select 1 from pg_stat_activity
+         where application_name = $1 and wait_event_type = 'Lock'
+       ) as blocked`,
+      [applicationName],
+    );
+    if (rows[0].blocked) return;
+    await new Promise((resolve) => setTimeout(resolve, LOCK_WAIT_POLL_MS));
+  }
+  throw new Error(`Connection did not block: ${applicationName}`);
 }
 
 async function seedEvent(
@@ -390,7 +410,7 @@ describe("Birth Giving storage RPCs", () => {
         `select
           has_function_privilege('authenticated', 'public.birth_giving_confirm_assignment(uuid,uuid,text,text,text,bigint)', 'EXECUTE') as assignment,
           has_function_privilege('authenticated', 'public.birth_giving_confirm_result_file(uuid,uuid,uuid,text,text,text,bigint)', 'EXECUTE') as result,
-          has_function_privilege('authenticated', 'public.birth_giving_claim_storage_cleanup(interval,interval,integer)', 'EXECUTE') as claim,
+          has_function_privilege('authenticated', 'public.birth_giving_claim_storage_cleanup(interval,integer)', 'EXECUTE') as claim,
           has_function_privilege('authenticated', 'public.birth_giving_finalize_storage_cleanup(text,uuid)', 'EXECUTE') as finalize,
           has_function_privilege('authenticated', 'public.birth_giving_release_storage_cleanup_claim(text,uuid)', 'EXECUTE') as release`,
       );
@@ -459,7 +479,7 @@ describe("Birth Giving storage RPCs", () => {
 
       await asServiceRole(client);
       const cleanup = await client.query<{ storage_path: string }>(
-        "select storage_path from public.birth_giving_claim_storage_cleanup(interval '1 hour', interval '15 minutes', 100)",
+        "select storage_path from public.birth_giving_claim_storage_cleanup(interval '1 hour', 1)",
       );
       expect(cleanup.rows.map(({ storage_path: path }) => path)).toContain(orphanPath);
       expect(cleanup.rows.map(({ storage_path: path }) => path)).not.toContain(newlyReferencedPath);
@@ -478,7 +498,7 @@ describe("Birth Giving storage RPCs", () => {
       await asServiceRole(client);
 
       const claims = await client.query<{ claim_id: string; storage_path: string }>(
-        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', interval '15 minutes', 10)",
+        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', 10)",
       );
       expect(claims.rows).toEqual([expect.objectContaining({ storage_path: storagePath })]);
       await expectDatabaseError(
@@ -489,13 +509,13 @@ describe("Birth Giving storage RPCs", () => {
     });
   });
 
-  it("retries stale cleanup claims and only lets the current claim finalize", async () => {
+  it("keeps aged cleanup claims exclusive until their token releases or finalizes them", async () => {
     await withRollback(async (client) => {
       const storagePath = `birth-giving/assignments/${crypto.randomUUID()}/orphan.pdf`;
       await insertStoredObject(client, storagePath, "application/pdf", 1_000, new Date(Date.now() - 2 * HOUR_MS).toISOString());
       await asServiceRole(client);
       const first = await client.query<{ claim_id: string; storage_path: string }>(
-        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', interval '15 minutes', 1)",
+        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', 1)",
       );
       await client.query("reset role");
       await client.query(
@@ -504,21 +524,25 @@ describe("Birth Giving storage RPCs", () => {
       );
       await asServiceRole(client);
       const second = await client.query<{ claim_id: string; storage_path: string }>(
-        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', interval '15 minutes', 1)",
+        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', 1)",
       );
 
-      expect(second.rows[0].storage_path).toBe(storagePath);
-      expect(second.rows[0].claim_id).not.toBe(first.rows[0].claim_id);
+      expect(second.rows).toEqual([]);
       expect((await client.query<{ value: boolean }>(
         "select public.birth_giving_release_storage_cleanup_claim($1, $2) as value",
         [storagePath, first.rows[0].claim_id],
-      )).rows[0].value).toBe(false);
+      )).rows[0].value).toBe(true);
+      const afterRelease = await client.query<{ claim_id: string; storage_path: string }>(
+        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', 1)",
+      );
+      expect(afterRelease.rows[0].storage_path).toBe(storagePath);
+      expect(afterRelease.rows[0].claim_id).not.toBe(first.rows[0].claim_id);
       await client.query("reset role");
       await client.query("delete from storage.objects where bucket_id = 'documents' and name = $1", [storagePath]);
       await asServiceRole(client);
       expect((await client.query<{ value: boolean }>(
         "select public.birth_giving_finalize_storage_cleanup($1, $2) as value",
-        [storagePath, second.rows[0].claim_id],
+        [storagePath, afterRelease.rows[0].claim_id],
       )).rows[0].value).toBe(true);
       await client.query("reset role");
       expect((await client.query<{ count: number }>(
@@ -526,6 +550,77 @@ describe("Birth Giving storage RPCs", () => {
         [storagePath],
       )).rows[0].count).toBe(0);
     });
+  });
+
+  it("rechecks assignment references after waiting for the confirmation storage lock", async () => {
+    const setupClient = await getPool().connect();
+    const confirmationClient = await getPool().connect();
+    const claimClient = await getPool().connect();
+    let eventId: string | undefined;
+    let storagePath: string | undefined;
+    const authUserIds: string[] = [];
+    const profileIds: string[] = [];
+    try {
+      await setupClient.query("begin");
+      const organizer = await insertVerifiedProfile(setupClient, { name: "Cleanup race organizer" });
+      const member = await insertVerifiedProfile(setupClient, { name: "Cleanup race member" });
+      authUserIds.push(organizer.authUserId, member.authUserId);
+      profileIds.push(organizer.profileId, member.profileId);
+      ({ eventId } = await seedEvent(setupClient, organizer, member, new Date(Date.now() - HOUR_MS).toISOString()));
+      storagePath = `birth-giving/assignments/${eventId}/race.pdf`;
+      await insertStoredObject(
+        setupClient,
+        storagePath,
+        "application/pdf",
+        1_000,
+        new Date(Date.now() - 2 * HOUR_MS).toISOString(),
+      );
+      await setupClient.query("commit");
+
+      await confirmationClient.query("begin");
+      await confirmAssignment(
+        confirmationClient,
+        organizer.profileId,
+        eventId,
+        storagePath,
+        "race.pdf",
+        "application/pdf",
+        1_000,
+      );
+      await claimClient.query("set application_name = 'birth-giving-confirmation-cleanup-race'");
+      await claimClient.query("begin");
+      await claimClient.query(`set local statement_timeout = '${RACE_STATEMENT_TIMEOUT_MS}ms'`);
+      await asServiceRole(claimClient);
+      const claim = claimClient.query<{ storage_path: string }>(
+        "select storage_path from public.birth_giving_claim_storage_cleanup(interval '1 hour', 1)",
+      );
+      await waitForBlockedConnection("birth-giving-confirmation-cleanup-race");
+      await confirmationClient.query("commit");
+
+      await expect(claim).resolves.toMatchObject({ rows: [] });
+      const references = await setupClient.query<{ count: number }>(
+        "select count(*)::int as count from public.birth_giving_assignments where storage_path = $1 and state = 'present'",
+        [storagePath],
+      );
+      expect(references.rows[0].count).toBe(1);
+    } finally {
+      await confirmationClient.query("rollback").catch(() => undefined);
+      await claimClient.query("rollback").catch(() => undefined);
+      if (storagePath) {
+        await setupClient.query("delete from public.birth_giving_storage_cleanup_claims where storage_path = $1", [storagePath]);
+        await setupClient.query("delete from storage.objects where bucket_id = 'documents' and name = $1", [storagePath]);
+      }
+      if (eventId) await setupClient.query("delete from public.birth_giving_events where id = $1", [eventId]);
+      if (profileIds.length > 0) await setupClient.query("delete from public.profiles where id = any($1::uuid[])", [profileIds]);
+      if (authUserIds.length > 0) {
+        await setupClient.query("delete from public.users where auth_user_id = any($1::uuid[])", [authUserIds]);
+        await setupClient.query("delete from auth.users where id = any($1::uuid[])", [authUserIds]);
+      }
+      await setupClient.query("rollback").catch(() => undefined);
+      setupClient.release();
+      confirmationClient.release();
+      claimClient.release();
+    }
   });
 
   it("configures the shared documents bucket for the complete safe 25 MiB allowlist", async () => {

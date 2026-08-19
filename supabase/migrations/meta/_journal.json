@@ -519,6 +519,13 @@
       "when": 1787112841579,
       "tag": "20260819041401_qualify-birth-giving-cleanup-claim-conflict",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1787113416327,
+      "tag": "20260819042336_birth-giving-safe-storage-claims",
+      "breakpoints": true
     }
   ]
 }
