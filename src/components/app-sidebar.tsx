@@ -18,6 +18,7 @@ import {
   Activity,
   Wrench,
   Brain,
+  Gift,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -52,6 +53,10 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>
   external?: boolean
   badge?: number
+  /** Renders a Beta badge and is hidden unless the user has beta access. */
+  betaOnly?: boolean
+  /** Path prefix used for the active state when it differs from `url`. */
+  activePrefix?: string
 }
 
 type NavSection = {
@@ -88,26 +93,36 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           title: "Zák. schůzky",
           url: "/schuzky",
           icon: Handshake,
+          betaOnly: true,
+          activePrefix: "/schuzky",
         },
         {
           title: "Koučování",
           url: "/koucovani",
           icon: GraduationCap,
+          betaOnly: true,
+          activePrefix: "/koucovani",
         },
         {
           title: "Týmová reflexe",
           url: "/tymova-reflexe",
           icon: NotebookPen,
+          betaOnly: true,
+          activePrefix: "/tymova-reflexe",
         },
         {
           title: "Týmový deník",
           url: "/tymovy-denik",
           icon: Activity,
+          betaOnly: true,
+          activePrefix: "/tymovy-denik",
         },
         {
           title: "Nástroje a techniky",
           url: "/nastroje-techniky",
           icon: Wrench,
+          betaOnly: true,
+          activePrefix: "/nastroje-techniky",
         },
         {
           title: "Osobnostní testy",
@@ -118,6 +133,13 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           title: "Čtení",
           url: "/cteni/prehled",
           icon: BookOpen,
+        },
+        {
+          title: "Birth Giving",
+          url: "/birth-giving",
+          icon: Gift,
+          betaOnly: true,
+          activePrefix: "/birth-giving",
         },
       ],
     },
@@ -163,11 +185,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isBeta = user?.beta_access ?? false
   const isReservationsActive = pathname.startsWith("/reservations")
-  const isSchuzkyActive = pathname.startsWith("/schuzky")
-  const isKoucovaniActive = pathname.startsWith("/koucovani")
-  const isTymovaReflexeActive = pathname.startsWith("/tymova-reflexe")
-  const isTymovyDenikActive = pathname.startsWith("/tymovy-denik")
-  const isNastrojeTechnikyActive = pathname.startsWith("/nastroje-techniky")
   const isCteniActive = pathname.startsWith("/cteni")
   const cteniSubItems = [
     { title: "Přehled", url: "/cteni/prehled" },
@@ -254,119 +271,18 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                     )
                   }
 
-                  // Zák. schůzky — beta-only
-                  if (item.title === "Zák. schůzky") {
+                  // Beta-gated items render through NavItem data (betaOnly).
+                  // The active state uses activePrefix so a colloquial url can
+                  // stay stable while the whole section stays highlighted.
+                  if (item.betaOnly) {
                     if (!isBeta) return null
+                    const activeUrl = item.activePrefix ?? item.url
 
                     return (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
                           asChild
-                          isActive={isSchuzkyActive}
-                          tooltip={item.title}
-                        >
-                          <Link href={item.url} onClick={closeSidebarOnMobile}>
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  }
-
-                  // Koučování — beta-only
-                  if (item.title === "Koučování") {
-                    if (!isBeta) return null
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isKoucovaniActive}
-                          tooltip={item.title}
-                        >
-                          <Link href={item.url} onClick={closeSidebarOnMobile}>
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  }
-
-                  // Týmová reflexe — beta-only
-                  if (item.title === "Týmová reflexe") {
-                    if (!isBeta) return null
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isTymovaReflexeActive}
-                          tooltip={item.title}
-                        >
-                          <Link href={item.url} onClick={closeSidebarOnMobile}>
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  }
-
-                  // Týmový deník — beta-only
-                  if (item.title === "Týmový deník") {
-                    if (!isBeta) return null
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isTymovyDenikActive}
-                          tooltip={item.title}
-                        >
-                          <Link href={item.url} onClick={closeSidebarOnMobile}>
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  }
-
-                  // Nástroje a techniky — beta-only
-                  if (item.title === "Nástroje a techniky") {
-                    if (!isBeta) return null
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isNastrojeTechnikyActive}
+                          isActive={pathname === activeUrl || pathname.startsWith(activeUrl + "/")}
                           tooltip={item.title}
                         >
                           <Link href={item.url} onClick={closeSidebarOnMobile}>

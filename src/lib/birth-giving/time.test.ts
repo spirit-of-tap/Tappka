@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   calculateEventEnd,
+  formatBirthGivingCountdown,
   getEventTimeState,
   isAssignmentReleased,
 } from "./time";
@@ -56,5 +57,29 @@ describe("isAssignmentReleased", () => {
 
   it("is true at the exact start", () => {
     expect(isAssignmentReleased(STARTS_AT, STARTS_AT)).toBe(true);
+  });
+});
+
+describe("formatBirthGivingCountdown", () => {
+  it("formats whole hours with an exact hour unit", () => {
+    expect(formatBirthGivingCountdown(3 * 60 * 60 * 1000)).toBe("3 h");
+  });
+
+  it("combines hours and minutes without leading zeros", () => {
+    expect(formatBirthGivingCountdown(2 * 60 * 60 * 1000 + 5 * 60 * 1000)).toBe(
+      "2 h 5 min",
+    );
+  });
+
+  it("formats minutes alone below one hour", () => {
+    expect(formatBirthGivingCountdown(45 * 60 * 1000)).toBe("45 min");
+  });
+
+  it("rounds a fraction of a minute up to keep a non-empty countdown", () => {
+    expect(formatBirthGivingCountdown(61 * 1000)).toBe("1 min");
+  });
+
+  it("returns zero for a non-positive remaining time", () => {
+    expect(formatBirthGivingCountdown(-1000)).toBe("0 min");
   });
 });
