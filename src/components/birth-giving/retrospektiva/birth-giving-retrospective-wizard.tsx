@@ -11,6 +11,7 @@ import { BirthGivingRetrospectiveEventStep } from "./birth-giving-retrospective-
 import { BirthGivingRetrospectiveZadaniStep } from "./birth-giving-retrospective-zadani-step";
 import { BirthGivingRetrospectiveTeamsStep } from "./birth-giving-retrospective-teams-step";
 import { BirthGivingRetrospectiveReviewStep } from "./birth-giving-retrospective-review-step";
+import { BirthGivingWizardSteps } from "./wizard-steps";
 import type { BirthGivingRetrospectiveEventPayload } from "./birth-giving-retrospective-event-step";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import type {
@@ -256,26 +257,18 @@ export function BirthGivingRetrospectiveWizard({
     setStepIndex((index) => Math.min(index + 1, STEP_LABELS.length - 1));
   }
 
+  function goToStep(index: number) {
+    if (index >= stepIndex) return;
+    setStepIndex(index);
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      <ol
-        aria-label="Kroky retrospektivy"
-        className="flex flex-wrap items-center gap-2 text-sm"
-      >
-        {STEP_LABELS.map((label, index) => (
-          <li
-            key={label}
-            aria-current={index === stepIndex ? "step" : undefined}
-            className={
-              index === stepIndex
-                ? "font-semibold text-foreground"
-                : "text-muted-foreground"
-            }
-          >
-            <span className="font-medium text-muted-foreground">{index + 1}.</span> {label}
-          </li>
-        ))}
-      </ol>
+      <BirthGivingWizardSteps
+        steps={STEP_LABELS}
+        currentIndex={stepIndex}
+        onStepClick={goToStep}
+      />
 
       <Card className="space-y-4 p-3 sm:p-5">
         <div className="flex items-center justify-between gap-3 border-b pb-3">

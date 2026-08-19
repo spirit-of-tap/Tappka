@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, Upload } from "lucide-react";
+import { useRef, useState } from "react";
+import { Loader2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
   BIRTH_GIVING_FILE_ACCEPT,
   birthGivingFileSchema,
 } from "@/lib/birth-giving/files";
+import { formatFileSize } from "@/lib/birth-giving/format";
 
 const EXTERNAL_LINK_WARNING = "Nahrajte exportovanou kopii souboru. Odkazy na Canvu, Google Drive a další služby mohou později ztratit přístup, takže nejsou spolehlivým výsledkem BG.";
 const ASSIGNMENT_RELEASE_WARNING = "Soubor se zadáním bude týmům dostupný až od začátku BG. Pokud ho během BG nahradíte, odešleme týmům e-mail s upozorněním.";
@@ -54,12 +53,25 @@ function putFile(url: string, file: File, onProgress: (progress: number) => void
 }
 
 export function BirthGivingFileUpload(props: BirthGivingFileUploadProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const isResults = props.kind === "results";
   const inputId = isResults ? `bg-results-${props.teamId}` : `bg-assignment-${props.eventId}`;
+  const inputLabel = isResults ? "Soubory s výsledky" : "Soubor se zadáním";
+
+  function pickFiles(event: React.ChangeEvent<HTMLInputElement>) {
+    setError(null);
+    setFiles(Array.from(event.target.files ?? []));
+  }
+
+  function clearSelection() {
+    setFiles([]);
+    setError(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
 
   async function upload() {
     setError(null);
@@ -103,7 +115,7 @@ export function BirthGivingFileUpload(props: BirthGivingFileUploadProps) {
         if (!confirmResponse.ok) throw new Error(confirmed.error ?? "Nahraný soubor se nepodařilo potvrdit");
         props.onUploaded();
       }
-      setFiles([]);
+      clearSelection();
       setProgress(100);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Soubor se nepodařilo nahrát");
@@ -113,21 +125,65 @@ export function BirthGivingFileUpload(props: BirthGivingFileUploadProps) {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-2">
-        <Label htmlFor={inputId}>{isResults ? "Soubory s výsledky" : "Soubor se zadáním"}</Label>
-        <Input
-          id={inputId}
-          type="file"
-          accept={BIRTH_GIVING_FILE_ACCEPT}
-          multiple={isResults}
+    <div className="space-y-2">
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="file"
+        aria-label={inputLabel}
+        accept={BIRTH_GIVING_FILE_ACCEPT}
+        multiple={isResults}
+        disabled={props.disabled || uploading}
+        onChange={pickFiles}
+        className="sr-only"
+      />
+
+      {files.length === 0 ? (
+        <Button
+          type="button"
+          variant="outline"
           disabled={props.disabled || uploading}
-          onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
-        />
-      </div>
-      {files.length > 0 && <p className="text-sm text-muted-foreground">{files.map((file) => file.name).join(", ")}</p>}
-      {!isResults && <p className="text-sm text-muted-foreground">{ASSIGNMENT_RELEASE_WARNING}</p>}
-      <p className="text-sm text-muted-foreground">{EXTERNAL_LINK_WARNING}</p>
+          onClick={() => inputRef.current?.click()}
+          className="w-full justify-start gap-2 border-dashed text-muted-foreground"
+        >
+          <Upload className="size-4" />
+          {isResults ? "Vybrat soubory s výsledky" : "Vybrat soubor se zadáním"}
+        </Button>
+      ) : (
+        <div className="space-y-2">
+          <ul className="space-y-1.5">
+            {files.map((file, index) => (
+              <li
+                key={`${file.name}-${index}`}
+                className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5 text-xs"
+              >
+                <span className="min-w-0 flex-1 truncate font-medium">{file.name}</span>
+                <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" disabled={props.disabled || uploading} onClick={() => void upload()}>
+              {uploading ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" /> : <Upload className="size-4" />}
+              {isResults ? "Nahrát soubory" : "Nahrát soubor"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              aria-label="Zrušit výběr souboru"
+              disabled={uploading}
+              onClick={clearSelection}
+            >
+              <X className="size-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!isResults && <p className="text-xs text-muted-foreground">{ASSIGNMENT_RELEASE_WARNING}</p>}
+      <p className="text-xs text-muted-foreground">{EXTERNAL_LINK_WARNING}</p>
+
       {uploading && (
         <div className="flex items-center gap-3" aria-live="polite">
           <Progress value={progress} aria-label="Průběh nahrávání" />
@@ -135,10 +191,6 @@ export function BirthGivingFileUpload(props: BirthGivingFileUploadProps) {
         </div>
       )}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      <Button type="button" onClick={upload} disabled={props.disabled || uploading}>
-        {uploading ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" /> : <Upload className="size-4" />}
-        {isResults ? "Nahrát soubory" : "Nahrát soubor"}
-      </Button>
     </div>
   );
 }

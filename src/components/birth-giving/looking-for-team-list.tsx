@@ -13,6 +13,7 @@ import {
   EmptyMedia,
 } from "@/components/ui/empty";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { BirthGivingDetailSection } from "./detail-section";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import { canFormBirthGivingTeams, getBirthGivingMembership } from "@/lib/birth-giving/permissions";
 import type { BirthGivingEventDetail } from "@/lib/birth-giving/types";
@@ -57,16 +58,14 @@ export function BirthGivingLookingForTeamList({
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-          Hledají tým
-        </h2>
+    <BirthGivingDetailSection
+      title="Hledají tým"
+      badge={
         <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
           {searches.length}
         </Badge>
-      </div>
-
+      }
+    >
       {searches.length === 0 ? (
         <Empty className="gap-3 border-dashed p-4">
           <EmptyMedia variant="icon">
@@ -106,6 +105,6 @@ export function BirthGivingLookingForTeamList({
           Zrušit hledání
         </Button>
       )}
-    </div>
+    </BirthGivingDetailSection>
   );
 }

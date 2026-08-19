@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/responsive-alert-dialog";
+import { BirthGivingDetailSection } from "./detail-section";
 import { BirthGivingFileUpload } from "./file-upload";
 import { formatFileSize } from "@/lib/birth-giving/format";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
@@ -91,14 +92,10 @@ export function BirthGivingAssignmentPanel({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-          Zadání
-        </h2>
-        {state === "missing" && <Badge variant="outline">Zadání nedohledáno</Badge>}
-      </div>
-
+    <BirthGivingDetailSection
+      title="Zadání"
+      badge={state === "missing" && <Badge variant="outline">Zadání nedohledáno</Badge>}
+    >
       {assignment && assignment.state === "present" && canDownload && (
         <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
           <FileText className="size-4 shrink-0 text-muted-foreground" />
@@ -162,6 +159,6 @@ export function BirthGivingAssignmentPanel({
           </AlertDialogContent>
         </AlertDialog>
       )}
-    </div>
+    </BirthGivingDetailSection>
   );
 }

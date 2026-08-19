@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 import { BirthGivingEventMetadata } from "./event-metadata";
+import { BirthGivingEventOverviewStrip } from "./event-overview-strip";
 import { BirthGivingAssignmentPanel } from "./assignment-panel";
 import { BirthGivingTeamList } from "./team-list";
 import { BirthGivingLookingForTeamList } from "./looking-for-team-list";
@@ -59,6 +60,8 @@ export function BirthGivingEventDetail({
         organizerProfiles={organizerProfiles}
         onEventChange={handleEventChange}
       />
+
+      <BirthGivingEventOverviewStrip event={event} />
 
       <BirthGivingAssignmentPanel
         event={event}

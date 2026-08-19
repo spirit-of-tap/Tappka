@@ -46,7 +46,7 @@ describe("BirthGivingAssignmentPanel", () => {
       "href",
       "/api/birth-giving/events/event-1/assignment/download",
     );
-    expect(screen.getByText("Nahrát soubor")).toBeInTheDocument();
+    expect(screen.getByText("Vybrat soubor se zadáním")).toBeInTheDocument();
   });
 
   it("releases the assignment to the community after the start", () => {
@@ -60,7 +60,7 @@ describe("BirthGivingAssignmentPanel", () => {
       "href",
       "/api/birth-giving/events/event-1/assignment/download",
     );
-    expect(screen.queryByText("Nahrát soubor")).not.toBeInTheDocument();
+    expect(screen.queryByText("Vybrat soubor se zadáním")).not.toBeInTheDocument();
   });
 
   it("gives an organizer the upload panel while an assignment is missing", () => {

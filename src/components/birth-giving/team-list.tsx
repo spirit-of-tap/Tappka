@@ -19,6 +19,7 @@ import {
   EmptyDescription,
   EmptyMedia,
 } from "@/components/ui/empty";
+import { BirthGivingDetailSection } from "./detail-section";
 import { BirthGivingTeamCard } from "./team-card";
 import { BirthGivingTeamForm } from "./team-form";
 import { canFormBirthGivingTeams } from "@/lib/birth-giving/permissions";
@@ -52,13 +53,12 @@ export function BirthGivingTeamList({
       : "Pro tuto událost nebyly založeny žádné týmy.";
 
   return (
-    <section className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-          <UsersRound className="size-4" />
-          Týmy
-        </h2>
-        {formationOpen && (
+    <BirthGivingDetailSection
+      title="Týmy"
+      icon={UsersRound}
+      boxed={false}
+      action={
+        formationOpen && (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -80,9 +80,9 @@ export function BirthGivingTeamList({
               />
             </DialogContent>
           </Dialog>
-        )}
-      </div>
-
+        )
+      }
+    >
       {visibleTeams.length === 0 ? (
         <Empty className="gap-3 border-dashed p-6">
           <EmptyMedia variant="icon">
@@ -110,6 +110,6 @@ export function BirthGivingTeamList({
           ))}
         </div>
       )}
-    </section>
+    </BirthGivingDetailSection>
   );
 }

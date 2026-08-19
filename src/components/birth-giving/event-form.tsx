@@ -269,6 +269,9 @@ export function BirthGivingEventForm({
           />
         </div>
       </div>
+      <p className="-mt-2 text-xs text-muted-foreground">
+        Určuje, kolik lidí smí mít jeden tým při sestavování v rámci této události.
+      </p>
 
       <div className="flex items-center justify-between rounded-md border p-3">
         <Label htmlFor="bg-event-joining">Otevřené přihlašování</Label>

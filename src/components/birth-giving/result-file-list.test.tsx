@@ -61,7 +61,7 @@ describe("BirthGivingResultFileList", () => {
       <BirthGivingResultFileList event={event} team={team} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
     );
 
-    expect(screen.queryByRole("button", { name: "Nahrát soubory" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Vybrat soubory s výsledky" })).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Smazat soubor vysledky.pdf" }),
     ).not.toBeInTheDocument();
@@ -77,7 +77,7 @@ describe("BirthGivingResultFileList", () => {
       <BirthGivingResultFileList event={event} team={team} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
     );
 
-    expect(screen.getByRole("button", { name: "Nahrát soubory" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vybrat soubory s výsledky" })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Smazat soubor vysledky.pdf" }),
     ).toBeInTheDocument();

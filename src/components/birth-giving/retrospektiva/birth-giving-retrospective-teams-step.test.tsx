@@ -305,7 +305,7 @@ describe("BirthGivingRetrospectiveTeamsStep", () => {
     renderStep(event, onEventChange);
 
     const deleteButton = screen.getByRole("button", { name: "Smazat soubor vysledky.pdf" });
-    const uploadButton = screen.getByRole("button", { name: "Nahrát soubory" });
+    const uploadButton = screen.getByRole("button", { name: "Vybrat soubory s výsledky" });
     expect(deleteButton).toBeEnabled();
     expect(uploadButton).toBeEnabled();
 
