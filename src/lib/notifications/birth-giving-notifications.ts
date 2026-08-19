@@ -27,6 +27,8 @@ interface ClaimedDelivery {
   event_id: string;
   event_name: string;
   customer: string;
+  email_subject: string | null;
+  email_html: string | null;
 }
 
 export interface BirthGivingNotificationResult {
@@ -34,6 +36,8 @@ export interface BirthGivingNotificationResult {
   claimed: number;
   sent: number;
   failed: number;
+  persistenceErrors: number;
+  manualReview: number;
 }
 
 function escapeHtml(value: string): string {
@@ -93,24 +97,44 @@ export async function processBirthGivingNotifications(): Promise<BirthGivingNoti
   const admin = createAdminClient();
   const startResult = await admin.rpc("birth_giving_process_due_starts", { p_limit: START_BATCH_SIZE });
   if (startResult.error) throw new Error(`Failed to process Birth Giving starts: ${startResult.error.message}`);
+  const reconciliation = await admin.rpc("birth_giving_reconcile_email_deliveries");
+  if (reconciliation.error) {
+    throw new Error(`Failed to reconcile Birth Giving deliveries: ${reconciliation.error.message}`);
+  }
 
   const claimResult = await admin.rpc("birth_giving_claim_email_deliveries", { p_limit: DELIVERY_BATCH_SIZE });
   if (claimResult.error) throw new Error(`Failed to claim Birth Giving deliveries: ${claimResult.error.message}`);
   const claims = (claimResult.data ?? []) as ClaimedDelivery[];
   let sent = 0;
   let failed = 0;
+  let persistenceErrors = 0;
 
   for (const claim of claims) {
     let providerMessageId: string;
     try {
-      const context = {
-        eventName: claim.event_name,
-        customer: claim.customer,
-        eventUrl: canonicalEventUrl(claim.event_id),
-      };
-      const content = claim.message_type === "assignment_replacement"
-        ? assignmentReplacementEmail(context)
-        : assignmentReleaseEmail(context);
+      let content: EmailContent;
+      if (claim.email_subject !== null && claim.email_html !== null) {
+        content = { subject: claim.email_subject, html: claim.email_html };
+      } else {
+        const context = {
+          eventName: claim.event_name,
+          customer: claim.customer,
+          eventUrl: canonicalEventUrl(claim.event_id),
+        };
+        const generated = claim.message_type === "assignment_replacement"
+          ? assignmentReplacementEmail(context)
+          : assignmentReleaseEmail(context);
+        const preparation = await admin.rpc("birth_giving_prepare_email_delivery", {
+          p_delivery_id: claim.delivery_id,
+          p_processing_token: claim.processing_token,
+          p_email_subject: generated.subject,
+          p_email_html: generated.html,
+        });
+        if (preparation.error || !preparation.data?.[0]) {
+          throw new Error(preparation.error?.message ?? "Delivery processing lease is no longer current");
+        }
+        content = { subject: preparation.data[0].email_subject, html: preparation.data[0].email_html };
+      }
       const provider = await sendEmail(
         { to: claim.recipient_email, ...content },
         { idempotencyKey: birthGivingDeliveryIdempotencyKey(claim.delivery_id) },
@@ -122,8 +146,11 @@ export async function processBirthGivingNotifications(): Promise<BirthGivingNoti
         p_processing_token: claim.processing_token,
         p_error: errorMessage(error),
       });
-      if (failure.error) throw new Error(`Failed to persist Birth Giving delivery failure: ${failure.error.message}`);
-      failed += 1;
+      if (failure.error || !failure.data) {
+        persistenceErrors += 1;
+      } else {
+        failed += 1;
+      }
       continue;
     }
 
@@ -133,7 +160,8 @@ export async function processBirthGivingNotifications(): Promise<BirthGivingNoti
       p_provider_message_id: providerMessageId,
     });
     if (completion.error || !completion.data) {
-      throw new Error(completion.error?.message ?? "Delivery processing lease is no longer current");
+      persistenceErrors += 1;
+      continue;
     }
     sent += 1;
   }
@@ -143,6 +171,8 @@ export async function processBirthGivingNotifications(): Promise<BirthGivingNoti
     claimed: claims.length,
     sent,
     failed,
+    persistenceErrors,
+    manualReview: reconciliation.data ?? 0,
   };
 }
 

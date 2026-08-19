@@ -314,6 +314,8 @@ export const birthGivingEmailDeliveries = pgTable("birth_giving_email_deliveries
   processingToken: uuid("processing_token"),
   sentAt: timestamp("sent_at", { withTimezone: true, mode: "string" }),
   providerMessageId: text("provider_message_id"),
+  emailSubject: text("email_subject"),
+  emailHtml: text("email_html"),
   lastError: text("last_error"),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),

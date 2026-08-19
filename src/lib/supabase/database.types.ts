@@ -91,6 +91,8 @@ export type Database = {
           attempt_count: number
           created_at: string
           created_by_profile_id: string
+          email_html: string | null
+          email_subject: string | null
           event_id: string
           first_attempt_at: string | null
           id: string
@@ -112,6 +114,8 @@ export type Database = {
           attempt_count?: number
           created_at?: string
           created_by_profile_id: string
+          email_html?: string | null
+          email_subject?: string | null
           event_id: string
           first_attempt_at?: string | null
           id?: string
@@ -133,6 +137,8 @@ export type Database = {
           attempt_count?: number
           created_at?: string
           created_by_profile_id?: string
+          email_html?: string | null
+          email_subject?: string | null
           event_id?: string
           first_attempt_at?: string | null
           id?: string
@@ -2851,6 +2857,8 @@ export type Database = {
           attempt_count: number
           customer: string
           delivery_id: string
+          email_html: string
+          email_subject: string
           event_id: string
           event_name: string
           message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
@@ -2975,6 +2983,18 @@ export type Database = {
         Args: { p_event_id: string; p_team_id: string }
         Returns: string[]
       }
+      birth_giving_prepare_email_delivery: {
+        Args: {
+          p_delivery_id: string
+          p_email_html: string
+          p_email_subject: string
+          p_processing_token: string
+        }
+        Returns: {
+          email_html: string
+          email_subject: string
+        }[]
+      }
       birth_giving_process_due_starts: {
         Args: { p_limit?: number }
         Returns: number
@@ -2983,6 +3003,7 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: undefined
       }
+      birth_giving_reconcile_email_deliveries: { Args: never; Returns: number }
       birth_giving_release_storage_cleanup_claim: {
         Args: { p_claim_id: string; p_storage_path: string }
         Returns: boolean
@@ -3321,3 +3342,4 @@ export const Constants = {
     },
   },
 } as const
+

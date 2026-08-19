@@ -29,6 +29,8 @@ const claim = {
   event_id: "event-id",
   event_name: "Akce <script>",
   customer: "Klient & partner",
+  email_subject: null,
+  email_html: null,
 };
 
 describe("Birth Giving email templates", () => {
@@ -86,7 +88,9 @@ describe("Birth Giving notification processing", () => {
   it("processes starts, sends claimed jobs, and completes with the matching fence token", async () => {
     rpc
       .mockResolvedValueOnce({ data: 2, error: null })
+      .mockResolvedValueOnce({ data: 0, error: null })
       .mockResolvedValueOnce({ data: [claim], error: null })
+      .mockResolvedValueOnce({ data: [{ email_subject: "Stored subject", email_html: "<p>Stored HTML</p>" }], error: null })
       .mockResolvedValueOnce({ data: true, error: null });
     mocks.sendEmail.mockResolvedValue({ id: "resend-id" });
 
@@ -95,6 +99,8 @@ describe("Birth Giving notification processing", () => {
       claimed: 1,
       sent: 1,
       failed: 0,
+      persistenceErrors: 0,
+      manualReview: 0,
     });
     expect(mocks.sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({ to: "recipient@example.com" }),
@@ -112,6 +118,7 @@ describe("Birth Giving notification processing", () => {
     delete process.env.SITE_URL;
     rpc
       .mockResolvedValueOnce({ data: 0, error: null })
+      .mockResolvedValueOnce({ data: 0, error: null })
       .mockResolvedValueOnce({ data: [claim], error: null })
       .mockResolvedValueOnce({ data: true, error: null });
 
@@ -120,6 +127,8 @@ describe("Birth Giving notification processing", () => {
       claimed: 1,
       sent: 0,
       failed: 1,
+      persistenceErrors: 0,
+      manualReview: 0,
     });
     expect(mocks.sendEmail).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenLastCalledWith("birth_giving_fail_email_delivery", expect.objectContaining({
@@ -129,20 +138,83 @@ describe("Birth Giving notification processing", () => {
     }));
   });
 
-  it("leaves an uncertain provider acceptance under its processing lease", async () => {
+  it("counts a completion persistence error and continues with remaining claims", async () => {
+    const secondClaim = { ...claim, delivery_id: "delivery-id-2", processing_token: "processing-token-2" };
     rpc
       .mockResolvedValueOnce({ data: 0, error: null })
-      .mockResolvedValueOnce({ data: [claim], error: null })
+      .mockResolvedValueOnce({ data: 1, error: null })
+      .mockResolvedValueOnce({ data: [claim, secondClaim], error: null })
+      .mockResolvedValueOnce({ data: [{ email_subject: "subject-1", email_html: "html-1" }], error: null })
       .mockResolvedValueOnce({ data: null, error: { message: "database unavailable" } })
+      .mockResolvedValueOnce({ data: [{ email_subject: "subject-2", email_html: "html-2" }], error: null })
       .mockResolvedValueOnce({ data: true, error: null });
-    mocks.sendEmail.mockResolvedValue({ id: "possibly-accepted" });
+    mocks.sendEmail
+      .mockResolvedValueOnce({ id: "possibly-accepted" })
+      .mockResolvedValueOnce({ id: "accepted" });
 
-    await expect(processBirthGivingNotifications()).rejects.toThrow("database unavailable");
+    await expect(processBirthGivingNotifications()).resolves.toEqual({
+      startsProcessed: 0,
+      claimed: 2,
+      sent: 1,
+      failed: 0,
+      persistenceErrors: 1,
+      manualReview: 1,
+    });
     expect(rpc).not.toHaveBeenCalledWith("birth_giving_fail_email_delivery", expect.anything());
+    expect(mocks.sendEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it("counts a failure persistence error and continues with remaining claims", async () => {
+    const secondClaim = { ...claim, delivery_id: "delivery-id-2", processing_token: "processing-token-2" };
+    rpc
+      .mockResolvedValueOnce({ data: 0, error: null })
+      .mockResolvedValueOnce({ data: 0, error: null })
+      .mockResolvedValueOnce({ data: [claim, secondClaim], error: null })
+      .mockResolvedValueOnce({ data: [{ email_subject: "subject-1", email_html: "html-1" }], error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "database unavailable" } })
+      .mockResolvedValueOnce({ data: [{ email_subject: "subject-2", email_html: "html-2" }], error: null })
+      .mockResolvedValueOnce({ data: true, error: null });
+    mocks.sendEmail
+      .mockRejectedValueOnce(new Error("ambiguous provider failure"))
+      .mockResolvedValueOnce({ id: "accepted" });
+
+    await expect(processBirthGivingNotifications()).resolves.toEqual({
+      startsProcessed: 0,
+      claimed: 2,
+      sent: 1,
+      failed: 0,
+      persistenceErrors: 1,
+      manualReview: 0,
+    });
+    expect(mocks.sendEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it("reuses a persisted payload when event data and APP_URL change between retries", async () => {
+    const subject = "Persisted subject";
+    const html = '<a href="https://original.example/birth-giving/event-id">Persisted body</a>';
+    process.env.APP_URL = "https://changed.example";
+    rpc
+      .mockResolvedValueOnce({ data: 0, error: null })
+      .mockResolvedValueOnce({ data: 0, error: null })
+      .mockResolvedValueOnce({
+        data: [{ ...claim, event_name: "Changed event", email_subject: subject, email_html: html }],
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: true, error: null });
+    mocks.sendEmail.mockResolvedValue({ id: "accepted" });
+
+    await processBirthGivingNotifications();
+
+    expect(rpc).not.toHaveBeenCalledWith("birth_giving_prepare_email_delivery", expect.anything());
+    expect(mocks.sendEmail).toHaveBeenCalledWith(
+      { to: claim.recipient_email, subject, html },
+      { idempotencyKey: "birth-giving-delivery-delivery-id" },
+    );
   });
 
   it("processes notifications without scanning storage cleanup", async () => {
     rpc
+      .mockResolvedValueOnce({ data: 0, error: null })
       .mockResolvedValueOnce({ data: 0, error: null })
       .mockResolvedValueOnce({ data: [], error: null });
 
@@ -151,6 +223,8 @@ describe("Birth Giving notification processing", () => {
       claimed: 0,
       sent: 0,
       failed: 0,
+      persistenceErrors: 0,
+      manualReview: 0,
     });
     expect(mocks.cleanupBirthGivingStorage).not.toHaveBeenCalled();
   });

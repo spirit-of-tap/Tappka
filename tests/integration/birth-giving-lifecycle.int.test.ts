@@ -1433,6 +1433,9 @@ describe("Birth Giving lifecycle RPCs", () => {
       expect(rows.every((row) => row.config?.includes("search_path=\"\"") === true)).toBe(true);
       expect(rows.every((row) => row.anon === false)).toBe(true);
       expect(rows.find((row) => row.proname === "birth_giving_process_due_starts")?.authenticated).toBe(false);
+      expect(rows.find((row) => row.proname === "birth_giving_prepare_email_delivery")?.authenticated).toBe(false);
+      expect(rows.find((row) => row.proname === "birth_giving_reconcile_email_deliveries")?.authenticated).toBe(false);
+      expect(rows.find((row) => row.proname === "birth_giving_claim_email_deliveries")?.authenticated).toBe(false);
 
       const { rows: triggerRows } = await client.query<{ table_name: string }>(
         `select c.relname as table_name
@@ -1556,12 +1559,32 @@ describe("Birth Giving lifecycle RPCs", () => {
         [first.rows[0].delivery_id, first.rows[0].processing_token],
       );
       expect(failed.rows[0].result).toBe(true);
-      const retry = await client.query<{ status: string; delay_seconds: number }>(
-        `select status, extract(epoch from (next_attempt_at - updated_at))::int as delay_seconds
+      const retry = await client.query<{ status: string; delay_seconds: number; first_attempt_at: string | null }>(
+        `select status, extract(epoch from (next_attempt_at - updated_at))::int as delay_seconds,
+                first_attempt_at
            from public.birth_giving_email_deliveries where id = $1`,
         [first.rows[0].delivery_id],
       );
-      expect(retry.rows[0]).toEqual({ status: "failed", delay_seconds: 60 });
+      expect(retry.rows[0].status).toBe("failed");
+      expect(retry.rows[0].delay_seconds).toBe(60);
+      expect(retry.rows[0].first_attempt_at).not.toBeNull();
+
+      await client.query(
+        `update public.birth_giving_email_deliveries
+            set first_attempt_at = now() - interval '23 hours 1 minute',
+                next_attempt_at = now() - interval '1 minute'
+          where id = $1`,
+        [first.rows[0].delivery_id],
+      );
+      const failedExpired = await client.query<{ result: number }>(
+        "select public.birth_giving_reconcile_email_deliveries() as result",
+      );
+      expect(failedExpired.rows[0].result).toBe(1);
+      const failedManualReview = await client.query<{ status: string }>(
+        "select status from public.birth_giving_email_deliveries where id = $1",
+        [first.rows[0].delivery_id],
+      );
+      expect(failedManualReview.rows[0].status).toBe("manual_review");
 
       await client.query(
         `update public.birth_giving_email_deliveries
@@ -1588,6 +1611,10 @@ describe("Birth Giving lifecycle RPCs", () => {
           where id = $1`,
         [stale.rows[0].delivery_id],
       );
+      const reconciled = await client.query<{ result: number }>(
+        "select public.birth_giving_reconcile_email_deliveries() as result",
+      );
+      expect(reconciled.rows[0].result).toBe(1);
       const expired = await client.query("select * from public.birth_giving_claim_email_deliveries(1)");
       expect(expired.rows).toEqual([]);
       const reconciliation = await client.query<{ status: string; last_error: string }>(
@@ -1596,6 +1623,56 @@ describe("Birth Giving lifecycle RPCs", () => {
       );
       expect(reconciliation.rows[0].status).toBe("manual_review");
       expect(reconciliation.rows[0].last_error).toMatch(/idempotency|manual/i);
+    });
+  });
+
+  it("immutably snapshots an email payload under the matching processing fence", async () => {
+    await withRollback(async (client) => {
+      const { organizer } = await actors(client);
+      const eventId = await createDraft(client, organizer, {
+        startsAt: timestamp(DAY_MS),
+        minimumTeamSize: 1,
+        maximumTeamSize: 2,
+      });
+      await client.query("reset role");
+      const team = await client.query<{ id: string }>(
+        `insert into public.birth_giving_teams
+           (event_id, name, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'Snapshot team', $2, $2) returning id`,
+        [eventId, organizer.profileId],
+      );
+      await client.query(
+        `insert into public.birth_giving_team_members
+           (event_id, team_id, profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, $3, $3, $3)`,
+        [eventId, team.rows[0].id, organizer.profileId],
+      );
+      const delivery = await client.query<{ id: string }>(
+        `insert into public.birth_giving_email_deliveries
+           (event_id, profile_id, message_type, recipient_email, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, 'assignment_release', 'snapshot@example.com', $2, $2) returning id`,
+        [eventId, organizer.profileId],
+      );
+      await client.query("set local role service_role");
+      const claimed = await client.query<{ processing_token: string }>(
+        "select processing_token from public.birth_giving_claim_email_deliveries(1)",
+      );
+      const first = await client.query<{ email_subject: string; email_html: string }>(
+        "select * from public.birth_giving_prepare_email_delivery($1, $2, 'Original subject', '<p>Original URL</p>')",
+        [delivery.rows[0].id, claimed.rows[0].processing_token],
+      );
+      const second = await client.query<{ email_subject: string; email_html: string }>(
+        "select * from public.birth_giving_prepare_email_delivery($1, $2, 'Changed subject', '<p>Changed URL</p>')",
+        [delivery.rows[0].id, claimed.rows[0].processing_token],
+      );
+
+      expect(first.rows[0]).toEqual({ email_subject: "Original subject", email_html: "<p>Original URL</p>" });
+      expect(second.rows[0]).toEqual(first.rows[0]);
+      const staleFence = await client.query(
+        "select * from public.birth_giving_prepare_email_delivery($1, gen_random_uuid(), 'X', 'Y')",
+        [delivery.rows[0].id],
+      );
+      expect(staleFence.rows).toEqual([]);
     });
   });
 });

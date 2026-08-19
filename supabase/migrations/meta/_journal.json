@@ -554,6 +554,20 @@
       "when": 1787114897829,
       "tag": "20260819044817_birth-giving-task-7-review-fixes",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1787115618840,
+      "tag": "20260819050018_tan_blink",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1787115628516,
+      "tag": "20260819050028_birth-giving-email-delivery-final-fixes",
+      "breakpoints": true
     }
   ]
 }
