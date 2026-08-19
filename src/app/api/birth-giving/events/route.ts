@@ -36,21 +36,22 @@ export async function POST(request: NextRequest) {
         customer: payload.customer,
         startsAt: new Date(payload.startsAt),
       });
-      const { data } = await context.supabase
-        .from("birth_giving_events")
-        .select("id")
-        .eq("normalized_name", identity.eventName)
-        .eq("normalized_customer", identity.customer)
-        .eq("starts_at", identity.startsAt)
-        .maybeSingle();
-      const canonical = data ? await refreshedEventResponse(context.supabase, data.id) : null;
-      if (canonical) {
-        const body = await canonical.json();
+      const { data } = await context.supabase.rpc("birth_giving_find_event_conflict", {
+        p_normalized_customer: identity.customer,
+        p_normalized_name: identity.eventName,
+        p_starts_at: identity.startsAt,
+      });
+      const conflict = data?.[0];
+      if (conflict) {
         return NextResponse.json(
           {
             code: BIRTH_GIVING_ERROR_CODES.duplicateEvent,
             error: "Stejná Birth Giving událost už existuje.",
-            ...body,
+            data: {
+              id: conflict.id,
+              status: conflict.status,
+              identity,
+            },
           },
           { status: 409 },
         );

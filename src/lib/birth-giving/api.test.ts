@@ -143,6 +143,8 @@ describe("mapBirthGivingPostgresError", () => {
     ["23505", "duplicate key value violates unique constraint birth_giving_team_members_event_profile_key", "ALREADY_JOINED", 409],
     ["55000", "Assignment is not released yet", "ASSIGNMENT_NOT_RELEASED", 409],
     ["55000", "Assignment is locked after event end", "ASSIGNMENT_LOCKED", 409],
+    ["55000", "Only an active event can be updated before it has ended", "EVENT_LOCKED", 409],
+    ["55000", "Started event lifecycle fields are immutable and joining must remain closed", "EVENT_LOCKED", 409],
     ["23505", "duplicate key value violates unique constraint birth_giving_events_identity_key", "DUPLICATE_EVENT", 409],
     ["55000", "MOVE_REQUIRES_ACKNOWLEDGEMENT", "MOVE_REQUIRES_ACKNOWLEDGEMENT", 409],
     ["23503", "Target team does not belong to the open event", "INVALID_RELATION", 409],

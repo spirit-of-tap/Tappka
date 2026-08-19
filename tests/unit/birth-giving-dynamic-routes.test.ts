@@ -15,6 +15,7 @@ vi.mock("@/app/api/birth-giving/_shared", async (importOriginal) => ({
 }));
 
 import { PATCH as patchEvent } from "@/app/api/birth-giving/events/[eventId]/route";
+import { POST as createEvent } from "@/app/api/birth-giving/events/route";
 import { POST as publishEvent } from "@/app/api/birth-giving/events/[eventId]/publish/route";
 import { PUT as saveReflection } from "@/app/api/birth-giving/events/[eventId]/reflection/route";
 import { PUT as setLooking } from "@/app/api/birth-giving/events/[eventId]/looking-for-team/route";
@@ -43,6 +44,7 @@ describe("Birth Giving dynamic routes", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    rpc.mockResolvedValue({ data: EVENT_ID, error: null });
     mocks.requireBirthGivingApiContext.mockResolvedValue({ supabase: { from, rpc } });
     mocks.refreshedEventResponse.mockResolvedValue(SUCCESS_RESPONSE);
   });
@@ -98,5 +100,50 @@ describe("Birth Giving dynamic routes", () => {
       p_organizer_profile_ids: undefined,
       p_starts_at: undefined,
     });
+  });
+
+  it("recovers an exact private draft duplicate through metadata-only RPC", async () => {
+    rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: "23505",
+          message: "duplicate key value violates unique constraint birth_giving_events_identity_key",
+        },
+      })
+      .mockResolvedValueOnce({ data: [{ id: EVENT_ID, status: "draft" }], error: null });
+
+    const response = await createEvent(request({
+      name: "  Event Name  ",
+      customer: "  Customer Name  ",
+      startsAt: "2026-09-01T08:00:00.000Z",
+      duration: "8h",
+      minimumTeamSize: 1,
+      maximumTeamSize: 3,
+      joiningOpen: true,
+      organizerProfileIds: [EVENT_ID],
+    }) as never);
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      code: "DUPLICATE_EVENT",
+      error: "Stejná Birth Giving událost už existuje.",
+      data: {
+        id: EVENT_ID,
+        status: "draft",
+        identity: {
+          eventName: "event name",
+          customer: "customer name",
+          startsAt: "2026-09-01T08:00:00.000Z",
+        },
+      },
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "birth_giving_find_event_conflict", {
+      p_normalized_customer: "customer name",
+      p_normalized_name: "event name",
+      p_starts_at: "2026-09-01T08:00:00.000Z",
+    });
+    expect(from).not.toHaveBeenCalled();
+    expect(mocks.refreshedEventResponse).not.toHaveBeenCalled();
   });
 });

@@ -97,6 +97,7 @@ export const BIRTH_GIVING_ERROR_CODES = {
   alreadyJoined: "ALREADY_JOINED",
   assignmentNotReleased: "ASSIGNMENT_NOT_RELEASED",
   assignmentLocked: "ASSIGNMENT_LOCKED",
+  eventLocked: "EVENT_LOCKED",
   duplicateEvent: "DUPLICATE_EVENT",
   publicationInvalid: "PUBLICATION_INVALID",
   moveRequiresAcknowledgement: "MOVE_REQUIRES_ACKNOWLEDGEMENT",
@@ -186,6 +187,18 @@ const ERROR_RULES: ReadonlyArray<{
     error: {
       code: BIRTH_GIVING_ERROR_CODES.assignmentLocked,
       message: "Zadání už nelze změnit.",
+      status: 409,
+    },
+  },
+  {
+    patterns: [
+      "only an active event can be updated before it has ended",
+      "started event lifecycle fields are immutable",
+      "published event cannot be rescheduled",
+    ],
+    error: {
+      code: BIRTH_GIVING_ERROR_CODES.eventLocked,
+      message: "Událost už v této fázi nelze změnit.",
       status: 409,
     },
   },

@@ -185,6 +185,37 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
+  it("reveals only exact conflict metadata for another organizer's private draft", async () => {
+    await withRollback(async (client) => {
+      const { organizer, other } = await actors(client);
+      const startsAt = timestamp(DAY_MS);
+      const eventId = await createDraft(client, organizer, { startsAt, suffix: "Private Exact" });
+
+      await asClaims(client, { sub: other.authUserId });
+      const { rows: hiddenRows } = await client.query(
+        "select id from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(hiddenRows).toEqual([]);
+
+      const { rows: conflictRows } = await client.query(
+        `select * from public.birth_giving_find_event_conflict(
+           'event private exact', 'customer', $1
+         )`,
+        [startsAt],
+      );
+      expect(conflictRows).toEqual([{ id: eventId, status: "draft" }]);
+
+      const { rows: nearMatchRows } = await client.query(
+        `select * from public.birth_giving_find_event_conflict(
+           'event private exact', 'different customer', $1
+         )`,
+        [startsAt],
+      );
+      expect(nearMatchRows).toEqual([]);
+    });
+  });
+
   it("rejects draft updates by non-organizers and callers with revoked access", async () => {
     await withRollback(async (client) => {
       const { organizer, other } = await actors(client);
@@ -278,55 +309,42 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
-  it("cannot move or reopen a published event after its start becomes current", async () => {
+  it("rejects moving an unstarted published event into the past but allows historical draft edits", async () => {
     await withRollback(async (client) => {
       const { organizer } = await actors(client);
       const eventId = await createDraft(client, organizer, { startsAt: timestamp(DAY_MS) });
       await publish(client, eventId);
 
-      await client.query(
-        "select public.birth_giving_update_event(p_event_id => $1, p_starts_at => $2)",
-        [eventId, timestamp(-60_000)],
-      );
-      const { rows: startedRows } = await client.query(
-        "select joining_open from public.birth_giving_events where id = $1",
-        [eventId],
-      );
-      expect(startedRows[0].joining_open).toBe(false);
-
       await expectDatabaseError(
         client,
         () => client.query(
-          `select public.birth_giving_update_event(
-             p_event_id => $1,
-             p_starts_at => $2,
-             p_duration => '24h',
-             p_minimum_team_size => 2,
-             p_maximum_team_size => 4,
-             p_joining_open => true
-           )`,
-          [eventId, timestamp(DAY_MS)],
+          "select public.birth_giving_update_event(p_event_id => $1, p_starts_at => $2)",
+          [eventId, timestamp(-9 * 60 * 60 * 1_000)],
         ),
-        /started|immutable|joining/i,
+        /published|start|past|ended/i,
       );
+      const { rows: unchangedRows } = await client.query(
+        "select starts_at, joining_open from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(Date.parse(unchangedRows[0].starts_at)).toBeGreaterThan(Date.now());
+      expect(unchangedRows[0].joining_open).toBe(true);
 
-      await client.query(
-        "select public.birth_giving_update_event(p_event_id => $1, p_name => 'Harmless metadata')",
-        [eventId],
-      );
-      const { rows } = await client.query(
-        `select name, starts_at, duration, minimum_team_size, maximum_team_size, joining_open
-           from public.birth_giving_events where id = $1`,
-        [eventId],
-      );
-      expect(rows[0]).toMatchObject({
-        name: "Harmless metadata",
-        duration: "8h",
-        minimum_team_size: 1,
-        maximum_team_size: 3,
-        joining_open: false,
+      const historicalDraftId = await createDraft(client, organizer, {
+        startsAt: timestamp(-DAY_MS),
+        joiningOpen: false,
+        suffix: "Historical Editable",
       });
-      expect(Date.parse(rows[0].starts_at)).toBeLessThanOrEqual(Date.now());
+      const changedStartsAt = timestamp(-2 * DAY_MS);
+      await client.query(
+        "select public.birth_giving_update_event(p_event_id => $1, p_starts_at => $2)",
+        [historicalDraftId, changedStartsAt],
+      );
+      const { rows: draftRows } = await client.query(
+        "select starts_at from public.birth_giving_events where id = $1",
+        [historicalDraftId],
+      );
+      expect(new Date(draftRows[0].starts_at).toISOString()).toBe(changedStartsAt);
     });
   });
 

@@ -2856,6 +2856,17 @@ export type Database = {
         Args: { p_event_id: string; p_name: string }
         Returns: string
       }
+      birth_giving_find_event_conflict: {
+        Args: {
+          p_normalized_customer: string
+          p_normalized_name: string
+          p_starts_at: string
+        }
+        Returns: {
+          id: string
+          status: Database["public"]["Enums"]["birth_giving_event_status"]
+        }[]
+      }
       birth_giving_process_due_starts: {
         Args: { p_limit?: number }
         Returns: number
