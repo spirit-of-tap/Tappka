@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { birthGivingDraftSchema } from "@/lib/birth-giving/api";
+import { birthGivingEventPatchSchema } from "@/lib/birth-giving/api";
 
 import {
   birthGivingMutationErrorResponse,
@@ -8,6 +8,7 @@ import {
   isBirthGivingApiGateFailure,
   refreshedEventResponse,
   requireBirthGivingApiContext,
+  validateBirthGivingRouteIds,
 } from "../../_shared";
 
 interface RouteContext {
@@ -18,7 +19,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const context = await requireBirthGivingApiContext();
   if (isBirthGivingApiGateFailure(context)) return context.response;
   const { eventId } = await params;
-  const parsed = birthGivingDraftSchema.safeParse(await request.json().catch(() => null));
+  const invalidId = validateBirthGivingRouteIds(eventId);
+  if (invalidId) return invalidId;
+  const parsed = birthGivingEventPatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return invalidPayloadResponse();
   const payload = parsed.data;
 

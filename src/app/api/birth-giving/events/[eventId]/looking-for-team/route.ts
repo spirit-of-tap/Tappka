@@ -8,6 +8,7 @@ import {
   isBirthGivingApiGateFailure,
   refreshedEventResponse,
   requireBirthGivingApiContext,
+  validateBirthGivingRouteIds,
 } from "../../../_shared";
 
 interface RouteContext {
@@ -30,6 +31,8 @@ async function setLookingForTeam(
   const context = await requireBirthGivingApiContext();
   if (isBirthGivingApiGateFailure(context)) return context.response;
   const { eventId } = await params;
+  const invalidId = validateBirthGivingRouteIds(eventId);
+  if (invalidId) return invalidId;
   const parsed = birthGivingLookingForTeamSchema.safeParse(
     fixedLooking === undefined ? await request?.json().catch(() => null) : { looking: fixedLooking },
   );

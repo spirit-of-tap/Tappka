@@ -308,6 +308,31 @@ describe("Birth Giving relational schema", () => {
 });
 
 describe("Birth Giving RLS", () => {
+  it("hides Birth Giving data and denies direct RLS mutations without beta access", async () => {
+    await withRollback(async (client) => {
+      const { organizer } = await seedActors(client);
+      const nonBeta = await insertVerifiedProfile(client, { name: "Non-beta", betaAccess: false });
+      const eventId = await insertEvent(client, organizer);
+
+      await asClaims(client, { sub: nonBeta.authUserId });
+      const { rows: eventRows } = await client.query(
+        "select id from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(eventRows).toEqual([]);
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `insert into public.birth_giving_looking_for_team
+             (event_id, profile_id, created_by_profile_id, updated_by_profile_id)
+           values ($1, $2, $2, $2)`,
+          [eventId, nonBeta.profileId],
+        ),
+        /row-level security/i,
+      );
+    });
+  });
+
   it("requires an active caller to delete a looking-for-team row", async () => {
     await withRollback(async (client) => {
       const { rows } = await client.query<{ qual: string }>(

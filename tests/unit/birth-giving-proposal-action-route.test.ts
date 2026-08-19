@@ -11,6 +11,7 @@ vi.mock("@/app/api/birth-giving/_shared", () => ({
   isBirthGivingApiGateFailure: () => false,
   refreshedEventResponse: mocks.refreshedEventResponse,
   requireBirthGivingApiContext: mocks.requireBirthGivingApiContext,
+  validateBirthGivingRouteIds: () => null,
 }));
 
 import { POST } from "@/app/api/birth-giving/proposals/[proposalId]/[action]/route";

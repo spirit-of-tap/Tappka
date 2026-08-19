@@ -18,7 +18,7 @@ const distinctUuidArray = z
     message: "Identifikátory se nesmí opakovat",
   });
 
-export const birthGivingDraftSchema = z
+const birthGivingEventFieldsSchema = z
   .object({
     name: trimmedText(MAX_EVENT_NAME_LENGTH),
     customer: trimmedText(MAX_CUSTOMER_LENGTH),
@@ -29,11 +29,29 @@ export const birthGivingDraftSchema = z
     joiningOpen: z.boolean(),
     organizerProfileIds: distinctUuidArray,
   })
-  .strict()
+  .strict();
+
+export const birthGivingDraftSchema = birthGivingEventFieldsSchema
   .refine(({ minimumTeamSize, maximumTeamSize }) => maximumTeamSize >= minimumTeamSize, {
     message: "Maximální velikost týmu musí být alespoň minimální velikost",
     path: ["maximumTeamSize"],
   });
+
+export const birthGivingEventPatchSchema = birthGivingEventFieldsSchema
+  .partial()
+  .refine((payload) => Object.keys(payload).length > 0, {
+    message: "Je nutné zadat alespoň jednu změnu",
+  })
+  .refine(
+    ({ minimumTeamSize, maximumTeamSize }) =>
+      minimumTeamSize === undefined
+      || maximumTeamSize === undefined
+      || maximumTeamSize >= minimumTeamSize,
+    {
+      message: "Maximální velikost týmu musí být alespoň minimální velikost",
+      path: ["maximumTeamSize"],
+    },
+  );
 
 export const birthGivingJoiningSchema = z.object({ joiningOpen: z.boolean() }).strict();
 
@@ -83,6 +101,7 @@ export const BIRTH_GIVING_ERROR_CODES = {
   publicationInvalid: "PUBLICATION_INVALID",
   moveRequiresAcknowledgement: "MOVE_REQUIRES_ACKNOWLEDGEMENT",
   invalidRelation: "INVALID_RELATION",
+  validationError: "VALIDATION_ERROR",
 } as const;
 
 export interface BirthGivingApiError {
@@ -198,6 +217,13 @@ const ERROR_RULES: ReadonlyArray<{
 export function mapBirthGivingPostgresError(
   error: BirthGivingPostgresError,
 ): BirthGivingApiError | null {
+  if (error.code === "22023") {
+    return {
+      code: BIRTH_GIVING_ERROR_CODES.validationError,
+      message: "Zadané údaje nejsou platné.",
+      status: 422,
+    };
+  }
   const message = error.message.toLowerCase();
   return ERROR_RULES.find(({ patterns }) => patterns.some((pattern) => message.includes(pattern)))
     ?.error ?? null;

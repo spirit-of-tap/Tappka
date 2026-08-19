@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   birthGivingDraftSchema,
+  birthGivingEventPatchSchema,
   birthGivingHistoricalTeamSchema,
   birthGivingJoiningSchema,
   birthGivingLookingForTeamSchema,
@@ -55,6 +56,17 @@ describe("Birth Giving API payload schemas", () => {
     };
 
     expect(birthGivingDraftSchema.safeParse(payload).success).toBe(false);
+  });
+
+  it("accepts only non-empty partial event patches", () => {
+    expect(birthGivingEventPatchSchema.parse({ name: "  Nový název  " })).toEqual({
+      name: "Nový název",
+    });
+    expect(birthGivingEventPatchSchema.parse({ joiningOpen: false })).toEqual({
+      joiningOpen: false,
+    });
+    expect(birthGivingEventPatchSchema.safeParse({}).success).toBe(false);
+    expect(birthGivingEventPatchSchema.safeParse({ unknown: true }).success).toBe(false);
   });
 
   it("parses joining, team-search, team, and proposal payloads", () => {
@@ -137,6 +149,7 @@ describe("mapBirthGivingPostgresError", () => {
     ["23514", "Every retrospective team requires a result state and valid team size", "PUBLICATION_INVALID", 422],
     ["55000", "Only an active draft can be published", "PUBLICATION_INVALID", 422],
     ["23514", "Historical team size is outside event capacity", "PUBLICATION_INVALID", 422],
+    ["22023", "Internal organizer validation details", "VALIDATION_ERROR", 422],
   ] as const)("maps %s %s to %s", (code, message, expectedCode, expectedStatus) => {
     expect(mapBirthGivingPostgresError({ code, message })).toMatchObject({
       code: expectedCode,
@@ -146,5 +159,15 @@ describe("mapBirthGivingPostgresError", () => {
 
   it("returns null for an unexpected database error", () => {
     expect(mapBirthGivingPostgresError({ code: "XX000", message: "Unexpected failure" })).toBeNull();
+  });
+
+  it("does not expose SQL validation details", () => {
+    expect(
+      mapBirthGivingPostgresError({ code: "22023", message: "Sensitive internal SQL details" }),
+    ).toEqual({
+      code: "VALIDATION_ERROR",
+      message: "Zadané údaje nejsou platné.",
+      status: 422,
+    });
   });
 });

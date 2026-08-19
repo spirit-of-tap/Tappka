@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import {
@@ -54,6 +55,14 @@ export function isBirthGivingApiGateFailure(
 
 export function invalidPayloadResponse(): NextResponse {
   return NextResponse.json({ error: "Neplatná data požadavku" }, { status: 400 });
+}
+
+export function validateBirthGivingRouteIds(...ids: string[]): NextResponse | null {
+  if (ids.every((id) => z.uuid().safeParse(id).success)) return null;
+  return NextResponse.json(
+    { code: "INVALID_ID", error: "Neplatný identifikátor" },
+    { status: 400 },
+  );
 }
 
 export async function birthGivingMutationErrorResponse(

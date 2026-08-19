@@ -39,13 +39,17 @@ const verifiedCommunity = sql`EXISTS (
   WHERE users.auth_user_id = (SELECT auth.uid())
     AND users.verified_work_email IS NOT NULL
     AND caller_profile.access_removed_at IS NULL
+    AND caller_profile.beta_access_granted_at IS NOT NULL
 )`
 
 const activeCaller = sql`EXISTS (
   SELECT 1
   FROM profiles caller_profile
+  JOIN users caller_user ON caller_user.id = caller_profile.user_id
   WHERE caller_profile.id = current_profile_id()
+    AND caller_user.verified_work_email IS NOT NULL
     AND caller_profile.access_removed_at IS NULL
+    AND caller_profile.beta_access_granted_at IS NOT NULL
 )`
 
 export const birthGivingEvents = pgTable("birth_giving_events", {
@@ -124,7 +128,7 @@ export const birthGivingAssignments = pgTable("birth_giving_assignments", {
   foreignKey({ columns: [table.createdByProfileId], foreignColumns: [profiles.id], name: "birth_giving_assignments_created_by_profile_id_fkey" }).onDelete("restrict"),
   foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "birth_giving_assignments_updated_by_profile_id_fkey" }).onDelete("restrict"),
   check("birth_giving_assignments_metadata_check", sql`(state = 'present' AND storage_path IS NOT NULL AND length(trim(storage_path)) > 0 AND original_file_name IS NOT NULL AND length(trim(original_file_name)) > 0 AND mime_type IS NOT NULL AND length(trim(mime_type)) > 0 AND file_size > 0 AND uploaded_by_profile_id IS NOT NULL AND uploaded_at IS NOT NULL) OR (state = 'missing' AND storage_path IS NULL AND original_file_name IS NULL AND mime_type IS NULL AND file_size IS NULL AND uploaded_by_profile_id IS NULL AND uploaded_at IS NULL)`),
-  pgPolicy("Community can view released BG assignments", { for: "select", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_assignments.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND e.starts_at <= now() AND ${verifiedCommunity}) OR EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id())))` }),
+  pgPolicy("Community can view released BG assignments", { for: "select", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_assignments.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND e.starts_at <= now() AND ${verifiedCommunity}) OR (${activeCaller} AND EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id()))))` }),
   pgPolicy("BG organizers can insert assignments", { for: "insert", to: ["authenticated"], withCheck: sql`false` }),
   pgPolicy("BG organizers can update assignments", { for: "update", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
   pgPolicy("BG assignments cannot be directly deleted", { for: "delete", to: ["authenticated"], using: sql`false` }),
@@ -150,7 +154,7 @@ export const birthGivingTeams = pgTable("birth_giving_teams", {
   foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "birth_giving_teams_updated_by_profile_id_fkey" }).onDelete("restrict"),
   check("birth_giving_teams_name_check", sql`length(trim(name)) > 0`),
   check("birth_giving_teams_cancellation_check", sql`(status = 'cancelled' AND cancelled_at IS NOT NULL AND cancellation_reason IS NOT NULL AND length(trim(cancellation_reason)) > 0) OR (status <> 'cancelled' AND cancelled_at IS NULL AND cancellation_reason IS NULL)`),
-  pgPolicy("Community can view published BG teams", { for: "select", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_teams.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND ${verifiedCommunity}) OR EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id())))` }),
+  pgPolicy("Community can view published BG teams", { for: "select", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_teams.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND ${verifiedCommunity}) OR (${activeCaller} AND EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id()))))` }),
   pgPolicy("BG organizers can insert teams", { for: "insert", to: ["authenticated"], withCheck: sql`false` }),
   pgPolicy("BG organizers can update teams", { for: "update", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
   pgPolicy("BG teams cannot be directly deleted", { for: "delete", to: ["authenticated"], using: sql`false` }),
@@ -175,7 +179,7 @@ export const birthGivingTeamMembers = pgTable("birth_giving_team_members", {
   foreignKey({ columns: [table.profileId], foreignColumns: [profiles.id], name: "birth_giving_team_members_profile_id_fkey" }).onDelete("cascade"),
   foreignKey({ columns: [table.createdByProfileId], foreignColumns: [profiles.id], name: "birth_giving_team_members_created_by_profile_id_fkey" }).onDelete("restrict"),
   foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "birth_giving_team_members_updated_by_profile_id_fkey" }).onDelete("restrict"),
-  pgPolicy("Community can view published BG memberships", { for: "select", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_team_members.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND ${verifiedCommunity}) OR EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id())))` }),
+  pgPolicy("Community can view published BG memberships", { for: "select", to: ["authenticated"], using: sql`EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_team_members.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND ${verifiedCommunity}) OR (${activeCaller} AND EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id()))))` }),
   pgPolicy("BG membership changes use lifecycle RPCs", { for: "all", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
 ]).enableRLS()
 
@@ -254,7 +258,7 @@ export const birthGivingTeamResultFiles = pgTable("birth_giving_team_result_file
   foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "birth_giving_team_result_files_updated_by_profile_id_fkey" }).onDelete("restrict"),
   check("birth_giving_team_result_files_metadata_check", sql`length(trim(storage_path)) > 0 AND length(trim(original_file_name)) > 0 AND length(trim(mime_type)) > 0 AND file_size > 0`),
   check("birth_giving_team_result_files_removed_check", sql`(removed_at IS NULL) = (removed_by_profile_id IS NULL)`),
-  pgPolicy("Community can view published BG result files", { for: "select", to: ["authenticated"], using: sql`birth_giving_team_result_files.removed_at IS NULL AND EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_team_result_files.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND ${verifiedCommunity}) OR EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id())))` }),
+  pgPolicy("Community can view published BG result files", { for: "select", to: ["authenticated"], using: sql`birth_giving_team_result_files.removed_at IS NULL AND EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_team_result_files.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND ${verifiedCommunity}) OR (${activeCaller} AND EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id()))))` }),
   pgPolicy("BG members and organizers can insert result files", { for: "insert", to: ["authenticated"], withCheck: sql`false` }),
   pgPolicy("BG members and organizers can update result files", { for: "update", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
   pgPolicy("BG result files cannot be directly deleted", { for: "delete", to: ["authenticated"], using: sql`false` }),

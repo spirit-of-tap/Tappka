@@ -8,6 +8,7 @@ import {
   isBirthGivingApiGateFailure,
   refreshedEventResponse,
   requireBirthGivingApiContext,
+  validateBirthGivingRouteIds,
 } from "../../../_shared";
 
 interface RouteContext {
@@ -18,6 +19,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const context = await requireBirthGivingApiContext();
   if (isBirthGivingApiGateFailure(context)) return context.response;
   const { eventId } = await params;
+  const invalidId = validateBirthGivingRouteIds(eventId);
+  if (invalidId) return invalidId;
   const parsed = birthGivingJoiningSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return invalidPayloadResponse();
 

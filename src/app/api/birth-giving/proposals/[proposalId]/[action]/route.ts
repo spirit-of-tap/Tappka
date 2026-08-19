@@ -5,6 +5,7 @@ import {
   isBirthGivingApiGateFailure,
   refreshedEventResponse,
   requireBirthGivingApiContext,
+  validateBirthGivingRouteIds,
 } from "../../../_shared";
 
 const PROPOSAL_ACTIONS = ["accept", "reject", "cancel"] as const;
@@ -18,6 +19,8 @@ export async function POST(_request: Request, { params }: RouteContext) {
   const context = await requireBirthGivingApiContext();
   if (isBirthGivingApiGateFailure(context)) return context.response;
   const { proposalId, action } = await params;
+  const invalidId = validateBirthGivingRouteIds(proposalId);
+  if (invalidId) return invalidId;
   if (!isProposalAction(action)) {
     return NextResponse.json({ error: "Neplatná akce návrhu" }, { status: 400 });
   }

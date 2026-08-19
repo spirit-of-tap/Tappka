@@ -3,6 +3,7 @@ import {
   isBirthGivingApiGateFailure,
   refreshedEventResponse,
   requireBirthGivingApiContext,
+  validateBirthGivingRouteIds,
 } from "../../../_shared";
 
 interface RouteContext {
@@ -13,6 +14,8 @@ export async function POST(_request: Request, { params }: RouteContext) {
   const context = await requireBirthGivingApiContext();
   if (isBirthGivingApiGateFailure(context)) return context.response;
   const { eventId } = await params;
+  const invalidId = validateBirthGivingRouteIds(eventId);
+  if (invalidId) return invalidId;
   const { error } = await context.supabase.rpc("birth_giving_publish_event", {
     p_event_id: eventId,
   });
