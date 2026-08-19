@@ -2326,118 +2326,6 @@ export type Database = {
           },
         ]
       }
-      team_document_versions: {
-        Row: {
-          change_note: string | null
-          created_at: string
-          created_by_profile_id: string
-          document_id: string
-          effective_from: string | null
-          file_name: string
-          file_path: string
-          file_size: number
-          id: string
-          version_no: number
-        }
-        Insert: {
-          change_note?: string | null
-          created_at?: string
-          created_by_profile_id: string
-          document_id: string
-          effective_from?: string | null
-          file_name: string
-          file_path: string
-          file_size: number
-          id?: string
-          version_no: number
-        }
-        Update: {
-          change_note?: string | null
-          created_at?: string
-          created_by_profile_id?: string
-          document_id?: string
-          effective_from?: string | null
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          id?: string
-          version_no?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_document_versions_created_by_profile_id_fkey"
-            columns: ["created_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_document_versions_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "team_documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      team_documents: {
-        Row: {
-          created_at: string
-          created_by_profile_id: string
-          doc_type: Database["public"]["Enums"]["team_document_type"]
-          id: string
-          removed_at: string | null
-          team_id: string
-          title: string | null
-          updated_at: string
-          updated_by_profile_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by_profile_id: string
-          doc_type: Database["public"]["Enums"]["team_document_type"]
-          id?: string
-          removed_at?: string | null
-          team_id: string
-          title?: string | null
-          updated_at?: string
-          updated_by_profile_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by_profile_id?: string
-          doc_type?: Database["public"]["Enums"]["team_document_type"]
-          id?: string
-          removed_at?: string | null
-          team_id?: string
-          title?: string | null
-          updated_at?: string
-          updated_by_profile_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_documents_created_by_profile_id_fkey"
-            columns: ["created_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_documents_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_documents_updated_by_profile_id_fkey"
-            columns: ["updated_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       team_reflections: {
         Row: {
           created_at: string
@@ -2990,7 +2878,6 @@ export type Database = {
         | "komunitni_a_cross_projekty"
         | "zacleneni_tucnaku"
         | "dalsi"
-      team_document_type: "team_contract" | "financial_policy" | "other"
       tool_type: "model" | "technique" | "tool"
     }
     CompositeTypes: {
@@ -3163,9 +3050,7 @@ export const Constants = {
         "zacleneni_tucnaku",
         "dalsi",
       ],
-      team_document_type: ["team_contract", "financial_policy", "other"],
       tool_type: ["model", "technique", "tool"],
     },
   },
 } as const
-

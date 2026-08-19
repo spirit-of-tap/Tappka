@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { insertVerifiedProfile } from "@/tests/setup/factories";
 import { asClaims } from "@/tests/setup/rls";
+import { getPool } from "@/tests/setup/testdb";
 import { withRollback } from "@/tests/setup/tx";
 
 interface Actor {
@@ -20,6 +21,8 @@ interface DraftOptions {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
+const LOCK_WAIT_POLL_MS = 10;
+const LOCK_WAIT_TIMEOUT_MS = 5_000;
 
 function timestamp(offsetMs: number): string {
   return new Date(Date.now() + offsetMs).toISOString();
@@ -105,6 +108,21 @@ async function expectDatabaseError(
   } finally {
     await client.query("release savepoint expected_database_error");
   }
+}
+
+async function waitForBlockedRaceConnections(): Promise<void> {
+  const deadline = Date.now() + LOCK_WAIT_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const { rows } = await getPool().query<{ blocked_count: number }>(
+      `select count(*)::integer as blocked_count
+         from pg_stat_activity
+        where application_name in ('birth-giving-capacity-race-1', 'birth-giving-capacity-race-2')
+          and wait_event_type = 'Lock'`,
+    );
+    if (rows[0].blocked_count === 2) return;
+    await new Promise((resolve) => setTimeout(resolve, LOCK_WAIT_POLL_MS));
+  }
+  throw new Error("Capacity race connections did not both block on the event lock");
 }
 
 describe("Birth Giving lifecycle RPCs", () => {
@@ -195,6 +213,63 @@ describe("Birth Giving lifecycle RPCs", () => {
         [[upcomingId, historicalId]],
       );
       expect(eventRows.every((row) => row.status === "published")).toBe(true);
+    });
+  });
+
+  it("finalizes historical participation at publication without queueing assignment release emails", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member } = await actors(client);
+      const eventId = await createDraft(client, organizer, {
+        startsAt: timestamp(-2 * DAY_MS),
+        minimumTeamSize: 2,
+        joiningOpen: true,
+      });
+      await client.query("reset role");
+      await client.query(
+        `insert into public.birth_giving_assignments
+           (event_id, state, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'missing', $2, $2)`,
+        [eventId, organizer.profileId],
+      );
+      await asClaims(client, { sub: organizer.authUserId });
+      await client.query(
+        "select public.birth_giving_create_historical_team($1, 'Historical', $2::uuid[], 'missing')",
+        [eventId, [organizer.profileId, member.profileId]],
+      );
+      await publish(client, eventId);
+
+      await client.query("reset role");
+      await client.query("set local role service_role");
+      const { rows: processedRows } = await client.query<{ birth_giving_process_due_starts: number }>(
+        "select public.birth_giving_process_due_starts(10)",
+      );
+      await client.query("reset role");
+
+      expect(processedRows[0].birth_giving_process_due_starts).toBe(0);
+      const { rows: eventRows } = await client.query(
+        `select joining_open, start_processed_at, start_emails_queued_at
+           from public.birth_giving_events where id = $1`,
+        [eventId],
+      );
+      expect(eventRows[0].joining_open).toBe(false);
+      expect(eventRows[0].start_processed_at).not.toBeNull();
+      expect(eventRows[0].start_emails_queued_at).toBeNull();
+      const { rows: teams } = await client.query(
+        "select status from public.birth_giving_teams where event_id = $1",
+        [eventId],
+      );
+      expect(teams).toEqual([{ status: "confirmed" }]);
+      const { rows: memberships } = await client.query(
+        "select frozen_at from public.birth_giving_team_members where event_id = $1",
+        [eventId],
+      );
+      expect(memberships).toHaveLength(2);
+      expect(memberships.every((membership) => membership.frozen_at !== null)).toBe(true);
+      const deliveries = await client.query(
+        "select 1 from public.birth_giving_email_deliveries where event_id = $1",
+        [eventId],
+      );
+      expect(deliveries.rowCount).toBe(0);
     });
   });
 
@@ -360,6 +435,89 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
+  it("accepts at most one proposal when two connections race for the final team place", async () => {
+    const setupClient = await getPool().connect();
+    const blocker = await getPool().connect();
+    const firstClient = await getPool().connect();
+    const secondClient = await getPool().connect();
+    let eventId: string | undefined;
+    const authUserIds: string[] = [];
+    const profileIds: string[] = [];
+    try {
+      await setupClient.query("begin");
+      const organizer = await insertVerifiedProfile(setupClient, { name: "Race organizer" });
+      const firstCandidate = await insertVerifiedProfile(setupClient, { name: "Race candidate one" });
+      const secondCandidate = await insertVerifiedProfile(setupClient, { name: "Race candidate two" });
+      authUserIds.push(organizer.authUserId, firstCandidate.authUserId, secondCandidate.authUserId);
+      profileIds.push(organizer.profileId, firstCandidate.profileId, secondCandidate.profileId);
+      eventId = await createDraft(setupClient, organizer, { maximumTeamSize: 2, suffix: "concurrent-capacity" });
+      await publish(setupClient, eventId);
+      const teamId = await createTeam(setupClient, eventId, "One place left");
+      const firstProposalId = await createProposal(
+        setupClient,
+        eventId,
+        teamId,
+        firstCandidate.profileId,
+        "invitation",
+      );
+      const secondProposalId = await createProposal(
+        setupClient,
+        eventId,
+        teamId,
+        secondCandidate.profileId,
+        "invitation",
+      );
+      await setupClient.query("commit");
+
+      await blocker.query("begin");
+      await blocker.query("select pg_advisory_xact_lock(pg_catalog.hashtextextended($1, 0))", [eventId]);
+      await firstClient.query("begin");
+      await secondClient.query("begin");
+      await firstClient.query("set application_name = 'birth-giving-capacity-race-1'");
+      await secondClient.query("set application_name = 'birth-giving-capacity-race-2'");
+      await asClaims(firstClient, { sub: firstCandidate.authUserId });
+      await asClaims(secondClient, { sub: secondCandidate.authUserId });
+
+      const acceptAndFinish = async (client: PoolClient, proposalId: string): Promise<void> => {
+        try {
+          await client.query("select public.birth_giving_resolve_proposal($1, 'accept')", [proposalId]);
+          await client.query("commit");
+        } catch (error: unknown) {
+          await client.query("rollback");
+          throw error;
+        }
+      };
+      const firstAcceptance = acceptAndFinish(firstClient, firstProposalId);
+      const secondAcceptance = acceptAndFinish(secondClient, secondProposalId);
+      await waitForBlockedRaceConnections();
+      await blocker.query("commit");
+      const outcomes = await Promise.allSettled([firstAcceptance, secondAcceptance]);
+
+      expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+      expect(outcomes.filter((outcome) => outcome.status === "rejected")).toHaveLength(1);
+      const { rows } = await setupClient.query<{ member_count: number }>(
+        "select count(*)::integer as member_count from public.birth_giving_team_members where team_id = $1",
+        [teamId],
+      );
+      expect(rows[0].member_count).toBe(2);
+    } finally {
+      await blocker.query("rollback").catch(() => undefined);
+      await firstClient.query("rollback").catch(() => undefined);
+      await secondClient.query("rollback").catch(() => undefined);
+      if (eventId) await setupClient.query("delete from public.birth_giving_events where id = $1", [eventId]);
+      if (profileIds.length > 0) await setupClient.query("delete from public.profiles where id = any($1::uuid[])", [profileIds]);
+      if (authUserIds.length > 0) {
+        await setupClient.query("delete from public.users where auth_user_id = any($1::uuid[])", [authUserIds]);
+        await setupClient.query("delete from auth.users where id = any($1::uuid[])", [authUserIds]);
+      }
+      await setupClient.query("rollback").catch(() => undefined);
+      setupClient.release();
+      blocker.release();
+      firstClient.release();
+      secondClient.release();
+    }
+  });
+
   it("lets historical organizers correct teams and membership without cross-event leakage", async () => {
     await withRollback(async (client) => {
       const { organizer, member, candidate, other } = await actors(client);
@@ -400,6 +558,59 @@ describe("Birth Giving lifecycle RPCs", () => {
           [eventId, [organizer.profileId, member.profileId, candidate.profileId]],
         ),
       ).rejects.toThrow(/team size|capacity/i);
+    });
+  });
+
+  it("rejects a processed historical correction that underfills another frozen team", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member, candidate, other } = await actors(client);
+      const eventId = await createDraft(client, organizer, {
+        startsAt: timestamp(-2 * DAY_MS),
+        minimumTeamSize: 2,
+        maximumTeamSize: 3,
+        joiningOpen: false,
+      });
+      await client.query("reset role");
+      await client.query(
+        `insert into public.birth_giving_assignments
+           (event_id, state, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'missing', $2, $2)`,
+        [eventId, organizer.profileId],
+      );
+      await asClaims(client, { sub: organizer.authUserId });
+      const firstTeam = await client.query<{ birth_giving_create_historical_team: string }>(
+        "select public.birth_giving_create_historical_team($1, 'First', $2::uuid[], 'missing')",
+        [eventId, [organizer.profileId, member.profileId]],
+      );
+      const secondTeam = await client.query<{ birth_giving_create_historical_team: string }>(
+        "select public.birth_giving_create_historical_team($1, 'Second', $2::uuid[], 'missing')",
+        [eventId, [candidate.profileId, other.profileId]],
+      );
+      await publish(client, eventId);
+
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_correct_team($1, $2, 'First corrected', $3::uuid[], 'present')",
+          [
+            eventId,
+            firstTeam.rows[0].birth_giving_create_historical_team,
+            [organizer.profileId, member.profileId, candidate.profileId],
+          ],
+        ),
+        /team size|capacity/i,
+      );
+
+      const { rows } = await client.query(
+        `select team_id, profile_id, frozen_at
+           from public.birth_giving_team_members
+          where event_id = $1
+          order by team_id, profile_id`,
+        [eventId],
+      );
+      expect(rows).toHaveLength(4);
+      expect(rows.filter((row) => row.team_id === secondTeam.rows[0].birth_giving_create_historical_team)).toHaveLength(2);
+      expect(rows.every((row) => row.frozen_at !== null)).toBe(true);
     });
   });
 

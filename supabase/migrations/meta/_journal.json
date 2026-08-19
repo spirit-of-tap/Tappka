@@ -414,6 +414,13 @@
       "when": 1787103532607,
       "tag": "20260819013852_real_tombstone",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1787104127612,
+      "tag": "20260819014847_fearless_snowbird",
+      "breakpoints": true
     }
   ]
 }
