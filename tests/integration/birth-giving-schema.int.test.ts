@@ -308,6 +308,20 @@ describe("Birth Giving relational schema", () => {
 });
 
 describe("Birth Giving RLS", () => {
+  it("requires an active caller to delete a looking-for-team row", async () => {
+    await withRollback(async (client) => {
+      const { rows } = await client.query<{ qual: string }>(
+        `select qual
+           from pg_policies
+          where schemaname = 'public'
+            and tablename = 'birth_giving_looking_for_team'
+            and policyname = 'Profiles can stop their own BG team search'`,
+      );
+
+      expect(rows[0].qual).toContain("access_removed_at IS NULL");
+    });
+  });
+
   it("shows drafts only to named organizers and published events to verified community", async () => {
     await withRollback(async (client) => {
       const { organizer, other } = await seedActors(client);
@@ -493,12 +507,33 @@ describe("Birth Giving RLS", () => {
     });
   });
 
-  it("denies team-search inserts for callers whose profile access was revoked", async () => {
+  it("denies team-search inserts and deletes for callers whose profile access was revoked", async () => {
     await withRollback(async (client) => {
       const { organizer, member } = await seedActors(client);
       const eventId = await insertEvent(client, organizer);
+
+      await asClaims(client, { sub: member.authUserId });
+      await client.query(
+        `insert into public.birth_giving_looking_for_team
+           (event_id, profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, $2, $2)`,
+        [eventId, member.profileId],
+      );
+      await client.query("reset role");
       await revokeActor(client, member, organizer.profileId);
 
+      await asClaims(client, { sub: member.authUserId });
+      const deletion = await client.query(
+        "delete from public.birth_giving_looking_for_team where event_id = $1 and profile_id = $2",
+        [eventId, member.profileId],
+      );
+      expect(deletion.rowCount).toBe(0);
+
+      await client.query("reset role");
+      await client.query(
+        "delete from public.birth_giving_looking_for_team where event_id = $1 and profile_id = $2",
+        [eventId, member.profileId],
+      );
       await asClaims(client, { sub: member.authUserId });
       await expectConstraintViolation(
         client,
@@ -709,7 +744,7 @@ describe("Birth Giving RLS", () => {
     });
   });
 
-  it("allows only the participant to create and edit their reflection, while community can read it", async () => {
+  it("allows community to read reflections but denies all direct reflection mutations", async () => {
     await withRollback(async (client) => {
       const { organizer, member, other } = await seedActors(client);
       const eventId = await insertEvent(client, organizer);
@@ -717,6 +752,18 @@ describe("Birth Giving RLS", () => {
       await insertMembership(client, eventId, teamId, member.profileId, organizer.profileId);
 
       await asClaims(client, { sub: member.authUserId });
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `insert into public.birth_giving_reflections
+             (event_id, profile_id, contribution, learning, created_by_profile_id, updated_by_profile_id)
+           values ($1, $2, 'Direct', 'Denied', $2, $2)`,
+          [eventId, member.profileId],
+        ),
+        /row-level security/i,
+      );
+
+      await client.query("reset role");
       const { rows } = await client.query(
         `insert into public.birth_giving_reflections
            (event_id, profile_id, contribution, learning, created_by_profile_id, updated_by_profile_id)
@@ -738,11 +785,16 @@ describe("Birth Giving RLS", () => {
       expect(denied.rowCount).toBe(0);
 
       await asClaims(client, { sub: member.authUserId });
-      const allowed = await client.query(
+      const deniedUpdate = await client.query(
         "update public.birth_giving_reflections set contribution = 'Changed', updated_by_profile_id = $2 where id = $1",
         [rows[0].id, member.profileId],
       );
-      expect(allowed.rowCount).toBe(1);
+      expect(deniedUpdate.rowCount).toBe(0);
+      const deniedDeletion = await client.query(
+        "delete from public.birth_giving_reflections where id = $1",
+        [rows[0].id],
+      );
+      expect(deniedDeletion.rowCount).toBe(0);
     });
   });
 
