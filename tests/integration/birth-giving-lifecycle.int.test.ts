@@ -290,6 +290,78 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
+  it("uses the post-lock boundary decision for retrospective publication validation", async () => {
+    const setupClient = await getPool().connect();
+    const blocker = await getPool().connect();
+    const publicationClient = await getPool().connect();
+    let eventId: string | undefined;
+    const authUserIds: string[] = [];
+    const profileIds: string[] = [];
+    try {
+      await setupClient.query("begin");
+      const organizer = await insertVerifiedProfile(setupClient, { name: "Publication boundary organizer" });
+      authUserIds.push(organizer.authUserId);
+      profileIds.push(organizer.profileId);
+      eventId = await createDraft(setupClient, organizer, {
+        startsAt: timestamp(1_000),
+        suffix: "publication-boundary",
+      });
+      await setupClient.query("reset role");
+      await setupClient.query(
+        `insert into public.birth_giving_assignments
+           (event_id, state, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'missing', $2, $2)`,
+        [eventId, organizer.profileId],
+      );
+      const { rows: teamRows } = await setupClient.query<{ id: string }>(
+        `insert into public.birth_giving_teams
+           (event_id, name, status, result_state, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'Boundary result', 'confirmed', 'present', $2, $2)
+         returning id`,
+        [eventId, organizer.profileId],
+      );
+      await setupClient.query(
+        `insert into public.birth_giving_team_members
+           (event_id, team_id, profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, $3, $3, $3)`,
+        [eventId, teamRows[0].id, organizer.profileId],
+      );
+      await setupClient.query("commit");
+
+      await blocker.query("begin");
+      await blocker.query("select 1 from public.birth_giving_events where id = $1 for update", [eventId]);
+      await publicationClient.query("begin");
+      await publicationClient.query("set application_name = 'birth-giving-boundary-publication'");
+      await publicationClient.query(`set local statement_timeout = '${RACE_STATEMENT_TIMEOUT_MS}ms'`);
+      await asClaims(publicationClient, { sub: organizer.authUserId });
+      const publication = publicationClient.query("select public.birth_giving_publish_event($1)", [eventId]);
+      await waitForBlockedConnections(["birth-giving-boundary-publication"]);
+      await new Promise((resolve) => setTimeout(resolve, 1_100));
+      await blocker.query("commit");
+
+      await expect(publication).rejects.toThrow(/result file/i);
+      await publicationClient.query("rollback");
+      const event = await setupClient.query(
+        "select status, joining_open, start_processed_at from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(event.rows[0]).toMatchObject({ status: "draft", joining_open: true, start_processed_at: null });
+    } finally {
+      await blocker.query("rollback").catch(() => undefined);
+      await publicationClient.query("rollback").catch(() => undefined);
+      if (eventId) await setupClient.query("delete from public.birth_giving_events where id = $1", [eventId]);
+      if (profileIds.length > 0) await setupClient.query("delete from public.profiles where id = any($1::uuid[])", [profileIds]);
+      if (authUserIds.length > 0) {
+        await setupClient.query("delete from public.users where auth_user_id = any($1::uuid[])", [authUserIds]);
+        await setupClient.query("delete from auth.users where id = any($1::uuid[])", [authUserIds]);
+      }
+      await setupClient.query("rollback").catch(() => undefined);
+      setupClient.release();
+      blocker.release();
+      publicationClient.release();
+    }
+  });
+
   it("creates a forming team with only the caller as member and clears their search", async () => {
     await withRollback(async (client) => {
       const { organizer, member } = await actors(client);
@@ -473,10 +545,11 @@ describe("Birth Giving lifecycle RPCs", () => {
       const oldTeam = await client.query("select 1 from public.birth_giving_teams where id = $1", [oldTeamId]);
       expect(oldTeam.rowCount).toBe(0);
       const { rows: competingRows } = await client.query(
-        "select state from public.birth_giving_team_proposals where id = any($1::uuid[]) order by id",
+        "select id, state, updated_by_profile_id from public.birth_giving_team_proposals where id = any($1::uuid[]) order by id",
         [[competingId, candidateRequest]],
       );
       expect(competingRows.map((row) => row.state).sort()).toEqual(["cancelled", "pending"]);
+      expect(competingRows.find((row) => row.id === competingId)?.updated_by_profile_id).toBe(member.profileId);
     });
   });
 
@@ -852,6 +925,15 @@ describe("Birth Giving lifecycle RPCs", () => {
       );
       const team = await client.query("select result_state from public.birth_giving_teams where id = $1", [teamId]);
       expect(team.rows[0].result_state).toBe("present");
+
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_correct_team($1, $2, 'Published correction', $3::uuid[], 'missing')",
+          [eventId, teamId, [member.profileId]],
+        ),
+        /result file/i,
+      );
     });
   });
 
@@ -1102,6 +1184,15 @@ describe("Birth Giving lifecycle RPCs", () => {
       );
       expect(cutoffRows).toHaveLength(4);
       expect(cutoffRows.every((row) => row.definition.includes("clock_timestamp()"))).toBe(true);
+
+      const { rows: publicationRows } = await client.query<{ definition: string }>(
+        `select pg_get_functiondef(p.oid) as definition
+           from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public'
+            and p.proname = 'birth_giving_publish_event'`,
+      );
+      expect(publicationRows[0].definition.match(/clock_timestamp\(\)/g)).toHaveLength(1);
     });
   });
 });
