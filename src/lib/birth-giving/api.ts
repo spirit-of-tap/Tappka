@@ -116,7 +116,10 @@ const ERROR_RULES: ReadonlyArray<{
     },
   },
   {
-    patterns: ["team formation is closed"],
+    patterns: [
+      "team formation is closed",
+      "joining can only change before the event start",
+    ],
     error: {
       code: BIRTH_GIVING_ERROR_CODES.formationClosed,
       message: "Sestavování týmů už není otevřené.",

@@ -124,6 +124,7 @@ describe("Birth Giving API payload schemas", () => {
 describe("mapBirthGivingPostgresError", () => {
   it.each([
     ["55000", "Team formation is closed for this event", "FORMATION_CLOSED", 409],
+    ["55000", "Joining can only change before the event start", "FORMATION_CLOSED", 409],
     ["23514", "Target team is at maximum capacity", "TEAM_FULL", 409],
     ["55000", "Proposal is missing or already resolved", "PROPOSAL_RESOLVED", 409],
     ["23505", "Profile already belongs to a team in this event", "ALREADY_JOINED", 409],
