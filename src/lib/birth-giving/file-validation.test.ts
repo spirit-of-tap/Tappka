@@ -92,6 +92,22 @@ describe("validateBirthGivingFile", () => {
 });
 
 describe("validateBirthGivingResultFile", () => {
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -1])(
+    "rejects invalid current total %s",
+    (currentTotalSizeBytes) => {
+      expect(
+        validateBirthGivingResultFile(
+          {
+            fileName: "document.pdf",
+            mimeType: "application/pdf",
+            sizeBytes: 1,
+          },
+          currentTotalSizeBytes,
+        ),
+      ).toMatchObject({ code: "team_total_too_large" });
+    },
+  );
+
   it("accepts the team total limit and rejects one byte over it", () => {
     const input = {
       fileName: "document.pdf",

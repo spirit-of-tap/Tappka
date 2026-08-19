@@ -88,6 +88,8 @@ export function validateBirthGivingResultFile(
   }
 
   if (
+    !Number.isFinite(currentTotalSizeBytes) ||
+    currentTotalSizeBytes < 0 ||
     currentTotalSizeBytes + input.sizeBytes >
     BIRTH_GIVING_MAX_TEAM_RESULT_TOTAL_SIZE_BYTES
   ) {
