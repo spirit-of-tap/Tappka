@@ -1,0 +1,9 @@
+const MEBIBYTE = 1024 * 1024;
+
+export const BIRTH_GIVING_DURATION_HOURS = {
+  "8h": 8,
+  "24h": 24,
+} as const;
+
+export const BIRTH_GIVING_MAX_FILE_SIZE_BYTES = 25 * MEBIBYTE;
+export const BIRTH_GIVING_MAX_TEAM_RESULT_TOTAL_SIZE_BYTES = 100 * MEBIBYTE;
