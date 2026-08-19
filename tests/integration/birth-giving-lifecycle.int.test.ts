@@ -233,6 +233,39 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
+  it("rejects retrospective publication when a missing team has an active result file", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member } = await actors(client);
+      const eventId = await createDraft(client, organizer, {
+        startsAt: timestamp(-2 * DAY_MS),
+        joiningOpen: false,
+      });
+      await client.query("reset role");
+      await client.query(
+        `insert into public.birth_giving_assignments
+           (event_id, state, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'missing', $2, $2)`,
+        [eventId, organizer.profileId],
+      );
+      await asClaims(client, { sub: organizer.authUserId });
+      const { rows } = await client.query<{ birth_giving_create_historical_team: string }>(
+        "select public.birth_giving_create_historical_team($1, 'Missing result', $2::uuid[], 'missing')",
+        [eventId, [member.profileId]],
+      );
+      await client.query("reset role");
+      await client.query(
+        `insert into public.birth_giving_team_result_files
+           (event_id, team_id, storage_path, original_file_name, mime_type, file_size,
+            uploaded_by_profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, $3, 'unexpected.pdf', 'application/pdf', 12, $4, $4, $4)`,
+        [eventId, rows[0].birth_giving_create_historical_team, `bg/${crypto.randomUUID()}.pdf`, organizer.profileId],
+      );
+      await asClaims(client, { sub: organizer.authUserId });
+
+      await expectDatabaseError(client, () => publish(client, eventId), /result file/i);
+    });
+  });
+
   it("finalizes historical participation at publication without queueing assignment release emails", async () => {
     await withRollback(async (client) => {
       const { organizer, member } = await actors(client);
