@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (!parsed.success) return invalidPayloadResponse();
   const payload = parsed.data;
 
-  const { error } = await context.supabase.rpc("birth_giving_upsert_draft", {
+  const { error } = await context.supabase.rpc("birth_giving_update_event", {
     p_customer: payload.customer,
     p_duration: payload.duration,
     p_event_id: eventId,

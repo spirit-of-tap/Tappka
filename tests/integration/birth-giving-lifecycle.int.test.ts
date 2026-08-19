@@ -75,10 +75,11 @@ async function createProposal(
   teamId: string,
   candidateProfileId: string,
   direction: "join_request" | "invitation",
+  acknowledgeMove = false,
 ): Promise<string> {
   const { rows } = await client.query<{ birth_giving_create_proposal: string }>(
-    "select public.birth_giving_create_proposal($1, $2, $3, $4)",
-    [eventId, teamId, candidateProfileId, direction],
+    "select public.birth_giving_create_proposal($1, $2, $3, $4, $5)",
+    [eventId, teamId, candidateProfileId, direction, acknowledgeMove],
   );
   return rows[0].birth_giving_create_proposal;
 }
@@ -188,6 +189,76 @@ describe("Birth Giving lifecycle RPCs", () => {
       await expect(
         client.query("select public.birth_giving_publish_event($1)", [eventId]),
       ).rejects.toThrow(/active.*profile|authorized/i);
+    });
+  });
+
+  it("patches draft and published events under a row lock without stale whole-row writes", async () => {
+    await withRollback(async (client) => {
+      const { organizer, other } = await actors(client);
+      const eventId = await createDraft(client, organizer, { startsAt: timestamp(DAY_MS) });
+
+      await asClaims(client, { sub: other.authUserId });
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_update_event(p_event_id => $1, p_name => 'Unauthorized')",
+          [eventId],
+        ),
+        /organizer|authorized/i,
+      );
+      await asClaims(client, { sub: organizer.authUserId });
+      await client.query(
+        "select public.birth_giving_update_event(p_event_id => $1, p_name => 'Changed draft')",
+        [eventId],
+      );
+      await publish(client, eventId);
+      await client.query(
+        "select public.birth_giving_update_event(p_event_id => $1, p_joining_open => false)",
+        [eventId],
+      );
+      const { rows } = await client.query(
+        "select name, customer, joining_open from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(rows[0]).toMatchObject({
+        name: "Changed draft",
+        customer: "Customer",
+        joining_open: false,
+      });
+
+      await client.query("reset role");
+      await client.query(
+        "update public.birth_giving_events set starts_at = clock_timestamp() - interval '1 hour' where id = $1",
+        [eventId],
+      );
+      await asClaims(client, { sub: organizer.authUserId });
+      await client.query(
+        "select public.birth_giving_update_event(p_event_id => $1, p_name => 'Still active')",
+        [eventId],
+      );
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_update_event(p_event_id => $1, p_joining_open => true)",
+          [eventId],
+        ),
+        /joining|start/i,
+      );
+
+      await client.query("reset role");
+      await client.query(
+        "update public.birth_giving_events set starts_at = clock_timestamp() - interval '9 hours' where id = $1",
+        [eventId],
+      );
+      await asClaims(client, { sub: organizer.authUserId });
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_update_event(p_event_id => $1, p_name => 'Too late')",
+          [eventId],
+        ),
+        /ended|update/i,
+      );
     });
   });
 
@@ -502,7 +573,11 @@ describe("Birth Giving lifecycle RPCs", () => {
       const teamId = await createTeam(client, eventId, "Target");
       const memberProposal = await createProposal(client, eventId, teamId, member.profileId, "invitation");
       await asClaims(client, { sub: member.authUserId });
-      await client.query("select public.birth_giving_resolve_proposal($1, 'accept')", [memberProposal]);
+      const resolved = await client.query<{ birth_giving_resolve_proposal: string }>(
+        "select public.birth_giving_resolve_proposal($1, 'accept')",
+        [memberProposal],
+      );
+      expect(resolved.rows[0].birth_giving_resolve_proposal).toBe(eventId);
 
       await asClaims(client, { sub: candidate.authUserId });
       await client.query("select public.birth_giving_set_looking_for_team($1, true)", [eventId]);
@@ -522,6 +597,15 @@ describe("Birth Giving lifecycle RPCs", () => {
         [eventId, candidate.profileId],
       );
       expect(search.rowCount).toBe(0);
+
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_resolve_proposal($1, 'accept')",
+          [crypto.randomUUID()],
+        ),
+        /proposal is missing or already resolved/i,
+      );
     });
   });
 
@@ -553,6 +637,52 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
+  it("requires explicit acknowledgement before proposing a move from another team", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member, candidate } = await actors(client);
+      const eventId = await createDraft(client, organizer, { maximumTeamSize: 4 });
+      await publish(client, eventId);
+      const targetTeamId = await createTeam(client, eventId, "Target");
+      await asClaims(client, { sub: member.authUserId });
+      await createTeam(client, eventId, "Current member team");
+
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_create_proposal($1, $2, $3, 'join_request', false)",
+          [eventId, targetTeamId, member.profileId],
+        ),
+        /MOVE_REQUIRES_ACKNOWLEDGEMENT/,
+      );
+      await client.query(
+        "select public.birth_giving_create_proposal($1, $2, $3, 'join_request', true)",
+        [eventId, targetTeamId, member.profileId],
+      );
+
+      await asClaims(client, { sub: candidate.authUserId });
+      const candidateTeamId = await createTeam(client, eventId, "Current candidate team");
+      await asClaims(client, { sub: organizer.authUserId });
+      await expectDatabaseError(
+        client,
+        () => client.query(
+          "select public.birth_giving_create_proposal($1, $2, $3, 'invitation', false)",
+          [eventId, targetTeamId, candidate.profileId],
+        ),
+        /MOVE_REQUIRES_ACKNOWLEDGEMENT/,
+      );
+      const { rows } = await client.query<{ birth_giving_create_proposal: string }>(
+        "select public.birth_giving_create_proposal($1, $2, $3, 'invitation', true)",
+        [eventId, targetTeamId, candidate.profileId],
+      );
+      const membership = await client.query(
+        "select team_id from public.birth_giving_team_members where event_id = $1 and profile_id = $2",
+        [eventId, candidate.profileId],
+      );
+      expect(rows[0].birth_giving_create_proposal).toBeTypeOf("string");
+      expect(membership.rows[0].team_id).toBe(candidateTeamId);
+    });
+  });
+
   it("atomically moves membership, clears search and competing proposals, and deletes an empty old team", async () => {
     await withRollback(async (client) => {
       const { organizer, member, candidate } = await actors(client);
@@ -562,8 +692,8 @@ describe("Birth Giving lifecycle RPCs", () => {
       await asClaims(client, { sub: member.authUserId });
       const oldTeamId = await createTeam(client, eventId, "Old");
       await asClaims(client, { sub: organizer.authUserId });
-      const acceptedId = await createProposal(client, eventId, targetTeamId, member.profileId, "invitation");
-      const competingId = await createProposal(client, eventId, targetTeamId, member.profileId, "invitation");
+      const acceptedId = await createProposal(client, eventId, targetTeamId, member.profileId, "invitation", true);
+      const competingId = await createProposal(client, eventId, targetTeamId, member.profileId, "invitation", true);
       await asClaims(client, { sub: candidate.authUserId });
       await client.query("select public.birth_giving_set_looking_for_team($1, true)", [eventId]);
       const candidateRequest = await createProposal(client, eventId, targetTeamId, candidate.profileId, "join_request");

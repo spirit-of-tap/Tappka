@@ -74,7 +74,15 @@ export async function birthGivingMutationErrorResponse(
     return NextResponse.json({ error: "Pro tuto akci nemáte oprávnění" }, { status: 403 });
   }
   if (error.code === "23503") {
-    return NextResponse.json({ error: "Požadovaná data nebyla nalezena" }, { status: 404 });
+    const data = eventId ? await safelyRefreshEvent(supabase, eventId) : null;
+    return NextResponse.json(
+      {
+        code: "INVALID_RELATION",
+        error: "Požadovaná vazba není pro tuto událost platná.",
+        data,
+      },
+      { status: 409 },
+    );
   }
 
   console.error("Birth Giving mutation failed:", error);

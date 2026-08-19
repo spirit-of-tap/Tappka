@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
 import { birthGivingReflectionSchema } from "@/lib/birth-giving/api";
 
@@ -6,6 +6,7 @@ import {
   birthGivingMutationErrorResponse,
   invalidPayloadResponse,
   isBirthGivingApiGateFailure,
+  refreshedEventResponse,
   requireBirthGivingApiContext,
 } from "../../../_shared";
 
@@ -20,7 +21,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   const parsed = birthGivingReflectionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return invalidPayloadResponse();
 
-  const { data: reflectionId, error } = await context.supabase.rpc(
+  const { error } = await context.supabase.rpc(
     "birth_giving_upsert_reflection",
     {
       p_contribution: parsed.data.contribution,
@@ -30,11 +31,5 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   );
   if (error) return birthGivingMutationErrorResponse(error, context.supabase, eventId);
 
-  const { data, error: readError } = await context.supabase
-    .from("birth_giving_reflections")
-    .select("*")
-    .eq("id", reflectionId)
-    .single();
-  if (readError) return birthGivingMutationErrorResponse(readError, context.supabase, eventId);
-  return NextResponse.json({ data });
+  return refreshedEventResponse(context.supabase, eventId);
 }

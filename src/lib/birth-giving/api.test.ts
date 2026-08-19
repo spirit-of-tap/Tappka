@@ -66,8 +66,21 @@ describe("Birth Giving API payload schemas", () => {
         teamId: TEAM_ID,
         candidateProfileId: PROFILE_ID,
         direction: "join_request",
+        acknowledgeMove: false,
       }),
-    ).toEqual({ teamId: TEAM_ID, candidateProfileId: PROFILE_ID, direction: "join_request" });
+    ).toEqual({
+      teamId: TEAM_ID,
+      candidateProfileId: PROFILE_ID,
+      direction: "join_request",
+      acknowledgeMove: false,
+    });
+    expect(
+      birthGivingProposalSchema.safeParse({
+        teamId: TEAM_ID,
+        candidateProfileId: PROFILE_ID,
+        direction: "join_request",
+      }).success,
+    ).toBe(false);
   });
 
   it("parses historical team correction and reflection payloads", () => {
@@ -93,6 +106,7 @@ describe("Birth Giving API payload schemas", () => {
         teamId: EVENT_ID,
         candidateProfileId: "not-a-uuid",
         direction: "move",
+        acknowledgeMove: false,
       }).success,
     ).toBe(false);
     expect(birthGivingTeamSchema.safeParse({ name: "   " }).success).toBe(false);
@@ -117,6 +131,8 @@ describe("mapBirthGivingPostgresError", () => {
     ["55000", "Assignment is not released yet", "ASSIGNMENT_NOT_RELEASED", 409],
     ["55000", "Assignment is locked after event end", "ASSIGNMENT_LOCKED", 409],
     ["23505", "duplicate key value violates unique constraint birth_giving_events_identity_key", "DUPLICATE_EVENT", 409],
+    ["55000", "MOVE_REQUIRES_ACKNOWLEDGEMENT", "MOVE_REQUIRES_ACKNOWLEDGEMENT", 409],
+    ["23503", "Target team does not belong to the open event", "INVALID_RELATION", 409],
     ["23514", "Every retrospective team requires a result state and valid team size", "PUBLICATION_INVALID", 422],
     ["55000", "Only an active draft can be published", "PUBLICATION_INVALID", 422],
     ["23514", "Historical team size is outside event capacity", "PUBLICATION_INVALID", 422],

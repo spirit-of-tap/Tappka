@@ -48,6 +48,7 @@ export const birthGivingProposalSchema = z
     teamId: z.uuid(),
     candidateProfileId: z.uuid(),
     direction: z.enum(["join_request", "invitation"]),
+    acknowledgeMove: z.boolean(),
   })
   .strict();
 
@@ -80,6 +81,8 @@ export const BIRTH_GIVING_ERROR_CODES = {
   assignmentLocked: "ASSIGNMENT_LOCKED",
   duplicateEvent: "DUPLICATE_EVENT",
   publicationInvalid: "PUBLICATION_INVALID",
+  moveRequiresAcknowledgement: "MOVE_REQUIRES_ACKNOWLEDGEMENT",
+  invalidRelation: "INVALID_RELATION",
 } as const;
 
 export interface BirthGivingApiError {
@@ -92,6 +95,26 @@ const ERROR_RULES: ReadonlyArray<{
   patterns: readonly string[];
   error: BirthGivingApiError;
 }> = [
+  {
+    patterns: ["move_requires_acknowledgement"],
+    error: {
+      code: BIRTH_GIVING_ERROR_CODES.moveRequiresAcknowledgement,
+      message: "Přesun z existujícího týmu vyžaduje výslovné potvrzení.",
+      status: 409,
+    },
+  },
+  {
+    patterns: [
+      "target team does not belong",
+      "does not belong to the event",
+      "reflection requires confirmed participation",
+    ],
+    error: {
+      code: BIRTH_GIVING_ERROR_CODES.invalidRelation,
+      message: "Požadovaná vazba není pro tuto událost platná.",
+      status: 409,
+    },
+  },
   {
     patterns: ["team formation is closed"],
     error: {

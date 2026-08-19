@@ -22,6 +22,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   if (!parsed.success) return invalidPayloadResponse();
 
   const { error } = await context.supabase.rpc("birth_giving_create_proposal", {
+    p_acknowledge_move: parsed.data.acknowledgeMove,
     p_candidate_profile_id: parsed.data.candidateProfileId,
     p_direction: parsed.data.direction,
     p_event_id: eventId,

@@ -2732,6 +2732,7 @@ export type Database = {
       }
       birth_giving_create_proposal: {
         Args: {
+          p_acknowledge_move: boolean
           p_candidate_profile_id: string
           p_direction: Database["public"]["Enums"]["birth_giving_proposal_direction"]
           p_event_id: string
@@ -2753,7 +2754,7 @@ export type Database = {
       }
       birth_giving_resolve_proposal: {
         Args: { p_action: string; p_proposal_id: string }
-        Returns: undefined
+        Returns: string
       }
       birth_giving_resolve_proposal_locked: {
         Args: { p_action: string; p_proposal_id: string }
@@ -2762,6 +2763,20 @@ export type Database = {
       birth_giving_set_looking_for_team: {
         Args: { p_event_id: string; p_looking: boolean }
         Returns: undefined
+      }
+      birth_giving_update_event: {
+        Args: {
+          p_customer?: string
+          p_duration?: Database["public"]["Enums"]["birth_giving_duration"]
+          p_event_id: string
+          p_joining_open?: boolean
+          p_maximum_team_size?: number
+          p_minimum_team_size?: number
+          p_name?: string
+          p_organizer_profile_ids?: string[]
+          p_starts_at?: string
+        }
+        Returns: string
       }
       birth_giving_upsert_draft: {
         Args: {
