@@ -62,7 +62,9 @@ describe("BirthGivingResultFileList", () => {
     );
 
     expect(screen.queryByRole("button", { name: "Nahrát soubory" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Smazat soubor" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Smazat soubor vysledky.pdf" }),
+    ).not.toBeInTheDocument();
   });
 
   it("offers upload and delete to a member during the event", () => {
@@ -76,7 +78,9 @@ describe("BirthGivingResultFileList", () => {
     );
 
     expect(screen.getByRole("button", { name: "Nahrát soubory" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Smazat soubor" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Smazat soubor vysledky.pdf" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Označit výsledek jako nedohledaný" })).not.toBeInTheDocument();
   });
 
@@ -102,7 +106,7 @@ describe("BirthGivingResultFileList", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Smazat soubor" }));
+    await user.click(screen.getByRole("button", { name: "Smazat soubor vysledky.pdf" }));
     await user.click(await screen.findByRole("button", { name: "Potvrdit" }));
 
     await waitFor(() =>

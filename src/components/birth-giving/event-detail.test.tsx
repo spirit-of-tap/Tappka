@@ -98,7 +98,7 @@ describe("BirthGivingEventDetail", () => {
       }),
     });
 
-    await user.click(screen.getByRole("button", { name: "Smazat soubor" }));
+    await user.click(screen.getByRole("button", { name: "Smazat soubor vysledky.pdf" }));
     await user.click(await screen.findByRole("button", { name: "Potvrdit" }));
 
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));

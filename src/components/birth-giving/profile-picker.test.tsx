@@ -103,4 +103,37 @@ describe("BirthGivingProfilePicker", () => {
     expect(await screen.findByText("Candidate One")).toBeInTheDocument();
     expect(screen.queryByText("Member One")).not.toBeInTheDocument();
   });
+
+  it("matches profiles regardless of diacritics", async () => {
+    const user = userEvent.setup();
+    render(
+      <BirthGivingProfilePicker
+        profiles={[{ id: "z-1", name: "Jiří Žluťoučký", picture: null }]}
+        selected={[]}
+        onChange={vi.fn()}
+        label="Organizátor:ky"
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Organizátor:ky" }));
+    await user.type(await screen.findByLabelText("Hledat profil"), "zlutoucky");
+
+    expect(await screen.findByText("Jiří Žluťoučký")).toBeInTheDocument();
+  });
+
+  it("hides remove chips and disables the trigger while disabled", () => {
+    render(
+      <BirthGivingProfilePicker
+        profiles={PROFILES}
+        selected={["org-1", "member-1"]}
+        onChange={vi.fn()}
+        label="Organizátor:ky"
+        disabled
+      />,
+    );
+
+    expect(screen.getByText("Org One")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Odebrat Org One" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Organizátor:ky" })).toBeDisabled();
+  });
 });

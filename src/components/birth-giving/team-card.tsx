@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, ShieldCheck, UserRoundCheck } from "lucide-react";
+import { Users, UserRoundCheck } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +74,6 @@ export function BirthGivingTeamCard({
               <li key={member.id} className="flex items-center gap-2 text-sm">
                 <ProfileAvatar picture={member.profile.picture} name={member.profile.name} size={24} />
                 <span className="min-w-0 flex-1 truncate">{member.profile.name}</span>
-                <ShieldCheck className="size-3.5 shrink-0 text-muted-foreground" />
               </li>
             ))}
           </ul>

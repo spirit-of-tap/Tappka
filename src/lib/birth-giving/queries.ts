@@ -9,13 +9,17 @@ import type {
   BirthGivingEventIndexItem,
   BirthGivingProfileHistoryItem,
   BirthGivingProfileSummary,
-  BirthGivingProposalState,
-  BirthGivingTeamProposal,
+  BirthGivingProposalWithProfiles,
   BirthGivingTeamStatus,
 } from "./types";
 
 const DUPLICATE_SEARCH_WINDOW_DAYS = 14;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export const EVENT_INDEX_HISTORY_WINDOW_DAYS = 90;
+export const EVENT_INDEX_UPCOMING_LIMIT = 50;
+export const EVENT_INDEX_HISTORY_LIMIT = 20;
+export const EVENT_INDEX_NESTED_ROWS_LIMIT = 50;
 
 interface BirthGivingParticipationValidityQuery<Query> {
   not(column: "frozen_at", operator: "is", value: null): Query;
@@ -30,8 +34,8 @@ const EVENT_INDEX_SELECT = `
   teams:birth_giving_teams(
     id,
     status,
-    members:birth_giving_team_members(profile_id),
-    proposals:birth_giving_team_proposals(candidate_profile_id, state)
+    members:birth_giving_team_members(profile_id, limit=${EVENT_INDEX_NESTED_ROWS_LIMIT}),
+    proposals:birth_giving_team_proposals(candidate_profile_id, state, limit=${EVENT_INDEX_NESTED_ROWS_LIMIT})
   )
 `;
 
@@ -46,14 +50,15 @@ const EVENT_DETAIL_SELECT = `
       profile:profiles!birth_giving_team_members_profile_id_fkey(id, name, picture),
       reflection:birth_giving_reflections(*)
     ),
-    proposals:birth_giving_team_proposals(
-      *,
-      candidate:profiles!birth_giving_team_proposals_candidate_profile_id_fkey(id, name, picture),
-      initiator:profiles!birth_giving_team_proposals_initiated_by_profile_id_fkey(id, name, picture)
-    ),
     result_files:birth_giving_team_result_files(*)
   ),
   team_searches:birth_giving_looking_for_team(*, profile:profiles!birth_giving_looking_for_team_profile_id_fkey(id, name, picture))
+`;
+
+const EVENT_PENDING_PROPOSALS_SELECT = `
+  *,
+  candidate:profiles!birth_giving_team_proposals_candidate_profile_id_fkey(id, name, picture),
+  initiator:profiles!birth_giving_team_proposals_initiated_by_profile_id_fkey(id, name, picture)
 `;
 
 interface EventIndexQueryRow extends BirthGivingEvent {
@@ -62,14 +67,22 @@ interface EventIndexQueryRow extends BirthGivingEvent {
     id: string;
     status: BirthGivingTeamStatus;
     members: { profile_id: string }[];
-    proposals: { candidate_profile_id: string; state: BirthGivingProposalState }[];
+    proposals: { candidate_profile_id: string; state: BirthGivingProposalWithProfiles["state"] }[];
   }[];
 }
 
-export function filterPendingBirthGivingProposals<
-  Proposal extends Pick<BirthGivingTeamProposal, "state">,
->(proposals: readonly Proposal[]): Proposal[] {
-  return proposals.filter(({ state }) => state === "pending");
+export interface BirthGivingEventIndexWindow {
+  nowIso: string;
+  historyStartIso: string;
+}
+
+export function buildBirthGivingEventIndexWindow(now: Date): BirthGivingEventIndexWindow {
+  return {
+    nowIso: now.toISOString(),
+    historyStartIso: new Date(
+      now.getTime() - EVENT_INDEX_HISTORY_WINDOW_DAYS * MILLISECONDS_PER_DAY,
+    ).toISOString(),
+  };
 }
 
 export function applyBirthGivingParticipationValidityFilters<
@@ -85,36 +98,79 @@ export function applyBirthGivingParticipationValidityFilters<
 export async function listBirthGivingEvents(
   supabase: SupabaseClient<Database>,
 ): Promise<BirthGivingEventIndexItem[]> {
-  const { data, error } = await supabase
+  const { nowIso, historyStartIso } = buildBirthGivingEventIndexWindow(new Date());
+
+  const historyQuery = supabase
     .from("birth_giving_events")
     .select(EVENT_INDEX_SELECT)
     .eq("status", "published")
     .is("removed_at", null)
-    .order("starts_at", { ascending: true });
+    .lt("starts_at", nowIso)
+    .gte("starts_at", historyStartIso)
+    .order("starts_at", { ascending: false })
+    .limit(EVENT_INDEX_HISTORY_LIMIT);
+
+  const upcomingQuery = supabase
+    .from("birth_giving_events")
+    .select(EVENT_INDEX_SELECT)
+    .eq("status", "published")
+    .is("removed_at", null)
+    .gte("starts_at", nowIso)
+    .order("starts_at", { ascending: true })
+    .limit(EVENT_INDEX_UPCOMING_LIMIT);
+
+  const [historyResult, upcomingResult] = await Promise.all([historyQuery, upcomingQuery]);
+  if (historyResult.error) throw historyResult.error;
+  if (upcomingResult.error) throw upcomingResult.error;
+
+  const rows = [
+    ...((historyResult.data ?? []) as unknown as EventIndexQueryRow[]),
+    ...((upcomingResult.data ?? []) as unknown as EventIndexQueryRow[]),
+  ];
+
+  return rows
+    .map(toBirthGivingEventIndexItem)
+    .sort((left, right) => Date.parse(left.starts_at) - Date.parse(right.starts_at));
+}
+
+function toBirthGivingEventIndexItem(event: EventIndexQueryRow): BirthGivingEventIndexItem {
+  const teams = event.teams.filter(({ status }) => status !== "cancelled");
+  const participantProfileIds = new Set(
+    teams.flatMap(({ members }) => members.map(({ profile_id }) => profile_id)),
+  );
+  const pendingProposalProfileIds = teams.flatMap(({ proposals }) =>
+    proposals
+      .filter(({ state }) => state === "pending")
+      .map(({ candidate_profile_id }) => candidate_profile_id),
+  );
+  const { organizers, teams: _teams, ...row } = event;
+
+  return {
+    ...row,
+    organizer_profile_ids: organizers.map(({ profile_id }) => profile_id),
+    participant_profile_ids: [...participantProfileIds],
+    pending_proposal_profile_ids: [...new Set(pendingProposalProfileIds)],
+    team_count: teams.length,
+    participant_count: participantProfileIds.size,
+  };
+}
+
+export async function listPendingBirthGivingEventProposals(
+  supabase: SupabaseClient<Database>,
+  eventId: string,
+): Promise<BirthGivingProposalWithProfiles[]> {
+  const { data, error } = await supabase
+    .from("birth_giving_team_proposals")
+    .select(`
+      ${EVENT_PENDING_PROPOSALS_SELECT},
+      team:birth_giving_teams!inner(event_id)
+    `)
+    .eq("state", "pending")
+    .eq("team.event_id", eventId)
+    .order("created_at", { ascending: true });
 
   if (error) throw error;
-
-  return ((data ?? []) as unknown as EventIndexQueryRow[]).map((event) => {
-    const teams = event.teams.filter(({ status }) => status !== "cancelled");
-    const participantProfileIds = new Set(
-      teams.flatMap(({ members }) => members.map(({ profile_id }) => profile_id)),
-    );
-    const pendingProposalProfileIds = teams.flatMap(({ proposals }) =>
-      proposals
-        .filter(({ state }) => state === "pending")
-        .map(({ candidate_profile_id }) => candidate_profile_id),
-    );
-    const { organizers, teams: _teams, ...row } = event;
-
-    return {
-      ...row,
-      organizer_profile_ids: organizers.map(({ profile_id }) => profile_id),
-      participant_profile_ids: [...participantProfileIds],
-      pending_proposal_profile_ids: [...new Set(pendingProposalProfileIds)],
-      team_count: teams.length,
-      participant_count: participantProfileIds.size,
-    };
-  });
+  return (data ?? []) as unknown as BirthGivingProposalWithProfiles[];
 }
 
 export async function getBirthGivingEvent(
@@ -132,11 +188,22 @@ export async function getBirthGivingEvent(
   const event = data as unknown as BirthGivingEventDetail | null;
   if (event === null) return null;
 
+  const proposals = await listPendingBirthGivingEventProposals(supabase, eventId);
+  const proposalsByTeamId = new Map<string, BirthGivingProposalWithProfiles[]>();
+  for (const proposal of proposals) {
+    const teamProposals = proposalsByTeamId.get(proposal.team_id);
+    if (teamProposals) {
+      teamProposals.push(proposal);
+    } else {
+      proposalsByTeamId.set(proposal.team_id, [proposal]);
+    }
+  }
+
   return {
     ...event,
     teams: event.teams.map((team) => ({
       ...team,
-      proposals: filterPendingBirthGivingProposals(team.proposals),
+      proposals: proposalsByTeamId.get(team.id) ?? [],
     })),
   };
 }

@@ -86,7 +86,7 @@ export function BirthGivingEventMetadata({
           </div>
           <p className="text-sm text-muted-foreground">{event.customer}</p>
           {isOrganizer && event.status === "draft" && (
-            <Badge variant="secondary">Draft</Badge>
+            <Badge variant="secondary">Koncept</Badge>
           )}
         </div>
         {canPublish && (

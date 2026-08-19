@@ -25,6 +25,7 @@ import {
 import { BirthGivingEventCard } from "./event-card";
 import { BirthGivingEventForm } from "./event-form";
 import { groupBirthGivingEvents } from "@/lib/birth-giving/grouping";
+import { normalizeBirthGivingSearchQuery } from "@/lib/birth-giving/search";
 import type {
   BirthGivingEventIndexItem,
   BirthGivingProfileSummary,
@@ -51,13 +52,6 @@ const EMPTY_TITLES: Record<BirthGivingIndexTab, string> = {
   history: "Žádné historické události",
 };
 
-function normalizeSearchQuery(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
 export function BirthGivingIndex({
   events,
   profileId,
@@ -75,10 +69,10 @@ export function BirthGivingIndex({
   );
 
   const filtered = useMemo(() => {
-    const needle = normalizeSearchQuery(query);
+    const needle = normalizeBirthGivingSearchQuery(query);
     if (!needle) return grouped;
     const matches = (event: BirthGivingEventIndexItem) => {
-      const haystack = normalizeSearchQuery(`${event.name} ${event.customer}`);
+      const haystack = normalizeBirthGivingSearchQuery(`${event.name} ${event.customer}`);
       return haystack.includes(needle);
     };
     return {

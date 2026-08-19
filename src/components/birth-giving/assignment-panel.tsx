@@ -17,12 +17,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/responsive-alert-dialog";
 import { BirthGivingFileUpload } from "./file-upload";
+import { formatFileSize } from "@/lib/birth-giving/format";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import {
   canManageBirthGivingAssignment,
   canMarkBirthGivingAssignmentMissing,
 } from "@/lib/birth-giving/permissions";
-import { formatBirthGivingCountdown } from "@/lib/birth-giving/time";
+import {
+  formatBirthGivingCountdown,
+  MINUTE_MILLISECONDS,
+} from "@/lib/birth-giving/time";
 import type { BirthGivingEventDetail } from "@/lib/birth-giving/types";
 
 interface BirthGivingAssignmentPanelProps {
@@ -30,14 +34,6 @@ interface BirthGivingAssignmentPanelProps {
   profileId: string;
   now: string;
   onEventChange: (event: BirthGivingEventDetail | null) => void;
-}
-
-const MINUTE_MILLISECONDS = 60 * 1000;
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1_000) return `${bytes} B`;
-  if (bytes < 1_000_000) return `${Math.round((bytes / 1_000) * 10) / 10} KB`;
-  return `${Math.round((bytes / 1_000_000) * 10) / 10} MB`;
 }
 
 export function BirthGivingAssignmentPanel({
@@ -51,8 +47,19 @@ export function BirthGivingAssignmentPanel({
   const [markingMissing, setMarkingMissing] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => setClientNow(new Date()), MINUTE_MILLISECONDS);
-    return () => clearInterval(timer);
+    setClientNow(new Date(now));
+  }, [now]);
+
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible") setClientNow(new Date());
+    };
+    const timer = setInterval(tick, MINUTE_MILLISECONDS);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, []);
 
   const assignment = event.assignment;

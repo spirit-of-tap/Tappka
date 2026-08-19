@@ -5,6 +5,7 @@ import {
   formatBirthGivingCountdown,
   getEventTimeState,
   isAssignmentReleased,
+  parseBirthGivingDateTimeInput,
 } from "./time";
 
 const STARTS_AT = new Date("2026-08-19T08:00:00.000Z");
@@ -81,5 +82,17 @@ describe("formatBirthGivingCountdown", () => {
 
   it("returns zero for a non-positive remaining time", () => {
     expect(formatBirthGivingCountdown(-1000)).toBe("0 min");
+  });
+});
+
+describe("parseBirthGivingDateTimeInput", () => {
+  it("parses a valid datetime-local value", () => {
+    expect(parseBirthGivingDateTimeInput("2026-08-19T08:00")).toEqual(
+      new Date("2026-08-19T08:00"),
+    );
+  });
+
+  it("returns null for an invalid datetime-local value", () => {
+    expect(parseBirthGivingDateTimeInput("2026-13-45T10:00")).toBeNull();
   });
 });

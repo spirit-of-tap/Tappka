@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/responsive-alert-dialog";
 import { BirthGivingFileUpload } from "./file-upload";
+import { formatFileSize } from "@/lib/birth-giving/format";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import {
   canManageBirthGivingResult,
@@ -44,12 +45,6 @@ interface BirthGivingResultFileListProps {
 
 interface PendingRemoval {
   file: BirthGivingTeamResultFile;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1_000) return `${bytes} B`;
-  if (bytes < 1_000_000) return `${Math.round((bytes / 1_000) * 10) / 10} KB`;
-  return `${Math.round((bytes / 1_000_000) * 10) / 10} MB`;
 }
 
 export function BirthGivingResultFileList({
@@ -137,7 +132,7 @@ export function BirthGivingResultFileList({
                   type="button"
                   size="xs"
                   variant="outline"
-                  aria-label="Smazat soubor"
+                  aria-label={`Smazat soubor ${file.original_file_name}`}
                   disabled={busy}
                   onClick={() => setPendingRemoval({ file })}
                 >

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { normalizeBirthGivingSearchQuery } from "@/lib/birth-giving/search";
 import type { BirthGivingProfileSummary } from "@/lib/birth-giving/types";
 
 interface BirthGivingProfilePickerProps {
@@ -37,6 +38,7 @@ export function BirthGivingProfilePicker({
   const visible = profiles.filter(
     (profile) => !excludeIds.includes(profile.id),
   );
+  const needle = normalizeBirthGivingSearchQuery(query);
 
   function toggle(id: string) {
     if (selected.includes(id)) {
@@ -51,9 +53,43 @@ export function BirthGivingProfilePicker({
     onChange(selected.filter((selectedId) => selectedId !== id));
   }
 
+  function commandFilter(value: string, search: string): number {
+    const normalizedSearch = normalizeBirthGivingSearchQuery(search);
+    if (!normalizedSearch) return 1;
+    const normalizedValue = normalizeBirthGivingSearchQuery(value);
+    if (normalizedValue.startsWith(normalizedSearch)) return 1;
+    if (normalizedValue.includes(normalizedSearch)) return 0.5;
+    return 0;
+  }
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
+      {selectedProfiles.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selectedProfiles.map((profile) => (
+            <span
+              key={profile.id}
+              className="flex items-center gap-1 rounded-full border bg-muted/60 py-0.5 pl-0.5 pr-0.5 text-xs"
+            >
+              <ProfileAvatar picture={profile.picture} name={profile.name} size={18} />
+              <span className="max-w-40 truncate">{profile.name}</span>
+              {!disabled && (
+                <Button
+                  type="button"
+                  size="icon-xs"
+                  variant="ghost"
+                  className="rounded-full text-muted-foreground hover:text-foreground"
+                  aria-label={`Odebrat ${profile.name}`}
+                  onClick={() => remove(profile.id)}
+                >
+                  <X className="size-3" />
+                </Button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
       <Popover open={open} onOpenChange={(next) => { setOpen(next); setQuery(""); }}>
         <PopoverTrigger asChild>
           <Button
@@ -61,44 +97,18 @@ export function BirthGivingProfilePicker({
             variant="outline"
             disabled={disabled}
             aria-label={label}
-            className="h-auto min-h-9 w-full flex-wrap justify-start gap-1.5 py-1.5"
+            className="h-auto min-h-9 w-full justify-start gap-1.5 py-1.5"
           >
             {selectedProfiles.length === 0 ? (
               <span className="text-muted-foreground">{placeholder}</span>
             ) : (
-              selectedProfiles.map((profile) => (
-                <span
-                  key={profile.id}
-                  className="flex items-center gap-1 rounded-full border bg-muted/60 py-0.5 pl-0.5 pr-1 text-xs"
-                >
-                  <ProfileAvatar picture={profile.picture} name={profile.name} size={18} />
-                  <span className="max-w-40 truncate">{profile.name}</span>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Odebrat ${profile.name}`}
-                    className="text-muted-foreground hover:text-foreground cursor-pointer"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      remove(profile.id);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter" && event.key !== " ") return;
-                      event.preventDefault();
-                      event.stopPropagation();
-                      remove(profile.id);
-                    }}
-                  >
-                    <X className="size-3" />
-                  </span>
-                </span>
-              ))
+              <span className="text-muted-foreground">Upravit výběr</span>
             )}
             <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-72 p-0">
-          <Command className="border-0 shadow-none">
+          <Command className="border-0 shadow-none" filter={commandFilter}>
             <CommandInput
               value={query}
               onValueChange={setQuery}
@@ -110,7 +120,7 @@ export function BirthGivingProfilePicker({
               <CommandGroup>
                 {visible
                 .filter((profile) =>
-                  (profile.name ?? "").toLowerCase().includes(query.toLowerCase()),
+                  normalizeBirthGivingSearchQuery(profile.name ?? "").includes(needle),
                 )
                 .map((profile) => {
                   const isSelected = selected.includes(profile.id);

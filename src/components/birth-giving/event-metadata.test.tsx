@@ -67,6 +67,8 @@ describe("BirthGivingEventMetadata", () => {
       />,
     );
 
+    expect(screen.getByText("Koncept")).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: "Zveřejnit" }));
 
     await waitFor(() =>

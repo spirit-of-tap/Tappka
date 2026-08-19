@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 
 import { birthGivingMutationRequest } from "./mutation";
+import type { BirthGivingDuplicateCandidateItem } from "./types";
 
 const fetchMock = vi.fn();
 
@@ -84,5 +85,32 @@ describe("birthGivingMutationRequest", () => {
 
     expect(result.ok).toBe(false);
     expect(result.body.error).toBeUndefined();
+  });
+
+  it("passes through a caller-typed duplicate-candidate payload", async () => {
+    const candidates: BirthGivingDuplicateCandidateItem[] = [
+      {
+        id: "existing-1",
+        status: "published",
+        name: "First BG",
+        customer: "Zákazník A",
+        starts_at: "2026-08-19T08:00:00.000Z",
+      },
+    ];
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: candidates }),
+    });
+
+    const result = await birthGivingMutationRequest<BirthGivingDuplicateCandidateItem[]>(
+      "/api/birth-giving/events/duplicate-candidates",
+      { body: { name: "First BG" } },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.body.data).toEqual(candidates);
+    expectTypeOf(result.body.data).toEqualTypeOf<
+      BirthGivingDuplicateCandidateItem[] | undefined
+    >();
   });
 });

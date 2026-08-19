@@ -17,11 +17,11 @@ describe("BirthGivingDuplicateCandidates", () => {
     expect(screen.getByText("Second BG")).toBeInTheDocument();
     expect(screen.getAllByText("Zákazník A").length).toBe(2);
     expect(screen.getByText("19. 8. 2026")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /First BG/ })).toHaveAttribute(
-      "href",
-      "/birth-giving/event-1",
-    );
-    expect(screen.getByText("Draft")).toBeInTheDocument();
+    const firstLink = screen.getByRole("link", { name: /First BG/ });
+    expect(firstLink).toHaveAttribute("href", "/birth-giving/event-1");
+    expect(firstLink).toHaveAttribute("target", "_blank");
+    expect(firstLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.getByText("Koncept")).toBeInTheDocument();
     expect(screen.getByText("Zveřejněná")).toBeInTheDocument();
   });
 

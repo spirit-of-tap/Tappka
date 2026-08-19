@@ -34,7 +34,13 @@ export function isAssignmentReleased(startsAt: Date, now: Date): boolean {
   return now.getTime() >= startsAt.getTime();
 }
 
-const MINUTE_MILLISECONDS = 60 * 1000;
+export function parseBirthGivingDateTimeInput(value: string): Date | null {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+export const MINUTE_MILLISECONDS = 60 * 1000;
 
 export function formatBirthGivingCountdown(remainingMilliseconds: number): string {
   if (remainingMilliseconds <= 0) return "0 min";

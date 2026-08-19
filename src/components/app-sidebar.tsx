@@ -69,7 +69,7 @@ type NavData = {
 }
 
 // Navigation data for Tappka
-const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCount: number): NavData => ({
+const getNavData = (isDevelopment: boolean): NavData => ({
   navMain: [
     {
       title: "Hlavní",
@@ -216,7 +216,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {getNavData(isDevelopment, isCoachOrAdmin, reviewCount).navMain.map((section) => (
+        {getNavData(isDevelopment).navMain.map((section) => (
           <SidebarGroup key={section.title}>
             <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
             <SidebarGroupContent>

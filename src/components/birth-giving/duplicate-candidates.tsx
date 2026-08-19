@@ -16,7 +16,7 @@ interface BirthGivingDuplicateCandidatesProps {
 }
 
 const STATUS_LABELS: Record<BirthGivingEventStatus, string> = {
-  draft: "Draft",
+  draft: "Koncept",
   published: "Zveřejněná",
 };
 
@@ -45,7 +45,12 @@ export function BirthGivingDuplicateCandidates({
         <ul className="mt-3 space-y-2">
           {candidates.map((candidate) => (
             <li key={candidate.id}>
-              <Link href={`/birth-giving/${candidate.id}`} className="block rounded-md focus-ring">
+              <Link
+                href={`/birth-giving/${candidate.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-md focus-ring"
+              >
                 <Card className="flex items-center justify-between gap-2 p-2 text-sm hover:bg-accent/50">
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{candidate.name}</span>

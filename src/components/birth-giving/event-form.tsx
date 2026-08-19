@@ -13,6 +13,7 @@ import { BirthGivingProfilePicker } from "./profile-picker";
 import { BirthGivingDuplicateCandidates, type BirthGivingDuplicateCandidateItem } from "./duplicate-candidates";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import { BIRTH_GIVING_DURATION_LABELS } from "@/lib/birth-giving/constants";
+import { parseBirthGivingDateTimeInput } from "@/lib/birth-giving/time";
 import type {
   BirthGivingDuration,
   BirthGivingEventDetail,
@@ -81,6 +82,11 @@ export function BirthGivingEventForm({
     if (!trimmedName) { setError("Název události je povinný"); return; }
     if (!trimmedCustomer) { setError("Zákazník je povinný"); return; }
     if (!startsAt) { setError("Začátek je povinný"); return; }
+    const startsAtDate = parseBirthGivingDateTimeInput(startsAt);
+    if (startsAtDate === null) {
+      toast.error("Zadejte platné datum začátku");
+      return;
+    }
     if (!Number.isInteger(min) || min < 1) { setError("Min. velikost týmu je neplatná"); return; }
     if (!Number.isInteger(max) || max < min) { setError("Max. velikost týmu musí být aspoň minimální"); return; }
     if (selectedOrganizers.length === 0) { setError("Vyberte alespoň jednoho organizátor:ku"); return; }
@@ -88,7 +94,7 @@ export function BirthGivingEventForm({
     const payload: BirthGivingDraftPayload = {
       name: trimmedName,
       customer: trimmedCustomer,
-      startsAt: new Date(startsAt).toISOString(),
+      startsAt: startsAtDate.toISOString(),
       duration,
       minimumTeamSize: min,
       maximumTeamSize: max,
@@ -100,7 +106,7 @@ export function BirthGivingEventForm({
     setLoading(true);
     try {
       if (!isEdit && !duplicateConfirmed) {
-        const check = await birthGivingMutationRequest(
+        const check = await birthGivingMutationRequest<BirthGivingDuplicateCandidateItem[]>(
           "/api/birth-giving/events/duplicate-candidates",
           { body: payload },
         );
@@ -108,7 +114,7 @@ export function BirthGivingEventForm({
           toast.error(check.body.error ?? "Kontrolu podobných událostí se nepodařilo dokončit");
           return;
         }
-        const candidates = toDuplicateCandidates(check.body.data);
+        const candidates = check.body.data ?? [];
         if (candidates.length > 0) {
           setDuplicates(candidates);
           return;
@@ -282,13 +288,6 @@ export function BirthGivingEventForm({
       </div>
     </form>
   );
-}
-
-function toDuplicateCandidates(data: unknown): BirthGivingDuplicateCandidateItem[] {
-  if (!Array.isArray(data)) return [];
-  return data
-    .map((candidate) => toDuplicateCandidate(candidate))
-    .filter((candidate): candidate is BirthGivingDuplicateCandidateItem => candidate !== null);
 }
 
 function toDuplicateCandidate(

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BirthGivingAssignmentPanel } from "@/components/birth-giving/assignment-panel";
@@ -103,5 +103,57 @@ describe("BirthGivingAssignmentPanel", () => {
     );
 
     expect(screen.getByText("Zadání nedohledáno")).toBeInTheDocument();
+  });
+
+  it("resyncs the countdown when the now prop changes", () => {
+    const event = makeEvent({ starts_at: FUTURE_START }, { assignment: makeAssignment() });
+    const { rerender } = render(
+      <BirthGivingAssignmentPanel event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
+    );
+
+    expect(screen.getByText("Zadání bude zveřejněno za 3 h")).toBeInTheDocument();
+
+    rerender(
+      <BirthGivingAssignmentPanel
+        event={event}
+        profileId="member-1"
+        now="2026-08-19T14:00:00.000Z"
+        onEventChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Zadání bude zveřejněno za 1 h")).toBeInTheDocument();
+  });
+
+  it("pauses the countdown while the document is hidden", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(NOW));
+    try {
+      const event = makeEvent({ starts_at: FUTURE_START }, { assignment: makeAssignment() });
+      render(
+        <BirthGivingAssignmentPanel event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
+      );
+
+      expect(screen.getByText("Zadání bude zveřejněno za 3 h")).toBeInTheDocument();
+
+      act(() => {
+        Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+        document.dispatchEvent(new Event("visibilitychange"));
+        vi.advanceTimersByTime(2 * 60 * 1000);
+      });
+
+      expect(screen.getByText("Zadání bude zveřejněno za 3 h")).toBeInTheDocument();
+
+      act(() => {
+        Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+        vi.setSystemTime(new Date("2026-08-19T12:02:00.000Z"));
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+
+      expect(screen.getByText("Zadání bude zveřejněno za 2 h 58 min")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+      Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+    }
   });
 });
