@@ -143,6 +143,7 @@ describe("mapBirthGivingPostgresError", () => {
     ["23505", "duplicate key value violates unique constraint birth_giving_team_members_event_profile_key", "ALREADY_JOINED", 409],
     ["55000", "Assignment is not released yet", "ASSIGNMENT_NOT_RELEASED", 409],
     ["55000", "Assignment is locked after event end", "ASSIGNMENT_LOCKED", 409],
+    ["55000", "Assignment can only be marked missing for a historical event", "ASSIGNMENT_LOCKED", 409],
     ["55000", "Only an active event can be updated before it has ended", "EVENT_LOCKED", 409],
     ["55000", "Started event lifecycle fields are immutable and joining must remain closed", "EVENT_LOCKED", 409],
     ["23505", "duplicate key value violates unique constraint birth_giving_events_identity_key", "DUPLICATE_EVENT", 409],
@@ -151,6 +152,8 @@ describe("mapBirthGivingPostgresError", () => {
     ["23514", "Every retrospective team requires a result state and valid team size", "PUBLICATION_INVALID", 422],
     ["55000", "Only an active draft can be published", "PUBLICATION_INVALID", 422],
     ["23514", "Historical team size is outside event capacity", "PUBLICATION_INVALID", 422],
+    ["55000", "Team result storage limit is 100 MiB", "RESULT_STORAGE_LIMIT", 409],
+    ["55000", "Result can only be marked missing for a historical event", "RESULT_LOCKED", 409],
     ["22023", "Internal organizer validation details", "VALIDATION_ERROR", 422],
   ] as const)("maps %s %s to %s", (code, message, expectedCode, expectedStatus) => {
     expect(mapBirthGivingPostgresError({ code, message })).toMatchObject({

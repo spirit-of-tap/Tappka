@@ -2810,6 +2810,35 @@ export type Database = {
     Functions: {
       before_user_created_hook: { Args: { event: Json }; Returns: Json }
       birth_giving_active_profile_id: { Args: never; Returns: string }
+      birth_giving_can_manage_assignment: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
+      birth_giving_can_manage_result: {
+        Args: { p_event_id: string; p_team_id: string }
+        Returns: boolean
+      }
+      birth_giving_confirm_assignment: {
+        Args: {
+          p_event_id: string
+          p_file_size: number
+          p_mime_type: string
+          p_original_file_name: string
+          p_storage_path: string
+        }
+        Returns: string
+      }
+      birth_giving_confirm_result_file: {
+        Args: {
+          p_event_id: string
+          p_file_size: number
+          p_mime_type: string
+          p_original_file_name: string
+          p_storage_path: string
+          p_team_id: string
+        }
+        Returns: string
+      }
       birth_giving_correct_team: {
         Args: {
           p_event_id: string
@@ -2867,6 +2896,14 @@ export type Database = {
           status: Database["public"]["Enums"]["birth_giving_event_status"]
         }[]
       }
+      birth_giving_mark_assignment_missing: {
+        Args: { p_event_id: string }
+        Returns: string
+      }
+      birth_giving_mark_result_missing: {
+        Args: { p_event_id: string; p_team_id: string }
+        Returns: string[]
+      }
       birth_giving_process_due_starts: {
         Args: { p_limit?: number }
         Returns: number
@@ -2874,6 +2911,10 @@ export type Database = {
       birth_giving_publish_event: {
         Args: { p_event_id: string }
         Returns: undefined
+      }
+      birth_giving_remove_result_file: {
+        Args: { p_result_file_id: string }
+        Returns: string
       }
       birth_giving_resolve_proposal: {
         Args: { p_action: string; p_proposal_id: string }

@@ -103,6 +103,8 @@ export const BIRTH_GIVING_ERROR_CODES = {
   moveRequiresAcknowledgement: "MOVE_REQUIRES_ACKNOWLEDGEMENT",
   invalidRelation: "INVALID_RELATION",
   validationError: "VALIDATION_ERROR",
+  resultStorageLimit: "RESULT_STORAGE_LIMIT",
+  resultLocked: "RESULT_LOCKED",
 } as const;
 
 export interface BirthGivingApiError {
@@ -115,6 +117,22 @@ const ERROR_RULES: ReadonlyArray<{
   patterns: readonly string[];
   error: BirthGivingApiError;
 }> = [
+  {
+    patterns: ["team result storage limit"],
+    error: {
+      code: BIRTH_GIVING_ERROR_CODES.resultStorageLimit,
+      message: "Soubory s výsledky už dosáhly limitu 100 MiB.",
+      status: 409,
+    },
+  },
+  {
+    patterns: ["result can only be marked missing for a historical event"],
+    error: {
+      code: BIRTH_GIVING_ERROR_CODES.resultLocked,
+      message: "Výsledek lze označit jako nedohledaný až po skončení události.",
+      status: 409,
+    },
+  },
   {
     patterns: ["move_requires_acknowledgement"],
     error: {
@@ -183,7 +201,11 @@ const ERROR_RULES: ReadonlyArray<{
     },
   },
   {
-    patterns: ["assignment is locked", "assignment replacement is locked"],
+    patterns: [
+      "assignment is locked",
+      "assignment replacement is locked",
+      "assignment can only be marked missing for a historical event",
+    ],
     error: {
       code: BIRTH_GIVING_ERROR_CODES.assignmentLocked,
       message: "Zadání už nelze změnit.",
