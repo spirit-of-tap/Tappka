@@ -35,8 +35,8 @@ const EVENT_INDEX_SELECT = `
   teams:birth_giving_teams(
     id,
     status,
-    members:birth_giving_team_members(profile_id, limit=${EVENT_INDEX_NESTED_ROWS_LIMIT}),
-    proposals:birth_giving_team_proposals(candidate_profile_id, state, limit=${EVENT_INDEX_NESTED_ROWS_LIMIT})
+    members:birth_giving_team_members(profile_id),
+    proposals:birth_giving_team_proposals(candidate_profile_id, state)
   )
 `;
 
@@ -109,6 +109,8 @@ export async function listBirthGivingEvents(
     .lt("starts_at", nowIso)
     .gte("starts_at", historyStartIso)
     .order("starts_at", { ascending: false })
+    .limit(EVENT_INDEX_NESTED_ROWS_LIMIT, { referencedTable: "teams.members" })
+    .limit(EVENT_INDEX_NESTED_ROWS_LIMIT, { referencedTable: "teams.proposals" })
     .limit(EVENT_INDEX_HISTORY_LIMIT);
 
   const upcomingQuery = supabase
@@ -118,6 +120,8 @@ export async function listBirthGivingEvents(
     .is("removed_at", null)
     .gte("starts_at", nowIso)
     .order("starts_at", { ascending: true })
+    .limit(EVENT_INDEX_NESTED_ROWS_LIMIT, { referencedTable: "teams.members" })
+    .limit(EVENT_INDEX_NESTED_ROWS_LIMIT, { referencedTable: "teams.proposals" })
     .limit(EVENT_INDEX_UPCOMING_LIMIT);
 
   const [historyResult, upcomingResult] = await Promise.all([historyQuery, upcomingQuery]);

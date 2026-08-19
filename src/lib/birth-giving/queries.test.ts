@@ -65,8 +65,8 @@ class FakeChain {
     return this;
   }
 
-  limit(count: number): this {
-    this.calls.push({ method: "limit", args: [count] });
+  limit(count: number, options?: { referencedTable?: string }): this {
+    this.calls.push({ method: "limit", args: options ? [count, options] : [count] });
     return this;
   }
 
@@ -303,14 +303,17 @@ describe("listBirthGivingEvents", () => {
     for (const { chain } of [history, upcoming]) {
       expect(callsOf(chain, "eq")).toEqual([["status", "published"]]);
       expect(callsOf(chain, "is")).toEqual([["removed_at", null]]);
+      expect(selectOf(chain)).not.toContain("limit=");
+      expect(selectOf(chain)).toContain("members:birth_giving_team_members(profile_id)");
       expect(selectOf(chain)).toContain(
-        "members:birth_giving_team_members(profile_id, limit=50)",
-      );
-      expect(selectOf(chain)).toContain(
-        "proposals:birth_giving_team_proposals(candidate_profile_id, state, limit=50)",
+        "proposals:birth_giving_team_proposals(candidate_profile_id, state)",
       );
     }
 
+    const scopedLimits = [
+      [50, { referencedTable: "teams.members" }],
+      [50, { referencedTable: "teams.proposals" }],
+    ];
     expect(callsOf(history.chain, "lt")).toEqual([["starts_at", NOW_ISO]]);
     expect(callsOf(history.chain, "gte")).toEqual([
       ["starts_at", "2026-05-21T12:00:00.000Z"],
@@ -318,14 +321,14 @@ describe("listBirthGivingEvents", () => {
     expect(callsOf(history.chain, "order")).toEqual([
       ["starts_at", { ascending: false }],
     ]);
-    expect(callsOf(history.chain, "limit")).toEqual([[20]]);
+    expect(callsOf(history.chain, "limit")).toEqual([...scopedLimits, [20]]);
 
     expect(callsOf(upcoming.chain, "lt")).toEqual([]);
     expect(callsOf(upcoming.chain, "gte")).toEqual([["starts_at", NOW_ISO]]);
     expect(callsOf(upcoming.chain, "order")).toEqual([
       ["starts_at", { ascending: true }],
     ]);
-    expect(callsOf(upcoming.chain, "limit")).toEqual([[50]]);
+    expect(callsOf(upcoming.chain, "limit")).toEqual([...scopedLimits, [50]]);
   });
 
   it("derives team and participant counts from bounded rows and sorts the merge", async () => {
