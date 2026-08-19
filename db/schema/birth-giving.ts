@@ -30,7 +30,7 @@ export const birthGivingTeamResultState = pgEnum("birth_giving_team_result_state
 export const birthGivingProposalDirection = pgEnum("birth_giving_proposal_direction", ["join_request", "invitation"])
 export const birthGivingProposalState = pgEnum("birth_giving_proposal_state", ["pending", "accepted", "rejected", "cancelled", "expired"])
 export const birthGivingEmailMessageType = pgEnum("birth_giving_email_message_type", ["assignment_release", "assignment_replacement"])
-export const birthGivingDeliveryStatus = pgEnum("birth_giving_delivery_status", ["pending", "processing", "sent", "failed"])
+export const birthGivingDeliveryStatus = pgEnum("birth_giving_delivery_status", ["pending", "processing", "sent", "failed", "manual_review"])
 
 const verifiedCommunity = sql`EXISTS (
   SELECT 1
@@ -309,6 +309,7 @@ export const birthGivingEmailDeliveries = pgTable("birth_giving_email_deliveries
   status: birthGivingDeliveryStatus().default("pending").notNull(),
   attemptCount: integer("attempt_count").default(0).notNull(),
   nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),
+  firstAttemptAt: timestamp("first_attempt_at", { withTimezone: true, mode: "string" }),
   processingStartedAt: timestamp("processing_started_at", { withTimezone: true, mode: "string" }),
   processingToken: uuid("processing_token"),
   sentAt: timestamp("sent_at", { withTimezone: true, mode: "string" }),

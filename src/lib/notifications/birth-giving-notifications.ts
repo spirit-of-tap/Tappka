@@ -1,4 +1,3 @@
-import { cleanupBirthGivingStorage } from "@/lib/birth-giving/storage-cleanup";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { sendEmail } from "./send-email";
@@ -102,6 +101,7 @@ export async function processBirthGivingNotifications(): Promise<BirthGivingNoti
   let failed = 0;
 
   for (const claim of claims) {
+    let providerMessageId: string;
     try {
       const context = {
         eventName: claim.event_name,
@@ -115,15 +115,7 @@ export async function processBirthGivingNotifications(): Promise<BirthGivingNoti
         { to: claim.recipient_email, ...content },
         { idempotencyKey: birthGivingDeliveryIdempotencyKey(claim.delivery_id) },
       );
-      const completion = await admin.rpc("birth_giving_complete_email_delivery", {
-        p_delivery_id: claim.delivery_id,
-        p_processing_token: claim.processing_token,
-        p_provider_message_id: provider.id,
-      });
-      if (completion.error || !completion.data) {
-        throw new Error(completion.error?.message ?? "Delivery processing lease is no longer current");
-      }
-      sent += 1;
+      providerMessageId = provider.id;
     } catch (error) {
       const failure = await admin.rpc("birth_giving_fail_email_delivery", {
         p_delivery_id: claim.delivery_id,
@@ -132,7 +124,18 @@ export async function processBirthGivingNotifications(): Promise<BirthGivingNoti
       });
       if (failure.error) throw new Error(`Failed to persist Birth Giving delivery failure: ${failure.error.message}`);
       failed += 1;
+      continue;
     }
+
+    const completion = await admin.rpc("birth_giving_complete_email_delivery", {
+      p_delivery_id: claim.delivery_id,
+      p_processing_token: claim.processing_token,
+      p_provider_message_id: providerMessageId,
+    });
+    if (completion.error || !completion.data) {
+      throw new Error(completion.error?.message ?? "Delivery processing lease is no longer current");
+    }
+    sent += 1;
   }
 
   return {
@@ -144,7 +147,5 @@ export async function processBirthGivingNotifications(): Promise<BirthGivingNoti
 }
 
 export async function processBirthGiving() {
-  const notifications = await processBirthGivingNotifications();
-  const storageCleanup = await cleanupBirthGivingStorage();
-  return { notifications, storageCleanup };
+  return processBirthGivingNotifications();
 }

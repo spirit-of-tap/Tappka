@@ -143,7 +143,7 @@ async function seedEvent(
 }
 
 describe("Birth Giving storage RPCs", () => {
-  it("switches assignment metadata before returning the old path and queues active replacement mail", async () => {
+  it("queues release mail for the first active assignment and replacement mail for later versions", async () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
       const member = await insertVerifiedProfile(client, { name: "Member" });
@@ -165,13 +165,24 @@ describe("Birth Giving storage RPCs", () => {
       });
       await client.query("reset role");
       const outbox = await client.query(
-        "select profile_id, message_type, replacement_id from public.birth_giving_email_deliveries where event_id = $1",
+        `select profile_id, message_type, replacement_id
+           from public.birth_giving_email_deliveries
+          where event_id = $1
+          order by message_type`,
         [eventId],
       );
       expect(outbox.rows).toEqual([
-        expect.objectContaining({ profile_id: member.profileId, message_type: "assignment_replacement" }),
+        expect.objectContaining({
+          profile_id: member.profileId,
+          message_type: "assignment_release",
+          replacement_id: null,
+        }),
+        expect.objectContaining({
+          profile_id: member.profileId,
+          message_type: "assignment_replacement",
+          replacement_id: assignment.rows[0].replacement_id,
+        }),
       ]);
-      expect(outbox.rows[0].replacement_id).toBe(assignment.rows[0].replacement_id);
     });
   });
 

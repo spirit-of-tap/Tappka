@@ -16,7 +16,7 @@ describe("Birth Giving combined process route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.CRON_SECRET = "configured-secret";
-    mocks.processBirthGiving.mockResolvedValue({ notifications: {}, storageCleanup: {} });
+    mocks.processBirthGiving.mockResolvedValue({ startsProcessed: 0, claimed: 0, sent: 0, failed: 0 });
   });
 
   it("exports only an authenticated GET handler", async () => {

@@ -92,6 +92,7 @@ export type Database = {
           created_at: string
           created_by_profile_id: string
           event_id: string
+          first_attempt_at: string | null
           id: string
           last_error: string | null
           message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
@@ -112,6 +113,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id: string
           event_id: string
+          first_attempt_at?: string | null
           id?: string
           last_error?: string | null
           message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
@@ -132,6 +134,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id?: string
           event_id?: string
+          first_attempt_at?: string | null
           id?: string
           last_error?: string | null
           message_type?: Database["public"]["Enums"]["birth_giving_email_message_type"]
@@ -3090,7 +3093,12 @@ export type Database = {
     }
     Enums: {
       birth_giving_assignment_state: "present" | "missing"
-      birth_giving_delivery_status: "pending" | "processing" | "sent" | "failed"
+      birth_giving_delivery_status:
+        | "pending"
+        | "processing"
+        | "sent"
+        | "failed"
+        | "manual_review"
       birth_giving_duration: "8h" | "24h"
       birth_giving_email_message_type:
         | "assignment_release"
@@ -3259,7 +3267,13 @@ export const Constants = {
   public: {
     Enums: {
       birth_giving_assignment_state: ["present", "missing"],
-      birth_giving_delivery_status: ["pending", "processing", "sent", "failed"],
+      birth_giving_delivery_status: [
+        "pending",
+        "processing",
+        "sent",
+        "failed",
+        "manual_review",
+      ],
       birth_giving_duration: ["8h", "24h"],
       birth_giving_email_message_type: [
         "assignment_release",

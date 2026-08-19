@@ -50,6 +50,7 @@ describe("Birth Giving email templates", () => {
     expect(content.html).toContain("Klient &amp; partner");
     expect(content.html).toContain('href="https://canonical.example/birth-giving/event-id"');
     expect(content.html).not.toContain("<script>");
+    expect(content.html).not.toMatch(/není dostupné|chybí/i);
   });
 
   it("describes a replacement without assuming recipient identity", () => {
@@ -128,15 +129,29 @@ describe("Birth Giving notification processing", () => {
     }));
   });
 
-  it("composes notification delivery with storage cleanup", async () => {
+  it("leaves an uncertain provider acceptance under its processing lease", async () => {
+    rpc
+      .mockResolvedValueOnce({ data: 0, error: null })
+      .mockResolvedValueOnce({ data: [claim], error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "database unavailable" } })
+      .mockResolvedValueOnce({ data: true, error: null });
+    mocks.sendEmail.mockResolvedValue({ id: "possibly-accepted" });
+
+    await expect(processBirthGivingNotifications()).rejects.toThrow("database unavailable");
+    expect(rpc).not.toHaveBeenCalledWith("birth_giving_fail_email_delivery", expect.anything());
+  });
+
+  it("processes notifications without scanning storage cleanup", async () => {
     rpc
       .mockResolvedValueOnce({ data: 0, error: null })
       .mockResolvedValueOnce({ data: [], error: null });
 
     await expect(processBirthGiving()).resolves.toEqual({
-      notifications: { startsProcessed: 0, claimed: 0, sent: 0, failed: 0 },
-      storageCleanup: { claimed: 0, deleted: 0, failed: 0 },
+      startsProcessed: 0,
+      claimed: 0,
+      sent: 0,
+      failed: 0,
     });
-    expect(mocks.cleanupBirthGivingStorage).toHaveBeenCalledOnce();
+    expect(mocks.cleanupBirthGivingStorage).not.toHaveBeenCalled();
   });
 });
