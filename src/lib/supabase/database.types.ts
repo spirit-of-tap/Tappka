@@ -2697,6 +2697,10 @@ export type Database = {
     }
     Functions: {
       before_user_created_hook: { Args: { event: Json }; Returns: Json }
+      can_view_birth_giving_event_organizers: {
+        Args: { target_event_id: string }
+        Returns: boolean
+      }
       coach_can_review_essay: { Args: { p_essay_id: string }; Returns: boolean }
       current_profile_id: { Args: never; Returns: string }
       get_best_books_per_category: {
@@ -2966,4 +2970,3 @@ export const Constants = {
     },
   },
 } as const
-

@@ -356,6 +356,130 @@ describe("Birth Giving RLS", () => {
     });
   });
 
+  it("denies all direct team mutations", async () => {
+    await withRollback(async (client) => {
+      const { organizer } = await seedActors(client);
+      const eventId = await insertEvent(client, organizer);
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `insert into public.birth_giving_teams
+             (event_id, name, status, result_state, created_by_profile_id, updated_by_profile_id)
+           values ($1, 'Direct', 'forming', 'pending', $2, $2)`,
+          [eventId, organizer.profileId],
+        ),
+        /row-level security/i,
+      );
+
+      await client.query("reset role");
+      const teamId = await insertTeam(client, eventId, organizer.profileId);
+      await asClaims(client, { sub: organizer.authUserId });
+      const update = await client.query(
+        "update public.birth_giving_teams set name = 'Changed', updated_by_profile_id = $2 where id = $1",
+        [teamId, organizer.profileId],
+      );
+      expect(update.rowCount).toBe(0);
+    });
+  });
+
+  it("allows active non-members to maintain only their own open-event team search", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member } = await seedActors(client);
+      const eventId = await insertEvent(client, organizer);
+
+      await asClaims(client, { sub: member.authUserId });
+      await client.query(
+        `insert into public.birth_giving_looking_for_team
+           (event_id, profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, $2, $2)`,
+        [eventId, member.profileId],
+      );
+      const update = await client.query(
+        `update public.birth_giving_looking_for_team
+            set updated_at = now(), updated_by_profile_id = $2
+          where event_id = $1 and profile_id = $2`,
+        [eventId, member.profileId],
+      );
+      expect(update.rowCount).toBe(1);
+
+      const deletion = await client.query(
+        "delete from public.birth_giving_looking_for_team where event_id = $1 and profile_id = $2",
+        [eventId, member.profileId],
+      );
+      expect(deletion.rowCount).toBe(1);
+    });
+  });
+
+  it("denies team-search inserts and updates after confirmed event membership", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member } = await seedActors(client);
+      const eventId = await insertEvent(client, organizer);
+      const teamId = await insertTeam(client, eventId, organizer.profileId);
+
+      await asClaims(client, { sub: member.authUserId });
+      await client.query(
+        `insert into public.birth_giving_looking_for_team
+           (event_id, profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, $2, $2)`,
+        [eventId, member.profileId],
+      );
+      await client.query("reset role");
+      await insertMembership(client, eventId, teamId, member.profileId, organizer.profileId);
+      await asClaims(client, { sub: member.authUserId });
+      const update = await client.query(
+        `update public.birth_giving_looking_for_team
+            set updated_at = now(), updated_by_profile_id = $2
+          where event_id = $1 and profile_id = $2`,
+        [eventId, member.profileId],
+      );
+      expect(update.rowCount).toBe(0);
+
+      await client.query("reset role");
+      await client.query(
+        "delete from public.birth_giving_looking_for_team where event_id = $1 and profile_id = $2",
+        [eventId, member.profileId],
+      );
+      await asClaims(client, { sub: member.authUserId });
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `insert into public.birth_giving_looking_for_team
+             (event_id, profile_id, created_by_profile_id, updated_by_profile_id)
+           values ($1, $2, $2, $2)`,
+          [eventId, member.profileId],
+        ),
+        /row-level security/i,
+      );
+    });
+  });
+
+  it("denies team-search inserts for callers whose profile access was revoked", async () => {
+    await withRollback(async (client) => {
+      const { organizer, member } = await seedActors(client);
+      const eventId = await insertEvent(client, organizer);
+      await client.query("alter table public.profiles disable trigger enforce_picture_only_update");
+      await client.query(
+        "update public.profiles set access_removed_at = now(), access_removed_by_profile_id = $2 where id = $1",
+        [member.profileId, organizer.profileId],
+      );
+      await client.query("alter table public.profiles enable trigger enforce_picture_only_update");
+
+      await asClaims(client, { sub: member.authUserId });
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `insert into public.birth_giving_looking_for_team
+             (event_id, profile_id, created_by_profile_id, updated_by_profile_id)
+           values ($1, $2, $2, $2)`,
+          [eventId, member.profileId],
+        ),
+        /row-level security/i,
+      );
+    });
+  });
+
   it("denies published event reads after the caller profile is revoked", async () => {
     await withRollback(async (client) => {
       const { organizer, other } = await seedActors(client);
