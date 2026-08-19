@@ -37,6 +37,14 @@ export interface BirthGivingProfileSummary {
   picture: Profile["picture"];
 }
 
+export interface BirthGivingDuplicateCandidateItem {
+  id: BirthGivingEvent["id"];
+  status: BirthGivingEventStatus;
+  name: BirthGivingEvent["name"];
+  customer: BirthGivingEvent["customer"];
+  starts_at: BirthGivingEvent["starts_at"];
+}
+
 export interface BirthGivingOrganizerWithProfile extends BirthGivingEventOrganizer {
   profile: BirthGivingProfileSummary;
 }

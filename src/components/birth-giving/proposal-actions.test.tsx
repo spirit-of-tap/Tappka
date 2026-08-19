@@ -223,13 +223,36 @@ describe("BirthGivingProposalActions", () => {
         ok: true,
         json: async () => ({ data: { id: "event-1" } }),
       } as Response);
-    const { onEventChange } = renderActions({ overrides: { proposals: [] } });
+    const onEventChange = vi.fn();
+    const myTeam = makeTeam({ id: "team-1", name: "Můj tým", members: [makeMemberWithProfile()] });
+    const target = makeTeam({ id: "team-2", name: "Tým Beta" });
+    const event = makeEvent({
+      starts_at: "2026-08-20T08:00:00.000Z",
+      teams: [myTeam, target],
+    });
+
+    render(
+      <BirthGivingProposalActions
+        event={event}
+        team={target}
+        profileId="member-1"
+        profiles={makeAllProfiles()}
+        now={NOW}
+        onEventChange={onEventChange}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "Požádat o vstup" }));
 
     expect(
-      await screen.findByText("Přesun z existujícího týmu vyžaduje výslovné potvrzení."),
+      await screen.findByText("Přesun z existujícího týmu vyžaduje výslovné potvrzení"),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("Zruší se tvé členství v aktuálním týmu a připojíš se do týmu Tým Beta."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Přesun z existujícího týmu vyžaduje výslovné potvrzení."),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Pokračovat" }));
 
@@ -238,7 +261,7 @@ describe("BirthGivingProposalActions", () => {
         "/api/birth-giving/events/event-1/proposals",
         expect.objectContaining({
           body: JSON.stringify({
-            teamId: "team-1",
+            teamId: "team-2",
             candidateProfileId: "member-1",
             direction: "join_request",
             acknowledgeMove: true,

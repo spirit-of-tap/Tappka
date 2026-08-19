@@ -147,9 +147,9 @@ export function BirthGivingIndex({
             <BirthGivingEventForm
               profileId={profileId}
               organizerProfiles={organizerProfiles}
-              onSuccess={() => {
+              onSuccess={(created) => {
                 setCreateOpen(false);
-                router.refresh();
+                router.push(`/birth-giving/${created.id}`);
               }}
               onCancel={() => setCreateOpen(false)}
             />

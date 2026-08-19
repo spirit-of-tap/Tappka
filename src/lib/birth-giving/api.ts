@@ -37,6 +37,14 @@ export const birthGivingDraftSchema = birthGivingEventFieldsSchema
     path: ["maximumTeamSize"],
   });
 
+export const birthGivingDuplicateCheckSchema = z
+  .object({
+    name: trimmedText(MAX_EVENT_NAME_LENGTH),
+    customer: trimmedText(MAX_CUSTOMER_LENGTH),
+    startsAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
+
 export const birthGivingEventPatchSchema = birthGivingEventFieldsSchema
   .partial()
   .refine((payload) => Object.keys(payload).length > 0, {

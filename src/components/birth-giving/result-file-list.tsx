@@ -7,6 +7,12 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyMedia,
+} from "@/components/ui/empty";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -144,7 +150,14 @@ export function BirthGivingResultFileList({
       )}
 
       {team.result_files.length === 0 && team.result_state !== "missing" && (
-        <p className="text-xs text-muted-foreground">Zatím žádné soubory s výsledky.</p>
+        <Empty className="gap-3 border-dashed p-4">
+          <EmptyMedia variant="icon">
+            <FileText className="size-5" />
+          </EmptyMedia>
+          <EmptyHeader>
+            <EmptyTitle className="text-sm">Zatím žádné soubory s výsledky.</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       )}
 
       {canManage && (

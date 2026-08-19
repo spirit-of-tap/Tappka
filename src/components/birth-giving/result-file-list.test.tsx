@@ -39,6 +39,18 @@ describe("BirthGivingResultFileList", () => {
     );
   });
 
+  it("renders the no-files state with the shared Empty primitive", () => {
+    const team = makeTeam({ result_files: [] });
+    const event = makeEvent({ teams: [team] });
+    render(
+      <BirthGivingResultFileList event={event} team={team} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
+    );
+
+    const empty = screen.getByText("Zatím žádné soubory s výsledky.");
+    expect(empty.closest('[data-slot="empty"]')).not.toBeNull();
+    expect(empty.tagName.toLowerCase()).not.toBe("p");
+  });
+
   it("does not offer upload or delete controls to a member before the start", () => {
     const team = makeTeam({
       members: [makeMemberWithProfile()],

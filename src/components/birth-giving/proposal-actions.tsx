@@ -311,11 +311,11 @@ export function BirthGivingProposalActions({
       <AlertDialog open={pendingMove !== null} onOpenChange={(open) => { if (!open) setPendingMove(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Přesun z existujícího týmu vyžaduje výslovné potvrzení.</AlertDialogTitle>
+            <AlertDialogTitle>Přesun z existujícího týmu vyžaduje výslovné potvrzení</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingMove?.direction === "invitation"
                 ? "Pozvaná osoba už je v jiném týmu. Přijetím pozvánky se přesune do tohoto týmu."
-                : `${myTeamId ? "Zruší se tvé členství v aktuálním týmu" : "Připojíš se"} do týmu ${team.name}.`}
+                : `${myTeamId ? "Zruší se tvé členství v aktuálním týmu a připojíš se" : "Připojíš se"} do týmu ${team.name}.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

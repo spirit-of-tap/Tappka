@@ -28,6 +28,17 @@ interface BirthGivingEventFormProps {
   onCancel: () => void;
 }
 
+interface BirthGivingDraftPayload {
+  name: string;
+  customer: string;
+  startsAt: string;
+  duration: BirthGivingDuration;
+  minimumTeamSize: number;
+  maximumTeamSize: number;
+  joiningOpen: boolean;
+  organizerProfileIds: string[];
+}
+
 export function BirthGivingEventForm({
   event,
   profileId,
@@ -56,11 +67,12 @@ export function BirthGivingEventForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [duplicates, setDuplicates] = useState<BirthGivingDuplicateCandidateItem[]>([]);
+  const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<BirthGivingDraftPayload | null>(null);
 
   async function handleSubmit(formEvent: React.FormEvent) {
     formEvent.preventDefault();
     setError(null);
-    setDuplicates([]);
 
     const trimmedName = name.trim();
     const trimmedCustomer = customer.trim();
@@ -73,7 +85,7 @@ export function BirthGivingEventForm({
     if (!Number.isInteger(max) || max < min) { setError("Max. velikost týmu musí být aspoň minimální"); return; }
     if (selectedOrganizers.length === 0) { setError("Vyberte alespoň jednoho organizátor:ku"); return; }
 
-    const payload = {
+    const payload: BirthGivingDraftPayload = {
       name: trimmedName,
       customer: trimmedCustomer,
       startsAt: new Date(startsAt).toISOString(),
@@ -83,28 +95,55 @@ export function BirthGivingEventForm({
       joiningOpen,
       organizerProfileIds: withCaller(selectedOrganizers),
     };
+    setPendingPayload(payload);
 
     setLoading(true);
     try {
-      const path = isEdit ? `/api/birth-giving/events/${event.id}` : "/api/birth-giving/events";
-      const result = await birthGivingMutationRequest(path, {
-        method: isEdit ? "PATCH" : "POST",
-        body: payload,
-      });
-      if (result.ok && result.body.data) {
-        toast.success(isEdit ? "Událost byla aktualizována" : "Událost byla vytvořena");
-        onSuccess(result.body.data);
-        return;
+      if (!isEdit && !duplicateConfirmed) {
+        const check = await birthGivingMutationRequest(
+          "/api/birth-giving/events/duplicate-candidates",
+          { body: payload },
+        );
+        if (!check.ok) {
+          toast.error(check.body.error ?? "Kontrolu podobných událostí se nepodařilo dokončit");
+          return;
+        }
+        const candidates = toDuplicateCandidates(check.body.data);
+        if (candidates.length > 0) {
+          setDuplicates(candidates);
+          return;
+        }
       }
-      if (result.body.code === "DUPLICATE_EVENT") {
-        const candidate = toDuplicateCandidate(result.body.data);
-        if (candidate) setDuplicates([candidate]);
-        return;
-      }
-      toast.error(result.body.error ?? "Událost se nepodařilo uložit");
+      await createEvent(payload);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function createEvent(payload: BirthGivingDraftPayload) {
+    const path = isEdit ? `/api/birth-giving/events/${event.id}` : "/api/birth-giving/events";
+    const result = await birthGivingMutationRequest(path, {
+      method: isEdit ? "PATCH" : "POST",
+      body: payload,
+    });
+    if (result.ok && result.body.data) {
+      toast.success(isEdit ? "Událost byla aktualizována" : "Událost byla vytvořena");
+      onSuccess(result.body.data);
+      return;
+    }
+    if (result.body.code === "DUPLICATE_EVENT") {
+      const candidate = toDuplicateCandidate(result.body.data);
+      if (candidate) setDuplicates([candidate]);
+      return;
+    }
+    toast.error(result.body.error ?? "Událost se nepodařilo uložit");
+  }
+
+  function continueAfterDuplicateConfirmation() {
+    if (!pendingPayload) return;
+    setDuplicateConfirmed(true);
+    setLoading(true);
+    void createEvent(pendingPayload).finally(() => setLoading(false));
   }
 
   function withCaller(organizerIds: string[]): string[] {
@@ -118,14 +157,30 @@ export function BirthGivingEventForm({
 
       <BirthGivingDuplicateCandidates candidates={duplicates} />
       {duplicates.length > 0 && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setDuplicates([])}
-        >
-          Vrátit se k formuláři
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {!duplicateConfirmed && (
+            <Button
+              type="button"
+              size="sm"
+              disabled={loading}
+              onClick={continueAfterDuplicateConfirmation}
+            >
+              {loading && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
+              Je to jiná událost. Pokračovat
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setDuplicates([]);
+              setDuplicateConfirmed(false);
+            }}
+          >
+            Vrátit se k formuláři
+          </Button>
+        </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -229,6 +284,13 @@ export function BirthGivingEventForm({
   );
 }
 
+function toDuplicateCandidates(data: unknown): BirthGivingDuplicateCandidateItem[] {
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((candidate) => toDuplicateCandidate(candidate))
+    .filter((candidate): candidate is BirthGivingDuplicateCandidateItem => candidate !== null);
+}
+
 function toDuplicateCandidate(
   data: unknown,
 ): BirthGivingDuplicateCandidateItem | null {
@@ -237,13 +299,21 @@ function toDuplicateCandidate(
     id?: string;
     status?: BirthGivingEventStatus;
     identity?: { eventName?: string; customer?: string; startsAt?: string };
+    name?: string;
+    customer?: string;
+    starts_at?: string;
   };
-  if (typeof candidate.id !== "string" || !candidate.identity) return null;
+  if (typeof candidate.id !== "string") return null;
+  const identity = candidate.identity;
+  const name = identity?.eventName ?? candidate.name ?? "";
+  const customer = identity?.customer ?? candidate.customer ?? "";
+  const startsAt = identity?.startsAt ?? candidate.starts_at ?? "";
+  if (!name || !customer || !startsAt) return null;
   return {
     id: candidate.id,
     status: candidate.status ?? "published",
-    name: candidate.identity.eventName ?? "",
-    customer: candidate.identity.customer ?? "",
-    starts_at: candidate.identity.startsAt ?? "",
+    name,
+    customer,
+    starts_at: startsAt,
   };
 }

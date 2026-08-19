@@ -34,4 +34,26 @@ describe("BirthGivingTeamList", () => {
     expect(screen.getByText("Zatím žádné týmy")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vytvořit tým" })).toBeInTheDocument();
   });
+
+  it("does not promise future visibility on a closed published event with no teams", () => {
+    const event = makeEvent({ starts_at: "2026-08-19T08:00:00.000Z", joining_open: false, teams: [] });
+    render(
+      <BirthGivingTeamList event={event} profileId="member-1" now={NOW} organizerProfiles={makeAllProfiles()} onEventChange={vi.fn()} />,
+    );
+
+    expect(screen.getByText("Zatím žádné týmy")).toBeInTheDocument();
+    expect(
+      screen.getByText("Pro tuto událost nebyly založeny žádné týmy."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Týmy se zobrazí po zveřejnění.")).not.toBeInTheDocument();
+  });
+
+  it("keeps the draft explanation for a draft with no teams", () => {
+    const event = makeEvent({ status: "draft", teams: [] });
+    render(
+      <BirthGivingTeamList event={event} profileId="org-1" now={NOW} organizerProfiles={makeAllProfiles()} onEventChange={vi.fn()} />,
+    );
+
+    expect(screen.getByText("Týmy se zobrazí po zveřejnění.")).toBeInTheDocument();
+  });
 });

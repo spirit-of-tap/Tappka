@@ -9,12 +9,14 @@ describe("BirthGivingDuplicateCandidates", () => {
     { id: "event-2", name: "Second BG", customer: "Zákazník A", starts_at: "2026-08-18T08:00:00.000Z", status: "draft" as const },
   ];
 
-  it("renders every candidate with a warning and a link", () => {
+  it("renders every candidate with a warning, a date, and a link", () => {
     render(<BirthGivingDuplicateCandidates candidates={candidates} />);
 
     expect(screen.getByText("Podobná událost už existuje")).toBeInTheDocument();
     expect(screen.getByText("First BG")).toBeInTheDocument();
     expect(screen.getByText("Second BG")).toBeInTheDocument();
+    expect(screen.getAllByText("Zákazník A").length).toBe(2);
+    expect(screen.getByText("19. 8. 2026")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /First BG/ })).toHaveAttribute(
       "href",
       "/birth-giving/event-1",

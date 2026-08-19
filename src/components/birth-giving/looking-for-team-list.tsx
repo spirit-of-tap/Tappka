@@ -6,6 +6,12 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyMedia,
+} from "@/components/ui/empty";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import { canFormBirthGivingTeams, getBirthGivingMembership } from "@/lib/birth-giving/permissions";
@@ -62,7 +68,14 @@ export function BirthGivingLookingForTeamList({
       </div>
 
       {searches.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Nikdo zatím nehledá tým.</p>
+        <Empty className="gap-3 border-dashed p-4">
+          <EmptyMedia variant="icon">
+            <UsersRound className="size-5" />
+          </EmptyMedia>
+          <EmptyHeader>
+            <EmptyTitle className="text-sm">Nikdo zatím nehledá tým.</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <ul className="space-y-1.5">
           {searches.map((search) => (

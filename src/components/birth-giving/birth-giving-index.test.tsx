@@ -1,13 +1,22 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BirthGivingIndex } from "@/components/birth-giving/birth-giving-index";
-import { makeEventIndexItem, makeOrganizerSummaries } from "@/tests/component/birth-giving-fixtures";
+import { makeEvent, makeEventIndexItem, makeOrganizerSummaries } from "@/tests/component/birth-giving-fixtures";
+
+const push = vi.fn();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), push }),
 }));
+
+const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+beforeEach(() => {
+  fetchSpy.mockReset();
+  push.mockReset();
+});
 
 const NOW = "2026-08-19T12:00:00.000Z";
 
@@ -141,5 +150,44 @@ describe("BirthGivingIndex", () => {
     );
 
     expect(screen.getByText("Žádné nadcházející události")).toBeInTheDocument();
+  });
+
+  it("routes to the created draft so completion is never a dead end", async () => {
+    const user = userEvent.setup();
+    const draft = makeEvent({ id: "draft-1", status: "draft", name: "Nový BG" });
+    fetchSpy
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: [] }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ data: draft }),
+      } as Response);
+
+    render(
+      <BirthGivingIndex
+        events={[]}
+        profileId="org-1"
+        now={NOW}
+        organizerProfiles={makeOrganizerSummaries()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Nová událost" }));
+    await user.type(await screen.findByLabelText("Název události"), "Nový BG");
+    await user.type(screen.getByLabelText("Zákazník"), "Zákazník A");
+    await user.type(screen.getByLabelText("Začátek"), "2026-08-20T08:00");
+    const minInput = screen.getByLabelText("Min. velikost týmu") as HTMLInputElement;
+    const maxInput = screen.getByLabelText("Max. velikost týmu") as HTMLInputElement;
+    await user.clear(minInput);
+    await user.type(minInput, "2");
+    await user.clear(maxInput);
+    await user.type(maxInput, "4");
+    await user.click(screen.getByRole("button", { name: "Vytvořit událost" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/birth-giving/draft-1"));
   });
 });

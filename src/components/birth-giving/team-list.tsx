@@ -45,6 +45,11 @@ export function BirthGivingTeamList({
   const [createOpen, setCreateOpen] = useState(false);
   const formationOpen = canFormBirthGivingTeams(event, new Date(now));
   const visibleTeams = event.teams;
+  const emptyDescription = formationOpen
+    ? "Založte první tým a pozvěte další lidi."
+    : event.status === "draft"
+      ? "Týmy se zobrazí po zveřejnění."
+      : "Pro tuto událost nebyly založeny žádné týmy.";
 
   return (
     <section className="space-y-3">
@@ -86,9 +91,7 @@ export function BirthGivingTeamList({
           <EmptyHeader>
             <EmptyTitle className="text-sm">Zatím žádné týmy</EmptyTitle>
             <EmptyDescription className="text-xs">
-              {formationOpen
-                ? "Založte první tým a pozvěte další lidi."
-                : "Týmy se zobrazí po zveřejnění."}
+              {emptyDescription}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

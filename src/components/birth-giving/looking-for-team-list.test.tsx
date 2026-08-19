@@ -32,6 +32,18 @@ describe("BirthGivingLookingForTeamList", () => {
     expect(screen.getByText("Hledají tým")).toBeInTheDocument();
   });
 
+  it("renders the empty state with the shared Empty primitive", () => {
+    const event = makeEvent({ starts_at: "2026-08-20T08:00:00.000Z" }, { teamSearches: [] });
+
+    render(
+      <BirthGivingLookingForTeamList event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
+    );
+
+    const empty = screen.getByText("Nikdo zatím nehledá tým.");
+    expect(empty.closest('[data-slot="empty"]')).not.toBeNull();
+    expect(empty.tagName.toLowerCase()).not.toBe("p");
+  });
+
   it("lets a memberless profile start searching", async () => {
     const user = userEvent.setup();
     fetchSpy.mockResolvedValueOnce({
