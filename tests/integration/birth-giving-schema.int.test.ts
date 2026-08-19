@@ -524,6 +524,39 @@ describe("Birth Giving RLS", () => {
     });
   });
 
+  it("shows draft result files to organizers but only published files to verified community", async () => {
+    await withRollback(async (client) => {
+      const { organizer, other } = await seedActors(client);
+      const draftEventId = await insertEvent(client, organizer, "draft", "draft-results");
+      const publishedEventId = await insertEvent(client, organizer, "published", "published-results");
+      const draftTeamId = await insertTeam(client, draftEventId, organizer.profileId, "Draft results");
+      const publishedTeamId = await insertTeam(client, publishedEventId, organizer.profileId, "Published results");
+      await client.query(
+        `insert into public.birth_giving_team_result_files
+           (event_id, team_id, storage_path, original_file_name, mime_type, file_size,
+            uploaded_by_profile_id, created_by_profile_id, updated_by_profile_id)
+         values
+           ($1, $2, 'bg/draft-results.pdf', 'draft-results.pdf', 'application/pdf', 12, $5, $5, $5),
+           ($3, $4, 'bg/published-results.pdf', 'published-results.pdf', 'application/pdf', 12, $5, $5, $5)`,
+        [draftEventId, draftTeamId, publishedEventId, publishedTeamId, organizer.profileId],
+      );
+
+      await asClaims(client, { sub: organizer.authUserId });
+      const { rows: organizerRows } = await client.query(
+        "select event_id from public.birth_giving_team_result_files order by event_id",
+      );
+      expect(organizerRows.map((row) => row.event_id).sort()).toEqual(
+        [draftEventId, publishedEventId].sort(),
+      );
+
+      await asClaims(client, { sub: other.authUserId });
+      const { rows: communityRows } = await client.query(
+        "select event_id from public.birth_giving_team_result_files order by event_id",
+      );
+      expect(communityRows.map((row) => row.event_id)).toEqual([publishedEventId]);
+    });
+  });
+
   it("allows members to add results and organizers only for historical events", async () => {
     await withRollback(async (client) => {
       const { organizer, member, other } = await seedActors(client);
