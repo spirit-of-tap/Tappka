@@ -264,6 +264,17 @@ export const birthGivingTeamResultFiles = pgTable("birth_giving_team_result_file
   pgPolicy("BG result files cannot be directly deleted", { for: "delete", to: ["authenticated"], using: sql`false` }),
 ]).enableRLS()
 
+export const birthGivingStorageCleanupClaims = pgTable("birth_giving_storage_cleanup_claims", {
+  storagePath: text("storage_path").primaryKey().notNull(),
+  claimId: uuid("claim_id").defaultRandom().notNull(),
+  claimedAt: timestamp("claimed_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),
+  attemptCount: integer("attempt_count").default(1).notNull(),
+}, (table) => [
+  unique("birth_giving_storage_cleanup_claims_claim_id_key").on(table.claimId),
+  check("birth_giving_storage_cleanup_claims_attempt_count_check", sql`attempt_count >= 1`),
+  pgPolicy("BG storage cleanup claims are private", { for: "all", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
+]).enableRLS()
+
 export const birthGivingReflections = pgTable("birth_giving_reflections", {
   id: uuid().defaultRandom().primaryKey().notNull(),
   eventId: uuid("event_id").notNull(),

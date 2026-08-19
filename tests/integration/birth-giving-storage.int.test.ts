@@ -378,14 +378,29 @@ describe("Birth Giving storage RPCs", () => {
     });
   });
 
-  it("does not expose file confirmation RPCs to authenticated clients", async () => {
+  it("does not expose privileged storage RPCs to authenticated clients", async () => {
     await withRollback(async (client) => {
-      const privileges = await client.query<{ assignment: boolean; result: boolean }>(
+      const privileges = await client.query<{
+        assignment: boolean;
+        claim: boolean;
+        finalize: boolean;
+        release: boolean;
+        result: boolean;
+      }>(
         `select
           has_function_privilege('authenticated', 'public.birth_giving_confirm_assignment(uuid,uuid,text,text,text,bigint)', 'EXECUTE') as assignment,
-          has_function_privilege('authenticated', 'public.birth_giving_confirm_result_file(uuid,uuid,uuid,text,text,text,bigint)', 'EXECUTE') as result`,
+          has_function_privilege('authenticated', 'public.birth_giving_confirm_result_file(uuid,uuid,uuid,text,text,text,bigint)', 'EXECUTE') as result,
+          has_function_privilege('authenticated', 'public.birth_giving_claim_storage_cleanup(interval,interval,integer)', 'EXECUTE') as claim,
+          has_function_privilege('authenticated', 'public.birth_giving_finalize_storage_cleanup(text,uuid)', 'EXECUTE') as finalize,
+          has_function_privilege('authenticated', 'public.birth_giving_release_storage_cleanup_claim(text,uuid)', 'EXECUTE') as release`,
       );
-      expect(privileges.rows[0]).toEqual({ assignment: false, result: false });
+      expect(privileges.rows[0]).toEqual({
+        assignment: false,
+        claim: false,
+        finalize: false,
+        release: false,
+        result: false,
+      });
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
       const member = await insertVerifiedProfile(client, { name: "Member" });
       const { eventId } = await seedEvent(client, organizer, member, new Date().toISOString(), "draft");
@@ -442,13 +457,74 @@ describe("Birth Giving storage RPCs", () => {
       await confirmAssignment(client, organizer.profileId, eventId, newlyReferencedPath, "current.pdf", "application/pdf", 1_000);
       await confirmResultFile(client, member.profileId, eventId, teamId, resultPath, "current.pdf", "application/pdf", 1_000);
 
+      await asServiceRole(client);
       const cleanup = await client.query<{ storage_path: string }>(
-        "select path as storage_path from public.birth_giving_unreferenced_storage_paths(interval '1 hour') as path",
+        "select storage_path from public.birth_giving_claim_storage_cleanup(interval '1 hour', interval '15 minutes', 100)",
       );
       expect(cleanup.rows.map(({ storage_path: path }) => path)).toContain(orphanPath);
       expect(cleanup.rows.map(({ storage_path: path }) => path)).not.toContain(newlyReferencedPath);
       expect(cleanup.rows.map(({ storage_path: path }) => path)).not.toContain(resultPath);
       expect(cleanup.rows.map(({ storage_path: path }) => path)).not.toContain(recentPath);
+    });
+  });
+
+  it("prevents confirmation while a storage cleanup claim is active", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const member = await insertVerifiedProfile(client, { name: "Member" });
+      const { eventId } = await seedEvent(client, organizer, member, new Date(Date.now() - HOUR_MS).toISOString());
+      const storagePath = `birth-giving/assignments/${eventId}/claimed.pdf`;
+      await insertStoredObject(client, storagePath, "application/pdf", 1_000, new Date(Date.now() - 2 * HOUR_MS).toISOString());
+      await asServiceRole(client);
+
+      const claims = await client.query<{ claim_id: string; storage_path: string }>(
+        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', interval '15 minutes', 10)",
+      );
+      expect(claims.rows).toEqual([expect.objectContaining({ storage_path: storagePath })]);
+      await expectDatabaseError(
+        client,
+        () => confirmAssignment(client, organizer.profileId, eventId, storagePath, "claimed.pdf", "application/pdf", 1_000),
+        /cleanup|claimed/i,
+      );
+    });
+  });
+
+  it("retries stale cleanup claims and only lets the current claim finalize", async () => {
+    await withRollback(async (client) => {
+      const storagePath = `birth-giving/assignments/${crypto.randomUUID()}/orphan.pdf`;
+      await insertStoredObject(client, storagePath, "application/pdf", 1_000, new Date(Date.now() - 2 * HOUR_MS).toISOString());
+      await asServiceRole(client);
+      const first = await client.query<{ claim_id: string; storage_path: string }>(
+        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', interval '15 minutes', 1)",
+      );
+      await client.query("reset role");
+      await client.query(
+        "update public.birth_giving_storage_cleanup_claims set claimed_at = now() - interval '30 minutes' where storage_path = $1",
+        [storagePath],
+      );
+      await asServiceRole(client);
+      const second = await client.query<{ claim_id: string; storage_path: string }>(
+        "select * from public.birth_giving_claim_storage_cleanup(interval '1 hour', interval '15 minutes', 1)",
+      );
+
+      expect(second.rows[0].storage_path).toBe(storagePath);
+      expect(second.rows[0].claim_id).not.toBe(first.rows[0].claim_id);
+      expect((await client.query<{ value: boolean }>(
+        "select public.birth_giving_release_storage_cleanup_claim($1, $2) as value",
+        [storagePath, first.rows[0].claim_id],
+      )).rows[0].value).toBe(false);
+      await client.query("reset role");
+      await client.query("delete from storage.objects where bucket_id = 'documents' and name = $1", [storagePath]);
+      await asServiceRole(client);
+      expect((await client.query<{ value: boolean }>(
+        "select public.birth_giving_finalize_storage_cleanup($1, $2) as value",
+        [storagePath, second.rows[0].claim_id],
+      )).rows[0].value).toBe(true);
+      await client.query("reset role");
+      expect((await client.query<{ count: number }>(
+        "select count(*)::int as count from public.birth_giving_storage_cleanup_claims where storage_path = $1",
+        [storagePath],
+      )).rows[0].count).toBe(0);
     });
   });
 

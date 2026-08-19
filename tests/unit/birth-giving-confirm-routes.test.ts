@@ -56,7 +56,7 @@ describe("Birth Giving confirmation routes", () => {
     mocks.inspectStorageObject.mockResolvedValue({ contentType: "application/pdf", size: 9 });
     mocks.downloadStorageObject.mockResolvedValue(Buffer.from("%PDF-1.7"));
     mocks.adminRpc.mockResolvedValue({ data: EVENT_ID, error: null });
-    mocks.sessionRpc.mockResolvedValue({ data: null, error: null });
+    mocks.sessionRpc.mockResolvedValue({ data: true, error: null });
   });
 
   it("confirms assignments through service_role with the authorized actor and never deletes an old path", async () => {
@@ -85,6 +85,24 @@ describe("Birth Giving confirmation routes", () => {
     });
 
     expect(response.status).toBe(409);
+    expect(mocks.adminRpc).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["assignment", () => confirmAssignment(request(`birth-giving/assignments/${EVENT_ID}/file.pdf`) as never, {
+      params: Promise.resolve({ eventId: EVENT_ID }),
+    })],
+    ["result", () => confirmResult(request(`birth-giving/results/${EVENT_ID}/${TEAM_ID}/file.pdf`) as never, {
+      params: Promise.resolve({ eventId: EVENT_ID, teamId: TEAM_ID }),
+    })],
+  ])("rejects unauthorized %s confirmation before privileged storage inspection", async (_kind, confirm) => {
+    mocks.sessionRpc.mockResolvedValue({ data: false, error: null });
+
+    const response = await confirm();
+
+    expect(response.status).toBe(403);
+    expect(mocks.inspectStorageObject).not.toHaveBeenCalled();
+    expect(mocks.downloadStorageObject).not.toHaveBeenCalled();
     expect(mocks.adminRpc).not.toHaveBeenCalled();
   });
 

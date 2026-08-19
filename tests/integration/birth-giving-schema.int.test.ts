@@ -132,7 +132,7 @@ describe("Birth Giving relational schema", () => {
             and c.relkind = 'r'
             and c.relname like 'birth_giving_%'`,
       );
-      expect(tableRows).toHaveLength(10);
+      expect(tableRows).toHaveLength(11);
       expect(tableRows.every((row) => row.relrowsecurity)).toBe(true);
     });
   });

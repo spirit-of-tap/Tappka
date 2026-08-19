@@ -443,6 +443,27 @@ export type Database = {
           },
         ]
       }
+      birth_giving_storage_cleanup_claims: {
+        Row: {
+          attempt_count: number
+          claim_id: string
+          claimed_at: string
+          storage_path: string
+        }
+        Insert: {
+          attempt_count?: number
+          claim_id?: string
+          claimed_at?: string
+          storage_path: string
+        }
+        Update: {
+          attempt_count?: number
+          claim_id?: string
+          claimed_at?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
       birth_giving_team_members: {
         Row: {
           confirmed_at: string
@@ -2818,6 +2839,13 @@ export type Database = {
         Args: { p_event_id: string; p_team_id: string }
         Returns: boolean
       }
+      birth_giving_claim_storage_cleanup: {
+        Args: { p_grace_period: string; p_limit: number; p_stale_after: string }
+        Returns: {
+          claim_id: string
+          storage_path: string
+        }[]
+      }
       birth_giving_confirm_assignment: {
         Args: {
           p_actor_profile_id: string
@@ -2887,6 +2915,10 @@ export type Database = {
         Args: { p_event_id: string; p_name: string }
         Returns: string
       }
+      birth_giving_finalize_storage_cleanup: {
+        Args: { p_claim_id: string; p_storage_path: string }
+        Returns: boolean
+      }
       birth_giving_find_event_conflict: {
         Args: {
           p_normalized_customer: string
@@ -2914,6 +2946,10 @@ export type Database = {
         Args: { p_event_id: string }
         Returns: undefined
       }
+      birth_giving_release_storage_cleanup_claim: {
+        Args: { p_claim_id: string; p_storage_path: string }
+        Returns: boolean
+      }
       birth_giving_remove_result_file: {
         Args: { p_result_file_id: string }
         Returns: string
@@ -2929,10 +2965,6 @@ export type Database = {
       birth_giving_set_looking_for_team: {
         Args: { p_event_id: string; p_looking: boolean }
         Returns: undefined
-      }
-      birth_giving_unreferenced_storage_paths: {
-        Args: { p_grace_period: string }
-        Returns: string[]
       }
       birth_giving_update_event: {
         Args: {

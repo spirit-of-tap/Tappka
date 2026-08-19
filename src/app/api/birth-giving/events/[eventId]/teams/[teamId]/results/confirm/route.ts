@@ -29,6 +29,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   if (!parsed.success || !parsed.data.storagePath.startsWith(resultStoragePrefix(eventId, teamId))) {
     return invalidPayloadResponse();
   }
+  const { data: authorized, error: authorizationError } = await context.supabase.rpc("birth_giving_can_manage_result", {
+    p_event_id: eventId,
+    p_team_id: teamId,
+  });
+  if (authorizationError || !authorized) {
+    return NextResponse.json({ error: "Výsledky tohoto týmu nelze spravovat" }, { status: 403 });
+  }
   const object = await inspectStorageObject("documents", parsed.data.storagePath);
   if (!object || object.size !== parsed.data.fileSize || object.contentType !== parsed.data.mimeType) {
     return NextResponse.json({ error: "Nahraný soubor neodpovídá potvrzeným údajům" }, { status: 409 });
