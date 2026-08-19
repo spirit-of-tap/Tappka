@@ -13,6 +13,7 @@ import {
 } from "@/lib/birth-giving/files";
 
 const EXTERNAL_LINK_WARNING = "Nahrajte exportovanou kopii souboru. Odkazy na Canvu, Google Drive a další služby mohou později ztratit přístup, takže nejsou spolehlivým výsledkem BG.";
+const ASSIGNMENT_RELEASE_WARNING = "Po zveřejnění zadání se soubor zpřístupní týmům. Pokud ho během BG nahradíte, odešleme týmům e-mail s upozorněním.";
 
 interface AssignmentFileUploadProps {
   kind: "assignment";
@@ -125,6 +126,7 @@ export function BirthGivingFileUpload(props: BirthGivingFileUploadProps) {
         />
       </div>
       {files.length > 0 && <p className="text-sm text-muted-foreground">{files.map((file) => file.name).join(", ")}</p>}
+      {!isResults && <p className="text-sm text-muted-foreground">{ASSIGNMENT_RELEASE_WARNING}</p>}
       <p className="text-sm text-muted-foreground">{EXTERNAL_LINK_WARNING}</p>
       {uploading && (
         <div className="flex items-center gap-3" aria-live="polite">

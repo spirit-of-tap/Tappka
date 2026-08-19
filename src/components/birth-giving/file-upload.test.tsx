@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BirthGivingFileUpload } from "@/components/birth-giving/file-upload";
 
 const WARNING = "Nahrajte exportovanou kopii souboru. Odkazy na Canvu, Google Drive a další služby mohou později ztratit přístup, takže nejsou spolehlivým výsledkem BG.";
+const ASSIGNMENT_WARNING = "Po zveřejnění zadání se soubor zpřístupní týmům. Pokud ho během BG nahradíte, odešleme týmům e-mail s upozorněním.";
 
 class FakeXmlHttpRequest {
   static instances: FakeXmlHttpRequest[] = [];
@@ -39,6 +40,14 @@ describe("BirthGivingFileUpload", () => {
 
     expect(screen.getByLabelText("Soubory s výsledky")).toHaveAttribute("multiple");
     expect(screen.getByText(WARNING)).toBeInTheDocument();
+    expect(screen.queryByText(ASSIGNMENT_WARNING)).not.toBeInTheDocument();
+  });
+
+  it("shows assignment release and replacement email consequences", () => {
+    render(<BirthGivingFileUpload kind="assignment" eventId="event-1" onUploaded={vi.fn()} />);
+
+    expect(screen.getByText(WARNING)).toBeInTheDocument();
+    expect(screen.getByText(ASSIGNMENT_WARNING)).toBeInTheDocument();
   });
 
   it("reports upload progress and confirms every selected result file", async () => {

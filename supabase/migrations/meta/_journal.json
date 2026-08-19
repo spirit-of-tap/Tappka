@@ -484,6 +484,13 @@
       "when": 1787110067824,
       "tag": "20260819032747_birth_giving_storage_rpcs",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1787111094918,
+      "tag": "20260819034454_birth_giving_storage_truth_and_idempotency",
+      "breakpoints": true
     }
   ]
 }

@@ -433,6 +433,36 @@ describe("Birth Giving RLS", () => {
     });
   });
 
+  it("hides assignments immediately before starts_at and reveals them exactly at starts_at", async () => {
+    await withRollback(async (client) => {
+      const { organizer, other } = await seedActors(client);
+      const { rows: clockRows } = await client.query<{ now: string }>(
+        "select transaction_timestamp()::text as now",
+      );
+      const atStartId = await insertEvent(client, organizer, "published", "at start", clockRows[0].now);
+      const beforeStartId = await insertEvent(
+        client,
+        organizer,
+        "published",
+        "before start",
+        new Date(new Date(clockRows[0].now).getTime() + 1).toISOString(),
+      );
+      await client.query(
+        `insert into public.birth_giving_assignments
+           (event_id, state, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'missing', $3, $3), ($2, 'missing', $3, $3)`,
+        [atStartId, beforeStartId, organizer.profileId],
+      );
+
+      await asClaims(client, { sub: other.authUserId });
+      const { rows } = await client.query<{ event_id: string }>(
+        "select event_id from public.birth_giving_assignments order by event_id",
+      );
+
+      expect(rows.map((row) => row.event_id)).toEqual([atStartId]);
+    });
+  });
+
   it("denies all direct team mutations", async () => {
     await withRollback(async (client) => {
       const { organizer } = await seedActors(client);
