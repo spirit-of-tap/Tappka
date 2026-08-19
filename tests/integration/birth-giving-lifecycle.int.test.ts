@@ -1444,4 +1444,93 @@ describe("Birth Giving lifecycle RPCs", () => {
       expect(publicationRows[0].definition.match(/clock_timestamp\(\)/g)).toHaveLength(1);
     });
   });
+
+  it("claims bounded deliveries with fencing, stale lease recovery, replacement identity, and exponential retry", async () => {
+    await withRollback(async (client) => {
+      const { organizer } = await actors(client);
+      const eventId = await createDraft(client, organizer, {
+        startsAt: timestamp(DAY_MS),
+        minimumTeamSize: 1,
+        maximumTeamSize: 2,
+      });
+      await client.query("reset role");
+      const team = await client.query<{ id: string }>(
+        `insert into public.birth_giving_teams
+           (event_id, name, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'Delivery team', $2, $2) returning id`,
+        [eventId, organizer.profileId],
+      );
+      await client.query(
+        `insert into public.birth_giving_team_members
+           (event_id, team_id, profile_id, created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, $3, $3, $3)`,
+        [eventId, team.rows[0].id, organizer.profileId],
+      );
+      const assignment = await client.query<{ replacement_id: string }>(
+        `insert into public.birth_giving_assignments
+           (event_id, state, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'missing', $2, $2) returning replacement_id`,
+        [eventId, organizer.profileId],
+      );
+      await client.query(
+        `insert into public.birth_giving_email_deliveries
+           (event_id, profile_id, message_type, replacement_id, recipient_email,
+            created_by_profile_id, updated_by_profile_id)
+         values ($1, $2, 'assignment_release', null, 'release@example.com', $2, $2),
+                ($1, $2, 'assignment_replacement', $3, 'replacement@example.com', $2, $2)`,
+        [eventId, organizer.profileId, assignment.rows[0].replacement_id],
+      );
+      await client.query(
+        `update public.birth_giving_email_deliveries
+            set next_attempt_at = now() + interval '1 hour'
+          where event_id = $1 and message_type = 'assignment_replacement'`,
+        [eventId],
+      );
+      await client.query("set local role service_role");
+
+      const first = await client.query<{
+        delivery_id: string;
+        processing_token: string;
+        message_type: string;
+        replacement_id: string | null;
+        attempt_count: number;
+      }>("select * from public.birth_giving_claim_email_deliveries(1)");
+      expect(first.rows).toHaveLength(1);
+      expect(first.rows[0].attempt_count).toBe(1);
+
+      const fenced = await client.query<{ result: boolean }>(
+        "select public.birth_giving_complete_email_delivery($1, gen_random_uuid(), 'wrong') as result",
+        [first.rows[0].delivery_id],
+      );
+      expect(fenced.rows[0].result).toBe(false);
+      const failed = await client.query<{ result: boolean }>(
+        "select public.birth_giving_fail_email_delivery($1, $2, 'temporary') as result",
+        [first.rows[0].delivery_id, first.rows[0].processing_token],
+      );
+      expect(failed.rows[0].result).toBe(true);
+      const retry = await client.query<{ status: string; delay_seconds: number }>(
+        `select status, extract(epoch from (next_attempt_at - updated_at))::int as delay_seconds
+           from public.birth_giving_email_deliveries where id = $1`,
+        [first.rows[0].delivery_id],
+      );
+      expect(retry.rows[0]).toEqual({ status: "failed", delay_seconds: 60 });
+
+      await client.query(
+        `update public.birth_giving_email_deliveries
+            set status = 'processing', processing_started_at = now() - interval '11 minutes',
+                processing_token = gen_random_uuid()
+          where message_type = 'assignment_replacement' and event_id = $1`,
+        [eventId],
+      );
+      const stale = await client.query<{
+        processing_token: string;
+        message_type: string;
+        replacement_id: string | null;
+        attempt_count: number;
+      }>("select * from public.birth_giving_claim_email_deliveries(1)");
+      expect(stale.rows[0].message_type).toBe("assignment_replacement");
+      expect(stale.rows[0].replacement_id).toBe(assignment.rows[0].replacement_id);
+      expect(stale.rows[0].attempt_count).toBe(1);
+    });
+  });
 });

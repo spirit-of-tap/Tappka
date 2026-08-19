@@ -310,6 +310,7 @@ export const birthGivingEmailDeliveries = pgTable("birth_giving_email_deliveries
   attemptCount: integer("attempt_count").default(0).notNull(),
   nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true, mode: "string" }).defaultNow().notNull(),
   processingStartedAt: timestamp("processing_started_at", { withTimezone: true, mode: "string" }),
+  processingToken: uuid("processing_token"),
   sentAt: timestamp("sent_at", { withTimezone: true, mode: "string" }),
   providerMessageId: text("provider_message_id"),
   lastError: text("last_error"),
@@ -328,5 +329,6 @@ export const birthGivingEmailDeliveries = pgTable("birth_giving_email_deliveries
   check("birth_giving_email_deliveries_message_check", sql`(message_type = 'assignment_release' AND replacement_id IS NULL) OR (message_type = 'assignment_replacement' AND replacement_id IS NOT NULL)`),
   check("birth_giving_email_deliveries_attempt_count_check", sql`attempt_count >= 0`),
   check("birth_giving_email_deliveries_recipient_check", sql`length(trim(recipient_email)) > 0`),
+  check("birth_giving_email_deliveries_processing_check", sql`(status = 'processing') = (processing_started_at IS NOT NULL AND processing_token IS NOT NULL)`),
   pgPolicy("BG delivery outbox is private", { for: "all", to: ["authenticated"], using: sql`false`, withCheck: sql`false` }),
 ]).enableRLS()

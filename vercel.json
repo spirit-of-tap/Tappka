@@ -4,6 +4,10 @@
     {
       "path": "/api/system/birth-giving/cleanup-storage",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/system/birth-giving/process",
+      "schedule": "* * * * *"
     }
   ]
 }

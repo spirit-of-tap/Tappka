@@ -97,6 +97,7 @@ export type Database = {
           message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
           next_attempt_at: string
           processing_started_at: string | null
+          processing_token: string | null
           profile_id: string
           provider_message_id: string | null
           recipient_email: string
@@ -116,6 +117,7 @@ export type Database = {
           message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
           next_attempt_at?: string
           processing_started_at?: string | null
+          processing_token?: string | null
           profile_id: string
           provider_message_id?: string | null
           recipient_email: string
@@ -135,6 +137,7 @@ export type Database = {
           message_type?: Database["public"]["Enums"]["birth_giving_email_message_type"]
           next_attempt_at?: string
           processing_started_at?: string | null
+          processing_token?: string | null
           profile_id?: string
           provider_message_id?: string | null
           recipient_email?: string
@@ -2839,12 +2842,35 @@ export type Database = {
         Args: { p_event_id: string; p_team_id: string }
         Returns: boolean
       }
+      birth_giving_claim_email_deliveries: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempt_count: number
+          customer: string
+          delivery_id: string
+          event_id: string
+          event_name: string
+          message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
+          processing_token: string
+          recipient_email: string
+          replacement_id: string
+          starts_at: string
+        }[]
+      }
       birth_giving_claim_storage_cleanup: {
         Args: { p_grace_period: string; p_limit: number }
         Returns: {
           claim_id: string
           storage_path: string
         }[]
+      }
+      birth_giving_complete_email_delivery: {
+        Args: {
+          p_delivery_id: string
+          p_processing_token: string
+          p_provider_message_id: string
+        }
+        Returns: boolean
       }
       birth_giving_confirm_assignment: {
         Args: {
@@ -2914,6 +2940,14 @@ export type Database = {
       birth_giving_create_team: {
         Args: { p_event_id: string; p_name: string }
         Returns: string
+      }
+      birth_giving_fail_email_delivery: {
+        Args: {
+          p_delivery_id: string
+          p_error: string
+          p_processing_token: string
+        }
+        Returns: boolean
       }
       birth_giving_finalize_storage_cleanup: {
         Args: { p_claim_id: string; p_storage_path: string }
