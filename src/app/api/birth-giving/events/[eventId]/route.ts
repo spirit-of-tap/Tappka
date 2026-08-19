@@ -1,6 +1,7 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { birthGivingEventPatchSchema } from "@/lib/birth-giving/api";
+import { getBirthGivingEvent } from "@/lib/birth-giving/queries";
 
 import {
   birthGivingMutationErrorResponse,
@@ -13,6 +14,17 @@ import {
 
 interface RouteContext {
   params: Promise<{ eventId: string }>;
+}
+
+export async function GET(_request: Request, { params }: RouteContext) {
+  const context = await requireBirthGivingApiContext();
+  if (isBirthGivingApiGateFailure(context)) return context.response;
+  const { eventId } = await params;
+  const invalidId = validateBirthGivingRouteIds(eventId);
+  if (invalidId) return invalidId;
+  const data = await getBirthGivingEvent(context.supabase, eventId);
+  if (!data) return NextResponse.json({ error: "Událost nebyla nalezena" }, { status: 404 });
+  return NextResponse.json({ data });
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {

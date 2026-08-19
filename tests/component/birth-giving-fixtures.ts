@@ -17,6 +17,7 @@ import type {
 
 export const STARTS_AT = "2026-08-19T08:00:00.000Z";
 export const NOW = "2026-08-19T12:00:00.000Z";
+export const HISTORICAL_STARTS_AT = "2024-08-19T08:00:00.000Z";
 
 export function makeProfileSummary(id: string, name: string): BirthGivingProfileSummary {
   return { id, name, picture: null };
@@ -287,6 +288,21 @@ export function makeOrganizerSummaries(): BirthGivingProfileSummary[] {
     makeProfileSummary("org-1", "Org One"),
     makeProfileSummary("org-2", "Org Two"),
   ];
+}
+
+export function makeDraftEvent(
+  overrides: Partial<BirthGivingEventDetail> = {},
+  options: MakeEventOptions = {},
+): BirthGivingEventDetail {
+  return makeEvent(
+    {
+      status: "draft",
+      starts_at: HISTORICAL_STARTS_AT,
+      joining_open: false,
+      ...overrides,
+    },
+    options,
+  );
 }
 
 export function makeAllProfiles(): BirthGivingProfileSummary[] {

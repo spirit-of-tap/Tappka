@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   birthGivingMutationErrorResponse: vi.fn(),
+  getBirthGivingEvent: vi.fn(),
   refreshedEventResponse: vi.fn(),
   requireBirthGivingApiContext: vi.fn(),
 }));
@@ -13,8 +14,9 @@ vi.mock("@/app/api/birth-giving/_shared", async (importOriginal) => ({
   refreshedEventResponse: mocks.refreshedEventResponse,
   requireBirthGivingApiContext: mocks.requireBirthGivingApiContext,
 }));
+vi.mock("@/lib/birth-giving/queries", () => ({ getBirthGivingEvent: mocks.getBirthGivingEvent }));
 
-import { PATCH as patchEvent } from "@/app/api/birth-giving/events/[eventId]/route";
+import { GET as readEvent, PATCH as patchEvent } from "@/app/api/birth-giving/events/[eventId]/route";
 import { POST as createEvent } from "@/app/api/birth-giving/events/route";
 import { POST as publishEvent } from "@/app/api/birth-giving/events/[eventId]/publish/route";
 import { PUT as saveReflection } from "@/app/api/birth-giving/events/[eventId]/reflection/route";
@@ -145,5 +147,46 @@ describe("Birth Giving dynamic routes", () => {
     });
     expect(from).not.toHaveBeenCalled();
     expect(mocks.refreshedEventResponse).not.toHaveBeenCalled();
+  });
+});
+
+describe("Birth Giving canonical event refresh route", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireBirthGivingApiContext.mockResolvedValue({ supabase: { from: vi.fn(), rpc: vi.fn() } });
+  });
+
+  it("rejects a malformed event ID before reading the event", async () => {
+    const response = await readEvent(new Request("http://localhost") as never, {
+      params: Promise.resolve({ eventId: INVALID_ID }),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ code: "INVALID_ID" });
+    expect(mocks.getBirthGivingEvent).not.toHaveBeenCalled();
+  });
+
+  it("returns the canonical draft used by the retrospective wizard", async () => {
+    mocks.getBirthGivingEvent.mockResolvedValue({ id: EVENT_ID, name: "First BG", status: "draft" });
+
+    const response = await readEvent(new Request("http://localhost") as never, {
+      params: Promise.resolve({ eventId: EVENT_ID }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      data: { id: EVENT_ID, name: "First BG", status: "draft" },
+    });
+    expect(mocks.getBirthGivingEvent).toHaveBeenCalledWith(expect.anything(), EVENT_ID);
+  });
+
+  it("returns 404 when the draft no longer exists", async () => {
+    mocks.getBirthGivingEvent.mockResolvedValue(null);
+
+    const response = await readEvent(new Request("http://localhost") as never, {
+      params: Promise.resolve({ eventId: EVENT_ID }),
+    });
+
+    expect(response.status).toBe(404);
   });
 });
