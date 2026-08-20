@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MODULE_HUB_ORDER, NAV_MODULES, getHubModules, getVisibleModules } from "./navigation";
+import { MODULE_HUB_ORDER, NAV_MODULES, getHubModules } from "./navigation";
 
 describe("navigation config", () => {
   it("contains every module with url, icon and Czech description", () => {
@@ -18,23 +18,6 @@ describe("navigation config", () => {
 
   it("marks beta-only modules", () => {
     expect(NAV_MODULES.filter((m) => m.betaOnly).length).toBeGreaterThan(0);
-  });
-
-  it("hides beta modules for non-beta users and shows all for beta users", () => {
-    expect(getVisibleModules(true).map((m) => m.url)).toEqual([
-      "/",
-      "/reservations",
-      "/komunita",
-      "/schuzky",
-      "/koucovani",
-      "/tymova-reflexe",
-      "/tymovy-denik",
-      "/nastroje-techniky",
-      "/komunita/profil",
-      "/cteni/prehled",
-      "/birth-giving",
-    ]);
-    expect(getVisibleModules(false).map((m) => m.url)).toEqual(["/", "/reservations", "/komunita"]);
   });
 
   it("pins the beta-only urls", () => {
@@ -74,6 +57,18 @@ describe("getHubModules", () => {
     expect(MODULE_HUB_ORDER).toHaveLength(9);
     expect(MODULE_HUB_ORDER).not.toContain("/");
     expect(MODULE_HUB_ORDER).not.toContain("/komunita");
+  });
+
+  // Hub-completeness invariant — a future NAV_MODULES entry must be added to
+  // MODULE_HUB_ORDER or this fails, so modules can't silently vanish from the
+  // /moduly hub. Only the permanent bottom-bar tabs ("/", "/komunita") are
+  // exempt; subroutes like /komunita/profil are regular hub cards.
+  it("includes every module route in the hub order exactly once", () => {
+    const expected = NAV_MODULES.filter((m) => m.url !== "/" && m.url !== "/komunita")
+      .map((m) => m.url)
+      .sort();
+    expect([...MODULE_HUB_ORDER].sort()).toEqual(expected);
+    expect(new Set(MODULE_HUB_ORDER).size).toBe(MODULE_HUB_ORDER.length);
   });
 
   it("marks exactly the weekly+ modules as featured", () => {

@@ -18,11 +18,12 @@ const TABS = [
 // belongs to the Komunita tab, so those urls are excluded here. Matching runs
 // on the url's first path segment so every route of a module counts — e.g.
 // Čtení is registered at /cteni/prehled but /cteni/hledat must highlight
-// Moduly too.
+// Moduly too. Non-root-relative urls (external links) are skipped — their
+// first segment would be empty and falsely match "/".
 const MODULE_SECTIONS = [
   ...new Set(
     NAV_MODULES
-      .filter((m) => m.url !== "/" && !m.url.startsWith("/komunita"))
+      .filter((m) => m.url !== "/" && m.url.startsWith("/") && !m.url.startsWith("/komunita"))
       .map((m) => m.url.split("/")[1]),
   ),
 ]

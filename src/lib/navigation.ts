@@ -44,11 +44,6 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Birth Giving", url: "/birth-giving", icon: Gift, betaOnly: true, description: "Týmová setkání Birth Giving a retrospektivy." },
 ];
 
-/** Modules a user can see — beta-gated like the sidebar. */
-export function getVisibleModules(isBeta: boolean): NavModule[] {
-  return NAV_MODULES.filter((m) => !m.betaOnly || isBeta);
-}
-
 /** /moduly hub card order — by visit frequency, most visited first (product owner data).
  *  Deliberately excludes Dashboard and Komunita (permanent bottom-bar tabs). */
 export const MODULE_HUB_ORDER: string[] = [
