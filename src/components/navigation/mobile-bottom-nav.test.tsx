@@ -8,6 +8,19 @@ vi.mock("next/navigation", () => ({
   usePathname: () => pathname.current,
 }));
 
+type TabTitle = "Domů" | "Moduly" | "Profil";
+
+// Active-tab contract edge cases — a naive `pathname.startsWith(url)` (missing
+// the trailing "/") would silently match some of these, so pin the behavior.
+// Note: `usePathname()` returns only the pathname — query strings never reach
+// `isActive` — so inputs like "/moduly?x=1" are impossible and not tested.
+const ACTIVE_EDGE_CASES: Array<[string, TabTitle | null]> = [
+  ["/modulyx", null], // false-positive guard: must NOT match Moduly
+  ["/profilx", null], // false-positive guard: must NOT match Profil
+  ["/cteni/prehled", null], // deep non-matching path
+  ["/profil/", "Profil"], // trailing slash must not break matching
+];
+
 describe("MobileBottomNav", () => {
   it("renders all three tabs with correct hrefs", () => {
     render(<MobileBottomNav />);
@@ -47,4 +60,22 @@ describe("MobileBottomNav", () => {
     expect(screen.getByRole("link", { name: "Moduly" })).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("link", { name: "Profil" })).not.toHaveAttribute("aria-current");
   });
+
+  // Each row is its own test, so auto-cleanup runs between rows — every row
+  // renders fresh against the updated module-level `pathname`.
+  it.each(ACTIVE_EDGE_CASES)(
+    "pins the active tab for pathname %s (expected: %s)",
+    (currentPath, expected) => {
+      pathname.current = currentPath;
+      render(<MobileBottomNav />);
+
+      for (const title of ["Domů", "Moduly", "Profil"] as const) {
+        if (title === expected) {
+          expect(screen.getByRole("link", { name: title })).toHaveAttribute("aria-current", "page");
+        } else {
+          expect(screen.getByRole("link", { name: title })).not.toHaveAttribute("aria-current");
+        }
+      }
+    },
+  );
 });
