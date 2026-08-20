@@ -329,6 +329,9 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
 }
 
 export function AppSidebar({ user, reviewCount, ...props }: AppSidebarProps) {
+  const { isMobile } = useSidebar()
+  // Mobile gets the bottom navigation bar instead of the sidebar sheet.
+  if (isMobile) return null
   return (
     <Sidebar {...props}>
       <AppSidebarContent user={user} reviewCount={reviewCount} />
