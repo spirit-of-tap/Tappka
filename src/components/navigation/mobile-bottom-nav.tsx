@@ -2,21 +2,45 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { House, LayoutGrid, User } from "lucide-react"
+import { House, LayoutGrid, User, Users } from "lucide-react"
 
+import { NAV_MODULES } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
 const TABS = [
   { title: "Domů", url: "/", icon: House },
   { title: "Moduly", url: "/moduly", icon: LayoutGrid },
+  { title: "Komunita", url: "/komunita", icon: Users },
   { title: "Profil", url: "/profil", icon: User },
 ] as const
+
+// Module routes light up the Moduly tab (section highlighting); /komunita*
+// belongs to the Komunita tab, so those urls are excluded here. Matching runs
+// on the url's first path segment so every route of a module counts — e.g.
+// Čtení is registered at /cteni/prehled but /cteni/hledat must highlight
+// Moduly too.
+const MODULE_SECTIONS = [
+  ...new Set(
+    NAV_MODULES
+      .filter((m) => m.url !== "/" && !m.url.startsWith("/komunita"))
+      .map((m) => m.url.split("/")[1]),
+  ),
+]
 
 export function MobileBottomNav() {
   const pathname = usePathname()
 
-  const isActive = (url: string) =>
-    url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/")
+  const isActive = (url: string) => {
+    if (url === "/") return pathname === "/"
+    if (url === "/moduly") {
+      return (
+        pathname === "/moduly" ||
+        pathname.startsWith("/moduly/") ||
+        MODULE_SECTIONS.some((s) => pathname === `/${s}` || pathname.startsWith(`/${s}/`))
+      )
+    }
+    return pathname === url || pathname.startsWith(url + "/")
+  }
 
   return (
     <nav aria-label="Hlavní navigace" className="fixed inset-x-0 bottom-0 z-50 md:hidden">

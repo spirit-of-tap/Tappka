@@ -8,7 +8,20 @@ vi.mock("next/navigation", () => ({
   usePathname: () => pathname.current,
 }));
 
-type TabTitle = "Domů" | "Moduly" | "Profil";
+type TabTitle = "Domů" | "Moduly" | "Komunita" | "Profil";
+
+const TAB_TITLES = ["Domů", "Moduly", "Komunita", "Profil"] as const;
+
+function expectActiveTab(expected: TabTitle | null) {
+  for (const title of TAB_TITLES) {
+    const link = screen.getByRole("link", { name: title });
+    if (title === expected) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    } else {
+      expect(link).not.toHaveAttribute("aria-current");
+    }
+  }
+}
 
 // Active-tab contract edge cases — a naive `pathname.startsWith(url)` (missing
 // the trailing "/") would silently match some of these, so pin the behavior.
@@ -17,48 +30,57 @@ type TabTitle = "Domů" | "Moduly" | "Profil";
 const ACTIVE_EDGE_CASES: Array<[string, TabTitle | null]> = [
   ["/modulyx", null], // false-positive guard: must NOT match Moduly
   ["/profilx", null], // false-positive guard: must NOT match Profil
-  ["/cteni/prehled", null], // deep non-matching path
+  ["/cteni/prehled", "Moduly"], // module route lights up Moduly (section highlighting)
   ["/profil/", "Profil"], // trailing slash must not break matching
 ];
 
+// Module routes have no tab of their own but light up their owning tab
+// (section highlighting).
+const SECTION_ACTIVE_CASES: Array<[string, TabTitle]> = [
+  ["/reservations", "Moduly"],
+  ["/cteni/hledat", "Moduly"],
+  ["/birth-giving/event-1", "Moduly"],
+  ["/komunita", "Komunita"],
+  // Osobnostní testy lives under /komunita/profil, but Komunita owns the space.
+  ["/komunita/profil/abc", "Komunita"],
+];
+
+// Paths that belong to no bottom-bar tab at all.
+const NO_ACTIVE_CASES: Array<[string]> = [
+  ["/komunitax"], // false-positive guard: must NOT match Komunita
+  ["/settings/notifikace"],
+];
+
 describe("MobileBottomNav", () => {
-  it("renders all three tabs with correct hrefs", () => {
+  it("renders all four tabs with correct hrefs", () => {
     render(<MobileBottomNav />);
     expect(screen.getByRole("link", { name: "Domů" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Moduly" })).toHaveAttribute("href", "/moduly");
+    expect(screen.getByRole("link", { name: "Komunita" })).toHaveAttribute("href", "/komunita");
     expect(screen.getByRole("link", { name: "Profil" })).toHaveAttribute("href", "/profil");
   });
 
   it("marks the active tab on the home page", () => {
     pathname.current = "/";
     render(<MobileBottomNav />);
-    expect(screen.getByRole("link", { name: "Domů" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Moduly" })).not.toHaveAttribute("aria-current");
+    expectActiveTab("Domů");
   });
 
-  it("marks the Moduly tab as active on the hub and inside a module", () => {
+  it("marks the Moduly tab as active on the hub and inside the hub tree", () => {
     pathname.current = "/moduly";
     render(<MobileBottomNav />);
-    expect(screen.getByRole("link", { name: "Moduly" })).toHaveAttribute("aria-current", "page");
+    expectActiveTab("Moduly");
 
-    pathname.current = "/moduly/nastroje-techniky";
+    pathname.current = "/moduly/deep";
     cleanup();
     render(<MobileBottomNav />);
-    expect(screen.getByRole("link", { name: "Moduly" })).toHaveAttribute("aria-current", "page");
+    expectActiveTab("Moduly");
   });
 
   it("marks the Profil tab as active on the hub", () => {
     pathname.current = "/profil";
     render(<MobileBottomNav />);
-    expect(screen.getByRole("link", { name: "Profil" })).toHaveAttribute("aria-current", "page");
-  });
-
-  it("leaves all tabs inactive on a module page", () => {
-    pathname.current = "/reservations";
-    render(<MobileBottomNav />);
-    expect(screen.getByRole("link", { name: "Domů" })).not.toHaveAttribute("aria-current");
-    expect(screen.getByRole("link", { name: "Moduly" })).not.toHaveAttribute("aria-current");
-    expect(screen.getByRole("link", { name: "Profil" })).not.toHaveAttribute("aria-current");
+    expectActiveTab("Profil");
   });
 
   // Each row is its own test, so auto-cleanup runs between rows — every row
@@ -68,14 +90,22 @@ describe("MobileBottomNav", () => {
     (currentPath, expected) => {
       pathname.current = currentPath;
       render(<MobileBottomNav />);
-
-      for (const title of ["Domů", "Moduly", "Profil"] as const) {
-        if (title === expected) {
-          expect(screen.getByRole("link", { name: title })).toHaveAttribute("aria-current", "page");
-        } else {
-          expect(screen.getByRole("link", { name: title })).not.toHaveAttribute("aria-current");
-        }
-      }
+      expectActiveTab(expected);
     },
   );
+
+  it.each(SECTION_ACTIVE_CASES)(
+    "keeps the owning tab active inside %s (expected: %s)",
+    (currentPath, expected) => {
+      pathname.current = currentPath;
+      render(<MobileBottomNav />);
+      expectActiveTab(expected);
+    },
+  );
+
+  it.each(NO_ACTIVE_CASES)("leaves all tabs inactive on %s", (currentPath) => {
+    pathname.current = currentPath;
+    render(<MobileBottomNav />);
+    expectActiveTab(null);
+  });
 });
