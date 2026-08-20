@@ -4,23 +4,13 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import {
-  LayoutDashboard,
-  CalendarDays,
-  Users,
-  Mail,
-  Database,
   ChevronRight,
+  Database,
   Heart,
-  BookOpen,
-  Handshake,
-  GraduationCap,
-  NotebookPen,
-  Activity,
-  Wrench,
-  Brain,
-  Gift,
+  Mail,
 } from "lucide-react"
 
+import { NAV_MODULES, type NavModule } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
@@ -46,126 +36,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-
-type NavItem = {
-  title: string
-  url: string
-  icon: React.ComponentType<{ className?: string }>
-  external?: boolean
-  badge?: number
-  /** Renders a Beta badge and is hidden unless the user has beta access. */
-  betaOnly?: boolean
-  /** Path prefix used for the active state when it differs from `url`. */
-  activePrefix?: string
-}
-
-type NavSection = {
-  title: string
-  items: NavItem[]
-}
-
-type NavData = {
-  navMain: NavSection[]
-}
-
-// Navigation data for Tappka
-const getNavData = (isDevelopment: boolean): NavData => ({
-  navMain: [
-    {
-      title: "Hlavní",
-      items: [
-        {
-          title: "Dashboard",
-          url: "/",
-          icon: LayoutDashboard,
-        },
-        {
-          title: "Místnosti",
-          url: "/reservations",
-          icon: CalendarDays,
-        },
-        {
-          title: "Komunita",
-          url: "/komunita",
-          icon: Users,
-        },
-        {
-          title: "Zák. schůzky",
-          url: "/schuzky",
-          icon: Handshake,
-          betaOnly: true,
-          activePrefix: "/schuzky",
-        },
-        {
-          title: "Koučování",
-          url: "/koucovani",
-          icon: GraduationCap,
-          betaOnly: true,
-          activePrefix: "/koucovani",
-        },
-        {
-          title: "Týmová reflexe",
-          url: "/tymova-reflexe",
-          icon: NotebookPen,
-          betaOnly: true,
-          activePrefix: "/tymova-reflexe",
-        },
-        {
-          title: "Týmový deník",
-          url: "/tymovy-denik",
-          icon: Activity,
-          betaOnly: true,
-          activePrefix: "/tymovy-denik",
-        },
-        {
-          title: "Nástroje a techniky",
-          url: "/nastroje-techniky",
-          icon: Wrench,
-          betaOnly: true,
-          activePrefix: "/nastroje-techniky",
-        },
-        {
-          title: "Osobnostní testy",
-          url: "/komunita/profil",
-          icon: Brain,
-        },
-        {
-          title: "Čtení",
-          url: "/cteni/prehled",
-          icon: BookOpen,
-        },
-        {
-          title: "Birth Giving",
-          url: "/birth-giving",
-          icon: Gift,
-          betaOnly: true,
-          activePrefix: "/birth-giving",
-        },
-      ],
-    },
-    ...(isDevelopment
-      ? [
-        {
-          title: "Dev",
-          items: [
-            {
-              title: "Mailpit",
-              url: "http://127.0.0.1:54324",
-              icon: Mail,
-              external: true,
-            },
-            {
-              title: "Supabase Studio",
-              url: "http://127.0.0.1:54323",
-              icon: Database,
-              external: true,
-            },
-          ],
-        },
-      ]
-      : []),
-  ],
-})
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
@@ -198,6 +68,16 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   ]
   const isDevelopment = process.env.NODE_ENV === "development"
 
+  const DEV_INSPECT_ITEMS: NavModule[] = [
+    { title: "Mailpit", url: "http://127.0.0.1:54324", icon: Mail, description: "", external: true },
+    { title: "Supabase Studio", url: "http://127.0.0.1:54323", icon: Database, description: "", external: true },
+  ]
+
+  const sections: { title: string; items: NavModule[] }[] = [
+    { title: "Hlavní", items: NAV_MODULES },
+    ...(isDevelopment ? [{ title: "Dev", items: DEV_INSPECT_ITEMS }] : []),
+  ]
+
   const closeSidebarOnMobile = () => {
     setOpenMobile(false)
   }
@@ -216,7 +96,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {getNavData(isDevelopment).navMain.map((section) => (
+        {sections.map((section) => (
           <SidebarGroup key={section.title}>
             <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -268,67 +148,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                           </CollapsibleContent>
                         </SidebarMenuItem>
                       </Collapsible>
-                    )
-                  }
-
-                  // Beta-gated items render through NavItem data (betaOnly).
-                  // The active state uses activePrefix so a colloquial url can
-                  // stay stable while the whole section stays highlighted.
-                  if (item.betaOnly) {
-                    if (!isBeta) return null
-                    const activeUrl = item.activePrefix ?? item.url
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={pathname === activeUrl || pathname.startsWith(activeUrl + "/")}
-                          tooltip={item.title}
-                        >
-                          <Link href={item.url} onClick={closeSidebarOnMobile}>
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  }
-
-                  // Osobnostní testy — own profile tests tab, beta-only
-                  if (item.title === "Osobnostní testy") {
-                    if (!isBeta || !user) return null
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={
-                            pathname.startsWith("/komunita/profil/") &&
-                            searchParams.get("tab") === "osobnostni-testy"
-                          }
-                          tooltip={item.title}
-                        >
-                          <Link
-                            href={`/komunita/profil/${user.id}?tab=osobnostni-testy`}
-                            onClick={closeSidebarOnMobile}
-                          >
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
                     )
                   }
 
@@ -389,6 +208,64 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                     )
                   }
 
+                  // Osobnostní testy — own profile tests tab, beta-only
+                  if (item.title === "Osobnostní testy") {
+                    if (!isBeta || !user) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={
+                            pathname.startsWith("/komunita/profil/") &&
+                            searchParams.get("tab") === "osobnostni-testy"
+                          }
+                          tooltip={item.title}
+                        >
+                          <Link
+                            href={`/komunita/profil/${user.id}?tab=osobnostni-testy`}
+                            onClick={closeSidebarOnMobile}
+                          >
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Beta-gated modules — badge item, hidden without beta access.
+                  if (item.betaOnly) {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
                   // Standard menu item (internal or external)
                   return (
                     <SidebarMenuItem key={item.title}>
@@ -403,14 +280,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                         >
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
-                          {item.badge !== undefined && item.badge > 0 && (
-                            <Badge
-                              variant="destructive"
-                              className="ml-auto h-5 min-w-5 p-0 flex items-center justify-center text-xs"
-                            >
-                              {item.badge}
-                            </Badge>
-                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

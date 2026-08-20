@@ -19,6 +19,8 @@ export interface NavModule {
   icon: LucideIcon;
   /** Hidden unless the user has beta access. */
   betaOnly?: boolean;
+  /** Opens in a new browser tab; used only by dev-tool items. */
+  external?: boolean;
   /** One-line description shown on module cards. */
   description: string;
 }
