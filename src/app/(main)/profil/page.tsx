@@ -1,0 +1,34 @@
+import { redirect } from "next/navigation";
+
+import { getSessionProfile } from "@/lib/auth/session";
+import { ProfileHub } from "@/components/navigation/profile-hub";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
+
+export const metadata = {
+  title: "Profil | Tappka",
+  description: "Tvůj profil a nastavení",
+};
+
+export default async function ProfilPage() {
+  const profile = await getSessionProfile();
+  if (!profile) redirect("/auth/login");
+
+  return (
+    <PageShell size="medium">
+      <PageHeader
+        title="Profil"
+        description="Tvůj účet, přístupy a nastavení aplikace."
+      />
+      <ProfileHub
+        user={{
+          id: profile.id,
+          name: profile.name ?? "",
+          email: profile.work_email,
+          role: profile.role,
+          beta_access: profile.beta_access_granted_at != null,
+        }}
+      />
+    </PageShell>
+  );
+}
