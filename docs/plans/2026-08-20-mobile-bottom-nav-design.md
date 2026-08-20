@@ -91,6 +91,22 @@ Zpětná vazba (rose-tinted, replaces the removed floating pill), theme switcher
 - `pnpm typecheck` + full fast suite before commit.
 - No DB / migration changes.
 
+## Amendment (2026-08-21, product owner feedback)
+
+1. **Bottom bar has 4 tabs**: Domů, Moduly, **Komunita**, Profil (Komunita
+   promoted from the hub grid to its own tab).
+2. **Section highlighting**: the Moduly tab stays active while the user is
+   inside any module route (derived from `NAV_MODULES`, excluding `/` and
+   `/komunita*` — Komunita owns that space). Komunita tab is active on
+   `/komunita*`.
+3. **Hub composition & ordering by visit frequency** (product owner data):
+   Čtení (multiple×/week), Místnosti (weekly), Nástroje a techniky (weekly),
+   Zák. schůzky (few×/month), Týmová reflexe (monthly), Týmový deník (3×/year),
+   Koučování (2×/year), Birth Giving (2×/year), Osobnostní testy (≤1×/year).
+   Dashboard and Komunita no longer appear as hub cards (both are permanent
+   tabs). Weekly+ tier renders as full-width featured cards; the rest stay
+   compact grid cards. Desktop sidebar order is unchanged.
+
 ## Out of scope
 
 - Desktop sidebar behavior (unchanged).
