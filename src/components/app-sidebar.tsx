@@ -102,6 +102,10 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
+                  // Branch order is load-bearing: Čtení and Osobnostní testy are
+                  // betaOnly in NAV_MODULES but render through their title special
+                  // cases below — the generic betaOnly branch must stay after them.
+
                   // Special handling for Rezervace with sub-menu for coach/admin
                   if (item.title === "Místnosti" && isCoachOrAdmin) {
                     return (
