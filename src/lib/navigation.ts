@@ -24,7 +24,7 @@ export interface NavModule {
 }
 
 export const NAV_MODULES: NavModule[] = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard, description: "Přehled vašich aktivit a rychlé akce." },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, description: "Přehled tvých aktivit a rychlé akce." },
   { title: "Místnosti", url: "/reservations", icon: CalendarDays, description: "Rezervace místností a jejich nastavení." },
   { title: "Komunita", url: "/komunita", icon: Users, description: "Lidé, týmy a profily v Tiimiakatemii." },
   { title: "Zák. schůzky", url: "/schuzky", icon: Handshake, betaOnly: true, description: "Evidence zákaznických schůzek." },
@@ -32,7 +32,8 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Týmová reflexe", url: "/tymova-reflexe", icon: NotebookPen, betaOnly: true, description: "Reflexe týmové spolupráce a semestrální hodnocení." },
   { title: "Týmový deník", url: "/tymovy-denik", icon: Activity, betaOnly: true, description: "Denní zápisy a přehled týmových aktivit." },
   { title: "Nástroje a techniky", url: "/nastroje-techniky", icon: Wrench, betaOnly: true, description: "Katalog modelů, technik a nástrojů pro práci." },
-  { title: "Osobnostní testy", url: "/komunita/profil", icon: Brain, betaOnly: true, description: "Výsledky osobnostních testů na vašem profilu." },
+  { title: "Osobnostní testy", url: "/komunita/profil", icon: Brain, betaOnly: true, description: "Výsledky osobnostních testů na tvém profilu." },
+  // Sidebar renders Čtení and Osobnostní testy via title-based special-case branches — keep betaOnly here, and the generic beta branch must run after those special cases.
   { title: "Čtení", url: "/cteni/prehled", icon: BookOpen, betaOnly: true, description: "Knihovna knih, eseje a jejich hodnocení." },
   { title: "Birth Giving", url: "/birth-giving", icon: Gift, betaOnly: true, description: "Týmová setkání Birth Giving a retrospektivy." },
 ];

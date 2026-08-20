@@ -21,8 +21,32 @@ describe("navigation config", () => {
   });
 
   it("hides beta modules for non-beta users and shows all for beta users", () => {
-    const visible = getVisibleModules(false);
-    expect(visible.every((m) => !m.betaOnly)).toBe(true);
-    expect(getVisibleModules(true).length).toBe(NAV_MODULES.length);
+    expect(getVisibleModules(true).map((m) => m.url)).toEqual([
+      "/",
+      "/reservations",
+      "/komunita",
+      "/schuzky",
+      "/koucovani",
+      "/tymova-reflexe",
+      "/tymovy-denik",
+      "/nastroje-techniky",
+      "/komunita/profil",
+      "/cteni/prehled",
+      "/birth-giving",
+    ]);
+    expect(getVisibleModules(false).map((m) => m.url)).toEqual(["/", "/reservations", "/komunita"]);
+  });
+
+  it("pins the beta-only urls", () => {
+    expect(NAV_MODULES.filter((m) => m.betaOnly).map((m) => m.url)).toEqual([
+      "/schuzky",
+      "/koucovani",
+      "/tymova-reflexe",
+      "/tymovy-denik",
+      "/nastroje-techniky",
+      "/komunita/profil",
+      "/cteni/prehled",
+      "/birth-giving",
+    ]);
   });
 });
