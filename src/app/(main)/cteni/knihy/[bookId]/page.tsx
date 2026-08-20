@@ -19,6 +19,8 @@ import { BookAdminActions } from './admin-actions';
 import { BookDescription } from '@/components/books/book-description';
 import { BookEssaysList } from '@/components/books/book-essays-list';
 import { VerifiedBadge, RocketBadge, HighlightBadge } from '@/components/books/book-status-badges';
+import { BookportReadButton } from '@/components/books/bookport-read-button';
+import { resolveBookportBook } from '@/lib/books/bookport';
 import { BOOK_CATEGORY_LABELS, BOOK_STATUS_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
 
@@ -54,6 +56,10 @@ export default async function BookDetailPage({ params }: PageProps) {
   if (!book) notFound();
 
   const isCoachOrAdmin = profile?.role === 'coach' || profile?.role === 'admin';
+  const bookport = await resolveBookportBook({
+    titleCs: book.title_cs,
+    isbn13: book.isbn_13 ?? null,
+  });
 
   const previewUrl = book.preview_link ? book.preview_link.replace(/^http:\/\//, 'https://') : null;
   const goodreadsUrl = `https://www.goodreads.com/search?q=${encodeURIComponent(book.title_cs)}`;
@@ -105,6 +111,11 @@ export default async function BookDetailPage({ params }: PageProps) {
                 <ExternalLink className="size-3.5" />
               </a>
             </Button>
+          )}
+          {bookport && (
+            <div className="mt-3">
+              <BookportReadButton match={bookport} />
+            </div>
           )}
         </div>
 
