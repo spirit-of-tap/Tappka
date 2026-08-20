@@ -51,7 +51,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["user"]; reviewCount?: number }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { setOpenMobile } = useSidebar()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isBeta = user?.beta_access ?? false
   const isReservationsActive = pathname.startsWith("/reservations")
@@ -77,10 +76,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
     { title: "Hlavní", items: NAV_MODULES },
     ...(isDevelopment ? [{ title: "Dev", items: DEV_INSPECT_ITEMS }] : []),
   ]
-
-  const closeSidebarOnMobile = () => {
-    setOpenMobile(false)
-  }
 
   return (
     <>
@@ -133,7 +128,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                                   asChild
                                   isActive={(pathname === "/reservations" || pathname.startsWith("/reservations/")) && pathname !== "/reservations/settings"}
                                 >
-                                  <Link href="/reservations" onClick={closeSidebarOnMobile}>
+                                  <Link href="/reservations">
                                     Místnosti
                                   </Link>
                                 </SidebarMenuSubButton>
@@ -143,7 +138,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                                   asChild
                                   isActive={pathname === "/reservations/settings"}
                                 >
-                                  <Link href="/reservations/settings" onClick={closeSidebarOnMobile}>
+                                  <Link href="/reservations/settings">
                                     Nastavení
                                   </Link>
                                 </SidebarMenuSubButton>
@@ -191,7 +186,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                                     asChild
                                     isActive={pathname === sub.url || (sub.url !== "/" && pathname.startsWith(sub.url + "/"))}
                                   >
-                                    <Link href={sub.url} onClick={closeSidebarOnMobile}>
+                                    <Link href={sub.url}>
                                       {sub.title}
                                       {"badge" in sub && sub.badge !== undefined && sub.badge > 0 && (
                                         <Badge
@@ -228,7 +223,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                         >
                           <Link
                             href={`/komunita/profil/${user.id}?tab=osobnostni-testy`}
-                            onClick={closeSidebarOnMobile}
                           >
                             <item.icon className="size-4" />
                             <span>{item.title}</span>
@@ -255,7 +249,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                           isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
                           tooltip={item.title}
                         >
-                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                          <Link href={item.url}>
                             <item.icon className="size-4" />
                             <span>{item.title}</span>
                             <Badge
@@ -279,7 +273,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                       >
                         <Link
                           href={item.url}
-                          onClick={item.external ? undefined : closeSidebarOnMobile}
                           {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                         >
                           <item.icon className="size-4" />
@@ -313,7 +306,7 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                   "border border-rose-200/50 dark:border-rose-800/40",
                 )}
               >
-                <Link href="/zpetna-vazba" onClick={closeSidebarOnMobile}>
+                <Link href="/zpetna-vazba">
                   <Heart className="size-4 animate-pulse transition-transform group-data-[active=true]/menu-button:scale-110" />
                   <span className="font-medium">Zpětná vazba</span>
                 </Link>
