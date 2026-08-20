@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getSessionProfile } from "@/lib/auth/session";
+import { ROLE_LABELS } from "@/lib/komunita/types";
 import { ProfileHub } from "@/components/navigation/profile-hub";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -25,7 +26,9 @@ export default async function ProfilPage() {
           id: profile.id,
           name: profile.name ?? "",
           email: profile.work_email,
-          role: profile.role,
+          // profile.role is a non-null profile_role enum value, so it is always
+          // a ROLE_LABELS key — no fallback needed.
+          role: ROLE_LABELS[profile.role],
           beta_access: profile.beta_access_granted_at != null,
         }}
       />

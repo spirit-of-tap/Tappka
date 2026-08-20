@@ -63,21 +63,21 @@ export function ProfileHub({ user }: ProfileHubProps) {
         <div className="min-w-0 space-y-0.5">
           <p className="truncate font-semibold">{user.name}</p>
           <p className="truncate text-sm text-muted-foreground">{user.email}</p>
-          {user.role && <p className="text-xs capitalize text-muted-foreground">{user.role}</p>}
+          {user.role && <p className="text-xs text-muted-foreground">{user.role}</p>}
         </div>
       </div>
 
       <div className="divide-y overflow-hidden rounded-xl border bg-card">
-        <Link href={`/komunita/profil/${user.id}`} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent">
+        <Link href={`/komunita/profil/${user.id}`} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
           <UserIcon className="size-4 text-muted-foreground" />
           Můj profil
         </Link>
-        <Link href="/settings/notifikace" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent">
+        <Link href="/settings/notifikace" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
           <Bell className="size-4 text-muted-foreground" />
           Notifikace
         </Link>
         {user.beta_access && (
-          <Link href="/portfolio" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent">
+          <Link href="/portfolio" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
             <BriefcaseBusiness className="size-4 text-muted-foreground" />
             <span className="flex-1">Portfolio</span>
             <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
@@ -85,7 +85,7 @@ export function ProfileHub({ user }: ProfileHubProps) {
             </Badge>
           </Link>
         )}
-        <Link href="/zpetna-vazba" className="flex items-center gap-3 bg-rose-50/60 px-4 py-3 text-sm text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/60">
+        <Link href="/zpetna-vazba" className="flex items-center gap-3 bg-rose-50/60 px-4 py-3 text-sm text-rose-700 hover:bg-rose-100 focus-ring dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/60">
           <Heart className="size-4" />
           Zpětná vazba
         </Link>
@@ -99,6 +99,7 @@ export function ProfileHub({ user }: ProfileHubProps) {
               key={o.value}
               variant={theme === o.value ? "default" : "outline"}
               size="sm"
+              aria-pressed={theme === o.value}
               onClick={() => setTheme(o.value)}
             >
               <o.icon className="mr-1.5 size-4" />
@@ -109,7 +110,7 @@ export function ProfileHub({ user }: ProfileHubProps) {
       </div>
 
       <div className="divide-y overflow-hidden rounded-xl border bg-card">
-        <Link href="/beta" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent">
+        <Link href="/beta" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
           <FlaskConical className="size-4 text-muted-foreground" />
           Beta přístup
         </Link>

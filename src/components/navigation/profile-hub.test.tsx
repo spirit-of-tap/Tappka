@@ -26,7 +26,9 @@ const USER = {
   id: "profile-1",
   name: "Anna Nováková",
   email: "anna@example.com",
-  role: "student" as const,
+  // The page maps the raw enum through ROLE_LABELS before passing it down,
+  // so the component receives an already-localized, properly cased label.
+  role: "Student:ka" as const,
   beta_access: true,
 };
 
@@ -41,6 +43,7 @@ describe("ProfileHub", () => {
     render(<ProfileHub user={USER} />);
     expect(screen.getByText("Anna Nováková")).toBeInTheDocument();
     expect(screen.getByText("anna@example.com")).toBeInTheDocument();
+    expect(screen.getByText("Student:ka")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Můj profil/ })).toHaveAttribute("href", "/komunita/profil/profile-1");
     expect(screen.getByRole("link", { name: /Notifikace/ })).toHaveAttribute("href", "/settings/notifikace");
     expect(screen.getByRole("link", { name: /Zpětná vazba/ })).toHaveAttribute("href", "/zpetna-vazba");
@@ -57,9 +60,16 @@ describe("ProfileHub", () => {
     expect(screen.queryByRole("link", { name: /Portfolio/ })).not.toBeInTheDocument();
   });
 
-  it("switches theme from the theme row", async () => {
+  it("omits the role line when role is undefined", () => {
+    render(<ProfileHub user={{ ...USER, role: undefined }} />);
+    expect(screen.queryByText("Student:ka")).not.toBeInTheDocument();
+  });
+
+  it("switches theme from the theme row and exposes pressed state", async () => {
     const user = userEvent.setup();
     render(<ProfileHub user={USER} />);
+    expect(screen.getByRole("button", { name: "Světlé" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Tmavé" })).toHaveAttribute("aria-pressed", "false");
     await user.click(screen.getByRole("button", { name: "Tmavé" }));
     expect(mockSetTheme).toHaveBeenCalledWith("dark");
   });
@@ -71,5 +81,7 @@ describe("ProfileHub", () => {
     await user.click(screen.getByRole("button", { name: /Odhlásit se/ }));
     await waitFor(() => expect(mockSignOut).toHaveBeenCalled());
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/auth/login"));
+    // Session must be cleared before navigating away.
+    expect(mockSignOut.mock.invocationCallOrder[0]).toBeLessThan(mockPush.mock.invocationCallOrder[0]);
   });
 });
