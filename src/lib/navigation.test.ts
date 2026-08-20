@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NAV_MODULES, getVisibleModules } from "./navigation";
+import { MODULE_HUB_ORDER, NAV_MODULES, getHubModules, getVisibleModules } from "./navigation";
 
 describe("navigation config", () => {
   it("contains every module with url, icon and Czech description", () => {
@@ -48,5 +48,36 @@ describe("navigation config", () => {
       "/cteni/prehled",
       "/birth-giving",
     ]);
+  });
+});
+
+describe("getHubModules", () => {
+  it("returns hub cards in visit-frequency order for beta users", () => {
+    expect(getHubModules(true).map((m) => m.url)).toEqual([
+      "/cteni/prehled",
+      "/reservations",
+      "/nastroje-techniky",
+      "/schuzky",
+      "/tymova-reflexe",
+      "/tymovy-denik",
+      "/koucovani",
+      "/birth-giving",
+      "/komunita/profil",
+    ]);
+  });
+
+  it("keeps only non-beta modules for non-beta users, preserving hub order", () => {
+    expect(getHubModules(false).map((m) => m.url)).toEqual(["/reservations"]);
+  });
+
+  it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
+    expect(MODULE_HUB_ORDER).toHaveLength(9);
+    expect(MODULE_HUB_ORDER).not.toContain("/");
+    expect(MODULE_HUB_ORDER).not.toContain("/komunita");
+  });
+
+  it("marks exactly the weekly+ modules as featured", () => {
+    const featured = getHubModules(true).filter((m) => m.featured);
+    expect(featured.map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/nastroje-techniky"]);
   });
 });

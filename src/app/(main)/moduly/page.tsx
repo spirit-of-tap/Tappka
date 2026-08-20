@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getSessionProfile } from "@/lib/auth/session";
-import { getVisibleModules } from "@/lib/navigation";
+import { getHubModules } from "@/lib/navigation";
 import { ModuleGrid } from "@/components/navigation/module-grid";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
@@ -23,7 +23,7 @@ export default async function ModulyPage() {
         title="Moduly"
         description="Všechny části Tappky na jednom místě."
       />
-      <ModuleGrid modules={getVisibleModules(isBeta)} profileId={profile.id} />
+      <ModuleGrid modules={getHubModules(isBeta)} profileId={profile.id} />
     </PageShell>
   );
 }

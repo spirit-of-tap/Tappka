@@ -29,4 +29,12 @@ describe("ModuleGrid", () => {
     const link = screen.getByRole("link", { name: /Osobnostní testy/ });
     expect(link).toHaveAttribute("href", "/komunita/profil/user-1?tab=osobnostni-testy");
   });
+
+  it("renders high-traffic modules as full-width featured cards", () => {
+    render(<ModuleGrid modules={NAV_MODULES} profileId="user-1" />);
+    const cteni = screen.getByRole("link", { name: /Čtení/ });
+    expect(cteni.className).toContain("col-span-2");
+    const koucovani = screen.getByRole("link", { name: /Koučování/ });
+    expect(koucovani.className).not.toContain("col-span-2");
+  });
 });
