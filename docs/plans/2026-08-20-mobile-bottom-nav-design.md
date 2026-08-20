@@ -106,6 +106,10 @@ Zpětná vazba (rose-tinted, replaces the removed floating pill), theme switcher
    Dashboard and Komunita no longer appear as hub cards (both are permanent
    tabs). Weekly+ tier renders as full-width featured cards; the rest stay
    compact grid cards. Desktop sidebar order is unchanged.
+4. **No top header on mobile** (reverses the earlier "slim header with title"
+   decision — the owner tried it and found it not useful). The header
+   (trigger/breadcrumb/title) renders `md+` only; content starts at the top on
+   phones. The `MobilePageTitle` component is removed.
 
 ## Out of scope
 
