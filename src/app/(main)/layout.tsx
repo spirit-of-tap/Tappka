@@ -5,6 +5,7 @@ import { getSessionProfile } from "@/lib/auth/session";
 import { getCoachUnreadCount } from "@/lib/essays/queries";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/navigation/mobile-bottom-nav";
+import { MobilePageTitle } from "@/components/navigation/mobile-page-title";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -72,8 +73,9 @@ export default async function DashboardLayout({
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            <MobilePageTitle />
           </header>
-          <main className="flex flex-1 flex-col gap-4 p-4 pb-24 md:pb-4">{children}</main>
+          <main className="flex flex-1 flex-col gap-4 p-4 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-4">{children}</main>
           <footer className="hidden border-t p-4 md:block">
             <p className="text-center text-xs text-muted-foreground">
               Tiimiakatemia Prague {new Date().getFullYear()}
