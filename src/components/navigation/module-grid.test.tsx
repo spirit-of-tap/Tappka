@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { ModuleGrid } from "./module-grid";
 import { NAV_MODULES } from "@/lib/navigation";
 
@@ -12,8 +12,16 @@ describe("ModuleGrid", () => {
   });
 
   it("shows a Beta badge on beta-only modules", () => {
-    render(<ModuleGrid modules={NAV_MODULES} />);
+    render(<ModuleGrid modules={NAV_MODULES} profileId="user-1" />);
     expect(screen.getAllByText("Beta").length).toBe(NAV_MODULES.filter((m) => m.betaOnly).length);
+    const mistnosti = screen.getByRole("link", { name: /Místnosti/ });
+    expect(within(mistnosti).queryByText("Beta")).not.toBeInTheDocument();
+  });
+
+  it("hides own-profile modules when no profileId is given", () => {
+    render(<ModuleGrid modules={NAV_MODULES} />);
+    expect(screen.queryByRole("link", { name: /Osobnostní testy/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Místnosti/ })).toBeInTheDocument();
   });
 
   it("links the personality tests card to the own profile tab when profileId is given", () => {

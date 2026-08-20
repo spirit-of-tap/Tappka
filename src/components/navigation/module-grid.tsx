@@ -5,17 +5,19 @@ import type { NavModule } from "@/lib/navigation"
 
 interface ModuleGridProps {
   modules: NavModule[]
-  /** Enables the own-profile link for Osobnostní testy. */
+  /** Required to render modules with ownProfileTab (links to the signed-in user's profile). */
   profileId?: string
 }
 
 export function ModuleGrid({ modules, profileId }: ModuleGridProps) {
+  const renderable = modules.filter((m) => !m.ownProfileTab || profileId)
+
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {modules.map((m) => {
+      {renderable.map((m) => {
         const href =
-          m.title === "Osobnostní testy" && profileId
-            ? `/komunita/profil/${profileId}?tab=osobnostni-testy`
+          m.ownProfileTab && profileId
+            ? `/komunita/profil/${profileId}?tab=${m.ownProfileTab}`
             : m.url
 
         return (
