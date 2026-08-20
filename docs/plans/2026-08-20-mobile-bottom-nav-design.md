@@ -110,6 +110,11 @@ Zpětná vazba (rose-tinted, replaces the removed floating pill), theme switcher
    decision — the owner tried it and found it not useful). The header
    (trigger/breadcrumb/title) renders `md+` only; content starts at the top on
    phones. The `MobilePageTitle` component is removed.
+5. **No active-module ring on the hub** (supersedes the "Active module shows a
+   subtle ring" note in §2): marking the current module would force this
+   server-rendered page client-side just for `usePathname`, so it was
+   consciously dropped. Hub cards stay plain `Link`s with the shared
+   `focus-ring` utility only.
 
 ## Out of scope
 

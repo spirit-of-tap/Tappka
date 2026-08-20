@@ -54,7 +54,7 @@ export function MobileBottomNav() {
               href={tab.url}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 transition-transform active:scale-[0.98]",
+                "flex flex-1 flex-col items-center justify-center gap-1 transition-transform active:scale-[0.98] focus-ring",
                 active ? "text-primary" : "text-muted-foreground",
               )}
             >
