@@ -247,6 +247,23 @@ export async function createTestTeam(onboardingYear?: number): Promise<string> {
   return id;
 }
 
+/** Deletes a single storage object using the service role (used by cleanupTestData). */
+async function storageRemoveFile(bucket: string, key: string): Promise<void> {
+  const res = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/${bucket}/${key.split("/").map(encodeURIComponent).join("/")}`,
+    {
+      method: "DELETE",
+      headers: {
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
+    },
+  );
+  if (!res.ok && res.status !== 404 && res.status !== 400) {
+    throw new Error(`storage remove ${bucket}/${key} failed: ${res.status}`);
+  }
+}
+
 /** Deletes all data created by the current worker's E2E tests.
  *
  *  Must be called from test.afterAll (or a global teardown). Safe to call
@@ -268,10 +285,27 @@ export async function cleanupTestData(): Promise<void> {
     restFetch(`/books?created_by_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
   ]));
 
+  // Delete personality tests together with their files — the created_by /
+  // updated_by FKs are RESTRICT, so any leftover row (including soft-deleted
+  // `removed_at` ones) blocks the profile DELETE in phase 3.
+  await Promise.all(profileIds.map(async (pid) => {
+    const rows = (await restFetch(
+      `/personality_tests?profile_id=eq.${pid}&select=file_path`,
+      "GET",
+    ).catch(() => [] as { file_path: string }[])) as { file_path: string }[];
+    await Promise.all(rows.map(({ file_path: key }) =>
+      storageRemoveFile("documents", key).catch((err) => {
+        console.error(`E2E cleanup: failed to remove storage file ${key}`, err);
+      })
+    ));
+    await restFetch(`/personality_tests?profile_id=eq.${pid}`, "DELETE").catch(() => {});
+  }));
+
   // Phase 2 — delete team-scoped data
   await Promise.all(teamIds.flatMap((tid) => [
     restFetch(`/recurring_schedules?team_id=eq.${tid}`, "DELETE").catch(() => {}),
     restFetch(`/team_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+    restFetch(`/team_activities?team_id=eq.${tid}`, "DELETE").catch(() => {}),
     restFetch(`/team_semester_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
   ]));
 
@@ -321,6 +355,22 @@ export async function seedTeamReflection(
     updated_by_profile_id: profileId,
   })) as { id: string }[];
   return { reflectionId: rows[0].id };
+}
+
+/** Seeds a team activity row directly, bypassing the UI. */
+export async function seedTeamActivity(
+  teamId: string,
+  profileId: string,
+  occurredAt: string,
+): Promise<{ activityId: string }> {
+  const rows = (await restFetch("/team_activities", "POST", {
+    team_id: teamId,
+    occurred_at: occurredAt,
+    activity_type: "E2E team building",
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
+  })) as { id: string }[];
+  return { activityId: rows[0].id };
 }
 
 /** Create a seeded book for E2E tests. */

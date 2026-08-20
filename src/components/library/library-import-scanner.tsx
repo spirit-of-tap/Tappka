@@ -31,7 +31,7 @@ export function LibraryImportScanner() {
   const [importingId, setImportingId] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
 
-  const handleSearch = async (searchQuery?: string) => {
+  const handleSearch = useCallback(async (searchQuery?: string) => {
     const q = (searchQuery ?? query).trim();
     if (!q) return;
     setSearching(true);
@@ -49,7 +49,7 @@ export function LibraryImportScanner() {
     } finally {
       setSearching(false);
     }
-  };
+  }, [query]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +83,7 @@ export function LibraryImportScanner() {
       setShowScanner(false);
       handleSearch(value);
     }
-  }, []);
+  }, [handleSearch]);
 
   return (
     <div className="flex flex-col gap-4">

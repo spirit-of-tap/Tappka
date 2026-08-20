@@ -15,7 +15,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/responsive-alert-dialog";
 import { EditReservationDialog } from "./edit-reservation-dialog";
 import { formatTime, isReservationActive } from "@/lib/reservations/utils";

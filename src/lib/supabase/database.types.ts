@@ -1035,6 +1035,76 @@ export type Database = {
           },
         ]
       }
+      personality_tests: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          profile_id: string
+          removed_at: string | null
+          test_type: Database["public"]["Enums"]["personality_test_type"]
+          test_type_other: string | null
+          tested_on: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          profile_id: string
+          removed_at?: string | null
+          test_type: Database["public"]["Enums"]["personality_test_type"]
+          test_type_other?: string | null
+          tested_on: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          profile_id?: string
+          removed_at?: string | null
+          test_type?: Database["public"]["Enums"]["personality_test_type"]
+          test_type_other?: string | null
+          tested_on?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personality_tests_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personality_tests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personality_tests_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           access_removed_at: string | null
@@ -1442,6 +1512,73 @@ export type Database = {
           },
         ]
       }
+      team_activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          occurred_at: string
+          participants: string | null
+          reason: string | null
+          reflection: string | null
+          removed_at: string | null
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          occurred_at: string
+          participants?: string | null
+          reason?: string | null
+          reflection?: string | null
+          removed_at?: string | null
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          occurred_at?: string
+          participants?: string | null
+          reason?: string | null
+          reflection?: string | null
+          removed_at?: string | null
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_activities_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activities_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activities_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_reflections: {
         Row: {
           created_at: string
@@ -1654,6 +1791,67 @@ export type Database = {
         }
         Relationships: []
       }
+      tools_techniques: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          name: string
+          profile_id: string
+          reflection: string
+          removed_at: string | null
+          tool_type: Database["public"]["Enums"]["tool_type"]
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          name: string
+          profile_id: string
+          reflection: string
+          removed_at?: string | null
+          tool_type: Database["public"]["Enums"]["tool_type"]
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          name?: string
+          profile_id?: string
+          reflection?: string
+          removed_at?: string | null
+          tool_type?: Database["public"]["Enums"]["tool_type"]
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tools_techniques_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tools_techniques_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tools_techniques_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           auth_user_id: string | null
@@ -1807,6 +2005,14 @@ export type Database = {
     Enums: {
       book_list_status: "processing" | "shortlist" | "longlist" | "archived"
       book_source: "manual" | "google_books" | "open_library"
+      personality_test_type:
+        | "gallup"
+        | "mbti"
+        | "disc"
+        | "big_five"
+        | "enneagram"
+        | "belbin"
+        | "other"
       profile_role: "student" | "mentor" | "coach" | "admin"
       schedule_type: "training_session" | "houston_calling"
       semester_reflection_topic:
@@ -1821,6 +2027,7 @@ export type Database = {
         | "komunitni_a_cross_projekty"
         | "zacleneni_tucnaku"
         | "dalsi"
+      tool_type: "model" | "technique" | "tool"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1950,6 +2157,15 @@ export const Constants = {
     Enums: {
       book_list_status: ["processing", "shortlist", "longlist", "archived"],
       book_source: ["manual", "google_books", "open_library"],
+      personality_test_type: [
+        "gallup",
+        "mbti",
+        "disc",
+        "big_five",
+        "enneagram",
+        "belbin",
+        "other",
+      ],
       profile_role: ["student", "mentor", "coach", "admin"],
       schedule_type: ["training_session", "houston_calling"],
       semester_reflection_topic: [
@@ -1965,6 +2181,7 @@ export const Constants = {
         "zacleneni_tucnaku",
         "dalsi",
       ],
+      tool_type: ["model", "technique", "tool"],
     },
   },
 } as const

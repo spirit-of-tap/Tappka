@@ -5,10 +5,9 @@ import { Badge } from '@/components/ui/badge';
 interface LibraryStatusBadgeProps {
   inLibrary: boolean;
   availableCopies: number;
-  totalCopies: number;
 }
 
-export function LibraryStatusBadge({ inLibrary, availableCopies, totalCopies }: LibraryStatusBadgeProps) {
+export function LibraryStatusBadge({ inLibrary, availableCopies }: LibraryStatusBadgeProps) {
   if (!inLibrary) return null;
 
   return (

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import {
   LayoutDashboard,
   CalendarDays,
@@ -15,6 +15,9 @@ import {
   Handshake,
   GraduationCap,
   NotebookPen,
+  Activity,
+  Wrench,
+  Brain,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -97,6 +100,21 @@ const getNavData = (isDevelopment: boolean, _isCoachOrAdmin: boolean, _reviewCou
           icon: NotebookPen,
         },
         {
+          title: "Týmový deník",
+          url: "/tymovy-denik",
+          icon: Activity,
+        },
+        {
+          title: "Nástroje a techniky",
+          url: "/nastroje-techniky",
+          icon: Wrench,
+        },
+        {
+          title: "Osobnostní testy",
+          url: "/komunita/profil",
+          icon: Brain,
+        },
+        {
           title: "Čtení",
           url: "/cteni/prehled",
           icon: BookOpen,
@@ -140,6 +158,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["user"]; reviewCount?: number }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { setOpenMobile } = useSidebar()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isBeta = user?.beta_access ?? false
@@ -147,6 +166,8 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
   const isSchuzkyActive = pathname.startsWith("/schuzky")
   const isKoucovaniActive = pathname.startsWith("/koucovani")
   const isTymovaReflexeActive = pathname.startsWith("/tymova-reflexe")
+  const isTymovyDenikActive = pathname.startsWith("/tymovy-denik")
+  const isNastrojeTechnikyActive = pathname.startsWith("/nastroje-techniky")
   const isCteniActive = pathname.startsWith("/cteni")
   const cteniSubItems = [
     { title: "Přehled", url: "/cteni/prehled" },
@@ -311,7 +332,91 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                     )
                   }
 
-                  // Special handling for Čtení with sub-menu (beta-only)
+                  // Týmový deník — beta-only
+                  if (item.title === "Týmový deník") {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isTymovyDenikActive}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Nástroje a techniky — beta-only
+                  if (item.title === "Nástroje a techniky") {
+                    if (!isBeta) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isNastrojeTechnikyActive}
+                          tooltip={item.title}
+                        >
+                          <Link href={item.url} onClick={closeSidebarOnMobile}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Osobnostní testy — own profile tests tab, beta-only
+                  if (item.title === "Osobnostní testy") {
+                    if (!isBeta || !user) return null
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={
+                            pathname.startsWith("/komunita/profil/") &&
+                            searchParams.get("tab") === "osobnostni-testy"
+                          }
+                          tooltip={item.title}
+                        >
+                          <Link
+                            href={`/komunita/profil/${user.id}?tab=osobnostni-testy`}
+                            onClick={closeSidebarOnMobile}
+                          >
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto h-5 text-[10px] px-1.5"
+                            >
+                              Beta
+                            </Badge>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  }
+
+                  // Čtení — beta-only
                   if (item.title === "Čtení") {
                     if (!isBeta) return null
 
