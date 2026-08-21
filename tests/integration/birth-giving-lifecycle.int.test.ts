@@ -185,11 +185,20 @@ describe("Birth Giving lifecycle RPCs", () => {
     });
   });
 
-  it("reports only an identity-taken marker for another organizer's private draft without leaking its id", async () => {
+  it("scopes conflict-search visibility to owners before publishing and everyone after", async () => {
     await withRollback(async (client) => {
       const { organizer, other } = await actors(client);
       const startsAt = timestamp(DAY_MS);
       const eventId = await createDraft(client, organizer, { startsAt, suffix: "Private Exact" });
+
+      await asClaims(client, { sub: organizer.authUserId });
+      const { rows: ownRows } = await client.query(
+        `select * from public.birth_giving_find_event_conflict(
+           'event private exact', 'customer', $1
+         )`,
+        [startsAt],
+      );
+      expect(ownRows).toEqual([{ id: eventId, status: "draft" }]);
 
       await asClaims(client, { sub: other.authUserId });
       const { rows: hiddenRows } = await client.query(
@@ -205,6 +214,17 @@ describe("Birth Giving lifecycle RPCs", () => {
         [startsAt],
       );
       expect(conflictRows).toEqual([{ id: null, status: null }]);
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await publish(client, eventId);
+      await asClaims(client, { sub: other.authUserId });
+      const { rows: publishedRows } = await client.query(
+        `select * from public.birth_giving_find_event_conflict(
+           'event private exact', 'customer', $1
+         )`,
+        [startsAt],
+      );
+      expect(publishedRows).toEqual([{ id: eventId, status: "published" }]);
 
       const { rows: nearMatchRows } = await client.query(
         `select * from public.birth_giving_find_event_conflict(
