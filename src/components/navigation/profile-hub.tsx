@@ -15,9 +15,10 @@ import {
   User as UserIcon,
 } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { getAvatarUrl } from "@/lib/storage/public-url"
 import { createClient } from "@/lib/supabase/client"
 
 interface ProfileHubProps {
@@ -25,6 +26,8 @@ interface ProfileHubProps {
     id: string
     name: string
     email: string
+    /** Raw ref from profiles.picture — storage key or external URL. */
+    picture?: string | null
     role?: string
     beta_access?: boolean
   }
@@ -58,6 +61,9 @@ export function ProfileHub({ user }: ProfileHubProps) {
     <div className="space-y-4">
       <div className="flex items-center gap-4 rounded-xl border bg-card p-4">
         <Avatar className="size-12 rounded-xl">
+          {user.picture && (
+            <AvatarImage src={getAvatarUrl(user.picture) ?? undefined} alt={user.name} />
+          )}
           <AvatarFallback className="rounded-xl">{getInitials(user.name)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 space-y-0.5">

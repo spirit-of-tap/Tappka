@@ -26,6 +26,8 @@ export default async function ProfilPage() {
           id: profile.id,
           name: profile.name ?? "",
           email: profile.work_email,
+          // Raw storage ref — ProfileHub resolves it via getAvatarUrl.
+          picture: profile.picture,
           // profile.role is a non-null profile_role enum value, so it is always
           // a ROLE_LABELS key — no fallback needed.
           role: ROLE_LABELS[profile.role],
