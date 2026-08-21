@@ -1,8 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
-import { Plus, Search } from "lucide-react"
+import { CircleHelp, Info, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -24,7 +23,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { MonthSection } from "@/components/ui/month-section"
 import { MetricProgress } from "@/components/metrics/metric-progress"
 import { InfoCard } from "./info-card"
-import { CustomerMeetingCard } from "./customer-meeting-card"
+import { CustomerMeetingRow } from "./customer-meeting-row"
 import { CustomerMeetingForm } from "./customer-meeting-form"
 import { groupByMonth } from "@/lib/timeline/group-by-month"
 import { getCurrentSemesterRange } from "@/lib/metrics/periods"
@@ -50,20 +49,39 @@ function matchesSearch(meeting: CustomerMeeting, normalizedQuery: string): boole
   return haystack.includes(normalizedQuery)
 }
 
+/** The wiki-sheet explainer, one tap away instead of pinned above the timeline. */
+function HelpDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-9 text-muted-foreground"
+          aria-label="Co jsou zákaznické schůzky?"
+        >
+          <CircleHelp className="size-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Info aria-hidden className="size-4 text-muted-foreground" />
+            Co jsou zákaznické schůzky?
+          </DialogTitle>
+        </DialogHeader>
+        <InfoCard />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function sortByMeetingAtDesc(meetings: CustomerMeeting[]): CustomerMeeting[] {
   return [...meetings].sort((a, b) => {
     if (!a.meeting_at) return 1
     if (!b.meeting_at) return -1
     return b.meeting_at.localeCompare(a.meeting_at)
   })
-}
-
-function MeetingLink({ meeting }: { meeting: CustomerMeeting }) {
-  return (
-    <Link href={`/schuzky/${meeting.id}`} className="focus-ring block rounded-xl">
-      <CustomerMeetingCard meeting={meeting} />
-    </Link>
-  )
 }
 
 export function CustomerMeetingsView({
@@ -114,24 +132,27 @@ export function CustomerMeetingsView({
           label: pluralizeCz(items.length, ["schůzka", "schůzky", "schůzek"]),
         }}
         action={
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="size-4" />
-                Nová
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Nová zákaznická schůzka</DialogTitle>
-              </DialogHeader>
-              <CustomerMeetingForm
-                profileId={profileId}
-                onSuccess={handleCreated}
-                onCancel={() => setCreateOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            <HelpDialog />
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="size-4" />
+                  Nová
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Nová zákaznická schůzka</DialogTitle>
+                </DialogHeader>
+                <CustomerMeetingForm
+                  profileId={profileId}
+                  onSuccess={handleCreated}
+                  onCancel={() => setCreateOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         }
       />
 
@@ -152,10 +173,7 @@ export function CustomerMeetingsView({
         />
       )}
 
-      <InfoCard />
-
-      {hasAny && (
-        <div className="relative">
+      {hasAny && (        <div className="relative">
           <Search
             aria-hidden
             className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -204,40 +222,21 @@ export function CustomerMeetingsView({
       ) : (
         <div className="space-y-4 sm:space-y-6">
           {undated.length > 0 && (
-            <MonthSection
-              label="Bez data"
-              count={undated.length}
-              defaultOpen
-              forceOpen={searching}
-            >
+            <MonthSection label="Bez data" count={undated.length}>
               {undated.map((meeting) => (
-                <MeetingLink key={meeting.id} meeting={meeting} />
+                <CustomerMeetingRow key={meeting.id} meeting={meeting} />
               ))}
             </MonthSection>
           )}
-          {groups.map((group) => {
-            const isEmpty = group.items.length === 0
-            if (searching && isEmpty) return null
-            return (
-              <MonthSection
-                key={group.key}
-                label={group.label}
-                count={group.items.length}
-                defaultOpen={!isEmpty || searching}
-                forceOpen={searching}
-              >
-                {isEmpty ? (
-                  <p className="px-1 py-2 text-xs text-muted-foreground/70">
-                    Tento měsíc bez schůzky
-                  </p>
-                ) : (
-                  group.items.map((meeting) => (
-                    <MeetingLink key={meeting.id} meeting={meeting} />
-                  ))
-                )}
+          {groups.map((group) =>
+            group.items.length === 0 ? null : (
+              <MonthSection key={group.key} label={group.label} count={group.items.length}>
+                {group.items.map((meeting) => (
+                  <CustomerMeetingRow key={meeting.id} meeting={meeting} />
+                ))}
               </MonthSection>
-            )
-          })}
+            ),
+          )}
         </div>
       )}
     </>

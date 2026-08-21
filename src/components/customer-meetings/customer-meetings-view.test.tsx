@@ -61,20 +61,12 @@ describe("CustomerMeetingsView", () => {
     expect(screen.getByText("2/60")).toBeInTheDocument()
   })
 
-  it("groups into month sections; months with entries are open, empty months collapsed", () => {
+  it("groups into month sections; empty months are not rendered", () => {
     render(<CustomerMeetingsView meetings={MEETINGS} profileId="p1" now={NOW} />)
-    expect(screen.getByRole("button", { name: /Květen 2026/ })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    )
-    expect(screen.getByRole("button", { name: /Březen 2026/ })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    )
-    expect(screen.getByRole("button", { name: /Duben 2026/ })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    )
+    expect(screen.getByText("Květen 2026")).toBeInTheDocument()
+    expect(screen.getByText("Březen 2026")).toBeInTheDocument()
+    expect(screen.queryByText("Duben 2026")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /2026/ })).not.toBeInTheDocument()
   })
 
   it("search filters by person, hiding months without hits", async () => {
@@ -83,7 +75,7 @@ describe("CustomerMeetingsView", () => {
     await user.type(screen.getByPlaceholderText("Hledat osobu nebo firmu…"), "Šitina")
     expect(screen.getByText("Jiří Šitina")).toBeInTheDocument()
     expect(screen.queryByText("Kateřina Gonderová")).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /Květen 2026/ })).not.toBeInTheDocument()
+    expect(screen.queryByText("Květen 2026")).not.toBeInTheDocument()
   })
 
   it("shows an empty state when nothing matches the search", async () => {
