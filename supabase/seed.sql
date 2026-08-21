@@ -29,3 +29,29 @@ CROSS JOIN (
     SELECT id FROM profiles WHERE work_email = 'admin@studenti.czu.cz'
 ) AS system_profile;
 
+-- ============================================
+-- SEED DATA - BOOK TAGS
+-- ============================================
+-- Reference data mirroring BOOK_CATEGORIES in src/lib/books/types.ts.
+-- Students may only assign existing tags: inserting into `tags` is
+-- coach/admin-only per RLS, so a missing tag would fail every student
+-- book submission with 42501.
+
+INSERT INTO tags (name, created_by_profile_id, updated_by_profile_id)
+SELECT seed_tags.name, system_profile.id, system_profile.id
+FROM (
+    VALUES
+        ('Finance & ekonomika'),
+        ('Inovace & kreativita'),
+        ('Komunikace & prodej'),
+        ('Leadership'),
+        ('Management'),
+        ('Marketing'),
+        ('Multidisciplinární'),
+        ('Osobní rozvoj')
+) AS seed_tags(name)
+CROSS JOIN (
+    SELECT id FROM profiles WHERE work_email = 'admin@studenti.czu.cz'
+) AS system_profile
+ON CONFLICT (name) DO NOTHING;
+

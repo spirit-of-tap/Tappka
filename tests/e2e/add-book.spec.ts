@@ -279,7 +279,7 @@ test.describe('adding a book', () => {
     // enrichment there is no score to show, so the coach assigns one.
     const submit = page.getByRole('button', { name: /odeslat ke schválení/i });
     await expect(submit).toBeDisabled();
-    await expect(page.getByText('Body přidělí kouč.')).toBeVisible();
+    await expect(page.getByText('Body přidělí kouč:ka.')).toBeVisible();
 
     await page.getByLabel(/popis/i).fill('Naučíš se, jak funguje týmové podnikání na Tiimi.');
     await page.getByLabel(/oblast/i).selectOption('Leadership');
