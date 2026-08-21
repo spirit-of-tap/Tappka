@@ -1,2206 +1,9 @@
 {
-  "id": "35a49b18-1372-4b03-bf90-ddf61f16ff11",
-  "prevId": "81d858fc-2c92-42bf-a22f-b91ab6de717b",
+  "id": "4fc2edb9-1220-45f1-96c8-e1089b745b81",
+  "prevId": "31159044-1747-4a04-804d-a931817faf2d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.birth_giving_assignments": {
-      "name": "birth_giving_assignments",
-      "schema": "",
-      "columns": {
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "state": {
-          "name": "state",
-          "type": "birth_giving_assignment_state",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "replacement_id": {
-          "name": "replacement_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "storage_path": {
-          "name": "storage_path",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "original_file_name": {
-          "name": "original_file_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mime_type": {
-          "name": "mime_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "file_size": {
-          "name": "file_size",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "uploaded_by_profile_id": {
-          "name": "uploaded_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "uploaded_at": {
-          "name": "uploaded_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "birth_giving_assignments_event_id_fkey": {
-          "name": "birth_giving_assignments_event_id_fkey",
-          "tableFrom": "birth_giving_assignments",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "tableTo": "birth_giving_events",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_assignments_uploaded_by_profile_id_fkey": {
-          "name": "birth_giving_assignments_uploaded_by_profile_id_fkey",
-          "tableFrom": "birth_giving_assignments",
-          "columnsFrom": [
-            "uploaded_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_assignments_created_by_profile_id_fkey": {
-          "name": "birth_giving_assignments_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_assignments",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_assignments_updated_by_profile_id_fkey": {
-          "name": "birth_giving_assignments_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_assignments",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "Community can view released BG assignments": {
-          "name": "Community can view released BG assignments",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_assignments.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND e.starts_at <= now() AND EXISTS (\n  SELECT 1\n  FROM users\n  JOIN profiles caller_profile ON caller_profile.user_id = users.id\n  WHERE users.auth_user_id = (SELECT auth.uid())\n    AND users.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n)) OR (EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id()))))"
-        },
-        "BG organizers can insert assignments": {
-          "name": "BG organizers can insert assignments",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
-          "withCheck": "false"
-        },
-        "BG organizers can update assignments": {
-          "name": "BG organizers can update assignments",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        },
-        "BG assignments cannot be directly deleted": {
-          "name": "BG assignments cannot be directly deleted",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false"
-        }
-      },
-      "checkConstraints": {
-        "birth_giving_assignments_metadata_check": {
-          "name": "birth_giving_assignments_metadata_check",
-          "value": "(state = 'present' AND storage_path IS NOT NULL AND length(trim(storage_path)) > 0 AND original_file_name IS NOT NULL AND length(trim(original_file_name)) > 0 AND mime_type IS NOT NULL AND length(trim(mime_type)) > 0 AND file_size > 0 AND uploaded_by_profile_id IS NOT NULL AND uploaded_at IS NOT NULL) OR (state = 'missing' AND storage_path IS NULL AND original_file_name IS NULL AND mime_type IS NULL AND file_size IS NULL AND uploaded_by_profile_id IS NULL AND uploaded_at IS NULL)"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_email_deliveries": {
-      "name": "birth_giving_email_deliveries",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "profile_id": {
-          "name": "profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "message_type": {
-          "name": "message_type",
-          "type": "birth_giving_email_message_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "replacement_id": {
-          "name": "replacement_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "recipient_email": {
-          "name": "recipient_email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "birth_giving_delivery_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "attempt_count": {
-          "name": "attempt_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "next_attempt_at": {
-          "name": "next_attempt_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "first_attempt_at": {
-          "name": "first_attempt_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "processing_started_at": {
-          "name": "processing_started_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "processing_token": {
-          "name": "processing_token",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sent_at": {
-          "name": "sent_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "provider_message_id": {
-          "name": "provider_message_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "email_subject": {
-          "name": "email_subject",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "email_html": {
-          "name": "email_html",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "last_error": {
-          "name": "last_error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_email_deliveries_pending_idx": {
-          "name": "birth_giving_email_deliveries_pending_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "next_attempt_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_email_deliveries_event_id_fkey": {
-          "name": "birth_giving_email_deliveries_event_id_fkey",
-          "tableFrom": "birth_giving_email_deliveries",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "tableTo": "birth_giving_events",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_email_deliveries_profile_id_fkey": {
-          "name": "birth_giving_email_deliveries_profile_id_fkey",
-          "tableFrom": "birth_giving_email_deliveries",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_email_deliveries_participant_fkey": {
-          "name": "birth_giving_email_deliveries_participant_fkey",
-          "tableFrom": "birth_giving_email_deliveries",
-          "columnsFrom": [
-            "event_id",
-            "profile_id"
-          ],
-          "tableTo": "birth_giving_team_members",
-          "columnsTo": [
-            "event_id",
-            "profile_id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_email_deliveries_created_by_profile_id_fkey": {
-          "name": "birth_giving_email_deliveries_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_email_deliveries",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_email_deliveries_updated_by_profile_id_fkey": {
-          "name": "birth_giving_email_deliveries_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_email_deliveries",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "birth_giving_email_deliveries_dedupe_key": {
-          "name": "birth_giving_email_deliveries_dedupe_key",
-          "columns": [
-            "event_id",
-            "profile_id",
-            "message_type",
-            "replacement_id"
-          ],
-          "nullsNotDistinct": true
-        }
-      },
-      "policies": {
-        "BG delivery outbox is private": {
-          "name": "BG delivery outbox is private",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        }
-      },
-      "checkConstraints": {
-        "birth_giving_email_deliveries_message_check": {
-          "name": "birth_giving_email_deliveries_message_check",
-          "value": "(message_type = 'assignment_release' AND replacement_id IS NULL) OR (message_type = 'assignment_replacement' AND replacement_id IS NOT NULL)"
-        },
-        "birth_giving_email_deliveries_attempt_count_check": {
-          "name": "birth_giving_email_deliveries_attempt_count_check",
-          "value": "attempt_count >= 0"
-        },
-        "birth_giving_email_deliveries_recipient_check": {
-          "name": "birth_giving_email_deliveries_recipient_check",
-          "value": "length(trim(recipient_email)) > 0"
-        },
-        "birth_giving_email_deliveries_processing_check": {
-          "name": "birth_giving_email_deliveries_processing_check",
-          "value": "(status = 'processing') = (processing_started_at IS NOT NULL AND processing_token IS NOT NULL)"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_event_organizers": {
-      "name": "birth_giving_event_organizers",
-      "schema": "",
-      "columns": {
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "profile_id": {
-          "name": "profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_event_organizers_profile_idx": {
-          "name": "birth_giving_event_organizers_profile_idx",
-          "columns": [
-            {
-              "expression": "profile_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_event_organizers_event_id_fkey": {
-          "name": "birth_giving_event_organizers_event_id_fkey",
-          "tableFrom": "birth_giving_event_organizers",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "tableTo": "birth_giving_events",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_event_organizers_profile_id_fkey": {
-          "name": "birth_giving_event_organizers_profile_id_fkey",
-          "tableFrom": "birth_giving_event_organizers",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_event_organizers_created_by_profile_id_fkey": {
-          "name": "birth_giving_event_organizers_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_event_organizers",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_event_organizers_updated_by_profile_id_fkey": {
-          "name": "birth_giving_event_organizers_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_event_organizers",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {
-        "birth_giving_event_organizers_pkey": {
-          "name": "birth_giving_event_organizers_pkey",
-          "columns": [
-            "event_id",
-            "profile_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {
-        "BG organizers can view their organizer rows": {
-          "name": "BG organizers can view their organizer rows",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "can_view_birth_giving_event_organizers(event_id)"
-        },
-        "BG organizer changes use lifecycle RPCs": {
-          "name": "BG organizer changes use lifecycle RPCs",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        }
-      },
-      "checkConstraints": {},
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_events": {
-      "name": "birth_giving_events",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "normalized_name": {
-          "name": "normalized_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "customer": {
-          "name": "customer",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "normalized_customer": {
-          "name": "normalized_customer",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "starts_at": {
-          "name": "starts_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "duration": {
-          "name": "duration",
-          "type": "birth_giving_duration",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "minimum_team_size": {
-          "name": "minimum_team_size",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "maximum_team_size": {
-          "name": "maximum_team_size",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "joining_open": {
-          "name": "joining_open",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "birth_giving_event_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'draft'"
-        },
-        "start_processed_at": {
-          "name": "start_processed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "start_emails_queued_at": {
-          "name": "start_emails_queued_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "removed_at": {
-          "name": "removed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "removed_by_profile_id": {
-          "name": "removed_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_events_status_starts_at_idx": {
-          "name": "birth_giving_events_status_starts_at_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "starts_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_events_removed_by_profile_id_fkey": {
-          "name": "birth_giving_events_removed_by_profile_id_fkey",
-          "tableFrom": "birth_giving_events",
-          "columnsFrom": [
-            "removed_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
-        },
-        "birth_giving_events_created_by_profile_id_fkey": {
-          "name": "birth_giving_events_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_events",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_events_updated_by_profile_id_fkey": {
-          "name": "birth_giving_events_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_events",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "birth_giving_events_identity_key": {
-          "name": "birth_giving_events_identity_key",
-          "columns": [
-            "normalized_name",
-            "normalized_customer",
-            "starts_at"
-          ],
-          "nullsNotDistinct": false
-        }
-      },
-      "policies": {
-        "Verified community can view published BG events": {
-          "name": "Verified community can view published BG events",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "removed_at IS NULL AND can_view_birth_giving_event_organizers(id)"
-        },
-        "Profiles can create BG event drafts": {
-          "name": "Profiles can create BG event drafts",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
-          "withCheck": "false"
-        },
-        "BG organizers can update events": {
-          "name": "BG organizers can update events",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        },
-        "BG events cannot be directly deleted": {
-          "name": "BG events cannot be directly deleted",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false"
-        }
-      },
-      "checkConstraints": {
-        "birth_giving_events_name_check": {
-          "name": "birth_giving_events_name_check",
-          "value": "length(trim(name)) > 0 AND length(trim(normalized_name)) > 0"
-        },
-        "birth_giving_events_customer_check": {
-          "name": "birth_giving_events_customer_check",
-          "value": "length(trim(customer)) > 0 AND length(trim(normalized_customer)) > 0"
-        },
-        "birth_giving_events_normalized_name_check": {
-          "name": "birth_giving_events_normalized_name_check",
-          "value": "normalized_name = lower(regexp_replace(trim(normalize(name, NFKC)), '[[:space:]]+', ' ', 'g'))"
-        },
-        "birth_giving_events_normalized_customer_check": {
-          "name": "birth_giving_events_normalized_customer_check",
-          "value": "normalized_customer = lower(regexp_replace(trim(normalize(customer, NFKC)), '[[:space:]]+', ' ', 'g'))"
-        },
-        "birth_giving_events_team_sizes_check": {
-          "name": "birth_giving_events_team_sizes_check",
-          "value": "minimum_team_size >= 1 AND maximum_team_size >= minimum_team_size"
-        },
-        "birth_giving_events_removed_check": {
-          "name": "birth_giving_events_removed_check",
-          "value": "(removed_at IS NULL) = (removed_by_profile_id IS NULL)"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_looking_for_team": {
-      "name": "birth_giving_looking_for_team",
-      "schema": "",
-      "columns": {
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "profile_id": {
-          "name": "profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_looking_for_team_profile_idx": {
-          "name": "birth_giving_looking_for_team_profile_idx",
-          "columns": [
-            {
-              "expression": "profile_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_looking_for_team_event_id_fkey": {
-          "name": "birth_giving_looking_for_team_event_id_fkey",
-          "tableFrom": "birth_giving_looking_for_team",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "tableTo": "birth_giving_events",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_looking_for_team_profile_id_fkey": {
-          "name": "birth_giving_looking_for_team_profile_id_fkey",
-          "tableFrom": "birth_giving_looking_for_team",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_looking_for_team_created_by_profile_id_fkey": {
-          "name": "birth_giving_looking_for_team_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_looking_for_team",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_looking_for_team_updated_by_profile_id_fkey": {
-          "name": "birth_giving_looking_for_team_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_looking_for_team",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {
-        "birth_giving_looking_for_team_pkey": {
-          "name": "birth_giving_looking_for_team_pkey",
-          "columns": [
-            "event_id",
-            "profile_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {
-        "Community can view BG team searches": {
-          "name": "Community can view BG team searches",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "EXISTS (\n  SELECT 1\n  FROM users\n  JOIN profiles caller_profile ON caller_profile.user_id = users.id\n  WHERE users.auth_user_id = (SELECT auth.uid())\n    AND users.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_looking_for_team.event_id AND e.status = 'published' AND e.removed_at IS NULL)"
-        },
-        "Profiles can start their own BG team search": {
-          "name": "Profiles can start their own BG team search",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
-          "withCheck": "profile_id = current_profile_id() AND created_by_profile_id = current_profile_id() AND updated_by_profile_id = current_profile_id() AND EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_looking_for_team.event_id AND e.status = 'published' AND e.joining_open AND now() < e.starts_at AND e.removed_at IS NULL) AND NOT EXISTS (SELECT 1 FROM birth_giving_team_members m WHERE m.event_id = birth_giving_looking_for_team.event_id AND m.profile_id = current_profile_id())"
-        },
-        "Profiles can update their own BG team search": {
-          "name": "Profiles can update their own BG team search",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "profile_id = current_profile_id() AND created_by_profile_id = current_profile_id() AND updated_by_profile_id = current_profile_id() AND EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_looking_for_team.event_id AND e.status = 'published' AND e.joining_open AND now() < e.starts_at AND e.removed_at IS NULL) AND NOT EXISTS (SELECT 1 FROM birth_giving_team_members m WHERE m.event_id = birth_giving_looking_for_team.event_id AND m.profile_id = current_profile_id())",
-          "withCheck": "profile_id = current_profile_id() AND created_by_profile_id = current_profile_id() AND updated_by_profile_id = current_profile_id() AND EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_looking_for_team.event_id AND e.status = 'published' AND e.joining_open AND now() < e.starts_at AND e.removed_at IS NULL) AND NOT EXISTS (SELECT 1 FROM birth_giving_team_members m WHERE m.event_id = birth_giving_looking_for_team.event_id AND m.profile_id = current_profile_id())"
-        },
-        "Profiles can stop their own BG team search": {
-          "name": "Profiles can stop their own BG team search",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND profile_id = current_profile_id()"
-        }
-      },
-      "checkConstraints": {},
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_reflections": {
-      "name": "birth_giving_reflections",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "profile_id": {
-          "name": "profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "contribution": {
-          "name": "contribution",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "learning": {
-          "name": "learning",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "removed_at": {
-          "name": "removed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_reflections_profile_idx": {
-          "name": "birth_giving_reflections_profile_idx",
-          "columns": [
-            {
-              "expression": "profile_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_reflections_participant_fkey": {
-          "name": "birth_giving_reflections_participant_fkey",
-          "tableFrom": "birth_giving_reflections",
-          "columnsFrom": [
-            "event_id",
-            "profile_id"
-          ],
-          "tableTo": "birth_giving_team_members",
-          "columnsTo": [
-            "event_id",
-            "profile_id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_reflections_created_by_profile_id_fkey": {
-          "name": "birth_giving_reflections_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_reflections",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_reflections_updated_by_profile_id_fkey": {
-          "name": "birth_giving_reflections_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_reflections",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "birth_giving_reflections_event_profile_key": {
-          "name": "birth_giving_reflections_event_profile_key",
-          "columns": [
-            "event_id",
-            "profile_id"
-          ],
-          "nullsNotDistinct": false
-        }
-      },
-      "policies": {
-        "Community can view published BG reflections": {
-          "name": "Community can view published BG reflections",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "removed_at IS NULL AND EXISTS (\n  SELECT 1\n  FROM users\n  JOIN profiles caller_profile ON caller_profile.user_id = users.id\n  WHERE users.auth_user_id = (SELECT auth.uid())\n    AND users.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_reflections.event_id AND e.status = 'published' AND e.removed_at IS NULL)"
-        },
-        "Participants can create their BG reflections": {
-          "name": "Participants can create their BG reflections",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
-          "withCheck": "false"
-        },
-        "Participants can update their BG reflections": {
-          "name": "Participants can update their BG reflections",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        },
-        "BG reflections cannot be directly deleted": {
-          "name": "BG reflections cannot be directly deleted",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false"
-        }
-      },
-      "checkConstraints": {
-        "birth_giving_reflections_content_check": {
-          "name": "birth_giving_reflections_content_check",
-          "value": "length(trim(contribution)) > 0 AND length(trim(learning)) > 0"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_storage_cleanup_claims": {
-      "name": "birth_giving_storage_cleanup_claims",
-      "schema": "",
-      "columns": {
-        "storage_path": {
-          "name": "storage_path",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "claim_id": {
-          "name": "claim_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "claimed_at": {
-          "name": "claimed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "attempt_count": {
-          "name": "attempt_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "birth_giving_storage_cleanup_claims_claim_id_key": {
-          "name": "birth_giving_storage_cleanup_claims_claim_id_key",
-          "columns": [
-            "claim_id"
-          ],
-          "nullsNotDistinct": false
-        }
-      },
-      "policies": {
-        "BG storage cleanup claims are private": {
-          "name": "BG storage cleanup claims are private",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        }
-      },
-      "checkConstraints": {
-        "birth_giving_storage_cleanup_claims_attempt_count_check": {
-          "name": "birth_giving_storage_cleanup_claims_attempt_count_check",
-          "value": "attempt_count >= 1"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_team_members": {
-      "name": "birth_giving_team_members",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "team_id": {
-          "name": "team_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "profile_id": {
-          "name": "profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "confirmed_at": {
-          "name": "confirmed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "frozen_at": {
-          "name": "frozen_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_team_members_team_idx": {
-          "name": "birth_giving_team_members_team_idx",
-          "columns": [
-            {
-              "expression": "event_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "team_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_team_members_event_team_fkey": {
-          "name": "birth_giving_team_members_event_team_fkey",
-          "tableFrom": "birth_giving_team_members",
-          "columnsFrom": [
-            "event_id",
-            "team_id"
-          ],
-          "tableTo": "birth_giving_teams",
-          "columnsTo": [
-            "event_id",
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_team_members_profile_id_fkey": {
-          "name": "birth_giving_team_members_profile_id_fkey",
-          "tableFrom": "birth_giving_team_members",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_team_members_created_by_profile_id_fkey": {
-          "name": "birth_giving_team_members_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_members",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_team_members_updated_by_profile_id_fkey": {
-          "name": "birth_giving_team_members_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_members",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "birth_giving_team_members_event_profile_key": {
-          "name": "birth_giving_team_members_event_profile_key",
-          "columns": [
-            "event_id",
-            "profile_id"
-          ],
-          "nullsNotDistinct": false
-        },
-        "birth_giving_team_members_event_team_profile_key": {
-          "name": "birth_giving_team_members_event_team_profile_key",
-          "columns": [
-            "event_id",
-            "team_id",
-            "profile_id"
-          ],
-          "nullsNotDistinct": false
-        }
-      },
-      "policies": {
-        "Community can view published BG memberships": {
-          "name": "Community can view published BG memberships",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_team_members.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND EXISTS (\n  SELECT 1\n  FROM users\n  JOIN profiles caller_profile ON caller_profile.user_id = users.id\n  WHERE users.auth_user_id = (SELECT auth.uid())\n    AND users.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n)) OR (EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id()))))"
-        },
-        "BG membership changes use lifecycle RPCs": {
-          "name": "BG membership changes use lifecycle RPCs",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        }
-      },
-      "checkConstraints": {},
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_team_proposals": {
-      "name": "birth_giving_team_proposals",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "team_id": {
-          "name": "team_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "candidate_profile_id": {
-          "name": "candidate_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "initiated_by_profile_id": {
-          "name": "initiated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "direction": {
-          "name": "direction",
-          "type": "birth_giving_proposal_direction",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "state": {
-          "name": "state",
-          "type": "birth_giving_proposal_state",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "resolved_by_profile_id": {
-          "name": "resolved_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolved_at": {
-          "name": "resolved_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_team_proposals_event_candidate_idx": {
-          "name": "birth_giving_team_proposals_event_candidate_idx",
-          "columns": [
-            {
-              "expression": "event_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "candidate_profile_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        },
-        "birth_giving_team_proposals_team_state_idx": {
-          "name": "birth_giving_team_proposals_team_state_idx",
-          "columns": [
-            {
-              "expression": "event_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "team_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "state",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_team_proposals_event_team_fkey": {
-          "name": "birth_giving_team_proposals_event_team_fkey",
-          "tableFrom": "birth_giving_team_proposals",
-          "columnsFrom": [
-            "event_id",
-            "team_id"
-          ],
-          "tableTo": "birth_giving_teams",
-          "columnsTo": [
-            "event_id",
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_team_proposals_candidate_profile_id_fkey": {
-          "name": "birth_giving_team_proposals_candidate_profile_id_fkey",
-          "tableFrom": "birth_giving_team_proposals",
-          "columnsFrom": [
-            "candidate_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_team_proposals_initiated_by_profile_id_fkey": {
-          "name": "birth_giving_team_proposals_initiated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_proposals",
-          "columnsFrom": [
-            "initiated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_team_proposals_resolved_by_profile_id_fkey": {
-          "name": "birth_giving_team_proposals_resolved_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_proposals",
-          "columnsFrom": [
-            "resolved_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
-        },
-        "birth_giving_team_proposals_created_by_profile_id_fkey": {
-          "name": "birth_giving_team_proposals_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_proposals",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_team_proposals_updated_by_profile_id_fkey": {
-          "name": "birth_giving_team_proposals_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_proposals",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "Profiles can view relevant BG proposals": {
-          "name": "Profiles can view relevant BG proposals",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND (candidate_profile_id = current_profile_id() OR initiated_by_profile_id = current_profile_id() OR EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = birth_giving_team_proposals.event_id AND o.profile_id = current_profile_id()) OR EXISTS (SELECT 1 FROM birth_giving_team_members m WHERE m.event_id = birth_giving_team_proposals.event_id AND m.team_id = birth_giving_team_proposals.team_id AND m.profile_id = current_profile_id()))"
-        },
-        "BG proposal changes use lifecycle RPCs": {
-          "name": "BG proposal changes use lifecycle RPCs",
-          "as": "PERMISSIVE",
-          "for": "ALL",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        }
-      },
-      "checkConstraints": {
-        "birth_giving_team_proposals_direction_check": {
-          "name": "birth_giving_team_proposals_direction_check",
-          "value": "(direction = 'join_request' AND candidate_profile_id = initiated_by_profile_id) OR (direction = 'invitation' AND candidate_profile_id <> initiated_by_profile_id)"
-        },
-        "birth_giving_team_proposals_resolution_check": {
-          "name": "birth_giving_team_proposals_resolution_check",
-          "value": "(state = 'pending' AND resolved_by_profile_id IS NULL AND resolved_at IS NULL) OR (state <> 'pending' AND resolved_at IS NOT NULL)"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_team_result_files": {
-      "name": "birth_giving_team_result_files",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "team_id": {
-          "name": "team_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "storage_path": {
-          "name": "storage_path",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "original_file_name": {
-          "name": "original_file_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "mime_type": {
-          "name": "mime_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "file_size": {
-          "name": "file_size",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "uploaded_by_profile_id": {
-          "name": "uploaded_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "uploaded_at": {
-          "name": "uploaded_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "removed_at": {
-          "name": "removed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "removed_by_profile_id": {
-          "name": "removed_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_team_result_files_team_idx": {
-          "name": "birth_giving_team_result_files_team_idx",
-          "columns": [
-            {
-              "expression": "event_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "team_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_team_result_files_event_team_fkey": {
-          "name": "birth_giving_team_result_files_event_team_fkey",
-          "tableFrom": "birth_giving_team_result_files",
-          "columnsFrom": [
-            "event_id",
-            "team_id"
-          ],
-          "tableTo": "birth_giving_teams",
-          "columnsTo": [
-            "event_id",
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_team_result_files_uploaded_by_profile_id_fkey": {
-          "name": "birth_giving_team_result_files_uploaded_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_result_files",
-          "columnsFrom": [
-            "uploaded_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_team_result_files_removed_by_profile_id_fkey": {
-          "name": "birth_giving_team_result_files_removed_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_result_files",
-          "columnsFrom": [
-            "removed_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
-        },
-        "birth_giving_team_result_files_created_by_profile_id_fkey": {
-          "name": "birth_giving_team_result_files_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_result_files",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_team_result_files_updated_by_profile_id_fkey": {
-          "name": "birth_giving_team_result_files_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_team_result_files",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "birth_giving_team_result_files_storage_path_key": {
-          "name": "birth_giving_team_result_files_storage_path_key",
-          "columns": [
-            "storage_path"
-          ],
-          "nullsNotDistinct": false
-        }
-      },
-      "policies": {
-        "Community can view published BG result files": {
-          "name": "Community can view published BG result files",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "birth_giving_team_result_files.removed_at IS NULL AND EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_team_result_files.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND EXISTS (\n  SELECT 1\n  FROM users\n  JOIN profiles caller_profile ON caller_profile.user_id = users.id\n  WHERE users.auth_user_id = (SELECT auth.uid())\n    AND users.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n)) OR (EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id()))))"
-        },
-        "BG members and organizers can insert result files": {
-          "name": "BG members and organizers can insert result files",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
-          "withCheck": "false"
-        },
-        "BG members and organizers can update result files": {
-          "name": "BG members and organizers can update result files",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        },
-        "BG result files cannot be directly deleted": {
-          "name": "BG result files cannot be directly deleted",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false"
-        }
-      },
-      "checkConstraints": {
-        "birth_giving_team_result_files_metadata_check": {
-          "name": "birth_giving_team_result_files_metadata_check",
-          "value": "length(trim(storage_path)) > 0 AND length(trim(original_file_name)) > 0 AND length(trim(mime_type)) > 0 AND file_size > 0"
-        },
-        "birth_giving_team_result_files_removed_check": {
-          "name": "birth_giving_team_result_files_removed_check",
-          "value": "(removed_at IS NULL) = (removed_by_profile_id IS NULL)"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.birth_giving_teams": {
-      "name": "birth_giving_teams",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "birth_giving_team_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'forming'"
-        },
-        "result_state": {
-          "name": "result_state",
-          "type": "birth_giving_team_result_state",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "cancelled_at": {
-          "name": "cancelled_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cancellation_reason": {
-          "name": "cancellation_reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "birth_giving_teams_event_idx": {
-          "name": "birth_giving_teams_event_idx",
-          "columns": [
-            {
-              "expression": "event_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "birth_giving_teams_event_id_fkey": {
-          "name": "birth_giving_teams_event_id_fkey",
-          "tableFrom": "birth_giving_teams",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "tableTo": "birth_giving_events",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "birth_giving_teams_created_by_profile_id_fkey": {
-          "name": "birth_giving_teams_created_by_profile_id_fkey",
-          "tableFrom": "birth_giving_teams",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "birth_giving_teams_updated_by_profile_id_fkey": {
-          "name": "birth_giving_teams_updated_by_profile_id_fkey",
-          "tableFrom": "birth_giving_teams",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "birth_giving_teams_event_id_id_key": {
-          "name": "birth_giving_teams_event_id_id_key",
-          "columns": [
-            "event_id",
-            "id"
-          ],
-          "nullsNotDistinct": false
-        }
-      },
-      "policies": {
-        "Community can view published BG teams": {
-          "name": "Community can view published BG teams",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "EXISTS (SELECT 1 FROM birth_giving_events e WHERE e.id = birth_giving_teams.event_id AND e.removed_at IS NULL AND ((e.status = 'published' AND EXISTS (\n  SELECT 1\n  FROM users\n  JOIN profiles caller_profile ON caller_profile.user_id = users.id\n  WHERE users.auth_user_id = (SELECT auth.uid())\n    AND users.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n)) OR (EXISTS (\n  SELECT 1\n  FROM profiles caller_profile\n  JOIN users caller_user ON caller_user.id = caller_profile.user_id\n  WHERE caller_profile.id = current_profile_id()\n    AND caller_user.verified_work_email IS NOT NULL\n    AND caller_profile.access_removed_at IS NULL\n    AND caller_profile.beta_access_granted_at IS NOT NULL\n) AND EXISTS (SELECT 1 FROM birth_giving_event_organizers o WHERE o.event_id = e.id AND o.profile_id = current_profile_id()))))"
-        },
-        "BG organizers can insert teams": {
-          "name": "BG organizers can insert teams",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
-          "withCheck": "false"
-        },
-        "BG organizers can update teams": {
-          "name": "BG organizers can update teams",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false",
-          "withCheck": "false"
-        },
-        "BG teams cannot be directly deleted": {
-          "name": "BG teams cannot be directly deleted",
-          "as": "PERMISSIVE",
-          "for": "DELETE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "false"
-        }
-      },
-      "checkConstraints": {
-        "birth_giving_teams_name_check": {
-          "name": "birth_giving_teams_name_check",
-          "value": "length(trim(name)) > 0"
-        },
-        "birth_giving_teams_cancellation_check": {
-          "name": "birth_giving_teams_cancellation_check",
-          "value": "(status = 'cancelled' AND cancelled_at IS NOT NULL AND cancellation_reason IS NOT NULL AND length(trim(cancellation_reason)) > 0) OR (status <> 'cancelled' AND cancelled_at IS NULL AND cancellation_reason IS NULL)"
-        }
-      },
-      "isRLSEnabled": true
-    },
     "public.book_loans": {
       "name": "book_loans",
       "schema": "",
@@ -2270,9 +73,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "book_loans_borrower_id_idx": {
           "name": "book_loans_borrower_id_idx",
@@ -2286,9 +89,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "book_loans_active_idx": {
           "name": "book_loans_active_idx",
@@ -2302,38 +105,38 @@
             }
           ],
           "isUnique": false,
-          "with": {},
-          "method": "btree",
           "where": "(returned_at IS NULL)",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "book_loans_library_book_id_fkey": {
           "name": "book_loans_library_book_id_fkey",
           "tableFrom": "book_loans",
+          "tableTo": "library_books",
           "columnsFrom": [
             "library_book_id"
           ],
-          "tableTo": "library_books",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "book_loans_borrower_id_fkey": {
           "name": "book_loans_borrower_id_fkey",
           "tableFrom": "book_loans",
+          "tableTo": "profiles",
           "columnsFrom": [
             "borrower_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2427,63 +230,63 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "book_tags_book_id_fkey": {
           "name": "book_tags_book_id_fkey",
           "tableFrom": "book_tags",
+          "tableTo": "books",
           "columnsFrom": [
             "book_id"
           ],
-          "tableTo": "books",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "book_tags_tag_id_fkey": {
           "name": "book_tags_tag_id_fkey",
           "tableFrom": "book_tags",
+          "tableTo": "tags",
           "columnsFrom": [
             "tag_id"
           ],
-          "tableTo": "tags",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "book_tags_created_by_profile_id_fkey": {
           "name": "book_tags_created_by_profile_id_fkey",
           "tableFrom": "book_tags",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "book_tags_updated_by_profile_id_fkey": {
           "name": "book_tags_updated_by_profile_id_fkey",
           "tableFrom": "book_tags",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -2696,9 +499,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "books_author_trgm_idx": {
           "name": "books_author_trgm_idx",
@@ -2712,9 +515,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "gin",
-          "concurrently": false
+          "with": {}
         },
         "books_created_desc_idx": {
           "name": "books_created_desc_idx",
@@ -2728,9 +531,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "books_isbn_13_idx": {
           "name": "books_isbn_13_idx",
@@ -2744,10 +547,10 @@
             }
           ],
           "isUnique": false,
-          "with": {},
-          "method": "btree",
           "where": "(isbn_13 IS NOT NULL)",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
         "books_list_status_idx": {
           "name": "books_list_status_idx",
@@ -2761,9 +564,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "books_title_cs_trgm_idx": {
           "name": "books_title_cs_trgm_idx",
@@ -2777,63 +580,63 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "gin",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "books_created_by_profile_id_fkey": {
           "name": "books_created_by_profile_id_fkey",
           "tableFrom": "books",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "books_updated_by_profile_id_fkey": {
           "name": "books_updated_by_profile_id_fkey",
           "tableFrom": "books",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "books_list_status_changed_by_profile_id_fkey": {
           "name": "books_list_status_changed_by_profile_id_fkey",
           "tableFrom": "books",
+          "tableTo": "profiles",
           "columnsFrom": [
             "list_status_changed_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "books_highlight_category_id_fkey": {
           "name": "books_highlight_category_id_fkey",
           "tableFrom": "books",
+          "tableTo": "highlight_categories",
           "columnsFrom": [
             "highlight_category_id"
           ],
-          "tableTo": "highlight_categories",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2944,28 +747,28 @@
         "highlight_categories_created_by_profile_id_fkey": {
           "name": "highlight_categories_created_by_profile_id_fkey",
           "tableFrom": "highlight_categories",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "highlight_categories_updated_by_profile_id_fkey": {
           "name": "highlight_categories_updated_by_profile_id_fkey",
           "tableFrom": "highlight_categories",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3075,9 +878,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "library_books_isbn_13_idx": {
           "name": "library_books_isbn_13_idx",
@@ -3091,51 +894,51 @@
             }
           ],
           "isUnique": false,
-          "with": {},
-          "method": "btree",
           "where": "(isbn_13 IS NOT NULL)",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "library_books_book_id_fkey": {
           "name": "library_books_book_id_fkey",
           "tableFrom": "library_books",
+          "tableTo": "books",
           "columnsFrom": [
             "book_id"
           ],
-          "tableTo": "books",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "library_books_created_by_profile_id_fkey": {
           "name": "library_books_created_by_profile_id_fkey",
           "tableFrom": "library_books",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "library_books_updated_by_profile_id_fkey": {
           "name": "library_books_updated_by_profile_id_fkey",
           "tableFrom": "library_books",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3231,38 +1034,38 @@
         "tags_created_by_profile_id_fkey": {
           "name": "tags_created_by_profile_id_fkey",
           "tableFrom": "tags",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "tags_updated_by_profile_id_fkey": {
           "name": "tags_updated_by_profile_id_fkey",
           "tableFrom": "tags",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "tags_name_key": {
           "name": "tags_name_key",
+          "nullsNotDistinct": false,
           "columns": [
             "name"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {
@@ -3412,9 +1215,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "customer_meetings_created_desc_idx": {
           "name": "customer_meetings_created_desc_idx",
@@ -3428,50 +1231,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "customer_meetings_profile_id_fkey": {
           "name": "customer_meetings_profile_id_fkey",
           "tableFrom": "customer_meetings",
+          "tableTo": "profiles",
           "columnsFrom": [
             "profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "customer_meetings_created_by_profile_id_fkey": {
           "name": "customer_meetings_created_by_profile_id_fkey",
           "tableFrom": "customer_meetings",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "customer_meetings_updated_by_profile_id_fkey": {
           "name": "customer_meetings_updated_by_profile_id_fkey",
           "tableFrom": "customer_meetings",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3567,41 +1370,41 @@
         "dashboard_layouts_profile_id_fkey": {
           "name": "dashboard_layouts_profile_id_fkey",
           "tableFrom": "dashboard_layouts",
+          "tableTo": "profiles",
           "columnsFrom": [
             "profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "dashboard_layouts_created_by_profile_id_fkey": {
           "name": "dashboard_layouts_created_by_profile_id_fkey",
           "tableFrom": "dashboard_layouts",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "dashboard_layouts_updated_by_profile_id_fkey": {
           "name": "dashboard_layouts_updated_by_profile_id_fkey",
           "tableFrom": "dashboard_layouts",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3711,63 +1514,63 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "essay_coach_reads_essay_id_fkey": {
           "name": "essay_coach_reads_essay_id_fkey",
           "tableFrom": "essay_coach_reads",
+          "tableTo": "essays",
           "columnsFrom": [
             "essay_id"
           ],
-          "tableTo": "essays",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_coach_reads_coach_profile_id_fkey": {
           "name": "essay_coach_reads_coach_profile_id_fkey",
           "tableFrom": "essay_coach_reads",
+          "tableTo": "profiles",
           "columnsFrom": [
             "coach_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_coach_reads_created_by_profile_id_fkey": {
           "name": "essay_coach_reads_created_by_profile_id_fkey",
           "tableFrom": "essay_coach_reads",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "essay_coach_reads_updated_by_profile_id_fkey": {
           "name": "essay_coach_reads_updated_by_profile_id_fkey",
           "tableFrom": "essay_coach_reads",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -3893,9 +1696,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "essay_comments_essay_idx": {
           "name": "essay_comments_essay_idx",
@@ -3909,76 +1712,76 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "essay_comments_essay_id_fkey": {
           "name": "essay_comments_essay_id_fkey",
           "tableFrom": "essay_comments",
+          "tableTo": "essays",
           "columnsFrom": [
             "essay_id"
           ],
-          "tableTo": "essays",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_comments_author_profile_id_fkey": {
           "name": "essay_comments_author_profile_id_fkey",
           "tableFrom": "essay_comments",
+          "tableTo": "profiles",
           "columnsFrom": [
             "author_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_comments_created_by_profile_id_fkey": {
           "name": "essay_comments_created_by_profile_id_fkey",
           "tableFrom": "essay_comments",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "essay_comments_updated_by_profile_id_fkey": {
           "name": "essay_comments_updated_by_profile_id_fkey",
           "tableFrom": "essay_comments",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "essay_comments_parent_id_fkey": {
           "name": "essay_comments_parent_id_fkey",
           "tableFrom": "essay_comments",
+          "tableTo": "essay_comments",
           "columnsFrom": [
             "parent_id"
           ],
-          "tableTo": "essay_comments",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4096,41 +1899,41 @@
         "essay_revisions_essay_id_fkey": {
           "name": "essay_revisions_essay_id_fkey",
           "tableFrom": "essay_revisions",
+          "tableTo": "essays",
           "columnsFrom": [
             "essay_id"
           ],
-          "tableTo": "essays",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_revisions_created_by_profile_id_fkey": {
           "name": "essay_revisions_created_by_profile_id_fkey",
           "tableFrom": "essay_revisions",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "essay_revisions_updated_by_profile_id_fkey": {
           "name": "essay_revisions_updated_by_profile_id_fkey",
           "tableFrom": "essay_revisions",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4255,63 +2058,63 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "essay_views_essay_id_fkey": {
           "name": "essay_views_essay_id_fkey",
           "tableFrom": "essay_views",
+          "tableTo": "essays",
           "columnsFrom": [
             "essay_id"
           ],
-          "tableTo": "essays",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_views_viewer_profile_id_fkey": {
           "name": "essay_views_viewer_profile_id_fkey",
           "tableFrom": "essay_views",
+          "tableTo": "profiles",
           "columnsFrom": [
             "viewer_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_views_created_by_profile_id_fkey": {
           "name": "essay_views_created_by_profile_id_fkey",
           "tableFrom": "essay_views",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "essay_views_updated_by_profile_id_fkey": {
           "name": "essay_views_updated_by_profile_id_fkey",
           "tableFrom": "essay_views",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4403,63 +2206,63 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "essay_votes_essay_id_fkey": {
           "name": "essay_votes_essay_id_fkey",
           "tableFrom": "essay_votes",
+          "tableTo": "essays",
           "columnsFrom": [
             "essay_id"
           ],
-          "tableTo": "essays",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_votes_voter_profile_id_fkey": {
           "name": "essay_votes_voter_profile_id_fkey",
           "tableFrom": "essay_votes",
+          "tableTo": "profiles",
           "columnsFrom": [
             "voter_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essay_votes_created_by_profile_id_fkey": {
           "name": "essay_votes_created_by_profile_id_fkey",
           "tableFrom": "essay_votes",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "essay_votes_updated_by_profile_id_fkey": {
           "name": "essay_votes_updated_by_profile_id_fkey",
           "tableFrom": "essay_votes",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -4597,9 +2400,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "essays_book_idx": {
           "name": "essays_book_idx",
@@ -4613,9 +2416,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "essays_created_desc_idx": {
           "name": "essays_created_desc_idx",
@@ -4629,76 +2432,76 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "essays_author_profile_id_fkey": {
           "name": "essays_author_profile_id_fkey",
           "tableFrom": "essays",
+          "tableTo": "profiles",
           "columnsFrom": [
             "author_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "essays_book_id_fkey": {
           "name": "essays_book_id_fkey",
           "tableFrom": "essays",
+          "tableTo": "books",
           "columnsFrom": [
             "book_id"
           ],
-          "tableTo": "books",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "essays_pinned_by_profile_id_fkey": {
           "name": "essays_pinned_by_profile_id_fkey",
           "tableFrom": "essays",
+          "tableTo": "profiles",
           "columnsFrom": [
             "pinned_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "essays_created_by_profile_id_fkey": {
           "name": "essays_created_by_profile_id_fkey",
           "tableFrom": "essays",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "essays_updated_by_profile_id_fkey": {
           "name": "essays_updated_by_profile_id_fkey",
           "tableFrom": "essays",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4821,9 +2624,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "feedback_author_idx": {
           "name": "feedback_author_idx",
@@ -4837,50 +2640,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "feedback_author_profile_id_fkey": {
           "name": "feedback_author_profile_id_fkey",
           "tableFrom": "feedback",
+          "tableTo": "profiles",
           "columnsFrom": [
             "author_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "feedback_created_by_profile_id_fkey": {
           "name": "feedback_created_by_profile_id_fkey",
           "tableFrom": "feedback",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "feedback_updated_by_profile_id_fkey": {
           "name": "feedback_updated_by_profile_id_fkey",
           "tableFrom": "feedback",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5025,9 +2828,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "individual_coaching_sessions_coach_idx": {
           "name": "individual_coaching_sessions_coach_idx",
@@ -5041,9 +2844,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "individual_coaching_sessions_created_desc_idx": {
           "name": "individual_coaching_sessions_created_desc_idx",
@@ -5057,63 +2860,63 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "individual_coaching_sessions_profile_id_fkey": {
           "name": "individual_coaching_sessions_profile_id_fkey",
           "tableFrom": "individual_coaching_sessions",
+          "tableTo": "profiles",
           "columnsFrom": [
             "profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "individual_coaching_sessions_coach_profile_id_fkey": {
           "name": "individual_coaching_sessions_coach_profile_id_fkey",
           "tableFrom": "individual_coaching_sessions",
+          "tableTo": "profiles",
           "columnsFrom": [
             "coach_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "individual_coaching_sessions_created_by_profile_id_fkey": {
           "name": "individual_coaching_sessions_created_by_profile_id_fkey",
           "tableFrom": "individual_coaching_sessions",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "individual_coaching_sessions_updated_by_profile_id_fkey": {
           "name": "individual_coaching_sessions_updated_by_profile_id_fkey",
           "tableFrom": "individual_coaching_sessions",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5235,41 +3038,41 @@
         "notification_preferences_profile_id_fkey": {
           "name": "notification_preferences_profile_id_fkey",
           "tableFrom": "notification_preferences",
+          "tableTo": "profiles",
           "columnsFrom": [
             "profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "notification_preferences_created_by_profile_id_fkey": {
           "name": "notification_preferences_created_by_profile_id_fkey",
           "tableFrom": "notification_preferences",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "notification_preferences_updated_by_profile_id_fkey": {
           "name": "notification_preferences_updated_by_profile_id_fkey",
           "tableFrom": "notification_preferences",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5414,50 +3217,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "personality_tests_profile_id_fkey": {
           "name": "personality_tests_profile_id_fkey",
           "tableFrom": "personality_tests",
+          "tableTo": "profiles",
           "columnsFrom": [
             "profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "personality_tests_created_by_profile_id_fkey": {
           "name": "personality_tests_created_by_profile_id_fkey",
           "tableFrom": "personality_tests",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "personality_tests_updated_by_profile_id_fkey": {
           "name": "personality_tests_updated_by_profile_id_fkey",
           "tableFrom": "personality_tests",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5634,9 +3437,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "profiles_team_id_user_id_idx": {
           "name": "profiles_team_id_user_id_idx",
@@ -5657,9 +3460,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "profiles_user_id_idx": {
           "name": "profiles_user_id_idx",
@@ -5673,9 +3476,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "profiles_work_email_idx": {
           "name": "profiles_work_email_idx",
@@ -5689,93 +3492,93 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "profiles_user_id_fkey": {
           "name": "profiles_user_id_fkey",
           "tableFrom": "profiles",
+          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "profiles_team_id_fkey": {
           "name": "profiles_team_id_fkey",
           "tableFrom": "profiles",
+          "tableTo": "teams",
           "columnsFrom": [
             "team_id"
           ],
-          "tableTo": "teams",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "profiles_access_removed_by_profile_id_fkey": {
           "name": "profiles_access_removed_by_profile_id_fkey",
           "tableFrom": "profiles",
+          "tableTo": "profiles",
           "columnsFrom": [
             "access_removed_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "profiles_created_by_profile_id_fkey": {
           "name": "profiles_created_by_profile_id_fkey",
           "tableFrom": "profiles",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "profiles_updated_by_profile_id_fkey": {
           "name": "profiles_updated_by_profile_id_fkey",
           "tableFrom": "profiles",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "profiles_user_id_key": {
           "name": "profiles_user_id_key",
+          "nullsNotDistinct": false,
           "columns": [
             "user_id"
-          ],
-          "nullsNotDistinct": false
+          ]
         },
         "profiles_work_email_key": {
           "name": "profiles_work_email_key",
+          "nullsNotDistinct": false,
           "columns": [
             "work_email"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {
@@ -5882,9 +3685,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "users_suggested_work_email_idx": {
           "name": "users_suggested_work_email_idx",
@@ -5898,42 +3701,42 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "users_auth_user_id_fkey": {
           "name": "users_auth_user_id_fkey",
           "tableFrom": "users",
+          "tableTo": "users",
+          "schemaTo": "auth",
           "columnsFrom": [
             "auth_user_id"
           ],
-          "tableTo": "users",
-          "schemaTo": "auth",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "users_auth_user_id_key": {
           "name": "users_auth_user_id_key",
+          "nullsNotDistinct": false,
           "columns": [
             "auth_user_id"
-          ],
-          "nullsNotDistinct": false
+          ]
         },
         "users_google_email_key": {
           "name": "users_google_email_key",
+          "nullsNotDistinct": false,
           "columns": [
             "google_email"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {
@@ -6075,9 +3878,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_recurring_schedules_room": {
           "name": "idx_recurring_schedules_room",
@@ -6091,9 +3894,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_recurring_schedules_team": {
           "name": "idx_recurring_schedules_team",
@@ -6107,9 +3910,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_recurring_schedules_type": {
           "name": "idx_recurring_schedules_type",
@@ -6123,9 +3926,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_recurring_schedules_valid": {
           "name": "idx_recurring_schedules_valid",
@@ -6146,63 +3949,63 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "recurring_schedules_room_id_fkey": {
           "name": "recurring_schedules_room_id_fkey",
           "tableFrom": "recurring_schedules",
+          "tableTo": "rooms",
           "columnsFrom": [
             "room_id"
           ],
-          "tableTo": "rooms",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recurring_schedules_team_id_fkey": {
           "name": "recurring_schedules_team_id_fkey",
           "tableFrom": "recurring_schedules",
+          "tableTo": "teams",
           "columnsFrom": [
             "team_id"
           ],
-          "tableTo": "teams",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "recurring_schedules_created_by_profile_id_fkey": {
           "name": "recurring_schedules_created_by_profile_id_fkey",
           "tableFrom": "recurring_schedules",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "recurring_schedules_updated_by_profile_id_fkey": {
           "name": "recurring_schedules_updated_by_profile_id_fkey",
           "tableFrom": "recurring_schedules",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6361,9 +4164,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_reservations_start": {
           "name": "idx_reservations_start",
@@ -6377,9 +4180,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_reservations_owner": {
           "name": "idx_reservations_owner",
@@ -6393,76 +4196,76 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "reservations_room_id_fkey": {
           "name": "reservations_room_id_fkey",
           "tableFrom": "reservations",
+          "tableTo": "rooms",
           "columnsFrom": [
             "room_id"
           ],
-          "tableTo": "rooms",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "reservations_owner_profile_id_fkey": {
           "name": "reservations_owner_profile_id_fkey",
           "tableFrom": "reservations",
+          "tableTo": "profiles",
           "columnsFrom": [
             "owner_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "reservations_cancelled_by_profile_id_fkey": {
           "name": "reservations_cancelled_by_profile_id_fkey",
           "tableFrom": "reservations",
+          "tableTo": "profiles",
           "columnsFrom": [
             "cancelled_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         },
         "reservations_created_by_profile_id_fkey": {
           "name": "reservations_created_by_profile_id_fkey",
           "tableFrom": "reservations",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "reservations_updated_by_profile_id_fkey": {
           "name": "reservations_updated_by_profile_id_fkey",
           "tableFrom": "reservations",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6602,47 +4405,47 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "rooms_created_by_profile_id_fkey": {
           "name": "rooms_created_by_profile_id_fkey",
           "tableFrom": "rooms",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "rooms_updated_by_profile_id_fkey": {
           "name": "rooms_updated_by_profile_id_fkey",
           "tableFrom": "rooms",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "rooms_code_key": {
           "name": "rooms_code_key",
+          "nullsNotDistinct": false,
           "columns": [
             "code"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {
@@ -6745,37 +4548,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "schedule_breaks_created_by_profile_id_fkey": {
           "name": "schedule_breaks_created_by_profile_id_fkey",
           "tableFrom": "schedule_breaks",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "schedule_breaks_updated_by_profile_id_fkey": {
           "name": "schedule_breaks_updated_by_profile_id_fkey",
           "tableFrom": "schedule_breaks",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6909,50 +4712,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "team_activities_team_id_fkey": {
           "name": "team_activities_team_id_fkey",
           "tableFrom": "team_activities",
+          "tableTo": "teams",
           "columnsFrom": [
             "team_id"
           ],
-          "tableTo": "teams",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "team_activities_created_by_profile_id_fkey": {
           "name": "team_activities_created_by_profile_id_fkey",
           "tableFrom": "team_activities",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "team_activities_updated_by_profile_id_fkey": {
           "name": "team_activities_updated_by_profile_id_fkey",
           "tableFrom": "team_activities",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6997,6 +4800,330 @@
         }
       },
       "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.team_document_versions": {
+      "name": "team_document_versions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "document_id": {
+          "name": "document_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version_no": {
+          "name": "version_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_path": {
+          "name": "file_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_name": {
+          "name": "file_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_size": {
+          "name": "file_size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_from": {
+          "name": "effective_from",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "change_note": {
+          "name": "change_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by_profile_id": {
+          "name": "created_by_profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "team_document_versions_document_version_idx": {
+          "name": "team_document_versions_document_version_idx",
+          "columns": [
+            {
+              "expression": "document_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            },
+            {
+              "expression": "version_no",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "team_document_versions_document_id_fkey": {
+          "name": "team_document_versions_document_id_fkey",
+          "tableFrom": "team_document_versions",
+          "tableTo": "team_documents",
+          "columnsFrom": [
+            "document_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_document_versions_created_by_profile_id_fkey": {
+          "name": "team_document_versions_created_by_profile_id_fkey",
+          "tableFrom": "team_document_versions",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "created_by_profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "Team members can view document versions": {
+          "name": "Team members can view document versions",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "document_id IN (\n\t\t\tSELECT team_documents.id\n\t\t\tFROM team_documents\n\t\t\tWHERE team_documents.team_id IN (\n\t\t\t\tSELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL\n\t\t\t)\n\t\t)"
+        },
+        "Team members can create document versions": {
+          "name": "Team members can create document versions",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "created_by_profile_id = current_profile_id() AND document_id IN (\n\t\t\tSELECT team_documents.id\n\t\t\tFROM team_documents\n\t\t\tWHERE team_documents.removed_at IS NULL\n\t\t\t\tAND team_documents.team_id IN (\n\t\t\t\t\tSELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL\n\t\t\t\t)\n\t\t)"
+        }
+      },
+      "checkConstraints": {
+        "team_document_versions_version_positive": {
+          "name": "team_document_versions_version_positive",
+          "value": "version_no > 0"
+        },
+        "team_document_versions_file_size_positive": {
+          "name": "team_document_versions_file_size_positive",
+          "value": "file_size > 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.team_documents": {
+      "name": "team_documents",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "doc_type": {
+          "name": "doc_type",
+          "type": "team_document_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "removed_at": {
+          "name": "removed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_by_profile_id": {
+          "name": "created_by_profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_by_profile_id": {
+          "name": "updated_by_profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "team_documents_featured_team_type_idx": {
+          "name": "team_documents_featured_team_type_idx",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            },
+            {
+              "expression": "doc_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "enum_ops"
+            }
+          ],
+          "isUnique": true,
+          "where": "doc_type IN ('team_contract', 'financial_policy') AND removed_at IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "team_documents_team_id_fkey": {
+          "name": "team_documents_team_id_fkey",
+          "tableFrom": "team_documents",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_documents_created_by_profile_id_fkey": {
+          "name": "team_documents_created_by_profile_id_fkey",
+          "tableFrom": "team_documents",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "created_by_profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "team_documents_updated_by_profile_id_fkey": {
+          "name": "team_documents_updated_by_profile_id_fkey",
+          "tableFrom": "team_documents",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "updated_by_profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "Team members can view documents": {
+          "name": "Team members can view documents",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL)"
+        },
+        "Team members can create documents": {
+          "name": "Team members can create documents",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL) AND created_by_profile_id = current_profile_id() AND updated_by_profile_id = current_profile_id()"
+        },
+        "Team members can update custom documents": {
+          "name": "Team members can update custom documents",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "doc_type = 'other' AND team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL)",
+          "withCheck": "doc_type = 'other' AND team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL) AND updated_by_profile_id = current_profile_id()"
+        }
+      },
+      "checkConstraints": {
+        "team_documents_title_matches_type": {
+          "name": "team_documents_title_matches_type",
+          "value": "(\n\t\t(doc_type = 'other' AND title IS NOT NULL AND length(trim(title)) > 0)\n\t\tOR (doc_type <> 'other' AND title IS NULL)\n\t)"
+        }
+      },
       "isRLSEnabled": true
     },
     "public.team_reflections": {
@@ -7105,51 +5232,51 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "(removed_at IS NULL)",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "team_reflections_team_id_fkey": {
           "name": "team_reflections_team_id_fkey",
           "tableFrom": "team_reflections",
+          "tableTo": "teams",
           "columnsFrom": [
             "team_id"
           ],
-          "tableTo": "teams",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "team_reflections_created_by_profile_id_fkey": {
           "name": "team_reflections_created_by_profile_id_fkey",
           "tableFrom": "team_reflections",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "team_reflections_updated_by_profile_id_fkey": {
           "name": "team_reflections_updated_by_profile_id_fkey",
           "tableFrom": "team_reflections",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -7272,9 +5399,9 @@
             }
           ],
           "isUnique": true,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "team_semester_reflection_entries_reflection_idx": {
           "name": "team_semester_reflection_entries_reflection_idx",
@@ -7288,37 +5415,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "team_semester_reflection_entries_semester_reflection_id_fkey": {
           "name": "team_semester_reflection_entries_semester_reflection_id_fkey",
           "tableFrom": "team_semester_reflection_entries",
+          "tableTo": "team_semester_reflections",
           "columnsFrom": [
             "semester_reflection_id"
           ],
-          "tableTo": "team_semester_reflections",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "team_semester_reflection_entries_updated_by_profile_id_fkey": {
           "name": "team_semester_reflection_entries_updated_by_profile_id_fkey",
           "tableFrom": "team_semester_reflection_entries",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -7432,51 +5559,51 @@
             }
           ],
           "isUnique": true,
-          "with": {},
-          "method": "btree",
           "where": "(removed_at IS NULL)",
-          "concurrently": false
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
         "team_semester_reflections_team_id_fkey": {
           "name": "team_semester_reflections_team_id_fkey",
           "tableFrom": "team_semester_reflections",
+          "tableTo": "teams",
           "columnsFrom": [
             "team_id"
           ],
-          "tableTo": "teams",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "team_semester_reflections_created_by_profile_id_fkey": {
           "name": "team_semester_reflections_created_by_profile_id_fkey",
           "tableFrom": "team_semester_reflections",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "team_semester_reflections_updated_by_profile_id_fkey": {
           "name": "team_semester_reflections_updated_by_profile_id_fkey",
           "tableFrom": "team_semester_reflections",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -7696,50 +5823,50 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "tools_techniques_profile_id_fkey": {
           "name": "tools_techniques_profile_id_fkey",
           "tableFrom": "tools_techniques",
+          "tableTo": "profiles",
           "columnsFrom": [
             "profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "tools_techniques_created_by_profile_id_fkey": {
           "name": "tools_techniques_created_by_profile_id_fkey",
           "tableFrom": "tools_techniques",
+          "tableTo": "profiles",
           "columnsFrom": [
             "created_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "tools_techniques_updated_by_profile_id_fkey": {
           "name": "tools_techniques_updated_by_profile_id_fkey",
           "tableFrom": "tools_techniques",
+          "tableTo": "profiles",
           "columnsFrom": [
             "updated_by_profile_id"
           ],
-          "tableTo": "profiles",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -7785,413 +5912,9 @@
       },
       "checkConstraints": {},
       "isRLSEnabled": true
-    },
-    "public.team_document_versions": {
-      "name": "team_document_versions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "document_id": {
-          "name": "document_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "version_no": {
-          "name": "version_no",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "file_path": {
-          "name": "file_path",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "file_name": {
-          "name": "file_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "file_size": {
-          "name": "file_size",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "effective_from": {
-          "name": "effective_from",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "change_note": {
-          "name": "change_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "team_document_versions_document_version_idx": {
-          "name": "team_document_versions_document_version_idx",
-          "columns": [
-            {
-              "expression": "document_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            },
-            {
-              "expression": "version_no",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "int4_ops"
-            }
-          ],
-          "isUnique": true,
-          "with": {},
-          "method": "btree",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "team_document_versions_document_id_fkey": {
-          "name": "team_document_versions_document_id_fkey",
-          "tableFrom": "team_document_versions",
-          "columnsFrom": [
-            "document_id"
-          ],
-          "tableTo": "team_documents",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "team_document_versions_created_by_profile_id_fkey": {
-          "name": "team_document_versions_created_by_profile_id_fkey",
-          "tableFrom": "team_document_versions",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "Team members can view document versions": {
-          "name": "Team members can view document versions",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "document_id IN (\n\t\t\tSELECT team_documents.id\n\t\t\tFROM team_documents\n\t\t\tWHERE team_documents.team_id IN (\n\t\t\t\tSELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL\n\t\t\t)\n\t\t)"
-        },
-        "Team members can create document versions": {
-          "name": "Team members can create document versions",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
-          "withCheck": "created_by_profile_id = current_profile_id() AND document_id IN (\n\t\t\tSELECT team_documents.id\n\t\t\tFROM team_documents\n\t\t\tWHERE team_documents.removed_at IS NULL\n\t\t\t\tAND team_documents.team_id IN (\n\t\t\t\t\tSELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL\n\t\t\t\t)\n\t\t)"
-        }
-      },
-      "checkConstraints": {
-        "team_document_versions_version_positive": {
-          "name": "team_document_versions_version_positive",
-          "value": "version_no > 0"
-        },
-        "team_document_versions_file_size_positive": {
-          "name": "team_document_versions_file_size_positive",
-          "value": "file_size > 0"
-        }
-      },
-      "isRLSEnabled": true
-    },
-    "public.team_documents": {
-      "name": "team_documents",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "team_id": {
-          "name": "team_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "doc_type": {
-          "name": "doc_type",
-          "type": "team_document_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "removed_at": {
-          "name": "removed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_by_profile_id": {
-          "name": "created_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_by_profile_id": {
-          "name": "updated_by_profile_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "team_documents_featured_team_type_idx": {
-          "name": "team_documents_featured_team_type_idx",
-          "columns": [
-            {
-              "expression": "team_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            },
-            {
-              "expression": "doc_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "enum_ops"
-            }
-          ],
-          "isUnique": true,
-          "with": {},
-          "method": "btree",
-          "where": "doc_type IN ('team_contract', 'financial_policy') AND removed_at IS NULL",
-          "concurrently": false
-        }
-      },
-      "foreignKeys": {
-        "team_documents_team_id_fkey": {
-          "name": "team_documents_team_id_fkey",
-          "tableFrom": "team_documents",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
-        },
-        "team_documents_created_by_profile_id_fkey": {
-          "name": "team_documents_created_by_profile_id_fkey",
-          "tableFrom": "team_documents",
-          "columnsFrom": [
-            "created_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        },
-        "team_documents_updated_by_profile_id_fkey": {
-          "name": "team_documents_updated_by_profile_id_fkey",
-          "tableFrom": "team_documents",
-          "columnsFrom": [
-            "updated_by_profile_id"
-          ],
-          "tableTo": "profiles",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {
-        "Team members can view documents": {
-          "name": "Team members can view documents",
-          "as": "PERMISSIVE",
-          "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
-          "using": "team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL)"
-        },
-        "Team members can create documents": {
-          "name": "Team members can create documents",
-          "as": "PERMISSIVE",
-          "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
-          "withCheck": "team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL) AND created_by_profile_id = current_profile_id() AND updated_by_profile_id = current_profile_id()"
-        },
-        "Team members can update custom documents": {
-          "name": "Team members can update custom documents",
-          "as": "PERMISSIVE",
-          "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
-          "using": "doc_type = 'other' AND team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL)",
-          "withCheck": "doc_type = 'other' AND team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL) AND updated_by_profile_id = current_profile_id()"
-        }
-      },
-      "checkConstraints": {
-        "team_documents_title_matches_type": {
-          "name": "team_documents_title_matches_type",
-          "value": "(\n\t\t(doc_type = 'other' AND title IS NOT NULL AND length(trim(title)) > 0)\n\t\tOR (doc_type <> 'other' AND title IS NULL)\n\t)"
-        }
-      },
-      "isRLSEnabled": true
     }
   },
   "enums": {
-    "public.birth_giving_assignment_state": {
-      "name": "birth_giving_assignment_state",
-      "schema": "public",
-      "values": [
-        "present",
-        "missing"
-      ]
-    },
-    "public.birth_giving_delivery_status": {
-      "name": "birth_giving_delivery_status",
-      "schema": "public",
-      "values": [
-        "pending",
-        "processing",
-        "sent",
-        "failed",
-        "manual_review"
-      ]
-    },
-    "public.birth_giving_duration": {
-      "name": "birth_giving_duration",
-      "schema": "public",
-      "values": [
-        "8h",
-        "24h"
-      ]
-    },
-    "public.birth_giving_email_message_type": {
-      "name": "birth_giving_email_message_type",
-      "schema": "public",
-      "values": [
-        "assignment_release",
-        "assignment_replacement"
-      ]
-    },
-    "public.birth_giving_event_status": {
-      "name": "birth_giving_event_status",
-      "schema": "public",
-      "values": [
-        "draft",
-        "published"
-      ]
-    },
-    "public.birth_giving_proposal_direction": {
-      "name": "birth_giving_proposal_direction",
-      "schema": "public",
-      "values": [
-        "join_request",
-        "invitation"
-      ]
-    },
-    "public.birth_giving_proposal_state": {
-      "name": "birth_giving_proposal_state",
-      "schema": "public",
-      "values": [
-        "pending",
-        "accepted",
-        "rejected",
-        "cancelled",
-        "expired"
-      ]
-    },
-    "public.birth_giving_team_result_state": {
-      "name": "birth_giving_team_result_state",
-      "schema": "public",
-      "values": [
-        "pending",
-        "present",
-        "missing"
-      ]
-    },
-    "public.birth_giving_team_status": {
-      "name": "birth_giving_team_status",
-      "schema": "public",
-      "values": [
-        "forming",
-        "confirmed",
-        "cancelled"
-      ]
-    },
     "public.book_list_status": {
       "name": "book_list_status",
       "schema": "public",
@@ -8242,6 +5965,15 @@
         "houston_calling"
       ]
     },
+    "public.team_document_type": {
+      "name": "team_document_type",
+      "schema": "public",
+      "values": [
+        "team_contract",
+        "financial_policy",
+        "other"
+      ]
+    },
     "public.semester_reflection_topic": {
       "name": "semester_reflection_topic",
       "schema": "public",
@@ -8267,22 +5999,14 @@
         "technique",
         "tool"
       ]
-    },
-    "public.team_document_type": {
-      "name": "team_document_type",
-      "schema": "public",
-      "values": [
-        "team_contract",
-        "financial_policy",
-        "other"
-      ]
     }
   },
   "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
   "views": {
     "public.books_with_essay_count": {
-      "name": "books_with_essay_count",
-      "schema": "public",
       "columns": {
         "id": {
           "name": "id",
@@ -8426,13 +6150,12 @@
         }
       },
       "definition": "SELECT b.id, b.title_cs, b.title_en, b.author, b.isbn_13, b.description, b.google_books_cover_url, b.book_points, b.page_count, b.preview_link, b.source, b.external_id, b.list_status, b.list_status_changed_at, b.list_status_changed_by_profile_id, b.list_status_reason, b.highlight_category_id, b.is_rocket_model, b.created_at, b.updated_at, b.created_by_profile_id, b.updated_by_profile_id, COALESCE(ec.essay_count, 0) AS essay_count FROM books b LEFT JOIN ( SELECT essays.book_id, count(*)::integer AS essay_count FROM essays WHERE essays.book_id IS NOT NULL AND essays.published_at IS NOT NULL AND essays.removed_at IS NULL GROUP BY essays.book_id) ec ON ec.book_id = b.id",
-      "materialized": false,
-      "isExisting": false
+      "name": "books_with_essay_count",
+      "schema": "public",
+      "isExisting": false,
+      "materialized": false
     }
   },
-  "sequences": {},
-  "roles": {},
-  "policies": {},
   "_meta": {
     "columns": {},
     "schemas": {},

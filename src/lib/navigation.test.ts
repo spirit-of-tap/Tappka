@@ -26,6 +26,7 @@ describe("navigation config", () => {
       "/koucovani",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/tymove-dokumenty",
       "/nastroje-techniky",
       "/komunita/profil",
       "/cteni/prehled",
@@ -43,6 +44,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
       "/komunita/profil",
@@ -54,7 +56,7 @@ describe("getHubModules", () => {
   });
 
   it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
-    expect(MODULE_HUB_ORDER).toHaveLength(9);
+    expect(MODULE_HUB_ORDER).toHaveLength(10);
     expect(MODULE_HUB_ORDER).not.toContain("/");
     expect(MODULE_HUB_ORDER).not.toContain("/komunita");
   });

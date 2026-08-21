@@ -3,6 +3,7 @@ import {
   BookOpen,
   Brain,
   CalendarDays,
+  Files,
   Gift,
   GraduationCap,
   Handshake,
@@ -37,6 +38,7 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Koučování", url: "/koucovani", icon: GraduationCap, betaOnly: true, description: "Evidence koučovacích sezení." },
   { title: "Týmová reflexe", url: "/tymova-reflexe", icon: NotebookPen, betaOnly: true, description: "Reflexe týmové spolupráce a semestrální hodnocení." },
   { title: "Týmový deník", url: "/tymovy-denik", icon: Activity, betaOnly: true, description: "Denní zápisy a přehled týmových aktivit." },
+  { title: "Týmové dokumenty", url: "/tymove-dokumenty", icon: Files, betaOnly: true, description: "Smlouvy, finanční politika a další dokumenty týmu." },
   { title: "Nástroje a techniky", url: "/nastroje-techniky", icon: Wrench, betaOnly: true, featured: true, description: "Katalog modelů, technik a nástrojů pro práci." },
   { title: "Osobnostní testy", url: "/komunita/profil", icon: Brain, betaOnly: true, ownProfileTab: "osobnostni-testy", description: "Výsledky osobnostních testů na tvém profilu." },
   // Sidebar renders Čtení and Osobnostní testy via title-based special-case branches — keep betaOnly here, and the generic beta branch must run after those special cases.
@@ -53,6 +55,7 @@ export const MODULE_HUB_ORDER: string[] = [
   "/schuzky",
   "/tymova-reflexe",
   "/tymovy-denik",
+  "/tymove-dokumenty",
   "/koucovani",
   "/birth-giving",
   "/komunita/profil",
