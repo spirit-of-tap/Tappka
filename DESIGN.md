@@ -143,7 +143,8 @@ Header rules:
   `action`.
 - Child pages navigate back via the `back` prop or `ui/page-back.tsx`
   (chevron + visible label, ≥44px tap height) — no bespoke back links.
-- Exceptions: auth screens, `/beta` hero, `/reservations/[code]/quick`,
+- Exceptions: dashboard hero greeting (`Vítej, …`, one step larger than
+  section titles), auth screens, `/beta` hero, `/reservations/[code]/quick`,
   essay editors (`sr-only h1`), 404.
 
 ## Elevation & Depth
