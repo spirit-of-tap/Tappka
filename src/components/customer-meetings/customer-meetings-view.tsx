@@ -232,13 +232,14 @@ export function CustomerMeetingsView({
         </div>
       )}
 
-      {/* Mobile FAB — second trigger of the shared dialog; the spacer below
-          keeps the last timeline row tappable above it. */}
+      {/* Mobile FAB — second trigger of the shared dialog. Sits just above
+          MobileBottomNav (fixed h-16 + safe-area, z-50) with a small gap;
+          the spacer keeps the last timeline row tappable above it. */}
       <DialogTrigger asChild>
         <Button
           size="icon"
           aria-label="Nová zákaznická schůzka"
-          className="fixed right-4 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-40 size-14 rounded-full shadow-lg sm:hidden"
+          className="fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 size-14 rounded-full shadow-lg sm:hidden"
         >
           <Plus className="size-6" />
         </Button>
@@ -255,7 +256,7 @@ export function CustomerMeetingsView({
         />
       </DialogContent>
       </Dialog>
-      <div aria-hidden className="h-16 sm:hidden" />
+      <div aria-hidden className="h-20 sm:hidden" />
     </>
   )
 }
