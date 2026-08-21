@@ -124,37 +124,28 @@ export function CustomerMeetingsView({
 
   return (
     <>
-      <PageHeader
-        title="Zákaznické schůzky"
-        description="Záznamník schůzek s lidmi z praxe"
-        count={{
-          value: items.length,
-          label: pluralizeCz(items.length, ["schůzka", "schůzky", "schůzek"]),
-        }}
-        action={
-          <div className="flex items-center gap-2">
-            <HelpDialog />
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      {/* One shared create-dialog: desktop opens from the header button,
+          mobile from the thumb-reachable floating action button below. */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <PageHeader
+          title="Zákaznické schůzky"
+          description="Záznamník schůzek s lidmi z praxe"
+          count={{
+            value: items.length,
+            label: pluralizeCz(items.length, ["schůzka", "schůzky", "schůzek"]),
+          }}
+          action={
+            <div className="flex items-center gap-2">
+              <HelpDialog />
               <DialogTrigger asChild>
-                <Button size="sm">
+                <Button size="sm" className="hidden sm:inline-flex">
                   <Plus className="size-4" />
                   Nová
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Nová zákaznická schůzka</DialogTitle>
-                </DialogHeader>
-                <CustomerMeetingForm
-                  profileId={profileId}
-                  onSuccess={handleCreated}
-                  onCancel={() => setCreateOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-        }
-      />
+            </div>
+          }
+        />
 
       {!searching && hasAny && (
         <MetricProgress
@@ -173,7 +164,8 @@ export function CustomerMeetingsView({
         />
       )}
 
-      {hasAny && (        <div className="relative">
+      {hasAny && (
+        <div className="relative">
           <Search
             aria-hidden
             className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -239,6 +231,31 @@ export function CustomerMeetingsView({
           )}
         </div>
       )}
+
+      {/* Mobile FAB — second trigger of the shared dialog; the spacer below
+          keeps the last timeline row tappable above it. */}
+      <DialogTrigger asChild>
+        <Button
+          size="icon"
+          aria-label="Nová zákaznická schůzka"
+          className="fixed right-4 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-40 size-14 rounded-full shadow-lg sm:hidden"
+        >
+          <Plus className="size-6" />
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Nová zákaznická schůzka</DialogTitle>
+        </DialogHeader>
+        <CustomerMeetingForm
+          profileId={profileId}
+          onSuccess={handleCreated}
+          onCancel={() => setCreateOpen(false)}
+        />
+      </DialogContent>
+      </Dialog>
+      <div aria-hidden className="h-16 sm:hidden" />
     </>
   )
 }

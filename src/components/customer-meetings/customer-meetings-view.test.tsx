@@ -89,4 +89,10 @@ describe("CustomerMeetingsView", () => {
     render(<CustomerMeetingsView meetings={[]} profileId="p1" now={NOW} />)
     expect(screen.getByText("Žádné schůzky")).toBeInTheDocument()
   })
+
+  it("offers a thumb-reachable floating create action on mobile", () => {
+    render(<CustomerMeetingsView meetings={MEETINGS} profileId="p1" now={NOW} />)
+    const fab = screen.getByRole("button", { name: "Nová zákaznická schůzka" })
+    expect(fab.className).toContain("sm:hidden")
+  })
 })
