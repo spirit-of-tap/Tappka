@@ -48,13 +48,13 @@ describe("Birth Giving combined process route", () => {
     expect(response.status).toBe(401);
   });
 
-  it("schedules the combined processor every minute", () => {
+  it("schedules the combined processor daily within the Vercel Hobby cron limit", () => {
     const config = JSON.parse(readFileSync(VERCEL_CONFIG_PATH, "utf8")) as {
       crons?: Array<{ path: string; schedule: string }>;
     };
     expect(config.crons).toContainEqual({
       path: "/api/system/birth-giving/process",
-      schedule: "* * * * *",
+      schedule: "0 6 * * *",
     });
   });
 });
