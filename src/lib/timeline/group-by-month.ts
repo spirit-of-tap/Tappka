@@ -3,10 +3,24 @@ export const MONTH_LABELS = [
   "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec",
 ] as const
 
+function toMonthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+}
+
+/**
+ * Returns the viewer-local month key (`YYYY-MM`) for a full ISO timestamp,
+ * or "" when the value is null or unparseable — such values are treated as
+ * undated by {@link groupByMonth}.
+ *
+ * Month bucketing follows the viewer-local calendar month (consistent with
+ * how {@link groupByMonth} derives the current month from `now`); SSR output
+ * is only stable when server and client share a timezone.
+ */
 export function getMonthKey(dateStr: string | null): string {
   if (!dateStr) return ""
   const d = new Date(dateStr)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+  if (Number.isNaN(d.getTime())) return ""
+  return toMonthKey(d)
 }
 
 export function getMonthLabel(key: string): string {
@@ -40,6 +54,14 @@ export interface GroupedByMonth<T> {
  * Groups items into calendar months, newest first. The span always covers
  * current month → earliest item month, and extends forward to the latest
  * item month so planned/future entries stay visible.
+ *
+ * Expects full ISO timestamps from `getDate`. Items with null or unparseable
+ * dates are returned under `undated`. Items keep their input order within
+ * each month — pre-sort items newest-first before calling.
+ *
+ * Month bucketing follows the viewer-local calendar month (consistent with
+ * how the current month is derived from `now`); SSR output is only stable
+ * when server and client share a timezone.
  */
 export function groupByMonth<T>(
   items: T[],
@@ -47,7 +69,7 @@ export function groupByMonth<T>(
 ): GroupedByMonth<T> {
   const byKey = new Map<string, T[]>()
   const undated: T[] = []
-  const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const currentKey = toMonthKey(now)
 
   let minKey = currentKey
   let maxKey = currentKey
@@ -59,8 +81,9 @@ export function groupByMonth<T>(
       undated.push(item)
       continue
     }
-    if (!byKey.has(key)) byKey.set(key, [])
-    byKey.get(key)!.push(item)
+    const list = byKey.get(key) ?? []
+    list.push(item)
+    byKey.set(key, list)
     hasDated = true
     if (key < minKey) minKey = key
     if (key > maxKey) maxKey = key

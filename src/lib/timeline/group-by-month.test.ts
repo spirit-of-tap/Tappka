@@ -61,4 +61,35 @@ describe("groupByMonth", () => {
     expect(groups).toEqual([])
     expect(undated).toEqual([])
   })
+
+  it("routes unparseable dates to undated and terminates", () => {
+    const { groups, undated } = groupByMonth([row("a", "not-a-date")], {
+      getDate: (r) => r.at,
+      now: NOW,
+    })
+    expect(groups).toEqual([])
+    expect(undated).toHaveLength(1)
+  })
+
+  it("returns undated items alongside populated groups", () => {
+    const { groups, undated } = groupByMonth(
+      [row("a", null), row("b", "2026-05-10T09:00:00Z"), row("c", "also-not-a-date")],
+      { getDate: (r) => r.at, now: NOW },
+    )
+    expect(groups.map((g) => g.key)).toEqual(["2026-05"])
+    expect(groups[0].items.map((i) => i.id)).toEqual(["b"])
+    expect(undated.map((i) => i.id)).toEqual(["a", "c"])
+  })
+
+  it("preserves input order among items in the same month (caller pre-sorts)", () => {
+    const { groups } = groupByMonth(
+      [
+        row("latest", "2026-05-03T09:00:00Z"),
+        row("earliest", "2026-05-01T09:00:00Z"),
+        row("middle", "2026-05-02T09:00:00Z"),
+      ],
+      { getDate: (r) => r.at, now: NOW },
+    )
+    expect(groups[0].items.map((i) => i.id)).toEqual(["latest", "earliest", "middle"])
+  })
 })
