@@ -224,7 +224,7 @@ export function CustomerMeetingsView({
           {undated.length > 0 && (
             <MonthSection label="Bez data" count={undated.length}>
               {undated.map((meeting) => (
-                <CustomerMeetingRow key={meeting.id} meeting={meeting} />
+                <CustomerMeetingRow key={meeting.id} meeting={meeting} showUndatedChip={false} />
               ))}
             </MonthSection>
           )}

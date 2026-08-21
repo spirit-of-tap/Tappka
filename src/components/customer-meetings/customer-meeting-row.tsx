@@ -30,6 +30,8 @@ interface CustomerMeetingRowProps {
   >
   /** Injectable for tests. */
   now?: Date
+  /** False inside the "Bez data" section, whose header already says it. */
+  showUndatedChip?: boolean
 }
 
 /**
@@ -37,8 +39,15 @@ interface CustomerMeetingRowProps {
  * (person · company), day right-aligned, chip only for open loops.
  * The whole row links to the detail page (~44px tap target).
  */
-export function CustomerMeetingRow({ meeting, now }: CustomerMeetingRowProps) {
+export function CustomerMeetingRow({
+  meeting,
+  now,
+  showUndatedChip = true,
+}: CustomerMeetingRowProps) {
   const loop = getMeetingLoop(meeting, now)
+  // Inside the "Bez data" group the header already says it — a per-row chip
+  // would repeat the loudest possible information.
+  const visibleLoop = showUndatedChip ? loop : loop === "undated" ? null : loop
 
   return (
     <Link
@@ -60,12 +69,12 @@ export function CustomerMeetingRow({ meeting, now }: CustomerMeetingRowProps) {
           {formatDay(meeting.meeting_at)}
         </span>
       )}
-      {loop && (
+      {visibleLoop && (
         <Badge
-          variant={loop === "missing-follow-up" ? "outline" : "default"}
-          className={`shrink-0 ${CHIP_CLASS[loop]}`}
+          variant={visibleLoop === "missing-follow-up" ? "outline" : "default"}
+          className={`shrink-0 ${CHIP_CLASS[visibleLoop]}`}
         >
-          {LOOP_LABELS[loop]}
+          {LOOP_LABELS[visibleLoop]}
         </Badge>
       )}
     </Link>

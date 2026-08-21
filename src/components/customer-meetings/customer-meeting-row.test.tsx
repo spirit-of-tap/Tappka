@@ -69,6 +69,13 @@ describe("CustomerMeetingRow", () => {
     expect(screen.queryByText(/^13\.$/)).not.toBeInTheDocument()
   })
 
+  it("can hide the redundant bez-data chip inside the bez-data section", () => {
+    render(
+      <CustomerMeetingRow meeting={build({ meeting_at: null })} now={NOW} showUndatedChip={false} />,
+    )
+    expect(screen.queryByText("Bez data")).not.toBeInTheDocument()
+  })
+
   it("does not leak objective/post-mortem text onto the row", () => {
     render(
       <CustomerMeetingRow meeting={build({ post_mortem: "Tajná dlouhá reflexe…" })} now={NOW} />,
