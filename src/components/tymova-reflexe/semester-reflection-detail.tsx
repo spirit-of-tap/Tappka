@@ -1,11 +1,10 @@
 "use client"
 
 import { useCallback, useEffect, useRef } from "react"
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 import { Accordion } from "@/components/ui/accordion"
 import { Card } from "@/components/ui/card"
+import { PageBack } from "@/components/ui/page-back"
 import { createClient } from "@/lib/supabase/client"
 import type { SemesterReflectionEntryWithUpdater, TeamSemesterReflectionWithCreator } from "@/lib/tymova-reflexe/semester-types"
 import { SEMESTER_REFLECTION_TOPICS } from "@/lib/tymova-reflexe/semester-topics"
@@ -77,14 +76,8 @@ export function SemesterReflectionDetail({ reflection, entries, profileId }: Sem
   return (
     <div className="container mx-auto max-w-4xl py-4 sm:py-6 px-3 sm:px-6 space-y-6">
       <div className="space-y-1">
-        <Link
-          href="/tymova-reflexe"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="size-4" />
-          Zpět na přehled
-        </Link>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+        <PageBack href="/tymova-reflexe" label="Zpět na přehled" />
+        <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
           Semestrální reflexe — {semesterLabel(reflection.semester_month)}
         </h1>
       </div>

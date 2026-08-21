@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Calendar, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { PageBack } from "@/components/ui/page-back";
 import { RoomScheduleView } from "@/components/reservations/room-schedule-view";
 import { AlternativeRooms } from "@/components/reservations/alternative-rooms";
 import { DAY_NAMES_CS } from "@/lib/reservations/types";
@@ -134,18 +133,13 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
   return (
     <div className="space-y-6">
       {/* Back navigation */}
-      <Button variant="ghost" size="sm" asChild>
-        <Link href="/reservations">
-          <ArrowLeft className="size-4 mr-2" />
-          Zpět na místnosti
-        </Link>
-      </Button>
+      <PageBack href="/reservations" label="Zpět na rezervace" />
 
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-heading font-bold tracking-tight">{room.name}</h2>
+            <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">{room.name}</h1>
             {room.can_have_ts && (
               <Badge variant="secondary" className="text-xs">TS místnost</Badge>
             )}

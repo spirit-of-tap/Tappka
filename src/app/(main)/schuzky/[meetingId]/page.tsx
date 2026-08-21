@@ -1,12 +1,10 @@
 import { redirect, notFound } from "next/navigation"
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth/session"
 import { getCustomerMeeting } from "@/lib/customer-meetings/queries"
 import { CustomerMeetingDetail } from "@/components/customer-meetings/customer-meeting-detail"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { PageBack } from "@/components/ui/page-back"
 
 interface MeetingDetailPageProps {
   params: Promise<{ meetingId: string }>
@@ -44,22 +42,16 @@ export default async function MeetingDetailPage({ params }: MeetingDetailPagePro
 
   return (
     <div className="container mx-auto max-w-3xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/schuzky">
-            <ArrowLeft className="size-4" />
-          </Link>
-        </Button>
-        <div className="space-y-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">{meeting.company}</h1>
-          <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-            <span>
-              Schůzka s {meeting.contact_person}
-              {meeting.meeting_at && ` — ${new Date(meeting.meeting_at).toLocaleDateString("cs-CZ")}`}
-            </span>
-            <Badge variant={status.variant}>{status.label}</Badge>
-          </p>
-        </div>
+      <PageBack href="/schuzky" label="Zpět na přehled" />
+      <div className="space-y-1 min-w-0">
+        <h1 className="font-heading text-2xl font-bold tracking-tight truncate sm:text-3xl">{meeting.company}</h1>
+        <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
+          <span>
+            Schůzka s {meeting.contact_person}
+            {meeting.meeting_at && ` — ${new Date(meeting.meeting_at).toLocaleDateString("cs-CZ")}`}
+          </span>
+          <Badge variant={status.variant}>{status.label}</Badge>
+        </p>
       </div>
       <CustomerMeetingDetail meeting={meeting} profileId={profile.id} />
     </div>

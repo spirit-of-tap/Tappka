@@ -9,7 +9,7 @@ import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
 export const metadata = {
   title: "Zákaznické schůzky | Tappka",
-  description: "Záznamník zákaznických schůzek",
+  description: "Záznamník schůzek s lidmi z praxe",
 }
 
 export default async function SchuzkyPage() {

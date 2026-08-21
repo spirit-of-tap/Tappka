@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/ui/page-header"
 
 export const metadata = {
   title: "Týmový deník | Tappka",
-  description: "Chronologický záznam týmových akcí",
+  description: "Chronologický záznam týmových akcí mimo pracovní prostředí",
 }
 
 export default async function TymovyDenikPage() {
@@ -27,7 +27,7 @@ export default async function TymovyDenikPage() {
     <div className="container mx-auto max-w-5xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
       <PageHeader
         title="Týmový deník"
-        description="Chronologický záznam týmových akcí, při kterých jsme trávili čas společně mimo pracovní prostředí."
+        description="Chronologický záznam týmových akcí mimo pracovní prostředí"
         count={{ value: activities.length, label: "akcí" }}
       />
       <InfoCard />

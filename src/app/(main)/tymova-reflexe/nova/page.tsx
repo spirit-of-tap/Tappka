@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth/session"
 import { getTeamReflectionForMonth } from "@/lib/tymova-reflexe/queries"
 import { TeamReflectionCreate } from "@/components/tymova-reflexe/team-reflection-create"
+import { PageHeader } from "@/components/ui/page-header"
 
 const MONTH_PATTERN = /^\d{4}-\d{2}-01$/
 
@@ -47,13 +48,11 @@ export default async function NovaReflexePage({
 
   return (
     <div className="container mx-auto max-w-3xl py-4 sm:py-6 px-3 sm:px-6 space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Nová týmová reflexe</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Založí prázdnou reflexi za {monthLabel(month)} — vyplňovat ji pak můžete přímo na stránce,
-          změny se ukládají automaticky.
-        </p>
-      </div>
+      <PageHeader
+        title="Nová týmová reflexe"
+        description={`Vytvoří prázdnou reflexi za ${monthLabel(month)} — změny se ukládají automaticky`}
+        back={{ href: "/tymova-reflexe", label: "Zpět na přehled" }}
+      />
       <TeamReflectionCreate
         teamId={profile.team_id}
         profileId={profile.id}

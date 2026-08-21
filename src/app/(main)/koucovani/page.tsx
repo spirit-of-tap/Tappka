@@ -5,13 +5,14 @@ import { listIndividualCoachingSessions, listCoachProfiles } from "@/lib/individ
 import { IndividualCoachingSessionList } from "@/components/individual-coaching-sessions/individual-coaching-session-list"
 import { InfoCard } from "@/components/individual-coaching-sessions/info-card"
 import { PageHeader } from "@/components/ui/page-header"
+import { PageShell } from "@/components/ui/page-shell"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 import { Badge } from "@/components/ui/badge"
 import type { IndividualCoachingSessionWithCoach } from "@/lib/individual-coaching-sessions/types"
 
 export const metadata = {
   title: "Individuální koučování | Tappka",
-  description: "Záznamník individuálních koučovacích sezení",
+  description: "Záznamník koučovacích sezení s týmovým:ou koučem:kou",
 }
 
 // Czech academic year splits roughly into a winter semester (September–January)
@@ -65,7 +66,7 @@ export default async function KoucovaniPage() {
   const sessionsThisSemester = countSessionsInCurrentSemester(sessions)
 
   return (
-    <div className="container mx-auto max-w-5xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
+    <PageShell className="max-w-5xl">
       <PageHeader
         title="Individuální koučování"
         description="Záznamník koučovacích sezení s týmovým:ou koučem:kou"
@@ -78,6 +79,6 @@ export default async function KoucovaniPage() {
       />
       <InfoCard />
       <IndividualCoachingSessionList sessions={sessions} profileId={profile.id} coachProfiles={coachProfiles} />
-    </div>
+    </PageShell>
   )
 }

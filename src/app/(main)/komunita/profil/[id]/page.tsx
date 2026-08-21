@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin, UserRound, Brain, Gift } from 'lucide-react';
+import { Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin, UserRound, Brain, Gift } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -17,7 +17,12 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { BirthGivingProfileHistory } from '@/components/birth-giving/profile-history';
 import { Badge } from '@/components/ui/badge';
+import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
+
+export const metadata = {
+  title: 'Profil | Tappka',
+};
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { InfoCard } from '@/components/personality-tests/info-card';
 import { PersonalityTestTimeline } from '@/components/personality-tests/personality-test-timeline';
@@ -85,13 +90,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           className="relative h-32 sm:h-40 bg-muted"
           style={teamColor ? { background: `linear-gradient(135deg, ${teamColor}55 0%, ${teamColor}20 70%, transparent 100%)` } : undefined}
         >
-          <Link
+          <PageBack
             href={from ?? '/komunita'}
-            className="focus-ring absolute top-4 left-4 inline-flex items-center gap-1.5 text-sm bg-background/70 backdrop-blur-sm px-3 py-1.5 rounded-full hover:bg-background/90 transition-colors"
-          >
-            <ArrowLeft className="size-3.5" />
-            Zpět
-          </Link>
+            label="Zpět"
+            className="absolute top-4 left-4 rounded-full bg-background/70 px-3 backdrop-blur-sm hover:bg-background/90"
+          />
         </div>
       </div>
 
@@ -109,7 +112,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           />
           {/* Name + badges float next to avatar, aligned to bottom */}
           <div className="min-w-0 pb-1 space-y-1.5">
-            <h1 className="text-xl sm:text-2xl font-bold leading-tight">{profile.name}</h1>
+            <h1 className="font-heading text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{profile.name}</h1>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className={cn('text-xs', ROLE_COLORS[profile.role])}>
                 {ROLE_LABELS[profile.role]}

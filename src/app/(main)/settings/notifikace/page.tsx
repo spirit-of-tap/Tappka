@@ -3,6 +3,12 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { NotificationPreferencesForm } from '@/components/settings/notification-preferences-form';
+import { PageHeader } from '@/components/ui/page-header';
+
+export const metadata = {
+  title: 'Notifikace | Tappka',
+  description: 'Vyber si, o čem tě budeme informovat e-mailem',
+};
 
 export default async function NotificationSettingsPage() {
   const supabase = await createClient();
@@ -20,10 +26,10 @@ export default async function NotificationSettingsPage() {
 
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-4xl">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Notifikace</h1>
-        <p className="text-muted-foreground text-sm">Vyber si, o čem tě budeme informovat e-mailem.</p>
-      </div>
+      <PageHeader
+        title="Notifikace"
+        description="Vyber si, o čem tě budeme informovat e-mailem"
+      />
       <NotificationPreferencesForm
         initialCoachReadEmail={preferences?.essay_coach_read_email ?? true}
         initialCommentEmail={preferences?.essay_comment_email ?? true}

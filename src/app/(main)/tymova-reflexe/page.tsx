@@ -6,10 +6,11 @@ import { listTeamSemesterReflectionsWithProgress } from "@/lib/tymova-reflexe/se
 import { TeamReflectionList } from "@/components/tymova-reflexe/team-reflection-list"
 import { InfoCard } from "@/components/tymova-reflexe/info-card"
 import { PageHeader } from "@/components/ui/page-header"
+import { PageShell } from "@/components/ui/page-shell"
 
 export const metadata = {
   title: "Týmová reflexe | Tappka",
-  description: "Měsíční reflexe týmové spolupráce",
+  description: "Měsíční ohlédnutí za týmovou spoluprací",
 }
 
 export default async function TymovaReflexePage() {
@@ -28,7 +29,7 @@ export default async function TymovaReflexePage() {
   ])
 
   return (
-    <div className="container mx-auto max-w-5xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
+    <PageShell className="max-w-5xl">
       <PageHeader
         title="Týmová reflexe"
         description="Měsíční ohlédnutí za týmovou spoluprací"
@@ -40,6 +41,6 @@ export default async function TymovaReflexePage() {
         semesterReflections={semesterReflections}
         onboardingYear={profile.team?.onboardingYear ?? null}
       />
-    </div>
+    </PageShell>
   )
 }

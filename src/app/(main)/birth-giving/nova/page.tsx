@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card"
 
 export const metadata = {
   title: "Nová Birth Giving událost | Tappka",
-  description: "Vytvoření nové Birth Giving události",
+  description: "Nastav termín, místo a organizátory nadcházející události",
 }
 
 export default async function BirthGivingNovaPage() {
@@ -30,7 +30,8 @@ export default async function BirthGivingNovaPage() {
     <PageShell>
       <PageHeader
         title="Nová Birth Giving událost"
-        description="Nastavte nadcházející událost. Podobné události v okolí data nabídneme ke kontrole."
+        description="Nastav termín, místo a organizátory nadcházející události"
+        back={{ href: "/birth-giving", label: "Zpět na přehled" }}
       />
       <Card className="p-3 sm:p-5">
         <BirthGivingUpcomingCreate

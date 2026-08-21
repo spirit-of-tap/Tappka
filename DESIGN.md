@@ -128,9 +128,23 @@ globals.css) — don't override.
 
 ## Layout
 
-Spacing follows the 4px scale (`sm`–`xl` above). List pages use the shared
-`PageHeader` (`title`, `description`, `count`, `action`) inside `PageShell`.
-Content width is max-w constrained; pages stay single-column on mobile.
+Spacing follows the 4px scale (`sm`–`xl` above). Every page renders inside
+`PageShell`; its header is the shared `PageHeader` (`title`, `description`,
+`count`, `action`, `back`) — never hand-rolled `h1`/`h2` markup. Content width
+is max-w constrained; pages stay single-column on mobile.
+
+Header rules:
+
+- Title: Poppins bold, `text-2xl sm:text-3xl tracking-tight`, always the
+  page's single `h1`.
+- Description: one sentence, no trailing period, ≤ ~90 chars, tykání,
+  gender-neutral (`:` pairs); identical to the page's `metadata.description`.
+- Counts go through the `count` prop with `pluralizeCz`; actions through
+  `action`.
+- Child pages navigate back via the `back` prop or `ui/page-back.tsx`
+  (chevron + visible label, ≥44px tap height) — no bespoke back links.
+- Exceptions: auth screens, `/beta` hero, `/reservations/[code]/quick`,
+  essay editors (`sr-only h1`), 404.
 
 ## Elevation & Depth
 

@@ -3,7 +3,13 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserBookPointsStats, getTeamBookPointsStats, getEssays } from '@/lib/essays/queries';
 import { PrehledTabs } from '@/components/essays/prehled-tabs';
+import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
+
+export const metadata = {
+  title: 'Přehled | Tappka',
+  description: 'Tvůj pokrok, eseje a srovnání s týmem',
+};
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -32,10 +38,10 @@ export default async function PrehledPage({ searchParams }: PageProps) {
 
   return (
     <PageShell size="full">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold">Přehled</h1>
-        <p className="text-muted-foreground">Tvůj pokrok, eseje a srovnání s týmem</p>
-      </div>
+      <PageHeader
+        title="Přehled"
+        description="Tvůj pokrok, eseje a srovnání s týmem"
+      />
 
       <PrehledTabs
         defaultTab={defaultTab}

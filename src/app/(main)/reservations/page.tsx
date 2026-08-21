@@ -3,11 +3,13 @@ import { RoomsWithFilter } from "@/components/reservations/rooms-with-filter";
 import { ReservationsTabs } from "@/components/reservations/reservations-tabs";
 import { getNextAvailableTime } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
 import type { RoomWithStatus, ReservationWithDetails } from "@/lib/reservations/types";
 
 export const metadata = {
   title: "Rezervace | Tappka",
-  description: "Rezervace místností v Tiimiakatemia Prague",
+  description: "Vyber si místnost a zarezervuj si ji",
 };
 
 /**
@@ -83,14 +85,11 @@ export default async function ReservationsPage() {
   });
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-heading font-bold">Rezervace místností</h2>
-        <p className="text-muted-foreground mt-1">
-          Vyber si místnost a zarezervuj si ji
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Rezervace"
+        description="Vyber si místnost a zarezervuj si ji"
+      />
 
       <ReservationsTabs myReservations={myReservations} />
 
@@ -99,6 +98,6 @@ export default async function ReservationsPage() {
         <h3 className="text-xl font-heading font-semibold mb-4">Místnosti</h3>
         <RoomsWithFilter rooms={roomsWithStatus} />
       </div>
-    </div>
+    </PageShell>
   );
 }

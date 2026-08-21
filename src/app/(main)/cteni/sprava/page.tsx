@@ -9,6 +9,11 @@ import { PageShell } from '@/components/ui/page-shell';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 
+export const metadata = {
+  title: "Správa knihovny | Tappka",
+  description: "Zařaď knihy do seznamů a spravuj výběr",
+};
+
 export default async function SpravaKnihovnyPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -33,7 +38,7 @@ export default async function SpravaKnihovnyPage() {
     <PageShell size="full">
       <PageHeader
         title="Správa knihovny"
-        description="Zařaď knihy do seznamů a spravuj výběr knih."
+        description="Zařaď knihy do seznamů a spravuj výběr"
         action={
           <Button asChild size="sm" className="gap-2 shrink-0">
             <Link href="/cteni/knihy/nova">

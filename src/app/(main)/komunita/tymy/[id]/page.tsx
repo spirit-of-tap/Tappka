@@ -1,14 +1,17 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, ChartColumn, Users } from 'lucide-react';
+import { ChartColumn, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getTeamById, getTeamPictureUrl, getProfilePictureUrl } from '@/lib/komunita/queries';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserCard } from '@/components/komunita/user-card';
+import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
+
+export const metadata = {
+  title: 'Tým | Tappka',
+};
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { TeamCustomerMeetingsChart } from '@/components/teams/team-customer-meetings-chart';
 import { TeamCoachingSessionsChart } from '@/components/teams/team-coaching-sessions-chart';
@@ -49,13 +52,7 @@ export default async function TeamPage({ params }: PageProps) {
 
   return (
     <PageShell>
-      {/* Back Button */}
-      <Button variant="ghost" size="sm" asChild>
-        <Link href="/komunita">
-          <ArrowLeft className="size-4 mr-2" />
-          Zpět na komunitu
-        </Link>
-      </Button>
+      <PageBack href="/komunita" label="Zpět na komunitu" />
 
       {/* Team Header */}
       <div className="flex items-center gap-4">
@@ -66,7 +63,7 @@ export default async function TeamPage({ params }: PageProps) {
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 space-y-2">
-          <h1 className="text-3xl font-bold">{team.name}</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">{team.name}</h1>
           <div className="flex items-center gap-2 flex-wrap">
             {team.onboardingYear && (
               <Badge variant="outline">{YEAR_LABELS[team.onboardingYear]}</Badge>

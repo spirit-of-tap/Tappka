@@ -8,7 +8,7 @@ import { PageShell } from "@/components/ui/page-shell";
 
 export const metadata = {
   title: "Profil | Tappka",
-  description: "Tvůj profil a nastavení",
+  description: "Tvůj účet, přístupy a nastavení aplikace",
 };
 
 export default async function ProfilPage() {
@@ -19,7 +19,7 @@ export default async function ProfilPage() {
     <PageShell size="medium">
       <PageHeader
         title="Profil"
-        description="Tvůj účet, přístupy a nastavení aplikace."
+        description="Tvůj účet, přístupy a nastavení aplikace"
       />
       <ProfileHub
         user={{

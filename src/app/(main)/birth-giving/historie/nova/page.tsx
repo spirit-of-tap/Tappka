@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/ui/page-header"
 
 export const metadata = {
   title: "Historická Birth Giving událost | Tappka",
-  description: "Zápis proběhlé Birth Giving události až do zveřejnění",
+  description: "Zapiš proběhlou událost po krocích — změny se ukládají průběžně",
 }
 
 export default async function BirthGivingHistorieNovaPage() {
@@ -29,7 +29,8 @@ export default async function BirthGivingHistorieNovaPage() {
     <PageShell>
       <PageHeader
         title="Nová historická událost"
-        description="Zapíšete proběhlou Birth Giving událost po krocích. Změny se ukládají průběžně a koncept může zůstat rozepsaný."
+        description="Zapiš proběhlou událost po krocích — změny se ukládají průběžně"
+        back={{ href: "/birth-giving", label: "Zpět na přehled" }}
       />
       <BirthGivingRetrospectiveWizard
         profileId={profile.id}
