@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/system/birth-giving/process",
-      "schedule": "* * * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }
