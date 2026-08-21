@@ -6,6 +6,11 @@ import { randomUUID } from "crypto";
 const PRESIGN_EXPIRY_SECONDS = 900;
 const SIGNED_DOWNLOAD_EXPIRY_SECONDS = 3600;
 
+export interface StoredObjectMetadata {
+  size: number;
+  contentType: string;
+}
+
 export async function generatePresignedUpload(
   options: UploadOptions
 ): Promise<PresignedUploadData> {
@@ -30,6 +35,56 @@ export async function generatePresignedUpload(
     key,
     expiresAt: new Date(Date.now() + PRESIGN_EXPIRY_SECONDS * 1000),
   };
+}
+
+export async function generatePresignedUploadForKey(
+  bucket: BucketId,
+  key: string,
+): Promise<PresignedUploadData> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage.from(BUCKETS[bucket].name).createSignedUploadUrl(key);
+  if (error || !data) throw new Error(`Failed to create signed upload URL: ${error?.message}`);
+  return {
+    url: data.signedUrl,
+    fields: {},
+    key,
+    expiresAt: new Date(Date.now() + PRESIGN_EXPIRY_SECONDS * 1000),
+  };
+}
+
+export async function inspectStorageObject(
+  bucket: BucketId,
+  key: string,
+): Promise<StoredObjectMetadata | null> {
+  const separator = key.lastIndexOf("/");
+  const folder = separator === -1 ? "" : key.slice(0, separator);
+  const name = key.slice(separator + 1);
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage.from(BUCKETS[bucket].name).list(folder, {
+    limit: 2,
+    search: name,
+  });
+  if (error) throw new Error(`Failed to inspect storage object: ${error.message}`);
+  const object = data.find((candidate) => candidate.name === name);
+  if (!object) return null;
+  const size = object.metadata?.size;
+  const contentType = object.metadata?.mimetype;
+  return typeof size === "number" && typeof contentType === "string"
+    ? { size, contentType: contentType.split(";")[0].trim() }
+    : null;
+}
+
+export async function downloadStorageObject(
+  bucket: BucketId,
+  key: string,
+  maxBytes: number,
+): Promise<Buffer | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.storage.from(BUCKETS[bucket].name).download(key);
+  if (error) throw new Error(`Failed to download storage object: ${error.message}`);
+  if (!data || data.size > maxBytes) return null;
+  const content = Buffer.from(await data.arrayBuffer());
+  return content.byteLength <= maxBytes ? content : null;
 }
 
 export async function uploadFile(
@@ -93,6 +148,10 @@ export function generateFileKey(
   const timestamp = Date.now();
   const uuid = randomUUID();
   return `${context}/${entityId}/${timestamp}-${uuid}.${fileExtension}`;
+}
+
+export function generatePrivateStorageKey(prefix: string, fileExtension: string): string {
+  return `${prefix}${randomUUID()}.${fileExtension}`;
 }
 
 const ALLOWED_COVER_TYPES: Record<string, string> = {

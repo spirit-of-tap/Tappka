@@ -1,0 +1,2 @@
+ALTER TYPE "public"."birth_giving_delivery_status" ADD VALUE 'manual_review';--> statement-breakpoint
+ALTER TABLE "birth_giving_email_deliveries" ADD COLUMN "first_attempt_at" timestamp with time zone;

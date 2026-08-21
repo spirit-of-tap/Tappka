@@ -35,6 +35,26 @@ describe('sendEmail', () => {
     });
   });
 
+  it('passes an idempotency key as SDK options and returns the provider ID', async () => {
+    sendMock.mockResolvedValue({ data: { id: 'provider-123' }, error: null });
+
+    const result = await sendEmail(
+      { to: 'a@b.cz', subject: 'Subj', html: '<p>hi</p>' },
+      { idempotencyKey: 'birth-giving-delivery-123' },
+    );
+
+    expect(sendMock).toHaveBeenCalledWith(
+      {
+        from: 'Tappka <notifications@tiimi.cz>',
+        to: 'a@b.cz',
+        subject: 'Subj',
+        html: '<p>hi</p>',
+      },
+      { idempotencyKey: 'birth-giving-delivery-123' },
+    );
+    expect(result).toEqual({ id: 'provider-123' });
+  });
+
   it('throws when RESEND_API_KEY is missing', async () => {
     delete process.env.RESEND_API_KEY;
 

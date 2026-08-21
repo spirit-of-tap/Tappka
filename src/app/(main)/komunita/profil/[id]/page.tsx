@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin, UserRound, Brain } from 'lucide-react';
+import { ArrowLeft, Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin, UserRound, Brain, Gift } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -8,11 +8,14 @@ import { getEssays, getUserBookPointsStats } from '@/lib/essays/queries';
 import { countCustomerMeetings } from '@/lib/customer-meetings/queries';
 import { countIndividualCoachingSessions } from '@/lib/individual-coaching-sessions/queries';
 import { listPersonalityTests } from '@/lib/personality-tests/queries';
+import { countProfileBirthGivingParticipations, listProfileBirthGivingHistory } from '@/lib/birth-giving/queries';
+import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 import { ProfilePictureSection } from '@/components/komunita/profile-picture-section';
 import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { BirthGivingProfileHistory } from '@/components/birth-giving/profile-history';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/ui/page-shell';
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
@@ -39,12 +42,14 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
   if (!profile) notFound();
 
-  const [essays, stats, meetingCount, coachingSessionCount, personalityTests] = await Promise.all([
+  const [essays, stats, meetingCount, coachingSessionCount, personalityTests, birthGivingHistory, birthGivingCount] = await Promise.all([
     getEssays(supabase, { authorProfileId: id, sort: 'best', pageSize: 100 }),
     getUserBookPointsStats(supabase, id),
     countCustomerMeetings(supabase, id).catch(() => 0),
     countIndividualCoachingSessions(supabase, id).catch(() => 0),
     listPersonalityTests(supabase, id).catch(() => []),
+    listProfileBirthGivingHistory(supabase, id).catch(() => []),
+    countProfileBirthGivingParticipations(supabase, id).catch(() => 0),
   ]);
 
   const votedIds = new Set<string>();
@@ -63,7 +68,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
   const isOwnProfile = currentUserProfile?.id === profile.id;
   const teamColor = profile.team?.color ?? null;
-  const activeTab = tab === 'eseje' || tab === 'osobnostni-testy' ? tab : 'prehled';
+  const activeTab = tab === 'eseje' || tab === 'osobnostni-testy' || tab === 'birth-giving' ? tab : 'prehled';
 
   const pts   = (n: number) => n === 1 ? 'bod' : n >= 2 && n <= 4 ? 'body' : 'bodů';
   const eseje = (n: number) => n === 1 ? 'esej' : n >= 2 && n <= 4 ? 'eseje' : 'esejí';
@@ -140,6 +145,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               Osobnostní testy
               <TabsTriggerCount count={personalityTests.length} />
             </TabsTrigger>
+            <TabsTrigger value="birth-giving">
+              <Gift />
+              Birth Giving
+              <TabsTriggerCount count={birthGivingCount} />
+            </TabsTrigger>
           </TabsList>
 
           {/* Stats + contact */}
@@ -153,6 +163,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                   { value: totalVotes,           label: hlasy(totalVotes) },
                   { value: meetingCount,         label: schuzky(meetingCount) },
                   { value: coachingSessionCount, label: koucovaniLabel },
+                  { value: birthGivingCount, label: pluralizeCz(birthGivingCount, ['participace', 'participace', 'participací']) },
                 ].map(({ value, label }) => (
                   <div key={label} className="text-center">
                     <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
@@ -299,6 +310,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               profileId={profile.id}
               isOwnProfile={isOwnProfile}
             />
+          </TabsContent>
+
+          {/* Birth Giving */}
+          <TabsContent value="birth-giving" className="mt-4">
+            <BirthGivingProfileHistory items={birthGivingHistory} />
           </TabsContent>
         </Tabs>
       </PageShell>

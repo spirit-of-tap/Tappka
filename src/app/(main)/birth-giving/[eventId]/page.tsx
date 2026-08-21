@@ -1,0 +1,46 @@
+import { notFound, redirect } from "next/navigation"
+
+import { createClient } from "@/lib/supabase/server"
+import { getSessionProfile } from "@/lib/auth/session"
+import { getBirthGivingEvent, listBirthGivingOrganizerProfiles } from "@/lib/birth-giving/queries"
+import { BirthGivingEventDetail } from "@/components/birth-giving/event-detail"
+import { PageShell } from "@/components/ui/page-shell"
+
+interface BirthGivingEventPageProps {
+  params: Promise<{ eventId: string }>
+}
+
+export const metadata = {
+  title: "Birth Giving | Tappka",
+  description: "Detail Birth Giving události, týmů a výsledků",
+}
+
+export default async function BirthGivingEventPage({ params }: BirthGivingEventPageProps) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login")
+
+  const profile = await getSessionProfile()
+  if (!profile) redirect("/auth/login")
+  if (!profile.beta_access_granted_at) redirect("/")
+
+  const { eventId } = await params
+  const [event, organizerProfiles] = await Promise.all([
+    getBirthGivingEvent(supabase, eventId),
+    listBirthGivingOrganizerProfiles(supabase),
+  ])
+  if (!event) notFound()
+
+  return (
+    <PageShell>
+      <BirthGivingEventDetail
+        event={event}
+        profileId={profile.id}
+        organizerProfiles={organizerProfiles}
+        now={new Date().toISOString()}
+      />
+    </PageShell>
+  )
+}

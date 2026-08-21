@@ -9,6 +9,786 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      birth_giving_assignments: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          event_id: string
+          file_size: number | null
+          mime_type: string | null
+          original_file_name: string | null
+          replacement_id: string
+          state: Database["public"]["Enums"]["birth_giving_assignment_state"]
+          storage_path: string | null
+          updated_at: string
+          updated_by_profile_id: string
+          uploaded_at: string | null
+          uploaded_by_profile_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          event_id: string
+          file_size?: number | null
+          mime_type?: string | null
+          original_file_name?: string | null
+          replacement_id?: string
+          state: Database["public"]["Enums"]["birth_giving_assignment_state"]
+          storage_path?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+          uploaded_at?: string | null
+          uploaded_by_profile_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          event_id?: string
+          file_size?: number | null
+          mime_type?: string | null
+          original_file_name?: string | null
+          replacement_id?: string
+          state?: Database["public"]["Enums"]["birth_giving_assignment_state"]
+          storage_path?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+          uploaded_at?: string | null
+          uploaded_by_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_assignments_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "birth_giving_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_assignments_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_assignments_uploaded_by_profile_id_fkey"
+            columns: ["uploaded_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_email_deliveries: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          created_by_profile_id: string
+          email_html: string | null
+          email_subject: string | null
+          event_id: string
+          first_attempt_at: string | null
+          id: string
+          last_error: string | null
+          message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
+          next_attempt_at: string
+          processing_started_at: string | null
+          processing_token: string | null
+          profile_id: string
+          provider_message_id: string | null
+          recipient_email: string
+          replacement_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["birth_giving_delivery_status"]
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          created_by_profile_id: string
+          email_html?: string | null
+          email_subject?: string | null
+          event_id: string
+          first_attempt_at?: string | null
+          id?: string
+          last_error?: string | null
+          message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
+          next_attempt_at?: string
+          processing_started_at?: string | null
+          processing_token?: string | null
+          profile_id: string
+          provider_message_id?: string | null
+          recipient_email: string
+          replacement_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["birth_giving_delivery_status"]
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          created_by_profile_id?: string
+          email_html?: string | null
+          email_subject?: string | null
+          event_id?: string
+          first_attempt_at?: string | null
+          id?: string
+          last_error?: string | null
+          message_type?: Database["public"]["Enums"]["birth_giving_email_message_type"]
+          next_attempt_at?: string
+          processing_started_at?: string | null
+          processing_token?: string | null
+          profile_id?: string
+          provider_message_id?: string | null
+          recipient_email?: string
+          replacement_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["birth_giving_delivery_status"]
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_email_deliveries_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_email_deliveries_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "birth_giving_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_email_deliveries_participant_fkey"
+            columns: ["event_id", "profile_id"]
+            isOneToOne: false
+            referencedRelation: "birth_giving_team_members"
+            referencedColumns: ["event_id", "profile_id"]
+          },
+          {
+            foreignKeyName: "birth_giving_email_deliveries_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_email_deliveries_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_event_organizers: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          event_id: string
+          profile_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          event_id: string
+          profile_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          event_id?: string
+          profile_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_event_organizers_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_event_organizers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "birth_giving_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_event_organizers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_event_organizers_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_events: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          customer: string
+          duration: Database["public"]["Enums"]["birth_giving_duration"]
+          id: string
+          joining_open: boolean
+          maximum_team_size: number
+          minimum_team_size: number
+          name: string
+          normalized_customer: string
+          normalized_name: string
+          removed_at: string | null
+          removed_by_profile_id: string | null
+          start_emails_queued_at: string | null
+          start_processed_at: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["birth_giving_event_status"]
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          customer: string
+          duration: Database["public"]["Enums"]["birth_giving_duration"]
+          id?: string
+          joining_open: boolean
+          maximum_team_size: number
+          minimum_team_size: number
+          name: string
+          normalized_customer: string
+          normalized_name: string
+          removed_at?: string | null
+          removed_by_profile_id?: string | null
+          start_emails_queued_at?: string | null
+          start_processed_at?: string | null
+          starts_at: string
+          status?: Database["public"]["Enums"]["birth_giving_event_status"]
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          customer?: string
+          duration?: Database["public"]["Enums"]["birth_giving_duration"]
+          id?: string
+          joining_open?: boolean
+          maximum_team_size?: number
+          minimum_team_size?: number
+          name?: string
+          normalized_customer?: string
+          normalized_name?: string
+          removed_at?: string | null
+          removed_by_profile_id?: string | null
+          start_emails_queued_at?: string | null
+          start_processed_at?: string | null
+          starts_at?: string
+          status?: Database["public"]["Enums"]["birth_giving_event_status"]
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_events_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_events_removed_by_profile_id_fkey"
+            columns: ["removed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_events_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_looking_for_team: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          event_id: string
+          profile_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          event_id: string
+          profile_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          event_id?: string
+          profile_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_looking_for_team_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_looking_for_team_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "birth_giving_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_looking_for_team_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_looking_for_team_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_reflections: {
+        Row: {
+          contribution: string
+          created_at: string
+          created_by_profile_id: string
+          event_id: string
+          id: string
+          learning: string
+          profile_id: string
+          removed_at: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          contribution: string
+          created_at?: string
+          created_by_profile_id: string
+          event_id: string
+          id?: string
+          learning: string
+          profile_id: string
+          removed_at?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          contribution?: string
+          created_at?: string
+          created_by_profile_id?: string
+          event_id?: string
+          id?: string
+          learning?: string
+          profile_id?: string
+          removed_at?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_reflections_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_reflections_participant_fkey"
+            columns: ["event_id", "profile_id"]
+            isOneToOne: true
+            referencedRelation: "birth_giving_team_members"
+            referencedColumns: ["event_id", "profile_id"]
+          },
+          {
+            foreignKeyName: "birth_giving_reflections_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_storage_cleanup_claims: {
+        Row: {
+          attempt_count: number
+          claim_id: string
+          claimed_at: string
+          storage_path: string
+        }
+        Insert: {
+          attempt_count?: number
+          claim_id?: string
+          claimed_at?: string
+          storage_path: string
+        }
+        Update: {
+          attempt_count?: number
+          claim_id?: string
+          claimed_at?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
+      birth_giving_team_members: {
+        Row: {
+          confirmed_at: string
+          created_at: string
+          created_by_profile_id: string
+          event_id: string
+          frozen_at: string | null
+          id: string
+          profile_id: string
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          confirmed_at?: string
+          created_at?: string
+          created_by_profile_id: string
+          event_id: string
+          frozen_at?: string | null
+          id?: string
+          profile_id: string
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          confirmed_at?: string
+          created_at?: string
+          created_by_profile_id?: string
+          event_id?: string
+          frozen_at?: string | null
+          id?: string
+          profile_id?: string
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_team_members_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_members_event_team_fkey"
+            columns: ["event_id", "team_id"]
+            isOneToOne: false
+            referencedRelation: "birth_giving_teams"
+            referencedColumns: ["event_id", "id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_members_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_team_proposals: {
+        Row: {
+          candidate_profile_id: string
+          created_at: string
+          created_by_profile_id: string
+          direction: Database["public"]["Enums"]["birth_giving_proposal_direction"]
+          event_id: string
+          id: string
+          initiated_by_profile_id: string
+          resolved_at: string | null
+          resolved_by_profile_id: string | null
+          state: Database["public"]["Enums"]["birth_giving_proposal_state"]
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          candidate_profile_id: string
+          created_at?: string
+          created_by_profile_id: string
+          direction: Database["public"]["Enums"]["birth_giving_proposal_direction"]
+          event_id: string
+          id?: string
+          initiated_by_profile_id: string
+          resolved_at?: string | null
+          resolved_by_profile_id?: string | null
+          state?: Database["public"]["Enums"]["birth_giving_proposal_state"]
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          candidate_profile_id?: string
+          created_at?: string
+          created_by_profile_id?: string
+          direction?: Database["public"]["Enums"]["birth_giving_proposal_direction"]
+          event_id?: string
+          id?: string
+          initiated_by_profile_id?: string
+          resolved_at?: string | null
+          resolved_by_profile_id?: string | null
+          state?: Database["public"]["Enums"]["birth_giving_proposal_state"]
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_team_proposals_candidate_profile_id_fkey"
+            columns: ["candidate_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_proposals_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_proposals_event_team_fkey"
+            columns: ["event_id", "team_id"]
+            isOneToOne: false
+            referencedRelation: "birth_giving_teams"
+            referencedColumns: ["event_id", "id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_proposals_initiated_by_profile_id_fkey"
+            columns: ["initiated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_proposals_resolved_by_profile_id_fkey"
+            columns: ["resolved_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_proposals_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_team_result_files: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          event_id: string
+          file_size: number
+          id: string
+          mime_type: string
+          original_file_name: string
+          removed_at: string | null
+          removed_by_profile_id: string | null
+          storage_path: string
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+          uploaded_at: string
+          uploaded_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          event_id: string
+          file_size: number
+          id?: string
+          mime_type: string
+          original_file_name: string
+          removed_at?: string | null
+          removed_by_profile_id?: string | null
+          storage_path: string
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+          uploaded_at?: string
+          uploaded_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          event_id?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          original_file_name?: string
+          removed_at?: string | null
+          removed_by_profile_id?: string | null
+          storage_path?: string
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+          uploaded_at?: string
+          uploaded_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_team_result_files_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_result_files_event_team_fkey"
+            columns: ["event_id", "team_id"]
+            isOneToOne: false
+            referencedRelation: "birth_giving_teams"
+            referencedColumns: ["event_id", "id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_result_files_removed_by_profile_id_fkey"
+            columns: ["removed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_result_files_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_team_result_files_uploaded_by_profile_id_fkey"
+            columns: ["uploaded_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_giving_teams: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by_profile_id: string
+          event_id: string
+          id: string
+          name: string
+          result_state: Database["public"]["Enums"]["birth_giving_team_result_state"]
+          status: Database["public"]["Enums"]["birth_giving_team_status"]
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by_profile_id: string
+          event_id: string
+          id?: string
+          name: string
+          result_state?: Database["public"]["Enums"]["birth_giving_team_result_state"]
+          status?: Database["public"]["Enums"]["birth_giving_team_status"]
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by_profile_id?: string
+          event_id?: string
+          id?: string
+          name?: string
+          result_state?: Database["public"]["Enums"]["birth_giving_team_result_state"]
+          status?: Database["public"]["Enums"]["birth_giving_team_status"]
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_giving_teams_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_teams_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "birth_giving_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birth_giving_teams_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_loans: {
         Row: {
           borrowed_at: string
@@ -2062,6 +2842,224 @@ export type Database = {
     }
     Functions: {
       before_user_created_hook: { Args: { event: Json }; Returns: Json }
+      birth_giving_active_profile_id: { Args: never; Returns: string }
+      birth_giving_can_manage_assignment: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
+      birth_giving_can_manage_result: {
+        Args: { p_event_id: string; p_team_id: string }
+        Returns: boolean
+      }
+      birth_giving_claim_email_deliveries: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempt_count: number
+          customer: string
+          delivery_id: string
+          email_html: string
+          email_subject: string
+          event_id: string
+          event_name: string
+          message_type: Database["public"]["Enums"]["birth_giving_email_message_type"]
+          processing_token: string
+          recipient_email: string
+          replacement_id: string
+          starts_at: string
+        }[]
+      }
+      birth_giving_claim_storage_cleanup: {
+        Args: { p_grace_period: string; p_limit: number }
+        Returns: {
+          claim_id: string
+          storage_path: string
+        }[]
+      }
+      birth_giving_complete_email_delivery: {
+        Args: {
+          p_delivery_id: string
+          p_processing_token: string
+          p_provider_message_id: string
+        }
+        Returns: boolean
+      }
+      birth_giving_confirm_assignment: {
+        Args: {
+          p_actor_profile_id: string
+          p_event_id: string
+          p_file_size: number
+          p_mime_type: string
+          p_original_file_name: string
+          p_storage_path: string
+        }
+        Returns: string
+      }
+      birth_giving_confirm_result_file: {
+        Args: {
+          p_actor_profile_id: string
+          p_event_id: string
+          p_file_size: number
+          p_mime_type: string
+          p_original_file_name: string
+          p_storage_path: string
+          p_team_id: string
+        }
+        Returns: string
+      }
+      birth_giving_correct_team: {
+        Args: {
+          p_event_id: string
+          p_member_profile_ids: string[]
+          p_name: string
+          p_result_state: Database["public"]["Enums"]["birth_giving_team_result_state"]
+          p_team_id: string
+        }
+        Returns: string
+      }
+      birth_giving_create_draft: {
+        Args: {
+          p_customer: string
+          p_duration: Database["public"]["Enums"]["birth_giving_duration"]
+          p_joining_open: boolean
+          p_maximum_team_size: number
+          p_minimum_team_size: number
+          p_name: string
+          p_organizer_profile_ids: string[]
+          p_starts_at: string
+        }
+        Returns: string
+      }
+      birth_giving_create_historical_team: {
+        Args: {
+          p_event_id: string
+          p_member_profile_ids: string[]
+          p_name: string
+          p_result_state: Database["public"]["Enums"]["birth_giving_team_result_state"]
+        }
+        Returns: string
+      }
+      birth_giving_create_proposal: {
+        Args: {
+          p_acknowledge_move: boolean
+          p_candidate_profile_id: string
+          p_direction: Database["public"]["Enums"]["birth_giving_proposal_direction"]
+          p_event_id: string
+          p_team_id: string
+        }
+        Returns: string
+      }
+      birth_giving_create_team: {
+        Args: { p_event_id: string; p_name: string }
+        Returns: string
+      }
+      birth_giving_fail_email_delivery: {
+        Args: {
+          p_delivery_id: string
+          p_error: string
+          p_processing_token: string
+        }
+        Returns: boolean
+      }
+      birth_giving_finalize_storage_cleanup: {
+        Args: { p_claim_id: string; p_storage_path: string }
+        Returns: boolean
+      }
+      birth_giving_find_event_conflict: {
+        Args: {
+          p_normalized_customer: string
+          p_normalized_name: string
+          p_starts_at: string
+        }
+        Returns: {
+          id: string
+          status: Database["public"]["Enums"]["birth_giving_event_status"]
+        }[]
+      }
+      birth_giving_mark_assignment_missing: {
+        Args: { p_event_id: string }
+        Returns: string
+      }
+      birth_giving_mark_result_missing: {
+        Args: { p_event_id: string; p_team_id: string }
+        Returns: string[]
+      }
+      birth_giving_prepare_email_delivery: {
+        Args: {
+          p_delivery_id: string
+          p_email_html: string
+          p_email_subject: string
+          p_processing_token: string
+        }
+        Returns: {
+          email_html: string
+          email_subject: string
+        }[]
+      }
+      birth_giving_process_due_starts: {
+        Args: { p_limit?: number }
+        Returns: number
+      }
+      birth_giving_publish_event: {
+        Args: { p_event_id: string }
+        Returns: undefined
+      }
+      birth_giving_reconcile_email_deliveries: { Args: never; Returns: number }
+      birth_giving_release_storage_cleanup_claim: {
+        Args: { p_claim_id: string; p_storage_path: string }
+        Returns: boolean
+      }
+      birth_giving_remove_result_file: {
+        Args: { p_result_file_id: string }
+        Returns: string
+      }
+      birth_giving_resolve_proposal: {
+        Args: { p_action: string; p_proposal_id: string }
+        Returns: string
+      }
+      birth_giving_resolve_proposal_locked: {
+        Args: { p_action: string; p_proposal_id: string }
+        Returns: undefined
+      }
+      birth_giving_set_looking_for_team: {
+        Args: { p_event_id: string; p_looking: boolean }
+        Returns: undefined
+      }
+      birth_giving_update_event: {
+        Args: {
+          p_customer?: string
+          p_duration?: Database["public"]["Enums"]["birth_giving_duration"]
+          p_event_id: string
+          p_joining_open?: boolean
+          p_maximum_team_size?: number
+          p_minimum_team_size?: number
+          p_name?: string
+          p_organizer_profile_ids?: string[]
+          p_starts_at?: string
+        }
+        Returns: string
+      }
+      birth_giving_upsert_draft: {
+        Args: {
+          p_customer: string
+          p_duration: Database["public"]["Enums"]["birth_giving_duration"]
+          p_event_id: string
+          p_joining_open: boolean
+          p_maximum_team_size: number
+          p_minimum_team_size: number
+          p_name: string
+          p_organizer_profile_ids: string[]
+          p_starts_at: string
+        }
+        Returns: string
+      }
+      birth_giving_upsert_reflection: {
+        Args: { p_contribution: string; p_event_id: string; p_learning: string }
+        Returns: string
+      }
+      can_view_birth_giving_event_organizers: {
+        Args: { target_event_id: string }
+        Returns: boolean
+      }
       coach_can_review_essay: { Args: { p_essay_id: string }; Returns: boolean }
       current_profile_id: { Args: never; Returns: string }
       get_best_books_per_category: {
@@ -2115,6 +3113,27 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      birth_giving_assignment_state: "present" | "missing"
+      birth_giving_delivery_status:
+        | "pending"
+        | "processing"
+        | "sent"
+        | "failed"
+        | "manual_review"
+      birth_giving_duration: "8h" | "24h"
+      birth_giving_email_message_type:
+        | "assignment_release"
+        | "assignment_replacement"
+      birth_giving_event_status: "draft" | "published"
+      birth_giving_proposal_direction: "join_request" | "invitation"
+      birth_giving_proposal_state:
+        | "pending"
+        | "accepted"
+        | "rejected"
+        | "cancelled"
+        | "expired"
+      birth_giving_team_result_state: "pending" | "present" | "missing"
+      birth_giving_team_status: "forming" | "confirmed" | "cancelled"
       book_list_status: "processing" | "shortlist" | "longlist" | "archived"
       book_source: "manual" | "google_books" | "open_library"
       personality_test_type:
@@ -2268,6 +3287,30 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      birth_giving_assignment_state: ["present", "missing"],
+      birth_giving_delivery_status: [
+        "pending",
+        "processing",
+        "sent",
+        "failed",
+        "manual_review",
+      ],
+      birth_giving_duration: ["8h", "24h"],
+      birth_giving_email_message_type: [
+        "assignment_release",
+        "assignment_replacement",
+      ],
+      birth_giving_event_status: ["draft", "published"],
+      birth_giving_proposal_direction: ["join_request", "invitation"],
+      birth_giving_proposal_state: [
+        "pending",
+        "accepted",
+        "rejected",
+        "cancelled",
+        "expired",
+      ],
+      birth_giving_team_result_state: ["pending", "present", "missing"],
+      birth_giving_team_status: ["forming", "confirmed", "cancelled"],
       book_list_status: ["processing", "shortlist", "longlist", "archived"],
       book_source: ["manual", "google_books", "open_library"],
       personality_test_type: [

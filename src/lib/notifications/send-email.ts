@@ -8,16 +8,33 @@ export interface SendEmailParams {
   html: string;
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<void> {
+export interface SendEmailOptions {
+  idempotencyKey?: string;
+}
+
+export interface SendEmailResult {
+  id: string;
+}
+
+export async function sendEmail(
+  { to, subject, html }: SendEmailParams,
+  options?: SendEmailOptions,
+): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     throw new Error('RESEND_API_KEY is not set');
   }
 
   const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({ from: NOTIFICATION_FROM_EMAIL, to, subject, html });
+  const message = { from: NOTIFICATION_FROM_EMAIL, to, subject, html };
+  const { data, error } = options?.idempotencyKey
+    ? await resend.emails.send(message, { idempotencyKey: options.idempotencyKey })
+    : await resend.emails.send(message);
 
   if (error) {
     throw new Error(`Resend send failed: ${error.message}`);
   }
+  if (!data?.id) throw new Error('Resend send failed: provider message ID is missing');
+
+  return { id: data.id };
 }
