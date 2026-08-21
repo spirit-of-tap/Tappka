@@ -1,0 +1,69 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import { birthGivingEventPatchSchema } from "@/lib/birth-giving/api";
+import { normalizeEventIdentity } from "@/lib/birth-giving/identity";
+import { getBirthGivingEvent } from "@/lib/birth-giving/queries";
+
+import {
+  birthGivingIdentityConflictResponse,
+  birthGivingMutationErrorResponse,
+  invalidPayloadResponse,
+  isBirthGivingApiGateFailure,
+  refreshedEventResponse,
+  requireBirthGivingApiContext,
+  validateBirthGivingRouteIds,
+} from "../../_shared";
+
+interface RouteContext {
+  params: Promise<{ eventId: string }>;
+}
+
+export async function GET(_request: Request, { params }: RouteContext) {
+  const context = await requireBirthGivingApiContext();
+  if (isBirthGivingApiGateFailure(context)) return context.response;
+  const { eventId } = await params;
+  const invalidId = validateBirthGivingRouteIds(eventId);
+  if (invalidId) return invalidId;
+  const data = await getBirthGivingEvent(context.supabase, eventId);
+  if (!data) return NextResponse.json({ error: "Událost nebyla nalezena" }, { status: 404 });
+  return NextResponse.json({ data });
+}
+
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const context = await requireBirthGivingApiContext();
+  if (isBirthGivingApiGateFailure(context)) return context.response;
+  const { eventId } = await params;
+  const invalidId = validateBirthGivingRouteIds(eventId);
+  if (invalidId) return invalidId;
+  const parsed = birthGivingEventPatchSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return invalidPayloadResponse();
+  const payload = parsed.data;
+
+  const { error } = await context.supabase.rpc("birth_giving_update_event", {
+    p_customer: payload.customer,
+    p_duration: payload.duration,
+    p_event_id: eventId,
+    p_joining_open: payload.joiningOpen,
+    p_maximum_team_size: payload.maximumTeamSize,
+    p_minimum_team_size: payload.minimumTeamSize,
+    p_name: payload.name,
+    p_organizer_profile_ids: payload.organizerProfileIds,
+    p_starts_at: payload.startsAt,
+  });
+  if (error) {
+    if (error.code === "23505") {
+      const current = await getBirthGivingEvent(context.supabase, eventId).catch(() => null);
+      if (current) {
+        const identity = normalizeEventIdentity({
+          eventName: payload.name ?? current.name,
+          customer: payload.customer ?? current.customer,
+          startsAt: new Date(payload.startsAt ?? current.starts_at),
+        });
+        return birthGivingIdentityConflictResponse(context.supabase, identity);
+      }
+      return birthGivingIdentityConflictResponse(context.supabase, null);
+    }
+    return birthGivingMutationErrorResponse(error, context.supabase, eventId);
+  }
+  return refreshedEventResponse(context.supabase, eventId);
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/system/birth-giving/cleanup-storage",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/system/birth-giving/process",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

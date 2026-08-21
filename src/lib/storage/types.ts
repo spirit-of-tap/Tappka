@@ -2,7 +2,12 @@
  * Storage Types for Supabase Storage S3 Integration
  */
 
-export type StorageContext = "profile" | "team" | "book" | "personality-test";
+export type StorageContext =
+  | "profile"
+  | "team"
+  | "book"
+  | "personality-test"
+  | "team-document";
 
 export interface UploadOptions {
   context: StorageContext;

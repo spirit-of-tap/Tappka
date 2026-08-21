@@ -13,6 +13,7 @@ import { generatePresignedUpload } from "@/lib/storage/service";
 import {
   validateImageUpload,
   validatePersonalityTestUpload,
+  validateTeamDocumentUpload,
   getFileExtension,
 } from "@/lib/storage/validation";
 import type { StorageContext } from "@/lib/storage/types";
@@ -47,8 +48,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type and size
-    const validationError =
-      context === "personality-test"
+    const validationError = context === "team-document"
+      ? validateTeamDocumentUpload(contentType, fileSize)
+      : context === "personality-test"
         ? validatePersonalityTestUpload(contentType, fileSize)
         : validateImageUpload(contentType, fileSize);
     if (validationError) {
@@ -68,7 +70,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Authorization checks
-    if (context === "personality-test") {
+    if (context === "team-document") {
+      const { data: document, error } = await supabase
+        .from("team_documents")
+        .select("team_id")
+        .eq("id", entityId)
+        .is("removed_at", null)
+        .maybeSingle();
+
+      if (error || !document || document.team_id !== profile.team_id) {
+        return NextResponse.json(
+          { error: "Nemáš oprávnění nahrát verzi tohoto dokumentu" },
+          { status: 403 }
+        );
+      }
+    } else if (context === "personality-test") {
       // Users can only upload to their own profile
       if (entityId !== profile.id) {
         return NextResponse.json(

@@ -1,0 +1,2 @@
+ALTER TABLE "birth_giving_email_deliveries" ADD COLUMN "processing_token" uuid;--> statement-breakpoint
+ALTER TABLE "birth_giving_email_deliveries" ADD CONSTRAINT "birth_giving_email_deliveries_processing_check" CHECK ((status = 'processing') = (processing_started_at IS NOT NULL AND processing_token IS NOT NULL));

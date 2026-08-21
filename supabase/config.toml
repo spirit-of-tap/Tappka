@@ -121,7 +121,8 @@ allowed_mime_types = ["image/png", "image/jpeg", "image/webp"]
 # Private user documents, served via signed URLs.
 [storage.buckets.documents]
 public = false
-file_size_limit = "50MiB"
+file_size_limit = "25MiB"
+allowed_mime_types = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "image/jpeg", "image/png", "image/webp"]
 
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
