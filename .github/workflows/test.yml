@@ -41,6 +41,18 @@ jobs:
       - name: Integration tests (Testcontainers)
         run: pnpm test:integration
 
+      - name: Create .env.local from example
+        run: cp .env.example .env.local
+
+      - name: Start local Supabase (CI-slim, no studio/analytics/edge-runtime)
+        run: pnpm supabase:start -- -x studio -x analytics -x edge-runtime
+
+      - name: Apply migrations and seed
+        run: pnpm db:reset
+
+      - name: Write local Supabase credentials to .env.local
+        run: pnpm setup-env
+
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
