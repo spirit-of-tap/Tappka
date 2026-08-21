@@ -21,9 +21,13 @@ export default async function SchuzkyPage() {
 
   const meetings = await listCustomerMeetings(supabase, profile.id)
 
+  // Computed once on the server and passed down so client-side month grouping
+  // hydrates against the exact same reference time (no TZ/boundary drift).
+  const now = new Date()
+
   return (
     <PageShell className="max-w-5xl">
-      <CustomerMeetingsView meetings={meetings} profileId={profile.id} />
+      <CustomerMeetingsView meetings={meetings} profileId={profile.id} now={now} />
     </PageShell>
   )
 }
