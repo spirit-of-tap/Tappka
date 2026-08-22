@@ -1,8 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/session";
-import { getCoachUnreadCount } from "@/lib/essays/queries";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/navigation/mobile-bottom-nav";
 import {
@@ -47,17 +45,10 @@ export default async function DashboardLayout({
     beta_access: profile.beta_access_granted_at != null,
   };
 
-  const isCoachOrAdmin = profile.role === "coach" || profile.role === "admin";
-  let reviewCount = 0;
-  if (isCoachOrAdmin && profile.team_id) {
-    const supabase = await createClient();
-    reviewCount = await getCoachUnreadCount(supabase, profile.id, profile.team_id);
-  }
-
   return (
     <>
       <SidebarProvider>
-        <AppSidebar user={sidebarUser} reviewCount={reviewCount} />
+        <AppSidebar user={sidebarUser} />
         <SidebarInset>
           <header className="hidden h-16 shrink-0 items-center gap-2 border-b px-4 md:flex">
             <SidebarTrigger className="-ml-1" />
