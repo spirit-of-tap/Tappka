@@ -119,38 +119,42 @@ export function IndividualCoachingSessionRow({
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        aria-expanded={expanded}
-        className="focus-ring flex w-full items-center gap-3 rounded-lg py-2 pr-1 text-left transition-colors hover:bg-accent/50"
-      >
-        <ProfileAvatar
-          picture={session.coach?.picture}
-          name={name}
-          size={28}
-          className="shrink-0 text-[11px]"
-        />
-        <span className="min-w-0 shrink-0 truncate text-sm font-medium">{name}</span>
-        {session.session_at && (
-          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
-            {formatShortDate(session.session_at)}
-          </span>
-        )}
-        {preview && (
-          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground/90">
-            {preview}
-          </span>
-        )}
-        {!preview && loop && <span className="flex-1" />}
+      <div className="flex items-center gap-3 rounded-lg py-2 pr-1 transition-colors hover:bg-accent/50">
+        {/* Toggle button covers avatar/name/date/preview/chip; the ⋮ menu is
+            a sibling — a button inside a button is invalid HTML (hydration
+            error) and breaks assistive tech. */}
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-expanded={expanded}
+          className="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left"
+        >
+          <ProfileAvatar
+            picture={session.coach?.picture}
+            name={name}
+            size={28}
+            className="shrink-0 text-[11px]"
+          />
+          <span className="min-w-0 shrink-0 truncate text-sm font-medium">{name}</span>
+          {session.session_at && (
+            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
+              {formatShortDate(session.session_at)}
+            </span>
+          )}
+          {preview && (
+            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground/90">
+              {preview}
+            </span>
+          )}
+          {!preview && loop && <span className="flex-1" />}
+        </button>
         {loop && (
-          <Badge variant="outline" className={`ml-auto shrink-0 ${CHIP_CLASS[loop]}`}>
+          <Badge variant="outline" className={`shrink-0 ${CHIP_CLASS[loop]}`}>
             {LOOP_LABELS[loop]}
           </Badge>
         )}
-        {!loop && !expanded && <span className="ml-auto" />}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
@@ -179,7 +183,7 @@ export function IndividualCoachingSessionRow({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </button>
+      </div>
 
       {expanded && (
         <div className="space-y-4 pb-4 pl-10 pr-1">
