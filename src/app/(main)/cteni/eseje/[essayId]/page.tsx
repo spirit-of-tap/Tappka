@@ -16,7 +16,7 @@ import { EssayPinButton } from '@/components/essays/essay-pin-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/ui/page-shell';
-import { PageBack } from '@/components/ui/page-back';
+import { BackButton } from '@/components/essays/back-button';
 import { ProfileAvatar } from '@/components/profile-avatar';
 
 export const metadata = {
@@ -77,7 +77,8 @@ export default async function EssayDetailPage({ params }: PageProps) {
 
       {/* Top bar */}
       <div className="flex items-center justify-between mb-8">
-        <PageBack href="/cteni" label="Zpět na knihovnu" />
+        {/* History-aware: essays are reached from both Moje and Objevovat. */}
+        <BackButton />
         {isAuthor && (
           <div className="flex items-center gap-2">
             <EssayPinButton essayId={essayId} isPinned={essay.pinned_at != null} />
