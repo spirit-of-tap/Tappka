@@ -186,7 +186,7 @@ export function IndividualCoachingSessionRow({
       </div>
 
       {expanded && (
-        <div className="space-y-4 pb-4 pl-10 pr-1">
+        <div className="space-y-4 pb-4 pl-10 pr-1 pt-1">
           {session.key_takeaways ? (
             <NoteBlock icon={Lightbulb} label="Co jsem si odnesl">
               {session.key_takeaways}
