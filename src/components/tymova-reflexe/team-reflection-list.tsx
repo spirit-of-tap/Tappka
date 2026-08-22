@@ -132,7 +132,7 @@ export function TeamReflectionList({
           </div>
         )}
       </div>
-      {!hasCurrentReflection && <MobileFab label="Nová týmová reflexe" href={newReflectionHref} />}
+      {!hasCurrentReflection && <MobileFab label="Nová reflexe" href={newReflectionHref} />}
       <MobileFabSpacer />
     </div>
   )

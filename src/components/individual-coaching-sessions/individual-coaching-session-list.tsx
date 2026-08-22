@@ -140,7 +140,7 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
           {/* Mobile FAB — second trigger of the shared dialog, thumb-reachable
               above the bottom nav. */}
           <DialogTrigger asChild>
-            <MobileFab label="Nové koučovací sezení" />
+            <MobileFab label="Nové sezení" />
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>

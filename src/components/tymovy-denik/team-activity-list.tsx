@@ -77,7 +77,7 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
           </DialogTrigger>
           {/* Mobile FAB — second trigger of the shared dialog. */}
           <DialogTrigger asChild>
-            <MobileFab label="Nová týmová akce" />
+            <MobileFab label="Nová akce" />
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>

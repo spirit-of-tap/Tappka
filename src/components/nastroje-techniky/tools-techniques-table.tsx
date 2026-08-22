@@ -97,7 +97,7 @@ export function ToolsTechniquesTable({ items, profileId }: ToolsTechniquesTableP
           </DialogTrigger>
           {/* Mobile FAB — second trigger of the shared dialog. */}
           <DialogTrigger asChild>
-            <MobileFab label="Nový záznam nástroje" />
+            <MobileFab label="Přidat záznam" />
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl" aria-describedby={undefined}>
             <DialogHeader>
