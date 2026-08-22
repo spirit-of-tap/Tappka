@@ -29,9 +29,10 @@ describe("CustomerMeetingRow", () => {
     const person = screen.getByText("Kateřina Gonderová")
     expect(person).toHaveClass("font-medium")
     expect(screen.getByText(/GrowJOB/)).toBeInTheDocument()
-    // Month context lives in the section header — rows carry the day only.
-    expect(screen.getByText(/^13\.$/)).toBeInTheDocument()
-    expect(screen.queryByText(/5\./)).toBeNull()
+    // Month context lives in the section header — the day travels inline
+    // with the entry text, not at the far row edge.
+    expect(screen.getByText(/^· 13\.$/)).toBeInTheDocument()
+    expect(screen.queryByText(/· 5\./)).toBeNull()
     const link = screen.getByRole("link")
     expect(link).toHaveAttribute("href", "/schuzky/m1")
   })
@@ -66,7 +67,7 @@ describe("CustomerMeetingRow", () => {
   it("marks undated meetings as bez data without a day", () => {
     render(<CustomerMeetingRow meeting={build({ meeting_at: null })} now={NOW} />)
     expect(screen.getByText("Bez data")).toBeInTheDocument()
-    expect(screen.queryByText(/^13\.$/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^· 13\.$/)).not.toBeInTheDocument()
   })
 
   it("can hide the redundant bez-data chip inside the bez-data section", () => {
