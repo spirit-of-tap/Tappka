@@ -2298,6 +2298,7 @@ export type Database = {
           created_at: string
           created_by_profile_id: string
           id: string
+          image_path: string | null
           occurred_at: string
           participants: string | null
           reason: string | null
@@ -2312,6 +2313,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id: string
           id?: string
+          image_path?: string | null
           occurred_at: string
           participants?: string | null
           reason?: string | null
@@ -2326,6 +2328,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id?: string
           id?: string
+          image_path?: string | null
           occurred_at?: string
           participants?: string | null
           reason?: string | null

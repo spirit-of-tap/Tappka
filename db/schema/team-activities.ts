@@ -11,6 +11,7 @@ export const teamActivities = pgTable("team_activities", {
 	participants: text("participants"),
 	reason: text("reason"),
 	reflection: text("reflection"),
+	imagePath: text("image_path"),
 	removedAt: timestamp("removed_at", { withTimezone: true, mode: 'string' }),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
