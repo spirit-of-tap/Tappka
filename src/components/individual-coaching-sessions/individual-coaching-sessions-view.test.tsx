@@ -75,6 +75,8 @@ describe("IndividualCoachingSessionsView", () => {
     expect(screen.getByText("2 sezení")).toBeInTheDocument()
     // Both fixtures sit inside the Feb–Aug semester relative to NOW.
     expect(screen.getByText("2/1")).toBeInTheDocument()
+    expect(screen.getByText("2/6")).toBeInTheDocument()
+    expect(screen.getByText("za studium")).toBeInTheDocument()
   })
 
   it("groups into month sections; empty months are not rendered", () => {

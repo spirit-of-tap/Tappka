@@ -153,6 +153,11 @@ export function IndividualCoachingSessionsView({
                 target: INDIVIDUAL_COACHING_METRIC.target ?? 0,
                 label: "tento semestr",
               },
+              {
+                current: items.length,
+                target: INDIVIDUAL_COACHING_METRIC.totalForStudy ?? 0,
+                label: "za studium",
+              },
             ]}
           />
         )}
