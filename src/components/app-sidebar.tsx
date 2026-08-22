@@ -28,7 +28,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
 import {
@@ -248,7 +247,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
           <NavUser user={user} />
         </SidebarFooter>
       )}
-      <SidebarRail />
     </>
   )
 }
@@ -258,7 +256,9 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   // Mobile gets the bottom navigation bar instead of the sidebar sheet.
   if (isMobile) return null
   return (
-    <Sidebar {...props}>
+    // collapsible="none": the sidebar is permanent chrome — no toggle, no
+    // rail, no keyboard shortcut can hide it.
+    <Sidebar collapsible="none" {...props}>
       <AppSidebarContent user={user} />
     </Sidebar>
   )

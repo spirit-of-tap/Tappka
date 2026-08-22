@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MODULE_HUB_ORDER, NAV_MODULES, getHubModules, getModuleForPath } from "./navigation";
+import { MODULE_HUB_ORDER, NAV_MODULES, getHubModules } from "./navigation";
 
 describe("navigation config", () => {
   it("contains every module with url, icon and Czech description", () => {
@@ -76,24 +76,5 @@ describe("getHubModules", () => {
   it("marks exactly the weekly+ modules as featured", () => {
     const featured = getHubModules(true).filter((m) => m.featured);
     expect(featured.map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/nastroje-techniky"]);
-  });
-});
-
-describe("getModuleForPath", () => {
-  it("matches a module by the pathname's first segment", () => {
-    expect(getModuleForPath("/cteni/prehled")?.title).toBe("Čtení");
-    expect(getModuleForPath("/cteni/knihy/some-id")?.title).toBe("Čtení");
-  });
-
-  it("maps subpages to their top-level module", () => {
-    // /komunita/* resolves to the Komunita module even though the
-    // Osobnostní-testy entry shares its first segment — array order wins.
-    expect(getModuleForPath("/komunita/profil")?.title).toBe("Komunita");
-  });
-
-  it("returns null for the dashboard root, unknown segments and missing paths", () => {
-    expect(getModuleForPath("/")).toBeNull();
-    expect(getModuleForPath("/neexistuje/cesta")).toBeNull();
-    expect(getModuleForPath(null)).toBeNull();
   });
 });

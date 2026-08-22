@@ -69,18 +69,3 @@ export function getHubModules(isBeta: boolean): NavModule[] {
   const byUrl = new Map(NAV_MODULES.map((m) => [m.url, m]));
   return MODULE_HUB_ORDER.map((url) => byUrl.get(url)).filter((m): m is NavModule => !!m && (!m.betaOnly || isBeta));
 }
-
-/**
- * Module a pathname belongs to, matched on each module URL's first path
- * segment (e.g. "/cteni/knihy/x" → Čtení via "/cteni/prehled"; a profile page
- * → Komunita even though Osobnostní testy shares the segment). Returns null
- * for the dashboard root, unknown segments and null paths.
- */
-export function getModuleForPath(pathname: string | null): NavModule | null {
-  if (!pathname) return null;
-  const segment = `/${pathname.split("/").filter(Boolean)[0] ?? ""}`;
-  if (segment === "/") return null;
-  return (
-    NAV_MODULES.find((m) => `/${m.url.split("/").filter(Boolean)[0] ?? ""}` === segment) ?? null
-  );
-}
