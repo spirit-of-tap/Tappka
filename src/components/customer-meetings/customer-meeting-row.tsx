@@ -8,18 +8,9 @@ const CHIP_CLASS: Record<MeetingLoop, string> = {
   undated: "",
 }
 
-function formatDay(dateStr: string): string {
-  return new Intl.DateTimeFormat("cs-CZ", { day: "numeric" }).format(new Date(dateStr))
-}
-
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return "?"
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]!)
-    .join("")
-    .toUpperCase()
+/** Day-of-month for the timeline disc — plain number, no period. */
+function dayOfMonth(dateStr: string): string {
+  return String(new Date(dateStr).getDate())
 }
 
 interface CustomerMeetingRowProps {
@@ -34,8 +25,8 @@ interface CustomerMeetingRowProps {
 }
 
 /**
- * One timeline entry: initials disc on the rail, a fixed-width day column
- * (so names align vertically), then person · company on one line.
+ * One timeline entry: the disc on the rail carries the day-of-month (the
+ * month header supplies the month), then person · company on one line.
  * Chip only for open loops. Whole row links to detail (~44px tap target).
  */
 export function CustomerMeetingRow({
@@ -53,18 +44,13 @@ export function CustomerMeetingRow({
       href={`/schuzky/${meeting.id}`}
       className="focus-ring relative flex items-center gap-3 rounded-lg py-2 pr-1 transition-colors hover:bg-accent/50"
     >
+      {/* The disc IS the date — the month header gives the month context. */}
       <span
-        aria-hidden
-        className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+        className="relative z-10 grid size-7 shrink-0 place-items-center rounded-full bg-muted text-[11px] font-medium tabular-nums text-muted-foreground"
+        aria-hidden={meeting.meeting_at ? undefined : true}
       >
-        {initialsFromName(meeting.contact_person)}
+        {meeting.meeting_at ? dayOfMonth(meeting.meeting_at) : "–"}
       </span>
-      {/* Day-first timestamp column — fixed width so names align vertically. */}
-      {meeting.meeting_at && (
-        <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-          {formatDay(meeting.meeting_at)}
-        </span>
-      )}
       <p className="min-w-0 flex-1 truncate text-sm">
         <span className="font-medium">{meeting.contact_person}</span>
         <span className="text-muted-foreground"> · {meeting.company}</span>

@@ -24,22 +24,25 @@ function build(
 }
 
 describe("CustomerMeetingRow", () => {
-  it("renders person first with company and day-only date, linking to detail", () => {
+  it("renders person first with company, linking to detail", () => {
     render(<CustomerMeetingRow meeting={build()} now={NOW} />)
     const person = screen.getByText("Kateřina Gonderová")
     expect(person).toHaveClass("font-medium")
     expect(screen.getByText(/GrowJOB/)).toBeInTheDocument()
-    // Month context lives in the section header — the day travels inline
-    // with the entry text, not at the far row edge.
-    expect(screen.getByText(/^13\.$/)).toBeInTheDocument()
-    expect(screen.queryByText(/· 5\./)).toBeNull()
-    const link = screen.getByRole("link")
-    expect(link).toHaveAttribute("href", "/schuzky/m1")
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/schuzky/m1")
   })
 
-  it("renders initials disc from the contact name", () => {
+  it("shows the day-of-month in the disc instead of initials", () => {
     render(<CustomerMeetingRow meeting={build()} now={NOW} />)
-    expect(screen.getByText("KG")).toBeInTheDocument()
+    // 2026-05-13 → day 13; no initials anywhere on the row.
+    expect(screen.getByText("13")).toBeInTheDocument()
+    expect(screen.queryByText("KG")).not.toBeInTheDocument()
+  })
+
+  it("renders an empty dash disc for undated meetings (rail stays connected)", () => {
+    render(<CustomerMeetingRow meeting={build({ meeting_at: null })} now={NOW} />)
+    expect(screen.getByText("–")).toBeInTheDocument()
+    expect(screen.queryByText(/^1[0-9]$/)).not.toBeInTheDocument()
   })
 
   it("shows no chip when the loop is closed", () => {
@@ -64,10 +67,9 @@ describe("CustomerMeetingRow", () => {
     expect(screen.getByRole("link")).toHaveAttribute("href", "/schuzky/m2")
   })
 
-  it("marks undated meetings as bez data without a day", () => {
+  it("marks undated meetings as bez data", () => {
     render(<CustomerMeetingRow meeting={build({ meeting_at: null })} now={NOW} />)
     expect(screen.getByText("Bez data")).toBeInTheDocument()
-    expect(screen.queryByText(/^13\.$/)).not.toBeInTheDocument()
   })
 
   it("can hide the redundant bez-data chip inside the bez-data section", () => {
