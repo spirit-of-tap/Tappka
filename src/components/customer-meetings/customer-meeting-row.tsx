@@ -63,13 +63,13 @@ export function CustomerMeetingRow({
       </span>
       <p className="min-w-0 flex-1 truncate text-sm">
         <span className="font-medium">{meeting.contact_person}</span>
-        <span className="text-muted-foreground"> · {meeting.company}, </span>
-        {meeting.meeting_at && (
-          <span className="text-muted-foreground tabular-nums">
-            {formatShortDate(meeting.meeting_at)}
-          </span>
-        )}
+        <span className="text-muted-foreground"> · {meeting.company}</span>
       </p>
+      {meeting.meeting_at && (
+        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
+          {formatShortDate(meeting.meeting_at)}
+        </span>
+      )}
       {visibleLoop && (
         <Badge
           variant="outline"
