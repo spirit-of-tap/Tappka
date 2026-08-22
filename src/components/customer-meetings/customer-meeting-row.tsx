@@ -4,7 +4,6 @@ import { getMeetingLoop, LOOP_LABELS, type MeetingLoop } from "@/lib/customer-me
 import type { CustomerMeeting } from "@/lib/customer-meetings/types"
 
 const CHIP_CLASS: Record<MeetingLoop, string> = {
-  planned: "",
   "missing-follow-up": "border-transparent bg-warning/10 text-warning-strong",
   undated: "",
 }
@@ -44,7 +43,7 @@ export function CustomerMeetingRow({
   now,
   showUndatedChip = true,
 }: CustomerMeetingRowProps) {
-  const loop = getMeetingLoop(meeting, now)
+  const loop = getMeetingLoop(meeting)
   // Inside the "Bez data" group the header already says it — a per-row chip
   // would repeat the loudest possible information.
   const visibleLoop = showUndatedChip ? loop : loop === "undated" ? null : loop
@@ -71,7 +70,7 @@ export function CustomerMeetingRow({
       )}
       {visibleLoop && (
         <Badge
-          variant={visibleLoop === "missing-follow-up" ? "outline" : "default"}
+          variant="outline"
           className={`shrink-0 ${CHIP_CLASS[visibleLoop]}`}
         >
           {LOOP_LABELS[visibleLoop]}

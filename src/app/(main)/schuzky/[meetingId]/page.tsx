@@ -5,7 +5,7 @@ import { getCustomerMeeting } from "@/lib/customer-meetings/queries"
 import { CustomerMeetingDetail } from "@/components/customer-meetings/customer-meeting-detail"
 import { Badge } from "@/components/ui/badge"
 import { PageBack } from "@/components/ui/page-back"
-import { getMeetingLoop, LOOP_LABELS } from "@/lib/customer-meetings/status"
+import { getMeetingLoop, LOOP_LABELS, type MeetingLoop } from "@/lib/customer-meetings/status"
 
 interface MeetingDetailPageProps {
   params: Promise<{ meetingId: string }>
@@ -15,8 +15,7 @@ export const metadata = {
   title: "Detail schůzky | Tappka",
 }
 
-const CHIP_CLASS: Record<Exclude<ReturnType<typeof getMeetingLoop>, null>, string> = {
-  planned: "",
+const CHIP_CLASS: Record<MeetingLoop, string> = {
   "missing-follow-up": "border-transparent bg-warning/10 text-warning-strong",
   undated: "",
 }
@@ -58,10 +57,7 @@ export default async function MeetingDetailPage({ params }: MeetingDetailPagePro
               })}`}
           </span>
           {loop && (
-            <Badge
-              variant={loop === "missing-follow-up" ? "outline" : "default"}
-              className={`shrink-0 ${CHIP_CLASS[loop]}`}
-            >
+            <Badge variant="outline" className={`shrink-0 ${CHIP_CLASS[loop]}`}>
               {LOOP_LABELS[loop]}
             </Badge>
           )}

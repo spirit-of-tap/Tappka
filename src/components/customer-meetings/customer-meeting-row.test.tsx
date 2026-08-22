@@ -52,14 +52,14 @@ describe("CustomerMeetingRow", () => {
     expect(screen.getByText("Chybí follow-up")).toBeInTheDocument()
   })
 
-  it("chips future meetings as planned", () => {
+  it("treats a future-dated entry (should not exist; form constrains it) as an open loop", () => {
     render(
       <CustomerMeetingRow
-        meeting={build({ id: "m2", meeting_at: "2026-06-01T09:00:00Z" })}
+        meeting={build({ id: "m2", meeting_at: "2027-01-01T09:00:00Z", post_mortem: null })}
         now={NOW}
       />,
     )
-    expect(screen.getByText("Naplánováno")).toBeInTheDocument()
+    expect(screen.getByText("Chybí follow-up")).toBeInTheDocument()
     expect(screen.getByRole("link")).toHaveAttribute("href", "/schuzky/m2")
   })
 

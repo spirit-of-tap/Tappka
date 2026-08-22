@@ -1,8 +1,13 @@
-/** Open-loop state of a meeting — drives the card chip. Null = done, no chip. */
-export type MeetingLoop = "planned" | "missing-follow-up" | "undated"
+/**
+ * Open-loop state of a meeting — drives the card/detail chip. Null = done,
+ * no chip.
+ *
+ * Meetings cannot be planned ahead: the form constrains the date to the past
+ * (max = now), so there is no "planned" state by design.
+ */
+export type MeetingLoop = "missing-follow-up" | "undated"
 
 export const LOOP_LABELS: Record<MeetingLoop, string> = {
-  planned: "Naplánováno",
   "missing-follow-up": "Chybí follow-up",
   undated: "Bez data",
 }
@@ -12,12 +17,8 @@ interface MeetingLoopInput {
   post_mortem: string | null
 }
 
-export function getMeetingLoop(
-  meeting: Pick<MeetingLoopInput, "meeting_at" | "post_mortem">,
-  now: Date = new Date(),
-): MeetingLoop | null {
+export function getMeetingLoop(meeting: Pick<MeetingLoopInput, "meeting_at" | "post_mortem">): MeetingLoop | null {
   if (!meeting.meeting_at) return "undated"
-  if (new Date(meeting.meeting_at).getTime() > now.getTime()) return "planned"
   if (!meeting.post_mortem?.trim()) return "missing-follow-up"
   return null
 }

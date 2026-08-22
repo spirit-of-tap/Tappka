@@ -9,29 +9,34 @@ function meeting(overrides: { meetingAt?: string | null; postMortem?: string | n
 
 describe("getMeetingLoop", () => {
   it("flags a past meeting without post-mortem as missing follow-up", () => {
-    expect(getMeetingLoop(meeting({ meetingAt: "2026-05-10T09:00:00Z" }), NOW)).toBe(
+    expect(getMeetingLoop(meeting({ meetingAt: "2026-05-10T09:00:00Z" }))).toBe(
       "missing-follow-up",
     )
   })
 
   it("treats an empty-string post-mortem as missing", () => {
-    expect(
-      getMeetingLoop(meeting({ meetingAt: "2026-05-10T09:00:00Z", postMortem: "  " }), NOW),
-    ).toBe("missing-follow-up")
+    expect(getMeetingLoop(meeting({ meetingAt: "2026-05-10T09:00:00Z", postMortem: "  " }))).toBe(
+      "missing-follow-up",
+    )
   })
 
   it("returns null once the post-mortem is filled (calm archive)", () => {
     expect(
-      getMeetingLoop(meeting({ meetingAt: "2026-05-10T09:00:00Z", postMortem: "Reflexe" }), NOW),
+      getMeetingLoop(meeting({ meetingAt: "2026-05-10T09:00:00Z", postMortem: "Reflexe" })),
     ).toBeNull()
   })
 
-  it("flags a future-dated meeting as planned even without post-mortem", () => {
-    expect(getMeetingLoop(meeting({ meetingAt: "2026-06-01T09:00:00Z" }), NOW)).toBe("planned")
+  it("returns undated for meetings without a date", () => {
+    expect(getMeetingLoop(meeting({}))).toBe("undated")
+    expect(LOOP_LABELS.undated).toBe("Bez data")
+    expect(LOOP_LABELS["missing-follow-up"]).toBe("Chybí follow-up")
   })
 
-  it("returns undated for meetings without a date", () => {
-    expect(getMeetingLoop(meeting({}), NOW)).toBe("undated")
-    expect(LOOP_LABELS.undated).toBe("Bez data")
+  it("treats a future-dated entry (should not exist; form constrains it) as an open loop", () => {
+    // Meetings cannot be planned ahead — the form rejects future dates. If one
+    // slips in (legacy data), it is simply a meeting without follow-up yet.
+    expect(getMeetingLoop(meeting({ meetingAt: "2027-01-01T09:00:00Z" }))).toBe(
+      "missing-follow-up",
+    )
   })
 })
