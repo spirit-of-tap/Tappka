@@ -142,7 +142,7 @@ export function IndividualCoachingSessionRow({
             </span>
           )}
           {preview && (
-            <span className="line-clamp-1 min-w-0 basis-full text-xs text-muted-foreground/90 sm:basis-0 sm:flex-1 sm:truncate">
+            <span className="line-clamp-1 min-w-0 basis-full pl-10 text-xs text-muted-foreground/90 sm:basis-0 sm:pl-0 sm:flex-1 sm:truncate">
               {preview}
             </span>
           )}
