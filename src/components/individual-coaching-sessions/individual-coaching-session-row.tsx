@@ -127,13 +127,13 @@ export function IndividualCoachingSessionRow({
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
           aria-expanded={expanded}
-          className="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left"
+          className="focus-ring flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg text-left"
         >
           <ProfileAvatar
             picture={session.coach?.picture}
             name={name}
             size={28}
-            className="shrink-0 text-[11px]"
+            className="relative z-10 shrink-0 text-[11px]"
           />
           <span className="min-w-0 shrink-0 truncate text-sm font-medium">{name}</span>
           {session.session_at && (
@@ -142,7 +142,7 @@ export function IndividualCoachingSessionRow({
             </span>
           )}
           {preview && (
-            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground/90">
+            <span className="line-clamp-1 min-w-0 basis-full text-xs text-muted-foreground/90 sm:basis-auto sm:flex-1 sm:truncate">
               {preview}
             </span>
           )}
