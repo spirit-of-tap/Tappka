@@ -32,17 +32,20 @@ describe("CustomerMeetingRow", () => {
     expect(screen.getByRole("link")).toHaveAttribute("href", "/schuzky/m1")
   })
 
-  it("shows the day-of-month in the disc instead of initials", () => {
+  it("shows initials in the disc", () => {
     render(<CustomerMeetingRow meeting={build()} now={NOW} />)
-    // 2026-05-13 → day 13; no initials anywhere on the row.
-    expect(screen.getByText("13")).toBeInTheDocument()
-    expect(screen.queryByText("KG")).not.toBeInTheDocument()
+    expect(screen.getByText("KG")).toBeInTheDocument()
   })
 
-  it("renders an empty dash disc for undated meetings (rail stays connected)", () => {
+  it("renders date inline after company as 13.05.", () => {
+    render(<CustomerMeetingRow meeting={build()} now={NOW} />)
+    expect(screen.getByText("13.05.")).toBeInTheDocument()
+  })
+
+  it("renders undated meeting with initials disc and no date", () => {
     render(<CustomerMeetingRow meeting={build({ meeting_at: null })} now={NOW} />)
-    expect(screen.getByText("–")).toBeInTheDocument()
-    expect(screen.queryByText(/^1[0-9]$/)).not.toBeInTheDocument()
+    expect(screen.getByText("KG")).toBeInTheDocument()
+    expect(screen.queryByText("13.05.")).not.toBeInTheDocument()
   })
 
   it("shows no chip when the loop is closed", () => {
