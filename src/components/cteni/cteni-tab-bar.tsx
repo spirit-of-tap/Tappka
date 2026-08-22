@@ -59,9 +59,9 @@ export function CteniTabBar({ isCoachOrAdmin, reviewCount }: CteniTabBarProps) {
               aria-current={activeUrl === tab.url ? 'page' : undefined}
               data-active={activeUrl === tab.url ? 'true' : undefined}
               className={[
-                // ~48px tap height (≥44px target), underline indicator on the track.
+                // ~48px tap height (≥44px minimum), underline indicator on the track.
                 'relative inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-none',
-                'px-3 py-3 text-sm font-medium transition-colors focus-ring',
+                'px-3 py-3.5 text-sm font-medium transition-colors focus-ring',
                 'after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full',
                 'after:bg-primary after:opacity-0 after:transition-opacity',
                 'text-foreground/60 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',

@@ -30,8 +30,27 @@ describe('CteniTabBar', () => {
   it('adds the coach work queues with a role', () => {
     renderBar({ isCoachOrAdmin: true });
 
-    expect(screen.getByRole('link', { name: /Kontrola/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Správa' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Kontrola/ })).toHaveAttribute(
+      'href',
+      '/cteni/eseje/ke-kontrole',
+    );
+    expect(screen.getByRole('link', { name: 'Správa' })).toHaveAttribute('href', '/cteni/sprava');
+    expect(screen.getByRole('link', { name: 'Moje' })).toHaveAttribute('href', '/cteni/prehled');
+    expect(screen.getByRole('link', { name: 'Objevovat' })).toHaveAttribute(
+      'href',
+      '/cteni/hledat',
+    );
+  });
+
+  it('does not treat a shared prefix as a section match', () => {
+    // Guards against weakening the matcher to plain startsWith(url).
+    mockPathname.mockReturnValue('/cteni/prehled-extra');
+    renderBar({ isCoachOrAdmin: true });
+
+    const currents = screen
+      .getAllByRole('link')
+      .filter((link) => link.hasAttribute('aria-current'));
+    expect(currents).toHaveLength(0);
   });
 
   it('marks exactly the current section root with aria-current', () => {
@@ -67,6 +86,7 @@ describe('CteniTabBar', () => {
 
     rerender(<CteniTabBar isCoachOrAdmin reviewCount={0} />);
     // At zero the badge disappears, leaving the bare label.
+    expect(screen.queryByText('3')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Kontrola' })).toBeInTheDocument();
   });
 });
