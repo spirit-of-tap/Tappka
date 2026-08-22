@@ -34,9 +34,9 @@ interface CustomerMeetingRowProps {
 }
 
 /**
- * One timeline entry: initials disc on the rail + a single lean line
- * (person · company), day right-aligned, chip only for open loops.
- * The whole row links to the detail page (~44px tap target).
+ * One timeline entry: initials disc on the rail, a fixed-width day column
+ * (so names align vertically), then person · company on one line.
+ * Chip only for open loops. Whole row links to detail (~44px tap target).
  */
 export function CustomerMeetingRow({
   meeting,
@@ -59,16 +59,16 @@ export function CustomerMeetingRow({
       >
         {initialsFromName(meeting.contact_person)}
       </span>
-      <p className="min-w-0 truncate text-sm">
+      {/* Day-first timestamp column — fixed width so names align vertically. */}
+      {meeting.meeting_at && (
+        <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+          {formatDay(meeting.meeting_at)}
+        </span>
+      )}
+      <p className="min-w-0 flex-1 truncate text-sm">
         <span className="font-medium">{meeting.contact_person}</span>
         <span className="text-muted-foreground"> · {meeting.company}</span>
       </p>
-      {meeting.meeting_at && (
-        <span aria-hidden className="shrink-0 text-xs tabular-nums text-muted-foreground">
-          {" "}
-          · {formatDay(meeting.meeting_at)}
-        </span>
-      )}
       {visibleLoop && (
         <Badge
           variant="outline"
