@@ -11,6 +11,11 @@ export interface StoredObjectMetadata {
   contentType: string;
 }
 
+export interface UploadFileOptions {
+  cacheControl?: string;
+  upsert?: boolean;
+}
+
 export async function generatePresignedUpload(
   options: UploadOptions
 ): Promise<PresignedUploadData> {
@@ -91,13 +96,18 @@ export async function uploadFile(
   bucket: BucketId,
   key: string,
   buffer: Buffer,
-  contentType: string
+  contentType: string,
+  options: UploadFileOptions = {},
 ): Promise<string> {
   const supabase = createAdminClient();
 
   const { error } = await supabase.storage
     .from(BUCKETS[bucket].name)
-    .upload(key, buffer, { contentType, upsert: true });
+    .upload(key, buffer, {
+      contentType,
+      upsert: options.upsert ?? true,
+      ...(options.cacheControl !== undefined && { cacheControl: options.cacheControl }),
+    });
 
   if (error) {
     throw new Error(`Failed to upload file: ${error.message}`);

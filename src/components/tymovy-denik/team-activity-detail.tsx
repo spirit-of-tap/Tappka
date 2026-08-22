@@ -28,16 +28,13 @@ import {
   DialogTitle,
 } from "@/components/ui/responsive-dialog"
 import { toast } from "sonner"
-import { createClient } from "@/lib/supabase/client"
-import { getPublicStorageUrl, getTransformedImageUrl } from "@/lib/storage/public-url"
+
 import { TeamActivityForm } from "./team-activity-form"
+import { TeamActivityImage } from "./team-activity-image"
 import { TeamActivityThumb } from "./team-activity-thumb"
 import { getTeamActivityLoop } from "@/lib/tymovy-denik/status"
 import { formatActivityDate } from "@/lib/tymovy-denik/format"
 import type { TeamActivityWithCreator } from "@/lib/tymovy-denik/types"
-
-/** Hero rendition width requested from Supabase image transforms (px). */
-const HERO_WIDTH = 1600
 
 function Block({ label, children }: { label: string; children: React.ReactNode }) {
   if (!children) return null
@@ -51,8 +48,10 @@ function Block({ label, children }: { label: string; children: React.ReactNode }
 
 interface TeamActivityDetailProps {
   activity: TeamActivityWithCreator
-  teamId: string
-  profileId: string
+}
+
+interface DeleteActivityResponse {
+  error?: string
 }
 
 /**
@@ -60,7 +59,7 @@ interface TeamActivityDetailProps {
  * with the title overlaid on a gradient scrim, then content as quiet labeled
  * sections separated by hairlines.
  */
-export function TeamActivityDetail({ activity, teamId, profileId }: TeamActivityDetailProps) {
+export function TeamActivityDetail({ activity }: TeamActivityDetailProps) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -71,17 +70,20 @@ export function TeamActivityDetail({ activity, teamId, profileId }: TeamActivity
   async function handleDelete() {
     setDeleting(true)
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("team_activities")
-        .update({ removed_at: new Date().toISOString() })
-        .eq("id", activity.id)
+      const response = await fetch(`/api/tymovy-denik/activities/${activity.id}`, {
+        body: JSON.stringify({ expectedUpdatedAt: activity.updated_at }),
+        headers: { "content-type": "application/json" },
+        method: "DELETE",
+      })
+      const body = await response.json().catch(() => null) as DeleteActivityResponse | null
+      if (!response.ok) {
+        throw new Error(body?.error ?? "Nepodařilo se odstranit akci")
+      }
 
-      if (error) throw error
       toast.success("Akce odstraněna")
       router.push("/tymovy-denik")
-    } catch {
-      toast.error("Nepodařilo se odstranit akci")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nepodařilo se odstranit akci")
     } finally {
       setDeleting(false)
     }
@@ -99,15 +101,9 @@ export function TeamActivityDetail({ activity, teamId, profileId }: TeamActivity
       {/* Full-bleed hero (escapes the container via negative margins). */}
       <div className="-mx-3 relative sm:-mx-6 -mt-4 sm:-mt-6">
         {activity.image_path ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={getTransformedImageUrl("images", activity.image_path, {
-              width: HERO_WIDTH,
-              quality: 75,
-              format: "webp",
-              resize: "cover",
-            })}
-            alt={`Fotografie z akce ${activity.activity_type}`}
+          <TeamActivityImage
+            imagePath={activity.image_path}
+            variant="hero"
             className="aspect-[16/9] w-full object-cover"
           />
         ) : (
@@ -236,8 +232,6 @@ export function TeamActivityDetail({ activity, teamId, profileId }: TeamActivity
             <DialogTitle>Upravit akci</DialogTitle>
           </DialogHeader>
           <TeamActivityForm
-            teamId={teamId}
-            profileId={profileId}
             initial={activity}
             onSuccess={handleUpdated}
             onCancel={() => setEditOpen(false)}

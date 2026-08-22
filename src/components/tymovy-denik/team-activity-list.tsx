@@ -23,23 +23,24 @@ import {
 } from "@/components/ui/empty"
 import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import { MonthSection } from "@/components/ui/month-section"
+import { PageHeader } from "@/components/ui/page-header"
+import { HelpDialog } from "@/components/help-dialog"
 import { TeamActivityForm } from "./team-activity-form"
 import { TeamActivityThumb } from "./team-activity-thumb"
+import { TeamActivityImage } from "./team-activity-image"
+import { InfoCard } from "./info-card"
 import { getTeamActivityLoop, LOOP_LABELS } from "@/lib/tymovy-denik/status"
 import { groupByMonth } from "@/lib/timeline/group-by-month"
 import { formatShortDate } from "@/lib/tymovy-denik/format-date"
-import { getTransformedImageUrl } from "@/lib/storage/public-url"
 import type { TeamActivityWithCreator } from "@/lib/tymovy-denik/types"
 
 const SEARCH_PLACEHOLDER = "Hledat akci nebo obsah…"
 
 interface TeamActivityListProps {
   activities: TeamActivityWithCreator[]
-  teamId: string
-  profileId: string
 }
 
-export function TeamActivityList({ activities, teamId, profileId }: TeamActivityListProps) {
+export function TeamActivityList({ activities }: TeamActivityListProps) {
   const [items, setItems] = useState(activities)
   const [createOpen, setCreateOpen] = useState(false)
   const [query, setQuery] = useState("")
@@ -65,6 +66,7 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
     () => groupByMonth(visible, { getDate: (a) => a.occurred_at }),
     [visible],
   )
+  const prioritizedPhotoId = visible[0]?.image_path ? visible[0].id : undefined
 
   function handleCreated(activity: TeamActivityWithCreator) {
     setItems((prev) =>
@@ -73,44 +75,42 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
     setCreateOpen(false)
   }
 
-  function handleUpdated(activity: TeamActivityWithCreator) {
-    setItems((prev) =>
-      prev
-        .map((a) => (a.id === activity.id ? activity : a))
-        .sort((a, b) => b.occurred_at.localeCompare(a.occurred_at)),
-    )
-  }
-
-  function handleDeleted(id: string) {
-    setItems((prev) => prev.filter((a) => a.id !== id))
-  }
-
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* One shared create-dialog: desktop opens from the header button,
           mobile from the thumb-reachable floating action button below. */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogTrigger asChild>
-          <Button size="sm" className="hidden sm:inline-flex">
-            <Plus className="size-4" />
-            Nová akce
-          </Button>
-        </DialogTrigger>
-        {/* Mobile FAB — second trigger of the shared dialog. */}
-        <DialogTrigger asChild>
-          <MobileFab label="Nová akce" />
-        </DialogTrigger>
+        <PageHeader
+          title="Týmový deník"
+          description="Chronologický záznam týmových akcí mimo pracovní prostředí"
+          count={{ value: items.length, label: "akcí" }}
+          action={
+            <div className="flex items-center gap-2">
+              <HelpDialog question="Co je týmový deník?">
+                <InfoCard />
+              </HelpDialog>
+              <DialogTrigger asChild>
+                <Button size="sm" className="hidden sm:inline-flex">
+                  <Plus className="size-4" />
+                  Nová akce
+                </Button>
+              </DialogTrigger>
+            </div>
+          }
+        />
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Nová týmová akce</DialogTitle>
           </DialogHeader>
           <TeamActivityForm
-            teamId={teamId}
-            profileId={profileId}
             onSuccess={handleCreated}
             onCancel={() => setCreateOpen(false)}
           />
         </DialogContent>
+        {/* Mobile FAB — second trigger of the shared dialog. */}
+        <DialogTrigger asChild>
+          <MobileFab label="Nová akce" />
+        </DialogTrigger>
       </Dialog>
 
       {items.length > 0 && (
@@ -164,7 +164,11 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
             group.items.length === 0 ? null : (
               <MonthSection key={group.key} label={group.label} count={group.items.length}>
                 {group.items.map((activity) => (
-                  <ActivityRowLink key={activity.id} activity={activity} />
+                  <ActivityRowLink
+                    key={activity.id}
+                    activity={activity}
+                    prioritizePhoto={activity.id === prioritizedPhotoId}
+                  />
                 ))}
               </MonthSection>
             ),
@@ -176,7 +180,13 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
   )
 }
 
-function ActivityRowLink({ activity }: { activity: TeamActivityWithCreator }) {
+function ActivityRowLink({
+  activity,
+  prioritizePhoto,
+}: {
+  activity: TeamActivityWithCreator
+  prioritizePhoto: boolean
+}) {
   const loop = getTeamActivityLoop(activity)
 
   // Photo-led entries get a cinematic card (the photo is the identity);
@@ -189,10 +199,10 @@ function ActivityRowLink({ activity }: { activity: TeamActivityWithCreator }) {
         className="focus-ring group block overflow-hidden rounded-xl border border-border/50 bg-card transition-colors hover:bg-accent/30"
       >
         <div className="aspect-[3/2] overflow-hidden sm:aspect-[16/6]">
-          <ActivityPhoto
+          <TeamActivityImage
             imagePath={activity.image_path}
-            alt={activity.activity_type}
-            width={720}
+            variant="card"
+            priority={prioritizePhoto}
             className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         </div>
@@ -223,34 +233,6 @@ function ActivityRowLink({ activity }: { activity: TeamActivityWithCreator }) {
       )}
       <DatePill dateStr={activity.occurred_at} />
     </Link>
-  )
-}
-
-/** Transformed (resized/WebP) rendition of the activity photo. */
-function ActivityPhoto({
-  imagePath,
-  alt,
-  width,
-  className,
-}: {
-  imagePath: string
-  alt: string
-  width: number
-  className?: string
-}) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={getTransformedImageUrl("images", imagePath, {
-        width,
-        quality: 72,
-        format: "webp",
-        resize: "cover",
-      })}
-      alt={alt}
-      loading="lazy"
-      className={className}
-    />
   )
 }
 

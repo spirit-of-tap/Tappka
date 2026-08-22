@@ -5,8 +5,8 @@ const THUMB_WIDTH = 192
 
 /**
  * Square thumbnail for an activity with a photo; type-initials disc fallback
- * when there is none. The photo requests a small transformed rendition
- * (Supabase image worker, CDN-cached) instead of the original object.
+ * when there is none. Requests a small transformed rendition; if the
+ * transformation endpoint is unavailable, falls back to the original object.
  */
 export function TeamActivityThumb({
   imagePath,
@@ -30,17 +30,22 @@ export function TeamActivityThumb({
     )
   }
 
+  const renditionSize = Math.max(THUMB_WIDTH, size * 2)
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={getTransformedImageUrl("images", imagePath, {
-        width: Math.max(THUMB_WIDTH, size * 2),
+        width: renditionSize,
+        height: renditionSize,
         quality: 70,
-        format: "webp",
         resize: "cover",
       })}
       alt=""
+      width={size}
+      height={size}
       loading="lazy"
+      decoding="async"
       style={{ width: size, height: size }}
       className="shrink-0 rounded-lg border border-border/50 object-cover"
     />

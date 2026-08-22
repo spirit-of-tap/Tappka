@@ -1,28 +1,25 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ImagePlus, Loader2, X } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { createClient } from "@/lib/supabase/client"
 import { optimizeImageToFit } from "@/lib/storage/image-optimizer"
-import { getPublicStorageUrl } from "@/lib/storage/public-url"
+import { getTransformedImageUrl } from "@/lib/storage/public-url"
+import { ALLOWED_IMAGE_TYPES } from "@/lib/storage/validation"
+import { TEAM_ACTIVITY_IMAGE } from "@/lib/tymovy-denik/image"
 import type { TeamActivity, TeamActivityWithCreator } from "@/lib/tymovy-denik/types"
-import { ACTIVITY_WITH_CREATOR_SELECT } from "@/lib/tymovy-denik/types"
 
-/** Photos are downscaled client-side before upload (longest edge, px). */
-const PHOTO_MAX_EDGE = 1600
+const PREVIEW_WIDTH = 352
+const PREVIEW_HEIGHT = 224
 
-interface PendingPhoto {
-  file: File
-  previewUrl: string
-}
-
-interface RemovedPhoto {
-  key: string
+interface TeamActivityMutationResponse {
+  data?: TeamActivityWithCreator
+  error?: string
 }
 
 function today(): string {
@@ -31,15 +28,14 @@ function today(): string {
 }
 
 interface TeamActivityFormProps {
-  teamId: string
-  profileId: string
   initial?: TeamActivity
   onSuccess: (activity: TeamActivityWithCreator) => void
   onCancel: () => void
 }
 
-export function TeamActivityForm({ teamId, profileId, initial, onSuccess, onCancel }: TeamActivityFormProps) {
+export function TeamActivityForm({ initial, onSuccess, onCancel }: TeamActivityFormProps) {
   const [loading, setLoading] = useState(false)
+  const [optimizingPhoto, setOptimizingPhoto] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [occurredAt, setOccurredAt] = useState(initial?.occurred_at ?? today())
   const [activityType, setActivityType] = useState(initial?.activity_type ?? "")
@@ -47,62 +43,77 @@ export function TeamActivityForm({ teamId, profileId, initial, onSuccess, onCanc
   const [reason, setReason] = useState(initial?.reason ?? "")
   const [reflection, setReflection] = useState(initial?.reflection ?? "")
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [pendingPhoto, setPendingPhoto] = useState<PendingPhoto | null>(null)
-  const [removedPhoto, setRemovedPhoto] = useState<RemovedPhoto | null>(
-    initial?.image_path ? { key: initial.image_path } : null,
-  )
+  const photoSelectionRef = useRef(0)
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [removeExistingPhoto, setRemoveExistingPhoto] = useState(false)
+
+  useEffect(() => {
+    if (!pendingPhoto) {
+      setPreviewUrl(null)
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(pendingPhoto)
+    setPreviewUrl(objectUrl)
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [pendingPhoto])
 
   const currentPhotoSrc =
-    pendingPhoto?.previewUrl ??
-    (initial?.image_path && !removedPhoto
-      ? getPublicStorageUrl("images", initial.image_path)
+    previewUrl ??
+    (initial?.image_path && !removeExistingPhoto
+      ? getTransformedImageUrl("images", initial.image_path, {
+          width: PREVIEW_WIDTH,
+          height: PREVIEW_HEIGHT,
+          quality: 72,
+          resize: "cover",
+        })
       : null)
 
-  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ""
     if (!file) return
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
       toast.error("Povolené formáty: JPEG, PNG, WebP")
       return
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Maximální velikost souboru je 10MB")
+    if (file.size > TEAM_ACTIVITY_IMAGE.maxSourceBytes) {
+      toast.error("Maximální velikost souboru je 10 MB")
       return
     }
-    setPendingPhoto({ file, previewUrl: URL.createObjectURL(file) })
-    setRemovedPhoto(initial?.image_path ? { key: initial.image_path } : null)
+
+    const selectionId = ++photoSelectionRef.current
+    setOptimizingPhoto(true)
+    try {
+      const optimized = await optimizeImageToFit(file, {
+        maxEdge: TEAM_ACTIVITY_IMAGE.maxEdge,
+        quality: TEAM_ACTIVITY_IMAGE.quality,
+        format: "image/webp",
+      })
+      if (selectionId !== photoSelectionRef.current) return
+      if (optimized.size > TEAM_ACTIVITY_IMAGE.maxUploadBytes) {
+        toast.error("Fotografii se nepodařilo zmenšit pod 3 MB")
+        return
+      }
+
+      setPendingPhoto(optimized)
+      setRemoveExistingPhoto(false)
+    } catch {
+      if (selectionId === photoSelectionRef.current) {
+        toast.error("Fotografii se nepodařilo zpracovat")
+      }
+    } finally {
+      if (selectionId === photoSelectionRef.current) setOptimizingPhoto(false)
+    }
   }
 
   function handleRemovePhoto() {
+    photoSelectionRef.current += 1
     setPendingPhoto(null)
-    setRemovedPhoto(initial?.image_path ? { key: initial.image_path } : null)
+    setRemoveExistingPhoto(Boolean(initial?.image_path))
+    setOptimizingPhoto(false)
     if (fileInputRef.current) fileInputRef.current.value = ""
-  }
-
-  /** Uploads the pending photo (if any); returns its storage key. */
-  async function uploadPendingPhoto(): Promise<string | null> {
-    if (!pendingPhoto) return null
-
-    const optimized = await optimizeImageToFit(pendingPhoto.file, {
-      maxEdge: PHOTO_MAX_EDGE,
-      quality: 0.82,
-      format: "image/webp",
-    })
-
-    const formData = new FormData()
-    formData.set("file", optimized)
-    formData.set("teamId", teamId)
-    const response = await fetch("/api/tymovy-denik/upload-image", {
-      method: "POST",
-      body: formData,
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      throw new Error(body?.error ?? "Nahrávání fotky selhalo")
-    }
-    const { key } = await response.json()
-    return key as string
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -114,53 +125,29 @@ export function TeamActivityForm({ teamId, profileId, initial, onSuccess, onCanc
 
     setLoading(true)
     try {
-      const supabase = createClient()
-
-      // Photo resolution order: newly uploaded wins; explicit removal clears;
-      // otherwise keep whatever the row already references.
-      const imagePathFromUpload = await uploadPendingPhoto()
-      const imagePath = imagePathFromUpload ?? (removedPhoto ? null : initial?.image_path ?? null)
-
-      const base = {
-        team_id: teamId,
-        occurred_at: occurredAt,
-        activity_type: activityType.trim(),
-        participants: participants.trim() || null,
-        reason: reason.trim() || null,
-        reflection: reflection.trim() || null,
-        image_path: imagePath,
-        updated_by_profile_id: profileId,
+      const payload = {
+        occurredAt,
+        activityType: activityType.trim(),
+        participants: participants.trim(),
+        reason: reason.trim(),
+        reflection: reflection.trim(),
+        photoAction: pendingPhoto ? "replace" : removeExistingPhoto ? "remove" : "keep",
+        ...(initial ? { expectedUpdatedAt: initial.updated_at } : {}),
       }
+      const formData = new FormData()
+      formData.set("payload", JSON.stringify(payload))
+      if (pendingPhoto) formData.set("photo", pendingPhoto)
 
-      // Best-effort cleanup of a replaced/removed photo's old object.
-      const oldKey = removedPhoto?.key
-      if (oldKey && oldKey !== base.image_path) {
-        void supabase.storage.from("images").remove([oldKey]).catch(() => {})
-      }
+      const response = await fetch(
+        initial ? `/api/tymovy-denik/activities/${initial.id}` : "/api/tymovy-denik/activities",
+        { method: initial ? "PATCH" : "POST", body: formData },
+      )
+      const body = await response.json().catch(() => null) as TeamActivityMutationResponse | null
+      if (!response.ok) throw new Error(body?.error ?? "Akci se nepodařilo uložit")
+      if (!body?.data) throw new Error("Server nevrátil uloženou akci")
 
-      let data: TeamActivityWithCreator
-      if (initial?.id) {
-        const result = await supabase
-          .from("team_activities")
-          .update(base)
-          .eq("id", initial.id)
-          .select(ACTIVITY_WITH_CREATOR_SELECT)
-          .single()
-        if (result.error) throw result.error
-        data = result.data as TeamActivityWithCreator
-        toast.success("Akce aktualizována")
-      } else {
-        const result = await supabase
-          .from("team_activities")
-          .insert({ ...base, created_by_profile_id: profileId })
-          .select(ACTIVITY_WITH_CREATOR_SELECT)
-          .single()
-        if (result.error) throw result.error
-        data = result.data as TeamActivityWithCreator
-        toast.success("Akce přidána")
-      }
-
-      onSuccess(data)
+      toast.success(initial ? "Akce aktualizována" : "Akce přidána")
+      onSuccess(body.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Neznámá chyba")
       toast.error("Nepodařilo se uložit akci")
@@ -178,40 +165,62 @@ export function TeamActivityForm({ teamId, profileId, initial, onSuccess, onCanc
       )}
 
       <div className="space-y-2">
-        <Label>Fotografie</Label>
+        <Label htmlFor="activity-photo">Fotografie</Label>
+        <input
+          ref={fileInputRef}
+          id="activity-photo"
+          type="file"
+          accept={ALLOWED_IMAGE_TYPES.join(",")}
+          className="hidden"
+          onChange={handlePhotoChange}
+          aria-label="Vybrat fotografii"
+          disabled={loading || optimizingPhoto}
+        />
         {currentPhotoSrc ? (
-          <div className="relative w-fit">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={currentPhotoSrc}
-              alt="Fotografie akce"
-              className="h-28 w-44 rounded-lg border border-border/50 object-cover"
-            />
+          <div className="space-y-2">
+            <div className="relative w-fit">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={currentPhotoSrc}
+                alt=""
+                width={PREVIEW_WIDTH / 2}
+                height={PREVIEW_HEIGHT / 2}
+                className="h-28 w-44 rounded-lg border border-border/50 object-cover"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="absolute -right-2 -top-2 size-7 rounded-full bg-background"
+                onClick={handleRemovePhoto}
+                aria-label="Odebrat fotografii"
+                disabled={loading || optimizingPhoto}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
             <Button
               type="button"
               variant="outline"
-              size="icon"
-              className="absolute -right-2 -top-2 size-7 rounded-full bg-background"
-              onClick={handleRemovePhoto}
-              aria-label="Odebrat fotografii"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading || optimizingPhoto}
             >
-              <X className="size-4" />
+              <ImagePlus className="size-4" />
+              Nahradit fotografii
             </Button>
           </div>
         ) : (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={handlePhotoChange}
-            />
-            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-              <ImagePlus className="size-4" />
-              Přidat fotografii
-            </Button>
-          </>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading || optimizingPhoto}
+          >
+            {optimizingPhoto ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+            {optimizingPhoto ? "Zpracovávám fotografii…" : "Přidat fotografii"}
+          </Button>
         )}
         {pendingPhoto && (
           <p className="text-xs text-muted-foreground">Fotografie se nahraje při uložení.</p>
@@ -274,7 +283,7 @@ export function TeamActivityForm({ teamId, profileId, initial, onSuccess, onCanc
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Zrušit
         </Button>
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || optimizingPhoto}>
           {loading && <Loader2 className="size-4 animate-spin" />}
           {initial?.id ? "Uložit změny" : "Přidat akci"}
         </Button>

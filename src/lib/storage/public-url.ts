@@ -4,13 +4,17 @@ function baseUrl(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
 }
 
+function encodeStorageKey(key: string): string {
+  return key.split('/').map(encodeURIComponent).join('/');
+}
+
 /**
  * Public object URL for a key in a public bucket.
  * Only valid for buckets with `public: true`; private buckets must be read
  * via server-generated signed URLs (see getSignedStorageUrl in service.ts).
  */
 export function getPublicStorageUrl(bucket: BucketId, key: string): string {
-  return `${baseUrl()}/storage/v1/object/public/${BUCKETS[bucket].name}/${key}`;
+  return `${baseUrl()}/storage/v1/object/public/${BUCKETS[bucket].name}/${encodeStorageKey(key)}`;
 }
 
 export interface TransformOptions {
@@ -19,6 +23,11 @@ export interface TransformOptions {
   quality?: number;
   format?: 'origin' | 'webp' | 'avif';
   resize?: 'contain' | 'cover' | 'fill';
+}
+
+export interface ImageRendition {
+  width: number;
+  height?: number;
 }
 
 export function getTransformedImageUrl(
@@ -33,7 +42,20 @@ export function getTransformedImageUrl(
   if (opts.format) params.set('format', opts.format);
   if (opts.resize) params.set('resize', opts.resize);
   const qs = params.toString();
-  return `${baseUrl()}/storage/v1/render/image/public/${BUCKETS[bucket].name}/${key}${qs ? '?' + qs : ''}`;
+  return `${baseUrl()}/storage/v1/render/image/public/${BUCKETS[bucket].name}/${encodeStorageKey(key)}${qs ? '?' + qs : ''}`;
+}
+
+export function getTransformedImageSrcSet(
+  bucket: BucketId,
+  key: string,
+  renditions: readonly ImageRendition[],
+  opts: Omit<TransformOptions, 'width' | 'height'>,
+): string {
+  return renditions
+    .map(({ width, height }) => (
+      `${getTransformedImageUrl(bucket, key, { ...opts, width, height })} ${width}w`
+    ))
+    .join(', ');
 }
 
 export function isExternalUrl(path: string): boolean {

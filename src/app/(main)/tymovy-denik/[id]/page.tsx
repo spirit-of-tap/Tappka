@@ -33,7 +33,7 @@ export default async function TeamActivityDetailPage({ params }: TeamActivityDet
   return (
     <div className="container mx-auto max-w-3xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
       <PageBack href="/tymovy-denik" label="Zpět na deník" />
-      <TeamActivityDetail activity={activity} teamId={profile.team_id} profileId={profile.id} />
+      <TeamActivityDetail activity={activity} />
     </div>
   )
 }
