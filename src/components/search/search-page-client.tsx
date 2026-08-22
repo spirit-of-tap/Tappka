@@ -120,7 +120,7 @@ export function SearchPageClient({
 
   return (
     <PageShell size="narrow">
-      <h1 className="sr-only">Hledat</h1>
+      <h1 className="sr-only">Objevovat</h1>
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />

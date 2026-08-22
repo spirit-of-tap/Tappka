@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
-  title: 'Přehled | Tappka',
+  title: 'Moje čtení | Tappka',
   description: 'Tvůj pokrok, eseje a srovnání s týmem',
 };
 
@@ -39,7 +39,7 @@ export default async function PrehledPage({ searchParams }: PageProps) {
   return (
     <PageShell size="full">
       <PageHeader
-        title="Přehled"
+        title="Moje čtení"
         description="Tvůj pokrok, eseje a srovnání s týmem"
       />
 
