@@ -92,7 +92,8 @@ describe("CustomerMeetingsView", () => {
 
   it("offers a thumb-reachable floating create action on mobile", () => {
     render(<CustomerMeetingsView meetings={MEETINGS} profileId="p1" now={NOW} />)
-    const fab = screen.getByRole("button", { name: "Nová zákaznická schůzka" })
+    const fab = screen.getByRole("button", { name: "Nová schůzka" })
     expect(fab.className).toContain("sm:hidden")
+    expect(fab).toHaveTextContent("Nová schůzka")
   })
 })

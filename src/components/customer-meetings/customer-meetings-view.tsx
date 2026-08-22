@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { CircleHelp, Info, Plus, Search } from "lucide-react"
+import { Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -22,6 +22,8 @@ import {
 import { PageHeader } from "@/components/ui/page-header"
 import { MonthSection } from "@/components/ui/month-section"
 import { MetricProgress } from "@/components/metrics/metric-progress"
+import { HelpDialog } from "@/components/help-dialog"
+import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import { InfoCard } from "./info-card"
 import { CustomerMeetingRow } from "./customer-meeting-row"
 import { CustomerMeetingForm } from "./customer-meeting-form"
@@ -47,33 +49,6 @@ function matchesSearch(meeting: CustomerMeeting, normalizedQuery: string): boole
     .join(" ")
     .toLowerCase()
   return haystack.includes(normalizedQuery)
-}
-
-/** The wiki-sheet explainer, one tap away instead of pinned above the timeline. */
-function HelpDialog() {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-9 text-muted-foreground"
-          aria-label="Co jsou zákaznické schůzky?"
-        >
-          <CircleHelp className="size-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Info aria-hidden className="size-4 text-muted-foreground" />
-            Co jsou zákaznické schůzky?
-          </DialogTitle>
-        </DialogHeader>
-        <InfoCard />
-      </DialogContent>
-    </Dialog>
-  )
 }
 
 function sortByMeetingAtDesc(meetings: CustomerMeeting[]): CustomerMeeting[] {
@@ -136,7 +111,9 @@ export function CustomerMeetingsView({
           }}
           action={
             <div className="flex items-center gap-2">
-              <HelpDialog />
+              <HelpDialog question="Co jsou zákaznické schůzky?">
+                <InfoCard />
+              </HelpDialog>
               <DialogTrigger asChild>
                 <Button size="sm" className="hidden sm:inline-flex">
                   <Plus className="size-4" />
@@ -233,16 +210,10 @@ export function CustomerMeetingsView({
       )}
 
       {/* Mobile FAB — second trigger of the shared dialog. Sits just above
-          MobileBottomNav (fixed h-16 + safe-area, z-50) with a small gap;
-          the spacer keeps the last timeline row tappable above it. */}
+          MobileBottomNav; extended variant with a visible label like every
+          other module. */}
       <DialogTrigger asChild>
-        <Button
-          size="icon"
-          aria-label="Nová zákaznická schůzka"
-          className="fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 size-14 rounded-full shadow-lg sm:hidden"
-        >
-          <Plus className="size-6" />
-        </Button>
+        <MobileFab label="Nová schůzka" />
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-2xl">
@@ -256,7 +227,7 @@ export function CustomerMeetingsView({
         />
       </DialogContent>
       </Dialog>
-      <div aria-hidden className="h-20 sm:hidden" />
+      <MobileFabSpacer />
     </>
   )
 }
