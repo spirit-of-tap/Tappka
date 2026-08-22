@@ -8,15 +8,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { toLocalInputValue } from "@/lib/utils/datetime-input"
 import type { CustomerMeeting } from "@/lib/customer-meetings/types"
-
-/** Formats a Date for the datetime-local `max`/`value` attributes (local time). */
-function toLocalInputValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}`
-}
 
 interface CustomerMeetingFormProps {
   profileId: string
