@@ -5,6 +5,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js"
 import { Accordion } from "@/components/ui/accordion"
 import { Card } from "@/components/ui/card"
 import { PageBack } from "@/components/ui/page-back"
+import { HelpDialog } from "@/components/help-dialog"
 import { createClient } from "@/lib/supabase/client"
 import type { SemesterReflectionEntryWithUpdater, TeamSemesterReflectionWithCreator } from "@/lib/tymova-reflexe/semester-types"
 import { SEMESTER_REFLECTION_TOPICS } from "@/lib/tymova-reflexe/semester-topics"
@@ -75,14 +76,17 @@ export function SemesterReflectionDetail({ reflection, entries, profileId }: Sem
 
   return (
     <div className="container mx-auto max-w-4xl py-4 sm:py-6 px-3 sm:px-6 space-y-6">
-      <div className="space-y-1">
-        <PageBack href="/tymova-reflexe" label="Zpět na přehled" />
-        <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
-          Semestrální reflexe — {semesterLabel(reflection.semester_month)}
-        </h1>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <PageBack href="/tymova-reflexe" label="Zpět na přehled" />
+          <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+            Semestrální reflexe — {semesterLabel(reflection.semester_month)}
+          </h1>
+        </div>
+        <HelpDialog question="Co je semestrální reflexe?">
+          <SemesterInfoCard />
+        </HelpDialog>
       </div>
-
-      <SemesterInfoCard />
 
       <Card className="px-4 sm:px-6">
         <Accordion type="multiple" className="w-full">

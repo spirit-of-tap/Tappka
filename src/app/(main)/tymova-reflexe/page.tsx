@@ -5,6 +5,7 @@ import { listTeamReflections } from "@/lib/tymova-reflexe/queries"
 import { listTeamSemesterReflectionsWithProgress } from "@/lib/tymova-reflexe/semester-queries"
 import { TeamReflectionList } from "@/components/tymova-reflexe/team-reflection-list"
 import { InfoCard } from "@/components/tymova-reflexe/info-card"
+import { HelpDialog } from "@/components/help-dialog"
 import { PageHeader } from "@/components/ui/page-header"
 import { PageShell } from "@/components/ui/page-shell"
 
@@ -34,8 +35,12 @@ export default async function TymovaReflexePage() {
         title="Týmová reflexe"
         description="Měsíční ohlédnutí za týmovou spoluprací"
         count={{ value: reflections.length + semesterReflections.length, label: "reflexí" }}
+        action={
+          <HelpDialog question="Co je týmová reflexe?">
+            <InfoCard />
+          </HelpDialog>
+        }
       />
-      <InfoCard />
       <TeamReflectionList
         reflections={reflections}
         semesterReflections={semesterReflections}

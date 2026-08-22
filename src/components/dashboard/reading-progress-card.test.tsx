@@ -32,8 +32,16 @@ describe("ReadingProgressCard", () => {
     expect(link).toHaveAttribute("href", "/cteni/prehled");
   });
 
-  it("renders PersonalProgress with correct points", () => {
-    render(<ReadingProgressCard stats={{ approved_points: 50, pending_points: 0, essay_count: 0 }} />);
-    expect(screen.getByText("50")).toBeInTheDocument();
+  it("renders the config-derived progress strip", () => {
+    render(
+      <ReadingProgressCard
+        stats={{ approved_points: 50, pending_points: 0, essay_count: 0, approved_points_this_semester: 10 }}
+      />,
+    );
+    // Goals come from METRICS["knizni-body"]: 20 per semester, 120 per study.
+    expect(screen.getByText("50/120")).toBeInTheDocument();
+    expect(screen.getByText(/za studium/)).toBeInTheDocument();
+    expect(screen.getByText("10/20")).toBeInTheDocument();
+    expect(screen.getByText(/tento semestr/)).toBeInTheDocument();
   });
 });

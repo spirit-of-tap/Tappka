@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserBookPointsStats, getTeamBookPointsStats, getEssays } from '@/lib/essays/queries';
 import { PrehledTabs } from '@/components/essays/prehled-tabs';
+import { HelpDialog } from '@/components/help-dialog';
+import { InfoCard } from '@/components/essays/info-card';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 
@@ -41,6 +43,11 @@ export default async function PrehledPage({ searchParams }: PageProps) {
       <PageHeader
         title="Moje čtení"
         description="Tvůj pokrok, eseje a srovnání s týmem"
+        action={
+          <HelpDialog question="Co jsou esejbanka a BookPoints?">
+            <InfoCard />
+          </HelpDialog>
+        }
       />
 
       <PrehledTabs

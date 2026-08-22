@@ -4,22 +4,29 @@ import Link from 'next/link';
 import { BookMarked, Plus, FileText, User, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { PersonalProgress } from './personal-progress';
 import { MyEssayList } from './my-essay-list';
-import { InfoCard } from './info-card';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
+import { MetricProgress } from '@/components/metrics/metric-progress';
+import { getMetric } from '@/lib/metrics/config';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import { MyLoansList } from '@/components/library/my-loans-list';
 
 interface PrehledTabsProps {
   defaultTab: string;
-  stats: { approved_points: number; pending_points: number; essay_count: number };
+  stats: {
+    approved_points: number;
+    pending_points: number;
+    essay_count: number;
+    approved_points_this_semester: number;
+  };
   myEssays: EssayWithDetails[];
   drafts: EssayWithDetails[];
   teamStats: { profile: { id: string; name: string; picture: string | null }; approved_points: number; pending_points: number }[];
   hasTeam: boolean;
   votedEssayIds: Set<string>;
 }
+
+const KNIZNI_BODY_METRIC = getMetric('knizni-body');
 
 export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, hasTeam, votedEssayIds }: PrehledTabsProps) {
   return (
@@ -43,8 +50,20 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
 
       {/* Moje tab */}
       <TabsContent value="moje" className="mt-6 space-y-6">
-        <InfoCard />
-        <PersonalProgress approved_points={stats.approved_points} pending_points={stats.pending_points} />
+        <MetricProgress
+          goals={[
+            {
+              current: stats.approved_points_this_semester,
+              target: KNIZNI_BODY_METRIC.target ?? 0,
+              label: 'tento semestr',
+            },
+            {
+              current: stats.approved_points,
+              target: KNIZNI_BODY_METRIC.totalForStudy ?? 0,
+              label: 'za studium',
+            },
+          ]}
+        />
 
         <div className="flex items-end justify-between gap-3 border-b pb-2">
           <h2 className="font-heading text-lg font-semibold">Moje eseje</h2>

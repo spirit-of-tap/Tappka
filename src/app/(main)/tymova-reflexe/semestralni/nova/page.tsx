@@ -4,6 +4,7 @@ import { getSessionProfile } from "@/lib/auth/session"
 import { getSemesterReflectionForTeamMonth } from "@/lib/tymova-reflexe/semester-queries"
 import { SemesterInfoCard } from "@/components/tymova-reflexe/semester-info-card"
 import { SemesterReflectionCreate } from "@/components/tymova-reflexe/semester-reflection-create"
+import { HelpDialog } from "@/components/help-dialog"
 import { PageHeader } from "@/components/ui/page-header"
 
 const SEMESTER_MONTH_PATTERN = /^\d{4}-(01|05)-01$/
@@ -45,8 +46,12 @@ export default async function NovaSemestralniReflexePage({
         title="Nová semestrální reflexe"
         description={`Vytvoří reflexi za ${semesterLabel(semester)} se všemi tématy pro celý tým`}
         back={{ href: "/tymova-reflexe", label: "Zpět na přehled" }}
+        action={
+          <HelpDialog question="Co je semestrální reflexe?">
+            <SemesterInfoCard />
+          </HelpDialog>
+        }
       />
-      <SemesterInfoCard />
       <SemesterReflectionCreate
         teamId={profile.team_id}
         profileId={profile.id}
