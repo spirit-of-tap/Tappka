@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Plus, Pencil, Trash2, Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -89,10 +90,14 @@ export function ToolsTechniquesTable({ items, profileId }: ToolsTechniquesTableP
       <div className="flex items-center justify-end">
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button size="sm" className="hidden sm:inline-flex">
               <Plus className="size-4" />
               Přidat záznam
             </Button>
+          </DialogTrigger>
+          {/* Mobile FAB — second trigger of the shared dialog. */}
+          <DialogTrigger asChild>
+            <MobileFab label="Nový záznam nástroje" />
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl" aria-describedby={undefined}>
             <DialogHeader>
@@ -224,6 +229,7 @@ export function ToolsTechniquesTable({ items, profileId }: ToolsTechniquesTableP
           </Table>
         </div>
       )}
+      <MobileFabSpacer />
     </div>
   )
 }

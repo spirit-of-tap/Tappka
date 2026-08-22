@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/responsive-dialog"
 import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/empty"
+import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import { IndividualCoachingSessionForm } from "./individual-coaching-session-form"
 import { IndividualCoachingSessionCard } from "./individual-coaching-session-card"
 import type { IndividualCoachingSessionWithCoach } from "@/lib/individual-coaching-sessions/types"
@@ -131,10 +132,15 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
       <div className="flex items-center justify-end gap-4">
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button size="sm" className="hidden sm:inline-flex">
               <Plus className="size-4" />
               Nové sezení
             </Button>
+          </DialogTrigger>
+          {/* Mobile FAB — second trigger of the shared dialog, thumb-reachable
+              above the bottom nav. */}
+          <DialogTrigger asChild>
+            <MobileFab label="Nové koučovací sezení" />
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
@@ -253,6 +259,7 @@ export function IndividualCoachingSessionList({ sessions, profileId, coachProfil
           })}
         </div>
       )}
+      <MobileFabSpacer />
     </div>
   )
 }

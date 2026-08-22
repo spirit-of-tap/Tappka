@@ -18,6 +18,7 @@ import {
   EmptyDescription,
   EmptyContent,
 } from "@/components/ui/empty"
+import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import { TeamActivityForm } from "./team-activity-form"
 import { TeamActivityCard } from "./team-activity-card"
 import { getActivityMonthKey, getActivityMonthLabel } from "@/lib/tymovy-denik/format"
@@ -69,10 +70,14 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
       <div className="flex items-center justify-end">
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button size="sm" className="hidden sm:inline-flex">
               <Plus className="size-4" />
               Nová akce
             </Button>
+          </DialogTrigger>
+          {/* Mobile FAB — second trigger of the shared dialog. */}
+          <DialogTrigger asChild>
+            <MobileFab label="Nová týmová akce" />
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
@@ -133,6 +138,7 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
           ))}
         </div>
       )}
+      <MobileFabSpacer />
     </div>
   )
 }

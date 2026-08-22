@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { MyEssayList } from './my-essay-list';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { MetricProgress } from '@/components/metrics/metric-progress';
+import { MobileFab, MobileFabSpacer } from '@/components/mobile-fab';
 import { getMetric } from '@/lib/metrics/config';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import { MyLoansList } from '@/components/library/my-loans-list';
@@ -67,7 +68,7 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
 
         <div className="flex items-end justify-between gap-3 border-b pb-2">
           <h2 className="font-heading text-lg font-semibold">Moje eseje</h2>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="hidden sm:inline-flex">
             <Link href="/cteni/eseje/nova">
               <Plus className="size-4 mr-1.5" />
               Psát
@@ -91,6 +92,11 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
         ) : (
           <MyEssayList essays={myEssays} drafts={drafts} votedEssayIds={votedEssayIds} />
         )}
+
+        {/* Lives inside the Moje tab so it disappears with the tab — writing
+            is the only create action this surface offers. */}
+        <MobileFab label="Napsat esej" href="/cteni/eseje/nova" />
+        <MobileFabSpacer />
       </TabsContent>
 
       {/* Tým tab */}
