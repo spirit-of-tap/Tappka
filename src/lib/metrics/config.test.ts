@@ -15,6 +15,12 @@ describe("METRICS registry", () => {
     expect(m.totalForStudy).toBe(60)
   })
 
+  it("defines the individuální koučování expectation (at least 1 per semester)", () => {
+    const m = METRICS["individual-coaching"]
+    expect(m.target).toBe(1)
+    expect(m.period).toBe("semester")
+  })
+
   it("every metric declares a positive target or per-study-year targets", () => {
     for (const m of Object.values(METRICS)) {
       const hasTarget =

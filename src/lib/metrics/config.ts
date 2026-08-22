@@ -51,6 +51,13 @@ export const METRICS = {
     totalForStudy: 60,
     individualMinimum: 60,
   },
+  // Not on the original sheet — the expectation lives in app copy
+  // ("alespoň jedno sezení za semestr" from the koučování info card).
+  "individual-coaching": {
+    label: "Individuální koučování",
+    period: "semester",
+    target: 1,
+  },
   // TODO(metrics): sheet says "9+1" / "7+1" — meaning of the "+1" unconfirmed;
   // modeled as plain totals until clarified.
   "birth-giving": {
