@@ -5,6 +5,7 @@ import { getCustomerMeeting } from "@/lib/customer-meetings/queries"
 import { CustomerMeetingDetail } from "@/components/customer-meetings/customer-meeting-detail"
 import { Badge } from "@/components/ui/badge"
 import { PageBack } from "@/components/ui/page-back"
+import { getMeetingLoop, LOOP_LABELS } from "@/lib/customer-meetings/status"
 
 interface MeetingDetailPageProps {
   params: Promise<{ meetingId: string }>
@@ -14,13 +15,10 @@ export const metadata = {
   title: "Detail schůzky | Tappka",
 }
 
-type MeetingStatusVariant = "outline" | "default" | "secondary"
-
-function getMeetingStatus(meetingAt: string | null): { label: string; variant: MeetingStatusVariant } {
-  if (!meetingAt) return { label: "Bez data", variant: "outline" }
-  return new Date(meetingAt).getTime() > Date.now()
-    ? { label: "Naplánováno", variant: "default" }
-    : { label: "Proběhlo", variant: "secondary" }
+const CHIP_CLASS: Record<Exclude<ReturnType<typeof getMeetingLoop>, null>, string> = {
+  planned: "",
+  "missing-follow-up": "border-transparent bg-warning/10 text-warning-strong",
+  undated: "",
 }
 
 export default async function MeetingDetailPage({ params }: MeetingDetailPageProps) {
@@ -38,7 +36,9 @@ export default async function MeetingDetailPage({ params }: MeetingDetailPagePro
     notFound()
   }
 
-  const status = getMeetingStatus(meeting.meeting_at)
+  // Same open-loop logic as the timeline rows: only unfinished states get a
+  // badge — done + reflected stays calm, "Proběhlo" would just repeat the date.
+  const loop = getMeetingLoop(meeting)
 
   return (
     <div className="container mx-auto max-w-3xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
@@ -57,7 +57,14 @@ export default async function MeetingDetailPage({ params }: MeetingDetailPagePro
                 year: "numeric",
               })}`}
           </span>
-          <Badge variant={status.variant}>{status.label}</Badge>
+          {loop && (
+            <Badge
+              variant={loop === "missing-follow-up" ? "outline" : "default"}
+              className={`shrink-0 ${CHIP_CLASS[loop]}`}
+            >
+              {LOOP_LABELS[loop]}
+            </Badge>
+          )}
         </p>
       </div>
       <CustomerMeetingDetail meeting={meeting} profileId={profile.id} />
