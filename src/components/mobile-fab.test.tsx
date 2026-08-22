@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import userEvent from "@testing-library/user-event"
+import { describe, expect, it, vi } from "vitest"
 
 import { MobileFab, MobileFabSpacer } from "./mobile-fab"
 
@@ -11,6 +12,17 @@ describe("MobileFab", () => {
     expect(fab).toHaveClass("rounded-full", "fixed", "sm:hidden")
     // Visible label, not icon-only — the accessible name comes from the text.
     expect(fab).toHaveTextContent("Nové sezení")
+  })
+
+  it("forwards handlers to the DOM button (Radix asChild compatibility)", async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+    render(<MobileFab label="Nová schůzka" onClick={onClick} />)
+
+    // DialogTrigger asChild clones its child with onClick — the component must
+    // spread it through, or clicks die silently.
+    await user.click(screen.getByRole("button", { name: "Nová schůzka" }))
+    expect(onClick).toHaveBeenCalledTimes(1)
   })
 
   it("renders a link variant when href is given", () => {

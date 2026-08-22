@@ -14,26 +14,39 @@ import { Button } from "@/components/ui/button"
  *
  * Desktop counterpart stays the header/inline button (`hidden sm:inline-flex`)
  * — one action, two triggers, matching the schůzky reference implementation.
+ *
+ * Spread of extra props matters: Radix `DialogTrigger asChild` attaches
+ * onClick/ref to its child element — when that child is this component, they
+ * must reach the underlying Button or clicks die silently.
  */
 const FAB_CLASSES =
   "fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 h-12 rounded-full px-4 shadow-lg sm:hidden"
 
-export function MobileFab({ label, href }: { label: string; href?: string }) {
+type MobileFabProps = {
+  label: string
+  /** When set the FAB navigates instead of acting as a dialog trigger. */
+  href?: string
+} & React.ComponentProps<typeof Button>
+
+export function MobileFab({ label, href, ...props }: MobileFabProps) {
+  const content = (
+    <>
+      <Plus className="size-5" />
+      {label}
+    </>
+  )
+
   if (href) {
     return (
-      <Button asChild className={FAB_CLASSES}>
-        <Link href={href}>
-          <Plus className="size-5" />
-          {label}
-        </Link>
+      <Button asChild {...props} className={FAB_CLASSES}>
+        <Link href={href}>{content}</Link>
       </Button>
     )
   }
 
   return (
-    <Button className={FAB_CLASSES}>
-      <Plus className="size-5" />
-      {label}
+    <Button {...props} className={FAB_CLASSES}>
+      {content}
     </Button>
   )
 }
