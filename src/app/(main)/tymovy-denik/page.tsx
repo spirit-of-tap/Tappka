@@ -6,6 +6,7 @@ import { TeamActivityList } from "@/components/tymovy-denik/team-activity-list"
 import { InfoCard } from "@/components/tymovy-denik/info-card"
 import { HelpDialog } from "@/components/help-dialog"
 import { PageHeader } from "@/components/ui/page-header"
+import { PageShell } from "@/components/ui/page-shell"
 
 export const metadata = {
   title: "Týmový deník | Tappka",
@@ -25,7 +26,7 @@ export default async function TymovyDenikPage() {
   const activities = await listTeamActivities(supabase, profile.team_id)
 
   return (
-    <div className="container mx-auto max-w-5xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
+    <PageShell className="max-w-5xl">
       <PageHeader
         title="Týmový deník"
         description="Chronologický záznam týmových akcí mimo pracovní prostředí"
@@ -37,6 +38,6 @@ export default async function TymovyDenikPage() {
         }
       />
       <TeamActivityList activities={activities} teamId={profile.team_id} profileId={profile.id} />
-    </div>
+    </PageShell>
   )
 }

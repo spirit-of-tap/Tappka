@@ -1,8 +1,11 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Plus, CalendarDays } from "lucide-react"
+import Link from "next/link"
+import { Plus, CalendarDays, Search } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -19,10 +22,15 @@ import {
   EmptyContent,
 } from "@/components/ui/empty"
 import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
+import { MonthSection } from "@/components/ui/month-section"
 import { TeamActivityForm } from "./team-activity-form"
-import { TeamActivityCard } from "./team-activity-card"
-import { getActivityMonthKey, getActivityMonthLabel } from "@/lib/tymovy-denik/format"
+import { TeamActivityThumb } from "./team-activity-thumb"
+import { getTeamActivityLoop, LOOP_LABELS } from "@/lib/tymovy-denik/status"
+import { groupByMonth } from "@/lib/timeline/group-by-month"
+import { formatShortDate } from "@/lib/tymovy-denik/format-date"
 import type { TeamActivityWithCreator } from "@/lib/tymovy-denik/types"
+
+const SEARCH_PLACEHOLDER = "Hledat akci nebo obsah…"
 
 interface TeamActivityListProps {
   activities: TeamActivityWithCreator[]
@@ -33,18 +41,29 @@ interface TeamActivityListProps {
 export function TeamActivityList({ activities, teamId, profileId }: TeamActivityListProps) {
   const [items, setItems] = useState(activities)
   const [createOpen, setCreateOpen] = useState(false)
+  const [query, setQuery] = useState("")
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, TeamActivityWithCreator[]>()
-    for (const activity of items) {
-      const key = getActivityMonthKey(activity.occurred_at)
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(activity)
-    }
-    return [...map.entries()]
-      .sort((a, b) => b[0].localeCompare(a[0]))
-      .map(([key, group]) => ({ key, label: getActivityMonthLabel(key), activities: group }))
-  }, [items])
+  const searching = query.trim().length > 0
+  const normalizedQuery = query.trim().toLowerCase()
+
+  const visible = useMemo(
+    () =>
+      searching
+        ? items.filter((a) =>
+            [a.activity_type, a.participants, a.reason, a.reflection]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase()
+              .includes(normalizedQuery),
+          )
+        : items,
+    [items, searching, normalizedQuery],
+  )
+
+  const { groups } = useMemo(
+    () => groupByMonth(visible, { getDate: (a) => a.occurred_at }),
+    [visible],
+  )
 
   function handleCreated(activity: TeamActivityWithCreator) {
     setItems((prev) =>
@@ -67,31 +86,48 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-end">
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="hidden sm:inline-flex">
-              <Plus className="size-4" />
-              Nová akce
-            </Button>
-          </DialogTrigger>
-          {/* Mobile FAB — second trigger of the shared dialog. */}
-          <DialogTrigger asChild>
-            <MobileFab label="Nová akce" />
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Nová týmová akce</DialogTitle>
-            </DialogHeader>
-            <TeamActivityForm
-              teamId={teamId}
-              profileId={profileId}
-              onSuccess={handleCreated}
-              onCancel={() => setCreateOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
+      {/* One shared create-dialog: desktop opens from the header button,
+          mobile from the thumb-reachable floating action button below. */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogTrigger asChild>
+          <Button size="sm" className="hidden sm:inline-flex">
+            <Plus className="size-4" />
+            Nová akce
+          </Button>
+        </DialogTrigger>
+        {/* Mobile FAB — second trigger of the shared dialog. */}
+        <DialogTrigger asChild>
+          <MobileFab label="Nová akce" />
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Nová týmová akce</DialogTitle>
+          </DialogHeader>
+          <TeamActivityForm
+            teamId={teamId}
+            profileId={profileId}
+            onSuccess={handleCreated}
+            onCancel={() => setCreateOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {items.length > 0 && (
+        <div className="relative">
+          <Search
+            aria-hidden
+            className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={SEARCH_PLACEHOLDER}
+            className="pl-9"
+            aria-label={SEARCH_PLACEHOLDER}
+          />
+        </div>
+      )}
 
       {items.length === 0 ? (
         <Empty>
@@ -105,40 +141,58 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Plus className="size-4" />
-                  Přidat akci
-                </Button>
-              </DialogTrigger>
-            </Dialog>
+            <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4" />
+              Přidat akci
+            </Button>
           </EmptyContent>
         </Empty>
+      ) : visible.length === 0 ? (
+        <Empty>
+          <EmptyMedia variant="icon">
+            <Search className="size-6" />
+          </EmptyMedia>
+          <EmptyHeader>
+            <EmptyTitle>Nic jsme nenašli</EmptyTitle>
+            <EmptyDescription>Pro „{query.trim()}“ nejsou žádné výsledky.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <div className="space-y-6">
-          {grouped.map((group) => (
-            <section key={group.key} className="space-y-3">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                {group.label} · {group.activities.length}
-              </h2>
-              <div className="space-y-4">
-                {group.activities.map((activity) => (
-                  <TeamActivityCard
-                    key={activity.id}
-                    activity={activity}
-                    teamId={teamId}
-                    profileId={profileId}
-                    onUpdated={handleUpdated}
-                    onDeleted={handleDeleted}
-                  />
+        <div className="space-y-4 sm:space-y-6">
+          {groups.map((group) =>
+            group.items.length === 0 ? null : (
+              <MonthSection key={group.key} label={group.label} count={group.items.length}>
+                {group.items.map((activity) => (
+                  <ActivityRowLink key={activity.id} activity={activity} />
                 ))}
-              </div>
-            </section>
-          ))}
+              </MonthSection>
+            ),
+          )}
         </div>
       )}
       <MobileFabSpacer />
     </div>
+  )
+}
+
+function ActivityRowLink({ activity }: { activity: TeamActivityWithCreator }) {
+  const loop = getTeamActivityLoop(activity)
+
+  return (
+    <Link
+      href={`/tymovy-denik/${activity.id}`}
+      className="focus-ring flex items-center gap-3 rounded-lg py-2 pr-1 transition-colors hover:bg-accent/50"
+    >
+      <TeamActivityThumb imagePath={activity.image_path} activityType={activity.activity_type} />
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">{activity.activity_type}</span>
+      {loop && (
+        <Badge variant="outline" className="shrink-0 border-transparent bg-warning/10 text-warning-strong">
+          {LOOP_LABELS[loop]}
+        </Badge>
+      )}
+      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
+        {formatShortDate(activity.occurred_at)}
+      </span>
+    </Link>
   )
 }
