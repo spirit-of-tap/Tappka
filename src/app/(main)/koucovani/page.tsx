@@ -5,6 +5,7 @@ import { listIndividualCoachingSessions, listCoachProfiles } from "@/lib/individ
 import { getCurrentSemesterRange } from "@/lib/metrics/periods"
 import { IndividualCoachingSessionList } from "@/components/individual-coaching-sessions/individual-coaching-session-list"
 import { InfoCard } from "@/components/individual-coaching-sessions/info-card"
+import { HelpDialog } from "@/components/help-dialog"
 import { PageHeader } from "@/components/ui/page-header"
 import { PageShell } from "@/components/ui/page-shell"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
@@ -48,12 +49,16 @@ export default async function KoucovaniPage() {
         description="Záznamník koučovacích sezení s týmovým:ou koučem:kou"
         count={{ value: sessions.length, label: pluralizeCz(sessions.length, ["sezení", "sezení", "sezení"]) }}
         action={
-          <Badge variant={sessionsThisSemester > 0 ? "secondary" : "outline"}>
-            {sessionsThisSemester} tento semestr
-          </Badge>
+          <div className="flex items-center gap-2">
+            <HelpDialog question="Co je individuální koučování?">
+              <InfoCard />
+            </HelpDialog>
+            <Badge variant={sessionsThisSemester > 0 ? "secondary" : "outline"}>
+              {sessionsThisSemester} tento semestr
+            </Badge>
+          </div>
         }
       />
-      <InfoCard />
       <IndividualCoachingSessionList sessions={sessions} profileId={profile.id} coachProfiles={coachProfiles} />
     </PageShell>
   )
