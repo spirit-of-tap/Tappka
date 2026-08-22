@@ -54,7 +54,7 @@ export function CteniTabBar({ isCoachOrAdmin, reviewCount }: CteniTabBarProps) {
       aria-label="Čtení"
       className="sticky top-0 z-40 -mx-4 border-b bg-background px-4 md:static md:z-auto md:mx-0 md:px-0"
     >
-      <div className="flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar">
+      <div className="flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar md:container md:mx-auto md:px-6">
         {tabs.map((tab, index) => (
           <Fragment key={tab.url}>
             {index === MEMBER_TABS.length && (

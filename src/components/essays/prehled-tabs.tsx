@@ -25,9 +25,11 @@ export function PrehledTabs({ defaultTab, stats, myEssays, drafts, teamStats, ha
   return (
     <Tabs defaultValue={defaultTab}>
       <TabsList>
+        {/* "Přehled", not "Moje" — the outer Čtení tab bar already has a Moje
+            tab, and two stacked rows must not repeat a label. */}
         <TabsTrigger value="moje">
           <User />
-          Moje
+          Přehled
         </TabsTrigger>
         <TabsTrigger value="tym">
           <Users />

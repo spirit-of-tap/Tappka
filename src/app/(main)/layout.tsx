@@ -8,7 +8,9 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { getModuleForPath } from "@/lib/navigation";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -23,13 +25,15 @@ export default async function DashboardLayout({
 }) {
   const profile = await getSessionProfile();
 
+  // The x-pathname header (stamped by the proxy) drives both the onboarding
+  // deep link and the breadcrumb's current-module crumb.
+  //
   // Linked-profile gate (moved here from the middleware): an authenticated,
   // email-verified user without an admin-linked profile sees the onboarding
-  // waiting screen. x-pathname is stamped by the proxy so the deep link
-  // survives onboarding.
+  // waiting screen — the deep link survives onboarding.
+  const headersList = await headers();
+  const fullPath = headersList.get("x-pathname");
   if (!profile) {
-    const headersList = await headers();
-    const fullPath = headersList.get("x-pathname");
     redirect(
       fullPath
         ? `/auth/onboarding?next=${encodeURIComponent(fullPath)}`
@@ -44,6 +48,8 @@ export default async function DashboardLayout({
     role: profile.role,
     beta_access: profile.beta_access_granted_at != null,
   };
+
+  const crumbModule = getModuleForPath(fullPath);
 
   return (
     <>
@@ -61,6 +67,16 @@ export default async function DashboardLayout({
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
                 </BreadcrumbItem>
+                {crumbModule && (
+                  <>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href={crumbModule.url}>
+                        {crumbModule.title}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                  </>
+                )}
               </BreadcrumbList>
             </Breadcrumb>
           </header>
