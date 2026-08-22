@@ -1,8 +1,12 @@
-import { getPublicStorageUrl } from "@/lib/storage/public-url"
+import { getTransformedImageUrl } from "@/lib/storage/public-url"
+
+/** Thumbnail rendition width requested from Supabase image transforms (px). */
+const THUMB_WIDTH = 192
 
 /**
  * Square thumbnail for an activity with a photo; type-initials disc fallback
- * when there is none. Used by overview rows and the detail hero placeholder.
+ * when there is none. The photo requests a small transformed rendition
+ * (Supabase image worker, CDN-cached) instead of the original object.
  */
 export function TeamActivityThumb({
   imagePath,
@@ -11,12 +15,10 @@ export function TeamActivityThumb({
 }: {
   imagePath?: string | null
   activityType: string
-  /** Pixel edge for the fallback disc; the photo scales to this box. */
+  /** Pixel edge for the fallback disc; also drives the transform width. */
   size?: number
 }) {
-  const src = imagePath ? getPublicStorageUrl("images", imagePath) : null
-
-  if (!src) {
+  if (!imagePath) {
     return (
       <span
         style={{ width: size, height: size }}
@@ -31,8 +33,14 @@ export function TeamActivityThumb({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={getTransformedImageUrl("images", imagePath, {
+        width: Math.max(THUMB_WIDTH, size * 2),
+        quality: 70,
+        format: "webp",
+        resize: "cover",
+      })}
       alt=""
+      loading="lazy"
       style={{ width: size, height: size }}
       className="shrink-0 rounded-lg border border-border/50 object-cover"
     />

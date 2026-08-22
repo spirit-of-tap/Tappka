@@ -28,6 +28,7 @@ import { TeamActivityThumb } from "./team-activity-thumb"
 import { getTeamActivityLoop, LOOP_LABELS } from "@/lib/tymovy-denik/status"
 import { groupByMonth } from "@/lib/timeline/group-by-month"
 import { formatShortDate } from "@/lib/tymovy-denik/format-date"
+import { getTransformedImageUrl } from "@/lib/storage/public-url"
 import type { TeamActivityWithCreator } from "@/lib/tymovy-denik/types"
 
 const SEARCH_PLACEHOLDER = "Hledat akci nebo obsah…"
@@ -178,21 +179,85 @@ export function TeamActivityList({ activities, teamId, profileId }: TeamActivity
 function ActivityRowLink({ activity }: { activity: TeamActivityWithCreator }) {
   const loop = getTeamActivityLoop(activity)
 
+  // Photo-led entries get a cinematic card (the photo is the identity);
+  // photo-less entries stay as compact initials rows so the timeline keeps
+  // its rhythm instead of turning into a wall of empty placeholders.
+  if (activity.image_path) {
+    return (
+      <Link
+        href={`/tymovy-denik/${activity.id}`}
+        className="focus-ring group block overflow-hidden rounded-xl border border-border/50 bg-card transition-colors hover:bg-accent/30"
+      >
+        <div className="aspect-[3/2] overflow-hidden sm:aspect-[16/6]">
+          <ActivityPhoto
+            imagePath={activity.image_path}
+            alt={activity.activity_type}
+            width={720}
+            className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          />
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2.5">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">{activity.activity_type}</span>
+          {loop && (
+            <Badge variant="outline" className="shrink-0 border-transparent bg-warning/10 text-warning-strong">
+              {LOOP_LABELS[loop]}
+            </Badge>
+          )}
+          <DatePill dateStr={activity.occurred_at} />
+        </div>
+      </Link>
+    )
+  }
+
   return (
     <Link
       href={`/tymovy-denik/${activity.id}`}
       className="focus-ring flex items-center gap-3 rounded-lg py-2 pr-1 transition-colors hover:bg-accent/50"
     >
-      <TeamActivityThumb imagePath={activity.image_path} activityType={activity.activity_type} />
+      <TeamActivityThumb activityType={activity.activity_type} />
       <span className="min-w-0 flex-1 truncate text-sm font-medium">{activity.activity_type}</span>
       {loop && (
         <Badge variant="outline" className="shrink-0 border-transparent bg-warning/10 text-warning-strong">
           {LOOP_LABELS[loop]}
         </Badge>
       )}
-      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
-        {formatShortDate(activity.occurred_at)}
-      </span>
+      <DatePill dateStr={activity.occurred_at} />
     </Link>
+  )
+}
+
+/** Transformed (resized/WebP) rendition of the activity photo. */
+function ActivityPhoto({
+  imagePath,
+  alt,
+  width,
+  className,
+}: {
+  imagePath: string
+  alt: string
+  width: number
+  className?: string
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={getTransformedImageUrl("images", imagePath, {
+        width,
+        quality: 72,
+        format: "webp",
+        resize: "cover",
+      })}
+      alt={alt}
+      loading="lazy"
+      className={className}
+    />
+  )
+}
+
+function DatePill({ dateStr }: { dateStr: string }) {
+  return (
+    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
+      {formatShortDate(dateStr)}
+    </span>
   )
 }
