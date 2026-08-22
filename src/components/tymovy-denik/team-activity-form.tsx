@@ -12,7 +12,9 @@ import { optimizeImageToFit } from "@/lib/storage/image-optimizer"
 import { getTransformedImageUrl } from "@/lib/storage/public-url"
 import { ALLOWED_IMAGE_TYPES } from "@/lib/storage/validation"
 import { TEAM_ACTIVITY_IMAGE } from "@/lib/tymovy-denik/image"
-import type { TeamActivity, TeamActivityWithCreator } from "@/lib/tymovy-denik/types"
+import type { TeamActivity, TeamActivityWithCreator, TeamMemberProfile } from "@/lib/tymovy-denik/types"
+import type { TeamActivityAttendeeInput } from "@/app/api/tymovy-denik/activities/_shared"
+import { AttendanceSelector } from "./attendance-selector"
 
 const PREVIEW_WIDTH = 352
 const PREVIEW_HEIGHT = 224
@@ -28,20 +30,33 @@ function today(): string {
 }
 
 interface TeamActivityFormProps {
-  initial?: TeamActivity
+  initial?: TeamActivity | TeamActivityWithCreator
+  teamMembers?: TeamMemberProfile[]
   onSuccess: (activity: TeamActivityWithCreator) => void
   onCancel: () => void
 }
 
-export function TeamActivityForm({ initial, onSuccess, onCancel }: TeamActivityFormProps) {
+export function TeamActivityForm({
+  initial,
+  teamMembers = [],
+  onSuccess,
+  onCancel,
+}: TeamActivityFormProps) {
+  const initialAttendees: TeamActivityAttendeeInput[] =
+    (initial as TeamActivityWithCreator | undefined)?.attendees?.map((a) => ({
+      profileId: a.profile_id,
+      status: a.status,
+    })) ?? (initial ? [] : teamMembers.map((m) => ({ profileId: m.id, status: "present" as const })))
+
   const [loading, setLoading] = useState(false)
   const [optimizingPhoto, setOptimizingPhoto] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [occurredAt, setOccurredAt] = useState(initial?.occurred_at ?? today())
   const [activityType, setActivityType] = useState(initial?.activity_type ?? "")
-  const [participants, setParticipants] = useState(initial?.participants ?? "")
+  const [attendees, setAttendees] = useState<TeamActivityAttendeeInput[]>(initialAttendees)
   const [reason, setReason] = useState(initial?.reason ?? "")
   const [reflection, setReflection] = useState(initial?.reflection ?? "")
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const photoSelectionRef = useRef(0)
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null)
@@ -128,7 +143,8 @@ export function TeamActivityForm({ initial, onSuccess, onCancel }: TeamActivityF
       const payload = {
         occurredAt,
         activityType: activityType.trim(),
-        participants: participants.trim(),
+        participants: null,
+        attendees,
         reason: reason.trim(),
         reflection: reflection.trim(),
         photoAction: pendingPhoto ? "replace" : removeExistingPhoto ? "remove" : "keep",
@@ -227,35 +243,34 @@ export function TeamActivityForm({ initial, onSuccess, onCancel }: TeamActivityF
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="occurred-at">Datum</Label>
-        <Input
-          id="occurred-at"
-          type="date"
-          value={occurredAt}
-          onChange={(e) => setOccurredAt(e.target.value)}
-        />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="occurred-at">Datum</Label>
+          <Input
+            id="occurred-at"
+            type="date"
+            value={occurredAt}
+            onChange={(e) => setOccurredAt(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="activity-type">Typ akce</Label>
+          <Input
+            id="activity-type"
+            value={activityType}
+            onChange={(e) => setActivityType(e.target.value)}
+            placeholder="Např. Cabin in the Woods, Learning Circus"
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="activity-type">Typ akce</Label>
-        <Input
-          id="activity-type"
-          value={activityType}
-          onChange={(e) => setActivityType(e.target.value)}
-          placeholder="Např. Cabin in the Woods, Learning Circus, team building"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="participants">Účast</Label>
-        <Input
-          id="participants"
-          value={participants}
-          onChange={(e) => setParticipants(e.target.value)}
-          placeholder="Kdo se zúčastnil — např. celý tým, jména"
-        />
-      </div>
+      <AttendanceSelector
+        teamMembers={teamMembers}
+        value={attendees}
+        onChange={setAttendees}
+        disabled={loading}
+      />
 
       <div className="space-y-2">
         <Label htmlFor="reason">Proč jsme tam byli</Label>

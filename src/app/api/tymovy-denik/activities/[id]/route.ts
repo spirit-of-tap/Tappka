@@ -88,10 +88,29 @@ export async function PATCH(request: Request, routeContext: TeamActivityRouteCon
       )
     }
 
+    if (parsed.input.attendees && parsed.input.attendees.length > 0) {
+      await context.supabase
+        .from("team_activity_attendees")
+        .delete()
+        .eq("activity_id", id)
+
+      const attendeeRows = parsed.input.attendees.map((a) => ({
+        activity_id: id,
+        profile_id: a.profileId,
+        status: a.status,
+        created_by_profile_id: context.profileId,
+        updated_by_profile_id: context.profileId,
+      }))
+      await context.supabase
+        .from("team_activity_attendees")
+        .insert(attendeeRows)
+    }
+
     if (existing.image_path !== data.image_path) {
       await deleteTeamActivityPhoto(existing.image_path, context.teamId)
     }
     return NextResponse.json({ data })
+
   } catch (error) {
     if (!mutationAttempted) return mutationFailedResponse(error)
     if (!mutationOutcomeAmbiguous) {

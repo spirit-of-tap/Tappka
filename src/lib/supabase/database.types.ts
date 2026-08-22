@@ -2362,6 +2362,68 @@ export type Database = {
           },
         ]
       }
+      team_activity_attendees: {
+        Row: {
+          activity_id: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          profile_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          profile_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          profile_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_activity_attendees_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "team_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activity_attendees_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activity_attendees_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activity_attendees_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_document_versions: {
         Row: {
           change_note: string | null
@@ -3116,6 +3178,7 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      attendance_status: "present" | "absent" | "excused" | "late"
       birth_giving_assignment_state: "present" | "missing"
       birth_giving_delivery_status:
         | "pending"
@@ -3290,6 +3353,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      attendance_status: ["present", "absent", "excused", "late"],
       birth_giving_assignment_state: ["present", "missing"],
       birth_giving_delivery_status: [
         "pending",

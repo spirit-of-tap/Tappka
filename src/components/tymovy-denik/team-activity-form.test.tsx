@@ -82,7 +82,8 @@ describe("TeamActivityForm", () => {
 
     render(<TeamActivityForm initial={ACTIVITY} onSuccess={onSuccess} onCancel={vi.fn()} />)
 
-    await user.type(screen.getByLabelText("Účast"), "Celý tým")
+    await user.clear(screen.getByLabelText("Typ akce"))
+    await user.type(screen.getByLabelText("Typ akce"), "Nový typ akce")
     await user.click(screen.getByRole("button", { name: "Uložit změny" }))
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(updated))
@@ -94,8 +95,9 @@ describe("TeamActivityForm", () => {
     const formData = submittedFormData()
     expect(formData.get("photo")).toBeNull()
     expect(JSON.parse(formData.get("payload") as string)).toEqual(expect.objectContaining({
+      activityType: "Nový typ akce",
       expectedUpdatedAt: ACTIVITY.updated_at,
-      participants: "Celý tým",
+      participants: null,
       photoAction: "keep",
     }))
   })

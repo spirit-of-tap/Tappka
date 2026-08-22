@@ -44,6 +44,24 @@ export async function POST(request: Request) {
 
     mutationOutcomeAmbiguous = isAmbiguousMutation(error, status) || (!error && !data)
     if (error || !data) throw error ?? new Error("Team activity insert returned no row")
+
+    if (parsed.input.attendees && parsed.input.attendees.length > 0) {
+      const attendeeRows = parsed.input.attendees.map((a) => ({
+        activity_id: activityId,
+        profile_id: a.profileId,
+        status: a.status,
+        created_by_profile_id: context.profileId,
+        updated_by_profile_id: context.profileId,
+      }))
+      const { error: attendeesError } = await context.supabase
+        .from("team_activity_attendees")
+        .insert(attendeeRows)
+
+      if (attendeesError) {
+        console.error("Failed to insert team activity attendees:", attendeesError)
+      }
+    }
+
     return NextResponse.json({ data }, { status: 201 })
   } catch (error) {
     if (mutationAttempted) {
@@ -66,3 +84,4 @@ export async function POST(request: Request) {
     return mutationFailedResponse(error)
   }
 }
+

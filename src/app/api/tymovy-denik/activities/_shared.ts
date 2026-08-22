@@ -18,12 +18,18 @@ const TEAM_ACTIVITY_IMAGE_PREFIX = "team-activities"
 const nullableText = (max: number) =>
   z.string().trim().max(max).transform((value) => value || null)
 
+const attendeeInputSchema = z.object({
+  profileId: z.string().uuid(),
+  status: z.enum(["present", "absent", "excused", "late"]).default("present"),
+})
+
 const inputSchema = z.object({
   occurredAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   activityType: z.string().trim().min(1).max(MAX_ACTIVITY_TYPE_LENGTH),
   participants: nullableText(MAX_PARTICIPANTS_LENGTH),
   reason: nullableText(MAX_STORY_FIELD_LENGTH),
   reflection: nullableText(MAX_STORY_FIELD_LENGTH),
+  attendees: z.array(attendeeInputSchema).optional().default([]),
   photoAction: z.enum(["keep", "remove", "replace"]),
   expectedUpdatedAt: z.iso.datetime({ offset: true }).optional(),
 })
@@ -32,15 +38,22 @@ const expectedUpdatedAtSchema = z.object({
   expectedUpdatedAt: z.iso.datetime({ offset: true }),
 })
 
+export interface TeamActivityAttendeeInput {
+  profileId: string
+  status: "present" | "absent" | "excused" | "late"
+}
+
 export interface TeamActivityInput {
   occurredAt: string
   activityType: string
   participants: string | null
   reason: string | null
   reflection: string | null
+  attendees: TeamActivityAttendeeInput[]
   photoAction: "keep" | "remove" | "replace"
   expectedUpdatedAt?: string
 }
+
 
 interface TeamActivityApiContext {
   profileId: string

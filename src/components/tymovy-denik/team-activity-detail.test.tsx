@@ -92,4 +92,36 @@ describe("TeamActivityDetail", () => {
     })
     expect(mocks.push).not.toHaveBeenCalled()
   })
+
+  it("renders structured attendees and highlighted reflection", () => {
+    const activityWithAttendees: TeamActivityWithCreator = {
+      ...ACTIVITY,
+      reflection: "Skvělá týmová reflexe a poučení",
+      attendees: [
+        {
+          id: "att-1",
+          activity_id: ACTIVITY.id,
+          profile_id: "prof-1",
+          status: "present",
+          profile: { id: "prof-1", name: "Aneta Nováková", picture: null, role: "student" },
+        },
+        {
+          id: "att-2",
+          activity_id: ACTIVITY.id,
+          profile_id: "prof-2",
+          status: "excused",
+          profile: { id: "prof-2", name: "Karel Dvořák", picture: null, role: "student" },
+        },
+      ],
+    }
+
+    render(<TeamActivityDetail activity={activityWithAttendees} />)
+
+    expect(screen.getByText("Skvělá týmová reflexe a poučení")).toBeInTheDocument()
+    expect(screen.getByText("Aneta Nováková")).toBeInTheDocument()
+    expect(screen.getByText("Karel Dvořák")).toBeInTheDocument()
+    expect(screen.getByText(/Účast \(1\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Omluven:a \(1\)/)).toBeInTheDocument()
+  })
 })
+
