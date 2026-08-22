@@ -46,8 +46,14 @@ export function CteniTabBar({ isCoachOrAdmin, reviewCount }: CteniTabBarProps) {
   )?.url;
 
   return (
-    // -mx-4/px-4 bleeds across main's padding; bg masks content scrolling under.
-    <nav aria-label="Čtení" className="sticky top-0 z-40 -mx-4 border-b bg-background px-4">
+    // Mobile: pinned full-bleed strip — there is no top header on phones, so
+    // this bar IS the module chrome and must stay one thumb-tap away.
+    // Desktop (md+): static, content-aligned — pinned it would stack under the
+    // breadcrumb header and read as a second navbar.
+    <nav
+      aria-label="Čtení"
+      className="sticky top-0 z-40 -mx-4 border-b bg-background px-4 md:static md:z-auto md:mx-0 md:px-0"
+    >
       <div className="flex max-w-full items-center gap-1 overflow-x-auto no-scrollbar">
         {tabs.map((tab, index) => (
           <Fragment key={tab.url}>
