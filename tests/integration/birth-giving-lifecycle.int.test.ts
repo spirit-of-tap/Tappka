@@ -545,6 +545,7 @@ describe("Birth Giving lifecycle RPCs", () => {
       await publicationClient.query(`set local statement_timeout = '${RACE_STATEMENT_TIMEOUT_MS}ms'`);
       await asClaims(publicationClient, { sub: organizer.authUserId });
       const publication = publicationClient.query("select public.birth_giving_publish_event($1)", [eventId]);
+      publication.catch(() => undefined);
       await waitForBlockedConnections(["birth-giving-boundary-publication"]);
       await new Promise((resolve) => setTimeout(resolve, 1_100));
       await blocker.query("commit");
@@ -627,6 +628,7 @@ describe("Birth Giving lifecycle RPCs", () => {
         "select public.birth_giving_create_team($1, 'Too late')",
         [eventId],
       );
+      formation.catch(() => undefined);
       await waitForBlockedConnections(["birth-giving-boundary-formation"]);
       await new Promise((resolve) => setTimeout(resolve, 1_100));
       await blocker.query("commit");
@@ -905,6 +907,8 @@ describe("Birth Giving lifecycle RPCs", () => {
       };
       const firstAcceptance = acceptAndFinish(firstClient, firstProposalId);
       const secondAcceptance = acceptAndFinish(secondClient, secondProposalId);
+      firstAcceptance.catch(() => undefined);
+      secondAcceptance.catch(() => undefined);
       await waitForBlockedRaceConnections();
       await blocker.query("commit");
       const outcomes = await Promise.allSettled([firstAcceptance, secondAcceptance]);
@@ -981,6 +985,7 @@ describe("Birth Giving lifecycle RPCs", () => {
       await startClient.query(`set local statement_timeout = '${RACE_STATEMENT_TIMEOUT_MS}ms'`);
       await startClient.query("set local role service_role");
       const processStart = startClient.query("select public.birth_giving_process_due_starts(1)");
+      processStart.catch(() => undefined);
       await waitForBlockedConnections(["birth-giving-due-start-race"]);
 
       await resolveClient.query("begin");
@@ -991,6 +996,7 @@ describe("Birth Giving lifecycle RPCs", () => {
         "select public.birth_giving_resolve_proposal($1, 'accept')",
         [proposalId],
       );
+      resolution.catch(() => undefined);
       await waitForBlockedConnections([
         "birth-giving-due-start-race",
         "birth-giving-proposal-resolution-race",
