@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { PersonalityTestTimeline } from '@/components/personality-tests/personality-test-timeline';
+import { PersonalityTestsView } from '@/components/personality-tests/personality-tests-view';
 import type { PersonalityTest } from '@/lib/personality-tests/types';
 
 const { error, success } = vi.hoisted(() => ({
@@ -43,37 +43,29 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('PersonalityTestTimeline', () => {
-  it('renders the owner empty state with the upload CTA and no viewer copy', () => {
-    render(<PersonalityTestTimeline initialTests={[]} profileId="profile-1" isOwnProfile />);
+describe('PersonalityTestsView', () => {
+  it('renders page header and empty state with the upload CTA', () => {
+    render(<PersonalityTestsView tests={[]} profileId="profile-1" />);
 
+    expect(screen.getByRole('heading', { name: 'Osobnostní testy' })).toBeInTheDocument();
     expect(screen.getByText('Zatím nemáš nahraný žádný osobnostní test')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Nahraj výsledky svého osobnostního testu jako soubor PDF nebo obrázek. Timeline ukáže, jak se v průběhu studia vyvíjíš.',
+        'Nahraj výsledky svého osobnostního testu jako soubor PDF nebo obrázek. Časová osa ukáže, jak se v průběhu studia vyvíjíš.',
       ),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Nahrát test' }).length).toBeGreaterThan(0);
-    expect(screen.queryByText('Zatím žádné osobnostní testy')).not.toBeInTheDocument();
-    expect(screen.queryByText('Tato osoba zatím nenahrála žádné osobnostní testy.')).not.toBeInTheDocument();
   });
 
-  it('renders the viewer empty state without any action buttons', () => {
-    render(<PersonalityTestTimeline initialTests={[]} profileId="profile-1" isOwnProfile={false} />);
-
-    expect(screen.getByText('Zatím žádné osobnostní testy')).toBeInTheDocument();
-    expect(screen.getByText('Tato osoba zatím nenahrála žádné osobnostní testy.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Nahrát test' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Upravit test' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Smazat test' })).not.toBeInTheDocument();
-  });
-
-  it('lists tests newest first with type, date, file name and size; owner gets full actions', () => {
-    const newest = testRow({ id: 'test-2', test_type: 'mbti' });
+  it('lists tests grouped by semester with type, date, size (without raw file name) and actions', () => {
+    const newest = testRow({ id: 'test-2', test_type: 'mbti', tested_on: '2026-03-15' });
     const older = testRow({ id: 'test-1', test_type: 'gallup', tested_on: '2025-11-02' });
     render(
-      <PersonalityTestTimeline initialTests={[older, newest]} profileId="profile-1" isOwnProfile />,
+      <PersonalityTestsView tests={[older, newest]} profileId="profile-1" onboardingYear={2025} />,
     );
+
+    expect(screen.getByText(/Letní semestr — 1\. ročník \(2025\/2026\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Zimní semestr — 1\. ročník \(2025\/2026\)/i)).toBeInTheDocument();
 
     const items = screen.getAllByRole('listitem');
     expect(items).toHaveLength(2);
@@ -81,8 +73,9 @@ describe('PersonalityTestTimeline', () => {
     const first = items[0].textContent ?? '';
     expect(first).toContain('MBTI');
     expect(first).toContain('15. 3. 2026');
-    expect(first).toContain('mbti-report.pdf');
     expect(first).toContain('1,4 MB');
+    expect(first).not.toContain('mbti-report.pdf');
+
     expect(items[1].textContent).toContain('Gallup');
     expect(items[1].textContent).toContain('2. 11. 2025');
 
@@ -91,22 +84,11 @@ describe('PersonalityTestTimeline', () => {
     expect(screen.getAllByRole('button', { name: 'Smazat test' })).toHaveLength(2);
   });
 
-  it('gives a viewer only the open link', () => {
-    render(<PersonalityTestTimeline initialTests={[testRow()]} profileId="profile-1" isOwnProfile={false} />);
-
-    expect(screen.getByRole('link', { name: 'Otevřít' })).toHaveAttribute(
-      'href',
-      '/api/personality-tests/test-1/open',
-    );
-    expect(screen.queryByRole('button', { name: 'Upravit test' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Smazat test' })).not.toBeInTheDocument();
-  });
-
-  it('deletes a test after confirming and removes it from the timeline', async () => {
+  it('deletes a test after confirming and removes it from the list', async () => {
     const row = testRow();
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
     const user = userEvent.setup();
-    render(<PersonalityTestTimeline initialTests={[row]} profileId="profile-1" isOwnProfile />);
+    render(<PersonalityTestsView tests={[row]} profileId="profile-1" />);
 
     await user.click(screen.getByRole('button', { name: 'Smazat test' }));
     expect(screen.getByText('Odstranit test?')).toBeInTheDocument();
@@ -128,7 +110,7 @@ describe('PersonalityTestTimeline', () => {
       json: async () => ({ error: 'Nepodařilo se odstranit test' }),
     });
     const user = userEvent.setup();
-    render(<PersonalityTestTimeline initialTests={[row]} profileId="profile-1" isOwnProfile />);
+    render(<PersonalityTestsView tests={[row]} profileId="profile-1" />);
 
     await user.click(screen.getByRole('button', { name: 'Smazat test' }));
     expect(screen.getByText('Odstranit test?')).toBeInTheDocument();
@@ -137,8 +119,6 @@ describe('PersonalityTestTimeline', () => {
 
     await waitFor(() => expect(error).toHaveBeenCalledWith('Nepodařilo se odstranit test'));
     expect(screen.getByText('Odstranit test?')).toBeInTheDocument();
-    // Radix marks DOM outside the open modal dialog aria-hidden, which hides it
-    // from role queries but not text queries — the test is still there.
-    expect(screen.getByText(/mbti-report\.pdf/)).toBeInTheDocument();
+    expect(screen.getAllByText('MBTI').length).toBeGreaterThan(0);
   });
 });

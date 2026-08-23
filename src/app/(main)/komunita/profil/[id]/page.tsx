@@ -1,13 +1,12 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin, UserRound, Brain, Gift } from 'lucide-react';
+import { Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin, UserRound, Gift } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getUserBookPointsStats } from '@/lib/essays/queries';
 import { countCustomerMeetings } from '@/lib/customer-meetings/queries';
 import { countIndividualCoachingSessions } from '@/lib/individual-coaching-sessions/queries';
-import { listPersonalityTests } from '@/lib/personality-tests/queries';
 import { countProfileBirthGivingParticipations, listProfileBirthGivingHistory } from '@/lib/birth-giving/queries';
 import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 import { ProfilePictureSection } from '@/components/komunita/profile-picture-section';
@@ -24,8 +23,6 @@ export const metadata = {
   title: 'Profil | Tappka',
 };
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
-import { InfoCard } from '@/components/personality-tests/info-card';
-import { PersonalityTestTimeline } from '@/components/personality-tests/personality-test-timeline';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
 import { formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
 import { cn } from '@/lib/utils';
@@ -47,12 +44,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
   if (!profile) notFound();
 
-  const [essays, stats, meetingCount, coachingSessionCount, personalityTests, birthGivingHistory, birthGivingCount] = await Promise.all([
+  const [essays, stats, meetingCount, coachingSessionCount, birthGivingHistory, birthGivingCount] = await Promise.all([
     getEssays(supabase, { authorProfileId: id, sort: 'best', pageSize: 100 }),
     getUserBookPointsStats(supabase, id),
     countCustomerMeetings(supabase, id).catch(() => 0),
     countIndividualCoachingSessions(supabase, id).catch(() => 0),
-    listPersonalityTests(supabase, id).catch(() => []),
     listProfileBirthGivingHistory(supabase, id).catch(() => []),
     countProfileBirthGivingParticipations(supabase, id).catch(() => 0),
   ]);
@@ -73,7 +69,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
   const isOwnProfile = currentUserProfile?.id === profile.id;
   const teamColor = profile.team?.color ?? null;
-  const activeTab = tab === 'eseje' || tab === 'osobnostni-testy' || tab === 'birth-giving' ? tab : 'prehled';
+  const activeTab = tab === 'eseje' || tab === 'birth-giving' ? tab : 'prehled';
 
   const pts   = (n: number) => n === 1 ? 'bod' : n >= 2 && n <= 4 ? 'body' : 'bodů';
   const eseje = (n: number) => n === 1 ? 'esej' : n >= 2 && n <= 4 ? 'eseje' : 'esejí';
@@ -142,11 +138,6 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               <BookOpen />
               Eseje
               <TabsTriggerCount count={essays.length} />
-            </TabsTrigger>
-            <TabsTrigger value="osobnostni-testy">
-              <Brain />
-              Osobnostní testy
-              <TabsTriggerCount count={personalityTests.length} />
             </TabsTrigger>
             <TabsTrigger value="birth-giving">
               <Gift />
@@ -303,16 +294,6 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
             </>
           )}
             </div>
-          </TabsContent>
-
-          {/* Personality tests */}
-          <TabsContent value="osobnostni-testy" className="mt-4 space-y-4">
-            <InfoCard />
-            <PersonalityTestTimeline
-              initialTests={personalityTests}
-              profileId={profile.id}
-              isOwnProfile={isOwnProfile}
-            />
           </TabsContent>
 
           {/* Birth Giving */}

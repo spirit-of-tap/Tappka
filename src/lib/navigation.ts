@@ -40,10 +40,8 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Týmový deník", url: "/tymovy-denik", icon: Activity, betaOnly: true, description: "Denní zápisy a přehled týmových aktivit." },
   { title: "Týmové dokumenty", url: "/tymove-dokumenty", icon: Files, betaOnly: true, description: "Smlouvy, finanční politika a další dokumenty týmu." },
   { title: "Nástroje a techniky", url: "/nastroje-techniky", icon: Wrench, betaOnly: true, featured: true, description: "Katalog modelů, technik a nástrojů pro práci." },
-  { title: "Osobnostní testy", url: "/komunita/profil", icon: Brain, betaOnly: true, ownProfileTab: "osobnostni-testy", description: "Výsledky osobnostních testů na tvém profilu." },
-  // Sidebar renders Osobnostní testy via a title-based special-case branch —
-  // keep betaOnly here, and the generic beta branch must run after that
-  // special case. Čtení renders as a plain link; its sub-navigation lives in
+  { title: "Osobnostní testy", url: "/osobnostni-testy", icon: Brain, betaOnly: true, description: "Výsledky osobnostních testů a jejich vývoj v čase." },
+  // Čtení renders as a plain link; its sub-navigation lives in
   // src/app/(main)/cteni/layout.tsx as a tab bar.
   { title: "Čtení", url: "/cteni/prehled", icon: BookOpen, betaOnly: true, featured: true, description: "Knihovna knih, eseje a jejich hodnocení." },
   { title: "Birth Giving", url: "/birth-giving", icon: Gift, betaOnly: true, description: "Týmová setkání Birth Giving a retrospektivy." },
@@ -61,7 +59,7 @@ export const MODULE_HUB_ORDER: string[] = [
   "/tymove-dokumenty",
   "/koucovani",
   "/birth-giving",
-  "/komunita/profil",
+  "/osobnostni-testy",
 ];
 
 /** Modules for the /moduly hub — hub order, beta-gated like the sidebar. */
