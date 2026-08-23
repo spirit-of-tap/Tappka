@@ -4,10 +4,9 @@ import { useEffect, useRef, useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { cs } from "date-fns/locale"
-import { CheckCircle2, Loader2, Trash2 } from "lucide-react"
+import { CheckCircle2, Loader2, Sparkles, Trash2 } from "lucide-react"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PageBack } from "@/components/ui/page-back"
@@ -175,6 +174,7 @@ export function TeamReflectionDetail({
 
   return (
     <div className="container mx-auto max-w-4xl py-4 sm:py-6 px-3 sm:px-6 space-y-6">
+      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <PageBack href="/tymova-reflexe" label="Zpět na přehled" />
@@ -226,37 +226,66 @@ export function TeamReflectionDetail({
         </div>
       </div>
 
-      <Card className="p-4 sm:p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="what-went-well">{FIELD_LABELS.what_went_well}</Label>
-            <Textarea
-              id="what-went-well"
-              value={data.what_went_well ?? ""}
-              onChange={(e) => setField("what_went_well", e.target.value)}
-              placeholder="Úspěchy, zvládnuté výzvy a pozitiva za uplynulý měsíc…"
-              rows={6}
-            />
+      {/* Two Reflection Text Areas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {/* Co se povedlo */}
+        <Card className="flex flex-col p-4 sm:p-5 space-y-3 border-emerald-500/20 bg-card">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="size-4" />
+            </div>
+            <div>
+              <h2 className="font-heading text-sm font-semibold text-foreground">
+                Co se povedlo
+              </h2>
+              <p className="text-[11px] text-muted-foreground">
+                Úspěchy, zvládnuté výzvy a pozitivní momenty
+              </p>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="what-we-do-differently">{FIELD_LABELS.what_we_do_differently}</Label>
-            <Textarea
-              id="what-we-do-differently"
-              value={data.what_we_do_differently ?? ""}
-              onChange={(e) => setField("what_we_do_differently", e.target.value)}
-              placeholder="Co příště změníme, zkusíme nebo upravíme v přístupu…"
-              rows={6}
-            />
-          </div>
-        </div>
-
-        <div className="border-t pt-6">
-          <ActionStepsEditor
-            steps={actionSteps}
-            onChange={handleActionStepsChange}
-            teamMembers={teamMembers}
+          <Textarea
+            id="what-went-well"
+            value={data.what_went_well ?? ""}
+            onChange={(e) => setField("what_went_well", e.target.value)}
+            placeholder="Úspěchy, zvládnuté výzvy a pozitiva za uplynulý měsíc…"
+            rows={8}
+            className="flex-1 resize-y text-sm bg-muted/20 border-border/50 focus:bg-background focus:border-emerald-500/50 leading-relaxed"
           />
-        </div>
+        </Card>
+
+        {/* Co uděláme jinak */}
+        <Card className="flex flex-col p-4 sm:p-5 space-y-3 border-primary/20 bg-card">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <Sparkles className="size-4" />
+            </div>
+            <div>
+              <h2 className="font-heading text-sm font-semibold text-foreground">
+                Co uděláme jinak
+              </h2>
+              <p className="text-[11px] text-muted-foreground">
+                Co příště upravíme, vyzkoušíme nebo změníme
+              </p>
+            </div>
+          </div>
+          <Textarea
+            id="what-we-do-differently"
+            value={data.what_we_do_differently ?? ""}
+            onChange={(e) => setField("what_we_do_differently", e.target.value)}
+            placeholder="Co příště změníme, zkusíme nebo upravíme v přístupu…"
+            rows={8}
+            className="flex-1 resize-y text-sm bg-muted/20 border-border/50 focus:bg-background focus:border-primary/50 leading-relaxed"
+          />
+        </Card>
+      </div>
+
+      {/* Action Steps Section */}
+      <Card className="p-4 sm:p-5 border-border/80 bg-card">
+        <ActionStepsEditor
+          steps={actionSteps}
+          onChange={handleActionStepsChange}
+          teamMembers={teamMembers}
+        />
       </Card>
     </div>
   )
