@@ -191,15 +191,15 @@ async function main() {
   // Essay 4: Coach commented, and Author wrote a standalone comment AFTER it (parent_id is null)
   if (essays[3]) {
     const essay4 = essays[3];
+    const coachCommentDate = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
+    const studentCommentDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: existingComments } = await sb
       .from("essay_comments")
       .select("id")
       .eq("essay_id", essay4.id);
 
     if (!existingComments || existingComments.length === 0) {
-      const coachCommentDate = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
-      const studentCommentDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-
       await sb.from("essay_comments").insert({
         essay_id: essay4.id,
         author_profile_id: primaryCoach.id,
@@ -213,30 +213,97 @@ async function main() {
       await sb.from("essay_comments").insert({
         essay_id: essay4.id,
         author_profile_id: essay4.author_profile_id,
-        parent_id: null, // Standalone comment without parent_id, but posted AFTER the coach's comment
+        parent_id: null,
         body: "Doplňuji poznámku k rizikům: Plán B jsme sepsali do naší týmové Notion dokumentace a omezili počáteční investice do marketingu.",
         created_at: studentCommentDate,
         created_by_profile_id: essay4.author_profile_id,
         updated_by_profile_id: essay4.author_profile_id,
       });
-
-      console.log(`✅ Seeded Thread 3 (Coach comment + standalone author comment afterwards) on essay ${essay4.id}`);
     }
+
+    // Seed Revision 1 (before coach) and Revision 2 (after coach)
+    await sb.from("essay_revisions").upsert([
+      {
+        essay_id: essay4.id,
+        revision_no: 1,
+        title: "Reflexe a aplikace v týmu: The Lean Startup",
+        content_json: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Knihu The Lean Startup od Erica Riese jsme si v týmu vybrali v reakci na naše počáteční neúspěchy při plánování projektu. Uvědomili jsme si, že trávíme příliš mnoho času teoretizováním v zasedačce a tvorbou nekonečných prezentací, místo abychom mluvili se skutečnými lidmi na trhu." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Hlavním pilířem knihy je cyklus tvorby, měření a učení (Build-Measure-Learn). Tradiční byznys plánování předpokládá, že předem přesně víme, co zákazník chce. Ries naproti tomu staví hypotézy a nutnost jejich co nejrychlejšího ověření prostřednictvím minimálního životaschopného produktu (MVP)." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Pro náš tým jsme se rozhodli připravit velký e-shop a investovat část týmového rozpočtu do placené reklamy na sociálních sítích, abychom zjistili, zda bude o naše produkty zájem." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Kniha nám otevřela oči v tom, že selhání je přirozenou součástí procesu, pokud z něj dokážeme vytěžit nové poznatky a včas změnit směr." }],
+            },
+          ],
+        },
+        created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+        created_by_profile_id: essay4.author_profile_id,
+        updated_by_profile_id: essay4.author_profile_id,
+      },
+      {
+        essay_id: essay4.id,
+        revision_no: 2,
+        title: "Reflexe a aplikace v týmu: The Lean Startup (Doplněna validace a plán B)",
+        content_json: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Knihu The Lean Startup od Erica Riese jsme si v týmu vybrali v reakci na naše počáteční neúspěchy při plánování projektu. Uvědomili jsme si, že trávíme příliš mnoho času teoretizováním v zasedačce a tvorbou nekonečných prezentací, místo abychom šli přímo do terénu za reálnými zákazníky." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Hlavním pilířem knihy je cyklus tvorby, měření a učení (Build-Measure-Learn). Tradiční byznys plánování předpokládá, že předem přesně víme, co zákazník chce. Ries naproti tomu staví hypotézy a nutnost jejich co nejrychlejšího ověření prostřednictvím minimálního životaschopného produktu (MVP) s minimálními finančními i časovými náklady." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Testování MVP a validované učení v praxi: Místo nákladné tvorby celého e-shopu jsme vytvořili jednoduchou jednostránkovou prezentaci na Notion během 48 hodin s celkovými náklady 0 Kč. Během prvního týdne jsme oslovili 85 potenciálních zákazníků z naší primární cílové skupiny. Z nich 34 vyplnilo formulář se zájmem a 12 lidí složilo vratnou zálohu 200 Kč na první várku. Tím jsme potvrdili hodnotovou hypotézu ještě před nákupem zásob." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Řízení rizik a Plán B: Na základě připomínek kouče jsme nastavili limit maximální přijatelné ztráty na 4 000 Kč a zavedli týdenní vyhodnocování konverzí. Jako plán B jsme připravili možnost pivotu: pokud by prodej koncovým studentům klesl pod 15 objednávek za měsíc, převedeme nabídku na B2B model pro studentské spolky a univerzitní akce." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Aplikace lean principů radikálně zkrátila naši rozhodovací smyčku z týdnů na dny a odstranila zbytečné dohady o tom, co by se zákazníkům mohlo líbit." }],
+            },
+          ],
+        },
+        created_at: studentCommentDate,
+        created_by_profile_id: essay4.author_profile_id,
+        updated_by_profile_id: essay4.author_profile_id,
+      },
+    ]);
+
+    await sb.from("essays").update({ updated_at: studentCommentDate }).eq("id", essay4.id);
+    console.log(`✅ Seeded Thread 3 (Coach comment + standalone author reply + Revize 2 diff) on essay ${essay4.id}`);
   }
 
   // Essay 5: Multiple comments by coach, and author replied to one of them (Author reply is latest)
   if (essays[4]) {
     const essay5 = essays[4];
+    const coachComment1Date = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    const coachComment2Date = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
+    const studentReplyDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: existingComments } = await sb
       .from("essay_comments")
       .select("id")
       .eq("essay_id", essay5.id);
 
     if (!existingComments || existingComments.length === 0) {
-      const coachComment1Date = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
-      const coachComment2Date = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
-      const studentReplyDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-
       const { data: c1 } = await sb.from("essay_comments").insert({
         essay_id: essay5.id,
         author_profile_id: primaryCoach.id,
@@ -262,15 +329,82 @@ async function main() {
           essay_id: essay5.id,
           author_profile_id: essay5.author_profile_id,
           parent_id: c1.id,
-          body: "Ahoj, k výsledkům: podařilo se nám dosáhnout obratu 45 000 Kč během prvního měsíce a získat 12 vracejících se zákazníků.",
+          body: "Ahoj, k výsledkům: podařilo se nám dosáhnout obratu 45 000 Kč během prvního měsíce a získat 12 vracejících se zákazníků. Všechny detaily a rozdělení rolí jsem doplnila do nové revize textu výše!",
           created_at: studentReplyDate,
           created_by_profile_id: essay5.author_profile_id,
           updated_by_profile_id: essay5.author_profile_id,
         });
       }
-
-      console.log(`✅ Seeded Thread 4 (2 coach comments + 1 student reply) on essay ${essay5.id}`);
     }
+
+    // Seed Revision 1 and Revision 2 on Essay 5
+    await sb.from("essay_revisions").upsert([
+      {
+        essay_id: essay5.id,
+        revision_no: 1,
+        title: "Reflexe a aplikace v týmu: Začněte s PROČ",
+        content_json: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Kniha Simona Sineka Začněte s PROČ nám ukázala, proč některé organizace a lídři dokáží dlouhodobě inspirovat své okolí, zatímco jiní rychle vyhoří. Většina podnikatelů přesně ví, CO dělá, někteří vědí, JAK to dělají, ale jen málokdo si dokáže jasně zodpovědět základní otázku, PROČ jeho projekt existuje." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "V našem týmu jsme dříve začínali přesně opačně – vymysleli jsme produkt a rovnou psali prodejní texty zaměřené na funkce a výhody. Sinek nám vysvětlil, že lidé nekupují to, co děláte, ale důvod, proč to děláte." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Na týmovém setkání jsme se pokusili zformulovat naše společné hodnoty a posunout naši komunikaci směrem k hlubšímu smyslu pro zákazníky." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Knihu považuji za zásadní základ pro budování silné týmové kultury i autentické marketingové komunikace." }],
+            },
+          ],
+        },
+        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        created_by_profile_id: essay5.author_profile_id,
+        updated_by_profile_id: essay5.author_profile_id,
+      },
+      {
+        essay_id: essay5.id,
+        revision_no: 2,
+        title: "Reflexe a aplikace v týmu: Začněte s PROČ (Doplněny výsledky a rozdělení rolí)",
+        content_json: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Kniha Simona Sineka Začněte s PROČ nám ukázala, proč některé organizace a lídři dokáží dlouhodobě inspirovat své okolí, zatímco jiní rychle vyhoří. Většina podnikatelů přesně ví, CO dělá, někteří vědí, JAK to dělají, ale jen málokdo si dokáže jasně zodpovědět základní otázku, PROČ jeho projekt existuje a jaké hodnoty vyznává." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "V našem týmu jsme dříve začínali přesně opačně – vymysleli jsme produkt a rovnou psali prodejní texty zaměřené na funkce a výhody. Sinek nám vysvětlil, že lidé nekupují to, co děláte, ale důvod, proč to děláte. Na týmovém workshopu jsme nově formulovali naše poslání: Věříme, že odvaha experimentovat a podnikavé myšlení mají patřit do života každého studenta." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Ověření změny komunikace v praxi: Na základě zpětné vazby jsme otestovali vliv nového sdělení na 40 potenciálních klientech. První skupině (20 kontaktů) jsme prezentovali čistě produktové parametry (CO). Získali jsme 4 objednávky (20% konverze). Druhé skupině (20 kontaktů) jsme nejdříve vysvětlili naše PROČ a příběh za projektem. Výsledkem bylo 13 potvrzených objednávek (65% konverze) a celkový obrat 45 000 Kč." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Rozdělení rolí a odpovědnosti v týmu: Abychom myšlenky z knihy ukotvili v praxi, rozdělili jsme si odpovědnosti podle Zlatého kruhu: Marie drží vizi a komunikaci s partnery (PROČ), Ondřej řídí procesy, finance a logistiku (JAK) a Matěj s Annou zajišťují samotné dodání a zákaznickou péči (CO). Díky tomu přesně víme, kdo za co nese zodpovědnost." }],
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Jasné PROČ nám umožnilo nejen výrazně zvýšit prodeje, ale především udržet silnou motivaci týmu i v náročných týdnech." }],
+            },
+          ],
+        },
+        created_at: studentReplyDate,
+        created_by_profile_id: essay5.author_profile_id,
+        updated_by_profile_id: essay5.author_profile_id,
+      },
+    ]);
+
+    await sb.from("essays").update({ updated_at: studentReplyDate }).eq("id", essay5.id);
+    console.log(`✅ Seeded Thread 4 (2 coach comments + 1 student reply + Revize 2 diff) on essay ${essay5.id}`);
   }
 
   // Essay 6: Dialogue where Coach commented -> Student replied -> Coach asked follow-up (Coach comment is latest)

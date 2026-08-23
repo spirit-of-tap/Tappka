@@ -7,9 +7,9 @@ import {
   CheckCheck,
   Clock,
   CornerDownRight,
+  FilePenLine,
   Inbox,
   MessageCircle,
-  MessageCircleReply,
   RotateCcw,
   Sparkles,
 } from 'lucide-react';
@@ -151,7 +151,7 @@ export function CoachReviewList({
     }
     if (replyFilter !== 'all') {
       const essayComments = effectiveCommentsMap[essay.id] ?? [];
-      const { hasCoachComment, hasAuthorReply } = getEssayCommentThreads(
+      const { hasCoachComment, hasAuthorReply, latestCoachCommentTime } = getEssayCommentThreads(
         essayComments,
         essay.author_profile_id,
       );
@@ -160,6 +160,11 @@ export function CoachReviewList({
         if (!hasAuthorReply) return false;
       } else if (replyFilter === 'without-reply') {
         if (!hasCoachComment || hasAuthorReply) return false;
+      } else if (replyFilter === 'edited-after-comment') {
+        const hasEditedAfterCoach =
+          hasCoachComment &&
+          new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
+        if (!hasEditedAfterCoach) return false;
       } else if (replyFilter === 'no-coach-comment') {
         if (hasCoachComment) return false;
       }
@@ -227,7 +232,7 @@ export function CoachReviewList({
           </Select>
         </div>
 
-        <div className="w-[150px] sm:w-[175px]">
+        <div className="w-[160px] sm:w-[185px]">
           <Select value={replyFilter} onValueChange={setReplyFilter}>
             <SelectTrigger size="sm" className="w-full">
               <SelectValue placeholder="Reakce Téčka" />
@@ -236,6 +241,7 @@ export function CoachReviewList({
               <SelectItem value="all">Všechny reakce</SelectItem>
               <SelectItem value="with-reply">Téčko odpovědělo</SelectItem>
               <SelectItem value="without-reply">Bez odpovědi Téčka</SelectItem>
+              <SelectItem value="edited-after-comment">Upraveno po komentáři</SelectItem>
               <SelectItem value="no-coach-comment">Bez komentáře kouče</SelectItem>
             </SelectContent>
           </Select>
@@ -362,6 +368,7 @@ export function getEssayCommentThreads(
       coachComments: [],
       hasCoachComment: false,
       hasAuthorReply: false,
+      latestCoachCommentTime: 0,
       threads: [],
     };
   }
@@ -406,6 +413,7 @@ export function getEssayCommentThreads(
     coachComments,
     hasCoachComment: true,
     hasAuthorReply,
+    latestCoachCommentTime,
     threads,
   };
 }
@@ -421,10 +429,15 @@ function ReviewRow({
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
   const bookPoints = pointsNumber(essay.book?.book_points);
 
-  const { coachComments, hasCoachComment, hasAuthorReply, threads } = useMemo(
-    () => getEssayCommentThreads(comments, essay.author_profile_id),
-    [comments, essay.author_profile_id],
-  );
+  const { coachComments, hasCoachComment, hasAuthorReply, latestCoachCommentTime, threads } =
+    useMemo(
+      () => getEssayCommentThreads(comments, essay.author_profile_id),
+      [comments, essay.author_profile_id],
+    );
+
+  const hasEditedAfterCoach =
+    hasCoachComment &&
+    new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
 
   return (
     <Card className="py-0">
@@ -514,33 +527,26 @@ function ReviewRow({
 
         {/* Combined Footer: Coach comments & read status */}
         {(hasCoachComment || (read && coachReads.length > 0)) && (
-          <div className="space-y-2 border-t border-border/40 pt-2.5">
-            {/* Header with comments count, reply status & read by */}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <div className="space-y-2.5 border-t border-border/40 pt-2.5">
+            {/* Header with comments count, edited status & read by */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[11px] text-muted-foreground">
               <div className="flex items-center gap-2">
                 {hasCoachComment && (
-                  <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">
+                  <span className="flex items-center gap-1 font-semibold text-foreground">
                     <MessageCircle className="size-3 text-primary" />
-                    Komentáře koučů:ek ({coachComments.length})
+                    Komentáře ({coachComments.length})
                   </span>
                 )}
-                {hasCoachComment && (
-                  hasAuthorReply ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
-                      <MessageCircleReply className="size-2.5" />
-                      Téčko odpovědělo
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
-                      <Clock className="size-2.5" />
-                      Bez odpovědi Téčka
-                    </span>
-                  )
+                {hasEditedAfterCoach && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+                    <FilePenLine className="size-2.5" />
+                    Upraveno po komentáři
+                  </span>
                 )}
               </div>
 
               {read && coachReads.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1 text-[11px]">
                   <CheckCheck className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Přečteno:</span>
                   {coachReads.map((cr, idx) => (

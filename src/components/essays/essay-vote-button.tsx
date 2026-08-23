@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronUp, ThumbsUp } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
@@ -26,10 +27,23 @@ export function EssayVoteButton({
   const [loading, setLoading] = useState(false);
   const [burst, setBurst] = useState(false);
 
-  const toggle = async (e: React.MouseEvent) => {
+  const toggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (loading || readOnly) return;
+
+    // Capture button origin synchronously before async fetch (to avoid React event pooling nulling e.currentTarget)
+    let origin = { x: 0.5, y: 0.7 };
+    try {
+      const rect = e.currentTarget.getBoundingClientRect();
+      origin = {
+        x: (rect.left + rect.width / 2) / window.innerWidth,
+        y: (rect.top + rect.height / 2) / window.innerHeight,
+      };
+    } catch {
+      // fallback
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`/api/essays/${essayId}/vote`, {
@@ -43,6 +57,22 @@ export function EssayVoteButton({
           if (nowVoted) {
             setBurst(true);
             setTimeout(() => setBurst(false), 600);
+
+            try {
+              confetti({
+                particleCount: 35,
+                spread: 55,
+                startVelocity: 24,
+                scalar: 0.75,
+                ticks: 160,
+                origin,
+                zIndex: 9999,
+                colors: ['#b31b1b', '#e11d48', '#fb7185', '#f59e0b', '#fde68a'],
+                disableForReducedMotion: true,
+              });
+            } catch {
+              // ignore
+            }
           }
         }
       } else {
@@ -100,11 +130,11 @@ export function EssayVoteButton({
             disabled={loading}
             aria-label={voted ? 'Odebrat hlas' : 'Označit esej jako užitečnou'}
             className={cn(
-              'relative flex shrink-0 items-center gap-2.5 rounded-2xl px-6 py-3 transition-colors select-none whitespace-nowrap',
+              'relative flex shrink-0 items-center gap-2.5 rounded-full border border-border/80 bg-card px-5 py-2.5 transition-colors select-none whitespace-nowrap shadow-2xs',
               burst && 'vote-pop',
               voted
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/25 hover:bg-primary/90'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
             {loading ? (

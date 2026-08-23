@@ -350,6 +350,38 @@ export async function getEssayRevisions(
   });
 }
 
+export interface EssayFullRevision {
+  revision_no: number;
+  title: string;
+  content_json: object;
+  content_text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getEssayFullRevisions(
+  supabase: SupabaseClient<Database>,
+  essayId: string,
+): Promise<EssayFullRevision[]> {
+  const { data, error } = await supabase
+    .from('essay_revisions')
+    .select('revision_no, title, content_json, created_at, updated_at')
+    .eq('essay_id', essayId)
+    .is('invalid_since', null)
+    .order('revision_no', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    revision_no: row.revision_no,
+    title: row.title,
+    content_json: (row.content_json ?? {}) as object,
+    content_text: contentTextFromJson((row.content_json ?? {}) as object),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
+}
+
 export async function getEssayAuthorInfo(
   supabase: SupabaseClient<Database>,
   essayId: string,

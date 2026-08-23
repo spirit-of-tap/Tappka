@@ -168,11 +168,8 @@ describe('CoachReviewList', () => {
       />,
     );
 
-    // Badge indicates student replied
-    expect(screen.getByText('Téčko odpovědělo')).toBeInTheDocument();
-
     // Coach comments quote is visible
-    expect(screen.getByText(/Komentáře koučů:ek/)).toBeInTheDocument();
+    expect(screen.getByText(/Komentáře \(\d+\)/)).toBeInTheDocument();
     expect(screen.getByText('Kouč Petr')).toBeInTheDocument();
     expect(screen.getByText('„Skvělé zhodnocení MVP a lean přístupu!“')).toBeInTheDocument();
 
@@ -180,7 +177,7 @@ describe('CoachReviewList', () => {
     expect(screen.getByText('„Díky, v další revizi doplním ještě metriky z testování.“')).toBeInTheDocument();
   });
 
-  it('renders "Bez odpovědi Téčka" indicator when coach commented but student has not replied', () => {
+  it('renders "Zatím bez odpovědi Téčka" indicator when coach commented but student has not replied', () => {
     const essay = mockEssay();
     const coachComment = {
       id: 'comment-1',
@@ -209,8 +206,8 @@ describe('CoachReviewList', () => {
       />,
     );
 
-    // Badge indicates waiting for reply
-    expect(screen.getByText('Bez odpovědi Téčka')).toBeInTheDocument();
+    // Indicator under coach comment
+    expect(screen.getByText('Zatím bez odpovědi Téčka')).toBeInTheDocument();
   });
 
   it('recognizes author comment posted after coach comment as a reply even when parent_id is null', () => {
@@ -259,8 +256,40 @@ describe('CoachReviewList', () => {
       />,
     );
 
-    // Shows Téčko odpovědělo badge and displays the reply
-    expect(screen.getByText('Téčko odpovědělo')).toBeInTheDocument();
     expect(screen.getByText('„Plán B máme sepsaný v Notion.“')).toBeInTheDocument();
+  });
+
+  it('renders "Upraveno po komentáři" badge when essay was updated after coach comment', () => {
+    const essay = mockEssay({
+      updated_at: '2026-08-23T16:00:00Z', // 5 hours after coach comment
+    });
+    const coachComment = {
+      id: 'comment-1',
+      essay_id: 'essay-1',
+      author_profile_id: 'coach-1',
+      parent_id: null,
+      body: 'Doporučuji rozvést kapitolu o MVP.',
+      removed_at: null,
+      created_at: '2026-08-23T11:00:00Z',
+      updated_at: '2026-08-23T11:00:00Z',
+      author: {
+        id: 'coach-1',
+        name: 'Kouč Petr',
+        picture: null,
+        role: 'coach' as const,
+      },
+    };
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+        commentsMap={{ 'essay-1': [coachComment] }}
+      />,
+    );
+
+    expect(screen.getByText('Upraveno po komentáři')).toBeInTheDocument();
   });
 });
