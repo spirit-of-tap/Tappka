@@ -28,18 +28,16 @@ export function TeamReflectionCard({ reflection }: TeamReflectionCardProps) {
   const steps = parseActionSteps(reflection.planned_action_steps, reflection.responsible_person)
 
   return (
-    <Card className="group relative overflow-hidden rounded-xl border border-border/80 bg-card p-4 sm:p-5 transition-all hover:border-primary/40 hover:bg-accent/15 hover:shadow-xs">
-      <Link
-        href={`/tymova-reflexe/${reflection.id}`}
-        className="absolute inset-0 z-0"
-        aria-label={`Otevřít reflexi za ${monthLabel(reflection.month)}`}
-      />
-
-      <div className="relative z-10 flex flex-col gap-3">
+    <Link
+      href={`/tymova-reflexe/${reflection.id}`}
+      className="block group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label={`Otevřít reflexi za ${monthLabel(reflection.month)}`}
+    >
+      <Card className="flex flex-col gap-3 rounded-xl border border-border/80 bg-card p-4 sm:p-5 transition-all group-hover:border-primary/40 group-hover:bg-accent/15 group-hover:shadow-xs cursor-pointer">
         {/* Top Header */}
-        <div className="flex items-center justify-between gap-3 pointer-events-none">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
               <Calendar className="size-4.5" />
             </div>
             <div className="min-w-0">
@@ -61,7 +59,7 @@ export function TeamReflectionCard({ reflection }: TeamReflectionCardProps) {
 
         {/* Action Steps Body */}
         {steps.length > 0 ? (
-          <div className="space-y-1.5 rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 pointer-events-none">
+          <div className="space-y-1.5 rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
               <CheckSquare className="size-3.5 text-primary" />
               <span>
@@ -93,21 +91,21 @@ export function TeamReflectionCard({ reflection }: TeamReflectionCardProps) {
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-border/60 bg-muted/15 p-2.5 text-xs text-muted-foreground italic pointer-events-none">
+          <div className="rounded-lg border border-dashed border-border/60 bg-muted/15 p-2.5 text-xs text-muted-foreground italic">
             Žádné naplánované akční kroky — klikněte pro otevření detailu
           </div>
         )}
 
         {/* Footer info: Creator */}
-        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground pointer-events-none pt-0.5">
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground pt-0.5">
           <span className="truncate">
             {reflection.created_by && `Založil:a ${reflection.created_by.name}`}
           </span>
-          <span className="text-[11px] text-primary/80 group-hover:underline">
+          <span className="text-[11px] text-primary font-medium group-hover:underline">
             Zobrazit detail →
           </span>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   )
 }

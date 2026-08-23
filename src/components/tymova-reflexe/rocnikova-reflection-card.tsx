@@ -24,18 +24,16 @@ export function RocnikovaReflectionCard({ reflection }: RocnikovaReflectionCardP
   )
 
   return (
-    <Card className="group relative overflow-hidden rounded-xl border border-chart-5/30 bg-card p-4 sm:p-5 transition-all hover:border-chart-5/60 hover:bg-chart-5/5 hover:shadow-xs">
-      <Link
-        href={`/tymova-reflexe/rocnikova/${reflection.id}`}
-        className="absolute inset-0 z-0"
-        aria-label={`Otevřít ${rocnikovaLabel(reflection.reflection_month)}`}
-      />
-
-      <div className="relative z-10 flex flex-col gap-3">
+    <Link
+      href={`/tymova-reflexe/rocnikova/${reflection.id}`}
+      className="block group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label={`Otevřít ${rocnikovaLabel(reflection.reflection_month)}`}
+    >
+      <Card className="flex flex-col gap-3 rounded-xl border border-chart-5/30 bg-card p-4 sm:p-5 transition-all group-hover:border-chart-5/60 group-hover:bg-chart-5/5 group-hover:shadow-xs cursor-pointer">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 pointer-events-none">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-chart-5/15 text-chart-5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-chart-5/15 text-chart-5 group-hover:bg-chart-5/25 transition-colors">
               <Award className="size-4.5" />
             </div>
             <div className="min-w-0">
@@ -59,7 +57,7 @@ export function RocnikovaReflectionCard({ reflection }: RocnikovaReflectionCardP
         </div>
 
         {/* Progress bar */}
-        <div className="space-y-1.5 pointer-events-none rounded-lg border border-chart-5/20 bg-chart-5/5 p-2.5 sm:p-3">
+        <div className="space-y-1.5 rounded-lg border border-chart-5/20 bg-chart-5/5 p-2.5 sm:p-3">
           <div className="flex items-center justify-between text-xs">
             <span className="font-medium text-foreground/85">Vyplněno témat</span>
             <span className="font-semibold tabular-nums text-foreground/90">
@@ -80,14 +78,14 @@ export function RocnikovaReflectionCard({ reflection }: RocnikovaReflectionCardP
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground pointer-events-none pt-0.5">
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
           <span>{reflection.created_by && `Založil:a ${reflection.created_by.name}`}</span>
-          <span className="text-[11px] text-chart-5/90 font-medium group-hover:underline">
+          <span className="text-[11px] text-chart-5 font-medium group-hover:underline">
             {isComplete ? "Zobrazit reflexi →" : "Pokračovat ve vyplňování →"}
           </span>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   )
 }
 
