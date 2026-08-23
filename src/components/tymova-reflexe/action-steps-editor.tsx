@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Trash2, Users, Quote, CheckSquare, Sparkles } from "lucide-react"
+import { Plus, Trash2, Users, CheckSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -60,47 +60,31 @@ export function ActionStepsEditor({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <CheckSquare className="size-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-heading text-base font-semibold text-foreground">
-                Plánované akční kroky
-              </h3>
-              <Badge variant="secondary" className="text-xs px-2 py-0 h-5 font-medium">
-                {steps.length}
-              </Badge>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <CheckSquare className="size-4" />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Konkrétní kroky s přiřazenou zodpovědnou osobou pro další období
-            </p>
+            <h3 className="font-heading text-base font-semibold text-foreground">
+              Plánované akční kroky
+            </h3>
+            <Badge variant="secondary" className="text-xs px-2 py-0 h-5 font-medium">
+              {steps.length}
+            </Badge>
           </div>
+          <p className="text-xs text-muted-foreground/80 italic mt-1 pl-9">
+            „Když je zodpovědný každý, ve skutečnosti není zodpovědný nikdo.“ — Albert Bandura
+          </p>
         </div>
 
-        <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="self-start sm:self-auto">
+        <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="self-start sm:self-auto shrink-0">
           <Plus className="size-4" />
           Přidat krok
         </Button>
       </div>
 
-      {/* Quote Banner */}
-      <div className="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-relaxed text-muted-foreground">
-        <Quote className="mt-0.5 size-4 shrink-0 text-primary/70" />
-        <div className="space-y-0.5">
-          <p className="font-medium text-foreground">
-            „Když je zodpovědný každý, ve skutečnosti není zodpovědný nikdo.“
-            <span className="font-normal text-muted-foreground"> — Albert Bandura</span>
-          </p>
-          <p className="text-[11px]">
-            Pokud má akční krok na starosti celá skupinka, vždy určete jednoho:jednu lídra:kyni zodpovědného:ou za dotažení.
-          </p>
-        </div>
-      </div>
-
-      {/* Flat List of Steps (No Nested Cards) */}
+      {/* Flat List of Steps (Seamless without inner card/border box) */}
       {steps.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border/80 bg-muted/10 p-6 text-center">
           <p className="text-xs text-muted-foreground">
@@ -118,7 +102,7 @@ export function ActionStepsEditor({
           </Button>
         </div>
       ) : (
-        <div className="divide-y divide-border/50 rounded-lg border border-border/70 bg-card">
+        <div className="divide-y divide-border/40">
           {steps.map((step, index) => {
             const isCustom =
               customModeSteps[step.id] ||
@@ -127,7 +111,7 @@ export function ActionStepsEditor({
             return (
               <div
                 key={step.id}
-                className="group/row flex items-start gap-3 p-3 sm:p-4 transition-colors hover:bg-muted/10"
+                className="group/row flex items-start gap-3 py-3 first:pt-1 last:pb-1 transition-colors"
               >
                 {/* Index Pill */}
                 <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary mt-1">
@@ -135,27 +119,27 @@ export function ActionStepsEditor({
                 </span>
 
                 {/* Content */}
-                <div className="flex-1 space-y-2 min-w-0">
+                <div className="flex-1 space-y-1.5 min-w-0">
                   <Textarea
                     value={step.text}
                     onChange={(e) => handleTextChange(step.id, e.target.value)}
                     placeholder="Co konkrétně uděláme (akční krok)…"
                     rows={2}
-                    className="min-h-[52px] resize-none text-sm bg-muted/20 border-border/50 focus:bg-background focus:border-primary/50 transition-colors"
+                    className="w-full resize-none text-sm border-0 bg-transparent p-1 shadow-none focus-visible:ring-0 focus-visible:bg-muted/20 rounded transition-colors placeholder:text-muted-foreground/60"
                   />
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-medium text-muted-foreground shrink-0">
+                  <div className="flex items-center gap-2 flex-wrap pl-1">
+                    <span className="text-[11px] font-medium text-muted-foreground/80 shrink-0">
                       Zodpovědnost:
                     </span>
 
                     {isCustom || teamMembers.length === 0 ? (
-                      <div className="flex items-center gap-1.5 flex-1 min-w-[200px] max-w-sm">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-xs">
                         <Input
                           value={step.assignee}
                           onChange={(e) => handleAssigneeChange(step.id, e.target.value)}
                           placeholder="Jméno zodpovědné osoby / lídra:kyně"
-                          className="h-7 text-xs bg-muted/20 border-border/50 focus:bg-background"
+                          className="h-7 text-xs bg-muted/20 border-border/40 focus:bg-background"
                         />
                         {teamMembers.length > 0 && (
                           <Button
@@ -171,7 +155,7 @@ export function ActionStepsEditor({
                         )}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1.5 flex-1 min-w-[200px] max-w-sm">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-xs">
                         <Select
                           value={step.assignee || undefined}
                           onValueChange={(val) => {
@@ -182,7 +166,7 @@ export function ActionStepsEditor({
                             }
                           }}
                         >
-                          <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/50 hover:bg-muted/30">
+                          <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/40 hover:bg-muted/30">
                             <SelectValue placeholder="Vyberte člena:ku týmu" />
                           </SelectTrigger>
                           <SelectContent>
@@ -217,7 +201,7 @@ export function ActionStepsEditor({
                   variant="ghost"
                   size="icon"
                   onClick={() => handleRemove(step.id)}
-                  className="size-7 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 shrink-0 mt-0.5"
+                  className="size-7 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 shrink-0 mt-0.5"
                   aria-label="Smazat akční krok"
                 >
                   <Trash2 className="size-4" />

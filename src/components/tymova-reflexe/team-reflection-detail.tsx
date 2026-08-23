@@ -226,10 +226,10 @@ export function TeamReflectionDetail({
         </div>
       </div>
 
-      {/* Two Reflection Text Areas */}
+      {/* Two Reflection Text Areas (Seamless without inner textarea boxes) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Co se povedlo */}
-        <Card className="flex flex-col p-4 sm:p-5 space-y-3 border-emerald-500/20 bg-card">
+        <Card className="flex flex-col p-4 sm:p-5 space-y-2.5 border-emerald-500/30 bg-card hover:border-emerald-500/50 transition-colors">
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="size-4" />
@@ -248,13 +248,13 @@ export function TeamReflectionDetail({
             value={data.what_went_well ?? ""}
             onChange={(e) => setField("what_went_well", e.target.value)}
             placeholder="Úspěchy, zvládnuté výzvy a pozitiva za uplynulý měsíc…"
-            rows={8}
-            className="flex-1 resize-y text-sm bg-muted/20 border-border/50 focus:bg-background focus:border-emerald-500/50 leading-relaxed"
+            rows={7}
+            className="flex-1 resize-y text-sm border-0 bg-transparent p-1 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 leading-relaxed"
           />
         </Card>
 
         {/* Co uděláme jinak */}
-        <Card className="flex flex-col p-4 sm:p-5 space-y-3 border-primary/20 bg-card">
+        <Card className="flex flex-col p-4 sm:p-5 space-y-2.5 border-primary/30 bg-card hover:border-primary/50 transition-colors">
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
               <Sparkles className="size-4" />
@@ -273,8 +273,8 @@ export function TeamReflectionDetail({
             value={data.what_we_do_differently ?? ""}
             onChange={(e) => setField("what_we_do_differently", e.target.value)}
             placeholder="Co příště změníme, zkusíme nebo upravíme v přístupu…"
-            rows={8}
-            className="flex-1 resize-y text-sm bg-muted/20 border-border/50 focus:bg-background focus:border-primary/50 leading-relaxed"
+            rows={7}
+            className="flex-1 resize-y text-sm border-0 bg-transparent p-1 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 leading-relaxed"
           />
         </Card>
       </div>
