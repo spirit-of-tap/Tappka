@@ -45,13 +45,13 @@ describe('BorrowPanel', () => {
       book: { list_status: 'shortlist', is_rocket_model: true, highlight_category: null },
     });
     expect(screen.getByLabelText('Ověřená kniha')).toBeInTheDocument();
-    expect(screen.getByLabelText('Raketový model')).toBeInTheDocument();
+    expect(screen.getByLabelText('Rocket model')).toBeInTheDocument();
   });
 
   it('hides status badges when book status fields are not passed', () => {
     renderPanel({});
     expect(screen.queryByLabelText('Ověřená kniha')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Raketový model')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Rocket model')).not.toBeInTheDocument();
   });
 
   it('disables the borrow button when no copies are available', () => {

@@ -346,35 +346,30 @@ async function main() {
       .eq("book_id", atomoveBookId)
       .maybeSingle();
 
-    if (!existingEssay) {
-      const { data: newEssay } = await sb
-        .from("essays")
-        .insert({
-          author_profile_id: mainStudent.id,
-          book_id: atomoveBookId,
-          published_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          pinned_at: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString(),
-          pinned_by_profile_id: mainStudent.id,
-          created_by_profile_id: mainStudent.id,
-          updated_by_profile_id: mainStudent.id,
-        })
-        .select("id")
-        .single();
+    const essayId = existingEssay?.id ?? (await sb.from("essays").insert({
+      author_profile_id: mainStudent.id,
+      book_id: atomoveBookId,
+      published_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      pinned_at: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000).toISOString(),
+      pinned_by_profile_id: mainStudent.id,
+      created_by_profile_id: mainStudent.id,
+      updated_by_profile_id: mainStudent.id,
+    }).select("id").single()).data?.id;
 
-      if (newEssay) {
-        await sb.from("essay_revisions").insert({
-          essay_id: newEssay.id,
-          revision_no: 1,
-          title: "Jak aplikovat Atomové návyky v týmovém prostředí",
-          content_json: docJson([
-            "Kniha Atomové návyky od Jamese Cleara nabízí skvělý rámec nejen pro jednotlivce, ale i pro týmovou spolupráci v Tiimiakatemia.",
-            "Klíčovým poznatkem pro náš tým bylo vytvoření společného prostředí, kde je žádoucí chování co nejjednodušší a viditelné pro všechny členy:ky.",
-            "Zavedli jsme 2minutové ranní check-iny a týdenní retrospektivy, což nám pomohlo zautomatizovat sdílení informací.",
-          ]),
-          created_by_profile_id: mainStudent.id,
-          updated_by_profile_id: mainStudent.id,
-        });
-      }
+    if (essayId) {
+      await sb.from("essay_revisions").upsert({
+        essay_id: essayId,
+        revision_no: 1,
+        title: "Jak aplikovat Atomové návyky v týmovém prostředí a trénincích",
+        content_json: docJson([
+          "Kniha Atomové návyky od Jamese Cleara zásadním způsobem změnila můj pohled na to, jak funguje týmová dynamika a dlouhodobé dosahování cílů. Často máme tendenci soustředit se výhradně na velké výsledky – získání velkého klienta, dokončení projektu, dosažení finančních cílů. Clear však ukazuje, že skutečný úspěch je součtem drobných 1% zlepšení prováděných každý den s neúprosnou konzistencí.",
+          "V našem týmu jsme dlouhodobě bojovali s přípravou na tréninky a evidencí projektových úkolů. Místo abychom zaváděli složité motivační systémy, aplikovali jsme první zákon změn chování: učiňte to nápadným. Vytvořili jsme fyzickou tabuli v kanceláři a zavedli dvouminutový ranní rituál, který se stal pevnou kotvou celého dne.",
+          "Druhý klíčový princip – změna identity – byl pro náš tým největším aha-momentem. Nepřemýšlíme o sobě jako o lidech, co se jen snaží podnikat, ale jako o profesionálním týmu, který plní své závazky. Tato drobná změna narativu měla obrovský vliv na dochvilnost na trénincích a kvalitu výstupů pro zákazníky.",
+          "Doporučuji knihu každému týmpodnikateli:ce, který:á se cítí zahlcený:á nebo má pocit, že se tým točí v kruhu. Není to o silné vůli, ale o správně nastavených systémech a prostředí, které vás nenechá selhat.",
+        ]),
+        created_by_profile_id: mainStudent.id,
+        updated_by_profile_id: mainStudent.id,
+      });
     }
   }
 
@@ -387,32 +382,28 @@ async function main() {
       .eq("book_id", whyBookId)
       .maybeSingle();
 
-    if (!existingEssay) {
-      const { data: newEssay } = await sb
-        .from("essays")
-        .insert({
-          author_profile_id: mainStudent.id,
-          book_id: whyBookId,
-          published_at: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
-          created_by_profile_id: mainStudent.id,
-          updated_by_profile_id: mainStudent.id,
-        })
-        .select("id")
-        .single();
+    const essayId = existingEssay?.id ?? (await sb.from("essays").insert({
+      author_profile_id: mainStudent.id,
+      book_id: whyBookId,
+      published_at: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
+      created_by_profile_id: mainStudent.id,
+      updated_by_profile_id: mainStudent.id,
+    }).select("id").single()).data?.id;
 
-      if (newEssay) {
-        await sb.from("essay_revisions").insert({
-          essay_id: newEssay.id,
-          revision_no: 1,
-          title: "Leadership založený na PROČ podle Simona Sinka",
-          content_json: docJson([
-            "Zlatý kruh Simona Sinka vysvětluje, proč některé organizace a lídři dokáží inspirovat, zatímco jiní ne.",
-            "Pro naše projekty je zásadní nejprve definovat náš smysl a hodnoty, a teprve poté hledat konkrétní produkty či služby.",
-          ]),
-          created_by_profile_id: mainStudent.id,
-          updated_by_profile_id: mainStudent.id,
-        });
-      }
+    if (essayId) {
+      await sb.from("essay_revisions").upsert({
+        essay_id: essayId,
+        revision_no: 1,
+        title: "Leadership založený na PROČ: Hledání společného smyslu v týmu",
+        content_json: docJson([
+          "Kniha Začněte s PROČ od Simona Sinka nabízí hluboký vhled do toho, jak funguje autentické vedení lidí a dlouhodobá inspirace v organizacích. Sinek představuje model Zlatého kruhu (PROČ – JAK – CO), který přesně pojmenovává důvod, proč některé firmy a týmy dokáží vybudovat neotřesitelnou loajalitu, zatímco jiné musí spoléhat na manipulaci a slevy.",
+          "Při aplikaci v našem týmu jsme si uvědomili, že jsme se příliš dlouho točili v kruhu CO děláme – pořádáme akce, děláme marketing, vytváříme weby. Scházela nám ale jasná odpověď na to, PROČ to vlastně děláme a jaká je naše společná vize. Po intenzivním workshopu jsme definovali naši hlavní misi: pomáhat mladým tvůrcům proměnit nápady ve funkční podnikání.",
+          "Tento posun v komunikaci okamžitě změnil způsob, jakým oslovujeme partnery i jak fungujeme uvnitř týmu. Když lidé rozumí hlubšímu smyslu a věří ve stejné hodnoty, nepotřebují neustálou mikro-kontrolu. Vzniká přirozená samostatnost a odpovědnost.",
+          "Knihu vnímám jako zásadní dílo pro každého lídra a kouče:ku. Pomáhá přejít od mechanického plnění úkolů k hlubokému zapojení a vášni pro společnou věc.",
+        ]),
+        created_by_profile_id: mainStudent.id,
+        updated_by_profile_id: mainStudent.id,
+      });
     }
   }
 
@@ -446,6 +437,7 @@ async function main() {
           title: "Návrh design sprintu pro náš nový zákaznický projekt",
           content_json: docJson([
             "Pracovní poznámky k metodice Design Sprint od Jakea Knappa. Jak zkrátit prototypování na 5 dní a co k tomu budeme potřebovat v týmu.",
+            "Den 1: Mapování problému a výběr klíčového cíle. Den 2: Skicování konkurenčních řešení. Den 3: Rozhodnutí a storyboard. Den 4: Tvorba realistického prototypu. Den 5: Testování s 5 reálnými zákazníky.",
           ]),
           created_by_profile_id: mainStudent.id,
           updated_by_profile_id: mainStudent.id,
@@ -454,14 +446,54 @@ async function main() {
     }
   }
 
-  // D. Teammate essays to populate team statistics
+  // D. Teammate essays to populate team statistics and feed variety
   const otherStudents = students.filter((s) => s.id !== mainStudent.id && s.team_id === mainStudent.team_id);
   const targetTeammates = otherStudents.length > 0 ? otherStudents : students.filter((s) => s.id !== mainStudent.id).slice(0, 4);
 
+  const teammateEssaysData = [
+    {
+      bookId: leanBookId,
+      title: "Lean Startup v praxi: Jak jsme otestovali MVP za 48 hodin",
+      paragraphs: [
+        "The Lean Startup od Erica Riese by měla být povinnou četbou každého, kdo v rámci Tiimiakatemia zakládá nový projekt. Dříve jsme strávili měsíce vymýšlením dokonalého produktu, psaním byznys plánů a laděním detailů, aniž bychom promluvili s jediným reálným zákazníkem. Riesova metodika nám otevřela oči v tom, jak neefektivní tento přístup byl.",
+        "Klíčovou myšlenkou, kterou jsme okamžitě zavedli do praxe, je cyklus Build-Measure-Learn (Vytvoř – Změř – Pouč se). Místo hotové webové aplikace jsme vytvořili jednoduchou jednostránkovou landing page za 24 hodin a spustili minikampaň za 500 Kč, abychom otestovali skutečnou poptávku. Zjistili jsme, že náš původní předpoklad byl chybný, což nám ušetřilo minimálně tři měsíce zbytečného programování.",
+        "Koncept Validated Learning (ověřeného učení) nám také pomohl překonat strach ze selhání. V týmu jsme přestali mluvit o neúspěšných pokusech a začali jsme měřit, jak rychle dokážeme hypotézu ověřit nebo vyvrátit. Každá schůzka se zákazníkem je pro nás experiment s jasně definovaným očekáváním.",
+        "Kniha nám dala společný jazyk v týmu – pojmy jako MVP, pivot a vanity metrics používáme v každodenní komunikaci. Pokud chcete v týmu stavět projekty na reálných datech a ne na vlastních domněnkách, je tohle absolutní základ.",
+      ],
+    },
+    {
+      bookId: whyBookId,
+      title: "Proč firmy selhávají: Zákazníci nekupují to, co děláte, ale PROČ to děláte",
+      paragraphs: [
+        "Když jsme poprvé začali nabízet naše služby firmám, měli jsme pocit, že musíme mít nejnižší cenu nebo nejvíce funkcí. Simon Sinek v této knize geniálně ukazuje, proč je tento přístup cestou do pekel. Skutečná hodnota a loajalita vzniká na emocionální úrovni – zákazníci se musí ztotožnit s vašimi hodnotami.",
+        "V našem obchodním pitchi jsme kompletně otočili pořadí prezentace. Začali jsme příběhem o tom, proč náš tým vznikl a jaký problém chceme na trhu vyřešit. Výsledek? Míra úspěšnosti našich schůzek vzrostla o více než 40 % a klienti s námi začali jednat jako s rovnocennými partnery.",
+        "Tuto knihu doporučuji každému, kdo má pocit, že jeho nabídka zapadá v šedi konkurence. Pomůže vám najít vlastní hlas.",
+      ],
+    },
+    {
+      bookId: atomoveBookId,
+      title: "Architektura volby: Jak jsme přestavěli kancelář pro maximální soustředění",
+      paragraphs: [
+        "Většina lidí si myslí, že produktivita je otázkou pevné vůle. James Clear v Atomových návycích přesvědčivě dokazuje, že jsme produktem našeho prostředí. Pokud máte na stole telefon a neustále vám chodí notifikace, vaše vůle dříve či později selže.",
+        "V naší týmové kanceláři jsme zavedli zóny ticha a pravidlo odkládání telefonů do košíku u vchodu během hluboké práce. Během dvou týdnů jsme zaznamenali obrovský nárůst dokončených úkolů bez pocitu vyčerpání.",
+        "Pokud chcete změnit své návyky, neměňte sebe, změňte své prostředí. To je největší lekce, kterou jsem si z této skvělé knihy odnesl:la.",
+      ],
+    },
+    {
+      bookId: sprintBookId,
+      title: "Jak vyřešit měsíční dilema za 5 dní: Naše zkušenost se Sprintem",
+      paragraphs: [
+        "Metodika Sprint od tvůrců z Google Ventures je geniální nástroj pro týmy, které se zasekly na mrtvém bodě. Místo nekonečných debat a dohadů vás sprint donutí vytvořit za 4 dny hmatatelný prototyp a pátý den ho otestovat před reálnými uživateli.",
+        "Tento proces jsme využili při návrhu nové platformy pro komunitní workshopy. Pátý den při testování s pěti uživateli jsme zjistili tři zásadní chyby v navigaci, které bychom jinak objevili až po měsících vývoje.",
+        "Sprint doporučuji aplikovat alespoň jednou za semestr na každý klíčový projekt. Ušetří vám to obrovské množství energie.",
+      ],
+    },
+  ];
+
   for (let i = 0; i < targetTeammates.length; i++) {
     const teammate = targetTeammates[i];
-    const bId = i % 2 === 0 ? leanBookId : whyBookId;
-    if (!bId) continue;
+    const data = teammateEssaysData[i % teammateEssaysData.length];
+    if (!data.bookId) continue;
 
     const { data: existing } = await sb
       .from("essays")
@@ -469,31 +501,23 @@ async function main() {
       .eq("author_profile_id", teammate.id)
       .maybeSingle();
 
-    if (!existing) {
-      const { data: te } = await sb
-        .from("essays")
-        .insert({
-          author_profile_id: teammate.id,
-          book_id: bId,
-          published_at: new Date(Date.now() - (10 + i * 15) * 24 * 60 * 60 * 1000).toISOString(),
-          created_by_profile_id: teammate.id,
-          updated_by_profile_id: teammate.id,
-        })
-        .select("id")
-        .single();
+    const essayId = existing?.id ?? (await sb.from("essays").insert({
+      author_profile_id: teammate.id,
+      book_id: data.bookId,
+      published_at: new Date(Date.now() - (5 + i * 8) * 24 * 60 * 60 * 1000).toISOString(),
+      created_by_profile_id: teammate.id,
+      updated_by_profile_id: teammate.id,
+    }).select("id").single()).data?.id;
 
-      if (te) {
-        await sb.from("essay_revisions").insert({
-          essay_id: te.id,
-          revision_no: 1,
-          title: `Reflexe a aplikace v týmu (${teammate.name})`,
-          content_json: docJson([
-            `Tento text shrnuje klíčové myšlenky z knihy a jak jsme je aplikovali v našem týmu.`,
-          ]),
-          created_by_profile_id: teammate.id,
-          updated_by_profile_id: teammate.id,
-        });
-      }
+    if (essayId) {
+      await sb.from("essay_revisions").upsert({
+        essay_id: essayId,
+        revision_no: 1,
+        title: data.title,
+        content_json: docJson(data.paragraphs),
+        created_by_profile_id: teammate.id,
+        updated_by_profile_id: teammate.id,
+      });
     }
   }
 

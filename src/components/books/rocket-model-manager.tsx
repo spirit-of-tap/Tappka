@@ -43,7 +43,7 @@ export function RocketModelManager({ books, onAdd, onRemove }: RocketModelManage
   return (
     <div className="space-y-6">
       <div className="space-y-3 rounded-md border p-4">
-        <p className="text-sm font-semibold">Zařadit knihu do raketového modelu</p>
+        <p className="text-sm font-semibold">Zařadit knihu do Rocket modelu</p>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
@@ -87,7 +87,7 @@ export function RocketModelManager({ books, onAdd, onRemove }: RocketModelManage
       {books.length === 0 ? (
         <div className="text-center py-12 space-y-2">
           <Rocket className="size-10 mx-auto text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Žádné knihy v raketovém modelu</p>
+          <p className="text-sm text-muted-foreground">Žádné knihy v Rocket modelu</p>
         </div>
       ) : (
         <div className="divide-y rounded-md border">
@@ -104,7 +104,7 @@ export function RocketModelManager({ books, onAdd, onRemove }: RocketModelManage
                 className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
                 onClick={() => void handleRemove(book.id)}
                 disabled={removingId === book.id}
-                title="Odebrat z raketového modelu"
+                title="Odebrat z Rocket modelu"
               >
                 {removingId === book.id ? <Spinner className="size-4" /> : <X className="size-4" />}
               </Button>

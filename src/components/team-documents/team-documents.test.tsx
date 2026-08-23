@@ -46,27 +46,19 @@ afterEach(() => {
 })
 
 describe("TeamDocuments", () => {
-  it("always renders the two featured document slots", () => {
-    const { container } = render(<TeamDocuments initialDocuments={[]} teamId="team-1" />)
+  it("always renders the two core featured document slots (Team Contract and Finanční směrnice)", () => {
+    render(<TeamDocuments initialDocuments={[]} teamId="team-1" />)
 
-    expect(screen.getByRole("heading", { name: "Týmová smlouva" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Team Contract" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Finanční směrnice" })).toBeInTheDocument()
     expect(screen.getAllByRole("button", { name: "Nahrát první verzi" })).toHaveLength(2)
-    expect(screen.queryByRole("button", { name: "Přejmenovat" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Archivovat" })).not.toBeInTheDocument()
-    expect(container.querySelectorAll('[data-slot="card"]')).toHaveLength(2)
-    const customEmptyState = screen.getByText("Zatím žádné další dokumenty").closest(
-      '[data-slot="empty"]',
-    )
-    expect(customEmptyState).toBeInTheDocument()
-    expect(customEmptyState).not.toHaveClass("border")
-    for (const emptyVersion of screen.getAllByText("Zatím není nahraná žádná verze.")) {
-      expect(emptyVersion).not.toHaveClass("border", "border-dashed")
-    }
+    expect(screen.getByText("Zatím žádné další dokumenty")).toBeInTheDocument()
+    expect(screen.getAllByText("Zatím není nahraná žádná verze.")).toHaveLength(2)
   })
 
-  it("lists custom documents and their immutable versions newest first", () => {
-    const { container } = render(
+  it("lists custom documents and shows version information", async () => {
+    const user = userEvent.setup()
+    render(
       <TeamDocuments
         teamId="team-1"
         initialDocuments={[
@@ -105,15 +97,68 @@ describe("TeamDocuments", () => {
     )
 
     expect(screen.getByRole("heading", { name: "Pravidla porad", level: 3 })).toBeInTheDocument()
-    expect(screen.getAllByText("Verze 2").length).toBeGreaterThan(0)
-    expect(screen.getByRole("link", { name: "Otevřít aktuální verzi" })).toHaveAttribute(
+    expect(screen.getByText("Verze 2")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Otevřít Pravidla porad" })).toHaveAttribute(
       "href",
       "/api/team-documents/versions/version-2/open",
     )
-    expect(container.querySelectorAll("div.border")).toHaveLength(2)
-    expect(screen.getByText("Historie verzí (2)").closest("details")).not.toHaveClass("border")
-    expect(screen.getByRole("button", { name: "Přejmenovat" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Archivovat" })).toBeInTheDocument()
+
+    // Open options dropdown
+    await user.click(screen.getByRole("button", { name: "Možnosti pro dokument Pravidla porad" }))
+    expect(screen.getByRole("menuitem", { name: "Nahrát novou verzi" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Historie verzí (2)" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Přejmenovat" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Archivovat" })).toBeInTheDocument()
+  })
+
+  it("opens version history dialog and displays all versions", async () => {
+    const user = userEvent.setup()
+    render(
+      <TeamDocuments
+        teamId="team-1"
+        initialDocuments={[
+          documentRow({
+            doc_type: "team_contract",
+            title: null,
+            versions: [
+              {
+                id: "tc-v2",
+                document_id: "document-1",
+                version_no: 2,
+                file_path: "team-document/document-1/v2.pdf",
+                file_name: "contract-v2.pdf",
+                file_size: 2048,
+                effective_from: "2026-09-01",
+                change_note: "Doplněna docházka",
+                created_at: "2026-08-19T11:00:00Z",
+                created_by_profile_id: "profile-1",
+                created_by: { id: "profile-1", name: "Alex", picture: null },
+              },
+              {
+                id: "tc-v1",
+                document_id: "document-1",
+                version_no: 1,
+                file_path: "team-document/document-1/v1.pdf",
+                file_name: "contract-v1.pdf",
+                file_size: 1024,
+                effective_from: null,
+                change_note: null,
+                created_at: "2026-08-18T11:00:00Z",
+                created_by_profile_id: "profile-1",
+                created_by: { id: "profile-1", name: "Alex", picture: null },
+              },
+            ],
+          }),
+        ]}
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: "Historie (2)" }))
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(screen.getByText("Historie verzí · Team Contract")).toBeInTheDocument()
+    expect(screen.getByText("Aktuální")).toBeInTheDocument()
+    expect(screen.getByText("Doplněna docházka")).toBeInTheDocument()
   })
 
   it("rejects non-PDF uploads before making a request", async () => {
@@ -125,7 +170,8 @@ describe("TeamDocuments", () => {
       />,
     )
 
-    await user.click(screen.getByRole("button", { name: "Nahrát novou verzi" }))
+    await user.click(screen.getByRole("button", { name: "Možnosti pro dokument Pravidla porad" }))
+    await user.click(screen.getByRole("menuitem", { name: "Nahrát novou verzi" }))
     await user.upload(
       screen.getByLabelText("Soubor PDF"),
       new File(["image"], "rules.png", { type: "image/png" }),
@@ -166,7 +212,8 @@ describe("TeamDocuments", () => {
     const user = userEvent.setup()
     render(<TeamDocuments teamId="team-1" initialDocuments={[documentRow()]} />)
 
-    await user.click(screen.getByRole("button", { name: "Nahrát novou verzi" }))
+    await user.click(screen.getByRole("button", { name: "Možnosti pro dokument Pravidla porad" }))
+    await user.click(screen.getByRole("menuitem", { name: "Nahrát novou verzi" }))
     await user.upload(
       screen.getByLabelText("Soubor PDF"),
       new File(["pdf"], "rules.pdf", { type: "application/pdf" }),
@@ -185,7 +232,8 @@ describe("TeamDocuments", () => {
     const user = userEvent.setup()
     render(<TeamDocuments teamId="team-1" initialDocuments={[documentRow()]} />)
 
-    await user.click(screen.getByRole("button", { name: "Archivovat" }))
+    await user.click(screen.getByRole("button", { name: "Možnosti pro dokument Pravidla porad" }))
+    await user.click(screen.getByRole("menuitem", { name: "Archivovat" }))
     expect(screen.getByText("Archivovat dokument?")).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Potvrdit archivaci" }))
 

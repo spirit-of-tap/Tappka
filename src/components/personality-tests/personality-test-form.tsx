@@ -42,19 +42,19 @@ export function PersonalityTestForm({ profileId, initial, onSuccess, onCancel }:
     setError(null)
 
     if (!(PERSONALITY_TEST_TYPES as readonly string[]).includes(testType)) {
-      setError("Vyberte typ testu.")
+      setError("Vyber typ testu.")
       return
     }
     if (testType === "other" && !testTypeOther.trim()) {
-      setError("Zadejte název testu.")
+      setError("Zadej název testu.")
       return
     }
     if (!testedOn) {
-      setError("Zadejte datum testu.")
+      setError("Zadej datum testu.")
       return
     }
     if (!initial && !file) {
-      setError("Nahrajte soubor s výsledky.")
+      setError("Nahraj soubor s výsledky.")
       return
     }
     if (file && !(ALLOWED_DOCUMENT_TYPES as readonly string[]).includes(file.type)) {
@@ -158,7 +158,7 @@ export function PersonalityTestForm({ profileId, initial, onSuccess, onCancel }:
         <Label htmlFor="test-type">Typ testu</Label>
         <Select value={testType} onValueChange={setTestType}>
           <SelectTrigger id="test-type" className="w-full">
-            <SelectValue placeholder="Vyberte typ testu" />
+            <SelectValue placeholder="Vyber typ testu" />
           </SelectTrigger>
           <SelectContent>
             {PERSONALITY_TEST_TYPES.map((type) => (

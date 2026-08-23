@@ -206,14 +206,14 @@ describe('EssayEditorForm — add-book entry', () => {
     expect(screen.queryByText('Nemůžeš najít knihu?')).not.toBeInTheDocument();
   });
 
-  it('offers adding a new book even when a book is already selected', () => {
+  it('does not show the Add Book CTA when a book is already selected', () => {
     render(
       <EssayEditorForm
         initialEssay={{ ...publishedEssay, book: { ...searchHit, book_points: 3 } }}
       />,
     );
 
-    const link = screen.getByRole('link', { name: /Přidat novou do BOBa/ });
-    expect(link).toHaveAttribute('href', '/cteni/knihy/nova?from=esej&essayId=essay-1');
+    expect(screen.queryByText(/Přidat novou do BOBa/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Nemůžeš najít knihu?')).not.toBeInTheDocument();
   });
 });

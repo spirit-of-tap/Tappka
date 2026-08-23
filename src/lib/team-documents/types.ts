@@ -21,7 +21,7 @@ export const TEAM_DOCUMENT_TYPES = [
 ] as const satisfies readonly TeamDocumentType[]
 
 export const TEAM_DOCUMENT_TYPE_LABELS: Record<TeamDocumentType, string> = {
-  team_contract: "Týmová smlouva",
+  team_contract: "Team Contract",
   financial_policy: "Finanční směrnice",
   other: "Další dokument",
 }

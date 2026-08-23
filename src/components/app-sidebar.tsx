@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
 import {
   ChevronRight,
   Database,
@@ -48,7 +48,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isBeta = user?.beta_access ?? false
   const isReservationsActive = pathname.startsWith("/reservations")
@@ -84,11 +83,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
-                  // Branch order is load-bearing for Osobnostní testy: it is
-                  // betaOnly in NAV_MODULES but renders through its title
-                  // special case below — the generic betaOnly branch must stay
-                  // after it.
-
                   // Special handling for Rezervace with sub-menu for coach/admin
                   if (item.title === "Místnosti" && isCoachOrAdmin) {
                     return (
@@ -135,37 +129,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                           </CollapsibleContent>
                         </SidebarMenuItem>
                       </Collapsible>
-                    )
-                  }
-
-                  // Osobnostní testy — own profile tests tab, beta-only
-                  if (item.title === "Osobnostní testy") {
-                    if (!isBeta || !user) return null
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={
-                            pathname.startsWith("/komunita/profil/") &&
-                            searchParams.get("tab") === "osobnostni-testy"
-                          }
-                          tooltip={item.title}
-                        >
-                          <Link
-                            href={`/komunita/profil/${user.id}?tab=osobnostni-testy`}
-                          >
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
                     )
                   }
 

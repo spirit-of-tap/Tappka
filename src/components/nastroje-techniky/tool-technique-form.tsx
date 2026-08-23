@@ -22,14 +22,21 @@ import type { ToolTechnique } from "@/lib/nastroje-techniky/types"
 interface ToolTechniqueFormProps {
   profileId: string
   initial?: ToolTechnique
+  defaultToolType?: ToolType
   onSuccess: (item: ToolTechnique) => void
   onCancel: () => void
 }
 
-export function ToolTechniqueForm({ profileId, initial, onSuccess, onCancel }: ToolTechniqueFormProps) {
+export function ToolTechniqueForm({
+  profileId,
+  initial,
+  defaultToolType,
+  onSuccess,
+  onCancel,
+}: ToolTechniqueFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [toolType, setToolType] = useState<ToolType | "">(initial?.tool_type ?? "")
+  const [toolType, setToolType] = useState<ToolType | "">(initial?.tool_type ?? defaultToolType ?? "")
   const [name, setName] = useState(initial?.name ?? "")
   const [reflection, setReflection] = useState(initial?.reflection ?? "")
 
@@ -95,16 +102,13 @@ export function ToolTechniqueForm({ profileId, initial, onSuccess, onCancel }: T
       <div className="space-y-2">
         <Label htmlFor="tool-type">Oblast *</Label>
         <Select value={toolType} onValueChange={(v) => setToolType(v as ToolType)}>
-          <SelectTrigger id="tool-type">
+          <SelectTrigger id="tool-type" className="w-full">
             <SelectValue placeholder="Vyber oblast" />
           </SelectTrigger>
           <SelectContent>
             {TOOL_TYPES.map((type) => (
               <SelectItem key={type.value} value={type.value}>
-                <span className="flex flex-col gap-0.5 py-0.5">
-                  <span className="font-medium">{type.label}</span>
-                  <span className="text-xs text-muted-foreground">{type.description}</span>
-                </span>
+                {type.label}
               </SelectItem>
             ))}
           </SelectContent>

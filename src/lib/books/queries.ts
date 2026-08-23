@@ -26,11 +26,11 @@ export async function getBooks(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  // Use the view when sorting by popularity so ORDER BY happens in Postgres.
+  // Use the view when sorting by popularity or filtering by essay count so ORDER BY / WHERE happens in Postgres.
   // The view is a superset of `books` (adds essay_count); supabase-js can't
   // type a table|view union for .from(), so pin to the `books` literal — the
   // result is reshaped to BookWithProfiles below regardless.
-  const table = (filters?.sortBy === 'popular'
+  const table = (filters?.sortBy === 'popular' || (filters?.minEssayCount !== undefined && filters.minEssayCount > 0)
     ? 'books_with_essay_count'
     : 'books') as 'books';
 
@@ -43,6 +43,10 @@ export async function getBooks(
     query = query.order('essay_count', { ascending: false }).order('created_at', { ascending: false });
   } else {
     query = query.order('created_at', { ascending: false });
+  }
+
+  if (filters?.minEssayCount !== undefined && filters.minEssayCount > 0) {
+    query = query.gte('essay_count', filters.minEssayCount);
   }
 
   if (filters?.listStatuses) {

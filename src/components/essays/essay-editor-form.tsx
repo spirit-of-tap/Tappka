@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import {
   Save, Send, BookOpen, Check, CloudOff, PenLine, Globe, Search,
@@ -409,16 +408,6 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                 Změnit
               </Button>
             </div>
-
-            <p className="text-xs text-muted-foreground">
-              Nemůžeš najít tu správnou knihu?{' '}
-              <Link
-                href={`/cteni/knihy/nova?from=esej${essayId ? `&essayId=${essayId}` : ''}`}
-                className="focus-ring rounded underline underline-offset-2 hover:text-foreground"
-              >
-                Přidat novou do BOBa
-              </Link>
-            </p>
           </div>
         ) : (
           <div className="rounded-xl border bg-muted/40 p-3 sm:p-4">

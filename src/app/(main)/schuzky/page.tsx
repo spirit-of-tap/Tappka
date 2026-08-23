@@ -27,7 +27,12 @@ export default async function SchuzkyPage() {
 
   return (
     <PageShell className="max-w-5xl">
-      <CustomerMeetingsView meetings={meetings} profileId={profile.id} now={now} />
+      <CustomerMeetingsView
+        meetings={meetings}
+        profileId={profile.id}
+        now={now}
+        onboardingYear={profile.team?.onboardingYear ?? null}
+      />
     </PageShell>
   )
 }

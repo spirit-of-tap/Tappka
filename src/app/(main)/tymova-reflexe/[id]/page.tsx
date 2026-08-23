@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation"
-import { notFound } from "next/navigation"
+import { redirect, notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth/session"
 import { TeamReflectionDetail } from "@/components/tymova-reflexe/team-reflection-detail"
 import { getTeamReflectionById } from "@/lib/tymova-reflexe/queries"
+import { listTeamMembers } from "@/lib/tymovy-denik/queries"
 
 export const metadata = {
   title: "Týmová reflexe | Tappka",
@@ -23,8 +23,12 @@ export default async function ReflexeDetailPage({
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
   if (!profile.beta_access_granted_at) redirect("/")
+  if (!profile.team_id) redirect("/")
 
-  const reflection = await getTeamReflectionById(supabase, id)
+  const [reflection, teamMembers] = await Promise.all([
+    getTeamReflectionById(supabase, id),
+    listTeamMembers(supabase, profile.team_id),
+  ])
 
   if (!reflection) notFound()
 
@@ -32,6 +36,7 @@ export default async function ReflexeDetailPage({
     <TeamReflectionDetail
       reflection={reflection}
       profileId={profile.id}
+      teamMembers={teamMembers}
     />
   )
 }

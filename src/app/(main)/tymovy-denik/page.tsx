@@ -27,7 +27,11 @@ export default async function TymovyDenikPage() {
 
   return (
     <PageShell className="max-w-5xl">
-      <TeamActivityList activities={activities} teamMembers={teamMembers} />
+      <TeamActivityList
+        activities={activities}
+        teamMembers={teamMembers}
+        onboardingYear={profile.team?.onboardingYear ?? null}
+      />
     </PageShell>
   )
 }

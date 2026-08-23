@@ -50,15 +50,20 @@ test.describe("osobnostní testy - single user", () => {
     await cleanupTestData();
   });
 
-  test("profile shows empty state on the personality tests tab", async ({ page }) => {
-    await page.goto(`/komunita/profil/${profileId}?tab=osobnostni-testy`);
-    await expect(page.getByRole("tab", { name: /Osobnostní testy/ })).toBeVisible();
+  test("profile page does not contain personality tests tab", async ({ page }) => {
+    await page.goto(`/komunita/profil/${profileId}`);
+    await expect(page.getByRole("tab", { name: /Osobnostní testy/ })).toHaveCount(0);
+  });
+
+  test("dedicated page shows empty state", async ({ page }) => {
+    await page.goto("/osobnostni-testy");
+    await expect(page.getByRole("heading", { name: "Osobnostní testy" })).toBeVisible();
     await expect(page.getByText("Zatím nemáš nahraný žádný osobnostní test")).toBeVisible();
   });
 
   test("uploading a test adds it to the timeline", async ({ page }) => {
     const testName = `E2E test ${Date.now()}`;
-    await page.goto(`/komunita/profil/${profileId}?tab=osobnostni-testy`);
+    await page.goto("/osobnostni-testy");
 
     await page.getByRole("button", { name: /Nahrát test/i }).first().click();
     const dialog = page.getByRole("dialog");
@@ -70,14 +75,13 @@ test.describe("osobnostní testy - single user", () => {
 
     await expect(dialog).toHaveCount(0);
     await expect(page.getByText(testName)).toBeVisible();
-    await expect(page.getByText("mbti-vysledky.pdf")).toBeVisible();
 
     await deleteOnlyTest(page);
   });
 
   test("editing a test changes its type", async ({ page }) => {
     const testName = `E2E uprava ${Date.now()}`;
-    await page.goto(`/komunita/profil/${profileId}?tab=osobnostni-testy`);
+    await page.goto("/osobnostni-testy");
 
     await page.getByRole("button", { name: /Nahrát test/i }).first().click();
     const dialog = page.getByRole("dialog");
@@ -103,7 +107,7 @@ test.describe("osobnostní testy - single user", () => {
 
   test("deleting a test removes it from the timeline", async ({ page }) => {
     const testName = `E2E smazat ${Date.now()}`;
-    await page.goto(`/komunita/profil/${profileId}?tab=osobnostni-testy`);
+    await page.goto("/osobnostni-testy");
 
     await uploadCustomTest(page, testName);
     await expect(page.getByText(testName)).toBeVisible();
@@ -118,7 +122,6 @@ test.describe("osobnostní testy - single user", () => {
 
 test.describe("osobnostní testy - two users", () => {
   let ownerCookie: string;
-  let ownerProfileId: string;
   let viewerCookie: string;
 
   test.beforeAll(async () => {
@@ -126,7 +129,6 @@ test.describe("osobnostní testy - two users", () => {
     const owner = await getSetupSessionCookie(teamId);
     const viewer = await getSetupSessionCookie(teamId);
     ownerCookie = owner.cookie;
-    ownerProfileId = owner.profileId;
     viewerCookie = viewer.cookie;
   });
 
@@ -134,26 +136,29 @@ test.describe("osobnostní testy - two users", () => {
     await cleanupTestData();
   });
 
-  test("another verified user sees the test and can open the file", async ({ context, page }) => {
-    const testName = `E2E sdileni ${Date.now()}`;
+  test("owner sees and opens test, while other user only sees their own page", async ({ context, page }) => {
+    const testName = `E2E izolace ${Date.now()}`;
 
+    // 1. Owner uploads test on /osobnostni-testy
     await setAuthCookie(context, ownerCookie);
-    await page.goto(`/komunita/profil/${ownerProfileId}?tab=osobnostni-testy`);
+    await page.goto("/osobnostni-testy");
     await uploadCustomTest(page, testName);
     await expect(page.getByText(testName)).toBeVisible();
 
-    await context.clearCookies();
-    await setAuthCookie(context, viewerCookie);
-    await page.goto(`/komunita/profil/${ownerProfileId}?tab=osobnostni-testy`);
-
-    await expect(page.getByText(testName)).toBeVisible();
-    await expect(page.getByText("mbti-vysledky.pdf")).toBeVisible();
-
+    // Owner can open the file
     const downloadPromise = context.waitForEvent("download");
     await page.getByRole("link", { name: /Otevřít/ }).click();
     const download = await downloadPromise;
     expect(await download.failure()).toBeNull();
     expect(download.url()).toMatch(/\/storage\/v1\/object\/sign\//);
     expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+
+    // 2. Viewer visits /osobnostni-testy and does NOT see owner's test
+    await context.clearCookies();
+    await setAuthCookie(context, viewerCookie);
+    await page.goto("/osobnostni-testy");
+
+    await expect(page.getByText(testName)).toHaveCount(0);
+    await expect(page.getByText("Zatím nemáš nahraný žádný osobnostní test")).toBeVisible();
   });
 });

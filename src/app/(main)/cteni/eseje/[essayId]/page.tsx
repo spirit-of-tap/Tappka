@@ -3,8 +3,8 @@ import { notFound, redirect } from 'next/navigation';
 import { BookOpen, Eye, Pencil } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getEssayById, getEssayComments, getEssayCoachViewers, getEssayCoachReads } from '@/lib/essays/queries';
-import { TiptapRenderer } from '@/components/essays/tiptap-renderer';
+import { getEssayById, getEssayComments, getEssayCoachViewers, getEssayCoachReads, getEssayFullRevisions } from '@/lib/essays/queries';
+import { EssayViewerWithDiff } from '@/components/essays/essay-viewer-with-diff';
 import { EssayCommentThread } from '@/components/essays/essay-comment-thread';
 import { SeenByCoachBanner } from '@/components/essays/seen-by-coach-banner';
 import { ReadByCoachBanner } from '@/components/essays/read-by-coach-banner';
@@ -37,9 +37,10 @@ export default async function EssayDetailPage({ params }: PageProps) {
 
   const profile = await getCurrentUserProfile(supabase, { user });
 
-  const [essay, comments, voteResult] = await Promise.all([
+  const [essay, comments, revisions, voteResult] = await Promise.all([
     getEssayById(supabase, essayId),
     getEssayComments(supabase, essayId),
+    getEssayFullRevisions(supabase, essayId),
     profile
       ? supabase.from('essay_votes').select('essay_id').eq('essay_id', essayId).eq('voter_profile_id', profile.id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -89,9 +90,6 @@ export default async function EssayDetailPage({ params }: PageProps) {
               </Link>
             </Button>
           </div>
-        )}
-        {canReview && (
-          <CoachReadButton essayId={essayId} initialRead={alreadyRead} size="sm" />
         )}
       </div>
 
@@ -169,23 +167,43 @@ export default async function EssayDetailPage({ params }: PageProps) {
         </Link>
       )}
 
-      {/* Content */}
-      <TiptapRenderer content={essay.content_json} className="mb-12" />
+      {/* Content with Revision Diff support */}
+      <EssayViewerWithDiff
+        essay={essay}
+        comments={comments}
+        revisions={revisions}
+        currentProfileId={profile?.id ?? ''}
+      />
 
-      {/* Vote CTA */}
-      {!isAuthor && (
-        <div className="flex items-center gap-4 px-4 py-4 mb-8 rounded-xl bg-muted/40">
-          <EssayVoteButton
+      {/* Post-reading Actions (Vote & Coach Review Card) */}
+      <div className="space-y-4 mb-8">
+        {canReview && (
+          <CoachReadButton
             essayId={essayId}
-            initialVoteCount={essay.vote_count}
-            initialVoted={hasVoted}
-            size="lg"
+            initialRead={alreadyRead}
+            variant="card"
           />
-        </div>
-      )}
+        )}
+
+        {!isAuthor && (
+          <div className="flex items-center gap-4">
+            <EssayVoteButton
+              essayId={essayId}
+              initialVoteCount={essay.vote_count}
+              initialVoted={hasVoted}
+              size="lg"
+            />
+          </div>
+        )}
+      </div>
 
       {profile && (
-        <EssayCommentThread essayId={essayId} initialComments={comments} currentProfileId={profile.id} />
+        <EssayCommentThread
+          essayId={essayId}
+          initialComments={comments}
+          currentProfileId={profile.id}
+          isAuthor={isAuthor}
+        />
       )}
     </PageShell>
   );

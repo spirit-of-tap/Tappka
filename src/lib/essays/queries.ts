@@ -31,7 +31,7 @@ const ESSAY_DETAIL_SELECT = `
   essay_votes(count),
   essay_views(count),
   essay_comments(count),
-  author:profiles!author_profile_id(id, name, picture, role),
+  author:profiles!author_profile_id(id, name, picture, role, team_id),
   book:books!book_id(id, title_cs, author, book_points, list_status, is_rocket_model, google_books_cover_url, highlight_category:highlight_categories(*))
 `;
 
@@ -148,20 +148,24 @@ async function findEssayIdsByTitleSearch(
   return [...new Set((data ?? []).map((row: { essay_id: string }) => row.essay_id))];
 }
 
-/** Active student profile ids in a team, excluding the given profile. */
-async function getTeamStudentIds(
+/** Active student profile ids, optionally filtered by team, excluding the given profile. */
+async function getReviewStudentIds(
   supabase: SupabaseClient<Database>,
-  teamId: string,
   excludeProfileId: string,
+  teamId?: string | null,
 ): Promise<string[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('profiles')
     .select('id')
-    .eq('team_id', teamId)
     .eq('role', 'student')
     .is('access_removed_at', null)
     .neq('id', excludeProfileId);
 
+  if (teamId && teamId !== 'all') {
+    query = query.eq('team_id', teamId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []).map((p: { id: string }) => p.id);
 }
@@ -346,6 +350,38 @@ export async function getEssayRevisions(
   });
 }
 
+export interface EssayFullRevision {
+  revision_no: number;
+  title: string;
+  content_json: object;
+  content_text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getEssayFullRevisions(
+  supabase: SupabaseClient<Database>,
+  essayId: string,
+): Promise<EssayFullRevision[]> {
+  const { data, error } = await supabase
+    .from('essay_revisions')
+    .select('revision_no, title, content_json, created_at, updated_at')
+    .eq('essay_id', essayId)
+    .is('invalid_since', null)
+    .order('revision_no', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    revision_no: row.revision_no,
+    title: row.title,
+    content_json: (row.content_json ?? {}) as object,
+    content_text: contentTextFromJson((row.content_json ?? {}) as object),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
+}
+
 export async function getEssayAuthorInfo(
   supabase: SupabaseClient<Database>,
   essayId: string,
@@ -410,9 +446,10 @@ export async function getEssayCoachViewers(
 export async function getUnreadTeamEssaysForCoach(
   supabase: SupabaseClient<Database>,
   coachProfileId: string,
-  teamId: string,
+  teamId?: string | null,
+  limit: number = 100,
 ): Promise<CoachReviewEssay[]> {
-  const studentIds = await getTeamStudentIds(supabase, teamId, coachProfileId);
+  const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
   if (studentIds.length === 0) return [];
 
   const { data: reads, error: readsError } = await supabase
@@ -428,7 +465,8 @@ export async function getUnreadTeamEssaysForCoach(
     .not('published_at', 'is', null)
     .is('removed_at', null)
     .in('author_profile_id', studentIds)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (readIds.length > 0) {
     query = query.not('id', 'in', `(${readIds.join(',')})`);
@@ -446,16 +484,18 @@ export async function getUnreadTeamEssaysForCoach(
 export async function getReadTeamEssaysForCoach(
   supabase: SupabaseClient<Database>,
   coachProfileId: string,
-  teamId: string,
+  teamId?: string | null,
+  limit: number = 100,
 ): Promise<CoachReviewEssay[]> {
-  const studentIds = await getTeamStudentIds(supabase, teamId, coachProfileId);
+  const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
   if (studentIds.length === 0) return [];
 
   const { data: reads, error: readsError } = await supabase
     .from('essay_coach_reads')
     .select('essay_id, read_at')
     .eq('coach_profile_id', coachProfileId)
-    .order('read_at', { ascending: false });
+    .order('read_at', { ascending: false })
+    .limit(limit);
   if (readsError) throw readsError;
 
   const readRows = (reads ?? []) as { essay_id: string; read_at: string }[];
@@ -479,9 +519,9 @@ export async function getReadTeamEssaysForCoach(
 export async function getCoachUnreadCount(
   supabase: SupabaseClient<Database>,
   coachProfileId: string,
-  teamId: string,
+  teamId?: string | null,
 ): Promise<number> {
-  const studentIds = await getTeamStudentIds(supabase, teamId, coachProfileId);
+  const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
   if (studentIds.length === 0) return 0;
 
   const { data: reads, error: readsError } = await supabase
@@ -515,13 +555,96 @@ export async function getEssayCoachReads(
     .from('essay_coach_reads')
     .select(`
       *,
-      coach:profiles!coach_profile_id(id, name, role)
+      coach:profiles!coach_profile_id(id, name, picture, role)
     `)
     .eq('essay_id', essayId)
     .order('read_at', { ascending: false });
 
   if (error) throw error;
   return (data ?? []) as EssayCoachReadWithProfile[];
+}
+
+/**
+ * Fetches all coach reads for a set of essay IDs, grouped by essay_id.
+ */
+export async function getCoachReadsForEssays(
+  supabase: SupabaseClient<Database>,
+  essayIds: string[],
+): Promise<Record<string, EssayCoachReadWithProfile[]>> {
+  if (essayIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('essay_coach_reads')
+    .select(`
+      *,
+      coach:profiles!coach_profile_id(id, name, picture, role)
+    `)
+    .in('essay_id', essayIds)
+    .order('read_at', { ascending: false });
+
+  if (error) throw error;
+
+  const result: Record<string, EssayCoachReadWithProfile[]> = {};
+  for (const row of (data ?? []) as EssayCoachReadWithProfile[]) {
+    if (!result[row.essay_id]) {
+      result[row.essay_id] = [];
+    }
+    result[row.essay_id].push(row);
+  }
+
+  return result;
+}
+
+/**
+ * Fetches all comments for a set of essay IDs, grouped by essay_id.
+ */
+export async function getCommentsForEssays(
+  supabase: SupabaseClient<Database>,
+  essayIds: string[],
+): Promise<Record<string, EssayCommentWithAuthor[]>> {
+  if (essayIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('essay_comments')
+    .select(`
+      *,
+      author:profiles!author_profile_id(id, name, picture, role)
+    `)
+    .in('essay_id', essayIds)
+    .is('removed_at', null)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+
+  const result: Record<string, EssayCommentWithAuthor[]> = {};
+  for (const row of (data ?? []) as EssayCommentWithAuthor[]) {
+    if (!result[row.essay_id]) {
+      result[row.essay_id] = [];
+    }
+    result[row.essay_id].push(row);
+  }
+
+  return result;
+}
+
+/**
+ * Fetches all coach/admin comments for a set of essay IDs, grouped by essay_id.
+ */
+export async function getCoachCommentsForEssays(
+  supabase: SupabaseClient<Database>,
+  essayIds: string[],
+): Promise<Record<string, EssayCommentWithAuthor[]>> {
+  const all = await getCommentsForEssays(supabase, essayIds);
+  const result: Record<string, EssayCommentWithAuthor[]> = {};
+  for (const [essayId, comments] of Object.entries(all)) {
+    const coachOnly = comments.filter(
+      (c) => c.author?.role === 'coach' || c.author?.role === 'admin',
+    );
+    if (coachOnly.length > 0) {
+      result[essayId] = coachOnly;
+    }
+  }
+  return result;
 }
 
 export async function getUserBookPointsStats(
@@ -582,6 +705,53 @@ export async function getUserBookPointsStats(
       0,
     ),
   };
+}
+
+/**
+ * Calculates total approved book points for each author profile in a single query.
+ */
+export async function getAuthorsApprovedBookPoints(
+  supabase: SupabaseClient<Database>,
+  authorProfileIds: string[],
+): Promise<Record<string, number>> {
+  if (authorProfileIds.length === 0) return {};
+
+  const { data: essays, error } = await supabase
+    .from('essays')
+    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
+    .in('author_profile_id', authorProfileIds)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .not('book_id', 'is', null);
+
+  if (error) throw error;
+
+  type Row = {
+    author_profile_id: string;
+    book_id: string;
+    books: { book_points: number; list_status: string };
+  };
+
+  const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
+  const pointsByAuthor: Record<string, Map<string, number>> = {};
+  for (const authorId of authorProfileIds) {
+    pointsByAuthor[authorId] = new Map();
+  }
+
+  for (const row of (essays ?? []) as unknown as Row[]) {
+    if (!row.book_id || !ELIGIBLE.has(row.books.list_status)) continue;
+    const authorMap = pointsByAuthor[row.author_profile_id];
+    if (authorMap) {
+      authorMap.set(row.book_id, Number(row.books.book_points));
+    }
+  }
+
+  const result: Record<string, number> = {};
+  for (const [authorId, bookMap] of Object.entries(pointsByAuthor)) {
+    result[authorId] = Array.from(bookMap.values()).reduce((sum, p) => sum + p, 0);
+  }
+
+  return result;
 }
 
 export async function getTeamBookPointsStats(

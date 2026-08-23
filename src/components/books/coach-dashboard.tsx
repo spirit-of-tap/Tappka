@@ -13,6 +13,7 @@ import { RocketModelManager } from './rocket-model-manager';
 import { LibraryImportScanner } from '@/components/library/library-import-scanner';
 import { Button } from '@/components/ui/button';
 import { suggestedBookPoints, type ReviewPoints } from '@/lib/books/points';
+import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 
 interface CoachDashboardProps {
@@ -34,6 +35,7 @@ export function CoachDashboard({
   initialCategories,
   initialRocketModel,
 }: CoachDashboardProps) {
+  const [activeTab, setActiveTab] = usePersistedState<string>('tappka:coach-dashboard:tab', 'processing');
   const [processing, setProcessing] = useState(initialProcessing);
   const [shortlisted, setShortlisted] = useState(initialShortlisted);
   const [longlisted, setLonglisted] = useState(initialLonglisted);
@@ -152,7 +154,7 @@ export function CoachDashboard({
       body: JSON.stringify({ action: 'edit', is_rocket_model: true }),
     });
     if (!res.ok) {
-      toast.error('Nepodařilo se zařadit knihu do raketového modelu.');
+      toast.error('Nepodařilo se zařadit knihu do Rocket modelu.');
       return false;
     }
 
@@ -164,7 +166,7 @@ export function CoachDashboard({
     setLonglisted((prev) => refreshBook(prev, book.id, patch));
     setArchived((prev) => refreshBook(prev, book.id, patch));
     setHighlighted((prev) => refreshBook(prev, book.id, patch));
-    toast.success('Kniha zařazena do raketového modelu.');
+    toast.success('Kniha zařazena do Rocket modelu.');
     return true;
   };
 
@@ -175,7 +177,7 @@ export function CoachDashboard({
       body: JSON.stringify({ action: 'edit', is_rocket_model: false }),
     });
     if (!res.ok) {
-      toast.error('Nepodařilo se odebrat knihu z raketového modelu.');
+      toast.error('Nepodařilo se odebrat knihu z Rocket modelu.');
       return false;
     }
 
@@ -186,7 +188,7 @@ export function CoachDashboard({
     setLonglisted((prev) => refreshBook(prev, bookId, patch));
     setArchived((prev) => refreshBook(prev, bookId, patch));
     setHighlighted((prev) => refreshBook(prev, bookId, patch));
-    toast.success('Kniha odebrána z raketového modelu.');
+    toast.success('Kniha odebrána z Rocket modelu.');
     return true;
   };
 
@@ -306,12 +308,12 @@ export function CoachDashboard({
     { value: 'longlist', label: 'Longlist', count: longlisted.length },
     { value: 'highlighted', label: 'Výběr', count: highlighted.length },
     { value: 'archived', label: 'Zamítnuté', count: archived.length },
-    { value: 'rocket-model', label: 'Raketový model', count: rocketModel.length },
+    { value: 'rocket-model', label: 'Rocket model', count: rocketModel.length },
     { value: 'import', label: 'Import', count: 0 },
   ];
 
   return (
-    <Tabs defaultValue="processing">
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList variant="line">
         {tabs.map(({ value, label, count, tone }) => (
           <TabsTrigger key={value} value={value}>

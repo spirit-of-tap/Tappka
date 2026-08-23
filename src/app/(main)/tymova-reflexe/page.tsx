@@ -3,20 +3,20 @@ import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth/session"
 import { listTeamReflections } from "@/lib/tymova-reflexe/queries"
 import { listTeamSemesterReflectionsWithProgress } from "@/lib/tymova-reflexe/semester-queries"
-import { TeamReflectionList } from "@/components/tymova-reflexe/team-reflection-list"
-import { InfoCard } from "@/components/tymova-reflexe/info-card"
-import { HelpDialog } from "@/components/help-dialog"
-import { PageHeader } from "@/components/ui/page-header"
+import { listTeamMembers } from "@/lib/tymovy-denik/queries"
+import { TeamReflectionView } from "@/components/tymova-reflexe/team-reflection-view"
 import { PageShell } from "@/components/ui/page-shell"
 
 export const metadata = {
   title: "Týmová reflexe | Tappka",
-  description: "Měsíční ohlédnutí za týmovou spoluprací",
+  description: "Pravidelné ohlédnutí za týmovou spoluprací a rozvojem",
 }
 
 export default async function TymovaReflexePage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect("/auth/login")
 
   const profile = await getSessionProfile()
@@ -24,26 +24,18 @@ export default async function TymovaReflexePage() {
   if (!profile.beta_access_granted_at) redirect("/")
   if (!profile.team_id) redirect("/")
 
-  const [reflections, semesterReflections] = await Promise.all([
+  const [reflections, rocnikovaReflections, teamMembers] = await Promise.all([
     listTeamReflections(supabase, profile.team_id),
     listTeamSemesterReflectionsWithProgress(supabase, profile.team_id),
+    listTeamMembers(supabase, profile.team_id),
   ])
 
   return (
     <PageShell className="max-w-5xl">
-      <PageHeader
-        title="Týmová reflexe"
-        description="Měsíční ohlédnutí za týmovou spoluprací"
-        count={{ value: reflections.length + semesterReflections.length, label: "reflexí" }}
-        action={
-          <HelpDialog question="Co je týmová reflexe?">
-            <InfoCard />
-          </HelpDialog>
-        }
-      />
-      <TeamReflectionList
+      <TeamReflectionView
         reflections={reflections}
-        semesterReflections={semesterReflections}
+        rocnikovaReflections={rocnikovaReflections}
+        teamMembers={teamMembers}
         onboardingYear={profile.team?.onboardingYear ?? null}
       />
     </PageShell>

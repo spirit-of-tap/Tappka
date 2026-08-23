@@ -16,7 +16,7 @@ import {
   type EditableSemesterEntryField,
   type SemesterReflectionEntryWithUpdater,
 } from "@/lib/tymova-reflexe/semester-types"
-import type { SemesterTopicDefinition } from "@/lib/tymova-reflexe/semester-topics"
+import type { RocnikovaTopicDefinition } from "@/lib/tymova-reflexe/semester-topics"
 import { useFieldAutosave } from "@/lib/tymova-reflexe/use-field-autosave"
 
 const FIELD_LABELS: Record<EditableSemesterEntryField, string> = {
@@ -27,7 +27,7 @@ const FIELD_LABELS: Record<EditableSemesterEntryField, string> = {
 
 interface SemesterTopicEditorProps {
   entry: SemesterReflectionEntryWithUpdater
-  topicDef: SemesterTopicDefinition
+  topicDef: RocnikovaTopicDefinition
   channelRef: RefObject<RealtimeChannel | null>
   profileId: string
   registerListener: (
@@ -51,7 +51,7 @@ export function SemesterTopicEditor({
       current: SemesterReflectionEntryWithUpdater,
     ) => {
       const { data: updated, error } = await supabase.current
-        .from("team_semester_reflection_entries")
+        .from("team_annual_reflection_entries")
         .update({ ...payload, updated_by_profile_id: profileId })
         .eq("id", current.id)
         .select(SEMESTER_ENTRY_SELECT)
@@ -74,7 +74,7 @@ export function SemesterTopicEditor({
   const onConflict = useCallback(
     (fields: EditableSemesterEntryField[]) => {
       const labels = fields.map((field) => FIELD_LABELS[field]).join(", ")
-      toast.warning(`Pole „${labels}“ u tématu „${topicDef.label}“ mezitím upravila jiná osoba.`)
+      toast.warning(`Pole „${labels}“ u tématu „${topicDef.label}“ mezitím upravil:a jiný:á člen:ka týmu.`)
     },
     [topicDef.label],
   )
@@ -94,12 +94,12 @@ export function SemesterTopicEditor({
   return (
     <AccordionItem value={topicDef.key}>
       <AccordionTrigger>
-        <div className="flex w-full items-center justify-between gap-3">
-          <span>{topicDef.label}</span>
+        <div className="flex w-full items-center justify-between gap-3 pr-2">
+          <span className="text-left font-medium">{topicDef.label}</span>
           <span
             className={
               filledCount === EDITABLE_SEMESTER_ENTRY_FIELDS.length
-                ? "text-xs font-normal text-green-600"
+                ? "text-xs font-normal text-emerald-600 dark:text-emerald-400"
                 : "text-xs font-normal text-muted-foreground"
             }
           >
@@ -107,8 +107,8 @@ export function SemesterTopicEditor({
           </span>
         </div>
       </AccordionTrigger>
-      <AccordionContent className="space-y-4">
-        <p className="text-xs text-muted-foreground">{topicDef.description}</p>
+      <AccordionContent className="space-y-4 pt-1 pb-4">
+        <p className="text-xs leading-relaxed text-muted-foreground">{topicDef.description}</p>
 
         {EDITABLE_SEMESTER_ENTRY_FIELDS.map((field) => (
           <div key={field} className="space-y-1.5">
@@ -117,16 +117,17 @@ export function SemesterTopicEditor({
               id={`${topicDef.key}-${field}`}
               value={data[field] ?? ""}
               onChange={(e) => setField(field, e.target.value)}
+              placeholder={`Zapište ${FIELD_LABELS[field].toLowerCase()}…`}
               rows={3}
             />
           </div>
         ))}
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
           <InlineSaveStatus saving={saving} dirty={dirtyFields.size > 0} />
           {data.updated_by && (
             <span>
-              Naposledy upravil:la {data.updated_by.name}{" "}
+              Naposledy upravil:a {data.updated_by.name}{" "}
               {formatDistanceToNow(new Date(data.updated_at), { locale: cs, addSuffix: true })}
             </span>
           )}
@@ -147,15 +148,15 @@ function InlineSaveStatus({ saving, dirty }: { saving: boolean; dirty: boolean }
   }
   if (dirty) {
     return (
-      <span className="flex items-center gap-1 font-medium text-amber-600">
+      <span className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
         <span className="size-1.5 rounded-full bg-amber-500" />
         Neuložené změny
       </span>
     )
   }
   return (
-    <span className="flex items-center gap-1">
-      <CheckCircle2 className="size-3 text-green-600" />
+    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+      <CheckCircle2 className="size-3" />
       Uloženo
     </span>
   )

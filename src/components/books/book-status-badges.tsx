@@ -24,8 +24,8 @@ export function RocketBadge({ className }: { className?: string }) {
   return (
     <IconBadge
       icon={Rocket}
-      label="Raketový model"
-      tooltip="Raketový model — kniha zařazená do raketového modelu rozvoje."
+      label="Rocket model"
+      tooltip="Rocket model — kniha zařazená do Rocket modelu rozvoje."
       className={cn('text-primary', className)}
     />
   );

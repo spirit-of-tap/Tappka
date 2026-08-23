@@ -5,7 +5,8 @@ export type ToolType = Database["public"]["Enums"]["tool_type"]
 interface ToolTypeInfo {
   value: ToolType
   label: string
-  /** Krátké vysvětlení, co daný typ je (pro dropdown a tabulku). */
+  pluralLabel: string
+  /** Krátké vysvětlení, co daný typ je (pro dropdown a zobrazení skupin). */
   description: string
   /** Přínos typu (pro info kartu). */
   benefit: string
@@ -15,18 +16,21 @@ export const TOOL_TYPES: readonly ToolTypeInfo[] = [
   {
     value: "model",
     label: "Model",
+    pluralLabel: "Modely",
     description: "Teoretický rámec pro pochopení složitých věcí (např. SWOT, Marketing mix).",
     benefit: "Pomáhá strukturovat myšlení, rozhodovat se a řešit komplexní problémy.",
   },
   {
     value: "technique",
     label: "Technika",
+    pluralLabel: "Techniky",
     description: "Konkrétní postup, jak něco dělat (např. brainstorming, SMART cíle).",
     benefit: "Zvyšuje produktivitu, organizaci, kreativitu a schopnost reagovat na změny.",
   },
   {
     value: "tool",
     label: "Nástroj",
+    pluralLabel: "Nástroje",
     description: "Praktický prostředek (např. Trello, Notion, Canva).",
     benefit: "Umožňuje realizaci nápadů, spolupráci, organizaci práce a automatizaci.",
   },

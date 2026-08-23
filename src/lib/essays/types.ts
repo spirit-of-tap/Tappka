@@ -24,7 +24,7 @@ export interface Essay {
 }
 
 export interface EssayWithDetails extends Essay {
-  author: Pick<Profile, 'id' | 'name' | 'picture' | 'role'> | null;
+  author: Pick<Profile, 'id' | 'name' | 'picture' | 'role' | 'team_id'> | null;
   book: (Pick<Book, 'id' | 'title_cs' | 'author' | 'book_points' | 'list_status' | 'is_rocket_model' | 'google_books_cover_url'> & {
     highlight_category: HighlightCategory | null;
   }) | null;
@@ -64,7 +64,7 @@ export interface EssayCoachRead {
 }
 
 export interface EssayCoachReadWithProfile extends EssayCoachRead {
-  coach: Pick<Profile, 'id' | 'name' | 'role'> | null;
+  coach: Pick<Profile, 'id' | 'name' | 'picture' | 'role'> | null;
 }
 
 /** Essay shown in the coach review inbox; `read_at` is set on the "read" tab. */

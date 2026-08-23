@@ -13,9 +13,37 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Tappka - Studentsky portal Tiimiakatemia Prague",
-  description: "We do business to learn, to live fully we earn!",
+  title: {
+    default: "Tappka – Studentský portál Tiimiakatemia Prague",
+    template: "%s | Tappka",
+  },
+  description:
+    "Studentský portál pro studující a kouče:ky Tiimiakatemia Prague na PEF ČZU.",
   manifest: "/manifest.json",
+  openGraph: {
+    title: "Tappka – Studentský portál Tiimiakatemia Prague",
+    description:
+      "Studentský portál pro studující a kouče:ky Tiimiakatemia Prague na PEF ČZU.",
+    url: defaultUrl,
+    siteName: "Tappka",
+    locale: "cs_CZ",
+    type: "website",
+    images: [
+      {
+        url: "/tap_logo.png",
+        width: 512,
+        height: 512,
+        alt: "Tappka – Tiimiakatemia Prague",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Tappka – Studentský portál Tiimiakatemia Prague",
+    description:
+      "Studentský portál pro studující a kouče:ky Tiimiakatemia Prague na PEF ČZU.",
+    images: ["/tap_logo.png"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
