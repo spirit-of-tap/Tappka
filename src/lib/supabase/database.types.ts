@@ -2427,30 +2427,33 @@ export type Database = {
       team_annual_reflection_entries: {
         Row: {
           annual_reflection_id: string
+          created_at: string
           id: string
           topic: Database["public"]["Enums"]["annual_reflection_topic"]
           updated_at: string
-          updated_by_profile_id: string
+          updated_by_profile_id: string | null
           what_didnt_go_well: string | null
           what_next_time: string | null
           what_went_well: string | null
         }
         Insert: {
           annual_reflection_id: string
+          created_at?: string
           id?: string
           topic: Database["public"]["Enums"]["annual_reflection_topic"]
           updated_at?: string
-          updated_by_profile_id: string
+          updated_by_profile_id?: string | null
           what_didnt_go_well?: string | null
           what_next_time?: string | null
           what_went_well?: string | null
         }
         Update: {
           annual_reflection_id?: string
+          created_at?: string
           id?: string
           topic?: Database["public"]["Enums"]["annual_reflection_topic"]
           updated_at?: string
-          updated_by_profile_id?: string
+          updated_by_profile_id?: string | null
           what_didnt_go_well?: string | null
           what_next_time?: string | null
           what_went_well?: string | null

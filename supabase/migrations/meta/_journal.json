@@ -624,6 +624,13 @@
       "when": 1787496360000,
       "tag": "20260823144600_rename_team_annual_reflections",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1787525902096,
+      "tag": "20260823225822_complete_annual_reflection_entries",
+      "breakpoints": true
     }
   ]
 }
