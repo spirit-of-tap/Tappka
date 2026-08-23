@@ -16,7 +16,12 @@ const STORAGE_DELETE_ATTEMPTS = 3
 const TEAM_ACTIVITY_IMAGE_PREFIX = "team-activities"
 
 const nullableText = (max: number) =>
-  z.string().trim().max(max).transform((value) => value || null)
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullish()
+    .transform((value) => value || null)
 
 const attendeeInputSchema = z.object({
   profileId: z.string().uuid(),

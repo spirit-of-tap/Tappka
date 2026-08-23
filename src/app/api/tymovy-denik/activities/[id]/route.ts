@@ -101,9 +101,13 @@ export async function PATCH(request: Request, routeContext: TeamActivityRouteCon
         created_by_profile_id: context.profileId,
         updated_by_profile_id: context.profileId,
       }))
-      await context.supabase
+      const { error: attendeesError } = await context.supabase
         .from("team_activity_attendees")
         .insert(attendeeRows)
+
+      if (attendeesError) {
+        console.error("Failed to insert team activity attendees on update:", attendeesError)
+      }
     }
 
     if (existing.image_path !== data.image_path) {
