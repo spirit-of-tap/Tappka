@@ -173,7 +173,7 @@ export function TeamReflectionDetail({
   }
 
   return (
-    <div className="container mx-auto max-w-4xl py-4 sm:py-6 px-3 sm:px-6 space-y-6">
+    <div className="container mx-auto max-w-4xl py-4 sm:py-6 px-3 sm:px-6 space-y-5 sm:space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
@@ -226,10 +226,10 @@ export function TeamReflectionDetail({
         </div>
       </div>
 
-      {/* Two Reflection Text Areas (Seamless without inner textarea boxes) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      {/* Two Reflection Text Areas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
         {/* Co se povedlo */}
-        <Card className="flex flex-col p-4 sm:p-5 space-y-2.5 border-emerald-500/30 bg-card hover:border-emerald-500/50 transition-colors">
+        <Card className="flex flex-col p-4 sm:p-5 space-y-2 border-emerald-500/25 bg-card hover:border-emerald-500/40 focus-within:border-emerald-500/60 focus-within:ring-1 focus-within:ring-emerald-500/20 transition-all">
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="size-4" />
@@ -248,13 +248,13 @@ export function TeamReflectionDetail({
             value={data.what_went_well ?? ""}
             onChange={(e) => setField("what_went_well", e.target.value)}
             placeholder="Úspěchy, zvládnuté výzvy a pozitiva za uplynulý měsíc…"
-            rows={7}
-            className="flex-1 resize-y text-sm border-0 bg-transparent p-1 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 leading-relaxed"
+            rows={6}
+            className="flex-1 resize-none text-sm border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 leading-relaxed min-h-[120px]"
           />
         </Card>
 
         {/* Co uděláme jinak */}
-        <Card className="flex flex-col p-4 sm:p-5 space-y-2.5 border-primary/30 bg-card hover:border-primary/50 transition-colors">
+        <Card className="flex flex-col p-4 sm:p-5 space-y-2 border-primary/25 bg-card hover:border-primary/40 focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
           <div className="flex items-center gap-2">
             <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
               <Sparkles className="size-4" />
@@ -273,8 +273,8 @@ export function TeamReflectionDetail({
             value={data.what_we_do_differently ?? ""}
             onChange={(e) => setField("what_we_do_differently", e.target.value)}
             placeholder="Co příště změníme, zkusíme nebo upravíme v přístupu…"
-            rows={7}
-            className="flex-1 resize-y text-sm border-0 bg-transparent p-1 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 leading-relaxed"
+            rows={6}
+            className="flex-1 resize-none text-sm border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60 leading-relaxed min-h-[120px]"
           />
         </Card>
       </div>

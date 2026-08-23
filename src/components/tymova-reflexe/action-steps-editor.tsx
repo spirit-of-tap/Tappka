@@ -58,33 +58,40 @@ export function ActionStepsEditor({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <div className="space-y-1.5 pb-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
               <CheckSquare className="size-4" />
             </div>
-            <h3 className="font-heading text-base font-semibold text-foreground">
+            <h3 className="font-heading text-base font-semibold text-foreground truncate">
               Plánované akční kroky
             </h3>
-            <Badge variant="secondary" className="text-xs px-2 py-0 h-5 font-medium">
+            <Badge variant="secondary" className="text-xs px-2 py-0 h-5 font-medium shrink-0">
               {steps.length}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground/80 italic mt-1 pl-9">
-            „Když je zodpovědný každý, ve skutečnosti není zodpovědný nikdo.“ — Albert Bandura
-          </p>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAdd}
+            className="shrink-0 h-8 gap-1.5"
+          >
+            <Plus className="size-3.5" />
+            Přidat krok
+          </Button>
         </div>
 
-        <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="self-start sm:self-auto shrink-0">
-          <Plus className="size-4" />
-          Přidat krok
-        </Button>
+        <p className="text-xs text-muted-foreground/75 italic">
+          „Když je zodpovědný každý, ve skutečnosti není zodpovědný nikdo.“ — Albert Bandura
+        </p>
       </div>
 
-      {/* Flat List of Steps (Seamless without inner card/border box) */}
+      {/* Flat List of Steps */}
       {steps.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border/80 bg-muted/10 p-6 text-center">
           <p className="text-xs text-muted-foreground">
@@ -111,25 +118,25 @@ export function ActionStepsEditor({
             return (
               <div
                 key={step.id}
-                className="group/row flex items-start gap-3 py-3 first:pt-1 last:pb-1 transition-colors"
+                className="group/row flex items-start gap-3 py-2.5 first:pt-1 last:pb-1 transition-colors"
               >
                 {/* Index Pill */}
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary mt-1">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary mt-0.5">
                   {index + 1}
                 </span>
 
                 {/* Content */}
-                <div className="flex-1 space-y-1.5 min-w-0">
+                <div className="flex-1 space-y-1 min-w-0">
                   <Textarea
                     value={step.text}
                     onChange={(e) => handleTextChange(step.id, e.target.value)}
                     placeholder="Co konkrétně uděláme (akční krok)…"
-                    rows={2}
-                    className="w-full resize-none text-sm border-0 bg-transparent p-1 shadow-none focus-visible:ring-0 focus-visible:bg-muted/20 rounded transition-colors placeholder:text-muted-foreground/60"
+                    rows={1}
+                    className="w-full resize-none text-sm border-0 bg-transparent p-1 min-h-[32px] shadow-none focus-visible:ring-0 focus-visible:bg-muted/20 rounded transition-colors placeholder:text-muted-foreground/60 leading-normal"
                   />
 
                   <div className="flex items-center gap-2 flex-wrap pl-1">
-                    <span className="text-[11px] font-medium text-muted-foreground/80 shrink-0">
+                    <span className="text-[11px] font-medium text-muted-foreground/75 shrink-0">
                       Zodpovědnost:
                     </span>
 
