@@ -200,7 +200,7 @@ export function ReviewDetailPanel({
               )}
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Rocket className="size-3.5" />
-                Raketový model: {book.is_rocket_model ? 'ano' : 'ne'}
+                Rocket model: {book.is_rocket_model ? 'ano' : 'ne'}
               </p>
             </div>
           )}

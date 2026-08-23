@@ -18,7 +18,11 @@ interface PageShellProps {
 
 export function PageShell({ size = "full", className, children }: PageShellProps) {
   return (
+    // suppressHydrationWarning: browser extensions (ProtonPass, …) inject
+    // attributes like `data-protonpass-form` into this container before
+    // hydration. One level deep only — real mismatches inside are unaffected.
     <div
+      suppressHydrationWarning
       className={cn(
         "container mx-auto space-y-4 px-3 py-4 sm:space-y-6 sm:px-6 sm:py-6",
         SIZE_CLASSES[size],

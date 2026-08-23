@@ -128,9 +128,10 @@ allowed_mime_types = ["application/pdf", "application/vnd.openxmlformats-officed
 [storage.s3_protocol]
 enabled = true
 
-# Image transformation API is available to Supabase Pro plan.
-# [storage.image_transformation]
-# enabled = true
+# Image transformation API (render endpoint). Free on self-hosted/CLI;
+# hosted team-diary images use the equivalent Supabase Pro service directly.
+[storage.image_transformation]
+enabled = true
 
 # Store analytical data in S3 for running ETL jobs over Iceberg Catalog
 # This feature is only available on the hosted platform.

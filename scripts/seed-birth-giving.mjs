@@ -70,7 +70,7 @@ async function insert(table, rows) {
   return batch;
 }
 
-async function eventExists(name, customer, startsAt) {
+async function eventExists(name, customer) {
   // Match by normalized name + customer only: starts_at is recomputed from
   // "now" on every run, so it must not participate in the identity match.
   const { data, error } = await sb
@@ -234,7 +234,7 @@ async function addResultFile({ eventId, teamId, fileName, data, contentType, lab
   if (error) throw new Error(`team_result_files: ${error.message}`);
 }
 
-function addReflectionRows({ eventId, teamId, profileId }) {
+function addReflectionRows({ eventId, profileId }) {
   return {
     id: randomUUID(),
     event_id: eventId,

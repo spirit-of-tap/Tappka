@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 
 export function BackButton({ fallbackHref = '/cteni/prehled' }: { fallbackHref?: string }) {
@@ -22,10 +21,17 @@ export function BackButton({ fallbackHref = '/cteni/prehled' }: { fallbackHref?:
     router.back();
   };
 
+  // Same visual language as ui/page-back.tsx, but history-aware for flows
+  // with multiple possible entry points.
   return (
-    <Button variant="ghost" className="gap-2 -ml-3" onClick={goBack} disabled={pending}>
-      {pending ? <Spinner className="size-4" /> : <ArrowLeft className="size-4" />}
+    <button
+      type="button"
+      onClick={goBack}
+      disabled={pending}
+      className="focus-ring -ml-2 inline-flex min-h-11 items-center gap-0.5 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+    >
+      {pending ? <Spinner className="size-5 shrink-0" /> : <ChevronLeft className="size-5 shrink-0" aria-hidden="true" />}
       Zpět
-    </Button>
+    </button>
   );
 }

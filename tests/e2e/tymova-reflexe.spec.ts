@@ -41,7 +41,7 @@ test.describe("týmová reflexe - single user", () => {
     const response = await page.goto("/tymova-reflexe");
     expect(response?.status()).toBeLessThan(400);
     await expect(page.getByRole("heading", { name: "Týmová reflexe" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Docházka reflexí" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kalendář reflexí" })).toBeVisible();
   });
 
   test("creating a reflection redirects to its detail page", async ({ page }) => {

@@ -8,7 +8,7 @@ import { PageShell } from "@/components/ui/page-shell";
 
 export const metadata = {
   title: "Profil | Tappka",
-  description: "Tvůj profil a nastavení",
+  description: "Tvůj účet, přístupy a nastavení aplikace",
 };
 
 export default async function ProfilPage() {
@@ -19,13 +19,15 @@ export default async function ProfilPage() {
     <PageShell size="medium">
       <PageHeader
         title="Profil"
-        description="Tvůj účet, přístupy a nastavení aplikace."
+        description="Tvůj účet, přístupy a nastavení aplikace"
       />
       <ProfileHub
         user={{
           id: profile.id,
           name: profile.name ?? "",
           email: profile.work_email,
+          // Raw storage ref — ProfileHub resolves it via getAvatarUrl.
+          picture: profile.picture,
           // profile.role is a non-null profile_role enum value, so it is always
           // a ROLE_LABELS key — no fallback needed.
           role: ROLE_LABELS[profile.role],

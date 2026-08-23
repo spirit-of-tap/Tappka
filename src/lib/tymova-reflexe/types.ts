@@ -13,7 +13,6 @@ export const REFLECTION_WITH_CREATOR_SELECT =
 
 export const EDITABLE_REFLECTION_FIELDS = [
   "what_went_well",
-  "what_didnt_go_well",
   "what_we_do_differently",
   "planned_action_steps",
   "responsible_person",

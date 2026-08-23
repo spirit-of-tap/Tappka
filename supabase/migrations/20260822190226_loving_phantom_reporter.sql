@@ -1,0 +1,1 @@
+ALTER TABLE "team_activities" ADD COLUMN "image_path" text;

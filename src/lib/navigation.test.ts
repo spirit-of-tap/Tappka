@@ -28,7 +28,7 @@ describe("navigation config", () => {
       "/tymovy-denik",
       "/tymove-dokumenty",
       "/nastroje-techniky",
-      "/komunita/profil",
+      "/osobnostni-testy",
       "/cteni/prehled",
       "/birth-giving",
     ]);
@@ -47,7 +47,7 @@ describe("getHubModules", () => {
       "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
-      "/komunita/profil",
+      "/osobnostni-testy",
     ]);
   });
 

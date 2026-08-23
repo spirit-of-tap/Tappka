@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
 import {
   ChevronRight,
   Database,
@@ -28,7 +28,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
 import {
@@ -45,26 +44,13 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     role?: string
     beta_access?: boolean
   }
-  reviewCount?: number
 }
 
-function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["user"]; reviewCount?: number }) {
+function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const isBeta = user?.beta_access ?? false
   const isReservationsActive = pathname.startsWith("/reservations")
-  const isCteniActive = pathname.startsWith("/cteni")
-  const cteniSubItems = [
-    { title: "Přehled", url: "/cteni/prehled" },
-    { title: "Hledat", url: "/cteni/hledat" },
-    ...(isCoachOrAdmin
-      ? [
-        { title: "Ke kontrole", url: "/cteni/eseje/ke-kontrole", badge: reviewCount },
-        { title: "Správa knihovny", url: "/cteni/sprava" },
-      ]
-      : []),
-  ]
   const isDevelopment = process.env.NODE_ENV === "development"
 
   const DEV_INSPECT_ITEMS: NavModule[] = [
@@ -97,10 +83,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
-                  // Branch order is load-bearing: Čtení and Osobnostní testy are
-                  // betaOnly in NAV_MODULES but render through their title special
-                  // cases below — the generic betaOnly branch must stay after them.
-
                   // Special handling for Rezervace with sub-menu for coach/admin
                   if (item.title === "Místnosti" && isCoachOrAdmin) {
                     return (
@@ -147,94 +129,6 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
                           </CollapsibleContent>
                         </SidebarMenuItem>
                       </Collapsible>
-                    )
-                  }
-
-                  // Čtení — beta-only
-                  if (item.title === "Čtení") {
-                    if (!isBeta) return null
-
-                    return (
-                      <Collapsible
-                        key={item.title}
-                        asChild
-                        defaultOpen={isCteniActive}
-                        className="group/collapsible"
-                      >
-                        <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                              isActive={isCteniActive}
-                              tooltip={item.title}
-                            >
-                              <item.icon className="size-4" />
-                              <span>{item.title}</span>
-                              <Badge
-                                variant="secondary"
-                                className="ml-auto h-5 text-[10px] px-1.5"
-                              >
-                                Beta
-                              </Badge>
-                              <ChevronRight className="size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              {cteniSubItems.map((sub) => (
-                                <SidebarMenuSubItem key={sub.title}>
-                                  <SidebarMenuSubButton
-                                    asChild
-                                    isActive={pathname === sub.url || (sub.url !== "/" && pathname.startsWith(sub.url + "/"))}
-                                  >
-                                    <Link href={sub.url}>
-                                      {sub.title}
-                                      {"badge" in sub && sub.badge !== undefined && sub.badge > 0 && (
-                                        <Badge
-                                          variant="destructive"
-                                          className="ml-auto h-5 min-w-5 p-0 flex items-center justify-center text-xs"
-                                        >
-                                          {sub.badge}
-                                        </Badge>
-                                      )}
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
-                    )
-                  }
-
-                  // Osobnostní testy — own profile tests tab, beta-only
-                  if (item.title === "Osobnostní testy") {
-                    if (!isBeta || !user) return null
-
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={
-                            pathname.startsWith("/komunita/profil/") &&
-                            searchParams.get("tab") === "osobnostni-testy"
-                          }
-                          tooltip={item.title}
-                        >
-                          <Link
-                            href={`/komunita/profil/${user.id}?tab=osobnostni-testy`}
-                          >
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
                     )
                   }
 
@@ -316,18 +210,19 @@ function AppSidebarContent({ user, reviewCount = 0 }: { user?: AppSidebarProps["
           <NavUser user={user} />
         </SidebarFooter>
       )}
-      <SidebarRail />
     </>
   )
 }
 
-export function AppSidebar({ user, reviewCount, ...props }: AppSidebarProps) {
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const { isMobile } = useSidebar()
   // Mobile gets the bottom navigation bar instead of the sidebar sheet.
   if (isMobile) return null
   return (
-    <Sidebar {...props}>
-      <AppSidebarContent user={user} reviewCount={reviewCount} />
+    // collapsible="none": the sidebar is permanent chrome — no toggle, no
+    // rail, no keyboard shortcut can hide it.
+    <Sidebar collapsible="none" {...props}>
+      <AppSidebarContent user={user} />
     </Sidebar>
   )
 }

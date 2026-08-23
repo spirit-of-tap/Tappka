@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EssayVoteButton } from "@/components/essays/essay-vote-button";
 
+vi.mock("canvas-confetti", () => ({
+  default: vi.fn(),
+}));
+
 const fetchSpy = vi.spyOn(globalThis, "fetch");
 
 beforeEach(() => {

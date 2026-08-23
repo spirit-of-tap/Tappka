@@ -1,7 +1,7 @@
 {
   "name": "Tappka - Tiimiakatemia",
   "short_name": "Tappka",
-  "description": "Studentsky portal Tiimiakatemia Prague - We do business to learn, to live fully we earn!",
+  "description": "Studentský portál pro studující a kouče:ky Tiimiakatemia Prague.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fcfff7",

@@ -12,7 +12,7 @@ export function InfoCard() {
         </p>
         <p>
           Osobnostní test si každé téčko dělá v 1. semestru. Následně ho zkonzultuje
-          s některým z koučů. Slouží jako podklad pro Learning contract.
+          s koučem:kou. Slouží jako podklad pro Learning contract.
         </p>
       </div>
     </div>

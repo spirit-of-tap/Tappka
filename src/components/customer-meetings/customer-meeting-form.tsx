@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { toLocalInputValue } from "@/lib/utils/datetime-input"
 import type { CustomerMeeting } from "@/lib/customer-meetings/types"
 
 interface CustomerMeetingFormProps {
@@ -37,6 +38,10 @@ export function CustomerMeetingForm({ profileId, initial, onSuccess, onCancel }:
     if (!company.trim()) { setError("Společnost je povinná"); return }
     if (!contactPerson.trim()) { setError("Kontaktní osoba je povinná"); return }
     if (!objective.trim()) { setError("Cíl schůzky je povinný"); return }
+    if (meetingAt && new Date(meetingAt).getTime() > Date.now()) {
+      setError("Datum schůzky nemůže být v budoucnu")
+      return
+    }
 
     setLoading(true)
     try {
@@ -87,7 +92,9 @@ export function CustomerMeetingForm({ profileId, initial, onSuccess, onCancel }:
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    // noValidate: our inline error box owns all messaging (consistent UI);
+    // the datetime-local `max` stays as a picker hint, not a submit blocker.
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {error && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -130,6 +137,7 @@ export function CustomerMeetingForm({ profileId, initial, onSuccess, onCancel }:
           id="meeting-at"
           type="datetime-local"
           value={meetingAt}
+          max={toLocalInputValue(new Date())}
           onChange={(e) => setMeetingAt(e.target.value)}
         />
       </div>

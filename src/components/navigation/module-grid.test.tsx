@@ -18,16 +18,31 @@ describe("ModuleGrid", () => {
     expect(within(mistnosti).queryByText("Beta")).not.toBeInTheDocument();
   });
 
-  it("hides own-profile modules when no profileId is given", () => {
+  it("links the personality tests card to /osobnostni-testy", () => {
     render(<ModuleGrid modules={NAV_MODULES} />);
-    expect(screen.queryByRole("link", { name: /Osobnostní testy/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Místnosti/ })).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /Osobnostní testy/ });
+    expect(link).toHaveAttribute("href", "/osobnostni-testy");
   });
 
-  it("links the personality tests card to the own profile tab when profileId is given", () => {
-    render(<ModuleGrid modules={NAV_MODULES} profileId="user-1" />);
-    const link = screen.getByRole("link", { name: /Osobnostní testy/ });
-    expect(link).toHaveAttribute("href", "/komunita/profil/user-1?tab=osobnostni-testy");
+  it("handles own-profile modules when ownProfileTab is set", () => {
+    const customModules = [
+      ...NAV_MODULES,
+      {
+        title: "Vlastní záložka",
+        url: "/komunita/profil",
+        icon: NAV_MODULES[0].icon,
+        ownProfileTab: "custom-tab",
+        description: "Testovací záložka",
+      },
+    ];
+
+    const { unmount } = render(<ModuleGrid modules={customModules} />);
+    expect(screen.queryByRole("link", { name: /Vlastní záložka/ })).not.toBeInTheDocument();
+    unmount();
+
+    render(<ModuleGrid modules={customModules} profileId="user-1" />);
+    const customLink = screen.getByRole("link", { name: /Vlastní záložka/ });
+    expect(customLink).toHaveAttribute("href", "/komunita/profil/user-1?tab=custom-tab");
   });
 
   it("renders high-traffic modules as full-width featured cards", () => {

@@ -1,11 +1,13 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getEssays } from '@/lib/essays/queries';
-import { getRocketModelBooks, getHighlightedBooks, getHighlightCategories } from '@/lib/books/queries';
+import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
+import { getBooks, getRocketModelBooks, getHighlightedBooks, getHighlightCategories } from '@/lib/books/queries';
+import { getBookIdsInLibrary } from '@/lib/library/book-ids';
 import { groupHighlightedBooks } from '@/lib/books/highlight-groups';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import type { BookListStatus, HighlightCategory } from '@/lib/books/types';
+import type { EssayWithDetails } from '@/lib/essays/types';
 import { SearchPageClient } from '@/components/search/search-page-client';
 
 export default async function HledatPage() {
@@ -15,8 +17,23 @@ export default async function HledatPage() {
 
   const profile = await getCurrentUserProfile(supabase, { user });
 
-  const [popularEssays, categoryRows, teamRows, rocketModelBooks, highlightedBooks, highlightCategories] = await Promise.all([
-    getEssays(supabase, { sort: 'month', pageSize: 8 }),
+  const [
+    books,
+    libraryBookIdsSet,
+    popularEssays,
+    recentEssays,
+    teamEssays,
+    categoryRows,
+    teamRows,
+    rocketModelBooks,
+    highlightedBooks,
+    highlightCategories,
+  ] = await Promise.all([
+    getBooks(supabase, { listStatus: 'shortlist', minEssayCount: 2, sortBy: 'popular', pageSize: 60 }),
+    getBookIdsInLibrary(supabase),
+    getEssays(supabase, { sort: 'month', pageSize: 40 }),
+    getEssays(supabase, { sort: 'recent', pageSize: 40 }),
+    (profile?.team_id ? getEssaysByTeam(supabase, profile.team_id, { pageSize: 40 }) : Promise.resolve([])) as Promise<EssayWithDetails[]>,
     supabase.rpc('get_best_books_per_category', { top_n: 3 }),
     supabase.rpc('get_teams_with_member_stats'),
     getRocketModelBooks(supabase),
@@ -56,31 +73,78 @@ export default async function HledatPage() {
   const highlightedByCategory = groupHighlightedBooks(highlightedBooks, highlightCategories);
 
   type MemberRow = { team_id: string; team_name: string; profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
-  type TeamWithMembers = { id: string; name: string; members: Omit<MemberRow, 'team_id' | 'team_name'>[] };
-  const teamsMap = new Map<string, TeamWithMembers>();
-  for (const row of (teamRows.data ?? []) as MemberRow[]) {
-    if (!teamsMap.has(row.team_id)) teamsMap.set(row.team_id, { id: row.team_id, name: row.team_name, members: [] });
-    teamsMap.get(row.team_id)!.members.push({ profile_id: row.profile_id, profile_name: row.profile_name, profile_picture: row.profile_picture, essay_count: row.essay_count, book_points: row.book_points });
-  }
-  const teamsWithMembers = Array.from(teamsMap.values());
+  const teamNamesById: Record<string, string> = {};
+  const authorStatsById: Record<string, { bookPoints: number; essayCount: number; isTeamTopReader: boolean }> = {};
 
+  const teamMembersByTeam = new Map<string, MemberRow[]>();
+  for (const row of (teamRows.data ?? []) as MemberRow[]) {
+    teamNamesById[row.team_id] = row.team_name;
+    if (!teamMembersByTeam.has(row.team_id)) teamMembersByTeam.set(row.team_id, []);
+    teamMembersByTeam.get(row.team_id)!.push(row);
+  }
+
+  for (const members of teamMembersByTeam.values()) {
+    const maxPoints = Math.max(...members.map((m) => m.book_points));
+    for (const m of members) {
+      authorStatsById[m.profile_id] = {
+        bookPoints: m.book_points,
+        essayCount: m.essay_count,
+        isTeamTopReader: maxPoints > 0 && m.book_points === maxPoints,
+      };
+    }
+  }
+
+  const allEssayIds = Array.from(
+    new Set([...popularEssays, ...recentEssays, ...teamEssays].map((e) => e.id)),
+  );
   const votedIds = new Set<string>();
-  if (profile && popularEssays.length > 0) {
+  if (profile && allEssayIds.length > 0) {
     const { data } = await supabase
       .from('essay_votes')
       .select('essay_id')
-      .in('essay_id', popularEssays.map((e) => e.id))
+      .in('essay_id', allEssayIds)
       .eq('voter_profile_id', profile.id);
     data?.forEach((v: { essay_id: string }) => votedIds.add(v.essay_id));
   }
 
+  // Extract latest essays for books
+  const essaysByBookId: Record<string, Array<{ id: string; title: string; author: { id: string; name: string | null; picture: string | null; team_id?: string | null } | null }>> = {};
+  for (const essay of [...recentEssays, ...popularEssays, ...teamEssays]) {
+    if (!essay.book_id) continue;
+    const list = (essaysByBookId[essay.book_id] ??= []);
+    if (list.length < 4 && !list.some((e) => e.id === essay.id)) {
+      list.push({
+        id: essay.id,
+        title: essay.title,
+        author: essay.author ? {
+          id: essay.author.id,
+          name: essay.author.name,
+          picture: essay.author.picture,
+          team_id: essay.author.team_id,
+        } : null,
+      });
+    }
+  }
+
   const popularWithVoted = popularEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
+  const recentWithVoted = recentEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
+  const teamWithVoted = teamEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
+
+  const userTeamName = profile?.team_id ? teamNamesById[profile.team_id] ?? null : null;
 
   return (
     <SearchPageClient
+      books={books}
+      libraryBookIds={Array.from(libraryBookIdsSet)}
+      essaysByBookId={essaysByBookId}
       popularEssays={popularWithVoted}
+      recentEssays={recentWithVoted}
+      teamEssays={teamWithVoted}
+      teamNamesById={teamNamesById}
+      authorStatsById={authorStatsById}
+      userTeamName={userTeamName}
+      userTeamId={profile?.team_id ?? null}
       categoryBestBooks={categoryBestBooks}
-      teamsWithMembers={teamsWithMembers}
       rocketModelBooks={rocketModelBooks}
       highlightedByCategory={highlightedByCategory}
     />

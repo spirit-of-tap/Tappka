@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  ArrowLeft,
   BookOpen,
   BookText,
   ExternalLink,
@@ -14,8 +12,13 @@ import { getBookCopiesStatus, getBookLibraryInfo } from '@/lib/library/queries';
 import { BookCopiesList } from '@/components/library/book-copies-list';
 import { StorageImage } from '@/components/storage/storage-image';
 import { Button } from '@/components/ui/button';
+import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
 import { BookAdminActions } from './admin-actions';
+
+export const metadata = {
+  title: 'Detail knihy | Tappka',
+};
 import { BookDescription } from '@/components/books/book-description';
 import { BookEssaysList } from '@/components/books/book-essays-list';
 import { VerifiedBadge, RocketBadge, HighlightBadge } from '@/components/books/book-status-badges';
@@ -68,12 +71,7 @@ export default async function BookDetailPage({ params }: PageProps) {
     <PageShell size="wide" className="space-y-8">
       {/* Top bar */}
       <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" asChild className="gap-2 -ml-2">
-          <Link href="/cteni/hledat">
-            <ArrowLeft className="size-4" />
-            Zpět do hledání
-          </Link>
-        </Button>
+        <PageBack href="/cteni/hledat" label="Zpět do hledání" />
         <BookAdminActions
           bookId={book.id}
           bookTitle={book.title_cs}

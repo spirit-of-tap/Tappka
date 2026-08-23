@@ -166,7 +166,7 @@
   --popover: oklch(0.205 0.022 8.2); /* Dark popover */
   --popover-foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --primary: oklch(0.537 0.206 27.8); /* TAP Red (brightened for dark) */
+  --primary: oklch(0.66 0.21 27.5); /* TAP Red (accessible contrast for dark mode) */
   --primary-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.284 0.037 8.8); /* Medium dark TAP Brown */
@@ -195,10 +195,10 @@
 
   --border: oklch(0.303 0.041 8.9); /* Dark border */
   --input: oklch(0.265 0.034 8.7); /* Dark input */
-  --ring: oklch(0.537 0.206 27.8); /* TAP Red for focus rings */
+  --ring: oklch(0.66 0.21 27.5); /* TAP Red for focus rings */
 
   /* Chart Colors - distinct hues for categorical data */
-  --chart-1: oklch(0.631 0.192 24.5); /* TAP Red */
+  --chart-1: oklch(0.66 0.21 27.5); /* TAP Red */
   --chart-2: oklch(0.792 0.137 72.4); /* Amber */
   /* Dark mode already clears WCAG AA (~9.6:1) as plain --chart-2. */
   --chart-2-strong: oklch(0.792 0.137 72.4);
@@ -211,12 +211,12 @@
   /* Sidebar */
   --sidebar: oklch(0.205 0.022 8.2);
   --sidebar-foreground: oklch(0.995 0.014 121.7);
-  --sidebar-primary: oklch(0.537 0.206 27.8);
+  --sidebar-primary: oklch(0.66 0.21 27.5);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.325 0.034 8.1);
   --sidebar-accent-foreground: oklch(0.995 0.014 121.7);
   --sidebar-border: oklch(0.303 0.041 8.9);
-  --sidebar-ring: oklch(0.537 0.206 27.8);
+  --sidebar-ring: oklch(0.66 0.21 27.5);
 }
 
 @layer base {

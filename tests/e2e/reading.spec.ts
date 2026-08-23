@@ -83,15 +83,18 @@ test.describe("reading navigation - arrow back", () => {
 
   test("cteni/knihy/nova - Zpět do hledání navigates to /cteni/hledat", async ({ page }) => {
     await page.goto("/cteni/knihy/nova");
-    await expect(page.getByRole("link", { name: /zpět/i })).toBeVisible();
-    await page.getByRole("link", { name: /zpět/i }).click();
+    // Exact name: /zpět/i would also match the sidebar's "Zpětná vazba" link.
+    const backLink = page.getByRole("link", { name: "Zpět do hledání" });
+    await expect(backLink).toBeVisible();
+    await backLink.click();
     await expect(page).toHaveURL(/\/cteni\/hledat/);
   });
 
   test("cteni/knihy/[bookId] - Zpět do hledání navigates to /cteni/hledat", async ({ page }) => {
     await page.goto(`/cteni/knihy/${bookId}`);
-    await expect(page.getByRole("link", { name: /zpět/i })).toBeVisible();
-    await page.getByRole("link", { name: /zpět/i }).click();
+    const backLink = page.getByRole("link", { name: "Zpět do hledání" });
+    await expect(backLink).toBeVisible();
+    await backLink.click();
     await expect(page).toHaveURL(/\/cteni\/hledat/);
   });
 
@@ -100,8 +103,10 @@ test.describe("reading navigation - arrow back", () => {
     const response = await page.goto("/cteni/eseje/nova");
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).toBeVisible();
-    await expect(page.locator("text=Zpět").first()).toBeVisible({ timeout: 10000 });
-    await page.locator("text=Zpět").first().click();
+    // The BackButton is a <button>; the sidebar "Zpětná vazba" is a link.
+    const backButton = page.getByRole("button", { name: "Zpět", exact: true });
+    await expect(backButton).toBeVisible({ timeout: 10000 });
+    await backButton.click();
     await expect(page).toHaveURL(/\/cteni\/hledat/);
   });
 
@@ -110,15 +115,20 @@ test.describe("reading navigation - arrow back", () => {
     const response = await page.goto(`/cteni/eseje/${essayId}`);
     expect(response?.status()).toBeLessThan(400);
     await expect(page.locator("body")).toBeVisible();
-    await expect(page.locator("text=Zpět").first()).toBeVisible({ timeout: 10000 });
-    await page.locator("text=Zpět").first().click();
+    const backButton = page.getByRole("button", { name: "Zpět", exact: true });
+    await expect(backButton).toBeVisible({ timeout: 10000 });
+    await backButton.click();
     await expect(page).toHaveURL(/\/cteni\/hledat/);
   });
 
-  test("cteni/eseje/[essayId]/upravit - Zpět na esej navigates to essay", async ({ page }) => {
+  test("cteni/eseje/[essayId]/upravit - Zpět (router.back) navigates back to essay", async ({ page }) => {
+    // The editor uses BackButton (router.back()), so history must contain the
+    // essay page for Zpět to land there.
+    await page.goto(`/cteni/eseje/${essayId}`);
     await page.goto(`/cteni/eseje/${essayId}/upravit`);
-    await expect(page.getByRole("link", { name: /zpět/i })).toBeVisible();
-    await page.getByRole("link", { name: /zpět/i }).click();
+    const backButton = page.getByRole("button", { name: "Zpět", exact: true });
+    await expect(backButton).toBeVisible();
+    await backButton.click();
     await expect(page).toHaveURL(new RegExp(`/cteni/eseje/${essayId}$`));
   });
 });

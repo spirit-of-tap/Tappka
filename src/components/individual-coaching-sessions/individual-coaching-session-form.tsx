@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
+import { toLocalInputValue } from "@/lib/utils/datetime-input"
 import type { IndividualCoachingSession, IndividualCoachingSessionWithCoach } from "@/lib/individual-coaching-sessions/types"
 import { SESSION_WITH_COACH_SELECT } from "@/lib/individual-coaching-sessions/types"
 import type { Profile } from "@/lib/auth-helpers"
@@ -49,6 +50,10 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
 
     if (!coachSelection) { setError("Vyber kouče:ku"); return }
     if (isExternal && !externalCoachName.trim()) { setError("Zadej jméno externí:ho kouče:ky"); return }
+    if (sessionAt && new Date(sessionAt).getTime() > Date.now()) {
+      setError("Datum sezení nemůže být v budoucnu")
+      return
+    }
 
     setLoading(true)
     try {
@@ -97,7 +102,9 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    // noValidate: our inline error box owns all messaging (consistent UI);
+    // the datetime-local `max` stays as a picker hint, not a submit blocker.
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {error && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -130,6 +137,7 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
             id="session-at"
             type="datetime-local"
             value={sessionAt}
+            max={toLocalInputValue(new Date())}
             onChange={(e) => setSessionAt(e.target.value)}
           />
         </div>

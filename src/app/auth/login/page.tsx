@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { LoginForm } from "@/components/login-form";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/server";
@@ -8,6 +9,10 @@ import { validateRedirectUrl } from "@/lib/utils";
 import { headers } from "next/headers";
 import { Sparkles } from "lucide-react";
 import Image from "next/image";
+
+export const metadata: Metadata = {
+  title: "Přihlášení",
+};
 
 interface LoginPageProps {
   searchParams: Promise<{ next?: string }>;
@@ -28,8 +33,13 @@ export default async function Home({ searchParams }: LoginPageProps) {
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
-      {/* Header with theme toggle */}
-      <header className="absolute top-0 right-0 p-4 md:p-6">
+      {/* Header with theme toggle & about link */}
+      <header className="absolute top-0 right-0 p-4 md:p-6 flex items-center gap-3 z-10">
+        <Button asChild variant="outline" size="sm" className="text-xs sm:text-sm font-medium">
+          <Link href="/about">
+            O aplikaci
+          </Link>
+        </Button>
         <ThemeSwitcher />
       </header>
 
@@ -104,6 +114,14 @@ export default async function Home({ searchParams }: LoginPageProps) {
 
       {/* Footer */}
       <footer className="p-4 md:p-6 text-center space-y-2">
+        <div className="flex items-center justify-center gap-4 text-xs">
+          <Link
+            href="/about"
+            className="text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+          >
+            O aplikaci
+          </Link>
+        </div>
         <p className="text-xs text-muted-foreground">
           © Tiimiakatemia Prague {new Date().getFullYear()}
         </p>

@@ -2,9 +2,26 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Pencil, Trash2, Building2, UserCircle, Briefcase, Calendar, Target, MessageSquare, Users } from "lucide-react"
+import {
+  Pencil,
+  Trash2,
+  Ellipsis,
+  Building2,
+  UserCircle,
+  Briefcase,
+  Calendar,
+  Target,
+  MessageSquare,
+  Users,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -21,7 +38,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
@@ -58,6 +74,7 @@ function DetailRow({
 export function CustomerMeetingDetail({ meeting, profileId }: CustomerMeetingDetailProps) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   async function handleDelete() {
@@ -87,68 +104,72 @@ export function CustomerMeetingDetail({ meeting, profileId }: CustomerMeetingDet
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end gap-2">
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Pencil className="size-4" />
-              Upravit
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Upravit schůzku</DialogTitle>
-            </DialogHeader>
-            <CustomerMeetingForm
-              profileId={profileId}
-              initial={meeting}
-              onSuccess={handleUpdated}
-              onCancel={() => setEditOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
-              <Trash2 className="size-4" />
-              Smazat
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Odstranit schůzku?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tato akce schůzku s {meeting.company} odstraní.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Zrušit</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                disabled={deleting}
-              >
-                {deleting ? "Odstraňuji..." : "Odstranit"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-
+      {/* Edit is the likely action — visible. Delete is rare and destructive —
+          hidden behind the three-dot overflow menu (DESIGN.md: responsive
+          AlertDialog for confirmation, no raw destructive buttons floating). */}
       <Card>
         <CardHeader>
           <CardTitle>Detaily schůzky</CardTitle>
+          <CardAction className="flex items-center gap-1">
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Pencil className="size-4" />
+                  Upravit
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Upravit schůzku</DialogTitle>
+                </DialogHeader>
+                <CustomerMeetingForm
+                  profileId={profileId}
+                  initial={meeting}
+                  onSuccess={handleUpdated}
+                  onCancel={() => setEditOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 text-muted-foreground"
+                  aria-label="Další akce"
+                >
+                  <Ellipsis className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {/* preventDefault keeps the menu open until the AlertDialog
+                    takes over focus — otherwise Radix closes both. */}
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    setDeleteOpen(true)
+                  }}
+                >
+                  <Trash2 className="size-4" />
+                  Smazat
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardAction>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Person first — consistent with the timeline rows and page title. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <DetailRow icon={Building2} label="Společnost">
-              {meeting.company}
-            </DetailRow>
             <DetailRow icon={UserCircle} label="Kontaktní osoba">
               {meeting.contact_person}
             </DetailRow>
             <DetailRow icon={Briefcase} label="Pozice">
               {meeting.position || "—"}
+            </DetailRow>
+            <DetailRow icon={Building2} label="Společnost">
+              {meeting.company}
             </DetailRow>
             <DetailRow icon={Calendar} label="Datum">
               {meeting.meeting_at
@@ -182,6 +203,27 @@ export function CustomerMeetingDetail({ meeting, profileId }: CustomerMeetingDet
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Odstranit schůzku?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tímto odstraníš schůzku s {meeting.contact_person} ({meeting.company}).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+            >
+              {deleting ? "Odstraňuji..." : "Odstranit"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

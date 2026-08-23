@@ -1,112 +1,167 @@
-export type MonthCellKind = "monthly" | "semester"
 export type MonthCellStatus = "done" | "current-missing" | "missing" | "future"
 
 export interface MonthCell {
   month: string
-  kind: MonthCellKind
-  status: MonthCellStatus
-  reflectionId: string | null
+  monthlyStatus: MonthCellStatus
+  monthlyReflectionId: string | null
+  isMay: boolean
+  rocnikovaStatus?: MonthCellStatus
+  rocnikovaReflectionId?: string | null
 }
 
 export interface SchoolYear {
   startYear: number
   label: string
   rocnik: number | null
+  isCurrentYear: boolean
+  completedCount: number
+  totalCount: number
   months: MonthCell[]
 }
 
-interface ReflectionRef {
+export interface ReflectionRef {
   id: string
   month: string
 }
 
-// A school year runs October through May; semester reflections replace the
-// monthly one in January and May. The program itself is fixed at 3 years.
-const SCHOOL_YEAR_MONTHS = [10, 11, 12, 1, 2, 3, 4, 5]
-const SEMESTER_MONTHS = new Set([1, 5])
+// A school year runs October through May. All 8 months have monthly reflections,
+// and May additionally has the comprehensive Ročníková reflexe.
+// The study program is fixed at 3 years.
+export const SCHOOL_YEAR_MONTHS = [10, 11, 12, 1, 2, 3, 4, 5] as const
 
-export function isSemesterMonth(monthKey: string): boolean {
-  const month = Number(monthKey.split("-")[1])
-  return SEMESTER_MONTHS.has(month)
+export function isRocnikovaMonth(monthKey: string): boolean {
+  const parts = monthKey.split("-")
+  const month = Number(parts[1])
+  return month === 5
 }
+
+/** Backward compatibility alias. */
+export const isSemesterMonth = isRocnikovaMonth
 
 const PROGRAM_LENGTH_YEARS = 3
 
-function schoolYearStartYearFor(monthKey: string): number {
+export function schoolYearStartYearFor(monthKey: string): number {
   const [year, month] = monthKey.split("-").map(Number)
   return month >= 9 ? year : year - 1
 }
 
 function monthKeyFor(year: number, month: number): string {
-  return `${year}-${String(month).padStart(2, "0")}-01`
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-01`
+}
+
+/**
+ * Normalizes onboardingYear to a valid 4-digit calendar year.
+ * If raw is a small number (1, 2, 3), it represents the relative ročník.
+ */
+export function normalizeOnboardingYear(
+  rawYear: number | null | undefined,
+  currentStartYear: number,
+): number {
+  if (typeof rawYear === "number") {
+    if (rawYear >= 1900 && rawYear <= 2100) {
+      return rawYear
+    }
+    if (rawYear >= 1 && rawYear <= 3) {
+      return currentStartYear - (rawYear - 1)
+    }
+  }
+  return currentStartYear
 }
 
 /**
  * A team's ročník (1st/2nd/3rd study year) for a given school year, derived
- * from teams.onboardingYear — the calendar year their first school year
- * started. Returns null if unset or the school year predates onboarding.
+ * from the effective 4-digit start onboarding year.
  */
-export function rocnikForSchoolYear(onboardingYear: number | null, startYear: number): number | null {
-  if (onboardingYear == null) return null
-  const rocnik = startYear - onboardingYear + 1
-  return rocnik >= 1 ? rocnik : null
+export function rocnikForSchoolYear(effectiveOnboardingYear: number, startYear: number): number | null {
+  const rocnik = startYear - effectiveOnboardingYear + 1
+  return rocnik >= 1 && rocnik <= 3 ? rocnik : null
+}
+
+function computeStatus(
+  reflectionId: string | null,
+  key: string,
+  currentMonth: string,
+): MonthCellStatus {
+  if (reflectionId) return "done"
+  if (key > currentMonth) return "future"
+  if (key === currentMonth) return "current-missing"
+  return "missing"
 }
 
 function buildMonths(
   startYear: number,
   currentMonth: string,
   monthlyMap: Map<string, string>,
-  semesterMap: Map<string, string>,
+  rocnikovaMap: Map<string, string>,
 ): MonthCell[] {
   return SCHOOL_YEAR_MONTHS.map((m) => {
     const year = m >= 9 ? startYear : startYear + 1
     const key = monthKeyFor(year, m)
-    const kind: MonthCellKind = SEMESTER_MONTHS.has(m) ? "semester" : "monthly"
-    const reflectionId = (kind === "semester" ? semesterMap : monthlyMap).get(key) ?? null
+    const isMay = m === 5
 
-    const status: MonthCellStatus = reflectionId
-      ? "done"
-      : key > currentMonth
-        ? "future"
-        : key === currentMonth
-          ? "current-missing"
-          : "missing"
+    const monthlyReflectionId = monthlyMap.get(key) ?? null
+    const monthlyStatus = computeStatus(monthlyReflectionId, key, currentMonth)
 
-    return { month: key, kind, status, reflectionId }
+    const cell: MonthCell = {
+      month: key,
+      monthlyStatus,
+      monthlyReflectionId,
+      isMay,
+    }
+
+    if (isMay) {
+      const rocnikovaReflectionId = rocnikovaMap.get(key) ?? null
+      cell.rocnikovaStatus = computeStatus(rocnikovaReflectionId, key, currentMonth)
+      cell.rocnikovaReflectionId = rocnikovaReflectionId
+    }
+
+    return cell
   })
 }
 
 /**
- * Builds the school years (September–May) to show on the reflection
- * calendar, oldest first.
- *
- * When `onboardingYear` is known, this is the team's whole fixed 3-year
- * program (ročník 1 through 3) regardless of the current date — future
- * ročníky are shown too, as a roadmap, with their months marked "future"
- * rather than omitted. Without an onboarding year we can't know the
- * program's bounds, so it falls back to a trailing `yearsBack + 1` window
- * ending at the school year containing `currentMonth`.
+ * Builds the 3 school years (October–May) for the team's roadmap.
  */
 export function buildSchoolYears(
   monthlyReflections: ReflectionRef[],
-  semesterReflections: ReflectionRef[],
+  rocnikovaReflections: ReflectionRef[],
   currentMonth: string,
-  yearsBack = 2,
+  _yearsBack = 2,
   onboardingYear: number | null = null,
 ): SchoolYear[] {
   const monthlyMap = new Map(monthlyReflections.map((r) => [r.month, r.id]))
-  const semesterMap = new Map(semesterReflections.map((r) => [r.month, r.id]))
+  const rocnikovaMap = new Map(rocnikovaReflections.map((r) => [r.month, r.id]))
   const currentStartYear = schoolYearStartYearFor(currentMonth)
 
-  const startYears =
-    onboardingYear !== null
-      ? Array.from({ length: PROGRAM_LENGTH_YEARS }, (_, i) => onboardingYear + i)
-      : Array.from({ length: yearsBack + 1 }, (_, i) => currentStartYear - yearsBack + i)
+  const effectiveOnboardingYear = normalizeOnboardingYear(onboardingYear, currentStartYear)
 
-  return startYears.map((startYear) => ({
-    startYear,
-    label: `${startYear}/${startYear + 1}`,
-    rocnik: rocnikForSchoolYear(onboardingYear, startYear),
-    months: buildMonths(startYear, currentMonth, monthlyMap, semesterMap),
-  }))
+  const startYears = Array.from(
+    { length: PROGRAM_LENGTH_YEARS },
+    (_, i) => effectiveOnboardingYear + i,
+  )
+
+  return startYears.map((startYear) => {
+    const months = buildMonths(startYear, currentMonth, monthlyMap, rocnikovaMap)
+    let completedCount = 0
+    let totalCount = 0
+
+    for (const cell of months) {
+      totalCount += 1
+      if (cell.monthlyStatus === "done") completedCount += 1
+      if (cell.isMay) {
+        totalCount += 1
+        if (cell.rocnikovaStatus === "done") completedCount += 1
+      }
+    }
+
+    return {
+      startYear,
+      label: `${startYear}/${startYear + 1}`,
+      rocnik: rocnikForSchoolYear(effectiveOnboardingYear, startYear),
+      isCurrentYear: startYear === currentStartYear,
+      completedCount,
+      totalCount,
+      months,
+    }
+  })
 }

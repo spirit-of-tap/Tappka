@@ -2,15 +2,13 @@
 
 import Link from 'next/link';
 import { Eye, BookOpen, MessageCircle, Sparkles, Pin, PenLine, ArrowRight } from 'lucide-react';
-import { StorageImage } from '@/components/storage/storage-image';
-import { EssayVoteButton } from './essay-vote-button';
-import { BookStatusBadges } from '@/components/books/book-status-badges';
-import { formatPoints, pointsNumber } from '@/lib/books/points';
-import { countWords, formatWordCount } from '@/lib/essays/text-stats';
-import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
-/** Preview length for a koncept row, matched to the published rows above. */
-const DRAFT_SNIPPET_LENGTH = 120;
+import { StorageImage } from '@/components/storage/storage-image';
+import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { EssayVoteButton } from './essay-vote-button';
+
+import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
 interface MyEssayListProps {
   essays: EssayWithDetails[];
@@ -35,56 +33,51 @@ export function MyEssayList({ essays, drafts = [], votedEssayIds = new Set() }: 
   return (
     <div className="space-y-6">
       {drafts.length > 0 && (
-        // Dashed edges mark "unfinished" here and on the koncept badge in the
-        // editor, so a draft never reads as a published essay at a glance.
-        <section className="rounded-xl border border-dashed border-primary/30 bg-primary/[0.03] px-3 py-2.5">
-          <h3 className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm font-semibold">
-            <span className="flex items-center gap-1.5">
+        <section
+          aria-label="Rozepsané koncepty"
+          className="rounded-lg border border-dashed border-border/80 bg-muted/20 px-3 py-2"
+        >
+          <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-border/40">
+            <h3 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <PenLine className="size-3.5 text-primary" />
-              Koncepty ({drafts.length})
-            </span>
-            <span className="text-xs font-normal text-muted-foreground">Vidíš je jenom ty</span>
-          </h3>
+              <span>Koncepty ({drafts.length})</span>
+            </h3>
+            <span className="text-[11px] text-muted-foreground">Vidíš jen ty</span>
+          </div>
 
-          <ul className="divide-y divide-primary/10">
-            {drafts.map((draft) => {
-              const text = draft.content_text ?? '';
-              const words = countWords(text);
-              const snippet = text.slice(0, DRAFT_SNIPPET_LENGTH).trimEnd();
-              return (
-                <li key={draft.id}>
-                  <Link
-                    href={`/cteni/eseje/${draft.id}/upravit`}
-                    className="group focus-ring -mx-1.5 block rounded-lg px-1.5 py-2 transition-colors hover:bg-primary/5"
-                  >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p className="truncate text-sm font-medium">
-                        {draft.title.trim() ? draft.title : 'Bez názvu'}
-                      </p>
-                      <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary">
-                        Pokračovat
-                        <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+          <ul className="divide-y divide-border/30">
+            {drafts.map((draft) => (
+              <li key={draft.id}>
+                <Link
+                  href={`/cteni/eseje/${draft.id}/upravit`}
+                  className="group focus-ring -mx-1.5 flex items-center justify-between gap-3 rounded-md px-1.5 py-2 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="truncate text-sm font-medium group-hover:text-primary transition-colors">
+                      {draft.title.trim() ? draft.title : 'Bez názvu'}
+                    </span>
+                    {draft.book && (
+                      <span className="hidden sm:inline text-xs text-muted-foreground truncate">
+                        · {draft.book.title_cs}
                       </span>
-                    </div>
-                    {snippet && (
-                      <p className="truncate text-xs text-muted-foreground/70">
-                        {snippet}{text.length > DRAFT_SNIPPET_LENGTH ? '…' : ''}
-                      </p>
                     )}
-                    <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-                      <span className="tabular-nums">{formatWordCount(words)}</span>
-                      <span aria-hidden className="text-muted-foreground/40">·</span>
-                      <span>
-                        upraveno {new Date(draft.updated_at).toLocaleDateString('cs-CZ', {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
-                      </span>
-                    </p>
-                  </Link>
-                </li>
-              );
-            })}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                    <span className="text-[11px] hidden sm:inline">
+                      upraveno{' '}
+                      {new Date(draft.updated_at).toLocaleDateString('cs-CZ', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>
+                    <span className="flex items-center gap-0.5 font-medium text-primary">
+                      Pokračovat
+                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
           </ul>
         </section>
       )}

@@ -18,6 +18,7 @@ export const OTP_LENGTH = 8;
  */
 export const PUBLIC_ROUTE_PREFIXES: readonly string[] = [
   '/auth',
+  '/about',
 ] as const;
 
 /**

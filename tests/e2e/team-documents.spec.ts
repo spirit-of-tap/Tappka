@@ -51,7 +51,7 @@ test.describe("týmové dokumenty - členství v týmu", () => {
     await page.goto("/tymove-dokumenty")
 
     await expect(page.getByRole("heading", { name: "Týmové dokumenty" })).toBeVisible()
-    await expect(page.getByRole("heading", { name: "Týmová smlouva" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Team Contract" })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Finanční směrnice" })).toBeVisible()
     await expect(page.getByText("Zatím žádné další dokumenty")).toBeVisible()
   })
@@ -70,13 +70,16 @@ test.describe("týmové dokumenty - členství v týmu", () => {
     await expect(page.getByRole("heading", { name: title })).toBeVisible()
     await expect(page.getByText("pravidla-v1.pdf")).toBeVisible()
 
-    await page.getByRole("button", { name: "Nahrát novou verzi" }).click()
+    await page.getByRole("button", { name: `Možnosti pro dokument ${title}` }).click()
+    await page.getByRole("menuitem", { name: "Nahrát novou verzi" }).click()
     dialog = page.getByRole("dialog")
     await dialog.getByLabel("Soubor PDF").setInputFiles(SECOND_PDF)
     await dialog.getByRole("button", { name: "Nahrát verzi" }).click()
 
     await expect(dialog).toHaveCount(0)
     await expect(page.getByText("pravidla-v2.pdf").first()).toBeVisible()
-    await expect(page.getByText("Historie verzí (2)")).toBeVisible()
+
+    await page.getByRole("button", { name: `Možnosti pro dokument ${title}` }).click()
+    await expect(page.getByRole("menuitem", { name: "Historie verzí (2)" })).toBeVisible()
   })
 })

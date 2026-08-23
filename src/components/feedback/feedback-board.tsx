@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Archive, Inbox, MessageSquare } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import { NewFeedbackForm } from './new-feedback-form';
 import { FeedbackNoteCard } from './feedback-note-card';
 import type { FeedbackWithAuthor } from '@/lib/feedback/types';
@@ -18,6 +19,7 @@ const EMPTY_ACTIVE = 'Zatím tu není žádná zpětná vazba. Buď první!';
 const EMPTY_ARCHIVED = 'Archiv je prázdný.';
 
 export function FeedbackBoard({ initialActive, initialArchived, isAdmin }: FeedbackBoardProps) {
+  const [activeTab, setActiveTab] = usePersistedState<string>('tappka:feedback:tab', 'active');
   const [active, setActive] = useState(initialActive);
   const [archived, setArchived] = useState(initialArchived);
 
@@ -73,7 +75,7 @@ export function FeedbackBoard({ initialActive, initialArchived, isAdmin }: Feedb
     <div className="flex flex-col gap-6">
       <NewFeedbackForm onCreated={handleCreated} />
 
-      <Tabs defaultValue="active">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="active">
             <MessageSquare />

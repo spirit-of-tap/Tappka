@@ -2298,6 +2298,7 @@ export type Database = {
           created_at: string
           created_by_profile_id: string
           id: string
+          image_path: string | null
           occurred_at: string
           participants: string | null
           reason: string | null
@@ -2312,6 +2313,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id: string
           id?: string
+          image_path?: string | null
           occurred_at: string
           participants?: string | null
           reason?: string | null
@@ -2326,6 +2328,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id?: string
           id?: string
+          image_path?: string | null
           occurred_at?: string
           participants?: string | null
           reason?: string | null
@@ -2352,6 +2355,174 @@ export type Database = {
           },
           {
             foreignKeyName: "team_activities_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_activity_attendees: {
+        Row: {
+          activity_id: string
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          profile_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          profile_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          profile_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_activity_attendees_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "team_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activity_attendees_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activity_attendees_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_activity_attendees_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_annual_reflection_entries: {
+        Row: {
+          annual_reflection_id: string
+          created_at: string
+          id: string
+          topic: Database["public"]["Enums"]["annual_reflection_topic"]
+          updated_at: string
+          updated_by_profile_id: string | null
+          what_didnt_go_well: string | null
+          what_next_time: string | null
+          what_went_well: string | null
+        }
+        Insert: {
+          annual_reflection_id: string
+          created_at?: string
+          id?: string
+          topic: Database["public"]["Enums"]["annual_reflection_topic"]
+          updated_at?: string
+          updated_by_profile_id?: string | null
+          what_didnt_go_well?: string | null
+          what_next_time?: string | null
+          what_went_well?: string | null
+        }
+        Update: {
+          annual_reflection_id?: string
+          created_at?: string
+          id?: string
+          topic?: Database["public"]["Enums"]["annual_reflection_topic"]
+          updated_at?: string
+          updated_by_profile_id?: string | null
+          what_didnt_go_well?: string | null
+          what_next_time?: string | null
+          what_went_well?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_annual_reflection_entries_annual_reflection_id_fkey"
+            columns: ["annual_reflection_id"]
+            isOneToOne: false
+            referencedRelation: "team_annual_reflections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_annual_reflection_entries_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_annual_reflections: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          reflection_month: string
+          removed_at: string | null
+          team_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          reflection_month: string
+          removed_at?: string | null
+          team_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          reflection_month?: string
+          removed_at?: string | null
+          team_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_annual_reflections_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_annual_reflections_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_annual_reflections_updated_by_profile_id_fkey"
             columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -2471,6 +2642,67 @@ export type Database = {
           },
         ]
       }
+      team_reflection_action_steps: {
+        Row: {
+          assignee_profile_id: string | null
+          created_at: string
+          created_by_profile_id: string | null
+          custom_assignee: string | null
+          description: string
+          id: string
+          order_index: number
+          removed_at: string | null
+          team_reflection_id: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_profile_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          custom_assignee?: string | null
+          description: string
+          id?: string
+          order_index?: number
+          removed_at?: string | null
+          team_reflection_id: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_profile_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          custom_assignee?: string | null
+          description?: string
+          id?: string
+          order_index?: number
+          removed_at?: string | null
+          team_reflection_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_reflection_action_steps_assignee_profile_id_fkey"
+            columns: ["assignee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_reflection_action_steps_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_reflection_action_steps_team_reflection_id_fkey"
+            columns: ["team_reflection_id"]
+            isOneToOne: false
+            referencedRelation: "team_reflections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_reflections: {
         Row: {
           created_at: string
@@ -2534,109 +2766,6 @@ export type Database = {
           },
           {
             foreignKeyName: "team_reflections_updated_by_profile_id_fkey"
-            columns: ["updated_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      team_semester_reflection_entries: {
-        Row: {
-          id: string
-          semester_reflection_id: string
-          topic: Database["public"]["Enums"]["semester_reflection_topic"]
-          updated_at: string
-          updated_by_profile_id: string
-          what_didnt_go_well: string | null
-          what_next_time: string | null
-          what_went_well: string | null
-        }
-        Insert: {
-          id?: string
-          semester_reflection_id: string
-          topic: Database["public"]["Enums"]["semester_reflection_topic"]
-          updated_at?: string
-          updated_by_profile_id: string
-          what_didnt_go_well?: string | null
-          what_next_time?: string | null
-          what_went_well?: string | null
-        }
-        Update: {
-          id?: string
-          semester_reflection_id?: string
-          topic?: Database["public"]["Enums"]["semester_reflection_topic"]
-          updated_at?: string
-          updated_by_profile_id?: string
-          what_didnt_go_well?: string | null
-          what_next_time?: string | null
-          what_went_well?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_semester_reflection_entries_semester_reflection_id_fkey"
-            columns: ["semester_reflection_id"]
-            isOneToOne: false
-            referencedRelation: "team_semester_reflections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_semester_reflection_entries_updated_by_profile_id_fkey"
-            columns: ["updated_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      team_semester_reflections: {
-        Row: {
-          created_at: string
-          created_by_profile_id: string
-          id: string
-          removed_at: string | null
-          semester_month: string
-          team_id: string
-          updated_at: string
-          updated_by_profile_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by_profile_id: string
-          id?: string
-          removed_at?: string | null
-          semester_month: string
-          team_id: string
-          updated_at?: string
-          updated_by_profile_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by_profile_id?: string
-          id?: string
-          removed_at?: string | null
-          semester_month?: string
-          team_id?: string
-          updated_at?: string
-          updated_by_profile_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_semester_reflections_created_by_profile_id_fkey"
-            columns: ["created_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_semester_reflections_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_semester_reflections_updated_by_profile_id_fkey"
             columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -3113,6 +3242,19 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
+      annual_reflection_topic:
+        | "predmety_zkousky_vyucujici"
+        | "metodika_a_metriky"
+        | "kouci_a_mentori"
+        | "tymy_a_tymove_spolecnosti"
+        | "individualni_prinos"
+        | "komunita"
+        | "komunitni_role"
+        | "komunitni_akce"
+        | "komunitni_a_cross_projekty"
+        | "zacleneni_tucnaku"
+        | "dalsi"
+      attendance_status: "present" | "absent" | "excused" | "late"
       birth_giving_assignment_state: "present" | "missing"
       birth_giving_delivery_status:
         | "pending"
@@ -3146,18 +3288,6 @@ export type Database = {
         | "other"
       profile_role: "student" | "mentor" | "coach" | "admin"
       schedule_type: "training_session" | "houston_calling"
-      semester_reflection_topic:
-        | "predmety_zkousky_vyucujici"
-        | "metodika_a_metriky"
-        | "kouci_a_mentori"
-        | "tymy_a_tymove_spolecnosti"
-        | "individualni_prinos"
-        | "komunita"
-        | "komunitni_role"
-        | "komunitni_akce"
-        | "komunitni_a_cross_projekty"
-        | "zacleneni_tucnaku"
-        | "dalsi"
       team_document_type: "team_contract" | "financial_policy" | "other"
       tool_type: "model" | "technique" | "tool"
     }
@@ -3287,6 +3417,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      annual_reflection_topic: [
+        "predmety_zkousky_vyucujici",
+        "metodika_a_metriky",
+        "kouci_a_mentori",
+        "tymy_a_tymove_spolecnosti",
+        "individualni_prinos",
+        "komunita",
+        "komunitni_role",
+        "komunitni_akce",
+        "komunitni_a_cross_projekty",
+        "zacleneni_tucnaku",
+        "dalsi",
+      ],
+      attendance_status: ["present", "absent", "excused", "late"],
       birth_giving_assignment_state: ["present", "missing"],
       birth_giving_delivery_status: [
         "pending",
@@ -3324,19 +3468,6 @@ export const Constants = {
       ],
       profile_role: ["student", "mentor", "coach", "admin"],
       schedule_type: ["training_session", "houston_calling"],
-      semester_reflection_topic: [
-        "predmety_zkousky_vyucujici",
-        "metodika_a_metriky",
-        "kouci_a_mentori",
-        "tymy_a_tymove_spolecnosti",
-        "individualni_prinos",
-        "komunita",
-        "komunitni_role",
-        "komunitni_akce",
-        "komunitni_a_cross_projekty",
-        "zacleneni_tucnaku",
-        "dalsi",
-      ],
       team_document_type: ["team_contract", "financial_policy", "other"],
       tool_type: ["model", "technique", "tool"],
     },
