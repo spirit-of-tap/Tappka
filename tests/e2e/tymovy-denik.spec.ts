@@ -51,7 +51,6 @@ test.describe("týmový deník - single user", () => {
     await page.goto("/tymovy-denik");
     await page.getByRole("button", { name: /Nová akce/i }).click();
     await page.getByLabel("Typ akce").fill(activityType);
-    await page.getByLabel("Účast").fill("Celý tým");
     await page.getByLabel("Proč jsme tam byli").fill("Teambuilding");
     await page.getByLabel(/Co jsme si odnesli/).fill("Silnější vazby");
     // Scope to the dialog: the empty-state also renders a "Přidat akci" trigger.
@@ -74,6 +73,7 @@ test.describe("týmový deník - single user", () => {
       buffer: ONE_PIXEL_PNG,
     });
     await page.getByRole("dialog").getByRole("button", { name: "Přidat akci" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
     const entry = page.getByRole("link", { name: new RegExp(activityType) });
     const photo = entry.locator("img");
