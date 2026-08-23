@@ -46,10 +46,7 @@ export function PrehledContent({
 }: PrehledContentProps) {
   return (
     <div className="space-y-8">
-      {/* 1. Active Loan(s) banner / card if borrowed */}
-      <ActiveLoansCard loans={loans} />
-
-      {/* 2. Reading goal / semester progress */}
+      {/* 1. Reading goal / semester progress */}
       <section aria-label="Pokrok ve čtení">
         <MetricProgress
           goals={[
@@ -66,6 +63,9 @@ export function PrehledContent({
           ]}
         />
       </section>
+
+      {/* 2. Active Loan(s) banner / card if borrowed */}
+      <ActiveLoansCard loans={loans} />
 
       {/* 3. My essays & drafts */}
       <section aria-label="Moje eseje" className="space-y-4">
