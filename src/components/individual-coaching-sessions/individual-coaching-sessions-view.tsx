@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/empty"
 import { PageHeader } from "@/components/ui/page-header"
 import { MonthSection } from "@/components/ui/month-section"
+import { SemesterSeparator } from "@/components/ui/semester-separator"
 import { MetricProgress } from "@/components/metrics/metric-progress"
 import { HelpDialog } from "@/components/help-dialog"
 import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
@@ -28,6 +29,7 @@ import { InfoCard } from "./info-card"
 import { IndividualCoachingSessionRow } from "./individual-coaching-session-row"
 import { IndividualCoachingSessionForm } from "./individual-coaching-session-form"
 import { groupByMonth } from "@/lib/timeline/group-by-month"
+import { getSemesterInfo } from "@/lib/timeline/semester-utils"
 import { getCurrentSemesterRange } from "@/lib/metrics/periods"
 import { getMetric } from "@/lib/metrics/config"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
@@ -225,22 +227,39 @@ export function IndividualCoachingSessionsView({
                 ))}
               </MonthSection>
             )}
-            {groups.map((group) =>
-              group.items.length === 0 ? null : (
-                <MonthSection key={group.key} label={group.label} count={group.items.length}>
-                  {group.items.map((session) => (
-                    <IndividualCoachingSessionRow
-                      key={session.id}
-                      session={session}
-                      profileId={profileId}
-                      coachProfiles={coachProfiles}
-                      onUpdated={handleUpdated}
-                      onDeleted={handleDeleted}
-                    />
-                  ))}
-                </MonthSection>
-              ),
-            )}
+            {groups
+              .filter((g) => g.items.length > 0)
+              .map((group, idx, activeGroups) => {
+                const semesterInfo = getSemesterInfo(group.key)
+                const prevSemesterInfo =
+                  idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key) : null
+                const isNewSemester =
+                  !prevSemesterInfo || prevSemesterInfo.key !== semesterInfo?.key
+
+                return (
+                  <div key={group.key} className="space-y-4">
+                    {isNewSemester && semesterInfo && (
+                      <SemesterSeparator
+                        label={semesterInfo.label}
+                        semester={semesterInfo.semester}
+                        className={idx === 0 && undated.length === 0 ? "mt-1 mb-4" : "mt-8 mb-4"}
+                      />
+                    )}
+                    <MonthSection label={group.label} count={group.items.length}>
+                      {group.items.map((session) => (
+                        <IndividualCoachingSessionRow
+                          key={session.id}
+                          session={session}
+                          profileId={profileId}
+                          coachProfiles={coachProfiles}
+                          onUpdated={handleUpdated}
+                          onDeleted={handleDeleted}
+                        />
+                      ))}
+                    </MonthSection>
+                  </div>
+                )
+              })}
           </div>
         )}
 

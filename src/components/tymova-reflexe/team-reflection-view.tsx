@@ -36,6 +36,8 @@ import { TeamReflectionCard } from "./team-reflection-card"
 import { RocnikovaReflectionCard } from "./rocnikova-reflection-card"
 import { TeamReflectionCalendar } from "./team-reflection-calendar"
 import { InfoCard } from "./info-card"
+import { SemesterSeparator } from "@/components/ui/semester-separator"
+import { getSemesterInfo } from "@/lib/timeline/semester-utils"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 import { isRocnikovaMonth } from "@/lib/tymova-reflexe/month-grid"
 import type { TeamReflectionWithCreator } from "@/lib/tymova-reflexe/types"
@@ -350,21 +352,42 @@ export function TeamReflectionView({
           </Empty>
         ) : (
           <div className="space-y-3">
-            {filtered.map((item) =>
-              item.kind === "monthly" ? (
-                <TeamReflectionCard
-                  key={`monthly-${item.reflection.id}`}
-                  reflection={item.reflection}
-                  onDeleted={handleMonthlyDeleted}
-                />
-              ) : (
-                <RocnikovaReflectionCard
-                  key={`rocnikova-${item.reflection.id}`}
-                  reflection={item.reflection}
-                  onDeleted={handleRocnikovaDeleted}
-                />
-              ),
-            )}
+            {filtered.map((item, idx) => {
+              const semesterInfo = getSemesterInfo(item.date, onboardingYear)
+              const prevSemesterInfo =
+                idx > 0 ? getSemesterInfo(filtered[idx - 1].date, onboardingYear) : null
+              const isNewSemester = !prevSemesterInfo || prevSemesterInfo.key !== semesterInfo?.key
+
+              return (
+                <div
+                  key={
+                    item.kind === "monthly"
+                      ? `monthly-${item.reflection.id}`
+                      : `rocnikova-${item.reflection.id}`
+                  }
+                  className="space-y-3"
+                >
+                  {isNewSemester && semesterInfo && (
+                    <SemesterSeparator
+                      label={semesterInfo.label}
+                      semester={semesterInfo.semester}
+                      className={idx === 0 ? "mt-1 mb-3" : "mt-6 mb-3"}
+                    />
+                  )}
+                  {item.kind === "monthly" ? (
+                    <TeamReflectionCard
+                      reflection={item.reflection}
+                      onDeleted={handleMonthlyDeleted}
+                    />
+                  ) : (
+                    <RocnikovaReflectionCard
+                      reflection={item.reflection}
+                      onDeleted={handleRocnikovaDeleted}
+                    />
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

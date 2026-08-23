@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/empty"
 import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import { MonthSection } from "@/components/ui/month-section"
+import { SemesterSeparator } from "@/components/ui/semester-separator"
 import { PageHeader } from "@/components/ui/page-header"
 import { HelpDialog } from "@/components/help-dialog"
 import { TeamActivityForm } from "./team-activity-form"
@@ -41,6 +42,7 @@ import { TeamActivityImage } from "./team-activity-image"
 import { InfoCard } from "./info-card"
 import { getTeamActivityLoop, LOOP_LABELS } from "@/lib/tymovy-denik/status"
 import { groupByMonth } from "@/lib/timeline/group-by-month"
+import { getSemesterInfo } from "@/lib/timeline/semester-utils"
 import { formatShortDate } from "@/lib/tymovy-denik/format-date"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 import { cn } from "@/lib/utils"
@@ -237,50 +239,82 @@ export function TeamActivityList({ activities, teamMembers = [] }: TeamActivityL
       ) : viewMode === "grid" ? (
         /* Photo Grid / Album View */
         <div className="space-y-6 sm:space-y-8">
-          {groups.map((group) =>
-            group.items.length === 0 ? null : (
-              <div key={group.key} className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-border/40 pb-2">
-                  <h3 className="font-heading text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    {group.label}
-                  </h3>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground font-medium">
-                    {group.items.length}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {group.items.map((activity) => (
-                    <ActivityGridCard
-                      key={activity.id}
-                      activity={activity}
-                      teamMembers={teamMembers}
-                      prioritizePhoto={activity.id === prioritizedPhotoId}
+          {groups
+            .filter((g) => g.items.length > 0)
+            .map((group, idx, activeGroups) => {
+              const semesterInfo = getSemesterInfo(group.key)
+              const prevSemesterInfo =
+                idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key) : null
+              const isNewSemester =
+                !prevSemesterInfo || prevSemesterInfo.key !== semesterInfo?.key
+
+              return (
+                <div key={group.key} className="space-y-3">
+                  {isNewSemester && semesterInfo && (
+                    <SemesterSeparator
+                      label={semesterInfo.label}
+                      semester={semesterInfo.semester}
+                      className={idx === 0 ? "mt-1 mb-4" : "mt-8 mb-4"}
                     />
-                  ))}
+                  )}
+                  <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+                    <h3 className="font-heading text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                      {group.label}
+                    </h3>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground font-medium">
+                      {group.items.length}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {group.items.map((activity) => (
+                      <ActivityGridCard
+                        key={activity.id}
+                        activity={activity}
+                        teamMembers={teamMembers}
+                        prioritizePhoto={activity.id === prioritizedPhotoId}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ),
-          )}
+              )
+            })}
         </div>
       ) : (
         /* High-density Smart Timeline Rows View */
         <div className="space-y-4 sm:space-y-6">
-          {groups.map((group) =>
-            group.items.length === 0 ? null : (
-              <MonthSection key={group.key} label={group.label} count={group.items.length}>
-                <div className="divide-y divide-border/40 rounded-xl border border-border/60 bg-card overflow-hidden">
-                  {group.items.map((activity) => (
-                    <ActivitySmartRow
-                      key={activity.id}
-                      activity={activity}
-                      teamMembers={teamMembers}
-                      prioritizePhoto={activity.id === prioritizedPhotoId}
+          {groups
+            .filter((g) => g.items.length > 0)
+            .map((group, idx, activeGroups) => {
+              const semesterInfo = getSemesterInfo(group.key)
+              const prevSemesterInfo =
+                idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key) : null
+              const isNewSemester =
+                !prevSemesterInfo || prevSemesterInfo.key !== semesterInfo?.key
+
+              return (
+                <div key={group.key} className="space-y-4">
+                  {isNewSemester && semesterInfo && (
+                    <SemesterSeparator
+                      label={semesterInfo.label}
+                      semester={semesterInfo.semester}
+                      className={idx === 0 ? "mt-1 mb-4" : "mt-8 mb-4"}
                     />
-                  ))}
+                  )}
+                  <MonthSection label={group.label} count={group.items.length}>
+                    <div className="divide-y divide-border/40 rounded-xl border border-border/60 bg-card overflow-hidden">
+                      {group.items.map((activity) => (
+                        <ActivitySmartRow
+                          key={activity.id}
+                          activity={activity}
+                          teamMembers={teamMembers}
+                          prioritizePhoto={activity.id === prioritizedPhotoId}
+                        />
+                      ))}
+                    </div>
+                  </MonthSection>
                 </div>
-              </MonthSection>
-            ),
-          )}
+              )
+            })}
         </div>
       )}
 
