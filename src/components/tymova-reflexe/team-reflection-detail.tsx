@@ -1,15 +1,27 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useCallback, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { cs } from "date-fns/locale"
-import { CheckCircle2, Loader2 } from "lucide-react"
+import { CheckCircle2, Loader2, Trash2 } from "lucide-react"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { PageBack } from "@/components/ui/page-back"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -19,6 +31,9 @@ import {
   type TeamReflectionWithCreator,
 } from "@/lib/tymova-reflexe/types"
 import { useFieldAutosave } from "@/lib/tymova-reflexe/use-field-autosave"
+import { parseActionSteps, serializeActionSteps, type ActionStepItem } from "@/lib/tymova-reflexe/action-steps"
+import { ActionStepsEditor } from "./action-steps-editor"
+import type { TeamMemberProfile } from "@/lib/tymovy-denik/types"
 
 const MONTH_LABELS = [
   "Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
@@ -26,13 +41,14 @@ const MONTH_LABELS = [
 ] as const
 
 function monthLabel(monthStr: string): string {
-  const m = Number(monthStr.slice(5, 7))
-  return `${MONTH_LABELS[m - 1]} ${monthStr.slice(0, 4)}`
+  const parts = monthStr.split("-")
+  const m = Number(parts[1])
+  const year = parts[0]
+  return `${MONTH_LABELS[m - 1]} ${year}`
 }
 
 const FIELD_LABELS: Record<EditableReflectionField, string> = {
   what_went_well: "Co se povedlo",
-  what_didnt_go_well: "Co se nepovedlo",
   what_we_do_differently: "Co uděláme jinak",
   planned_action_steps: "Plánované akční kroky",
   responsible_person: "Zodpovědná osoba za AK",
@@ -41,14 +57,24 @@ const FIELD_LABELS: Record<EditableReflectionField, string> = {
 interface TeamReflectionDetailProps {
   reflection: TeamReflectionWithCreator
   profileId: string
+  teamMembers?: TeamMemberProfile[]
 }
 
-export function TeamReflectionDetail({ reflection: initial, profileId }: TeamReflectionDetailProps) {
+export function TeamReflectionDetail({
+  reflection: initial,
+  profileId,
+  teamMembers = [],
+}: TeamReflectionDetailProps) {
+  const router = useRouter()
+  const [deleting, setDeleting] = useState(false)
   const supabase = useRef(createClient())
   const channelRef = useRef<RealtimeChannel | null>(null)
 
   const save = useCallback(
-    async (payload: Partial<Record<EditableReflectionField, string | null>>, current: TeamReflectionWithCreator) => {
+    async (
+      payload: Partial<Record<EditableReflectionField, string | null>>,
+      current: TeamReflectionWithCreator,
+    ) => {
       const { data: updated, error } = await supabase.current
         .from("team_reflections")
         .update({ ...payload, updated_by_profile_id: profileId })
@@ -97,21 +123,55 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
 
     channelRef.current = channel
 
-    client.realtime.setAuth().then(() => {
-      channel.subscribe((status, err) => {
-        if (status === "CHANNEL_ERROR") {
-          console.error("Reflection channel error:", err)
-        }
+    client.realtime
+      .setAuth()
+      .then(() => {
+        channel.subscribe((status, err) => {
+          if (status === "CHANNEL_ERROR") {
+            console.error("Reflection channel error:", err)
+          }
+        })
       })
-    }).catch((err) => {
-      console.error("Failed to set auth for reflection channel:", err)
-    })
+      .catch((err) => {
+        console.error("Failed to set auth for reflection channel:", err)
+      })
 
     return () => {
       channelRef.current = null
       client.removeChannel(channel)
     }
   }, [topic, applyIncoming])
+
+  const actionSteps = useMemo(
+    () => parseActionSteps(data.planned_action_steps, data.responsible_person),
+    [data.planned_action_steps, data.responsible_person],
+  )
+
+  const handleActionStepsChange = useCallback(
+    (steps: ActionStepItem[]) => {
+      const serialized = serializeActionSteps(steps)
+      setField("planned_action_steps", serialized.planned_action_steps ?? "")
+      setField("responsible_person", serialized.responsible_person ?? "")
+    },
+    [setField],
+  )
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const { error } = await supabase.current
+        .from("team_reflections")
+        .update({ removed_at: new Date().toISOString() })
+        .eq("id", data.id)
+
+      if (error) throw error
+      toast.success("Reflexe odstraněna")
+      router.push("/tymova-reflexe")
+    } catch {
+      toast.error("Nepodařilo se odstranit reflexi")
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="container mx-auto max-w-4xl py-4 sm:py-6 px-3 sm:px-6 space-y-6">
@@ -123,13 +183,46 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
           </h1>
           {data.updated_by && (
             <p className="text-xs text-muted-foreground">
-              Naposledy upravil:la {data.updated_by.name}{" "}
+              Naposledy upravil:a {data.updated_by.name}{" "}
               {formatDistanceToNow(new Date(data.updated_at), { locale: cs, addSuffix: true })}
             </p>
           )}
         </div>
-        <div className="shrink-0">
+
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <SaveStatus saving={saving} dirty={dirtyFields.size > 0} />
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                aria-label="Smazat reflexi"
+              >
+                <Trash2 className="size-4" />
+                <span className="hidden sm:inline ml-1.5">Smazat</span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Odstranit měsíční reflexi?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tato akce reflexi za {monthLabel(data.month)} odstraní.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleting}
+                >
+                  {deleting ? "Odstraňuji..." : "Odstranit"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -141,53 +234,28 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
               id="what-went-well"
               value={data.what_went_well ?? ""}
               onChange={(e) => setField("what_went_well", e.target.value)}
-              placeholder="Úspěchy a pozitiva za uplynulý měsíc"
+              placeholder="Úspěchy, zvládnuté výzvy a pozitiva za uplynulý měsíc…"
               rows={6}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="what-didnt-go-well">{FIELD_LABELS.what_didnt_go_well}</Label>
+            <Label htmlFor="what-we-do-differently">{FIELD_LABELS.what_we_do_differently}</Label>
             <Textarea
-              id="what-didnt-go-well"
-              value={data.what_didnt_go_well ?? ""}
-              onChange={(e) => setField("what_didnt_go_well", e.target.value)}
-              placeholder="Problémy a výzvy, které nastaly"
+              id="what-we-do-differently"
+              value={data.what_we_do_differently ?? ""}
+              onChange={(e) => setField("what_we_do_differently", e.target.value)}
+              placeholder="Co příště změníme, zkusíme nebo upravíme v přístupu…"
               rows={6}
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="what-we-do-differently">{FIELD_LABELS.what_we_do_differently}</Label>
-          <Textarea
-            id="what-we-do-differently"
-            value={data.what_we_do_differently ?? ""}
-            onChange={(e) => setField("what_we_do_differently", e.target.value)}
-            placeholder="Změny přístupu do budoucna"
-            rows={4}
+        <div className="border-t pt-6">
+          <ActionStepsEditor
+            steps={actionSteps}
+            onChange={handleActionStepsChange}
+            teamMembers={teamMembers}
           />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="action-steps">{FIELD_LABELS.planned_action_steps}</Label>
-            <Textarea
-              id="action-steps"
-              value={data.planned_action_steps ?? ""}
-              onChange={(e) => setField("planned_action_steps", e.target.value)}
-              placeholder="Konkrétní kroky ke zlepšení"
-              rows={4}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="responsible-person">{FIELD_LABELS.responsible_person}</Label>
-            <Input
-              id="responsible-person"
-              value={data.responsible_person ?? ""}
-              onChange={(e) => setField("responsible_person", e.target.value)}
-              placeholder="Jméno člena:ky týmu"
-            />
-          </div>
         </div>
       </Card>
     </div>
@@ -205,7 +273,7 @@ function SaveStatus({ saving, dirty }: { saving: boolean; dirty: boolean }) {
   }
   if (dirty) {
     return (
-      <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
         <span className="size-1.5 rounded-full bg-amber-500" />
         Neuložené změny
       </span>
@@ -213,7 +281,7 @@ function SaveStatus({ saving, dirty }: { saving: boolean; dirty: boolean }) {
   }
   return (
     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-      <CheckCircle2 className="size-3.5 text-green-600" />
+      <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
       Uloženo
     </span>
   )

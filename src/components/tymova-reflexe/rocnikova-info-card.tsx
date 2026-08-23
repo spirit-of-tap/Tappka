@@ -24,5 +24,3 @@ export function RocnikovaInfoCard() {
     </div>
   )
 }
-
-export const SemesterInfoCard = RocnikovaInfoCard

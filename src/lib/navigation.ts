@@ -36,7 +36,7 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Komunita", url: "/komunita", icon: Users, description: "Lidé, týmy a profily v Tiimiakatemii." },
   { title: "Zák. schůzky", url: "/schuzky", icon: Handshake, betaOnly: true, description: "Evidence zákaznických schůzek." },
   { title: "Koučování", url: "/koucovani", icon: GraduationCap, betaOnly: true, description: "Evidence koučovacích sezení." },
-  { title: "Týmová reflexe", url: "/tymova-reflexe", icon: NotebookPen, betaOnly: true, description: "Reflexe týmové spolupráce a semestrální hodnocení." },
+  { title: "Týmová reflexe", url: "/tymova-reflexe", icon: NotebookPen, betaOnly: true, description: "Reflexe týmové spolupráce a ročníková hodnocení." },
   { title: "Týmový deník", url: "/tymovy-denik", icon: Activity, betaOnly: true, description: "Denní zápisy a přehled týmových aktivit." },
   { title: "Týmové dokumenty", url: "/tymove-dokumenty", icon: Files, betaOnly: true, description: "Smlouvy, finanční politika a další dokumenty týmu." },
   { title: "Nástroje a techniky", url: "/nastroje-techniky", icon: Wrench, betaOnly: true, featured: true, description: "Katalog modelů, technik a nástrojů pro práci." },

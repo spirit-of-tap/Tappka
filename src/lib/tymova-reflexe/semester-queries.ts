@@ -1,42 +1,44 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "@/lib/supabase/database.types"
 import {
-  SEMESTER_ENTRY_SELECT,
-  SEMESTER_REFLECTION_SELECT,
-  type SemesterReflectionEntryWithUpdater,
-  type SemesterReflectionWithEntries,
-  type TeamSemesterReflectionSummary,
-  type TeamSemesterReflectionWithCreator,
+  ANNUAL_ENTRY_SELECT,
+  ANNUAL_REFLECTION_SELECT,
+  type AnnualReflectionEntryWithUpdater,
+  type AnnualReflectionWithEntries,
+  type TeamAnnualReflectionSummary,
+  type TeamAnnualReflectionWithCreator,
 } from "./semester-types"
-import { SEMESTER_REFLECTION_TOPICS } from "./semester-topics"
+import { ROCNIKOVA_REFLECTION_TOPICS } from "./semester-topics"
 
-export async function listTeamSemesterReflections(
+export async function listTeamAnnualReflections(
   supabase: SupabaseClient<Database>,
   teamId: string,
-): Promise<TeamSemesterReflectionWithCreator[]> {
+): Promise<TeamAnnualReflectionWithCreator[]> {
   const { data, error } = await supabase
-    .from("team_semester_reflections")
-    .select(SEMESTER_REFLECTION_SELECT)
+    .from("team_annual_reflections")
+    .select(ANNUAL_REFLECTION_SELECT)
     .is("removed_at", null)
     .eq("team_id", teamId)
-    .order("semester_month", { ascending: false })
+    .order("reflection_month", { ascending: false })
 
   if (error) throw error
-  return (data ?? []) as TeamSemesterReflectionWithCreator[]
+  return (data ?? []) as TeamAnnualReflectionWithCreator[]
 }
 
-/** Same as listTeamSemesterReflections, plus how many of the fixed topics have any content — for list previews. */
-export async function listTeamSemesterReflectionsWithProgress(
+export const listTeamSemesterReflections = listTeamAnnualReflections
+
+/** Same as listTeamAnnualReflections, plus how many of the fixed topics have any content — for list previews. */
+export async function listTeamAnnualReflectionsWithProgress(
   supabase: SupabaseClient<Database>,
   teamId: string,
-): Promise<TeamSemesterReflectionSummary[]> {
-  const reflections = await listTeamSemesterReflections(supabase, teamId)
+): Promise<TeamAnnualReflectionSummary[]> {
+  const reflections = await listTeamAnnualReflections(supabase, teamId)
   if (reflections.length === 0) return []
 
   const { data: entries, error } = await supabase
-    .from("team_semester_reflection_entries")
-    .select("semester_reflection_id, what_went_well, what_didnt_go_well, what_next_time")
-    .in("semester_reflection_id", reflections.map((r) => r.id))
+    .from("team_annual_reflection_entries")
+    .select("annual_reflection_id, what_went_well, what_didnt_go_well, what_next_time")
+    .in("annual_reflection_id", reflections.map((r) => r.id))
 
   if (error) throw error
 
@@ -47,42 +49,46 @@ export async function listTeamSemesterReflectionsWithProgress(
     )
     if (!hasContent) continue
     filledByReflection.set(
-      entry.semester_reflection_id,
-      (filledByReflection.get(entry.semester_reflection_id) ?? 0) + 1,
+      entry.annual_reflection_id,
+      (filledByReflection.get(entry.annual_reflection_id) ?? 0) + 1,
     )
   }
 
   return reflections.map((reflection) => ({
     ...reflection,
     filledTopicsCount: filledByReflection.get(reflection.id) ?? 0,
-    totalTopicsCount: SEMESTER_REFLECTION_TOPICS.length,
+    totalTopicsCount: ROCNIKOVA_REFLECTION_TOPICS.length,
   }))
 }
 
-export async function getSemesterReflectionForTeamMonth(
+export const listTeamSemesterReflectionsWithProgress = listTeamAnnualReflectionsWithProgress
+
+export async function getAnnualReflectionForTeamMonth(
   supabase: SupabaseClient<Database>,
   teamId: string,
-  semesterMonth: string,
+  reflectionMonth: string,
 ): Promise<{ id: string } | null> {
   const { data, error } = await supabase
-    .from("team_semester_reflections")
+    .from("team_annual_reflections")
     .select("id")
     .is("removed_at", null)
     .eq("team_id", teamId)
-    .eq("semester_month", semesterMonth)
+    .eq("reflection_month", reflectionMonth)
     .maybeSingle()
 
   if (error) throw error
   return data
 }
 
-export async function getSemesterReflectionWithEntries(
+export const getSemesterReflectionForTeamMonth = getAnnualReflectionForTeamMonth
+
+export async function getAnnualReflectionWithEntries(
   supabase: SupabaseClient<Database>,
   id: string,
-): Promise<SemesterReflectionWithEntries | null> {
+): Promise<AnnualReflectionWithEntries | null> {
   const { data: reflection, error: reflectionError } = await supabase
-    .from("team_semester_reflections")
-    .select(SEMESTER_REFLECTION_SELECT)
+    .from("team_annual_reflections")
+    .select(ANNUAL_REFLECTION_SELECT)
     .is("removed_at", null)
     .eq("id", id)
     .maybeSingle()
@@ -91,30 +97,32 @@ export async function getSemesterReflectionWithEntries(
   if (!reflection) return null
 
   const { data: entries, error: entriesError } = await supabase
-    .from("team_semester_reflection_entries")
-    .select(SEMESTER_ENTRY_SELECT)
-    .eq("semester_reflection_id", id)
+    .from("team_annual_reflection_entries")
+    .select(ANNUAL_ENTRY_SELECT)
+    .eq("annual_reflection_id", id)
 
   if (entriesError) throw entriesError
 
   return {
-    reflection: reflection as TeamSemesterReflectionWithCreator,
-    entries: (entries ?? []) as SemesterReflectionEntryWithUpdater[],
+    reflection: reflection as TeamAnnualReflectionWithCreator,
+    entries: (entries ?? []) as AnnualReflectionEntryWithUpdater[],
   }
 }
 
-/** Creates a semester reflection and pre-seeds one entry row per topic. */
-export async function createSemesterReflection(
+export const getSemesterReflectionWithEntries = getAnnualReflectionWithEntries
+
+/** Creates an annual reflection and pre-seeds one entry row per topic. */
+export async function createAnnualReflection(
   supabase: SupabaseClient<Database>,
   teamId: string,
-  semesterMonth: string,
+  reflectionMonth: string,
   profileId: string,
 ): Promise<{ id: string }> {
   const { data: reflection, error: reflectionError } = await supabase
-    .from("team_semester_reflections")
+    .from("team_annual_reflections")
     .insert({
       team_id: teamId,
-      semester_month: semesterMonth,
+      reflection_month: reflectionMonth,
       created_by_profile_id: profileId,
       updated_by_profile_id: profileId,
     })
@@ -123,9 +131,9 @@ export async function createSemesterReflection(
 
   if (reflectionError) throw reflectionError
 
-  const { error: entriesError } = await supabase.from("team_semester_reflection_entries").insert(
-    SEMESTER_REFLECTION_TOPICS.map((topic) => ({
-      semester_reflection_id: reflection.id,
+  const { error: entriesError } = await supabase.from("team_annual_reflection_entries").insert(
+    ROCNIKOVA_REFLECTION_TOPICS.map((topic) => ({
+      annual_reflection_id: reflection.id,
       topic: topic.key,
       updated_by_profile_id: profileId,
     })),
@@ -135,3 +143,5 @@ export async function createSemesterReflection(
 
   return { id: reflection.id }
 }
+
+export const createSemesterReflection = createAnnualReflection
