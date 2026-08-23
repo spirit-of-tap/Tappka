@@ -52,7 +52,7 @@ describe('PrehledContent', () => {
 
     expect(screen.getByText('Moje eseje')).toBeInTheDocument();
     expect(screen.getByText('Ještě tu nic není')).toBeInTheDocument();
-    expect(screen.getByText('Tým a BookPoints')).toBeInTheDocument();
+    expect(screen.getByText('Tým a knižní body')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Detail týmu/i })).toHaveAttribute(
       'href',
       '/komunita/tymy/team-1?tab=statistiky',
@@ -66,6 +66,6 @@ describe('PrehledContent', () => {
       </TooltipProvider>,
     );
 
-    expect(screen.queryByText('Tým a BookPoints')).not.toBeInTheDocument();
+    expect(screen.queryByText('Tým a knižní body')).not.toBeInTheDocument();
   });
 });

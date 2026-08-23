@@ -30,10 +30,10 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
           <Users className="size-4 text-muted-foreground" />
           {teamName ? `Tým ${teamName}` : 'Tým'}
         </CardTitle>
-        <CardDescription>Nejlepší čtenáři:ky podle BookPoints</CardDescription>
+        <CardDescription>Nejlepší čtenáři:ky podle knižních bodů</CardDescription>
         <CardAction>
           <Link
-            href="/cteni/prehled?tab=tym"
+            href="/cteni/prehled"
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
           >
             Celý tým

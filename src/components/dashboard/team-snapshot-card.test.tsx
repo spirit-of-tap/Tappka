@@ -35,7 +35,7 @@ describe("TeamSnapshotCard", () => {
     render(<TeamSnapshotCard stats={stats} hasTeam teamName="Ambiciózní" />);
     expect(screen.getByRole("link", { name: /Celý tým/ })).toHaveAttribute(
       "href",
-      "/cteni/prehled?tab=tym",
+      "/cteni/prehled",
     );
   });
 

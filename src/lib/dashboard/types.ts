@@ -26,7 +26,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   {
     id: 'reading',
     label: 'Čtení',
-    description: 'Tvůj postup v BookPoints a počet napsaných esejí.',
+    description: 'Tvůj postup v knižních bodech a počet napsaných esejí.',
     roles: ['student', 'mentor'],
   },
   {
@@ -44,7 +44,7 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   {
     id: 'team-snapshot',
     label: 'Tým',
-    description: 'Nejlepší čtenáři:ky tvého týmu podle BookPoints.',
+    description: 'Nejlepší čtenáři:ky tvého týmu podle knižních bodů.',
     roles: ['student', 'mentor', 'coach', 'admin'],
   },
   {

@@ -58,14 +58,14 @@ describe('EssayDeleteButton', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/cteni/prehled'));
   });
 
-  it('warns a published author about the BookPoints they give up', async () => {
+  it('warns a published author about the points they give up', async () => {
     const user = userEvent.setup();
     render(<EssayDeleteButton essayId="essay-1" isDraft={false} points={3} />);
 
     await user.click(screen.getByRole('button', { name: /Smazat/ }));
 
     expect(await screen.findByText('Smazat esej?')).toBeInTheDocument();
-    expect(screen.getByText(/3 BookPoints/)).toBeInTheDocument();
+    expect(screen.getByText(/3 body/)).toBeInTheDocument();
   });
 
   it('does not mention points when the essay earns none', async () => {
@@ -75,7 +75,7 @@ describe('EssayDeleteButton', () => {
     await user.click(screen.getByRole('button', { name: /Smazat/ }));
 
     expect(await screen.findByText('Smazat esej?')).toBeInTheDocument();
-    expect(screen.queryByText(/BookPoints/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/body/)).not.toBeInTheDocument();
   });
 
   it('reports a refused delete and stays on the page', async () => {

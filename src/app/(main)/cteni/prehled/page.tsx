@@ -39,7 +39,7 @@ export default async function PrehledPage() {
         title="Moje čtení"
         description="Tvůj pokrok, eseje a srovnání s týmem"
         action={
-          <HelpDialog question="Co jsou esejbanka a BookPoints?">
+          <HelpDialog question="Co jsou esejbanka a knižní body?">
             <InfoCard />
           </HelpDialog>
         }

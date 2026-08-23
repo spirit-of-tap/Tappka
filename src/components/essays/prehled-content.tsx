@@ -102,12 +102,12 @@ export function PrehledContent({
         )}
       </section>
 
-      {/* 4. Team BookPoints overview */}
+      {/* 4. Team book points overview */}
       {hasTeam && (
-        <section aria-label="Tým a BookPoints" className="space-y-4 pt-4 border-t">
+        <section aria-label="Tým a knižní body" className="space-y-4 pt-4 border-t">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="font-heading text-lg font-semibold">Tým a BookPoints</h2>
+              <h2 className="font-heading text-lg font-semibold">Tým a knižní body</h2>
               <p className="text-sm text-muted-foreground">
                 Schválené a čekající knihy na cestu k cíli 120 bodů
               </p>
