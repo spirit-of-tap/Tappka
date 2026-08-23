@@ -2,12 +2,8 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth/session"
 import { listToolsTechniques } from "@/lib/nastroje-techniky/queries"
-import { ToolsTechniquesTable } from "@/components/nastroje-techniky/tools-techniques-table"
-import { InfoCard } from "@/components/nastroje-techniky/info-card"
-import { HelpDialog } from "@/components/help-dialog"
-import { PageHeader } from "@/components/ui/page-header"
+import { ToolsTechniquesView } from "@/components/nastroje-techniky/tools-techniques-view"
 import { PageShell } from "@/components/ui/page-shell"
-import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
 export const metadata = {
   title: "Nástroje a techniky | Tappka",
@@ -27,17 +23,7 @@ export default async function NastrojeTechnikyPage() {
 
   return (
     <PageShell className="max-w-5xl">
-      <PageHeader
-        title="Nástroje a techniky"
-        description="Katalog modelů, technik a nástrojů, které umíš používat pro efektivní práci"
-        count={{ value: items.length, label: pluralizeCz(items.length, ["záznam", "záznamy", "záznamů"]) }}
-        action={
-          <HelpDialog question="Co jsou nástroje a techniky?">
-            <InfoCard />
-          </HelpDialog>
-        }
-      />
-      <ToolsTechniquesTable items={items} profileId={profile.id} />
+      <ToolsTechniquesView items={items} profileId={profile.id} />
     </PageShell>
   )
 }
