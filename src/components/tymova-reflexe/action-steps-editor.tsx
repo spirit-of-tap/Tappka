@@ -31,6 +31,7 @@ export function ActionStepsEditor({
   teamMembers = [],
 }: ActionStepsEditorProps) {
   const [customModeSteps, setCustomModeSteps] = useState<Record<string, boolean>>({})
+  const [editingAssigneeStepIds, setEditingAssigneeStepIds] = useState<Record<string, boolean>>({})
 
   function handleAdd() {
     const newStep: ActionStepItem = {
@@ -38,6 +39,7 @@ export function ActionStepsEditor({
       text: "",
       assignee: "",
     }
+    setEditingAssigneeStepIds((prev) => ({ ...prev, [newStep.id]: true }))
     onChange([...steps, newStep])
   }
 
@@ -50,11 +52,17 @@ export function ActionStepsEditor({
   }
 
   function handleAssigneeChange(id: string, assignee: string) {
+    setEditingAssigneeStepIds((prev) => ({ ...prev, [id]: false }))
     onChange(steps.map((s) => (s.id === id ? { ...s, assignee } : s)))
   }
 
   function toggleCustomMode(id: string, custom: boolean) {
     setCustomModeSteps((prev) => ({ ...prev, [id]: custom }))
+    setEditingAssigneeStepIds((prev) => ({ ...prev, [id]: true }))
+  }
+
+  function startEditingAssignee(id: string) {
+    setEditingAssigneeStepIds((prev) => ({ ...prev, [id]: true }))
   }
 
   return (
@@ -111,9 +119,12 @@ export function ActionStepsEditor({
       ) : (
         <div className="divide-y divide-border/40">
           {steps.map((step, index) => {
+            const hasAssignee = Boolean(step.assignee && step.assignee.trim().length > 0)
+            const isEditingAssignee = editingAssigneeStepIds[step.id] || !hasAssignee
+            const matchedMember = teamMembers.find((m) => m.name === step.assignee)
             const isCustom =
               customModeSteps[step.id] ||
-              (step.assignee && !teamMembers.some((m) => m.name === step.assignee))
+              (hasAssignee && !matchedMember)
 
             return (
               <div
@@ -126,7 +137,7 @@ export function ActionStepsEditor({
                 </span>
 
                 {/* Content */}
-                <div className="flex-1 space-y-1 min-w-0">
+                <div className="flex-1 space-y-1.5 min-w-0">
                   <Textarea
                     value={step.text}
                     onChange={(e) => handleTextChange(step.id, e.target.value)}
@@ -140,14 +151,60 @@ export function ActionStepsEditor({
                       Zodpovědnost:
                     </span>
 
-                    {isCustom || teamMembers.length === 0 ? (
+                    {/* Selected Human Mode (Read-only pill with "Změnit" button) */}
+                    {!isEditingAssignee && hasAssignee ? (
+                      <div className="flex items-center gap-1.5 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-foreground">
+                        {matchedMember ? (
+                          <ProfileAvatar
+                            name={matchedMember.name}
+                            picture={matchedMember.picture}
+                            size={16}
+                            className="size-4 shrink-0"
+                          />
+                        ) : (
+                          <Users className="size-3.5 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="font-medium truncate max-w-[200px]">{step.assignee}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEditingAssignee(step.id)}
+                          className="h-5 px-1.5 text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/10 ml-0.5 font-normal"
+                        >
+                          Změnit
+                        </Button>
+                      </div>
+                    ) : isCustom || teamMembers.length === 0 ? (
+                      /* Custom Name Input Mode */
                       <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-xs">
                         <Input
                           value={step.assignee}
-                          onChange={(e) => handleAssigneeChange(step.id, e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            onChange(steps.map((s) => (s.id === step.id ? { ...s, assignee: val } : s)))
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault()
+                              handleAssigneeChange(step.id, step.assignee)
+                            }
+                          }}
                           placeholder="Jméno zodpovědné osoby / lídra:kyně"
                           className="h-7 text-xs bg-muted/20 border-border/40 focus:bg-background"
+                          autoFocus={hasAssignee}
                         />
+                        {hasAssignee && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAssigneeChange(step.id, step.assignee)}
+                            className="h-7 px-2 text-xs text-primary hover:text-primary/80"
+                          >
+                            Hotovo
+                          </Button>
+                        )}
                         {teamMembers.length > 0 && (
                           <Button
                             type="button"
@@ -162,6 +219,7 @@ export function ActionStepsEditor({
                         )}
                       </div>
                     ) : (
+                      /* Dropdown Selection Mode */
                       <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-xs">
                         <Select
                           value={step.assignee || undefined}

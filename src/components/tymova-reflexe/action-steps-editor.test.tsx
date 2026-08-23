@@ -53,6 +53,33 @@ describe("ActionStepsEditor", () => {
     expect(onChange.mock.calls[onChange.mock.calls.length - 1][0][0].text).toContain("Zavolat zákazníkům")
   })
 
+  it("displays assigned member pill and reveals selector when clicking 'Změnit'", async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    const initialSteps: ActionStepItem[] = [
+      { id: "s1", text: "Krok 1", assignee: "Anna Nováková" },
+    ]
+
+    render(
+      <ActionStepsEditor
+        steps={initialSteps}
+        onChange={onChange}
+        teamMembers={TEAM_MEMBERS}
+      />,
+    )
+
+    // Should show the assignee name in pill with "Změnit" button
+    expect(screen.getByText("Anna Nováková")).toBeInTheDocument()
+    const changeBtn = screen.getByRole("button", { name: "Změnit" })
+    expect(changeBtn).toBeInTheDocument()
+
+    // Click "Změnit"
+    await user.click(changeBtn)
+
+    // Now the select trigger is visible
+    expect(screen.getByRole("combobox")).toBeInTheDocument()
+  })
+
   it("calls onChange to remove step when clicking trash icon", async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
