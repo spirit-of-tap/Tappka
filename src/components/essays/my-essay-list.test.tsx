@@ -52,4 +52,28 @@ describe('MyEssayList koncepty', () => {
       '/cteni/eseje/essay-2/upravit',
     );
   });
+
+  it('renders linked book title and omits verbose snippet/word count', () => {
+    const draft = essay({
+      id: 'essay-2',
+      title: 'Návrh design sprintu',
+      content_text: 'Dlouhý text konceptu...',
+      published_at: null,
+      book: {
+        id: 'book-1',
+        title_cs: 'Design Sprint',
+        author: 'Jake Knapp',
+        book_points: '3',
+        list_status: 'canon',
+        is_rocket_model: false,
+        google_books_cover_url: null,
+        highlight_category: null,
+      },
+    });
+    render(<MyEssayList essays={[]} drafts={[draft]} />);
+    expect(screen.getByText('Návrh design sprintu')).toBeInTheDocument();
+    expect(screen.getByText(/Design Sprint/)).toBeInTheDocument();
+    expect(screen.queryByText('Dlouhý text konceptu...')).not.toBeInTheDocument();
+    expect(screen.queryByText(/slov/)).not.toBeInTheDocument();
+  });
 });
