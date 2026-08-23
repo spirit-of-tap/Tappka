@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
-import { User, Compass, type LucideIcon } from 'lucide-react';
+import { User, Compass, ClipboardCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 
 import { TabsTriggerCount } from '@/components/ui/tabs';
 
@@ -21,10 +21,10 @@ const MEMBER_TABS: CteniTab[] = [
   { title: 'Objevovat', url: '/cteni/hledat', icon: Compass },
 ];
 
-/** Coach work queues trail behind a divider — a different mental mode ("work" vs "read"). Plain text without icons to keep focus on queues. */
+/** Coach work queues trail behind a divider. */
 const COACH_TABS: CteniTab[] = [
-  { title: 'Kontrola', url: '/cteni/eseje/ke-kontrole', showsReviewCount: true },
-  { title: 'Správa', url: '/cteni/sprava' },
+  { title: 'Kontrola', url: '/cteni/eseje/ke-kontrole', icon: ClipboardCheck, showsReviewCount: true },
+  { title: 'Správa', url: '/cteni/sprava', icon: SlidersHorizontal },
 ];
 
 export function getActiveCteniTabUrl(pathname: string, isCoachOrAdmin: boolean): string | undefined {
@@ -52,11 +52,12 @@ export function getActiveCteniTabUrl(pathname: string, isCoachOrAdmin: boolean):
     return '/cteni/prehled';
   }
 
-  // 3. Objevovat (search/discovery feed, book details, curated selections)
+  // 3. Objevovat (search/discovery feed, book details, community essays, curated selections)
   if (
     pathname === '/cteni/hledat' ||
     pathname.startsWith('/cteni/hledat/') ||
-    pathname.startsWith('/cteni/knihy')
+    pathname.startsWith('/cteni/knihy') ||
+    pathname.startsWith('/cteni/eseje')
   ) {
     return '/cteni/hledat';
   }

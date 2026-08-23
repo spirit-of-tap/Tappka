@@ -13,6 +13,7 @@ import { RocketModelManager } from './rocket-model-manager';
 import { LibraryImportScanner } from '@/components/library/library-import-scanner';
 import { Button } from '@/components/ui/button';
 import { suggestedBookPoints, type ReviewPoints } from '@/lib/books/points';
+import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 
 interface CoachDashboardProps {
@@ -34,6 +35,7 @@ export function CoachDashboard({
   initialCategories,
   initialRocketModel,
 }: CoachDashboardProps) {
+  const [activeTab, setActiveTab] = usePersistedState<string>('tappka:coach-dashboard:tab', 'processing');
   const [processing, setProcessing] = useState(initialProcessing);
   const [shortlisted, setShortlisted] = useState(initialShortlisted);
   const [longlisted, setLonglisted] = useState(initialLonglisted);
@@ -311,7 +313,7 @@ export function CoachDashboard({
   ];
 
   return (
-    <Tabs defaultValue="processing">
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList variant="line">
         {tabs.map(({ value, label, count, tone }) => (
           <TabsTrigger key={value} value={value}>

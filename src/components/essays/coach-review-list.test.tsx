@@ -67,7 +67,7 @@ describe('CoachReviewList', () => {
     );
 
     expect(screen.getByText('Matěj Vrbas')).toBeInTheDocument();
-    expect(screen.getByText('24 b.')).toBeInTheDocument();
+    expect(screen.getByText('3 body')).toBeInTheDocument();
     expect(screen.getByText('Reflexe a aplikace v týmu')).toBeInTheDocument();
     expect(screen.getByText('The Lean Startup')).toBeInTheDocument();
     expect(screen.queryByText('Tento text shrnuje klíčové myšlenky z knihy...')).not.toBeInTheDocument();

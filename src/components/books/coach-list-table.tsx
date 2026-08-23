@@ -42,6 +42,7 @@ import { DeleteBookDialog } from './delete-book-dialog';
 import { BookRowHeader } from './book-row-header';
 import { HighlightBadge } from './book-status-badges';
 import { formatPoints } from '@/lib/books/points';
+import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import type { BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 
 export type ListKind = 'shortlist' | 'longlist';
@@ -78,10 +79,10 @@ export function CoachListTable({
   const [editBook, setEditBook] = useState<BookWithProfiles | null>(null);
   const [deleteBook, setDeleteBook] = useState<BookWithProfiles | null>(null);
 
-  const [query, setQuery] = useState('');
-  const [pointFilter, setPointFilter] = useState<string>('any');
-  const [categoryFilter, setCategoryFilter] = useState<string>('any');
-  const [essayFilter, setEssayFilter] = useState<string>('any');
+  const [query, setQuery] = usePersistedState(`tappka:coach-list:${kind}:query`, '', { storage: 'sessionStorage' });
+  const [pointFilter, setPointFilter] = usePersistedState<string>(`tappka:coach-list:${kind}:point`, 'any');
+  const [categoryFilter, setCategoryFilter] = usePersistedState<string>(`tappka:coach-list:${kind}:category`, 'any');
+  const [essayFilter, setEssayFilter] = usePersistedState<string>(`tappka:coach-list:${kind}:essay`, 'any');
 
   const targetStatus: ListKind = kind === 'shortlist' ? 'longlist' : 'shortlist';
   const moveLabel = kind === 'longlist' ? 'Do shortlistu' : 'Do longlistu';

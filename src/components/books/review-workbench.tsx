@@ -5,6 +5,7 @@ import { BookOpen } from 'lucide-react';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { ReviewDetailPanel } from './review-detail-panel';
 import { ReviewQueueRail } from './review-queue-rail';
+import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import { cn } from '@/lib/utils';
 import type { ReviewPoints } from '@/lib/books/points';
 import type { BookWithProfiles } from '@/lib/books/types';
@@ -24,7 +25,7 @@ interface ReviewWorkbenchProps {
 export function ReviewWorkbench({ books, onDecide, onEdited, onDeleted }: ReviewWorkbenchProps) {
   // `null` means "no explicit pick": on wide viewports the panel falls through to
   // the head of the queue, on narrow ones the queue is what you see.
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = usePersistedState<string | null>('tappka:coach-review-workbench:selected-book', null, { storage: 'sessionStorage' });
   const panelRef = useRef<HTMLDivElement>(null);
 
   const selected = books.find((book) => book.id === selectedId) ?? books[0] ?? null;

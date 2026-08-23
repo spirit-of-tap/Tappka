@@ -2,19 +2,39 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, PenLine, ExternalLink, Sparkles, Rocket, Medal, ArrowRight, BadgeCheck } from 'lucide-react';
+import {
+  Search,
+  BookOpen,
+  PenLine,
+  Sparkles,
+  Rocket,
+  Medal,
+  ArrowRight,
+  ArrowLeft,
+  ChevronRight,
+  TrendingUp,
+  Lightbulb,
+  MessageSquare,
+  Crown,
+  Briefcase,
+  Megaphone,
+  Boxes,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { PageShell } from '@/components/ui/page-shell';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
-import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { BookCard } from '@/components/books/book-card';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { BookNotFoundCard } from '@/components/books/book-not-found-card';
+import { type BookEssayItem } from '@/components/books/feed-book-card';
+import { DiscoveryMixedFeed } from './discovery-mixed-feed';
+import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 import { formatPoints, formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
+import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 import type { HighlightedGroup } from '@/lib/books/highlight-groups';
@@ -31,13 +51,19 @@ type BookResult = {
   highlight_category: HighlightCategory | null;
 };
 type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number; list_status: BookListStatus; is_rocket_model: boolean; highlight_category: HighlightCategory | null };
-type TeamMember = { profile_id: string; profile_name: string; profile_picture: string | null; essay_count: number; book_points: number };
-type TeamWithMembers = { id: string; name: string; members: TeamMember[] };
 
 interface SearchPageClientProps {
+  books?: BookWithProfiles[];
+  libraryBookIds?: string[];
+  essaysByBookId?: Record<string, BookEssayItem[]>;
   popularEssays: EssayWithVoted[];
+  recentEssays?: EssayWithVoted[];
+  teamEssays?: EssayWithVoted[];
+  teamNamesById?: Record<string, string>;
+  authorStatsById?: Record<string, AuthorGamificationStats>;
+  userTeamName?: string | null;
+  userTeamId?: string | null;
   categoryBestBooks: Record<string, CategoryBook[]>;
-  teamsWithMembers: TeamWithMembers[];
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
 }
@@ -45,25 +71,44 @@ interface SearchPageClientProps {
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
 const FINE_POINTER_QUERY = '(pointer: fine)';
 
+const CATEGORY_META: Record<string, { icon: React.ElementType; color: string }> = {
+  'Finance & ekonomika': { icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' },
+  'Inovace & kreativita': { icon: Lightbulb, color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10' },
+  'Komunikace & prodej': { icon: MessageSquare, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10' },
+  Leadership: { icon: Crown, color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10' },
+  Management: { icon: Briefcase, color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10' },
+  Marketing: { icon: Megaphone, color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10' },
+  Multidisciplinární: { icon: Boxes, color: 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10' },
+  'Osobní rozvoj': { icon: Sparkles, color: 'text-orange-600 dark:text-orange-400 bg-orange-500/10' },
+};
+
 export function SearchPageClient({
-  popularEssays, categoryBestBooks, teamsWithMembers, rocketModelBooks, highlightedByCategory,
+  books = [],
+  libraryBookIds = [],
+  essaysByBookId = {},
+  popularEssays,
+  recentEssays = [],
+  teamEssays = [],
+  teamNamesById = {},
+  authorStatsById = {},
+  userTeamName = null,
+  userTeamId = null,
+  categoryBestBooks,
+  rocketModelBooks,
+  highlightedByCategory,
 }: SearchPageClientProps) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = usePersistedState('tappka:search:query', '', { storage: 'sessionStorage' });
   const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = usePersistedState<string | null>('tappka:search:category', null, { storage: 'sessionStorage' });
   const [categoryBooks, setCategoryBooks] = useState<(BookWithProfiles & { essay_count?: number })[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
-  const [libraryFilterEnabled, setLibraryFilterEnabled] = useState(false);
+  const [libraryFilterEnabled, setLibraryFilterEnabled] = usePersistedState('tappka:search:library-filter', false, { storage: 'sessionStorage' });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Only the newest request may write state; a slow earlier response must not
-  // overwrite the results of a newer query.
   const searchIdRef = useRef(0);
   const categoryIdRef = useRef(0);
 
-  // Focus the search box on pointer devices only — on touch it would pop up the
-  // on-screen keyboard and cover the page the moment it opens.
   useEffect(() => {
     if (window.matchMedia(FINE_POINTER_QUERY).matches) inputRef.current?.focus();
   }, []);
@@ -116,7 +161,6 @@ export function SearchPageClient({
   }, [selectedCategory, libraryFilterEnabled]);
 
   const hasQuery = query.trim().length > 0;
-  const toggleCategory = (key: string) => setSelectedCategory((prev) => (prev === key ? null : key));
 
   return (
     <PageShell size="narrow">
@@ -136,40 +180,6 @@ export function SearchPageClient({
         )}
       </div>
 
-      {/* Category pills */}
-      {!hasQuery && (
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {CATEGORIES.map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => toggleCategory(key)}
-              aria-pressed={selectedCategory === key}
-              className={cn(
-                'shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors',
-                selectedCategory === key
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground',
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Library filter checkbox */}
-      {!hasQuery && selectedCategory && (
-        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer py-1">
-          <input
-            type="checkbox"
-            checked={libraryFilterEnabled}
-            onChange={(e) => setLibraryFilterEnabled(e.target.checked)}
-            className="rounded border-border accent-primary"
-          />
-          Pouze knihy v TAP Knihovně
-        </label>
-      )}
-
       {/* Content */}
       <div className="space-y-10">
         {hasQuery ? (
@@ -183,15 +193,26 @@ export function SearchPageClient({
             label={BOOK_CATEGORY_LABELS[selectedCategory] ?? selectedCategory}
             books={categoryBooks}
             loading={categoryLoading}
+            libraryFilterEnabled={libraryFilterEnabled}
+            onToggleLibraryFilter={setLibraryFilterEnabled}
+            onBack={() => setSelectedCategory(null)}
           />
         ) : (
           <DiscoveryView
+            books={books}
+            libraryBookIds={libraryBookIds}
+            essaysByBookId={essaysByBookId}
             popularEssays={popularEssays}
+            recentEssays={recentEssays}
+            teamEssays={teamEssays}
+            teamNamesById={teamNamesById}
+            authorStatsById={authorStatsById}
+            userTeamName={userTeamName}
+            userTeamId={userTeamId}
             categoryBestBooks={categoryBestBooks}
-            teamsWithMembers={teamsWithMembers}
             rocketModelBooks={rocketModelBooks}
             highlightedByCategory={highlightedByCategory}
-            onSelectCategory={toggleCategory}
+            onSelectCategory={setSelectedCategory}
           />
         )}
       </div>
@@ -202,67 +223,65 @@ export function SearchPageClient({
 // ─── Discovery ────────────────────────────────────────────────────────────────
 
 function DiscoveryView({
-  popularEssays, categoryBestBooks, teamsWithMembers, rocketModelBooks, highlightedByCategory, onSelectCategory,
+  books,
+  libraryBookIds,
+  essaysByBookId,
+  popularEssays,
+  recentEssays,
+  teamEssays,
+  teamNamesById,
+  authorStatsById,
+  userTeamName,
+  userTeamId,
+  categoryBestBooks,
+  rocketModelBooks,
+  highlightedByCategory,
+  onSelectCategory,
 }: {
+  books: BookWithProfiles[];
+  libraryBookIds: string[];
+  essaysByBookId: Record<string, BookEssayItem[]>;
   popularEssays: EssayWithVoted[];
+  recentEssays: EssayWithVoted[];
+  teamEssays: EssayWithVoted[];
+  teamNamesById: Record<string, string>;
+  authorStatsById: Record<string, AuthorGamificationStats>;
+  userTeamName: string | null;
+  userTeamId: string | null;
   categoryBestBooks: Record<string, CategoryBook[]>;
-  teamsWithMembers: TeamWithMembers[];
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
   onSelectCategory: (key: string) => void;
 }) {
   return (
-    <div className="space-y-10">
-      {popularEssays.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-base">Populární tento měsíc</h2>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {popularEssays.map((essay) => (
-              <EssayDiscoveryCard key={essay.id} essay={essay} initialVoted={essay.user_has_voted ?? false} />
-            ))}
-          </div>
-        </section>
-      )}
-
+    <div className="space-y-8">
+      {/* 1. Curated Selections: TOP BOB & Rocket Model */}
       {(highlightedByCategory.length > 0 || rocketModelBooks.length > 0) && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           {highlightedByCategory.length > 0 && <TopPicksCard groups={highlightedByCategory} />}
           {rocketModelBooks.length > 0 && <RocketModelCard books={rocketModelBooks} />}
         </div>
       )}
 
-      {teamsWithMembers.length > 0 && (
-        <TeamsSection teams={teamsWithMembers} />
-      )}
+      {/* 2. Book Categories Grid (2 columns on mobile) */}
+      <CategoryGridSection
+        categoryBestBooks={categoryBestBooks}
+        onSelectCategory={onSelectCategory}
+      />
 
-      {Object.keys(categoryBestBooks).length > 0 && (
-        <CategoryBestBooksSection
-          categoryBestBooks={categoryBestBooks}
-          onSelectCategory={onSelectCategory}
-        />
-      )}
-    </div>
-  );
-}
-
-/** Small pill of stacked icon + eyebrow label, shared by the two invite cards below. */
-function InviteCardEyebrow({ icon: Icon, label, tone }: { icon: React.ElementType; label: string; tone: 'amber' | 'primary' }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className={cn(
-        'flex size-8 shrink-0 items-center justify-center rounded-full',
-        tone === 'amber' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-primary/15 text-primary',
-      )}>
-        <Icon className="size-4" />
-      </span>
-      <span className={cn(
-        'text-[11px] font-semibold uppercase tracking-wide',
-        tone === 'amber' ? 'text-amber-700 dark:text-amber-400' : 'text-primary',
-      )}>
-        {label}
-      </span>
+      {/* 3. Mixed Stream: Books with Interleaved Community Essays */}
+      <DiscoveryMixedFeed
+        books={books}
+        libraryBookIds={libraryBookIds}
+        essaysByBookId={essaysByBookId}
+        recentEssays={recentEssays}
+        popularEssays={popularEssays}
+        teamEssays={teamEssays}
+        teamNamesById={teamNamesById}
+        authorStatsById={authorStatsById}
+        userTeamName={userTeamName}
+        userTeamId={userTeamId}
+      />
     </div>
   );
 }
@@ -271,328 +290,155 @@ function TopPicksCard({ groups }: { groups: HighlightedGroup[] }) {
   const totalBooks = groups.reduce((sum, g) => sum + g.books.length, 0);
 
   return (
-    <section className="rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-background to-background p-5 dark:border-amber-900/40 dark:from-amber-950/20">
-      <div className="flex h-full flex-col gap-3">
-        <InviteCardEyebrow icon={Medal} label="Doporučení koučů:ek a komunity" tone="amber" />
-        <div className="space-y-1.5">
-          <h2 className="text-lg font-bold leading-snug">TOP BOB</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            Zlato celé knihovny — {totalBooks} knih, na kterých se shodli kouči:ky i komunita.
-            Když nevíš, co číst dál, začni tady: tady nešlápneš vedle.
-          </p>
+    <Link
+      href="/cteni/knihy/top-bob"
+      className="group flex items-center gap-2 sm:gap-3 rounded-xl border border-amber-200/70 bg-gradient-to-r from-amber-500/10 via-card to-card p-2.5 sm:p-3 transition-all hover:border-amber-400 hover:shadow-sm dark:border-amber-900/50 dark:from-amber-950/30"
+    >
+      <span className="flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
+        <Medal className="size-3.5 sm:size-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1">
+          <h3 className="text-xs sm:text-sm font-bold text-foreground truncate">TOP BOB</h3>
+          <span className="text-[11px] text-muted-foreground shrink-0">· {totalBooks}</span>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {groups.map(({ category, books }) => (
-            <span
-              key={category.id}
-              className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-800 dark:text-amber-300"
-            >
-              {category.name} <span className="opacity-70">· {books.length}</span>
-            </span>
-          ))}
-        </div>
-        <Link
-          href="/cteni/knihy/top-bob"
-          className="mt-auto inline-flex items-center gap-1 self-start text-sm font-semibold text-amber-700 hover:underline dark:text-amber-400"
-        >
-          Zobrazit celý výběr
-          <ArrowRight className="size-3.5" />
-        </Link>
+        <p className="hidden sm:block truncate text-xs text-muted-foreground">
+          Doporučená četba
+        </p>
       </div>
-    </section>
+      <ArrowRight className="hidden sm:block size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+    </Link>
   );
 }
 
 function RocketModelCard({ books }: { books: BookWithProfiles[] }) {
   return (
-    <section className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background p-5">
-      <div className="flex h-full flex-col gap-3">
-        <InviteCardEyebrow icon={Rocket} label="Klíčové knihy programu" tone="primary" />
-        <div className="space-y-1.5">
-          <h2 className="text-lg font-bold leading-snug">Rocket Model</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            {books.length} {books.length === 1 ? 'kniha klíčová' : books.length < 5 ? 'knihy klíčové' : 'knih klíčových'} pro
-            studijní program — pomáhají Téčkům v cestě na Tiimi.
-          </p>
+    <Link
+      href="/cteni/knihy/rocket-model"
+      className="group flex items-center gap-2 sm:gap-3 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-card to-card p-2.5 sm:p-3 transition-all hover:border-primary/50 hover:shadow-sm dark:border-primary/30 dark:from-primary/15"
+    >
+      <span className="flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+        <Rocket className="size-3.5 sm:size-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1">
+          <h3 className="text-xs sm:text-sm font-bold text-foreground truncate">Rocket Model</h3>
+          <span className="text-[11px] text-muted-foreground shrink-0">· {books.length}</span>
         </div>
-        <Link
-          href="/cteni/knihy/rocket-model"
-          className="mt-auto inline-flex items-center gap-1 self-start text-sm font-semibold text-primary hover:underline"
-        >
-          Zobrazit knihy
-          <ArrowRight className="size-3.5" />
-        </Link>
+        <p className="hidden sm:block truncate text-xs text-muted-foreground">
+          Klíčové knihy
+        </p>
       </div>
-    </section>
+      <ArrowRight className="hidden sm:block size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+    </Link>
   );
 }
 
-function EssayDiscoveryCard({ essay, initialVoted }: { essay: EssayWithDetails; initialVoted: boolean }) {
-  return (
-    <div className="shrink-0 w-52 rounded-xl border bg-card hover:shadow-md transition-shadow group flex flex-col p-3 gap-2.5">
-      <Link href={`/cteni/eseje/${essay.id}`} className="flex gap-2.5">
-        {/* Small portrait cover — at this size low-res thumbnails look fine */}
-        <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center">
-          {essay.book?.google_books_cover_url ? (
-            <StorageImage
-              storageKey={essay.book.google_books_cover_url}
-              alt={essay.book?.title_cs ?? ''}
-              width={40}
-              height={56}
-              className="w-full h-full object-cover"
-            />
-          ) : essay.book ? (
-            <BookOpen className="size-4 text-muted-foreground/30" />
-          ) : (
-            <Sparkles className="size-4 text-amber-500/40" />
-          )}
-        </div>
-        <div className="flex-1 min-w-0 space-y-1 py-0.5">
-          <div className="flex items-center gap-1.5">
-            <div className="size-4 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center">
-              {essay.author?.picture ? (
-                <ProfileAvatar picture={essay.author.picture} name={essay.author.name} size={16} className="w-full h-full" />
-              ) : (
-                <span className="text-[8px] font-semibold">{essay.author?.name?.[0]}</span>
-              )}
-            </div>
-            <span className="text-xs text-muted-foreground truncate">{essay.author?.name}</span>
-          </div>
-          <p className="font-semibold text-sm leading-snug line-clamp-3 group-hover:text-primary transition-colors">
-            {essay.title}
-          </p>
-          {essay.book ? (
-            <p className="text-xs text-muted-foreground truncate">{essay.book.title_cs}</p>
-          ) : (
-            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-              <Sparkles className="size-3" />
-              Nad rámec četby
-            </p>
-          )}
-        </div>
-      </Link>
-      <div className="border-t pt-2">
-        <EssayVoteButton
-          essayId={essay.id}
-          initialVoteCount={essay.vote_count}
-          initialVoted={initialVoted}
-          size="sm"
-        />
-      </div>
-    </div>
-  );
-}
-
-function TeamsSection({ teams }: { teams: TeamWithMembers[] }) {
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
-  const activeTeam = teams.find((t) => t.id === activeTeamId) ?? null;
-
-  return (
-    <section className="space-y-3">
-      <h2 className="font-semibold text-base">Týmy</h2>
-
-      {/* Team pills */}
-      <div className="flex gap-2 flex-wrap">
-        {teams.map((team) => (
-          <button
-            key={team.id}
-            onClick={() => setActiveTeamId((prev) => (prev === team.id ? null : team.id))}
-            aria-pressed={activeTeamId === team.id}
-            className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-full text-sm border transition-colors',
-              activeTeamId === team.id
-                ? 'bg-primary text-primary-foreground border-primary font-medium'
-                : 'bg-card text-foreground border-border hover:border-primary/40 hover:bg-muted/50',
-            )}
-          >
-            {/* Avatar stack */}
-            <div className="flex -space-x-1.5">
-              {team.members.slice(0, 3).map((m) => (
-                <div key={m.profile_id} className="size-5 rounded-full overflow-hidden border-2 border-background bg-muted shrink-0 flex items-center justify-center text-[8px] font-semibold">
-                  {m.profile_picture
-                    ? <ProfileAvatar picture={m.profile_picture} name={m.profile_name} size={20} className="w-full h-full" />
-                    : m.profile_name[0]}
-                </div>
-              ))}
-            </div>
-            <span>{team.name}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Expanded member list */}
-      {activeTeam && (
-        <div className="rounded-xl border bg-card overflow-hidden">
-          <div className="divide-y">
-            {activeTeam.members.map((member) => (
-              <Link
-                key={member.profile_id}
-                href={`/komunita/profil/${member.profile_id}`}
-                className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-muted/50 transition-colors group"
-              >
-                <div className="size-8 rounded-full overflow-hidden bg-muted shrink-0 flex items-center justify-center text-xs font-semibold">
-                  {member.profile_picture
-                    ? <ProfileAvatar picture={member.profile_picture} name={member.profile_name} size={32} className="w-full h-full" />
-                    : member.profile_name[0]}
-                </div>
-                <p className="flex-1 text-sm font-medium group-hover:text-primary transition-colors truncate">
-                  {member.profile_name}
-                </p>
-                <div className="flex items-center gap-2 shrink-0 text-xs text-muted-foreground">
-                  {member.essay_count > 0 && (
-                    <span className="flex items-center gap-1">
-                      <PenLine className="size-3" />
-                      {member.essay_count}
-                    </span>
-                  )}
-                  {pointsNumber(member.book_points) > 0 && (
-                    <span className="font-medium text-foreground">
-                      {formatPoints(member.book_points)} b.
-                    </span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function CategoryBestBooksSection({
-  categoryBestBooks, onSelectCategory,
+function CategoryGridSection({
+  categoryBestBooks,
+  onSelectCategory,
 }: {
   categoryBestBooks: Record<string, CategoryBook[]>;
   onSelectCategory: (key: string) => void;
 }) {
-  const entries = Object.entries(BOOK_CATEGORY_LABELS)
-    .filter(([key]) => (categoryBestBooks[key]?.length ?? 0) > 0);
-
-  if (entries.length === 0) return null;
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <BadgeCheck className="size-4 text-blue-500 dark:text-blue-400" />
-        <h2 className="font-semibold text-base">Ověřené knihy podle kategorie</h2>
-      </div>
-      <div className="space-y-8">
-        {entries.map(([key, label]) => {
-          const books = categoryBestBooks[key];
+    <section className="space-y-3 pt-2">
+      <h2 className="text-sm sm:text-base font-semibold text-foreground">Knihy podle kategorií</h2>
+
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        {CATEGORIES.map(([key, label]) => {
+          const meta = CATEGORY_META[key] ?? { icon: BookOpen, color: 'text-primary bg-primary/10' };
+          const Icon = meta.icon;
+          const books = categoryBestBooks[key] ?? [];
           const totalEssays = books.reduce((s, b) => s + b.essay_count, 0);
+
           return (
-            <section key={key} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-base">{label}</h2>
-                {totalEssays > 0 && (
-                  <span className="text-xs text-muted-foreground">{totalEssays} esejí</span>
-                )}
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelectCategory(key)}
+              className="group flex items-center gap-2.5 sm:gap-3 rounded-xl border bg-card p-2.5 sm:p-3 text-left transition-all hover:border-primary/40 hover:shadow-xs focus-ring"
+            >
+              <span className={cn('flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-lg', meta.color)}>
+                <Icon className="size-4 sm:size-4.5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                  {label}
+                </p>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {totalEssays > 0 ? `${totalEssays} esejí` : 'Procházet'}
+                </p>
               </div>
-
-              <div className="divide-y rounded-xl border overflow-hidden bg-card">
-                {books.map((book) => (
-                  <div key={book.id} className="flex gap-3 px-3 py-2.5 group">
-                    <Link
-                      href={`/cteni/knihy/${book.id}`}
-                      className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5"
-                    >
-                      {book.cover_path ? (
-                        <StorageImage storageKey={book.cover_path} alt={book.title} width={40} height={56} className="w-full h-full object-cover" />
-                      ) : (
-                        <BookOpen className="size-3.5 text-muted-foreground/30" />
-                      )}
-                    </Link>
-                    <div className="flex-1 min-w-0 py-0.5 space-y-1">
-                      <div className="flex items-center gap-1.5">
-                        <Link href={`/cteni/knihy/${book.id}`}>
-                          <p className="font-medium text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
-                            {book.title}
-                          </p>
-                        </Link>
-                        <BookStatusBadges book={book} />
-                      </div>
-                      {book.description && (
-                        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{book.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="font-medium">{formatPointsWithLabel(book.book_points)}</span>
-                        {book.essay_count > 0 && (
-                          <>
-                            <span className="text-muted-foreground/40">·</span>
-                            <span className="text-muted-foreground">{book.essay_count} esejí</span>
-                          </>
-                        )}
-                        {book.preview_link && (
-                          <a
-                            href={book.preview_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="ml-auto flex items-center gap-0.5 text-primary hover:underline"
-                          >
-                            <ExternalLink className="size-3" />Náhled
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  onClick={() => onSelectCategory(key)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Zobrazit vše →
-                </button>
-              </div>
-            </section>
+              <ChevronRight className="size-3.5 sm:size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+            </button>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
 // ─── Category view ─────────────────────────────────────────────────────────────
 
 function CategoryBooksView({
-  label, books, loading,
+  label,
+  books,
+  loading,
+  libraryFilterEnabled,
+  onToggleLibraryFilter,
+  onBack,
 }: {
   label: string;
   books: (BookWithProfiles & { essay_count?: number })[];
   loading: boolean;
+  libraryFilterEnabled: boolean;
+  onToggleLibraryFilter: (enabled: boolean) => void;
+  onBack: () => void;
 }) {
-  if (loading) {
-    return (
-      <div className="flex justify-center py-16">
-        <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (books.length === 0) {
-    return (
-      <div className="text-center py-16 space-y-2">
-        <BookOpen className="size-10 mx-auto text-muted-foreground/40" />
-        <p className="text-muted-foreground text-sm">Žádné knihy v kategorii {label}</p>
-      </div>
-    );
-  }
-
   return (
-    <section className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        {books.length} knih v kategorii <span className="font-medium text-foreground">{label}</span>
-      </p>
-      <div className="space-y-2">
-        {books.map((book) => (
-          <BookCard key={book.id} book={book} />
-        ))}
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
+        <div>
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            Zpět na přehled
+          </button>
+          <h2 className="text-xl font-bold text-foreground">{label}</h2>
+        </div>
+
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={libraryFilterEnabled}
+            onChange={(e) => onToggleLibraryFilter(e.target.checked)}
+            className="rounded border-border accent-primary"
+          />
+          Pouze knihy v TAP Knihovně
+        </label>
       </div>
-    </section>
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      ) : books.length === 0 ? (
+        <div className="text-center py-16 space-y-2">
+          <BookOpen className="size-10 mx-auto text-muted-foreground/40" />
+          <p className="text-muted-foreground text-sm">Žádné knihy v kategorii {label}</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {books.map((book) => (
+            <BookCard key={book.id} book={book} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

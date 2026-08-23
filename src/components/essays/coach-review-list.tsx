@@ -28,6 +28,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { CoachReadButton } from './coach-read-button';
+import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import type {
@@ -61,14 +62,15 @@ export function CoachReviewList({
   currentCoachId,
   currentCoachName = 'Kouč:ka',
 }: CoachReviewListProps) {
+  const [activeTab, setActiveTab] = usePersistedState<'unread' | 'read'>('tappka:coach-review:tab', 'unread');
   const [unread, setUnread] = useState(initialUnread);
   const [read, setRead] = useState(initialRead);
   const [readsMap, setReadsMap] = useState<Record<string, EssayCoachReadWithProfile[]>>(coachReadsMap);
 
-  const [teamFilter, setTeamFilter] = useState<string>(defaultTeamId);
-  const [rocketFilter, setRocketFilter] = useState<string>('all');
-  const [pointsFilter, setPointsFilter] = useState<string>('all');
-  const [replyFilter, setReplyFilter] = useState<string>('all');
+  const [teamFilter, setTeamFilter] = usePersistedState<string>('tappka:coach-review:team', defaultTeamId);
+  const [rocketFilter, setRocketFilter] = usePersistedState<string>('tappka:coach-review:rocket', 'all');
+  const [pointsFilter, setPointsFilter] = usePersistedState<string>('tappka:coach-review:points', 'all');
+  const [replyFilter, setReplyFilter] = usePersistedState<string>('tappka:coach-review:reply', 'all');
 
   const effectiveCommentsMap = useMemo(() => {
     const map = { ...commentsMap };
@@ -260,7 +262,7 @@ export function CoachReviewList({
         )}
       </div>
 
-      <Tabs defaultValue="unread">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'unread' | 'read')}>
         <TabsList>
           <TabsTrigger value="unread">
             <Inbox />
@@ -479,9 +481,6 @@ function ReviewRow({
                 <span className="truncate text-xs font-medium text-foreground">
                   {essay.author?.name}
                 </span>
-                <span className="rounded-full bg-primary/10 px-1.5 py-0.2 text-[11px] font-semibold tabular-nums text-primary">
-                  {authorPoints} b.
-                </span>
                 <span className="text-muted-foreground/40">·</span>
                 <span className="text-xs text-muted-foreground">
                   {new Date(essay.created_at).toLocaleDateString('cs-CZ', {
@@ -503,6 +502,11 @@ function ReviewRow({
                     <span className="truncate font-medium text-foreground/80">
                       {essay.book.title_cs}
                     </span>
+                    {bookPoints > 0 && (
+                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                        {bookPoints} {bookPoints === 1 ? 'bod' : bookPoints < 5 ? 'body' : 'bodů'}
+                      </span>
+                    )}
                     <BookStatusBadges book={essay.book} />
                   </>
                 ) : (
@@ -527,27 +531,27 @@ function ReviewRow({
 
         {/* Combined Footer: Coach comments & read status */}
         {(hasCoachComment || (read && coachReads.length > 0)) && (
-          <div className="space-y-2.5 border-t border-border/40 pt-2.5">
+          <div className="space-y-3 border-t border-border/40 pt-3">
             {/* Header with comments count, edited status & read by */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[11px] text-muted-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 {hasCoachComment && (
-                  <span className="flex items-center gap-1 font-semibold text-foreground">
-                    <MessageCircle className="size-3 text-primary" />
+                  <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                    <MessageCircle className="size-4 text-primary" />
                     Komentáře ({coachComments.length})
                   </span>
                 )}
                 {hasEditedAfterCoach && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
-                    <FilePenLine className="size-2.5" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                    <FilePenLine className="size-3" />
                     Upraveno po komentáři
                   </span>
                 )}
               </div>
 
               {read && coachReads.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1 text-[11px]">
-                  <CheckCheck className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <div className="flex flex-wrap items-center gap-1 text-xs">
+                  <CheckCheck className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Přečteno:</span>
                   {coachReads.map((cr, idx) => (
                     <span key={cr.coach_profile_id} className="font-medium text-foreground">
@@ -566,35 +570,35 @@ function ReviewRow({
 
             {/* Comment Threads */}
             {hasCoachComment && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {threads.map(({ coachComment, replies }) => (
-                  <div key={coachComment.id} className="space-y-1.5 pl-0.5">
+                  <div key={coachComment.id} className="space-y-2 pl-0.5">
                     {/* Coach quote */}
-                    <div className="border-l-2 border-primary/50 pl-2.5 py-0.5 space-y-0.5">
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <div className="border-l-2 border-primary/60 pl-3 py-1 space-y-1">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         {coachComment.author?.picture ? (
                           <ProfileAvatar
                             picture={coachComment.author.picture}
                             name={coachComment.author.name}
-                            size={14}
+                            size={18}
                           />
                         ) : (
-                          <div className="flex size-3.5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[8px] font-bold text-primary">
+                          <div className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
                             {coachComment.author?.name?.[0]?.toUpperCase() ?? 'K'}
                           </div>
                         )}
-                        <span className="text-[11px] font-semibold text-foreground">
+                        <span className="text-xs font-semibold text-foreground">
                           {coachComment.author?.name}
                         </span>
                         <span className="text-muted-foreground/40">·</span>
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           {new Date(coachComment.created_at).toLocaleDateString('cs-CZ', {
                             day: 'numeric',
                             month: 'short',
                           })}
                         </span>
                       </div>
-                      <p className="text-xs text-foreground/85 italic leading-relaxed whitespace-pre-wrap">
+                      <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
                         „{coachComment.body}“
                       </p>
                     </div>
@@ -604,43 +608,43 @@ function ReviewRow({
                       replies.map((reply) => (
                         <div
                           key={reply.id}
-                          className="ml-3.5 border-l-2 border-emerald-500/40 pl-2.5 py-0.5 space-y-0.5"
+                          className="ml-4 border-l-2 border-emerald-500/50 pl-3 py-1 space-y-1"
                         >
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <CornerDownRight className="size-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <CornerDownRight className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             {reply.author?.picture ? (
                               <ProfileAvatar
                                 picture={reply.author.picture}
                                 name={reply.author.name}
-                                size={14}
+                                size={18}
                               />
                             ) : (
-                              <div className="flex size-3.5 shrink-0 items-center justify-center rounded-full bg-muted text-[8px] font-semibold">
+                              <div className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">
                                 {reply.author?.name?.[0]?.toUpperCase() ?? 'T'}
                               </div>
                             )}
-                            <span className="text-[11px] font-semibold text-foreground">
+                            <span className="text-xs font-semibold text-foreground">
                               {reply.author?.name}
                             </span>
-                            <span className="rounded bg-emerald-500/10 px-1 py-0.2 text-[9px] font-medium text-emerald-700 dark:text-emerald-300">
+                            <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
                               autor:ka
                             </span>
                             <span className="text-muted-foreground/40">·</span>
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {new Date(reply.created_at).toLocaleDateString('cs-CZ', {
                                 day: 'numeric',
                                 month: 'short',
                               })}
                             </span>
                           </div>
-                          <p className="text-xs text-foreground/85 italic leading-relaxed whitespace-pre-wrap">
+                          <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
                             „{reply.body}“
                           </p>
                         </div>
                       ))
                     ) : (
-                      <div className="ml-3.5 flex items-center gap-1.5 text-[11px] text-amber-600/90 dark:text-amber-400/90 py-0.5">
-                        <Clock className="size-3 shrink-0" />
+                      <div className="ml-4 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 py-0.5">
+                        <Clock className="size-3.5 shrink-0" />
                         <span>Zatím bez odpovědi Téčka</span>
                       </div>
                     )}

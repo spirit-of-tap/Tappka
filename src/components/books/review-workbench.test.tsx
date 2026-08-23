@@ -1,9 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { ReviewWorkbench } from './review-workbench';
 import type { BookWithProfiles } from '@/lib/books/types';
+
+beforeEach(() => {
+  window.sessionStorage.clear();
+  window.localStorage.clear();
+});
 
 function book(overrides: Partial<BookWithProfiles>): BookWithProfiles {
   return {

@@ -54,29 +54,29 @@ export function CoachReadButton({
     return (
       <div
         className={cn(
-          'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 rounded-xl border p-3.5 sm:p-4 transition-colors',
+          'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border p-4 sm:p-5 transition-colors',
           read
             ? 'border-emerald-500/30 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.07]'
             : 'border-border bg-card/60',
           className,
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3.5">
           <div
             className={cn(
-              'flex size-8 shrink-0 items-center justify-center rounded-lg',
+              'flex size-10 shrink-0 items-center justify-center rounded-xl',
               read
                 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                 : 'bg-primary/10 text-primary',
             )}
           >
-            {read ? <CheckCheck className="size-4" /> : <GraduationCap className="size-4" />}
+            {read ? <CheckCheck className="size-5" /> : <GraduationCap className="size-5" />}
           </div>
-          <div>
-            <p className="text-xs font-semibold text-foreground">
+          <div className="space-y-0.5">
+            <p className="text-sm sm:text-base font-semibold text-foreground">
               {read ? 'Přečteno koučem:koučkou' : 'Potvrdit přečtení'}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {read
                 ? 'Autor:ka vidí tvé potvrzení v hlavičce eseje.'
                 : 'Autor:ka uvidí, že jsi esej přečetl:a.'}
@@ -91,7 +91,7 @@ export function CoachReadButton({
           onClick={toggle}
           disabled={isPending}
           className={cn(
-            'shrink-0 gap-2 font-semibold shadow-xs',
+            'h-10 shrink-0 gap-2 px-5 text-sm font-semibold shadow-xs',
             read && 'bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300',
           )}
         >

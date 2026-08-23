@@ -30,6 +30,7 @@ export interface BookFilters {
   pageSize?: number;
   libraryOnly?: boolean;
   isRocketModel?: boolean;
+  minEssayCount?: number;
 }
 
 export interface CreateBookInput {
