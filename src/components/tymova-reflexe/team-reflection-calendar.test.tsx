@@ -14,14 +14,14 @@ describe("TeamReflectionCalendar", () => {
       />,
     )
 
-    expect(screen.getByText("Říj")).toBeInTheDocument()
-    expect(screen.getByText("Lis")).toBeInTheDocument()
-    expect(screen.getByText("Pro")).toBeInTheDocument()
-    expect(screen.getByText("Led")).toBeInTheDocument()
-    expect(screen.getByText("Úno")).toBeInTheDocument()
-    expect(screen.getByText("Bře")).toBeInTheDocument()
-    expect(screen.getByText("Dub")).toBeInTheDocument()
-    expect(screen.getByText("Kvě")).toBeInTheDocument()
+    expect(screen.getByText("Říjen")).toBeInTheDocument()
+    expect(screen.getByText("Listopad")).toBeInTheDocument()
+    expect(screen.getByText("Prosinec")).toBeInTheDocument()
+    expect(screen.getByText("Leden")).toBeInTheDocument()
+    expect(screen.getByText("Únor")).toBeInTheDocument()
+    expect(screen.getByText("Březen")).toBeInTheDocument()
+    expect(screen.getByText("Duben")).toBeInTheDocument()
+    expect(screen.getByText("Květen")).toBeInTheDocument()
   })
 
   it("renders dual actions for May (Měsíční and Ročníková)", () => {

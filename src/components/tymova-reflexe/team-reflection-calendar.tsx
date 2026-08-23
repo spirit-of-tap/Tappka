@@ -9,25 +9,15 @@ import {
   type MonthCell,
 } from "@/lib/tymova-reflexe/month-grid"
 
-const MONTH_LABELS = [
-  { short: "Led", full: "Leden" },
-  { short: "Úno", full: "Únor" },
-  { short: "Bře", full: "Březen" },
-  { short: "Dub", full: "Duben" },
-  { short: "Kvě", full: "Květen" },
-  { short: "Čvn", full: "Červen" },
-  { short: "Čvc", full: "Červenec" },
-  { short: "Srp", full: "Srpen" },
-  { short: "Zář", full: "Září" },
-  { short: "Říj", full: "Říjen" },
-  { short: "Lis", full: "Listopad" },
-  { short: "Pro", full: "Prosinec" },
+const MONTH_NAMES = [
+  "Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
+  "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec",
 ] as const
 
-function monthLabel(monthStr: string): { short: string; full: string } {
+function getMonthName(monthStr: string): string {
   const parts = monthStr.split("-")
   const m = Number(parts[1])
-  return MONTH_LABELS[m - 1] ?? { short: "—", full: "—" }
+  return MONTH_NAMES[m - 1] ?? "—"
 }
 
 interface TeamReflectionCalendarProps {
@@ -38,16 +28,16 @@ interface TeamReflectionCalendarProps {
 }
 
 function RegularMonthCell({ cell }: { cell: MonthCell }) {
-  const { full, short } = monthLabel(cell.month)
+  const full = getMonthName(cell.month)
 
   if (cell.monthlyStatus === "future") {
     return (
       <div
         title={`${full} (budoucí období)`}
-        className="flex h-[68px] flex-col items-center justify-center gap-1 rounded-lg bg-muted/20 p-1.5 text-xs text-muted-foreground/40 select-none border border-transparent"
+        className="flex h-[72px] flex-col items-center justify-center gap-1 rounded-lg bg-muted/20 p-1.5 text-xs text-muted-foreground/40 select-none border border-transparent"
       >
-        <span className="font-semibold text-xs">{short}</span>
-        <span className="text-[10px] text-muted-foreground/40">—</span>
+        <span className="font-medium text-xs truncate max-w-full">{full}</span>
+        <span className="text-[10px] text-muted-foreground/30">—</span>
       </div>
     )
   }
@@ -65,53 +55,51 @@ function RegularMonthCell({ cell }: { cell: MonthCell }) {
       href={href}
       title={`${full} — ${isDone ? "vyplněno" : isCurrentMissing ? "k vyplnění" : "chybí"}`}
       className={cn(
-        "group relative flex h-[68px] flex-col items-center justify-center gap-1 rounded-lg p-1.5 text-xs transition-all text-center",
+        "group relative flex h-[72px] flex-col items-center justify-center gap-1 rounded-lg p-1.5 text-xs transition-all text-center",
         isDone &&
-          "bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/15 border border-emerald-500/25",
+          "bg-emerald-500/10 text-emerald-900 dark:text-emerald-100 hover:bg-emerald-500/20 border border-emerald-500/30",
         isCurrentMissing &&
-          "bg-amber-500/10 text-amber-800 dark:text-amber-200 hover:bg-amber-500/20 border border-amber-500/40 ring-1 ring-amber-500/30",
+          "bg-amber-500/10 text-amber-900 dark:text-amber-100 hover:bg-amber-500/20 border border-amber-500/50 ring-1 ring-amber-500/30",
         !isDone &&
           !isCurrentMissing &&
           "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-accent/60 border border-transparent",
       )}
     >
-      <div className="flex items-center gap-1 font-semibold text-xs">
-        {isDone ? (
-          <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-        ) : isCurrentMissing ? (
-          <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
-        ) : (
-          <Plus className="size-3 text-muted-foreground/60 group-hover:text-primary transition-colors" />
-        )}
-        <span>{short}</span>
-      </div>
-
-      <span
-        className={cn(
-          "text-[10px] leading-none",
-          isDone && "text-emerald-700 dark:text-emerald-300 font-normal",
-          isCurrentMissing && "text-amber-700 dark:text-amber-300 font-semibold",
-          !isDone && !isCurrentMissing && "text-muted-foreground/70",
-        )}
-      >
-        {isDone ? "Hotovo" : isCurrentMissing ? "K vyplnění" : "Chybí"}
+      <span className="font-semibold text-xs truncate max-w-full tracking-tight">
+        {full}
       </span>
+
+      {isDone ? (
+        <div className="flex items-center justify-center size-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+          <Check className="size-3 stroke-[2.5]" />
+        </div>
+      ) : isCurrentMissing ? (
+        <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+          <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+          K vyplnění
+        </span>
+      ) : (
+        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60 group-hover:text-primary transition-colors">
+          <Plus className="size-2.5" />
+          Vytvořit
+        </span>
+      )}
     </Link>
   )
 }
 
 function MayMonthCell({ cell }: { cell: MonthCell }) {
-  const { short, full } = monthLabel(cell.month)
+  const full = getMonthName(cell.month)
   const isFuture = cell.monthlyStatus === "future" && cell.rocnikovaStatus === "future"
 
   if (isFuture) {
     return (
       <div
         title={`${full} (budoucí období)`}
-        className="flex h-[68px] flex-col items-center justify-center gap-1 rounded-lg bg-muted/20 p-1.5 text-xs text-muted-foreground/40 select-none border border-transparent"
+        className="flex h-[72px] flex-col items-center justify-center gap-1 rounded-lg bg-muted/20 p-1.5 text-xs text-muted-foreground/40 select-none border border-transparent"
       >
-        <span className="font-semibold text-xs">{short}</span>
-        <span className="text-[10px] text-muted-foreground/40">—</span>
+        <span className="font-medium text-xs">{full}</span>
+        <span className="text-[10px] text-muted-foreground/30">—</span>
       </div>
     )
   }
@@ -133,9 +121,9 @@ function MayMonthCell({ cell }: { cell: MonthCell }) {
   const isRocnikovaCurrentMissing = cell.rocnikovaStatus === "current-missing"
 
   return (
-    <div className="flex h-[68px] flex-col justify-between rounded-lg bg-muted/30 p-1 border border-border/40 text-center">
-      <span className="text-[11px] font-semibold text-foreground leading-none pt-0.5">
-        {short}
+    <div className="flex h-[72px] flex-col justify-between rounded-lg bg-muted/30 p-1 border border-border/50 text-center">
+      <span className="text-xs font-semibold text-foreground leading-none pt-0.5">
+        {full}
       </span>
 
       <div className="flex flex-col gap-0.5">
@@ -150,8 +138,11 @@ function MayMonthCell({ cell }: { cell: MonthCell }) {
             !isMonthlyDone && !isMonthlyCurrentMissing && "bg-background/80 text-muted-foreground hover:text-foreground",
           )}
         >
-          {isMonthlyDone && <Check className="size-2.5 text-emerald-600 dark:text-emerald-400" />}
-          {isMonthlyCurrentMissing && <span className="size-1.5 rounded-full bg-amber-500" />}
+          {isMonthlyDone ? (
+            <Check className="size-2.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+          ) : (
+            <Plus className="size-2.5 text-muted-foreground/70" />
+          )}
           <span>Měsíční</span>
         </Link>
 
@@ -167,7 +158,7 @@ function MayMonthCell({ cell }: { cell: MonthCell }) {
           )}
         >
           {isRocnikovaDone ? (
-            <Check className="size-2.5 text-chart-5" />
+            <Check className="size-2.5 text-chart-5 stroke-[2.5]" />
           ) : (
             <Award className="size-2.5 text-chart-5" />
           )}
