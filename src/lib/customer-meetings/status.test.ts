@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { getMeetingLoop, LOOP_LABELS } from "./status"
 
-const NOW = new Date(2026, 4, 15, 12, 0)
-
 function meeting(overrides: { meetingAt?: string | null; postMortem?: string | null }) {
   return { meeting_at: overrides.meetingAt ?? null, post_mortem: overrides.postMortem ?? null }
 }

@@ -14,7 +14,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/responsive-dialog';
 import type { BookLoanWithDetails } from '@/lib/library/types';
 import { cn } from '@/lib/utils';

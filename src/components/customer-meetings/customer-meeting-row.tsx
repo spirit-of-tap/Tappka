@@ -29,8 +29,6 @@ interface CustomerMeetingRowProps {
     CustomerMeeting,
     "id" | "company" | "contact_person" | "meeting_at" | "post_mortem"
   >
-  /** Injectable for tests. */
-  now?: Date
   /** False inside the "Bez data" section, whose header already says it. */
   showUndatedChip?: boolean
 }
@@ -42,7 +40,6 @@ interface CustomerMeetingRowProps {
  */
 export function CustomerMeetingRow({
   meeting,
-  now,
   showUndatedChip = true,
 }: CustomerMeetingRowProps) {
   const loop = getMeetingLoop(meeting)

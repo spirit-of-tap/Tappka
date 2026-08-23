@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -30,7 +30,7 @@ import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { CoachReadButton } from './coach-read-button';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 
-import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { pointsNumber } from '@/lib/books/points';
 import type {
   CoachReviewEssay,
   EssayCoachReadWithProfile,
@@ -55,7 +55,7 @@ export function CoachReviewList({
   initialRead,
   teams = [],
   defaultTeamId = 'all',
-  authorPointsMap = {},
+  authorPointsMap: _authorPointsMap = {},
   commentsMap = {},
   coachCommentsMap = {},
   coachReadsMap = {},
@@ -73,11 +73,14 @@ export function CoachReviewList({
   const [replyFilter, setReplyFilter] = usePersistedState<string>('tappka:coach-review:reply', 'all');
 
   const effectiveCommentsMap = useMemo(() => {
-    const map = { ...commentsMap };
-    for (const [id, cList] of Object.entries(coachCommentsMap)) {
-      if (!map[id]) map[id] = cList;
+    const merged: Record<string, EssayCommentWithAuthor[]> = { ...commentsMap };
+    for (const [essayId, coachComments] of Object.entries(coachCommentsMap)) {
+      const existing = merged[essayId] ?? [];
+      const existingIds = new Set(existing.map((c) => c.id));
+      const newCoach = coachComments.filter((c) => !existingIds.has(c.id));
+      merged[essayId] = [...existing, ...newCoach];
     }
-    return map;
+    return merged;
   }, [commentsMap, coachCommentsMap]);
 
   const hasActiveFilters =
@@ -95,34 +98,24 @@ export function CoachReviewList({
 
   const markRead = (essay: CoachReviewEssay) => {
     setUnread((prev) => prev.filter((e) => e.id !== essay.id));
-    setRead((prev) => [{ ...essay, read_at: new Date().toISOString() }, ...prev]);
+    setRead((prev) => (prev.some((e) => e.id === essay.id) ? prev : [essay, ...prev]));
     if (currentCoachId) {
-      setReadsMap((prev) => {
-        const existing = prev[essay.id] ?? [];
-        if (existing.some((r) => r.coach_profile_id === currentCoachId)) return prev;
-        return {
-          ...prev,
-          [essay.id]: [
-            {
-              essay_id: essay.id,
-              coach_profile_id: currentCoachId,
-              read_at: new Date().toISOString(),
-              coach: { id: currentCoachId, name: currentCoachName, picture: null, role: 'coach' },
-            },
-            ...existing,
-          ],
-        };
-      });
+      const newEntry: EssayCoachReadWithProfile = {
+        essay_id: essay.id,
+        coach_profile_id: currentCoachId,
+        read_at: new Date().toISOString(),
+        coach: { id: currentCoachId, name: currentCoachName, picture: null, role: 'coach' },
+      };
+      setReadsMap((prev) => ({
+        ...prev,
+        [essay.id]: [...(prev[essay.id]?.filter((r) => r.coach_profile_id !== currentCoachId) ?? []), newEntry],
+      }));
     }
   };
 
   const markUnread = (essay: CoachReviewEssay) => {
     setRead((prev) => prev.filter((e) => e.id !== essay.id));
-    setUnread((prev) =>
-      [{ ...essay, read_at: null }, ...prev].sort((a, b) =>
-        b.created_at.localeCompare(a.created_at),
-      ),
-    );
+    setUnread((prev) => (prev.some((e) => e.id === essay.id) ? prev : [essay, ...prev]));
     if (currentCoachId) {
       setReadsMap((prev) => {
         const existing = prev[essay.id] ?? [];
@@ -134,54 +127,57 @@ export function CoachReviewList({
     }
   };
 
-  const filterEssay = (essay: CoachReviewEssay) => {
-    if (teamFilter !== 'all') {
-      if (essay.author?.team_id !== teamFilter) return false;
-    }
-    if (rocketFilter === 'rocket') {
-      if (!essay.book?.is_rocket_model) return false;
-    } else if (rocketFilter === 'non-rocket') {
-      if (essay.book?.is_rocket_model) return false;
-    }
-    if (pointsFilter !== 'all') {
-      const pts = pointsNumber(essay.book?.book_points);
-      if (pointsFilter === '0') {
-        if (essay.book && pts > 0) return false;
-      } else {
-        if (!essay.book || Math.round(pts) !== Number(pointsFilter)) return false;
+  const filterEssay = useCallback(
+    (essay: CoachReviewEssay) => {
+      if (teamFilter !== 'all') {
+        if (essay.author?.team_id !== teamFilter) return false;
       }
-    }
-    if (replyFilter !== 'all') {
-      const essayComments = effectiveCommentsMap[essay.id] ?? [];
-      const { hasCoachComment, hasAuthorReply, latestCoachCommentTime } = getEssayCommentThreads(
-        essayComments,
-        essay.author_profile_id,
-      );
+      if (rocketFilter === 'rocket') {
+        if (!essay.book?.is_rocket_model) return false;
+      } else if (rocketFilter === 'non-rocket') {
+        if (essay.book?.is_rocket_model) return false;
+      }
+      if (pointsFilter !== 'all') {
+        const pts = pointsNumber(essay.book?.book_points);
+        if (pointsFilter === '0') {
+          if (essay.book && pts > 0) return false;
+        } else {
+          if (!essay.book || Math.round(pts) !== Number(pointsFilter)) return false;
+        }
+      }
+      if (replyFilter !== 'all') {
+        const essayComments = effectiveCommentsMap[essay.id] ?? [];
+        const { hasCoachComment, hasAuthorReply, latestCoachCommentTime } = getEssayCommentThreads(
+          essayComments,
+          essay.author_profile_id,
+        );
 
-      if (replyFilter === 'with-reply') {
-        if (!hasAuthorReply) return false;
-      } else if (replyFilter === 'without-reply') {
-        if (!hasCoachComment || hasAuthorReply) return false;
-      } else if (replyFilter === 'edited-after-comment') {
-        const hasEditedAfterCoach =
-          hasCoachComment &&
-          new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
-        if (!hasEditedAfterCoach) return false;
-      } else if (replyFilter === 'no-coach-comment') {
-        if (hasCoachComment) return false;
+        if (replyFilter === 'with-reply') {
+          if (!hasAuthorReply) return false;
+        } else if (replyFilter === 'without-reply') {
+          if (!hasCoachComment || hasAuthorReply) return false;
+        } else if (replyFilter === 'edited-after-comment') {
+          const hasEditedAfterCoach =
+            hasCoachComment &&
+            new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
+          if (!hasEditedAfterCoach) return false;
+        } else if (replyFilter === 'no-coach-comment') {
+          if (hasCoachComment) return false;
+        }
       }
-    }
-    return true;
-  };
+      return true;
+    },
+    [teamFilter, rocketFilter, pointsFilter, replyFilter, effectiveCommentsMap],
+  );
 
   const filteredUnread = useMemo(
     () => unread.filter(filterEssay),
-    [unread, teamFilter, rocketFilter, pointsFilter, replyFilter, effectiveCommentsMap],
+    [unread, filterEssay],
   );
 
   const filteredRead = useMemo(
     () => read.filter(filterEssay),
-    [read, teamFilter, rocketFilter, pointsFilter, replyFilter, effectiveCommentsMap],
+    [read, filterEssay],
   );
 
   return (
@@ -293,7 +289,6 @@ export function CoachReviewList({
                   key={essay.id}
                   essay={essay}
                   read={false}
-                  authorPoints={authorPointsMap[essay.author_profile_id] ?? 0}
                   comments={effectiveCommentsMap[essay.id] ?? []}
                   coachReads={readsMap[essay.id] ?? []}
                   onToggled={() => markRead(essay)}
@@ -320,7 +315,6 @@ export function CoachReviewList({
                   key={essay.id}
                   essay={essay}
                   read
-                  authorPoints={authorPointsMap[essay.author_profile_id] ?? 0}
                   comments={effectiveCommentsMap[essay.id] ?? []}
                   coachReads={readsMap[essay.id] ?? []}
                   onToggled={() => markUnread(essay)}
@@ -351,7 +345,6 @@ function EmptyState({ label, onReset }: { label: string; onReset?: () => void })
 interface ReviewRowProps {
   essay: CoachReviewEssay;
   read: boolean;
-  authorPoints: number;
   comments: EssayCommentWithAuthor[];
   coachReads: EssayCoachReadWithProfile[];
   onToggled: () => void;
@@ -423,7 +416,6 @@ export function getEssayCommentThreads(
 function ReviewRow({
   essay,
   read,
-  authorPoints,
   comments,
   coachReads,
   onToggled,
@@ -431,7 +423,7 @@ function ReviewRow({
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
   const bookPoints = pointsNumber(essay.book?.book_points);
 
-  const { coachComments, hasCoachComment, hasAuthorReply, latestCoachCommentTime, threads } =
+  const { coachComments, hasCoachComment, latestCoachCommentTime, threads } =
     useMemo(
       () => getEssayCommentThreads(comments, essay.author_profile_id),
       [comments, essay.author_profile_id],

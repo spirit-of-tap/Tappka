@@ -33,7 +33,6 @@ import { DiscoveryMixedFeed } from './discovery-mixed-feed';
 import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
-import { formatPoints, formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';

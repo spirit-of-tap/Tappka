@@ -39,7 +39,6 @@ import { InfoCard } from "./info-card"
 import { SemesterSeparator } from "@/components/ui/semester-separator"
 import { getSemesterInfo } from "@/lib/timeline/semester-utils"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
-import { isRocnikovaMonth } from "@/lib/tymova-reflexe/month-grid"
 import type { TeamReflectionWithCreator } from "@/lib/tymova-reflexe/types"
 import type { TeamSemesterReflectionSummary } from "@/lib/tymova-reflexe/semester-types"
 import type { TeamMemberProfile } from "@/lib/tymovy-denik/types"
@@ -81,7 +80,7 @@ interface TeamReflectionViewProps {
 export function TeamReflectionView({
   reflections,
   rocnikovaReflections,
-  teamMembers = [],
+  teamMembers: _teamMembers = [],
   onboardingYear,
 }: TeamReflectionViewProps) {
   const [monthlyItems, setMonthlyItems] = useState(reflections)
@@ -91,7 +90,6 @@ export function TeamReflectionView({
   const [filterTab, setFilterTab] = useState<FilterTab>("all")
 
   const currentMonth = getCurrentMonth()
-  const isMay = isRocnikovaMonth(currentMonth)
 
   const hasCurrentMonthly = monthlyItems.some((r) => r.month === currentMonth)
   const hasCurrentRocnikova = rocnikovaItems.some((r) => r.reflection_month === getMayMonth())

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookOpen, ExternalLink, Library, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, ExternalLink, Library } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StorageImage } from '@/components/storage/storage-image';

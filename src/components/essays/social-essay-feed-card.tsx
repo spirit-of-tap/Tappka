@@ -90,10 +90,6 @@ export function SocialEssayFeedCard({
 
   const isSpotlight = Boolean(spotlightLabel);
 
-  const isTitleSameAsBook =
-    essay.book &&
-    essay.title.toLowerCase().trim() === essay.book.title_cs.toLowerCase().trim();
-
   return (
     <article
       className={cn(

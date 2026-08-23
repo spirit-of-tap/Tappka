@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DiscoveryMixedFeed, type EssayWithVoted } from './discovery-mixed-feed';
 import type { BookWithProfiles } from '@/lib/books/types';

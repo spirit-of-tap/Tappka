@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import {
   Save, Send, BookOpen, Check, CloudOff, PenLine, Globe, Search,
