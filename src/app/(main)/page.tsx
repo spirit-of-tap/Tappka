@@ -31,7 +31,7 @@ import { MessageCircleQuestion, ExternalLink } from "lucide-react";
 const TEAMS_SUPPORT_URL =
   "https://teams.microsoft.com/l/channel/19%3Aea499f40a2864e03862e5b517fa824a8%40thread.tacv2/HelpDesk%20IT%20House?groupId=c84b63de-1603-4ba8-98a6-9825300c0f22&tenantId=f26a48e1-fc21-461a-b97f-ac5bd535f341";
 
-const EMPTY_STATS = { approved_points: 0, pending_points: 0, essay_count: 0 };
+const EMPTY_STATS = { approved_points: 0, pending_points: 0, essay_count: 0, approved_points_this_semester: 0 };
 
 async function getNextReservation(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -137,9 +137,9 @@ export default async function DashboardPage() {
 
       {/* Hero greeting */}
       <div className="mb-6">
-        <h2 className="text-3xl font-heading font-bold tracking-tight">
+        <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
           {firstName ? `Vítej, ${firstName}!` : "Vítej!"}
-        </h2>
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm first-letter:uppercase">
           {today}
         </p>

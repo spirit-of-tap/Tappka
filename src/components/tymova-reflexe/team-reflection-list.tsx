@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Plus, CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import {
   Empty,
   EmptyMedia,
@@ -79,7 +80,7 @@ export function TeamReflectionList({
 
       {!hasCurrentReflection && (
         <div className="flex items-center justify-end gap-4">
-          <Button size="sm" asChild>
+          <Button size="sm" asChild className="hidden sm:inline-flex">
             <Link href={newReflectionHref}>
               <Plus className="size-4" />
               Nová reflexe
@@ -131,6 +132,8 @@ export function TeamReflectionList({
           </div>
         )}
       </div>
+      {!hasCurrentReflection && <MobileFab label="Nová reflexe" href={newReflectionHref} />}
+      <MobileFabSpacer />
     </div>
   )
 }

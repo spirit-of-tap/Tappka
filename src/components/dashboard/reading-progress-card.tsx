@@ -8,11 +8,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { PersonalProgress } from '@/components/essays/personal-progress';
+import { MetricProgress } from '@/components/metrics/metric-progress';
+import { getMetric } from '@/lib/metrics/config';
 
 interface ReadingProgressCardProps {
-  stats: { approved_points: number; pending_points: number; essay_count: number };
+  stats: { approved_points: number; pending_points: number; essay_count: number; approved_points_this_semester?: number };
 }
+
+const KNIZNI_BODY_METRIC = getMetric('knizni-body');
 
 export function ReadingProgressCard({ stats }: ReadingProgressCardProps) {
   return (
@@ -40,9 +43,19 @@ export function ReadingProgressCard({ stats }: ReadingProgressCardProps) {
         </CardAction>
       </CardHeader>
       <CardContent>
-        <PersonalProgress
-          approved_points={stats.approved_points}
-          pending_points={stats.pending_points}
+        <MetricProgress
+          goals={[
+            {
+              current: stats.approved_points_this_semester ?? 0,
+              target: KNIZNI_BODY_METRIC.target ?? 0,
+              label: 'tento semestr',
+            },
+            {
+              current: stats.approved_points,
+              target: KNIZNI_BODY_METRIC.totalForStudy ?? 0,
+              label: 'za studium',
+            },
+          ]}
         />
       </CardContent>
     </Card>

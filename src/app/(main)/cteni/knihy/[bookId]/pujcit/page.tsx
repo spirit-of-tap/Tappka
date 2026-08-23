@@ -1,6 +1,4 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -8,7 +6,12 @@ import { getBookById } from '@/lib/books/queries';
 import { getBookLibraryInfo, getUserActiveLoanDetails } from '@/lib/library/queries';
 import { BorrowPanel } from '@/components/library/borrow-panel';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
+
+export const metadata = {
+  title: 'Půjčit knihu | Tappka',
+};
 
 interface PageProps {
   params: Promise<{ bookId: string }>;
@@ -34,7 +37,7 @@ export default async function BorrowBookPage({ params }: PageProps) {
     return (
       <PageShell size="narrow" className="flex flex-col items-center gap-2 py-16 text-center">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold">{book.title_cs}</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">{book.title_cs}</h1>
           <BookStatusBadges book={book} />
         </div>
         <p className="text-muted-foreground">Tato kniha není dostupná v TAP Knihovně.</p>
@@ -46,13 +49,7 @@ export default async function BorrowBookPage({ params }: PageProps) {
 
   return (
     <PageShell size="narrow" className="space-y-2">
-      <Link
-        href={`/cteni/knihy/${book.id}`}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Zpět na detail knihy
-      </Link>
+      <PageBack href={`/cteni/knihy/${book.id}`} label="Zpět na detail knihy" />
       <BorrowPanel
         bookId={book.id}
         title={book.title_cs}

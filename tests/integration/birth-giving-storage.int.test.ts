@@ -605,6 +605,7 @@ describe("Birth Giving storage RPCs", () => {
       const claim = claimClient.query<{ storage_path: string }>(
         "select storage_path from public.birth_giving_claim_storage_cleanup(interval '1 hour', 1)",
       );
+      claim.catch(() => undefined);
       await waitForBlockedConnection("birth-giving-confirmation-cleanup-race");
       await confirmationClient.query("commit");
 

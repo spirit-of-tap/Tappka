@@ -41,7 +41,10 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Týmové dokumenty", url: "/tymove-dokumenty", icon: Files, betaOnly: true, description: "Smlouvy, finanční politika a další dokumenty týmu." },
   { title: "Nástroje a techniky", url: "/nastroje-techniky", icon: Wrench, betaOnly: true, featured: true, description: "Katalog modelů, technik a nástrojů pro práci." },
   { title: "Osobnostní testy", url: "/komunita/profil", icon: Brain, betaOnly: true, ownProfileTab: "osobnostni-testy", description: "Výsledky osobnostních testů na tvém profilu." },
-  // Sidebar renders Čtení and Osobnostní testy via title-based special-case branches — keep betaOnly here, and the generic beta branch must run after those special cases.
+  // Sidebar renders Osobnostní testy via a title-based special-case branch —
+  // keep betaOnly here, and the generic beta branch must run after that
+  // special case. Čtení renders as a plain link; its sub-navigation lives in
+  // src/app/(main)/cteni/layout.tsx as a tab bar.
   { title: "Čtení", url: "/cteni/prehled", icon: BookOpen, betaOnly: true, featured: true, description: "Knihovna knih, eseje a jejich hodnocení." },
   { title: "Birth Giving", url: "/birth-giving", icon: Gift, betaOnly: true, description: "Týmová setkání Birth Giving a retrospektivy." },
 ];

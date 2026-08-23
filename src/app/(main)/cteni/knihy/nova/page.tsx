@@ -1,9 +1,10 @@
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { AddBookFlow } from '@/components/books/add-book/add-book-flow';
+
+export const metadata = {
+  title: 'Přidat knihu do BOBa | Tappka',
+};
 
 interface NovaKnihaPageProps {
   searchParams: Promise<{ q?: string; from?: string; essayId?: string }>;
@@ -18,15 +19,8 @@ export default async function NovaKnihaPage({ searchParams }: NovaKnihaPageProps
 
   return (
     <PageShell size="narrow">
-      <Button variant="ghost" asChild className="gap-2">
-        <Link href={backHref}>
-          <ArrowLeft className="size-4" />
-          {backLabel}
-        </Link>
-      </Button>
-
       {/* No subtitle: the flow map below states the steps and who approves. */}
-      <h1 className="font-heading text-2xl font-bold">Přidat knihu do BOBa</h1>
+      <PageHeader title="Přidat knihu do BOBa" back={{ href: backHref, label: backLabel }} />
 
       <AddBookFlow
         initialQuery={q ?? ''}

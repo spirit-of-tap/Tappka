@@ -10,7 +10,7 @@ import { listTeamDocuments } from "@/lib/team-documents/queries"
 
 export const metadata = {
   title: "Týmové dokumenty | Tappka",
-  description: "Týmová smlouva, finanční směrnice a další verzované dokumenty",
+  description: "Jedno místo pro důležité týmové dokumenty a jejich historii",
 }
 
 export default async function TeamDocumentsPage() {
@@ -28,7 +28,7 @@ export default async function TeamDocumentsPage() {
     <PageShell className="max-w-5xl">
       <PageHeader
         title="Týmové dokumenty"
-        description="Jedno místo pro důležité týmové dokumenty a jejich historii."
+        description="Jedno místo pro důležité týmové dokumenty a jejich historii"
         count={{ value: documents.length, label: "dokumentů" }}
       />
 

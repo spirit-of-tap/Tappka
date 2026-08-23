@@ -8,7 +8,7 @@ import { PageShell } from "@/components/ui/page-shell";
 
 export const metadata = {
   title: "Moduly | Tappka",
-  description: "Všechny moduly Tappky na jednom místě",
+  description: "Všechny části Tappky na jednom místě",
 };
 
 export default async function ModulyPage() {
@@ -21,7 +21,7 @@ export default async function ModulyPage() {
     <PageShell>
       <PageHeader
         title="Moduly"
-        description="Všechny části Tappky na jednom místě."
+        description="Všechny části Tappky na jednom místě"
       />
       <ModuleGrid modules={getHubModules(isBeta)} profileId={profile.id} />
     </PageShell>

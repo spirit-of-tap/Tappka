@@ -8,6 +8,7 @@ import {
   Save, Send, BookOpen, Check, CloudOff, PenLine, Globe, Search,
   MoreHorizontal, History, Trash2,
 } from 'lucide-react';
+import { BackButton } from './back-button';
 import { TiptapEditor } from './tiptap-editor';
 import { EssayHistorySheet } from './essay-history-sheet';
 import { EssayDeleteButton } from './essay-delete-button';
@@ -267,26 +268,65 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
 
 
   return (
-    <div className="space-y-5">
-      {/* Status strip: what this essay is, whether it is safe, what you can do
-          with it. The badge and the save state sit together on purpose. */}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b pb-3">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+    <div className="space-y-4">
+      {/* Top navigation & action bar: Back button on the left, Primary action + more options on the right */}
+      <div className="flex items-center justify-between gap-3">
+        <BackButton />
+
+        <div className="flex items-center gap-1.5">
+          <Button
+            onClick={() => void handlePrimaryAction()}
+            disabled={isPublishing || needsTitle}
+            size="sm"
+          >
+            {isPublishing ? (
+              <Spinner className="mr-1.5 size-4" />
+            ) : isDraft ? (
+              <Send className="mr-1.5 size-4" />
+            ) : (
+              <Save className="mr-1.5 size-4" />
+            )}
+            {isDraft ? 'Zveřejnit' : 'Uložit změny'}
+          </Button>
+
+          {essayId && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="size-8" aria-label="Další akce">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setHistoryOpen(true)}>
+                  <History className="size-4" />
+                  Historie verzí
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+                  <Trash2 className="size-4" />
+                  {isDraft ? 'Smazat koncept' : 'Smazat esej'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
+
+      {/* Status strip: Draft/published badge + live autosave status */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-xs border-b pb-3">
+        <div className="flex items-center gap-2 flex-wrap">
           {isDraft ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/40 bg-primary/5 px-2.5 py-1 font-medium text-primary">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/40 bg-primary/5 px-2.5 py-0.5 font-medium text-primary text-xs">
               <PenLine className="size-3" />
               Koncept
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-0.5 font-medium text-muted-foreground text-xs">
               <Globe className="size-3" />
               Zveřejněná
             </span>
           )}
           <SaveStatus status={status} lastSavedAt={lastSavedAt} onRetry={() => void retry()} />
-          {/* Only the koncept case earns a sentence — that a draft is private is
-              worth teaching, whereas "saving publishes it" is self-evident. Kept
-              off small screens, where the badge alone carries it. */}
           {isDraft && (
             <>
               <span aria-hidden className="hidden text-muted-foreground/40 sm:inline">·</span>
@@ -297,54 +337,9 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-1.5">
-            <Button
-              onClick={() => void handlePrimaryAction()}
-              disabled={isPublishing || needsTitle}
-              size="sm"
-            >
-              {isPublishing ? (
-                <Spinner className="mr-2 size-4" />
-              ) : isDraft ? (
-                <Send className="mr-2 size-4" />
-              ) : (
-                <Save className="mr-2 size-4" />
-              )}
-              {isDraft ? 'Zveřejnit' : 'Uložit změny'}
-            </Button>
-
-            {/* History and delete live behind one control: three buttons across
-                the top crowded the strip, and only one of them is the action an
-                author came here to take. Nothing to show before the essay
-                exists as a row. */}
-            {essayId && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8" aria-label="Další akce">
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => setHistoryOpen(true)}>
-                    <History className="size-4" />
-                    Historie verzí
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-                    <Trash2 className="size-4" />
-                    {isDraft ? 'Smazat koncept' : 'Smazat esej'}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-          {/* The publish button is disabled without a title; say why rather
-              than leaving the author to guess at a dead control. */}
-          {needsTitle && (
-            <p className="text-xs text-muted-foreground">Esej potřebuje název, aby šla zveřejnit.</p>
-          )}
-        </div>
+        {needsTitle && (
+          <p className="text-xs text-muted-foreground">Esej potřebuje název, aby šla zveřejnit.</p>
+        )}
       </div>
 
       {essayId && (

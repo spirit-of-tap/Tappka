@@ -1,15 +1,17 @@
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
-import { Button } from '@/components/ui/button';
 import { BookEditForm } from '@/components/books/book-edit-form';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface PageProps {
   params: Promise<{ bookId: string }>;
 }
+
+export const metadata = {
+  title: 'Upravit knihu | Tappka',
+};
 
 export default async function BookEditPage({ params }: PageProps) {
   const { bookId } = await params;
@@ -27,16 +29,11 @@ export default async function BookEditPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto py-6 space-y-6 max-w-2xl">
-      <Button variant="ghost" asChild className="gap-2">
-        <Link href={`/cteni/knihy/${bookId}`}>
-          <ArrowLeft className="size-4" />
-          Zpět na knihu
-        </Link>
-      </Button>
-      <div>
-        <h1 className="text-2xl font-bold">Upravit knihu</h1>
-        <p className="text-muted-foreground text-sm mt-1">{book.title_cs}</p>
-      </div>
+      <PageHeader
+        title="Upravit knihu"
+        description={book.title_cs}
+        back={{ href: `/cteni/knihy/${bookId}`, label: "Zpět na knihu" }}
+      />
       <BookEditForm book={book} />
     </div>
   );

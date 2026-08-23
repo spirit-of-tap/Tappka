@@ -7,9 +7,9 @@ import {
 
 /**
  * A unique ISBN + unique title per test. findDuplicate returns a match when
- * ISBN-13 collides, but ALSO when (normalized author, normalized title) match —
- * so the submit path is only collision-free when every test submits a book
- * combination no other test (or a leftover from a crashed run) could produce.
+ * ISBN-13 collides, or when one normalized title contains the other — author
+ * is NOT part of the match, so no submitted title may contain a real catalog
+ * title (e.g. "Sprint") even with a unique suffix.
  */
 function uniqueIsbn(): string {
   return `978${String(Math.floor(Math.random() * 1e10)).padStart(10, '0')}`;
@@ -105,9 +105,10 @@ test.describe('adding a book', () => {
     const { cookie } = await getSetupSessionCookie();
     await setAuthCookie(page.context(), cookie);
     const isbn = uniqueIsbn();
-    // A unique title matters as much as the ISBN: dedupe matches on title for a
-    // given author, so two parallel tests must never share (author, title).
-    const title = uniqueTitle('E2E Sprint Manual', isbn);
+    // The catalog already holds "Sprint" by Jake Knapp, and dedupe flags a
+    // stored title contained in the submitted one — so the submitted title
+    // must not contain "sprint", even though the search query does.
+    const title = uniqueTitle('E2E Five-Day Manual', isbn);
     await stubFlow(page, { ...sprintCandidate(isbn), title }, {
       ...ENRICHED(isbn),
       data: { ...ENRICHED(isbn).data, title_cs: title, title_en: title },

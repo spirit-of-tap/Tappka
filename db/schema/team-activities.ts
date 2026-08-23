@@ -1,7 +1,9 @@
-import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, date, index } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, date, index, pgEnum, unique } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { teams } from "./teams"
 import { profiles } from "./profiles"
+
+export const attendanceStatus = pgEnum("attendance_status", ["present", "absent", "excused", "late"])
 
 export const teamActivities = pgTable("team_activities", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -11,6 +13,7 @@ export const teamActivities = pgTable("team_activities", {
 	participants: text("participants"),
 	reason: text("reason"),
 	reflection: text("reflection"),
+	imagePath: text("image_path"),
 	removedAt: timestamp("removed_at", { withTimezone: true, mode: 'string' }),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -38,3 +41,64 @@ export const teamActivities = pgTable("team_activities", {
 	pgPolicy("Team members can update activities", { as: "permissive", for: "update", to: ["authenticated"], using: sql`team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL)`, withCheck: sql`team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL)` }),
 	pgPolicy("Team members can delete activities", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL)` }),
 ]).enableRLS()
+
+export const teamActivityAttendees = pgTable("team_activity_attendees", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	activityId: uuid("activity_id").notNull(),
+	profileId: uuid("profile_id").notNull(),
+	status: attendanceStatus().default("present").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdByProfileId: uuid("created_by_profile_id").notNull(),
+	updatedByProfileId: uuid("updated_by_profile_id").notNull(),
+}, (table) => [
+	unique("team_activity_attendees_activity_profile_key").on(table.activityId, table.profileId),
+	index("team_activity_attendees_activity_idx").using("btree", table.activityId.asc().nullsLast().op("uuid_ops")),
+	index("team_activity_attendees_profile_idx").using("btree", table.profileId.asc().nullsLast().op("uuid_ops")),
+	foreignKey({
+		columns: [table.activityId],
+		foreignColumns: [teamActivities.id],
+		name: "team_activity_attendees_activity_id_fkey",
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.profileId],
+		foreignColumns: [profiles.id],
+		name: "team_activity_attendees_profile_id_fkey",
+	}).onDelete("cascade"),
+	foreignKey({
+		columns: [table.createdByProfileId],
+		foreignColumns: [profiles.id],
+		name: "team_activity_attendees_created_by_profile_id_fkey",
+	}).onDelete("restrict"),
+	foreignKey({
+		columns: [table.updatedByProfileId],
+		foreignColumns: [profiles.id],
+		name: "team_activity_attendees_updated_by_profile_id_fkey",
+	}).onDelete("restrict"),
+	pgPolicy("Team members can view activity attendees", {
+		as: "permissive",
+		for: "select",
+		to: ["authenticated"],
+		using: sql`activity_id IN (SELECT id FROM team_activities WHERE team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL))`,
+	}),
+	pgPolicy("Team members can create activity attendees", {
+		as: "permissive",
+		for: "insert",
+		to: ["authenticated"],
+		withCheck: sql`activity_id IN (SELECT id FROM team_activities WHERE team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL))`,
+	}),
+	pgPolicy("Team members can update activity attendees", {
+		as: "permissive",
+		for: "update",
+		to: ["authenticated"],
+		using: sql`activity_id IN (SELECT id FROM team_activities WHERE team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL))`,
+		withCheck: sql`activity_id IN (SELECT id FROM team_activities WHERE team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL))`,
+	}),
+	pgPolicy("Team members can delete activity attendees", {
+		as: "permissive",
+		for: "delete",
+		to: ["authenticated"],
+		using: sql`activity_id IN (SELECT id FROM team_activities WHERE team_id IN (SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL))`,
+	}),
+]).enableRLS()
+

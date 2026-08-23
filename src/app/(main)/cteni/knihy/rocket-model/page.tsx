@@ -1,12 +1,19 @@
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, ExternalLink, Rocket } from 'lucide-react';
+import { BookOpen, ExternalLink } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getRocketModelBooks } from '@/lib/books/queries';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
-import { Button } from '@/components/ui/button';
+import { PageBack } from '@/components/ui/page-back';
+import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { formatPointsWithLabel } from '@/lib/books/points';
+import { pluralizeCz } from '@/lib/utils/pluralize-cz';
+
+export const metadata = {
+  title: 'Rocket Model | Tappka',
+  description: 'Klíčové knihy programu — pomáhají Téčkům nastartovat cestu rychleji a bez oklik',
+};
 
 export default async function RocketModelPage() {
   const supabase = await createClient();
@@ -14,29 +21,13 @@ export default async function RocketModelPage() {
 
   return (
     <PageShell size="wide" className="space-y-8">
-      <Button variant="ghost" asChild className="-ml-2 gap-2">
-        <Link href="/cteni/hledat">
-          <ArrowLeft className="size-4" />
-          Zpět do hledání
-        </Link>
-      </Button>
+      <PageBack href="/cteni/hledat" label="Zpět do hledání" />
 
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background p-8">
-        <div className="mb-4 flex items-center gap-2">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-            <Rocket className="size-5" />
-          </span>
-          <span className="text-xs font-semibold uppercase tracking-wide text-primary">
-            Klíčové knihy programu
-          </span>
-        </div>
-        <h1 className="mb-2 text-3xl font-bold tracking-tight">Rocket Model</h1>
-        <p className="max-w-2xl leading-relaxed text-muted-foreground">
-          {books.length} {books.length === 1 ? 'kniha klíčová' : books.length < 5 ? 'knihy klíčové' : 'knih klíčových'} pro
-          studijní program — pomáhají Téčkům nastartovat jejich cestu rychleji a bez zbytečných oklik.
-        </p>
-      </div>
+      <PageHeader
+        title="Rocket Model"
+        description="Klíčové knihy programu — pomáhají Téčkům nastartovat cestu rychleji a bez oklik"
+        count={{ value: books.length, label: pluralizeCz(books.length, ['kniha', 'knihy', 'knih']) }}
+      />
 
       {books.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground">Zatím žádné knihy v Rocket Modelu.</div>

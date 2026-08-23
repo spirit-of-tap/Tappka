@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Roboto, Pacifico } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "@/components/ui/sonner";
@@ -44,26 +44,35 @@ export const viewport: Viewport = {
   themeColor: "#b31b1b",
 };
 
-// TAP Brand Typography
-const poppins = Poppins({
+// TAP Brand Typography (self-hosted via next/font/local so builds never depend
+// on a network connection to Google Fonts). Each weight ships a single woff2
+// that already contains both the latin and latin-ext subsets (Czech diacritics).
+const poppins = localFont({
   variable: "--font-poppins",
-  weight: ["400", "600", "700", "800"],
   display: "swap",
-  subsets: ["latin", "latin-ext"],
+  src: [
+    { path: "./fonts/poppins-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/poppins-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/poppins-700.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/poppins-800.woff2", weight: "800", style: "normal" },
+  ],
 });
 
-const roboto = Roboto({
+const roboto = localFont({
   variable: "--font-roboto",
-  weight: ["300", "400", "500", "700"],
   display: "swap",
-  subsets: ["latin", "latin-ext"],
+  src: [
+    { path: "./fonts/roboto-300.woff2", weight: "300", style: "normal" },
+    { path: "./fonts/roboto-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/roboto-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/roboto-700.woff2", weight: "700", style: "normal" },
+  ],
 });
 
-const pacifico = Pacifico({
+const pacifico = localFont({
   variable: "--font-pacifico",
-  weight: "400",
   display: "swap",
-  subsets: ["latin"],
+  src: [{ path: "./fonts/pacifico-400.woff2", weight: "400", style: "normal" }],
 });
 
 export default function RootLayout({

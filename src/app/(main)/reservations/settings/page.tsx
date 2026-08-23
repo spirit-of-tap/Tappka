@@ -6,11 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrainingSessionsManager } from "@/components/reservations/training-sessions-manager";
 import { ScheduleBreaksManager } from "@/components/reservations/schedule-breaks-manager";
+import { PageHeader } from "@/components/ui/page-header";
 import type { Room, RecurringSchedule, ScheduleBreak } from "@/lib/reservations/types";
 
 export const metadata = {
   title: "Nastavení rezervací | Tappka",
-  description: "Správa Training Sessions a výjimek z rozvrhu",
+  description: "Spravuj Training Sessions a výjimky v rozvrhu",
 };
 
 /**
@@ -73,13 +74,11 @@ export default async function ReservationSettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-heading font-bold">Nastavení rezervací</h2>
-        <p className="text-muted-foreground mt-1">
-          Správa Training Sessions, Days of Joy a dalších výjimek
-        </p>
-      </div>
+      <PageHeader
+        title="Nastavení rezervací"
+        description="Spravuj Training Sessions a výjimky v rozvrhu"
+        back={{ href: "/reservations", label: "Zpět na rezervace" }}
+      />
 
       {/* Tabs */}
       <Tabs defaultValue="training-sessions" className="space-y-4">

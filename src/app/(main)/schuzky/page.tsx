@@ -2,14 +2,12 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth/session"
 import { listCustomerMeetings } from "@/lib/customer-meetings/queries"
-import { CustomerMeetingList } from "@/components/customer-meetings/customer-meeting-list"
-import { InfoCard } from "@/components/customer-meetings/info-card"
-import { PageHeader } from "@/components/ui/page-header"
-import { pluralizeCz } from "@/lib/utils/pluralize-cz"
+import { CustomerMeetingsView } from "@/components/customer-meetings/customer-meetings-view"
+import { PageShell } from "@/components/ui/page-shell"
 
 export const metadata = {
   title: "Zákaznické schůzky | Tappka",
-  description: "Záznamník zákaznických schůzek",
+  description: "Záznamník schůzek s lidmi z praxe",
 }
 
 export default async function SchuzkyPage() {
@@ -23,15 +21,13 @@ export default async function SchuzkyPage() {
 
   const meetings = await listCustomerMeetings(supabase, profile.id)
 
+  // Computed once on the server and passed down so client-side month grouping
+  // hydrates against the exact same reference time (no TZ/boundary drift).
+  const now = new Date()
+
   return (
-    <div className="container mx-auto max-w-5xl py-4 sm:py-6 px-3 sm:px-6 space-y-4 sm:space-y-6">
-      <PageHeader
-        title="Zákaznické schůzky"
-        description="Záznamník schůzek s lidmi z praxe"
-        count={{ value: meetings.length, label: pluralizeCz(meetings.length, ["schůzka", "schůzky", "schůzek"]) }}
-      />
-      <InfoCard />
-      <CustomerMeetingList meetings={meetings} profileId={profile.id} />
-    </div>
+    <PageShell className="max-w-5xl">
+      <CustomerMeetingsView meetings={meetings} profileId={profile.id} now={now} />
+    </PageShell>
   )
 }

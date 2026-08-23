@@ -1,7 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { getProfiles, getTeamsWithCount, getProfilePictureUrl } from '@/lib/komunita/queries';
 import { KomunitaContent } from '@/components/komunita/komunita-content';
+import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
+
+export const metadata = {
+  title: 'Komunita | Tappka',
+  description: 'Prohlížej si členy:ky komunity a kontaktuj je',
+};
 
 interface PageProps {
   searchParams: Promise<{
@@ -26,13 +32,10 @@ export default async function KomunitaPage({ searchParams }: PageProps) {
 
   return (
     <PageShell>
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Komunita</h1>
-        <p className="text-muted-foreground">
-          Prohlížejte a kontaktujte členy:ky komunity
-        </p>
-      </div>
+      <PageHeader
+        title="Komunita"
+        description="Prohlížej si členy:ky komunity a kontaktuj je"
+      />
 
       <KomunitaContent
         profiles={profiles}

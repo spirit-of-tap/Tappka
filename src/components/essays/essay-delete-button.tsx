@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { formatPointsWithLabel } from '@/lib/books/points';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,7 +83,7 @@ export function EssayDeleteButton({
             {isDraft
               ? 'Rozepsaný text se ztratí. Tuhle akci nevrátíš.'
               : 'Esej zmizí z tvého přehledu i z týmové stránky. Tuhle akci nevrátíš.'}
-            {!isDraft && points > 0 && ` Přijdeš i o ${points} BookPoints, které za ni máš.`}
+            {!isDraft && points > 0 && ` Přijdeš i o ${formatPointsWithLabel(points)}, které za ni máš.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

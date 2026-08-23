@@ -1,15 +1,15 @@
 "use client"
 
 import { useEffect, useRef, useCallback } from "react"
-import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { cs } from "date-fns/locale"
-import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react"
+import { CheckCircle2, Loader2 } from "lucide-react"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
+import { PageBack } from "@/components/ui/page-back"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -117,14 +117,8 @@ export function TeamReflectionDetail({ reflection: initial, profileId }: TeamRef
     <div className="container mx-auto max-w-4xl py-4 sm:py-6 px-3 sm:px-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <Link
-            href="/tymova-reflexe"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="size-4" />
-            Zpět na přehled
-          </Link>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+          <PageBack href="/tymova-reflexe" label="Zpět na přehled" />
+          <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
             Týmová reflexe — {monthLabel(data.month)}
           </h1>
           {data.updated_by && (
