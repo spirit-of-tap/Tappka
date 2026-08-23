@@ -45,6 +45,7 @@ interface IndividualCoachingSessionsViewProps {
   coachProfiles: Pick<Profile, "id" | "name" | "picture">[]
   /** Injectable for tests. */
   now?: Date
+  onboardingYear?: number | null
 }
 
 function matchesSearch(
@@ -78,6 +79,7 @@ export function IndividualCoachingSessionsView({
   profileId,
   coachProfiles,
   now = new Date(),
+  onboardingYear,
 }: IndividualCoachingSessionsViewProps) {
   const [items, setItems] = useState(sessions)
   const [createOpen, setCreateOpen] = useState(false)
@@ -230,9 +232,9 @@ export function IndividualCoachingSessionsView({
             {groups
               .filter((g) => g.items.length > 0)
               .map((group, idx, activeGroups) => {
-                const semesterInfo = getSemesterInfo(group.key)
+                const semesterInfo = getSemesterInfo(group.key, onboardingYear)
                 const prevSemesterInfo =
-                  idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key) : null
+                  idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key, onboardingYear) : null
                 const isNewSemester =
                   !prevSemesterInfo || prevSemesterInfo.key !== semesterInfo?.key
 

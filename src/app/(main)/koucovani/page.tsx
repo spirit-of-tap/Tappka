@@ -35,6 +35,7 @@ export default async function KoucovaniPage() {
         profileId={profile.id}
         coachProfiles={coachProfiles}
         now={now}
+        onboardingYear={profile.team?.onboardingYear ?? null}
       />
     </PageShell>
   )

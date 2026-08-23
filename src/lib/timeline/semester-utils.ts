@@ -12,8 +12,8 @@ export interface SemesterInfo {
   semesterName: "Zimní semestr" | "Letní semestr"
   academicStartYear: number
   academicYearLabel: string // e.g. "2025/2026"
-  studyYear: number | null // e.g. 1, 2, 3 (if onboardingYear is provided)
-  label: string // e.g. "1. ročník — Zimní semestr (2025/2026)" or "Zimní semestr 2025/2026"
+  studyYear: number | null // e.g. 1, 2, 3
+  label: string // e.g. "Zimní semestr — 1. ročník (2025/2026)" or "Zimní semestr (2025/2026)"
 }
 
 export function getSemesterInfo(
@@ -46,16 +46,26 @@ export function getSemesterInfo(
   const key = `${academicStartYear}-${isWinter ? "ZS" : "LS"}`
 
   let studyYear: number | null = null
-  if (onboardingYear && onboardingYear > 1900 && onboardingYear <= 2100) {
-    const diff = academicStartYear - onboardingYear
-    if (diff >= 0 && diff < 10) {
-      studyYear = diff + 1
+  if (typeof onboardingYear === "number" && onboardingYear > 0) {
+    if (onboardingYear >= 1900 && onboardingYear <= 2100) {
+      // 4-digit calendar start year (e.g. 2025)
+      const diff = academicStartYear - onboardingYear
+      if (diff >= 0 && diff < 10) {
+        studyYear = diff + 1
+      }
+    } else if (onboardingYear <= 6) {
+      // Grade number relative to reference academic start year 2025 (e.g. 1, 2, 3)
+      const baseStartYear = 2025 - (onboardingYear - 1)
+      const diff = academicStartYear - baseStartYear
+      if (diff >= 0 && diff < 10) {
+        studyYear = diff + 1
+      }
     }
   }
 
   const label = studyYear
-    ? `${studyYear}. ročník — ${semesterName} (${academicYearLabel})`
-    : `${semesterName} ${academicYearLabel}`
+    ? `${semesterName} — ${studyYear}. ročník (${academicYearLabel})`
+    : `${semesterName} (${academicYearLabel})`
 
   return {
     key,

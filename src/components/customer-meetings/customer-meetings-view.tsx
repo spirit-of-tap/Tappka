@@ -43,6 +43,7 @@ interface CustomerMeetingsViewProps {
   profileId: string
   /** Injectable for tests. */
   now?: Date
+  onboardingYear?: number | null
 }
 
 function matchesSearch(meeting: CustomerMeeting, normalizedQuery: string): boolean {
@@ -65,6 +66,7 @@ export function CustomerMeetingsView({
   meetings,
   profileId,
   now = new Date(),
+  onboardingYear,
 }: CustomerMeetingsViewProps) {
   const [items, setItems] = useState(meetings)
   const [createOpen, setCreateOpen] = useState(false)
@@ -202,9 +204,9 @@ export function CustomerMeetingsView({
           {groups
             .filter((g) => g.items.length > 0)
             .map((group, idx, activeGroups) => {
-              const semesterInfo = getSemesterInfo(group.key)
+              const semesterInfo = getSemesterInfo(group.key, onboardingYear)
               const prevSemesterInfo =
-                idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key) : null
+                idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key, onboardingYear) : null
               const isNewSemester = !prevSemesterInfo || prevSemesterInfo.key !== semesterInfo?.key
 
               return (

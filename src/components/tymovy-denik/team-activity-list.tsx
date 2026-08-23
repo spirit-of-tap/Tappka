@@ -55,9 +55,14 @@ type ViewMode = "timeline" | "grid"
 interface TeamActivityListProps {
   activities: TeamActivityWithCreator[]
   teamMembers?: TeamMemberProfile[]
+  onboardingYear?: number | null
 }
 
-export function TeamActivityList({ activities, teamMembers = [] }: TeamActivityListProps) {
+export function TeamActivityList({
+  activities,
+  teamMembers = [],
+  onboardingYear,
+}: TeamActivityListProps) {
   const [items, setItems] = useState(activities)
   const [createOpen, setCreateOpen] = useState(false)
   const [query, setQuery] = useState("")
@@ -242,9 +247,9 @@ export function TeamActivityList({ activities, teamMembers = [] }: TeamActivityL
           {groups
             .filter((g) => g.items.length > 0)
             .map((group, idx, activeGroups) => {
-              const semesterInfo = getSemesterInfo(group.key)
+              const semesterInfo = getSemesterInfo(group.key, onboardingYear)
               const prevSemesterInfo =
-                idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key) : null
+                idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key, onboardingYear) : null
               const isNewSemester =
                 !prevSemesterInfo || prevSemesterInfo.key !== semesterInfo?.key
 
@@ -285,9 +290,9 @@ export function TeamActivityList({ activities, teamMembers = [] }: TeamActivityL
           {groups
             .filter((g) => g.items.length > 0)
             .map((group, idx, activeGroups) => {
-              const semesterInfo = getSemesterInfo(group.key)
+              const semesterInfo = getSemesterInfo(group.key, onboardingYear)
               const prevSemesterInfo =
-                idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key) : null
+                idx > 0 ? getSemesterInfo(activeGroups[idx - 1].key, onboardingYear) : null
               const isNewSemester =
                 !prevSemesterInfo || prevSemesterInfo.key !== semesterInfo?.key
 
