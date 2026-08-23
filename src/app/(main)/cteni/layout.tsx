@@ -15,8 +15,8 @@ export default async function CteniLayout({ children }: { children: ReactNode })
 
   const isCoachOrAdmin = profile.role === 'coach' || profile.role === 'admin';
   let reviewCount = 0;
-  if (isCoachOrAdmin && profile.team_id) {
-    reviewCount = await getCoachUnreadCount(supabase, profile.id, profile.team_id);
+  if (isCoachOrAdmin) {
+    reviewCount = await getCoachUnreadCount(supabase, profile.id, profile.team_id ?? undefined);
   }
 
   return (

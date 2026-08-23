@@ -1,0 +1,266 @@
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { CoachReviewList } from './coach-review-list';
+import type { CoachReviewEssay } from '@/lib/essays/types';
+
+vi.mock('./coach-read-button', () => ({
+  CoachReadButton: ({ onToggled }: { onToggled?: () => void }) => (
+    <button onClick={onToggled}>Označit jako přečtené</button>
+  ),
+}));
+
+function mockEssay(overrides: Partial<CoachReviewEssay> = {}): CoachReviewEssay {
+  return {
+    id: 'essay-1',
+    author_profile_id: 'user-1',
+    book_id: 'book-1',
+    title: 'Reflexe a aplikace v týmu',
+    content_json: {},
+    content_text: 'Tento text shrnuje klíčové myšlenky z knihy...',
+    published_at: '2026-08-23T10:00:00Z',
+    view_count: 0,
+    vote_count: 0,
+    comment_count: 0,
+    created_at: '2026-08-23T10:00:00Z',
+    updated_at: '2026-08-23T10:00:00Z',
+    pinned_at: null,
+    pinned_by_profile_id: null,
+    removed_at: null,
+    read_at: null,
+    author: {
+      id: 'user-1',
+      name: 'Matěj Vrbas',
+      picture: null,
+      role: 'student',
+      team_id: 'team-1',
+    },
+    book: {
+      id: 'book-1',
+      title_cs: 'The Lean Startup',
+      author: 'Eric Ries',
+      book_points: 3,
+      list_status: 'shortlist',
+      is_rocket_model: true,
+      google_books_cover_url: 'covers/lean-startup.jpg',
+      highlight_category: null,
+    },
+    ...overrides,
+  };
+}
+
+describe('CoachReviewList', () => {
+  const teams = [
+    { id: 'team-1', name: 'Alpha' },
+    { id: 'team-2', name: 'Beta' },
+  ];
+
+  it('renders author book points and book info but omits content text snippet', () => {
+    const essay = mockEssay();
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+        authorPointsMap={{ 'user-1': 24 }}
+      />,
+    );
+
+    expect(screen.getByText('Matěj Vrbas')).toBeInTheDocument();
+    expect(screen.getByText('24 b.')).toBeInTheDocument();
+    expect(screen.getByText('Reflexe a aplikace v týmu')).toBeInTheDocument();
+    expect(screen.getByText('The Lean Startup')).toBeInTheDocument();
+    expect(screen.queryByText('Tento text shrnuje klíčové myšlenky z knihy...')).not.toBeInTheDocument();
+  });
+
+  it('filters essays by team correctly', () => {
+    const essay1 = mockEssay({ id: 'e1', title: 'Esej Alpha', author: { id: 'u1', name: 'Student 1', picture: null, role: 'student', team_id: 'team-1' } });
+    const essay2 = mockEssay({ id: 'e2', title: 'Esej Beta', author: { id: 'u2', name: 'Student 2', picture: null, role: 'student', team_id: 'team-2' } });
+
+    const { unmount } = render(
+      <CoachReviewList
+        initialUnread={[essay1, essay2]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="team-1"
+      />,
+    );
+
+    expect(screen.getByText('Esej Alpha')).toBeInTheDocument();
+    expect(screen.queryByText('Esej Beta')).not.toBeInTheDocument();
+
+    unmount();
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay1, essay2]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+      />,
+    );
+
+    expect(screen.getByText('Esej Alpha')).toBeInTheDocument();
+    expect(screen.getByText('Esej Beta')).toBeInTheDocument();
+  });
+
+  it('moves essay to read tab when toggled', () => {
+    const essay = mockEssay();
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+      />,
+    );
+
+    expect(screen.getByText('Nepřečtené')).toBeInTheDocument();
+    const markButton = screen.getByText('Označit jako přečtené');
+    fireEvent.click(markButton);
+
+    expect(screen.getByText('Žádné nové eseje ke kontrole')).toBeInTheDocument();
+  });
+
+  it('renders coach comment quotes and threaded student replies on essays', () => {
+    const essay = mockEssay();
+    const coachComment = {
+      id: 'comment-1',
+      essay_id: 'essay-1',
+      author_profile_id: 'coach-1',
+      parent_id: null,
+      body: 'Skvělé zhodnocení MVP a lean přístupu!',
+      removed_at: null,
+      created_at: '2026-08-23T11:00:00Z',
+      updated_at: '2026-08-23T11:00:00Z',
+      author: {
+        id: 'coach-1',
+        name: 'Kouč Petr',
+        picture: null,
+        role: 'coach' as const,
+      },
+    };
+
+    const studentReply = {
+      id: 'comment-2',
+      essay_id: 'essay-1',
+      author_profile_id: 'user-1',
+      parent_id: 'comment-1',
+      body: 'Díky, v další revizi doplním ještě metriky z testování.',
+      removed_at: null,
+      created_at: '2026-08-23T12:00:00Z',
+      updated_at: '2026-08-23T12:00:00Z',
+      author: {
+        id: 'user-1',
+        name: 'Matěj Vrbas',
+        picture: null,
+        role: 'student' as const,
+      },
+    };
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+        commentsMap={{ 'essay-1': [coachComment, studentReply] }}
+      />,
+    );
+
+    // Badge indicates student replied
+    expect(screen.getByText('Téčko odpovědělo')).toBeInTheDocument();
+
+    // Coach comments quote is visible
+    expect(screen.getByText(/Komentáře koučů:ek/)).toBeInTheDocument();
+    expect(screen.getByText('Kouč Petr')).toBeInTheDocument();
+    expect(screen.getByText('„Skvělé zhodnocení MVP a lean přístupu!“')).toBeInTheDocument();
+
+    // Student reply quote is visible
+    expect(screen.getByText('„Díky, v další revizi doplním ještě metriky z testování.“')).toBeInTheDocument();
+  });
+
+  it('renders "Bez odpovědi Téčka" indicator when coach commented but student has not replied', () => {
+    const essay = mockEssay();
+    const coachComment = {
+      id: 'comment-1',
+      essay_id: 'essay-1',
+      author_profile_id: 'coach-1',
+      parent_id: null,
+      body: 'Skvělé zhodnocení MVP a lean přístupu!',
+      removed_at: null,
+      created_at: '2026-08-23T11:00:00Z',
+      updated_at: '2026-08-23T11:00:00Z',
+      author: {
+        id: 'coach-1',
+        name: 'Kouč Petr',
+        picture: null,
+        role: 'coach' as const,
+      },
+    };
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+        commentsMap={{ 'essay-1': [coachComment] }}
+      />,
+    );
+
+    // Badge indicates waiting for reply
+    expect(screen.getByText('Bez odpovědi Téčka')).toBeInTheDocument();
+  });
+
+  it('recognizes author comment posted after coach comment as a reply even when parent_id is null', () => {
+    const essay = mockEssay();
+    const coachComment = {
+      id: 'comment-1',
+      essay_id: 'essay-1',
+      author_profile_id: 'coach-1',
+      parent_id: null,
+      body: 'Doporučuji promyslet plán B.',
+      removed_at: null,
+      created_at: '2026-08-23T10:00:00Z',
+      updated_at: '2026-08-23T10:00:00Z',
+      author: {
+        id: 'coach-1',
+        name: 'Kouč Petr',
+        picture: null,
+        role: 'coach' as const,
+      },
+    };
+
+    const standaloneAuthorComment = {
+      id: 'comment-2',
+      essay_id: 'essay-1',
+      author_profile_id: 'user-1',
+      parent_id: null, // No parent_id!
+      body: 'Plán B máme sepsaný v Notion.',
+      removed_at: null,
+      created_at: '2026-08-23T12:00:00Z', // Posted after coach comment
+      updated_at: '2026-08-23T12:00:00Z',
+      author: {
+        id: 'user-1',
+        name: 'Matěj Vrbas',
+        picture: null,
+        role: 'student' as const,
+      },
+    };
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+        commentsMap={{ 'essay-1': [coachComment, standaloneAuthorComment] }}
+      />,
+    );
+
+    // Shows Téčko odpovědělo badge and displays the reply
+    expect(screen.getByText('Téčko odpovědělo')).toBeInTheDocument();
+    expect(screen.getByText('„Plán B máme sepsaný v Notion.“')).toBeInTheDocument();
+  });
+});

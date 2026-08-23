@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { CornerDownRight, MessageSquare, Pencil, Reply, Send, Trash2 } from 'lucide-react';
+import { CornerDownRight, Info, MessageSquare, Pencil, Reply, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
@@ -154,12 +154,14 @@ interface EssayCommentThreadProps {
   essayId: string;
   initialComments: EssayCommentWithAuthor[];
   currentProfileId: string;
+  isAuthor?: boolean;
 }
 
 export function EssayCommentThread({
   essayId,
   initialComments,
   currentProfileId,
+  isAuthor = false,
 }: EssayCommentThreadProps) {
   const [comments, setComments] = useState(initialComments);
   const [body, setBody] = useState('');
@@ -278,8 +280,8 @@ export function EssayCommentThread({
     const isReplyTarget = replyTarget?.id === comment.id;
     const isEdited = !isRemoved && comment.updated_at !== comment.created_at;
     const role = comment.author?.role;
-    // Role reads as metadata next to the date rather than a coloured chip --
-    // it is useful context on staff feedback, not the headline of a comment.
+    const isCoach = role === 'coach' || role === 'admin';
+
     const meta = [
       role && role !== 'student' ? ROLE_LABELS[role] : null,
       new Date(comment.created_at).toLocaleDateString('cs-CZ'),
@@ -290,6 +292,7 @@ export function EssayCommentThread({
       <div
         className={cn(
           'group/comment flex gap-3 rounded-lg transition-colors',
+          isCoach && !isReply && 'border border-primary/20 bg-primary/[0.03] p-3 dark:bg-primary/[0.06]',
           isReplyTarget && '-mx-2 bg-primary/5 px-2 py-1.5 ring-1 ring-primary/15',
         )}
       >
@@ -351,14 +354,27 @@ export function EssayCommentThread({
             <>
               <p className="mt-0.5 text-sm whitespace-pre-wrap break-words">{comment.body}</p>
               <div className={ACTION_ROW_CLASS}>
-                <button
-                  type="button"
-                  className={ACTION_BUTTON_CLASS}
-                  onClick={() => startReply(comment)}
-                >
-                  <Reply className="size-3.5" />
-                  Odpovědět
-                </button>
+                {isCoach ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1.5 border-primary/30 bg-primary/10 text-xs font-semibold text-primary shadow-xs hover:bg-primary/20 hover:text-primary dark:bg-primary/20 dark:hover:bg-primary/30"
+                    onClick={() => startReply(comment)}
+                  >
+                    <Reply className="size-3.5" />
+                    Odpovědět na komentář kouče:ky
+                  </Button>
+                ) : (
+                  <button
+                    type="button"
+                    className={ACTION_BUTTON_CLASS}
+                    onClick={() => startReply(comment)}
+                  >
+                    <Reply className="size-3.5" />
+                    Odpovědět
+                  </button>
+                )}
                 {isOwn && (
                   <>
                     <button
@@ -405,6 +421,10 @@ export function EssayCommentThread({
       </div>
     );
   };
+
+  const hasCoachThread = threads.some(
+    (t) => t.comment.author?.role === 'coach' || t.comment.author?.role === 'admin',
+  );
 
   return (
     <div className="space-y-4">
@@ -469,7 +489,16 @@ export function EssayCommentThread({
       )}
 
       {replyTarget == null && (
-        <div className="pt-1">
+        <div className="space-y-2 pt-1">
+          {isAuthor && hasCoachThread && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Info className="size-3.5 shrink-0 text-muted-foreground/70" />
+              <span>
+                Pro reakci na zpětnou vazbu kouče:ky využij tlačítko{' '}
+                <span className="font-medium text-foreground">Odpovědět na komentář kouče:ky</span> přímo u daného komentáře.
+              </span>
+            </p>
+          )}
           <CommentComposer
             value={body}
             onChange={setBody}

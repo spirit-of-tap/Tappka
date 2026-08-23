@@ -37,12 +37,16 @@ const deletedComment: EssayCommentWithAuthor = {
   removed_at: "2026-08-02T09:00:00.000Z",
 };
 
-function renderThread(comments: EssayCommentWithAuthor[] = [ownComment, otherComment]) {
+function renderThread(
+  comments: EssayCommentWithAuthor[] = [ownComment, otherComment],
+  isAuthor = false,
+) {
   return render(
     <EssayCommentThread
       essayId="essay-1"
       initialComments={comments}
       currentProfileId="profile-1"
+      isAuthor={isAuthor}
     />,
   );
 }
@@ -383,5 +387,46 @@ describe("EssayCommentThread threading", () => {
     // before the unrelated second root comment.
     expect(follows(screen.getByText("Odpověď na první"), composer)).toBe(true);
     expect(follows(composer, screen.getByText("Druhý komentář"))).toBe(true);
+  });
+
+  it("renders a highlighted reply button for coach comments, and hint only for author", async () => {
+    const coachComment: EssayCommentWithAuthor = {
+      id: "c-coach",
+      essay_id: "essay-1",
+      author_profile_id: "coach-1",
+      parent_id: null,
+      body: "Skvělá reflexe! Jak jste otestovali hypotézu?",
+      removed_at: null,
+      created_at: "2026-08-01T10:00:00.000Z",
+      updated_at: "2026-08-01T10:00:00.000Z",
+      author: { id: "coach-1", name: "Petr Kouč", picture: null, role: "coach" },
+    };
+
+    const user = userEvent.setup();
+    const { unmount } = renderThread([coachComment], false); // Not author
+
+    // Prominent reply button for coach comment is visible
+    const coachReplyBtn = screen.getByRole("button", { name: "Odpovědět na komentář kouče:ky" });
+    expect(coachReplyBtn).toBeInTheDocument();
+
+    // Guidance hint is NOT visible for non-author
+    expect(
+      screen.queryByText(/Pro reakci na zpětnou vazbu kouče:ky využij tlačítko/i),
+    ).not.toBeInTheDocument();
+
+    unmount();
+
+    // Render as author
+    renderThread([coachComment], true);
+
+    // Guidance hint IS visible for author
+    expect(
+      screen.getByText(/Pro reakci na zpětnou vazbu kouče:ky využij tlačítko/i),
+    ).toBeInTheDocument();
+
+    // Clicking the highlighted button opens the reply composer targeted to coach
+    const authorReplyBtn = screen.getByRole("button", { name: "Odpovědět na komentář kouče:ky" });
+    await user.click(authorReplyBtn);
+    expect(screen.getByPlaceholderText("Odpovědět na Petr Kouč...")).toBeInTheDocument();
   });
 });

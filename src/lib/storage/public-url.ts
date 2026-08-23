@@ -1,7 +1,7 @@
 import { BUCKETS, type BucketId } from './buckets';
 
 function baseUrl(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://localhost:54321').replace(/\/$/, '');
 }
 
 function encodeStorageKey(key: string): string {
