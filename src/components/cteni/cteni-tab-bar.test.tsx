@@ -67,14 +67,34 @@ describe('CteniTabBar', () => {
     expect(currents).toHaveLength(1);
   });
 
-  it('highlights nothing on detail routes shared by several sections', () => {
+  it('highlights Moje on essay creation subpage', () => {
+    mockPathname.mockReturnValue('/cteni/eseje/nova');
+    renderBar({ isCoachOrAdmin: true });
+
+    expect(screen.getByRole('link', { name: 'Moje' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('highlights Moje on essay edit subpage', () => {
+    mockPathname.mockReturnValue('/cteni/eseje/some-id/upravit');
+    renderBar({ isCoachOrAdmin: true });
+
+    expect(screen.getByRole('link', { name: 'Moje' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('highlights Objevovat on book detail and list pages', () => {
     mockPathname.mockReturnValue('/cteni/knihy/some-id');
     renderBar({ isCoachOrAdmin: true });
 
-    const currents = screen
-      .getAllByRole('link')
-      .filter((link) => link.hasAttribute('aria-current'));
-    expect(currents).toHaveLength(0);
+    expect(screen.getByRole('link', { name: 'Objevovat' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   it('carries the review count badge only while essays are waiting', () => {

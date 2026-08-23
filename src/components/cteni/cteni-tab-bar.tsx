@@ -3,27 +3,68 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
+import { User, Compass, type LucideIcon } from 'lucide-react';
 
 import { TabsTriggerCount } from '@/components/ui/tabs';
 
 interface CteniTab {
   title: string;
   url: string;
+  icon?: LucideIcon;
   /** Renders the coach review count as an attention badge when > 0. */
   showsReviewCount?: boolean;
 }
 
 /** Member areas — ordered by visit frequency (most visited first). */
 const MEMBER_TABS: CteniTab[] = [
-  { title: 'Moje', url: '/cteni/prehled' },
-  { title: 'Objevovat', url: '/cteni/hledat' },
+  { title: 'Moje', url: '/cteni/prehled', icon: User },
+  { title: 'Objevovat', url: '/cteni/hledat', icon: Compass },
 ];
 
-/** Coach work queues trail behind a divider — a different mental mode ("work" vs "read"). */
+/** Coach work queues trail behind a divider — a different mental mode ("work" vs "read"). Plain text without icons to keep focus on queues. */
 const COACH_TABS: CteniTab[] = [
   { title: 'Kontrola', url: '/cteni/eseje/ke-kontrole', showsReviewCount: true },
   { title: 'Správa', url: '/cteni/sprava' },
 ];
+
+export function getActiveCteniTabUrl(pathname: string, isCoachOrAdmin: boolean): string | undefined {
+  // 1. Coach queues
+  if (
+    isCoachOrAdmin &&
+    (pathname === '/cteni/eseje/ke-kontrole' || pathname.startsWith('/cteni/eseje/ke-kontrole/'))
+  ) {
+    return '/cteni/eseje/ke-kontrole';
+  }
+  if (
+    isCoachOrAdmin &&
+    (pathname === '/cteni/sprava' || pathname.startsWith('/cteni/sprava/'))
+  ) {
+    return '/cteni/sprava';
+  }
+
+  // 2. Moje čtení (overview, authoring new essay, editing own draft/essay, or any subpage under /cteni/prehled)
+  if (
+    pathname === '/cteni/prehled' ||
+    pathname.startsWith('/cteni/prehled/') ||
+    pathname === '/cteni/eseje/nova' ||
+    pathname.endsWith('/upravit')
+  ) {
+    return '/cteni/prehled';
+  }
+
+  // 3. Objevovat (search/discovery feed, book details, curated selections)
+  if (
+    pathname === '/cteni/hledat' ||
+    pathname.startsWith('/cteni/hledat/') ||
+    pathname.startsWith('/cteni/knihy')
+  ) {
+    return '/cteni/hledat';
+  }
+
+  // 4. Default prefix match
+  const tabs = isCoachOrAdmin ? [...MEMBER_TABS, ...COACH_TABS] : MEMBER_TABS;
+  return tabs.find((tab) => pathname === tab.url || pathname.startsWith(tab.url + '/'))?.url;
+}
 
 interface CteniTabBarProps {
   isCoachOrAdmin: boolean;
@@ -32,18 +73,13 @@ interface CteniTabBarProps {
 
 /**
  * Single persistent navigation strip for every /cteni/* route. URL-driven —
- * not Radix state tabs — so back/forward, deep links (?tab=vypujcky) and
+ * not Radix state tabs — so back/forward, deep links and
  * prefetching behave natively. Visual language mirrors ui/tabs.tsx `line`.
  */
 export function CteniTabBar({ isCoachOrAdmin, reviewCount }: CteniTabBarProps) {
   const pathname = usePathname();
   const tabs = isCoachOrAdmin ? [...MEMBER_TABS, ...COACH_TABS] : MEMBER_TABS;
-
-  // Only section roots highlight a tab: detail/editor routes are reachable
-  // from more than one tab, so claiming a parent would misrepresent context.
-  const activeUrl = tabs.find(
-    (tab) => pathname === tab.url || pathname.startsWith(tab.url + '/'),
-  )?.url;
+  const activeUrl = getActiveCteniTabUrl(pathname, isCoachOrAdmin);
 
   return (
     // Mobile: pinned full-bleed strip — there is no top header on phones, so
@@ -74,7 +110,8 @@ export function CteniTabBar({ isCoachOrAdmin, reviewCount }: CteniTabBarProps) {
                 'data-[active=true]:text-foreground data-[active=true]:after:opacity-100',
               ].join(' ')}
             >
-              {tab.title}
+              {tab.icon && <tab.icon className="size-4 shrink-0" aria-hidden="true" />}
+              <span>{tab.title}</span>
               {tab.showsReviewCount && (
                 <TabsTriggerCount count={reviewCount} tone="attention" />
               )}

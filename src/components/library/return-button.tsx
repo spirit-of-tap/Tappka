@@ -6,13 +6,16 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 
 interface ReturnButtonProps {
   bookId: string;
   onReturned?: () => void;
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  className?: string;
 }
 
-export function ReturnButton({ bookId, onReturned }: ReturnButtonProps) {
+export function ReturnButton({ bookId, onReturned, size = 'default', className }: ReturnButtonProps) {
   const [loading, setLoading] = useState(false);
 
   const handleReturn = async () => {
@@ -30,8 +33,14 @@ export function ReturnButton({ bookId, onReturned }: ReturnButtonProps) {
   };
 
   return (
-    <Button onClick={handleReturn} disabled={loading} variant="outline" className="gap-2">
-      {loading ? <Spinner className="size-4" /> : <BookCheck className="size-4" />}
+    <Button
+      onClick={handleReturn}
+      disabled={loading}
+      variant="outline"
+      size={size}
+      className={cn('gap-1.5', className)}
+    >
+      {loading ? <Spinner className="size-3.5" /> : <BookCheck className="size-3.5" />}
       Vrátit
     </Button>
   );

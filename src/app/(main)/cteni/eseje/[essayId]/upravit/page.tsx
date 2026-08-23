@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById } from '@/lib/essays/queries';
 import { PageShell } from '@/components/ui/page-shell';
-import { BackButton } from '@/components/essays/back-button';
 import { EssayEditorForm } from '@/components/essays/essay-editor-form';
 
 interface PageProps {
@@ -25,11 +24,10 @@ export default async function EssayEditPage({ params }: PageProps) {
   const isDraft = essay.published_at == null;
 
   return (
-    <PageShell size="wide" className="space-y-3 sm:space-y-4">
+    <PageShell size="wide">
       {/* The visible document title is the editor's own title field, so the
           page heading only needs to exist for assistive technology. */}
       <h1 className="sr-only">{isDraft ? 'Koncept eseje' : 'Upravit esej'}</h1>
-      <BackButton />
       <EssayEditorForm initialEssay={essay} />
     </PageShell>
   );
