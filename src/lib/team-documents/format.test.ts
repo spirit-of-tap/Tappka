@@ -26,7 +26,7 @@ describe("team document format helpers", () => {
 describe("team document titles", () => {
   it("uses fixed titles for featured document types", () => {
     expect(getTeamDocumentTitle({ doc_type: "team_contract", title: null })).toBe(
-      "Týmová smlouva",
+      "Team Contract",
     )
     expect(getTeamDocumentTitle({ doc_type: "financial_policy", title: null })).toBe(
       "Finanční směrnice",

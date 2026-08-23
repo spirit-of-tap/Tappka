@@ -1,18 +1,7 @@
 "use client"
 
-import { Archive, FileClock, FileText, Pencil, Upload } from "lucide-react"
+import { Clock, ExternalLink, Landmark, ScrollText, Upload } from "lucide-react"
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -30,149 +19,137 @@ import {
 interface TeamDocumentCardProps {
   document: TeamDocumentWithVersions | null
   documentType: TeamDocumentType
-  featured?: boolean
   onUpload: () => void
-  onRename?: () => void
-  onArchive?: () => void
+  onViewHistory?: () => void
 }
 
-const FEATURED_DESCRIPTIONS: Partial<Record<TeamDocumentType, string>> = {
-  team_contract: "Společná pravidla, hodnoty a směřování týmu.",
-  financial_policy: "Pravidla finančního řízení a nakládání s penězi.",
+const FEATURED_CONFIG: Record<
+  "team_contract" | "financial_policy",
+  {
+    icon: typeof ScrollText
+    description: string
+  }
+> = {
+  team_contract: {
+    icon: ScrollText,
+    description: "Pravidla spolupráce, hodnoty a fungování týmu.",
+  },
+  financial_policy: {
+    icon: Landmark,
+    description: "Pravidla hospodaření a nakládání s rozpočtem.",
+  },
 }
 
 export function TeamDocumentCard({
   document,
   documentType,
-  featured = false,
   onUpload,
-  onRename,
-  onArchive,
+  onViewHistory,
 }: TeamDocumentCardProps) {
   const latestVersion = document?.versions[0] ?? null
   const title = document
     ? getTeamDocumentTitle(document)
     : getTeamDocumentTitle({ doc_type: documentType, title: null })
-  const Heading = featured ? "h2" : "h3"
 
-  const content = (
-    <>
-      <CardHeader className="flex-row items-start justify-between gap-4 px-5">
-        <div className="flex min-w-0 gap-3">
+  const config =
+    documentType === "team_contract" || documentType === "financial_policy"
+      ? FEATURED_CONFIG[documentType]
+      : { icon: ScrollText, description: "" }
+  const Icon = config.icon
+
+  return (
+    <Card className="gap-0 border bg-card p-0 shadow-sm transition-all hover:shadow-md">
+      <CardHeader className="flex-row items-start justify-between gap-3 border-b p-4 sm:p-5">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <FileText className="size-5" />
+            <Icon className="size-5" />
           </div>
-          <div className="min-w-0 space-y-1">
-            <Heading className="font-heading text-lg font-semibold">{title}</Heading>
-            {FEATURED_DESCRIPTIONS[documentType] && (
-              <p className="text-sm text-muted-foreground">
-                {FEATURED_DESCRIPTIONS[documentType]}
+          <div className="min-w-0">
+            <h2 className="font-heading text-lg font-bold tracking-tight text-foreground sm:text-xl">
+              {title}
+            </h2>
+            {config.description && (
+              <p className="line-clamp-1 text-xs text-muted-foreground sm:text-sm">
+                {config.description}
               </p>
             )}
           </div>
         </div>
-        {latestVersion && <Badge variant="secondary">{formatVersionLabel(latestVersion.version_no)}</Badge>}
+
+        {latestVersion ? (
+          <Badge variant="secondary" className="shrink-0 font-medium">
+            {formatVersionLabel(latestVersion.version_no)}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="shrink-0 text-muted-foreground">
+            Nenahráno
+          </Badge>
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-4 px-5">
+      <CardContent className="flex flex-col justify-between gap-4 p-4 sm:p-5">
         {latestVersion ? (
-          <div className="py-2">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{latestVersion.file_name}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Nahráno {formatDocumentDate(latestVersion.created_at)}
-                  {latestVersion.created_by?.name ? ` · ${latestVersion.created_by.name}` : ""}
-                  {` · ${formatDocumentFileSize(latestVersion.file_size)}`}
-                </p>
-              </div>
-              <Button asChild size="sm" variant="outline">
-                <a
-                  href={`/api/team-documents/versions/${latestVersion.id}/open`}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Otevřít aktuální verzi"
-                >
-                  Otevřít
-                </a>
-              </Button>
+          <div className="space-y-1 rounded-md bg-muted/40 p-3 text-xs sm:text-sm">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate font-medium text-foreground">
+                {latestVersion.file_name}
+              </span>
+              <span className="shrink-0 text-muted-foreground">
+                {formatDocumentFileSize(latestVersion.file_size)}
+              </span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Nahráno {formatDocumentDate(latestVersion.created_at)}
+              {latestVersion.created_by?.name ? ` · ${latestVersion.created_by.name}` : ""}
+            </p>
           </div>
         ) : (
-          <div className="rounded-md bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground sm:text-sm">
             Zatím není nahraná žádná verze.
           </div>
         )}
 
-        {document && document.versions.length > 1 && (
-          <details className="border-t pt-3">
-            <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium">
-              <FileClock className="size-4" />
-              Historie verzí ({document.versions.length})
-            </summary>
-            <ul className="mt-3 divide-y" aria-label="Historie verzí">
-              {document.versions.map((version) => (
-                <li key={version.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                  <div className="min-w-0">
-                    <p className="font-medium">{formatVersionLabel(version.version_no)}</p>
-                    <p className="truncate text-xs text-muted-foreground">{version.file_name}</p>
-                  </div>
-                  <Button asChild variant="ghost" size="sm">
-                    <a
-                      href={`/api/team-documents/versions/${version.id}/open`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Otevřít
-                    </a>
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={onUpload} size="sm">
-            <Upload className="size-4" />
-            {document ? "Nahrát novou verzi" : "Nahrát první verzi"}
-          </Button>
-          {documentType === "other" && document && onRename && (
-            <Button onClick={onRename} variant="outline" size="sm" aria-label="Přejmenovat">
-              <Pencil className="size-4" />
-              Přejmenovat
-            </Button>
-          )}
-          {documentType === "other" && document && onArchive && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" aria-label="Archivovat">
-                  <Archive className="size-4" />
-                  Archivovat
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {latestVersion ? (
+              <>
+                <Button asChild size="sm">
+                  <a
+                    href={`/api/team-documents/versions/${latestVersion.id}/open`}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Otevřít aktuální verzi ${title}`}
+                  >
+                    <ExternalLink className="size-3.5" />
+                    Otevřít
+                  </a>
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Archivovat dokument?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Dokument zmizí z přehledu. Jeho soubory a historie verzí zůstanou uložené.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Zrušit</AlertDialogCancel>
-                  <AlertDialogAction onClick={onArchive}>Potvrdit archivaci</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                <Button variant="outline" size="sm" onClick={onUpload}>
+                  <Upload className="size-3.5" />
+                  Nová verze
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" onClick={onUpload}>
+                <Upload className="size-3.5" />
+                Nahrát první verzi
+              </Button>
+            )}
+          </div>
+
+          {document && document.versions.length > 0 && onViewHistory && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onViewHistory}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Clock className="size-3.5" />
+              Historie ({document.versions.length})
+            </Button>
           )}
         </div>
       </CardContent>
-    </>
-  )
-
-  return featured ? (
-    <Card className="gap-4 bg-accent/40 py-5">{content}</Card>
-  ) : (
-    <article className="py-5">{content}</article>
+    </Card>
   )
 }
