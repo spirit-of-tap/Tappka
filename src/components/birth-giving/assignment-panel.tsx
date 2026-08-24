@@ -21,10 +21,7 @@ import { BirthGivingFileUpload } from "./file-upload";
 import { formatFileSize } from "@/lib/birth-giving/format";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import { isBirthGivingOrganizer } from "@/lib/birth-giving/permissions";
-import {
-  formatBirthGivingCountdown,
-  MINUTE_MILLISECONDS,
-} from "@/lib/birth-giving/time";
+import { MINUTE_MILLISECONDS } from "@/lib/birth-giving/time";
 import type { BirthGivingEventDetail } from "@/lib/birth-giving/types";
 
 interface BirthGivingAssignmentPanelProps {
@@ -108,15 +105,14 @@ export function BirthGivingAssignmentPanel({
         </div>
       )}
 
-      {state === "present" && !released && !isOrganizer && (
+      {!released && !isOrganizer && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Lock className="size-4" />
-          Zadání bude zveřejněno za{" "}
-          {formatBirthGivingCountdown(startsAt.getTime() - clientNow.getTime())}
+          Zadání se zveřejní na začátku akce.
         </p>
       )}
 
-      {state === "none" && !isOrganizer && (
+      {released && state === "none" && !isOrganizer && (
         <p className="text-sm text-muted-foreground">Zadání zatím nebylo nahráno.</p>
       )}
 

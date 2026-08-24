@@ -9,6 +9,8 @@
 //   3. started + assignment missing
 //   4. past + winner team + some reflections submitted (Ondřej's still open)
 //   5. past + all reflections submitted (Ondřej done)
+//   6. upcoming + assignment already uploaded (present) — embargoed from
+//      attendees until starts_at
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 
@@ -52,6 +54,8 @@ const EVENT_IDS = {
     "c1000000-0000-4000-8000-000000000004",
   pastComplete:
     "c1000000-0000-4000-8000-000000000005",
+  upcomingPresentEmbargo:
+    "c1000000-0000-4000-8000-000000000006",
 };
 
 const MINI_PDF = Buffer.from(
@@ -372,6 +376,50 @@ async function main() {
       },
     ]);
     console.log("  [5] Green Energy Hackathon (Ondřej reflection submitted)");
+  }
+
+  // ---------------------------------------------------------------- 6. upcoming + assignment uploaded (embargo)
+  {
+    const eventId = EVENT_IDS.upcomingPresentEmbargo;
+    await deleteEventRows(eventId);
+    const assignmentPath = `birth-giving/assignments/${eventId}/zadani.pdf`;
+    await upload("documents", assignmentPath, MINI_PDF, "application/pdf");
+    await insertEvent({
+      id: eventId,
+      name: "AI Hackathon Praha",
+      customer: "CzechInvest",
+      starts_at: iso(daysFromNow(7)),
+      duration: "24h",
+      status: "published",
+      organizer_profile_ids: [ORGANIZERS.petr],
+      assignment_state: "present",
+      assignment_storage_path: assignmentPath,
+      assignment_file_name: "AI-zadani.pdf",
+      assignment_mime_type: "application/pdf",
+      assignment_file_size: MINI_PDF.length,
+      assignment_uploaded_at: iso(daysFromNow(-1)),
+      assignment_uploaded_by_profile_id: ORGANIZERS.petr,
+      removed_at: null,
+      removed_by_profile_id: null,
+      created_by_profile_id: ORGANIZERS.petr,
+      updated_by_profile_id: ORGANIZERS.petr,
+    });
+    const t = teamId(6);
+    await insertTeam({
+      id: t,
+      event_id: eventId,
+      name: "Prompt Wizards",
+      is_winner: false,
+      result_state: "pending",
+      result_files: [],
+      created_by_profile_id: ORGANIZERS.petr,
+      updated_by_profile_id: ORGANIZERS.petr,
+    });
+    await insertMembers([
+      { id: memberId(14), event_id: eventId, team_id: t, profile_id: ONDREJ, created_by_profile_id: ORGANIZERS.petr, updated_by_profile_id: ORGANIZERS.petr },
+      { id: memberId(15), event_id: eventId, team_id: t, profile_id: MEMBERS.annabela, created_by_profile_id: ORGANIZERS.petr, updated_by_profile_id: ORGANIZERS.petr },
+    ]);
+    console.log("  [6] AI Hackathon Praha (assignment uploaded, embargoed until start)");
   }
 
   console.log("Seeding complete!");

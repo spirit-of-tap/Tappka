@@ -17,7 +17,7 @@ beforeEach(() => {
 const FUTURE_START = "2026-08-19T15:00:00.000Z";
 
 describe("BirthGivingAssignmentPanel", () => {
-  it("keeps a non-organizer locked out before the event with a countdown", () => {
+  it("keeps an attendee locked out before the event with a neutral message", () => {
     const event = makeEvent({
       starts_at: FUTURE_START,
       assignment_state: "present",
@@ -27,9 +27,23 @@ describe("BirthGivingAssignmentPanel", () => {
       <BirthGivingAssignmentPanel event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
     );
 
-    expect(screen.getByText("Zadání bude zveřejněno za 3 h")).toBeInTheDocument();
+    expect(screen.getByText("Zadání se zveřejní na začátku akce.")).toBeInTheDocument();
     expect(screen.queryByText("zadani.pdf")).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Stáhnout zadání" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Zadání zatím nebylo nahráno.")).not.toBeInTheDocument();
+  });
+
+  it("shows the not-uploaded message to attendees only after the start", () => {
+    const event = makeEvent({
+      starts_at: FUTURE_START,
+      assignment_state: "none",
+    });
+    render(
+      <BirthGivingAssignmentPanel event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
+    );
+
+    expect(screen.getByText("Zadání se zveřejní na začátku akce.")).toBeInTheDocument();
+    expect(screen.queryByText("Zadání zatím nebylo nahráno.")).not.toBeInTheDocument();
   });
 
   it("lets an organizer see and download the file before the start", () => {
