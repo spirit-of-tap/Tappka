@@ -16,7 +16,7 @@ BEGIN
        OR p.proname = 'can_view_birth_giving_event_organizers'
      );
 
-  FOREACH routine_id IN ARRAY routine_ids
+  FOREACH routine_id IN ARRAY COALESCE(routine_ids, ARRAY[]::text[])
   LOOP
     EXECUTE format(
       'DROP FUNCTION IF EXISTS %s CASCADE',
