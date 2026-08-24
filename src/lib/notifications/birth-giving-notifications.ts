@@ -1,11 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-
 import { sendEmail } from "./send-email";
-
-const START_BATCH_SIZE = 25;
-const DELIVERY_BATCH_SIZE = 25;
-const DELIVERY_IDEMPOTENCY_PREFIX = "birth-giving-delivery-";
-const EVENT_PATH_PREFIX = "/birth-giving/";
 
 interface BirthGivingEmailContext {
   eventName: string;
@@ -13,31 +7,36 @@ interface BirthGivingEmailContext {
   eventUrl: string;
 }
 
-interface EmailContent {
-  subject: string;
-  html: string;
-}
+/**
+ * The event columns the cron reads directly on `birth_giving_events` through
+ * the admin (service-role) client. Service role bypasses RLS and the column
+ * grants, so the embargoed `assignment_*` metadata is readable here without
+ * exposing it to `authenticated` callers.
+ */
+const ASSIGNMENT_RELEASE_EVENT_COLUMNS = [
+  "id",
+  "name",
+  "customer",
+  "status",
+  "starts_at",
+  "removed_at",
+  "assignment_state",
+  "assignment_uploaded_at",
+] as const;
 
-interface ClaimedDelivery {
-  delivery_id: string;
-  processing_token: string;
-  recipient_email: string;
-  message_type: "assignment_release" | "assignment_replacement";
-  replacement_id: string | null;
-  event_id: string;
-  event_name: string;
+interface AssignmentReleaseEvent {
+  id: string;
+  name: string;
   customer: string;
-  email_subject: string | null;
-  email_html: string | null;
+  status: "draft" | "published";
+  starts_at: string;
+  removed_at: string | null;
+  assignment_state: "none" | "missing" | "present";
+  assignment_uploaded_at: string | null;
 }
 
-export interface BirthGivingNotificationResult {
-  startsProcessed: number;
-  claimed: number;
-  sent: number;
-  failed: number;
-  persistenceErrors: number;
-  manualReview: number;
+interface AssignmentReleaseMember {
+  profile: { user: { verified_work_email: string | null } };
 }
 
 function escapeHtml(value: string): string {
@@ -49,11 +48,9 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function assignmentEmail(ctx: BirthGivingEmailContext, replacement: boolean): EmailContent {
-  const title = replacement ? "Nová verze zadání" : "Zadání je dostupné";
-  const introduction = replacement
-    ? "K dispozici je nová verze zadání. Před zahájením práce si prosím otevřete aktuální soubor."
-    : "Zadání je nyní dostupné. Otevřete si detail akce a můžete začít.";
+export function assignmentReleaseEmail(ctx: BirthGivingEmailContext) {
+  const title = "Zadání je dostupné";
+  const introduction = "Zadání pro Birth Giving je nyní dostupné. Otevřete si detail události a můžete začít.";
   return {
     subject: `${title}: ${ctx.eventName}`,
     html: `<!doctype html>
@@ -61,121 +58,101 @@ function assignmentEmail(ctx: BirthGivingEmailContext, replacement: boolean): Em
   <h1>${title}</h1>
   <p>${introduction}</p>
   <p><strong>${escapeHtml(ctx.eventName)}</strong><br>${escapeHtml(ctx.customer)}</p>
-  <p><a href="${escapeHtml(ctx.eventUrl)}">Otevřít zadání</a></p>
+  <p><a href="${escapeHtml(ctx.eventUrl)}">Otevřít zadání v Tappce</a></p>
 </body></html>`,
   };
 }
 
-export function assignmentReleaseEmail(ctx: BirthGivingEmailContext): EmailContent {
-  return assignmentEmail(ctx, false);
-}
-
-export function assignmentReplacementEmail(ctx: BirthGivingEmailContext): EmailContent {
-  return assignmentEmail(ctx, true);
-}
-
-export function birthGivingDeliveryIdempotencyKey(deliveryId: string): string {
-  return `${DELIVERY_IDEMPOTENCY_PREFIX}${deliveryId}`;
-}
-
-function canonicalEventUrl(eventId: string): string {
-  const configuredUrl = process.env.APP_URL ?? process.env.SITE_URL;
-  if (!configuredUrl) throw new Error("APP_URL or SITE_URL is not configured");
-
-  const appUrl = new URL(configuredUrl);
-  if (appUrl.protocol !== "https:" && appUrl.protocol !== "http:") {
-    throw new Error("APP_URL or SITE_URL must use HTTP or HTTPS");
-  }
-  return new URL(`${EVENT_PATH_PREFIX}${encodeURIComponent(eventId)}`, appUrl.origin).toString();
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-export async function processBirthGivingNotifications(): Promise<BirthGivingNotificationResult> {
+/**
+ * Notifies the current members of an event that its assignment is available.
+ * Sends only while the assignment is actually released: the event must be
+ * published, not removed, already started (`starts_at <= now()`), and carry a
+ * `present` assignment, so drafts, future events, and replaced-but-not-yet
+ * started assignments never advertise early.
+ *
+ * The provider idempotency key includes the assignment's upload timestamp, so
+ * re-confirming a replacement assignment produces a new send while repeated
+ * runs for the same event/recipient are deduped at the provider. There is no
+ * local delivery-tracking table; one recipient's failure never aborts the
+ * remaining recipients.
+ */
+export async function notifyParticipantsOfAssignment(eventId: string): Promise<number> {
   const admin = createAdminClient();
-  const startResult = await admin.rpc("birth_giving_process_due_starts", { p_limit: START_BATCH_SIZE });
-  if (startResult.error) throw new Error(`Failed to process Birth Giving starts: ${startResult.error.message}`);
-  const reconciliation = await admin.rpc("birth_giving_reconcile_email_deliveries");
-  if (reconciliation.error) {
-    throw new Error(`Failed to reconcile Birth Giving deliveries: ${reconciliation.error.message}`);
-  }
 
-  const claimResult = await admin.rpc("birth_giving_claim_email_deliveries", { p_limit: DELIVERY_BATCH_SIZE });
-  if (claimResult.error) throw new Error(`Failed to claim Birth Giving deliveries: ${claimResult.error.message}`);
-  const claims = (claimResult.data ?? []) as ClaimedDelivery[];
+  const { data: rawEvent } = await admin
+    .from("birth_giving_events")
+    .select(ASSIGNMENT_RELEASE_EVENT_COLUMNS.join(", "))
+    .eq("id", eventId)
+    .maybeSingle();
+
+  const event = (rawEvent ?? null) as unknown as AssignmentReleaseEvent | null;
+  if (!event) return 0;
+  if (event.status !== "published" || event.removed_at !== null) return 0;
+  if (event.assignment_state !== "present" || !event.assignment_uploaded_at) return 0;
+  if (Date.parse(event.starts_at) > Date.now()) return 0;
+
+  const { data: members } = await admin
+    .from("birth_giving_team_members")
+    .select("profile:profiles!inner(user:users!inner(verified_work_email))")
+    .eq("event_id", eventId);
+
+  const baseUrl = process.env.APP_URL ?? process.env.SITE_URL ?? "https://tappka.cz";
+  const eventUrl = `${baseUrl}/birth-giving/${eventId}`;
+  const emailContent = assignmentReleaseEmail({
+    eventName: event.name,
+    customer: event.customer,
+    eventUrl,
+  });
+
   let sent = 0;
-  let failed = 0;
-  let persistenceErrors = 0;
-
-  for (const claim of claims) {
-    let providerMessageId: string;
+  for (const m of (members ?? []) as unknown as AssignmentReleaseMember[]) {
+    const email = m.profile?.user?.verified_work_email;
+    if (!email) continue;
     try {
-      let content: EmailContent;
-      if (claim.email_subject !== null && claim.email_html !== null) {
-        content = { subject: claim.email_subject, html: claim.email_html };
-      } else {
-        const context = {
-          eventName: claim.event_name,
-          customer: claim.customer,
-          eventUrl: canonicalEventUrl(claim.event_id),
-        };
-        const generated = claim.message_type === "assignment_replacement"
-          ? assignmentReplacementEmail(context)
-          : assignmentReleaseEmail(context);
-        const preparation = await admin.rpc("birth_giving_prepare_email_delivery", {
-          p_delivery_id: claim.delivery_id,
-          p_processing_token: claim.processing_token,
-          p_email_subject: generated.subject,
-          p_email_html: generated.html,
-        });
-        if (preparation.error || !preparation.data?.[0]) {
-          throw new Error(preparation.error?.message ?? "Delivery processing lease is no longer current");
-        }
-        content = { subject: preparation.data[0].email_subject, html: preparation.data[0].email_html };
-      }
-      const provider = await sendEmail(
-        { to: claim.recipient_email, ...content },
-        { idempotencyKey: birthGivingDeliveryIdempotencyKey(claim.delivery_id) },
+      await sendEmail(
+        {
+          to: email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+        },
+        {
+          idempotencyKey: `bg-assignment-${eventId}-${event.assignment_uploaded_at}-${email}`,
+        },
       );
-      providerMessageId = provider.id;
-    } catch (error) {
-      const failure = await admin.rpc("birth_giving_fail_email_delivery", {
-        p_delivery_id: claim.delivery_id,
-        p_processing_token: claim.processing_token,
-        p_error: errorMessage(error),
-      });
-      if (failure.error || !failure.data) {
-        persistenceErrors += 1;
-      } else {
-        failed += 1;
-      }
-      continue;
+      sent += 1;
+    } catch (err) {
+      console.error(`Failed to send assignment email to ${email}:`, err);
     }
-
-    const completion = await admin.rpc("birth_giving_complete_email_delivery", {
-      p_delivery_id: claim.delivery_id,
-      p_processing_token: claim.processing_token,
-      p_provider_message_id: providerMessageId,
-    });
-    if (completion.error || !completion.data) {
-      persistenceErrors += 1;
-      continue;
-    }
-    sent += 1;
   }
 
-  return {
-    startsProcessed: startResult.data ?? 0,
-    claimed: claims.length,
-    sent,
-    failed,
-    persistenceErrors,
-    manualReview: reconciliation.data ?? 0,
-  };
+  return sent;
 }
 
-export async function processBirthGiving() {
-  return processBirthGivingNotifications();
+/**
+ * Cron entry point: processes all currently released Birth Giving assignments.
+ * Enumerates published, non-removed events whose assignment is `present` and
+ * whose start has passed, then notifies each event's current members. The
+ * helper re-checks the release conditions for the event (an event may have
+ * changed since enumeration) and returns 0 when nothing is due.
+ */
+export async function processBirthGiving(): Promise<{ sent: number }> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  const { data: rawEvents } = await admin
+    .from("birth_giving_events")
+    .select("id")
+    .eq("status", "published")
+    .is("removed_at", null)
+    .eq("assignment_state", "present")
+    .lte("starts_at", now);
+
+  const events = (rawEvents ?? []) as unknown as Array<{ id: string }>;
+
+  let sent = 0;
+  for (const event of events) {
+    sent += await notifyParticipantsOfAssignment(event.id);
+  }
+
+  return { sent };
 }

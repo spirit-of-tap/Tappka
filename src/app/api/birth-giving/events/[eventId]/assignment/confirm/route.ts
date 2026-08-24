@@ -4,6 +4,7 @@ import {
   assignmentStoragePrefix,
   birthGivingConfirmedFileSchema,
 } from "@/lib/birth-giving/files";
+import { notifyParticipantsOfAssignment } from "@/lib/notifications/birth-giving-notifications";
 import { deleteFile, inspectStorageObject } from "@/lib/storage/service";
 import {
   birthGivingMutationErrorResponse,
@@ -86,6 +87,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         { status: 500 },
       );
     }
+  }
+
+  // The assignment is committed and may now be available-due; notify current
+  // members so a replacement made after the event started reaches them
+  // immediately. The helper itself checks published/due/present and returns 0
+  // when nothing is due. A notification failure must not fail the confirm.
+  try {
+    await notifyParticipantsOfAssignment(eventId);
+  } catch (notifyError) {
+    console.error("Birth Giving assignment notification failed:", notifyError);
   }
 
   return NextResponse.json({ data: { storagePath } });
