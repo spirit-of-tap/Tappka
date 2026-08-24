@@ -41,7 +41,12 @@ function request(body?: unknown, method = "POST"): Request {
 }
 
 function createSupabase(rpcData: unknown = null, rpcError: RpcError | null = null) {
-  const rpc = vi.fn().mockResolvedValue({ data: rpcData, error: rpcError });
+  // The real supabase-js rpc() reads `this.rest`; the call must stay bound to
+  // the client object (calling the method value detached throws TypeError).
+  const rpc = vi.fn(function (this: unknown, ..._args: unknown[]) {
+    if (!this) throw new TypeError("Cannot read properties of undefined (reading 'rest')");
+    return Promise.resolve({ data: rpcData, error: rpcError });
+  });
   return { rpc, supabase: { rpc } };
 }
 

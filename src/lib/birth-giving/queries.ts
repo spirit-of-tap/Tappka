@@ -94,7 +94,7 @@ async function loadVisibleAssignment(
   supabase: SupabaseClient<Database>,
   eventId: string,
 ): Promise<VisibleAssignmentRow | null> {
-  const rpc = supabase.rpc as unknown as VisibleAssignmentRpcCaller;
+  const rpc = (supabase.rpc as unknown as VisibleAssignmentRpcCaller).bind(supabase);
   const { data, error } = await rpc("birth_giving_get_visible_assignment", {
     p_event_id: eventId,
   });

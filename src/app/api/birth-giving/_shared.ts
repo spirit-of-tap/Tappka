@@ -71,11 +71,11 @@ export function validateBirthGivingRouteIds(...ids: string[]): NextResponse | nu
 }
 
 /**
- * The committed Birth Giving mutation/reporting RPCs are not yet present in
- * the generated `database.types.ts` (the implementation plan regenerates them
- * in Task 10 via `db:migrate`). Route handlers call them through this narrowly
- * typed adapter, which keeps handler code fully typed while the generated
- * overload catches up.
+ * The Birth Giving mutation/reporting RPCs accept a nullable `p_event_id` for
+ * the create case, which the generated typed overloads don't express. Route
+ * handlers call them through this narrowly typed adapter (bound to the
+ * SupabaseClient so supabase-js retains its `this` context), keeping handler
+ * code fully typed without hand-writing database types.
  */
 type BirthGivingRpcCaller = (
   functionName: string,
@@ -87,7 +87,10 @@ export async function callBirthGivingRpc<TData = null>(
   functionName: string,
   args: Record<string, unknown>,
 ): Promise<{ data: TData | null; error: PostgrestError | null }> {
-  const caller = supabase.rpc as unknown as BirthGivingRpcCaller;
+  // supabase-js `rpc()` reads `this.rest`, so the method must stay bound to the
+  // client. Calling `supabase.rpc(...)` directly here is impossible because the
+  // stored `p_event_id: null` create-arg doesn't fit the generated `string` type.
+  const caller = (supabase.rpc as unknown as BirthGivingRpcCaller).bind(supabase);
   const result = await caller(functionName, args);
   return { data: result.data as TData | null, error: result.error };
 }

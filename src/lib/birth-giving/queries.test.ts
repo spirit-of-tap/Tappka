@@ -116,7 +116,10 @@ function fakeSupabase(
       chains.push({ table, chain });
       return chain;
     },
-    rpc(functionName: string, args?: Record<string, unknown>) {
+    rpc(this: { rpc: (fn: string, args?: Record<string, unknown>) => FakeChain }, functionName: string, args?: Record<string, unknown>) {
+      if (!this || typeof this.rpc !== "function") {
+        throw new TypeError("Cannot read properties of undefined (reading 'rest')");
+      }
       const entry = queues[`rpc:${functionName}`]?.shift() ?? {};
       const chain = new FakeChain(entry.data, entry.error, entry.count);
       chains.push({ table: `rpc:${functionName}`, chain });
