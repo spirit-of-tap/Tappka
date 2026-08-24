@@ -53,7 +53,7 @@ export function BirthGivingTeamCard({
         `/api/birth-giving/events/${event.id}/teams/${team.id}`,
         {
           method: "PATCH",
-          body: JSON.stringify({ isWinner: !team.is_winner }),
+          body: { isWinner: !team.is_winner },
         },
       );
       if (result.ok) {
