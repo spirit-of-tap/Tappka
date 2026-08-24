@@ -121,13 +121,19 @@ describe("Birth Giving simplification migration", () => {
       );
       expect(rows.map((row) => row.proname)).toEqual([
         "birth_giving_active_profile_id",
+        "birth_giving_add_result_file",
         "birth_giving_create_team",
         "birth_giving_dedupe_profile_ids",
         "birth_giving_delete_team",
+        "birth_giving_get_visible_assignment",
+        "birth_giving_mark_result_missing",
         "birth_giving_publish_event",
         "birth_giving_remove_event",
+        "birth_giving_remove_result_file",
         "birth_giving_save_event",
+        "birth_giving_set_assignment",
         "birth_giving_update_team",
+        "birth_giving_upsert_reflection",
       ]);
     });
   });

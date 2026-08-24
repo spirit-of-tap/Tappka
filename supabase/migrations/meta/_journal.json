@@ -673,6 +673,13 @@
       "when": 1787593286879,
       "tag": "20260824174126_secure_simplified_birth_giving_team_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1787595675054,
+      "tag": "20260824182115_secure_simplified_birth_giving_remaining_operations",
+      "breakpoints": true
     }
   ]
 }
