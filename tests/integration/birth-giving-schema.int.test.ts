@@ -424,4 +424,22 @@ describe("Birth Giving relational invariants", () => {
       );
     });
   });
+
+  it("rejects an organizer array that contains a NULL element", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `insert into public.birth_giving_events (
+             name, customer, starts_at, duration, status, organizer_profile_ids,
+             created_by_profile_id, updated_by_profile_id
+           ) values ('Null organizer', 'Customer', $1, '8h', 'draft', $2::uuid[], $3, $3)`,
+          [futureTimestamp(), [null], organizer.profileId],
+        ),
+        /check/i,
+      );
+    });
+  });
 });

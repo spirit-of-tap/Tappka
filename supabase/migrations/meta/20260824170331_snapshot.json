@@ -266,7 +266,7 @@
         },
         "birth_giving_events_organizers_check": {
           "name": "birth_giving_events_organizers_check",
-          "value": "cardinality(\"birth_giving_events\".\"organizer_profile_ids\") > 0"
+          "value": "cardinality(\"birth_giving_events\".\"organizer_profile_ids\") > 0 AND cardinality(array_remove(\"birth_giving_events\".\"organizer_profile_ids\", NULL)) = cardinality(\"birth_giving_events\".\"organizer_profile_ids\")"
         },
         "birth_giving_events_assignment_check": {
           "name": "birth_giving_events_assignment_check",

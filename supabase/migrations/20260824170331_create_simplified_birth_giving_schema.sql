@@ -21,7 +21,7 @@ CREATE TABLE "birth_giving_events" (
 	"updated_by_profile_id" uuid NOT NULL,
 	CONSTRAINT "birth_giving_events_name_check" CHECK (length(trim("birth_giving_events"."name")) > 0),
 	CONSTRAINT "birth_giving_events_customer_check" CHECK (length(trim("birth_giving_events"."customer")) > 0),
-	CONSTRAINT "birth_giving_events_organizers_check" CHECK (cardinality("birth_giving_events"."organizer_profile_ids") > 0),
+	CONSTRAINT "birth_giving_events_organizers_check" CHECK (cardinality("birth_giving_events"."organizer_profile_ids") > 0 AND cardinality(array_remove("birth_giving_events"."organizer_profile_ids", NULL)) = cardinality("birth_giving_events"."organizer_profile_ids")),
 	CONSTRAINT "birth_giving_events_assignment_check" CHECK ((
     "birth_giving_events"."assignment_state" = 'present'
     AND "birth_giving_events"."assignment_storage_path" IS NOT NULL

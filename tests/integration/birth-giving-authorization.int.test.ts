@@ -81,7 +81,7 @@ async function expectRlsDenied(
   await client.query("savepoint expected_rls_denial");
   try {
     await operation();
-    throw new Error("Expected row-level security denial");
+    throw new Error("Expected RLS denial but operation succeeded");
   } catch (error: unknown) {
     await client.query("rollback to savepoint expected_rls_denial");
     expect(error).toBeInstanceOf(Error);

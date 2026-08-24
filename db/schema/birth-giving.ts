@@ -2,6 +2,7 @@
 // Please look at CONTRIBUTING.md for more information on how to change the schema.
 import { sql } from "drizzle-orm"
 import {
+  type AnyPgColumn,
   bigint,
   boolean,
   check,
@@ -34,6 +35,13 @@ const ACTIVE_BIRTH_GIVING_CALLER = sql`EXISTS (
     AND caller_profile.beta_access_granted_at IS NOT NULL
     AND caller_user.verified_work_email IS NOT NULL
 )`
+
+const BIRTH_GIVING_EVENT_VISIBLE = (eventId: AnyPgColumn) => sql`EXISTS (
+      SELECT 1 FROM birth_giving_events event
+      WHERE event.id = ${eventId}
+        AND event.removed_at IS NULL
+        AND (event.status = 'published' OR current_profile_id() = ANY(event.organizer_profile_ids))
+    )`
 
 export const birthGivingEvents = pgTable("birth_giving_events", {
   id: uuid().defaultRandom().primaryKey().notNull(),
@@ -70,7 +78,7 @@ export const birthGivingEvents = pgTable("birth_giving_events", {
   foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "birth_giving_events_updated_by_profile_id_fkey" }).onDelete("restrict"),
   check("birth_giving_events_name_check", sql`length(trim(${table.name})) > 0`),
   check("birth_giving_events_customer_check", sql`length(trim(${table.customer})) > 0`),
-  check("birth_giving_events_organizers_check", sql`cardinality(${table.organizerProfileIds}) > 0`),
+  check("birth_giving_events_organizers_check", sql`cardinality(${table.organizerProfileIds}) > 0 AND cardinality(array_remove(${table.organizerProfileIds}, NULL)) = cardinality(${table.organizerProfileIds})`),
   check("birth_giving_events_assignment_check", sql`(
     ${table.assignmentState} = 'present'
     AND ${table.assignmentStoragePath} IS NOT NULL
@@ -135,12 +143,7 @@ export const birthGivingTeams = pgTable("birth_giving_teams", {
   pgPolicy("Community can view BG teams for accessible events", {
     for: "select",
     to: ["authenticated"],
-    using: sql`${ACTIVE_BIRTH_GIVING_CALLER} AND EXISTS (
-      SELECT 1 FROM birth_giving_events event
-      WHERE event.id = ${table.eventId}
-        AND event.removed_at IS NULL
-        AND (event.status = 'published' OR current_profile_id() = ANY(event.organizer_profile_ids))
-    )`,
+    using: sql`${ACTIVE_BIRTH_GIVING_CALLER} AND ${BIRTH_GIVING_EVENT_VISIBLE(table.eventId)}`,
   }),
 ]).enableRLS()
 
@@ -180,11 +183,6 @@ export const birthGivingTeamMembers = pgTable("birth_giving_team_members", {
   pgPolicy("Community can view BG memberships for accessible events", {
     for: "select",
     to: ["authenticated"],
-    using: sql`${ACTIVE_BIRTH_GIVING_CALLER} AND EXISTS (
-      SELECT 1 FROM birth_giving_events event
-      WHERE event.id = ${table.eventId}
-        AND event.removed_at IS NULL
-        AND (event.status = 'published' OR current_profile_id() = ANY(event.organizer_profile_ids))
-    )`,
+    using: sql`${ACTIVE_BIRTH_GIVING_CALLER} AND ${BIRTH_GIVING_EVENT_VISIBLE(table.eventId)}`,
   }),
 ]).enableRLS()
