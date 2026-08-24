@@ -149,12 +149,18 @@ $$;
 -- changes), then locks the team. NULL arguments mean "leave unchanged".
 --
 -- Atomicity: name/winner/membership all commit in the one transaction.
--- Memberships are synchronized with one DELETE + one set-based INSERT; any
--- violation (23505 cross-team duplicate, 23503 unknown profile, 23514
--- inactive profile) rolls back the whole call, including the name/winner
--- change. Winner changes first clear is_winner on every other active team of
--- the event, then set the target, so the partial unique index and explicit
--- state agree even in a single call (and toggling off works).
+-- Memberships are synchronized incrementally: rows whose profile_id leaves
+-- the team are deleted, rows for new profiles are inserted, and retained
+-- memberships are left completely untouched (preserving user-authored
+-- reflections plus confirmed_at / created_by / updated_by provenance, and
+-- avoiding row churn on a no-op resubmission). Any violation (23505
+-- cross-team duplicate, 23503 unknown profile, 23514 inactive profile) rolls
+-- back the whole call, including the name/winner change. Winner changes first
+-- clear is_winner on every other active team of the event, then set the
+-- target, so the partial unique index and explicit state agree even in a
+-- single call (and toggling off works). Setting a winner on a cancelled team
+-- is ignored (never becomes true), mirroring the partial unique index
+-- predicate.
 -- ---------------------------------------------------------------------------
 
 create function public.birth_giving_update_team(
@@ -233,16 +239,32 @@ begin
         using errcode = '23514';
     end if;
 
+    -- Delete only memberships whose profile_id leaves the team; every retained
+    -- row is left completely untouched so user-authored reflections and the
+    -- confirmation / provenance metadata are never rewritten (and a no-op
+    -- resubmission inserts and deletes nothing).
     delete from public.birth_giving_team_members
      where event_id = p_event_id
-       and team_id = p_team_id;
+       and team_id = p_team_id
+       and not (profile_id = any(v_members));
 
+    -- Insert only profiles that are not already a member of this team. Both
+    -- unique constraints (event+profile across the event, event+team+profile
+    -- within the team) still raise 23505 on any cross-team/concurrent clash,
+    -- which aborts the whole mutation atomically.
     insert into public.birth_giving_team_members (
       event_id, team_id, profile_id,
       created_by_profile_id, updated_by_profile_id
     )
     select p_event_id, p_team_id, u.profile_id, v_profile_id, v_profile_id
-      from unnest(v_members) as u(profile_id);
+      from unnest(v_members) as u(profile_id)
+     where not exists (
+       select 1
+         from public.birth_giving_team_members m
+        where m.event_id = p_event_id
+          and m.team_id = p_team_id
+          and m.profile_id = u.profile_id
+     );
   end if;
 
   -- Winner replacement: clear every other active winner, then set the target.
@@ -260,7 +282,10 @@ begin
        set is_winner = p_is_winner,
            updated_by_profile_id = v_profile_id,
            updated_at = clock_timestamp()
-     where id = p_team_id;
+     where id = p_team_id
+       -- Mirror the partial unique index predicate: a cancelled team can never
+       -- become a winner. Toggling a winner off stays unconditional.
+       and (not p_is_winner or cancelled_at is null);
   end if;
 
   if p_name is not null then

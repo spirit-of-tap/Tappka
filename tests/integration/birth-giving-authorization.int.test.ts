@@ -965,6 +965,169 @@ describe("Birth Giving team mutation functions", () => {
     });
   });
 
+  // Kept members carry user-authored reflection columns plus confirmation and
+  // provenance metadata. Syncing a roster on a published event must never wipe
+  // or rewrite those rows: the old implementation deleted every membership and
+  // re-inserted them, silently discarding reflections and resetting
+  // confirmed_at / created_by / updated_by. Direct membership writes are
+  // denied to authenticated callers by RLS, so the reflection is seeded as
+  // admin (the default connection role in this suite), matching how the
+  // Task-3/4 mutation surface leaves those columns to app-level routes.
+  it("preserves reflections, confirmation, and provenance for retained members while syncing a published roster", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const keptMember = await insertVerifiedProfile(client, { name: "Kept Member" });
+      const removedMember = await insertVerifiedProfile(client, { name: "Removed Member" });
+      const newMember = await insertVerifiedProfile(client, { name: "New Member" });
+      const eventId = await insertEvent(client, organizer.profileId, "pub-sync", "published");
+      const teamId = await insertTeam(client, eventId, organizer.profileId, "Synced team");
+
+      await insertMember(client, eventId, teamId, keptMember.profileId, organizer.profileId);
+      await insertMember(client, eventId, teamId, removedMember.profileId, organizer.profileId);
+
+      // Seed a stored reflection on the member who is about to be retained.
+      const reflectionSubmittedAt = "2026-01-10T10:00:00.000Z";
+      await client.query(
+        `update public.birth_giving_team_members
+            set reflection_contribution = $1,
+                reflection_learning = $2,
+                reflection_submitted_at = $3
+          where team_id = $4 and profile_id = $5`,
+        [
+          "Stáhl jsem tým dohromady",
+          "Naučil jsem se delegovat",
+          reflectionSubmittedAt,
+          teamId,
+          keptMember.profileId,
+        ],
+      );
+
+      interface MemberRow {
+        id: string;
+        confirmed_at: string;
+        reflection_contribution: string | null;
+        reflection_learning: string | null;
+        reflection_submitted_at: string | null;
+        created_by_profile_id: string;
+        created_at: string;
+        updated_at: string;
+      }
+      const readMemberRow = async (profileId: string): Promise<MemberRow> => {
+        const { rows } = await client.query(
+          `select id, confirmed_at, reflection_contribution, reflection_learning,
+                  reflection_submitted_at, created_by_profile_id, created_at, updated_at
+             from public.birth_giving_team_members
+            where team_id = $1 and profile_id = $2`,
+          [teamId, profileId],
+        );
+        const row = rows[0] as {
+          id: string;
+          confirmed_at: Date;
+          reflection_contribution: string | null;
+          reflection_learning: string | null;
+          reflection_submitted_at: Date | null;
+          created_by_profile_id: string;
+          created_at: Date;
+          updated_at: Date;
+        };
+        return {
+          id: row.id,
+          confirmed_at: row.confirmed_at.toISOString(),
+          reflection_contribution: row.reflection_contribution,
+          reflection_learning: row.reflection_learning,
+          reflection_submitted_at: row.reflection_submitted_at
+            ? row.reflection_submitted_at.toISOString()
+            : null,
+          created_by_profile_id: row.created_by_profile_id,
+          created_at: row.created_at.toISOString(),
+          updated_at: row.updated_at.toISOString(),
+        };
+      };
+
+      const keptBefore = await readMemberRow(keptMember.profileId);
+
+      // Keep the reflecting member and add a new one; the removed member drops
+      // off and the organizer (caller) is appended because the event is
+      // published.
+      await asClaims(client, { sub: organizer.authUserId });
+      await callUpdateTeam(client, {
+        eventId,
+        teamId,
+        memberProfileIds: [keptMember.profileId, newMember.profileId],
+      });
+      await client.query("reset role");
+
+      // The retained member is bit-for-bit untouched: id, confirmation,
+      // reflection, provenance, and timestamps all unchanged.
+      const keptAfter = await readMemberRow(keptMember.profileId);
+      expect(keptAfter.id).toBe(keptBefore.id);
+      expect(keptAfter.confirmed_at).toBe(keptBefore.confirmed_at);
+      expect(keptAfter.reflection_contribution).toBe(keptBefore.reflection_contribution);
+      expect(keptAfter.reflection_learning).toBe(keptBefore.reflection_learning);
+      expect(keptAfter.reflection_submitted_at).toBe(keptBefore.reflection_submitted_at);
+      expect(keptAfter.created_by_profile_id).toBe(keptBefore.created_by_profile_id);
+      expect(keptAfter.created_at).toBe(keptBefore.created_at);
+      expect(keptAfter.updated_at).toBe(keptBefore.updated_at);
+
+      // The new member was added, the caller (organizer) is present, and the
+      // removed member is gone.
+      const members = await readTeamMembers(client, eventId, teamId);
+      expect(members).toEqual(
+        [keptMember.profileId, newMember.profileId, organizer.profileId].sort(),
+      );
+
+      // A no-op resubmission of the identical set leaves every membership row
+      // byte-identical -- the correct implementation must not delete/re-insert.
+      const beforeNoop = await Promise.all(members.map((profileId) => readMemberRow(profileId)));
+      await asClaims(client, { sub: organizer.authUserId });
+      await callUpdateTeam(client, {
+        eventId,
+        teamId,
+        memberProfileIds: [keptMember.profileId, newMember.profileId],
+      });
+      await client.query("reset role");
+      const afterNoop = await Promise.all(
+        (await readTeamMembers(client, eventId, teamId)).map((profileId) =>
+          readMemberRow(profileId),
+        ),
+      );
+      expect(afterNoop).toEqual(beforeNoop);
+    });
+  });
+
+  // Defense-in-depth: a cancelled team must never become a winner, matching
+  // the predicate of the partial unique index (is_winner AND cancelled_at IS
+  // NULL). No team-cancel function exists yet, so the cancelled_at is seeded
+  // directly; the winner guard keeps state consistent if/when cancellation
+  // lands.
+  it("never lets a cancelled team become a winner, mirroring the partial unique index", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "cancelled-winner");
+      const teamId = await insertTeam(client, eventId, organizer.profileId, "Zrušený tým");
+
+      await client.query(
+        `update public.birth_giving_teams
+            set cancelled_at = $2, cancellation_reason = 'Zrušený tým'
+          where id = $1`,
+        [teamId, pastTimestamp()],
+      );
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await callUpdateTeam(client, { eventId, teamId, isWinner: true });
+      await client.query("reset role");
+
+      const { rows } = await client.query<{
+        is_winner: boolean;
+        cancelled_at: string | null;
+      }>("select is_winner, cancelled_at from public.birth_giving_teams where id = $1", [
+        teamId,
+      ]);
+      expect(rows[0].cancelled_at).not.toBeNull();
+      expect(rows[0].is_winner).toBe(false);
+    });
+  });
+
   it("clears the previous winner and sets the new one in a single call, and can toggle off", async () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
