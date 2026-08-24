@@ -185,7 +185,7 @@ export async function getBirthGivingEvent(
         *,
         members:birth_giving_team_members(
           *,
-          profile:profiles(id, name, picture)
+          profile:profiles!birth_giving_team_members_profile_id_fkey(id, name, picture)
         )
       )
     `)

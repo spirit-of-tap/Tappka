@@ -42,6 +42,10 @@ const THIRTEEN_SAFE_EVENT_COLUMNS = [
 
 const VISIBILITY_RPC = "birth_giving_get_visible_assignment";
 
+// `birth_giving_team_members` has three FKs to `profiles`; the member embed must
+// pin the relationship or PostgREST raises PGRST201.
+const MEMBER_PROFILE_EMBED = "profiles!birth_giving_team_members_profile_id_fkey(id, name, picture)";
+
 interface RecordedCall {
   method: string;
   args: unknown[];
@@ -288,6 +292,40 @@ describe("Birth Giving queries", () => {
     expect(result?.assignment_uploaded_at).toBe("2026-08-19T09:00:00.000Z");
     expect(result?.assignment_uploaded_by_profile_id).toBe("org-1");
     expect(rpcCalls).toEqual([{ functionName: VISIBILITY_RPC, args: { p_event_id: "event-1" } }]);
+  });
+
+  it("getBirthGivingEvent disambiguates the member->profile embed (PGRST201 guard)", async () => {
+    const rawEvent: Record<string, unknown> = {
+      id: "event-1",
+      name: "Event 1",
+      customer: "Customer A",
+      starts_at: "2026-08-19T08:00:00.000Z",
+      duration: "8h",
+      status: "published",
+      organizer_profile_ids: ["org-1"],
+      removed_at: null,
+      removed_by_profile_id: null,
+      created_at: "2026-08-19T06:00:00.000Z",
+      updated_at: "2026-08-19T06:00:00.000Z",
+      created_by_profile_id: "org-1",
+      updated_by_profile_id: "org-1",
+      teams: [],
+    };
+
+    const { client, chains } = fakeSupabase({
+      birth_giving_events: [{ data: rawEvent }],
+      [`rpc:${VISIBILITY_RPC}`]: [{ data: [] }],
+    });
+
+    await getBirthGivingEvent(client, "event-1");
+
+    const eventEntry = chains.find(({ table }) => table === "birth_giving_events");
+    const selectCall = eventEntry?.chain.calls.find(({ method }) => method === "select");
+    const projection = selectCall?.args[0];
+    expect(typeof projection).toBe("string");
+    expect(projection as string).toContain(MEMBER_PROFILE_EMBED);
+    // The ambiguous bare embed must never be used.
+    expect(projection as string).not.toContain("profile:profiles(id, name, picture)");
   });
 
   it("getBirthGivingEvent falls back to redacted 'none' assignment fields when the RPC returns no row", async () => {
