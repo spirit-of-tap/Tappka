@@ -631,6 +631,34 @@
       "when": 1787525902096,
       "tag": "20260823225822_complete_annual_reflection_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1787587273074,
+      "tag": "20260824160113_assert_empty_birth_giving_legacy_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1787587744897,
+      "tag": "20260824160904_drop_legacy_birth_giving_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1787587764709,
+      "tag": "20260824160924_retire_legacy_birth_giving_routines",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1787587783257,
+      "tag": "20260824160943_drop_obsolete_birth_giving_enums",
+      "breakpoints": true
     }
   ]
 }
