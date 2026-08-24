@@ -8,7 +8,6 @@ import { BirthGivingEventMetadata } from "./event-metadata";
 import { BirthGivingEventOverviewStrip } from "./event-overview-strip";
 import { BirthGivingAssignmentPanel } from "./assignment-panel";
 import { BirthGivingTeamList } from "./team-list";
-import { BirthGivingLookingForTeamList } from "./looking-for-team-list";
 import type {
   BirthGivingEventDetail,
   BirthGivingProfileSummary,
@@ -68,13 +67,6 @@ export function BirthGivingEventDetail({
         profileId={profileId}
         now={now}
         organizerProfiles={organizerProfiles}
-        onEventChange={handleEventChange}
-      />
-
-      <BirthGivingLookingForTeamList
-        event={event}
-        profileId={profileId}
-        now={now}
         onEventChange={handleEventChange}
       />
     </div>

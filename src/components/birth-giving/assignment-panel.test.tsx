@@ -1,10 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BirthGivingAssignmentPanel } from "@/components/birth-giving/assignment-panel";
 import {
-  makeAssignment,
   makeEvent,
   NOW,
 } from "@/tests/component/birth-giving-fixtures";
@@ -19,10 +18,11 @@ const FUTURE_START = "2026-08-19T15:00:00.000Z";
 
 describe("BirthGivingAssignmentPanel", () => {
   it("keeps a non-organizer locked out before the event with a countdown", () => {
-    const event = makeEvent(
-      { starts_at: FUTURE_START },
-      { assignment: makeAssignment() },
-    );
+    const event = makeEvent({
+      starts_at: FUTURE_START,
+      assignment_state: "present",
+      assignment_file_name: "zadani.pdf",
+    });
     render(
       <BirthGivingAssignmentPanel event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
     );
@@ -33,10 +33,11 @@ describe("BirthGivingAssignmentPanel", () => {
   });
 
   it("lets an organizer see and download the file before the start", () => {
-    const event = makeEvent(
-      { starts_at: FUTURE_START },
-      { assignment: makeAssignment() },
-    );
+    const event = makeEvent({
+      starts_at: FUTURE_START,
+      assignment_state: "present",
+      assignment_file_name: "zadani.pdf",
+    });
     render(
       <BirthGivingAssignmentPanel event={event} profileId="org-1" now={NOW} onEventChange={vi.fn()} />,
     );
@@ -50,7 +51,10 @@ describe("BirthGivingAssignmentPanel", () => {
   });
 
   it("releases the assignment to the community after the start", () => {
-    const event = makeEvent({}, { assignment: makeAssignment() });
+    const event = makeEvent({
+      assignment_state: "present",
+      assignment_file_name: "zadani.pdf",
+    });
     render(
       <BirthGivingAssignmentPanel event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
     );
@@ -64,7 +68,7 @@ describe("BirthGivingAssignmentPanel", () => {
   });
 
   it("gives an organizer the upload panel while an assignment is missing", () => {
-    const event = makeEvent({ starts_at: FUTURE_START }, { assignment: null });
+    const event = makeEvent({ starts_at: FUTURE_START, assignment_state: "none" });
     render(
       <BirthGivingAssignmentPanel event={event} profileId="org-1" now={NOW} onEventChange={vi.fn()} />,
     );
@@ -72,14 +76,14 @@ describe("BirthGivingAssignmentPanel", () => {
     expect(screen.getByLabelText("Soubor se zadáním")).toBeInTheDocument();
   });
 
-  it("lets an organizer mark a missing assignment as not recovered after the end", async () => {
+  it("lets an organizer mark a missing assignment", async () => {
     const user = userEvent.setup();
     fetchSpy.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ data: { state: "missing" } }),
+      json: async () => ({ data: { assignment_state: "missing" } }),
     } as Response);
     const onEventChange = vi.fn();
-    const event = makeEvent({}, { assignment: null });
+    const event = makeEvent({ assignment_state: "none" });
     render(
       <BirthGivingAssignmentPanel event={event} profileId="org-1" now="2026-08-19T18:00:00.000Z" onEventChange={onEventChange} />,
     );
@@ -97,63 +101,11 @@ describe("BirthGivingAssignmentPanel", () => {
   });
 
   it("shows the missing badge for an unrecovered assignment", () => {
-    const event = makeEvent({}, { assignment: makeAssignment({ state: "missing" }) });
+    const event = makeEvent({ assignment_state: "missing" });
     render(
-      <BirthGivingAssignmentPanel event={event} profileId="org-1" now="2026-08-19T18:00:00.000Z" onEventChange={vi.fn()} />,
-    );
-
-    expect(screen.getByText("Zadání nedohledáno")).toBeInTheDocument();
-  });
-
-  it("resyncs the countdown when the now prop changes", () => {
-    const event = makeEvent({ starts_at: FUTURE_START }, { assignment: makeAssignment() });
-    const { rerender } = render(
       <BirthGivingAssignmentPanel event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
     );
 
-    expect(screen.getByText("Zadání bude zveřejněno za 3 h")).toBeInTheDocument();
-
-    rerender(
-      <BirthGivingAssignmentPanel
-        event={event}
-        profileId="member-1"
-        now="2026-08-19T14:00:00.000Z"
-        onEventChange={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("Zadání bude zveřejněno za 1 h")).toBeInTheDocument();
-  });
-
-  it("pauses the countdown while the document is hidden", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(NOW));
-    try {
-      const event = makeEvent({ starts_at: FUTURE_START }, { assignment: makeAssignment() });
-      render(
-        <BirthGivingAssignmentPanel event={event} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
-      );
-
-      expect(screen.getByText("Zadání bude zveřejněno za 3 h")).toBeInTheDocument();
-
-      act(() => {
-        Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
-        document.dispatchEvent(new Event("visibilitychange"));
-        vi.advanceTimersByTime(2 * 60 * 1000);
-      });
-
-      expect(screen.getByText("Zadání bude zveřejněno za 3 h")).toBeInTheDocument();
-
-      act(() => {
-        Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
-        vi.setSystemTime(new Date("2026-08-19T12:02:00.000Z"));
-        document.dispatchEvent(new Event("visibilitychange"));
-      });
-
-      expect(screen.getByText("Zadání bude zveřejněno za 2 h 58 min")).toBeInTheDocument();
-    } finally {
-      vi.useRealTimers();
-      Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
-    }
+    expect(screen.getByText("Zadání nedohledáno")).toBeInTheDocument();
   });
 });

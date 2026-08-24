@@ -25,14 +25,11 @@ import {
 import { BirthGivingFileUpload } from "./file-upload";
 import { formatFileSize } from "@/lib/birth-giving/format";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
-import {
-  canManageBirthGivingResult,
-  canMarkBirthGivingResultMissing,
-} from "@/lib/birth-giving/permissions";
+import { canUploadResults } from "@/lib/birth-giving/permissions";
 import type {
   BirthGivingEventDetail,
+  BirthGivingResultFile,
   BirthGivingTeamDetail,
-  BirthGivingTeamResultFile,
 } from "@/lib/birth-giving/types";
 
 interface BirthGivingResultFileListProps {
@@ -45,14 +42,14 @@ interface BirthGivingResultFileListProps {
 }
 
 interface PendingRemoval {
-  file: BirthGivingTeamResultFile;
+  file: BirthGivingResultFile;
 }
 
 export function BirthGivingResultFileList({
   event,
   team,
   profileId,
-  now,
+  now: _now,
   disabled = false,
   onEventChange,
 }: BirthGivingResultFileListProps) {
@@ -60,9 +57,8 @@ export function BirthGivingResultFileList({
   const [missingConfirmOpen, setMissingConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const clientNow = new Date(now);
-  const canManage = canManageBirthGivingResult(event, team, profileId, clientNow);
-  const canMarkMissing = canMarkBirthGivingResultMissing(event, team, profileId, clientNow);
+  const canManage = canUploadResults(event, team, profileId);
+  const canMarkMissing = canManage;
 
   async function removeFile() {
     const file = pendingRemoval?.file;

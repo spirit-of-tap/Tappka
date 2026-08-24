@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BirthGivingDuplicateCandidates } from "@/components/birth-giving/duplicate-candidates";
 import { BirthGivingProfilePicker } from "@/components/birth-giving/profile-picker";
 import { BIRTH_GIVING_DURATION_LABELS } from "@/lib/birth-giving/constants";
 import { parseBirthGivingDateTimeInput } from "@/lib/birth-giving/time";
 import type {
-  BirthGivingDuplicateCandidateItem,
   BirthGivingDuration,
   BirthGivingEventDetail,
   BirthGivingProfileSummary,
@@ -32,9 +28,6 @@ export interface BirthGivingRetrospectiveEventPayload {
   customer: string;
   startsAt: string;
   duration: BirthGivingDuration;
-  minimumTeamSize: number;
-  maximumTeamSize: number;
-  joiningOpen: boolean;
   organizerProfileIds: string[];
 }
 
@@ -43,15 +36,7 @@ interface BirthGivingRetrospectiveEventStepProps {
   profileId: string;
   organizerProfiles: BirthGivingProfileSummary[];
   busy: boolean;
-  duplicates: BirthGivingDuplicateCandidateItem[];
-  exactDuplicate: BirthGivingDuplicateCandidateItem | null;
-  resumeDraftId: string | null;
-  identityCollision: boolean;
-  hiddenConflict: boolean;
   onSubmit: (payload: BirthGivingRetrospectiveEventPayload) => void;
-  onConfirmDuplicate: () => void;
-  onCancelDuplicate: () => void;
-  onResumeDraft: () => void;
 }
 
 export function BirthGivingRetrospectiveEventStep({
@@ -59,15 +44,7 @@ export function BirthGivingRetrospectiveEventStep({
   profileId,
   organizerProfiles,
   busy,
-  duplicates,
-  exactDuplicate,
-  resumeDraftId,
-  identityCollision,
-  hiddenConflict,
   onSubmit,
-  onConfirmDuplicate,
-  onCancelDuplicate,
-  onResumeDraft,
 }: BirthGivingRetrospectiveEventStepProps) {
   const [name, setName] = useState(event?.name ?? "");
   const [customer, setCustomer] = useState(event?.customer ?? "");
@@ -75,14 +52,9 @@ export function BirthGivingRetrospectiveEventStep({
     event?.starts_at ? event.starts_at.slice(0, 16) : "",
   );
   const [duration, setDuration] = useState<BirthGivingDuration>(event?.duration ?? "8h");
-  const [minimumTeamSize, setMinimumTeamSize] = useState(
-    event?.minimum_team_size.toString() ?? "2",
-  );
-  const [maximumTeamSize, setMaximumTeamSize] = useState(
-    event?.maximum_team_size.toString() ?? "4",
-  );
   const [selectedOrganizers, setSelectedOrganizers] = useState<string[]>(() => {
-    if (event) return event.organizers.map((organizer) => organizer.profile_id);
+    if (event?.organizer_profile_ids) return event.organizer_profile_ids;
+    if (event?.organizers) return event.organizers.map((o) => o.id);
     return [profileId];
   });
   const [error, setError] = useState<string | null>(null);
@@ -98,303 +70,99 @@ export function BirthGivingRetrospectiveEventStep({
 
     const trimmedName = name.trim();
     const trimmedCustomer = customer.trim();
-    const min = Number(minimumTeamSize);
-    const max = Number(maximumTeamSize);
-    if (!trimmedName) {
-      setError("Název události je povinný");
-      return;
-    }
-    if (!trimmedCustomer) {
-      setError("Zákazník je povinný");
-      return;
-    }
-    if (!startsAt) {
-      setError("Začátek je povinný");
-      return;
-    }
+    if (!trimmedName) { setError("Název události je povinný"); return; }
+    if (!trimmedCustomer) { setError("Zákazník je povinný"); return; }
+    if (!startsAt) { setError("Začátek je povinný"); return; }
     const startsAtDate = parseBirthGivingDateTimeInput(startsAt);
     if (startsAtDate === null) {
       toast.error("Zadejte platné datum začátku");
       return;
     }
-    if (startsAtDate.getTime() >= Date.now()) {
-      setError("Začátek historické události musí být v minulosti");
-      return;
-    }
-    if (!Number.isInteger(min) || min < 1) {
-      setError("Min. velikost týmu je neplatná");
-      return;
-    }
-    if (!Number.isInteger(max) || max < min) {
-      setError("Max. velikost týmu musí být aspoň minimální");
-      return;
-    }
-    if (selectedOrganizers.length === 0) {
-      setError("Vyberte alespoň jednoho organizátor:ku");
-      return;
-    }
+    if (selectedOrganizers.length === 0) { setError("Vyberte alespoň jednoho organizátor:ku"); return; }
 
     onSubmit({
       name: trimmedName,
       customer: trimmedCustomer,
       startsAt: startsAtDate.toISOString(),
       duration,
-      minimumTeamSize: min,
-      maximumTeamSize: max,
-      joiningOpen: false,
       organizerProfileIds: withCaller(selectedOrganizers),
     });
   }
 
   return (
-    <div className="space-y-4">
-      {resumeDraftId && (
-        <Alert className="border-info/40 bg-info/5 text-chart-3-strong">
-          <AlertTitle>Rozepsaný koncept existuje</AlertTitle>
-          <AlertDescription>
-            <p>
-              Přesně stejná událost už má rozepsaný koncept. Můžete v něm pokračovat,
-              nebo se vrátit k údajům.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                disabled={busy}
-                onClick={onResumeDraft}
-              >
-                {busy && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
-                Pokračovat v rozepsaném konceptu
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={onCancelDuplicate}
-              >
-                Vrátit se k údajům
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
 
-      {identityCollision && (
-        <Alert role="alert" className="border-destructive/40 bg-destructive/10 text-destructive">
-          <AlertTriangle className="size-4" />
-          <AlertTitle>Změny identity se nepodařilo uložit</AlertTitle>
-          <AlertDescription>
-            <p>
-              Událost se stejnými údaji (název, zákazník a začátek) už existuje.
-              Změňte údaje v konceptu, nebo pokračujte v původní události.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={onCancelDuplicate}
-              >
-                Vrátit se k údajům
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {hiddenConflict && (
-        <Alert className="border-warning/40 bg-warning/5 text-warning-strong">
-          <AlertTriangle className="size-4" />
-          <AlertTitle>Stejná událost už existuje</AlertTitle>
-          <AlertDescription>
-            <p>
-              Událost se stejnými údaji (název, zákazník a začátek) už existuje,
-              ale není k dispozici k otevření. Upravte údaje, nebo pokračujte
-              v původní události.
-            </p>
-            <div className="mt-3">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={onCancelDuplicate}
-              >
-                Vrátit se k údajům
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {exactDuplicate && (
-        <Alert className="border-warning/40 bg-warning/5 text-warning-strong">
-          <AlertTriangle className="size-4" />
-          <AlertTitle>Tato událost už existuje</AlertTitle>
-          <AlertDescription>
-            <p>
-              Přesně stejná událost už je zveřejněná. Otevřete ji a pokračujte
-              v původní události.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button asChild size="sm">
-                <Link
-                  href={`/birth-giving/${exactDuplicate.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Otevřít událost
-                </Link>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={onCancelDuplicate}
-              >
-                Vrátit se k údajům
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <BirthGivingDuplicateCandidates candidates={duplicates} />
-      {duplicates.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="bg-retro-name">Název události</Label>
+          <Input
+            id="bg-retro-name"
+            value={name}
             disabled={busy}
-            onClick={onConfirmDuplicate}
-          >
-            {busy && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
-            Je to jiná událost. Pokračovat
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Např. Letní BG 2024"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="bg-retro-customer">Zákazník</Label>
+          <Input
+            id="bg-retro-customer"
+            value={customer}
             disabled={busy}
-            onClick={onCancelDuplicate}
+            onChange={(e) => setCustomer(e.target.value)}
+            placeholder="Název zákazníka"
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="bg-retro-starts-at">Začátek</Label>
+          <Input
+            id="bg-retro-starts-at"
+            type="datetime-local"
+            value={startsAt}
+            disabled={busy}
+            onChange={(e) => setStartsAt(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Délka</Label>
+          <Select
+            value={duration}
+            disabled={busy}
+            onValueChange={(val) => setDuration(val as BirthGivingDuration)}
           >
-            Vrátit se k formuláři
-          </Button>
+            <SelectTrigger aria-label="Délka">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(BIRTH_GIVING_DURATION_LABELS) as BirthGivingDuration[]).map((val) => (
+                <SelectItem key={val} value={val}>
+                  {BIRTH_GIVING_DURATION_LABELS[val]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </p>
-        )}
+      <BirthGivingProfilePicker
+        profiles={organizerProfiles}
+        selected={selectedOrganizers}
+        onChange={(next) => setSelectedOrganizers(withCaller(next))}
+        label="Organizátoři:ky"
+        placeholder="Vyberte organizátory:ky"
+        disabled={busy}
+      />
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="bg-historical-event-name">Název události</Label>
-            <Input
-              id="bg-historical-event-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Např. Letní BG"
-              disabled={busy}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="bg-historical-event-customer">Zákazník</Label>
-            <Input
-              id="bg-historical-event-customer"
-              value={customer}
-              onChange={(event) => setCustomer(event.target.value)}
-              placeholder="Název zákazníka"
-              disabled={busy}
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="bg-historical-event-start">Začátek</Label>
-            <Input
-              id="bg-historical-event-start"
-              type="datetime-local"
-              value={startsAt}
-              onChange={(event) => setStartsAt(event.target.value)}
-              disabled={busy}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Délka</Label>
-            <Select
-              value={duration}
-              onValueChange={(value) => setDuration(value as BirthGivingDuration)}
-              disabled={busy}
-            >
-              <SelectTrigger aria-label="Délka">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(BIRTH_GIVING_DURATION_LABELS) as BirthGivingDuration[]).map(
-                  (value) => (
-                    <SelectItem key={value} value={value}>
-                      {BIRTH_GIVING_DURATION_LABELS[value]}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="bg-historical-event-min-size">Min. velikost týmu</Label>
-            <Input
-              id="bg-historical-event-min-size"
-              type="number"
-              min={1}
-              value={minimumTeamSize}
-              onChange={(event) => setMinimumTeamSize(event.target.value)}
-              disabled={busy}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="bg-historical-event-max-size">Max. velikost týmu</Label>
-            <Input
-              id="bg-historical-event-max-size"
-              type="number"
-              min={1}
-              value={maximumTeamSize}
-              onChange={(event) => setMaximumTeamSize(event.target.value)}
-              disabled={busy}
-            />
-          </div>
-        </div>
-
-        <p className="text-sm text-muted-foreground">
-          U historické události zůstává sestavování týmů zavřené.
-        </p>
-
-        <BirthGivingProfilePicker
-          profiles={organizerProfiles}
-          selected={selectedOrganizers}
-          onChange={(next) => setSelectedOrganizers(withCaller(next))}
-          label="Organizátor:ky"
-          placeholder="Vyberte organizátor:ky"
-          disabled={busy}
-        />
-
-        <div className="flex items-center justify-end gap-2">
-          <Button type="submit" disabled={busy}>
-            {busy && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
-            {event ? "Uložit koncept" : "Vytvořit koncept"}
-          </Button>
-        </div>
-      </form>
-    </div>
+      <div className="flex items-center justify-end gap-2 pt-2">
+        <Button type="submit" disabled={busy}>
+          {busy && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
+          Uložit a pokračovat
+        </Button>
+      </div>
+    </form>
   );
 }

@@ -1,35 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { MessageSquarePlus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-export interface BirthGivingReflectionValues {
-  contribution: string;
-  learning: string;
-}
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/responsive-dialog";
+import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
+import type { BirthGivingEventDetail } from "@/lib/birth-giving/types";
 
 interface BirthGivingReflectionFormProps {
-  initial?: BirthGivingReflectionValues;
-  onSubmit: (values: BirthGivingReflectionValues) => void | Promise<void>;
-  onCancel: () => void;
+  eventId: string;
+  currentContribution?: string;
+  currentLearning?: string;
+  onEventChange: (event: BirthGivingEventDetail | null) => void;
 }
 
 export function BirthGivingReflectionForm({
-  initial,
-  onSubmit,
-  onCancel,
+  eventId,
+  currentContribution = "",
+  currentLearning = "",
+  onEventChange,
 }: BirthGivingReflectionFormProps) {
-  const [contribution, setContribution] = useState(initial?.contribution ?? "");
-  const [learning, setLearning] = useState(initial?.learning ?? "");
+  const [open, setOpen] = useState(false);
+  const [contribution, setContribution] = useState(currentContribution);
+  const [learning, setLearning] = useState(currentLearning);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setError(null);
     if (!contribution.trim()) {
       setError("Přínos je povinný");
@@ -41,44 +50,73 @@ export function BirthGivingReflectionForm({
     }
     setLoading(true);
     try {
-      await onSubmit({ contribution: contribution.trim(), learning: learning.trim() });
+      const result = await birthGivingMutationRequest(
+        `/api/birth-giving/events/${eventId}/reflection`,
+        {
+          method: "PUT",
+          body: { contribution: contribution.trim(), learning: learning.trim() },
+        },
+      );
+      if (result.ok) {
+        toast.success("Reflexe byla uložena");
+        setOpen(false);
+        onEventChange(result.body.data ?? null);
+        return;
+      }
+      toast.error(result.body.error ?? "Reflexi se nepodařilo uložit");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      <div className="space-y-2">
-        <Label htmlFor="bg-reflection-contribution">Přínos</Label>
-        <Textarea
-          id="bg-reflection-contribution"
-          value={contribution}
-          onChange={(event) => setContribution(event.target.value)}
-          placeholder="Co jsi do týmu přidal:a"
-          rows={4}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="bg-reflection-learning">Poučení</Label>
-        <Textarea
-          id="bg-reflection-learning"
-          value={learning}
-          onChange={(event) => setLearning(event.target.value)}
-          placeholder="Co ses naučil:a"
-          rows={4}
-        />
-      </div>
-      <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
-          Zrušit
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="xs" variant="outline" className="gap-1">
+          <MessageSquarePlus className="size-3.5" />
+          {currentContribution ? "Upravit reflexi" : "Napsat reflexi"}
         </Button>
-        <Button type="submit" disabled={loading}>
-          {loading && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
-          Uložit reflexi
-        </Button>
-      </div>
-    </form>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{currentContribution ? "Upravit reflexi" : "Napsat reflexi"}</DialogTitle>
+          <DialogDescription>
+            Popište svůj osobní přínos a co jste se během práce na projektu naučili:y.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <div className="space-y-2">
+            <Label htmlFor="bg-reflection-contribution">V čem spočíval váš přínos týmu?</Label>
+            <Textarea
+              id="bg-reflection-contribution"
+              value={contribution}
+              onChange={(e) => setContribution(e.target.value)}
+              placeholder="Např. Připravil:a jsem návrh architektury a frontendové komponenty..."
+              rows={3}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="bg-reflection-learning">Co jste se naučili:y nebo co byste příště udělali:y jinak?</Label>
+            <Textarea
+              id="bg-reflection-learning"
+              value={learning}
+              onChange={(e) => setLearning(e.target.value)}
+              placeholder="Např. Příště lépe naplánovat čas na integraci..."
+              rows={3}
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+              Zrušit
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
+              Uložit reflexi
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

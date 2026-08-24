@@ -7,17 +7,27 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BirthGivingProfilePicker } from "./profile-picker";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
-import type { BirthGivingEventDetail } from "@/lib/birth-giving/types";
+import type { BirthGivingEventDetail, BirthGivingProfileSummary } from "@/lib/birth-giving/types";
 
 interface BirthGivingTeamFormProps {
   eventId: string;
+  callerProfileId: string;
+  availableProfiles: BirthGivingProfileSummary[];
   onSuccess: (event: BirthGivingEventDetail | null) => void;
   onCancel: () => void;
 }
 
-export function BirthGivingTeamForm({ eventId, onSuccess, onCancel }: BirthGivingTeamFormProps) {
+export function BirthGivingTeamForm({
+  eventId,
+  callerProfileId,
+  availableProfiles,
+  onSuccess,
+  onCancel,
+}: BirthGivingTeamFormProps) {
   const [name, setName] = useState("");
+  const [memberIds, setMemberIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +42,10 @@ export function BirthGivingTeamForm({ eventId, onSuccess, onCancel }: BirthGivin
     setLoading(true);
     try {
       const result = await birthGivingMutationRequest(`/api/birth-giving/events/${eventId}/teams`, {
-        body: { name: trimmed },
+        body: {
+          name: trimmed,
+          memberProfileIds: memberIds,
+        },
       });
       if (result.ok && result.body.data) {
         toast.success("Tým byl vytvořen");
@@ -58,7 +71,19 @@ export function BirthGivingTeamForm({ eventId, onSuccess, onCancel }: BirthGivin
           placeholder="Např. Tým Alfa"
         />
       </div>
-      <div className="flex items-center justify-end gap-2">
+
+      <div className="space-y-2">
+        <BirthGivingProfilePicker
+          profiles={availableProfiles}
+          selected={memberIds}
+          onChange={setMemberIds}
+          excludeIds={[callerProfileId]}
+          label="Přidat další členy:ky"
+          placeholder="Vyberte členy:ky týmu"
+        />
+      </div>
+
+      <div className="flex items-center justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Zrušit
         </Button>

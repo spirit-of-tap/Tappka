@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarClock, Factory, Loader2, PencilLine, Rocket, UserRound, Users } from "lucide-react";
+import { CalendarClock, Loader2, PencilLine, Rocket, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,14 +15,9 @@ import {
   DialogTitle,
 } from "@/components/ui/responsive-dialog";
 import { BirthGivingEventForm } from "./event-form";
-import { BirthGivingEventStatusBadge } from "./event-status-badge";
 import { BIRTH_GIVING_DURATION_LABELS } from "@/lib/birth-giving/constants";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
-import {
-  canManageBirthGivingEventDetails,
-  isBirthGivingOrganizer,
-} from "@/lib/birth-giving/permissions";
-import { getEventTimeState } from "@/lib/birth-giving/time";
+import { isBirthGivingOrganizer } from "@/lib/birth-giving/permissions";
 import type {
   BirthGivingEventDetail,
   BirthGivingProfileSummary,
@@ -39,16 +34,13 @@ interface BirthGivingEventMetadataProps {
 export function BirthGivingEventMetadata({
   event,
   profileId,
-  now,
+  now: _now,
   organizerProfiles,
   onEventChange,
 }: BirthGivingEventMetadataProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const clientNow = new Date(now);
-  const timeState = getEventTimeState(new Date(event.starts_at), event.duration, clientNow);
   const isOrganizer = isBirthGivingOrganizer(event, profileId);
-  const canEdit = canManageBirthGivingEventDetails(event, profileId, clientNow);
   const startsAt = new Date(event.starts_at);
   const canPublish = event.status === "draft" && isOrganizer;
 
@@ -76,23 +68,19 @@ export function BirthGivingEventMetadata({
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">{event.name}</h1>
-            <BirthGivingEventStatusBadge
-              joiningOpen={event.joining_open}
-              timeState={timeState}
-            />
             <Badge variant="outline" className="text-muted-foreground">
               {BIRTH_GIVING_DURATION_LABELS[event.duration]}
             </Badge>
+            {event.status === "draft" && (
+              <Badge variant="secondary">Koncept</Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground">{event.customer}</p>
-          {isOrganizer && event.status === "draft" && (
-            <Badge variant="secondary">Koncept</Badge>
-          )}
         </div>
         {canPublish && (
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             size="sm"
             disabled={publishing}
             onClick={() => void publishDraft()}
@@ -102,7 +90,7 @@ export function BirthGivingEventMetadata({
             Zveřejnit
           </Button>
         )}
-        {canEdit && (
+        {isOrganizer && (
           <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <PencilLine className="size-4" />
             Upravit událost
@@ -123,24 +111,10 @@ export function BirthGivingEventMetadata({
         </div>
         <div className="flex items-center gap-2">
           <dt className="flex items-center gap-1 text-muted-foreground">
-            <Factory className="size-3.5" />
-            Velikost týmů
-          </dt>
-          <dd>{event.minimum_team_size}–{event.maximum_team_size}</dd>
-        </div>
-        <div className="flex items-center gap-2">
-          <dt className="flex items-center gap-1 text-muted-foreground">
             <Users className="size-3.5" />
-            Organizátor:ky
+            Organizátoři:ky
           </dt>
-          <dd>{event.organizers.map((organizer) => organizer.profile.name).join(", ")}</dd>
-        </div>
-        <div className="flex items-center gap-2">
-          <dt className="flex items-center gap-1 text-muted-foreground">
-            <UserRound className="size-3.5" />
-            Přihlašování
-          </dt>
-          <dd>{event.joining_open ? "Otevřené" : "Zavřené"}</dd>
+          <dd>{event.organizers.map((organizer) => organizer.name).filter(Boolean).join(", ") || "–"}</dd>
         </div>
       </dl>
 
@@ -149,7 +123,7 @@ export function BirthGivingEventMetadata({
           <DialogHeader>
             <DialogTitle>Upravit událost</DialogTitle>
             <DialogDescription>
-              Aktualizujte parametry zveřejněné události.
+              Aktualizujte parametry události.
             </DialogDescription>
           </DialogHeader>
           <BirthGivingEventForm

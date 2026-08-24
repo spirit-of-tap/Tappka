@@ -6,17 +6,15 @@ import {
   makeAllProfiles,
   makeEvent,
   makeMemberWithProfile,
-  makeProposal,
-  makeReflection,
   makeResultFile,
   makeTeam,
   NOW,
 } from "@/tests/component/birth-giving-fixtures";
 
 describe("BirthGivingTeamCard", () => {
-  it("shows team name, status, capacity and members", () => {
+  it("shows team name, members and winner badge", () => {
     const team = makeTeam({
-      status: "confirmed",
+      is_winner: true,
       members: [
         makeMemberWithProfile({ profile_id: "member-1" }),
         makeMemberWithProfile({ profile_id: "candidate-2" }),
@@ -36,10 +34,9 @@ describe("BirthGivingTeamCard", () => {
     );
 
     expect(screen.getByText("Tým Alfa")).toBeInTheDocument();
-    expect(screen.getByText("Potvrzený")).toBeInTheDocument();
+    expect(screen.getByText("Vítězný tým")).toBeInTheDocument();
     expect(screen.getByText("Member One")).toBeInTheDocument();
     expect(screen.getByText("Member candidate-2")).toBeInTheDocument();
-    expect(screen.getByText("2/4")).toBeInTheDocument();
   });
 
   it("marks the current profile's team", () => {
@@ -62,66 +59,16 @@ describe("BirthGivingTeamCard", () => {
     expect(screen.getByText("Můj tým")).toBeInTheDocument();
   });
 
-  it("renders pending proposals with directional labels", () => {
-    const team = makeTeam({
-      members: [makeMemberWithProfile({ profile_id: "member-1" })],
-      proposals: [
-        makeProposal({ direction: "join_request", candidate_profile_id: "candidate-1" }),
-      ],
-    });
-    const event = makeEvent({ teams: [team] });
-
-    render(
-      <BirthGivingTeamCard
-        event={event}
-        team={team}
-        profileId="member-1"
-        now={NOW}
-        organizerProfiles={makeAllProfiles()}
-        onEventChange={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText(/Candidate candidate-1/)).toBeInTheDocument();
-    expect(screen.getByText(/Žádost o vstup/)).toBeInTheDocument();
-  });
-
-  it("shows a cancelled team with its reason and no actions", () => {
-    const team = makeTeam({
-      id: "team-2",
-      name: "Vyřazený tým",
-      status: "cancelled",
-      cancelled_at: "2026-08-19T08:00:00.000Z",
-      cancellation_reason: "Nenaplnil se minimální počet",
-    });
-    const event = makeEvent({ teams: [team] });
-
-    render(
-      <BirthGivingTeamCard
-        event={event}
-        team={team}
-        profileId="member-1"
-        now={NOW}
-        organizerProfiles={makeAllProfiles()}
-        onEventChange={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("Zrušený")).toBeInTheDocument();
-    expect(screen.getByText("Nenaplnil se minimální počet")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Požádat o vstup" })).not.toBeInTheDocument();
-  });
-
   it("surfaces the team result files and member reflections", () => {
     const team = makeTeam({
       members: [
-        makeMemberWithProfile(
-          { profile_id: "member-1" },
-          makeReflection({ contribution: "Přínos člena." }),
-        ),
+        makeMemberWithProfile({
+          profile_id: "member-1",
+          reflection_contribution: "Přínos člena.",
+          reflection_learning: "Poučení člena.",
+        }),
       ],
       result_files: [makeResultFile({ original_file_name: "vysledky.pdf" })],
-      status: "confirmed",
     });
     const event = makeEvent({ teams: [team] });
 

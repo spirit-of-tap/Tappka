@@ -22,7 +22,6 @@ import {
 import { BirthGivingDetailSection } from "./detail-section";
 import { BirthGivingTeamCard } from "./team-card";
 import { BirthGivingTeamForm } from "./team-form";
-import { canFormBirthGivingTeams } from "@/lib/birth-giving/permissions";
 import type {
   BirthGivingEventDetail,
   BirthGivingProfileSummary,
@@ -44,13 +43,10 @@ export function BirthGivingTeamList({
   onEventChange,
 }: BirthGivingTeamListProps) {
   const [createOpen, setCreateOpen] = useState(false);
-  const formationOpen = canFormBirthGivingTeams(event, new Date(now));
   const visibleTeams = event.teams;
-  const emptyDescription = formationOpen
-    ? "Založte první tým a pozvěte další lidi."
-    : event.status === "draft"
-      ? "Týmy se zobrazí po zveřejnění."
-      : "Pro tuto událost nebyly založeny žádné týmy.";
+  const emptyDescription = event.status === "draft"
+    ? "Týmy se zobrazí po zveřejnění."
+    : "Pro tuto událost nebyly založeny žádné týmy.";
 
   return (
     <BirthGivingDetailSection
@@ -58,7 +54,7 @@ export function BirthGivingTeamList({
       icon={UsersRound}
       boxed={false}
       action={
-        formationOpen && (
+        (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -70,12 +66,17 @@ export function BirthGivingTeamList({
               <DialogHeader>
                 <DialogTitle>Nový tým</DialogTitle>
                 <DialogDescription>
-                  Založte tým a vyzvěte lidi k připojení.
+                  Založte tým a vyberte jeho členy:ky.
                 </DialogDescription>
               </DialogHeader>
               <BirthGivingTeamForm
                 eventId={event.id}
-                onSuccess={onEventChange}
+                callerProfileId={profileId}
+                availableProfiles={organizerProfiles}
+                onSuccess={(updated) => {
+                  setCreateOpen(false);
+                  onEventChange(updated);
+                }}
                 onCancel={() => setCreateOpen(false)}
               />
             </DialogContent>

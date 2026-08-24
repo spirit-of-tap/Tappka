@@ -1,4 +1,4 @@
-import { MessageSquareText, Send, UsersRound } from "lucide-react";
+import { MessageSquareText, UsersRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { pluralizeCz } from "@/lib/utils/pluralize-cz";
@@ -9,10 +9,13 @@ interface BirthGivingEventOverviewStripProps {
 }
 
 export function BirthGivingEventOverviewStrip({ event }: BirthGivingEventOverviewStripProps) {
-  const teams = event.teams.filter((team) => team.status !== "cancelled");
-  const pendingProposals = teams.reduce((sum, team) => sum + team.proposals.length, 0);
+  const teams = event.teams.filter((team) => !team.cancelled_at);
   const reflectionsDone = teams.reduce(
-    (sum, team) => sum + team.members.filter((member) => member.reflection !== null).length,
+    (sum, team) =>
+      sum +
+      team.members.filter(
+        (member) => member.reflection_contribution || member.reflection_learning,
+      ).length,
     0,
   );
   const reflectionsTotal = teams.reduce((sum, team) => sum + team.members.length, 0);
@@ -25,12 +28,6 @@ export function BirthGivingEventOverviewStrip({ event }: BirthGivingEventOvervie
         <UsersRound className="size-3" />
         {teams.length} {pluralizeCz(teams.length, ["tým", "týmy", "týmů"])}
       </Badge>
-      {pendingProposals > 0 && (
-        <Badge variant="outline" className="gap-1 text-muted-foreground">
-          <Send className="size-3" />
-          {pendingProposals} {pluralizeCz(pendingProposals, ["čekající návrh", "čekající návrhy", "čekajících návrhů"])}
-        </Badge>
-      )}
       <Badge variant="outline" className="gap-1 text-muted-foreground">
         <MessageSquareText className="size-3" />
         {reflectionsDone}/{reflectionsTotal} reflexí
@@ -38,3 +35,4 @@ export function BirthGivingEventOverviewStrip({ event }: BirthGivingEventOvervie
     </div>
   );
 }
+

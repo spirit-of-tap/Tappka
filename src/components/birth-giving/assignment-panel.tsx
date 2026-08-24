@@ -20,10 +20,7 @@ import { BirthGivingDetailSection } from "./detail-section";
 import { BirthGivingFileUpload } from "./file-upload";
 import { formatFileSize } from "@/lib/birth-giving/format";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
-import {
-  canManageBirthGivingAssignment,
-  canMarkBirthGivingAssignmentMissing,
-} from "@/lib/birth-giving/permissions";
+import { isBirthGivingOrganizer } from "@/lib/birth-giving/permissions";
 import {
   formatBirthGivingCountdown,
   MINUTE_MILLISECONDS,
@@ -63,14 +60,11 @@ export function BirthGivingAssignmentPanel({
     };
   }, []);
 
-  const assignment = event.assignment;
   const startsAt = new Date(event.starts_at);
   const released = clientNow.getTime() >= startsAt.getTime();
-  const canManage = canManageBirthGivingAssignment(event, profileId, clientNow);
-  const canMarkMissing = canMarkBirthGivingAssignmentMissing(event, profileId, clientNow);
-
-  const state = assignment?.state;
-  const canDownload = state === "present" && (released || canManage);
+  const isOrganizer = isBirthGivingOrganizer(event, profileId);
+  const state = event.assignment_state;
+  const canDownload = state === "present" && (released || isOrganizer);
 
   async function markMissing() {
     setMarkingMissing(true);
@@ -96,14 +90,14 @@ export function BirthGivingAssignmentPanel({
       title="Zadání"
       badge={state === "missing" && <Badge variant="outline">Zadání nedohledáno</Badge>}
     >
-      {assignment && assignment.state === "present" && canDownload && (
+      {state === "present" && canDownload && (
         <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
           <FileText className="size-4 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium">
-            {assignment.original_file_name}
+            {event.assignment_file_name ?? "Zadání"}
           </span>
           <span className="text-xs text-muted-foreground">
-            {formatFileSize(assignment.file_size ?? 0)}
+            {formatFileSize(event.assignment_file_size ?? 0)}
           </span>
           <Button size="sm" variant="outline" asChild>
             <a href={`/api/birth-giving/events/${event.id}/assignment/download`}>
@@ -114,7 +108,7 @@ export function BirthGivingAssignmentPanel({
         </div>
       )}
 
-      {assignment && assignment.state === "present" && !released && !canManage && (
+      {state === "present" && !released && !isOrganizer && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Lock className="size-4" />
           Zadání bude zveřejněno za{" "}
@@ -122,11 +116,11 @@ export function BirthGivingAssignmentPanel({
         </p>
       )}
 
-      {!assignment && !canMarkMissing && !canManage && (
+      {state === "none" && !isOrganizer && (
         <p className="text-sm text-muted-foreground">Zadání zatím nebylo nahráno.</p>
       )}
 
-      {canManage && (
+      {isOrganizer && (
         <BirthGivingFileUpload
           kind="assignment"
           eventId={event.id}
@@ -134,7 +128,7 @@ export function BirthGivingAssignmentPanel({
         />
       )}
 
-      {canMarkMissing && !assignment && (
+      {isOrganizer && state !== "present" && state !== "missing" && (
         <AlertDialog open={missingConfirmOpen} onOpenChange={setMissingConfirmOpen}>
           <Button type="button" variant="outline" onClick={() => setMissingConfirmOpen(true)}>
             Označit zadání jako nedohledané

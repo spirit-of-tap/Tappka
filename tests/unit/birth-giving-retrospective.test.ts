@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  makeAssignment,
   makeDraftEvent,
   makeMemberWithProfile,
   makeProfileSummary,
@@ -19,12 +18,10 @@ describe("collectBirthGivingAffectedProfiles", () => {
       teams: [
         makeTeam({
           id: "team-1",
-          status: "confirmed",
           members: [makeMemberWithProfile({ profile_id: "profile-a" })],
         }),
         makeTeam({
           id: "team-2",
-          status: "confirmed",
           members: [
             makeMemberWithProfile({ profile_id: "profile-a" }),
             makeMemberWithProfile({ profile_id: "profile-b" }),
@@ -32,7 +29,7 @@ describe("collectBirthGivingAffectedProfiles", () => {
         }),
         makeTeam({
           id: "team-3",
-          status: "cancelled",
+          cancelled_at: "2026-08-19T10:00:00.000Z",
           members: [makeMemberWithProfile({ profile_id: "profile-c" })],
         }),
       ],
@@ -45,7 +42,7 @@ describe("collectBirthGivingAffectedProfiles", () => {
 
   it("returns an empty list when no team has members", () => {
     const event = makeDraftEvent({
-      teams: [makeTeam({ status: "confirmed", members: [] })],
+      teams: [makeTeam({ members: [] })],
     });
 
     expect(collectBirthGivingAffectedProfiles(event)).toEqual([]);
@@ -55,18 +52,14 @@ describe("collectBirthGivingAffectedProfiles", () => {
 describe("buildBirthGivingRetrospectiveReview", () => {
   it("flags missing assignment, missing teams, and per-team validation issues", () => {
     const event = makeDraftEvent({
-      assignment: null,
-      minimum_team_size: 2,
-      maximum_team_size: 4,
+      assignment_state: "none",
       teams: [
         makeTeam({
-          status: "confirmed",
           result_state: "present",
           result_files: [],
           members: [makeMemberWithProfile()],
         }),
         makeTeam({
-          status: "confirmed",
           result_state: "pending",
           members: [],
         }),
@@ -80,7 +73,7 @@ describe("buildBirthGivingRetrospectiveReview", () => {
 
     const [first, second] = review.teamIssues;
     expect(first.memberCount).toBe(1);
-    expect(first.sizeValid).toBe(false);
+    expect(first.sizeValid).toBe(true);
     expect(first.resultStatePending).toBe(false);
     expect(first.resultPresentWithoutFiles).toBe(true);
     expect(second.memberCount).toBe(0);
@@ -90,12 +83,9 @@ describe("buildBirthGivingRetrospectiveReview", () => {
 
   it("reports a clean review for a complete draft", () => {
     const event = makeDraftEvent({
-      assignment: makeAssignment({ state: "present" }),
-      minimum_team_size: 2,
-      maximum_team_size: 4,
+      assignment_state: "present",
       teams: [
         makeTeam({
-          status: "confirmed",
           result_state: "present",
           result_files: [makeResultFile()],
           members: [
@@ -120,7 +110,7 @@ describe("buildBirthGivingRetrospectiveReview", () => {
   });
 
   it("reports a draft without teams as blocked while it has no affected profiles", () => {
-    const event = makeDraftEvent({ assignment: makeAssignment(), teams: [] });
+    const event = makeDraftEvent({ assignment_state: "present", teams: [] });
 
     const review = buildBirthGivingRetrospectiveReview(event);
 
@@ -134,11 +124,9 @@ describe("buildBirthGivingRetrospectiveReview", () => {
     const event = makeDraftEvent({
       teams: [
         makeTeam({
-          status: "confirmed",
           members: [{ ...makeMemberWithProfile({ profile_id: "shared" }), profile }],
         }),
         makeTeam({
-          status: "confirmed",
           members: [{ ...makeMemberWithProfile({ profile_id: "shared" }), profile }],
         }),
       ],
