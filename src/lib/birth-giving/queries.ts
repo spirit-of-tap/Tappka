@@ -298,8 +298,14 @@ export async function countProfileBirthGivingParticipations(
 ): Promise<number> {
   const { count, error } = await supabase
     .from("birth_giving_team_members")
-    .select("id", { count: "exact", head: true })
-    .eq("profile_id", profileId);
+    .select(
+      "id, team:birth_giving_teams!inner(event:birth_giving_events!inner(id))",
+      { count: "exact", head: true },
+    )
+    .eq("profile_id", profileId)
+    .is("team.cancelled_at", null)
+    .eq("team.event.status", "published")
+    .is("team.event.removed_at", null);
 
   if (error) throw error;
   return count ?? 0;

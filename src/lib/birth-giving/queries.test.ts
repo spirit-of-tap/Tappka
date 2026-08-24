@@ -59,8 +59,8 @@ class FakeChain {
     this.count = count;
   }
 
-  select(select: string, _options?: unknown): this {
-    this.calls.push({ method: "select", args: [select] });
+  select(select: string, options?: unknown): this {
+    this.calls.push({ method: "select", args: [select, options] });
     return this;
   }
 
@@ -323,13 +323,47 @@ describe("Birth Giving queries", () => {
     expect(rpcCalls).toHaveLength(1);
   });
 
-  it("countProfileBirthGivingParticipations returns count of memberships", async () => {
-    const { client } = fakeSupabase({
-      birth_giving_team_members: [{ count: 3 }],
+  it("countProfileBirthGivingParticipations counts only valid participations (cancelled team and draft event excluded)", async () => {
+    // Seeds model the rows PostgREST sees server-side; the head-count the mock
+    // reports (2) is the count the server returns once the validity filters
+    // asserted below are applied. Only m-valid-1 and m-valid-2 satisfy the same
+    // validity predicate as listProfileBirthGivingHistory (team NOT cancelled
+    // AND event published AND event NOT removed); m-cancelled has a cancelled
+    // team and m-draft belongs to a draft event.
+    const memberships = [
+      { id: "m-valid-1", event_id: "e-valid-1" },
+      { id: "m-valid-2", event_id: "e-valid-2" },
+      { id: "m-cancelled", event_id: "e-cancelled" },
+      { id: "m-draft", event_id: "e-draft" },
+    ];
+
+    const { client, chains } = fakeSupabase({
+      birth_giving_team_members: [{ data: memberships, count: 2 }],
     });
 
     const count = await countProfileBirthGivingParticipations(client, "p1");
-    expect(count).toBe(3);
+    expect(count).toBe(2);
+
+    const memberChain = chains.find(
+      ({ table }) => table === "birth_giving_team_members",
+    );
+    expect(memberChain).toBeDefined();
+    const calls = memberChain!.chain.calls;
+
+    // Head count with the aliased `!inner` embeds so the nested validity filters
+    // resolve and force inner joins (same shape as listProfileBirthGivingHistory).
+    const selectCall = calls.find((call) => call.method === "select");
+    expect(selectCall).toBeDefined();
+    const projection = selectCall!.args[0] as string;
+    expect(projection).toContain("team:birth_giving_teams!inner");
+    expect(projection).toContain("event:birth_giving_events!inner");
+    expect(selectCall!.args[1]).toEqual({ count: "exact", head: true });
+
+    expect(calls).toContainEqual({ method: "eq", args: ["profile_id", "p1"] });
+    // Validity predicate shared with listProfileBirthGivingHistory.
+    expect(calls).toContainEqual({ method: "is", args: ["team.cancelled_at", null] });
+    expect(calls).toContainEqual({ method: "eq", args: ["team.event.status", "published"] });
+    expect(calls).toContainEqual({ method: "is", args: ["team.event.removed_at", null] });
   });
 
   it("listProfileBirthGivingHistory returns profile participations with redacted assignment defaults and no visibility RPC", async () => {
