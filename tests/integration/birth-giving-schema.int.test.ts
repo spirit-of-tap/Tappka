@@ -106,7 +106,7 @@ describe("Birth Giving simplification migration", () => {
     });
   });
 
-  it("removes every public Birth Giving function after retirement", async () => {
+  it("keeps only the secure Birth Giving mutation functions after retirement", async () => {
     await withRollback(async (client) => {
       const { rows } = await client.query<{ proname: string }>(
         `select p.proname
@@ -119,7 +119,12 @@ describe("Birth Giving simplification migration", () => {
             )
           order by p.proname`,
       );
-      expect(rows).toEqual([]);
+      expect(rows.map((row) => row.proname)).toEqual([
+        "birth_giving_active_profile_id",
+        "birth_giving_publish_event",
+        "birth_giving_remove_event",
+        "birth_giving_save_event",
+      ]);
     });
   });
 

@@ -91,6 +91,68 @@ async function expectRlsDenied(
   }
 }
 
+function pastTimestamp(): string {
+  return new Date(Date.now() - 60 * 60 * 1_000).toISOString();
+}
+
+type PgError = Error & { code?: string };
+
+// A denied mutation aborts the outer transaction, so wrap each expected
+// SQLSTATE error in a savepoint to keep the transaction usable for later
+// assertions (mirrors expectRlsDenied above).
+async function expectSqlState(
+  client: PoolClient,
+  code: string,
+  operation: () => Promise<unknown>,
+): Promise<void> {
+  await client.query("savepoint expected_sqlstate");
+  try {
+    await operation();
+    throw new Error(`Expected SQLSTATE ${code} but operation succeeded`);
+  } catch (error: unknown) {
+    await client.query("rollback to savepoint expected_sqlstate");
+    expect(error).toBeInstanceOf(Error);
+    expect((error as PgError).code).toBe(code);
+  } finally {
+    await client.query("release savepoint expected_sqlstate");
+  }
+}
+
+async function callSaveEvent(
+  client: PoolClient,
+  args: {
+    eventId?: string | null;
+    name: string;
+    customer: string;
+    startsAt: string;
+    duration: string;
+    organizerProfileIds: string[];
+  },
+): Promise<string> {
+  const { rows } = await client.query<{ saved: string }>(
+    `select public.birth_giving_save_event(
+       $1, $2, $3, $4::timestamptz, $5::public.birth_giving_duration, $6::uuid[]
+     ) as saved`,
+    [
+      args.eventId ?? null,
+      args.name,
+      args.customer,
+      args.startsAt,
+      args.duration,
+      args.organizerProfileIds,
+    ],
+  );
+  return rows[0].saved;
+}
+
+async function callPublishEvent(client: PoolClient, eventId: string): Promise<void> {
+  await client.query("select public.birth_giving_publish_event($1)", [eventId]);
+}
+
+async function callRemoveEvent(client: PoolClient, eventId: string): Promise<void> {
+  await client.query("select public.birth_giving_remove_event($1)", [eventId]);
+}
+
 describe("Birth Giving read-only authorization", () => {
   it("lets an active verified beta profile read published events, teams, and members", async () => {
     await withRollback(async (client) => {
@@ -295,6 +357,337 @@ describe("Birth Giving read-only authorization", () => {
         );
         expect(memberships).toEqual([]);
       }
+    });
+  });
+});
+
+describe("Birth Giving event mutation functions", () => {
+  it("denies every event mutation to inactive, revoked, non-beta, or unverified callers", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "mutations");
+
+      // Revoked: verified beta profile whose access has already been removed.
+      const revokedAuth = await insertAuthUser(client);
+      const { rows: revokedUserRows } = await client.query<{ id: string }>(
+        "select id from public.users where auth_user_id = $1",
+        [revokedAuth.id],
+      );
+      await client.query(
+        "update public.users set verified_work_email = $2, verified_work_email_at = now() where auth_user_id = $1",
+        [revokedAuth.id, `revoked-${revokedAuth.id}@studenti.czu.cz`],
+      );
+      await client.query(
+        `insert into public.profiles (name, work_email, user_id, role, beta_access_granted_at, access_removed_at)
+         values ('Revoked', $1, $2, 'student', now(), now())`,
+        [`revoked-${revokedAuth.id}@studenti.czu.cz`, revokedUserRows[0].id],
+      );
+
+      const nonBeta = await insertVerifiedProfile(client, {
+        name: "Non-beta",
+        betaAccess: false,
+      });
+
+      const unverifiedAuth = await insertAuthUser(client);
+      const { rows: unverifiedUserRows } = await client.query<{ id: string }>(
+        "select id from public.users where auth_user_id = $1",
+        [unverifiedAuth.id],
+      );
+      await client.query(
+        `insert into public.profiles (name, work_email, user_id, role)
+         values ('Unverified', $1, $2, 'student')`,
+        [`unverified-${unverifiedAuth.id}@studenti.czu.cz`, unverifiedUserRows[0].id],
+      );
+
+      for (const authUserId of [revokedAuth.id, nonBeta.authUserId, unverifiedAuth.id]) {
+        await asClaims(client, { sub: authUserId });
+        await expectSqlState(client, "42501", () =>
+          callSaveEvent(client, {
+            name: "Zakázané",
+            customer: "Klient",
+            startsAt: futureTimestamp(),
+            duration: "8h",
+            organizerProfileIds: [],
+          }),
+        );
+        await expectSqlState(client, "42501", () => callPublishEvent(client, eventId));
+        await expectSqlState(client, "42501", () => callRemoveEvent(client, eventId));
+      }
+    });
+  });
+
+  it("creates a draft whose organizer set contains the caller even when none is supplied", async () => {
+    await withRollback(async (client) => {
+      const caller = await insertVerifiedProfile(client, { name: "Caller" });
+      await asClaims(client, { sub: caller.authUserId });
+
+      const id = await callSaveEvent(client, {
+        name: "Nový kurz",
+        customer: "Klient",
+        startsAt: futureTimestamp(),
+        duration: "8h",
+        organizerProfileIds: [],
+      });
+
+      const { rows } = await client.query<{
+        organizer_profile_ids: string[];
+        status: string;
+        created_by_profile_id: string;
+      }>(
+        `select organizer_profile_ids, status, created_by_profile_id
+           from public.birth_giving_events where id = $1`,
+        [id],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].status).toBe("draft");
+      expect(rows[0].created_by_profile_id).toBe(caller.profileId);
+      expect(rows[0].organizer_profile_ids).toEqual([caller.profileId]);
+    });
+  });
+
+  it("requires the caller to be an organizer to update an event", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const outsider = await insertVerifiedProfile(client, { name: "Outsider" });
+      const eventId = await insertEvent(client, organizer.profileId, "upd");
+
+      await asClaims(client, { sub: outsider.authUserId });
+      await expectSqlState(client, "42501", () =>
+        callSaveEvent(client, {
+          eventId,
+          name: "Změna",
+          customer: "Klient",
+          startsAt: futureTimestamp(),
+          duration: "24h",
+          organizerProfileIds: [outsider.profileId],
+        }),
+      );
+    });
+  });
+
+  it("lets an organizer mutate editable fields, keeps status, and re-adds the caller as organizer", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const coOrganizer = await insertVerifiedProfile(client, { name: "Co-organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "upd2");
+
+      await asClaims(client, { sub: organizer.authUserId });
+      const newStartsAt = futureTimestamp();
+      await callSaveEvent(client, {
+        eventId,
+        name: "Přejmenováno",
+        customer: "Nový klient",
+        startsAt: newStartsAt,
+        duration: "24h",
+        // Caller is intentionally omitted from the supplied set; the function
+        // must append them so an organizer cannot lock themselves out.
+        organizerProfileIds: [coOrganizer.profileId],
+      });
+
+      await client.query("reset role");
+      const { rows } = await client.query<{
+        name: string;
+        customer: string;
+        starts_at: Date;
+        duration: string;
+        status: string;
+        created_by_profile_id: string;
+        organizer_profile_ids: string[];
+      }>(
+        `select name, customer, starts_at, duration, status, created_by_profile_id, organizer_profile_ids
+           from public.birth_giving_events where id = $1`,
+        [eventId],
+      );
+      expect(rows[0].name).toBe("Přejmenováno");
+      expect(rows[0].customer).toBe("Nový klient");
+      expect(rows[0].starts_at.toISOString()).toBe(newStartsAt);
+      expect(rows[0].duration).toBe("24h");
+      // save_event exposes no status/assignment/removal arguments, so the
+      // mutable surface stays limited to the organizer-editable fields.
+      expect(rows[0].status).toBe("draft");
+      expect(rows[0].created_by_profile_id).toBe(organizer.profileId);
+      expect(rows[0].organizer_profile_ids).toContain(organizer.profileId);
+      expect(rows[0].organizer_profile_ids).toContain(coOrganizer.profileId);
+    });
+  });
+
+  it("rejects a normalized duplicate event identity with 23505", async () => {
+    await withRollback(async (client) => {
+      const caller = await insertVerifiedProfile(client, { name: "Caller" });
+      await asClaims(client, { sub: caller.authUserId });
+
+      const startsAt = futureTimestamp();
+      await callSaveEvent(client, {
+        name: "  Retrospektiva  Kurz  ",
+        customer: "Duplikát",
+        startsAt,
+        duration: "8h",
+        organizerProfileIds: [caller.profileId],
+      });
+
+      await expectSqlState(client, "23505", () =>
+        callSaveEvent(client, {
+          name: "retrospektiva kurz",
+          customer: "Duplikát",
+          startsAt,
+          duration: "8h",
+          organizerProfileIds: [caller.profileId],
+        }),
+      );
+    });
+  });
+
+  it("rejects publishing a started retrospective draft whose assignment state is 'none'", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "past-none");
+      await client.query(
+        "update public.birth_giving_events set starts_at = $2 where id = $1",
+        [eventId, pastTimestamp()],
+      );
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await expectSqlState(client, "23514", () => callPublishEvent(client, eventId));
+    });
+  });
+
+  it("rejects publishing a started retrospective with no teams", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "past-noteam");
+      await client.query(
+        `update public.birth_giving_events
+            set starts_at = $2, assignment_state = 'missing'
+          where id = $1`,
+        [eventId, pastTimestamp()],
+      );
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await expectSqlState(client, "23514", () => callPublishEvent(client, eventId));
+    });
+  });
+
+  it("rejects publishing a started retrospective with a pending team result", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const member = await insertVerifiedProfile(client, { name: "Member" });
+      const eventId = await insertEvent(client, organizer.profileId, "past-pending");
+      await client.query(
+        `update public.birth_giving_events
+            set starts_at = $2, assignment_state = 'missing'
+          where id = $1`,
+        [eventId, pastTimestamp()],
+      );
+      const teamId = await insertTeam(client, eventId, organizer.profileId, "Tým");
+      await insertMember(client, eventId, teamId, member.profileId, organizer.profileId);
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await expectSqlState(client, "23514", () => callPublishEvent(client, eventId));
+    });
+  });
+
+  it("publishes a complete started retrospective", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const member = await insertVerifiedProfile(client, { name: "Member" });
+      const eventId = await insertEvent(client, organizer.profileId, "past-ok");
+      await client.query(
+        `update public.birth_giving_events
+            set starts_at = $2, assignment_state = 'missing'
+          where id = $1`,
+        [eventId, pastTimestamp()],
+      );
+      const teamId = await insertTeam(client, eventId, organizer.profileId, "Tým");
+      await insertMember(client, eventId, teamId, member.profileId, organizer.profileId);
+      await client.query(
+        "update public.birth_giving_teams set result_state = 'missing' where id = $1",
+        [teamId],
+      );
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await callPublishEvent(client, eventId);
+
+      const { rows } = await client.query<{
+        status: string;
+        updated_by_profile_id: string;
+      }>("select status, updated_by_profile_id from public.birth_giving_events where id = $1", [
+        eventId,
+      ]);
+      expect(rows[0].status).toBe("published");
+      expect(rows[0].updated_by_profile_id).toBe(organizer.profileId);
+    });
+  });
+
+  it("publishes a future draft without retrospective validation", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "future", "draft");
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await callPublishEvent(client, eventId);
+
+      const { rows } = await client.query<{ status: string }>(
+        "select status from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(rows[0].status).toBe("published");
+    });
+  });
+
+  it("removes an event only as an organizer and sets both removal columns", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const outsider = await insertVerifiedProfile(client, { name: "Outsider" });
+      const eventId = await insertEvent(client, organizer.profileId, "rm");
+
+      // A non-organizer cannot remove the event.
+      await asClaims(client, { sub: outsider.authUserId });
+      await expectSqlState(client, "42501", () => callRemoveEvent(client, eventId));
+
+      // The organizer can remove it.
+      await asClaims(client, { sub: organizer.authUserId });
+      await callRemoveEvent(client, eventId);
+
+      // The removed event is hidden from RLS even for the organizer.
+      const visible = await client.query<{ id: string }>(
+        "select id from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(visible.rows).toEqual([]);
+
+      // Inspect the removal columns directly as admin.
+      await client.query("reset role");
+      const { rows } = await client.query<{
+        removed_at: string | null;
+        removed_by_profile_id: string | null;
+      }>(
+        "select removed_at, removed_by_profile_id from public.birth_giving_events where id = $1",
+        [eventId],
+      );
+      expect(rows[0].removed_at).not.toBeNull();
+      expect(rows[0].removed_by_profile_id).toBe(organizer.profileId);
+    });
+  });
+
+  it("keeps the private active-profile helper out of reach of authenticated callers", async () => {
+    await withRollback(async (client) => {
+      const caller = await insertVerifiedProfile(client, { name: "Caller" });
+      await asClaims(client, { sub: caller.authUserId });
+
+      // Grading EXECUTE: the private helper is not executable by authenticated.
+      await expectSqlState(client, "42501", () =>
+        client.query("select public.birth_giving_active_profile_id()"),
+      );
+
+      // The public event functions remain executable.
+      const id = await callSaveEvent(client, {
+        name: "Veřejné",
+        customer: "Klient",
+        startsAt: futureTimestamp(),
+        duration: "8h",
+        organizerProfileIds: [caller.profileId],
+      });
+      expect(id).toBeTruthy();
     });
   });
 });
