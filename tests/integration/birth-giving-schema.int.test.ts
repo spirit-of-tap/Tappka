@@ -88,18 +88,38 @@ describe("Birth Giving simplification migration", () => {
         "birth_giving_teams",
       ] as const;
 
-      await client.query(`
-        drop table if exists public.birth_giving_team_members cascade;
-        drop table if exists public.birth_giving_teams cascade;
-        drop table if exists public.birth_giving_events cascade;
-      `);
+      // Clear any legacy table still present (e.g. if the full chain is not
+      // applied) inside the rollback transaction so the stubs below are safe
+      // to create; nothing is dropped out of band.
+      for (const tableName of legacyTableNames) {
+        await client.query(`drop table if exists public.${tableName} cascade`);
+      }
       for (const tableName of legacyTableNames) {
         await client.query(`create table public.${tableName} (stub integer)`);
       }
       await client.query("insert into public.birth_giving_assignments values (1)");
 
-      const guardSql = readMigrationBySuffix("_assert_empty_birth_giving_legacy_tables.sql");
+      // The emptiness guard lives at the top of the drop migration, so it must
+      // run in the same file/transaction as the destructive drops.
+      const guardSql = readMigrationBySuffix("_drop_legacy_birth_giving_tables.sql");
       await expect(client.query(guardSql)).rejects.toThrow(/requires empty legacy tables/i);
+    });
+  });
+
+  it("removes every public Birth Giving function after retirement", async () => {
+    await withRollback(async (client) => {
+      const { rows } = await client.query<{ proname: string }>(
+        `select p.proname
+           from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname = 'public'
+            and (
+              substring(p.proname for 12) = 'birth_giving'
+              or p.proname = 'can_view_birth_giving_event_organizers'
+            )
+          order by p.proname`,
+      );
+      expect(rows).toEqual([]);
     });
   });
 

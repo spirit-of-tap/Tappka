@@ -61,12 +61,11 @@ The obsolete storage-cleanup table, RPCs, helper, and cron are removed. The assi
 
 The migration is deliberately staged:
 
-1. A custom migration verifies all eleven legacy tables are empty.
-2. Drizzle drops the eleven tables and their policies while retaining enum objects.
-3. A custom migration retires legacy Birth Giving functions after their table and policy dependencies are gone.
-4. Drizzle drops only the five obsolete enums.
-5. Drizzle creates the final three-table schema with four enums and read-only RLS.
-6. A custom migration creates mutation/read functions, triggers, grants, and assignment column restrictions.
+1. The Drizzle-generated drop migration begins with a custom-SQL guard that `LOCK`s every still-present legacy table in `ACCESS EXCLUSIVE` mode (fixed deterministic order) and raises if any is non-empty, then Drizzle drops the eleven tables and their policies while retaining enum objects — all in one file and one transaction, so a concurrent insert cannot slip between the emptiness check and the drops.
+2. A custom migration retires legacy Birth Giving functions after their table and policy dependencies are gone.
+3. Drizzle drops only the five obsolete enums.
+4. Drizzle creates the final three-table schema with four enums and read-only RLS.
+5. A custom migration creates mutation/read functions, triggers, grants, and assignment column restrictions.
 
 This ordering avoids trigger, policy, function-signature, and enum dependencies. Structural DDL remains Drizzle-generated.
 

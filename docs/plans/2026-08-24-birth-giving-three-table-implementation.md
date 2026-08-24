@@ -24,8 +24,7 @@
 - Modify: `tests/integration/birth-giving-schema.int.test.ts`
 - Modify: `tests/setup/testdb.ts`
 - Delete: `tests/setup/fixtures/birth-giving-simplification.sql`
-- Generate: `supabase/migrations/<timestamp>_assert_empty_birth_giving_legacy_tables.sql`
-- Generate: `supabase/migrations/<timestamp>_drop_legacy_birth_giving_tables.sql`
+- Generate: `supabase/migrations/<timestamp>_drop_legacy_birth_giving_tables.sql` (leading custom-SQL emptiness guard merges the former standalone guard migration into this file)
 - Generate: `supabase/migrations/<timestamp>_retire_legacy_birth_giving_routines.sql`
 - Generate: `supabase/migrations/<timestamp>_drop_obsolete_birth_giving_enums.sql`
 - Generate: matching `supabase/migrations/meta/*_snapshot.json` and `_journal.json` entries
@@ -36,7 +35,7 @@ Delete the fixture hook from `tests/setup/testdb.ts`, delete the fixture SQL fil
 
 **Step 2: Write the failing migration-guard test**
 
-In a `withRollback` test, drop the final three Birth Giving tables, create eleven same-named one-column stubs, insert one row into one stub, read the generated guard migration, and assert execution rejects:
+In a `withRollback` test, clear any present legacy table, create eleven same-named one-column stubs, insert one row into one stub, read the *drop* migration (which carries the emptiness guard at its top), and assert execution rejects:
 
 ```ts
 const LEGACY_TABLES = [
@@ -58,23 +57,23 @@ await expect(client.query(guardSql)).rejects.toThrow(
 );
 ```
 
-Locate the migration by its stable suffix, not a hardcoded timestamp.
+Locate the migration by its stable suffix (`_drop_legacy_birth_giving_tables.sql`), not a hardcoded timestamp.
 
 **Step 3: Run the integration layer to verify RED**
 
 Run: `pnpm test:integration`
 
-Expected: FAIL during migration setup or because the guard migration does not exist.
+Expected: FAIL during migration setup or because the drop migration carries no guard yet.
 
-**Step 4: Generate the guard migration in the staging worktree**
+**Step 4: Prepending the atomic emptiness guard to the drop migration**
 
-Link the main `node_modules` into the clean staging worktree if needed, then run:
+Generate the drop migration (Step 5 below) and prepend a leading custom-SQL `DO $$` block so the emptiness check and the destructive drops run in the same file and the same transaction. The block must:
 
-```bash
-pnpm db:generate:custom --name assert_empty_birth_giving_legacy_tables
-```
+- iterate the eleven legacy table names in a fixed, deterministic order;
+- for each table still present, `LOCK` it in `ACCESS EXCLUSIVE` mode to block concurrent writers; skip absent tables so the block stays idempotent;
+- then check each present table is empty and raise if any row exists.
 
-Use this migration body:
+Use this leading block:
 
 ```sql
 DO $$
@@ -96,16 +95,30 @@ BEGIN
     'birth_giving_teams'
   ]
   LOOP
-    EXECUTE format(
-      'SELECT EXISTS (SELECT 1 FROM public.%I LIMIT 1)',
-      legacy_table
-    ) INTO has_rows;
+    -- Idempotent: skip tables that no longer exist.
+    IF EXISTS (
+      SELECT 1
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = 'public'
+         AND c.relname = legacy_table
+         AND c.relkind IN ('r', 'p')
+    ) THEN
+      -- Block concurrent writers before the emptiness check; held for the
+      -- whole transaction so no row can slip in before the drops below.
+      EXECUTE format('LOCK TABLE public.%I IN ACCESS EXCLUSIVE MODE', legacy_table);
 
-    IF has_rows THEN
-      RAISE EXCEPTION
-        'Birth Giving simplification requires empty legacy tables; %.% contains data',
-        'public',
-        legacy_table;
+      EXECUTE format(
+        'SELECT EXISTS (SELECT 1 FROM public.%I LIMIT 1)',
+        legacy_table
+      ) INTO has_rows;
+
+      IF has_rows THEN
+        RAISE EXCEPTION
+          'Birth Giving simplification requires empty legacy tables; %.% contains data',
+          'public',
+          legacy_table;
+      END IF;
     END IF;
   END LOOP;
 END
@@ -129,28 +142,34 @@ Run `pnpm db:generate:custom --name retire_legacy_birth_giving_routines` and use
 ```sql
 DO $$
 DECLARE
-  legacy_function record;
+  routine_ids text[];
+  routine_id text;
 BEGIN
-  FOR legacy_function IN
-    SELECT p.oid::regprocedure AS identity
-      FROM pg_proc p
-      JOIN pg_namespace n ON n.oid = p.pronamespace
-     WHERE n.nspname = 'public'
-       AND (
-         p.proname LIKE 'birth_giving_%'
-         OR p.proname = 'can_view_birth_giving_event_organizers'
-       )
+  -- Materialize the full list as canonical text first so a CASCADE from an
+  -- earlier DROP cannot leave a stale regprocedure OID behind.
+  SELECT array_agg(p.oid::regprocedure::text)
+    INTO routine_ids
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public'
+     AND p.prokind = 'f'
+     AND (
+       substring(p.proname for 12) = 'birth_giving'
+       OR p.proname = 'can_view_birth_giving_event_organizers'
+     );
+
+  FOREACH routine_id IN ARRAY routine_ids
   LOOP
     EXECUTE format(
       'DROP FUNCTION IF EXISTS %s CASCADE',
-      legacy_function.identity
+      routine_id
     );
   END LOOP;
 END
 $$;
 ```
 
-This migration must run after table/policy drops so `CASCADE` cannot remove policies expected by generated SQL.
+Constrain with `prokind = 'f'` and match the `birth_giving` prefix with an exact, wildcard-safe predicate (`substring(proname for 12)`) rather than a `LIKE` whose `_` would act as a single-char wildcard. This migration must run after table/policy drops so `CASCADE` cannot remove policies expected by generated SQL.
 
 **Step 7: Generate obsolete enum drops**
 
@@ -169,7 +188,7 @@ Expected generated drops: delivery status, email message type, proposal directio
 
 **Step 8: Replace the failed local migration history**
 
-Delete the untracked failed migration attempts and their snapshots. Copy the four staged generated migrations, snapshots, and journal into the main worktree. Do not modify generated SQL or snapshots by hand.
+Delete the untracked failed migration attempts and their snapshots. Copy the three staged generated migrations, snapshots, and journal into the main worktree. The drop migration already carries the leading emptiness guard (Step 4) and is the only guard-bearing migration; do not keep a separate guard migration or snapshot. Do not modify generated SQL or snapshots by hand.
 
 **Step 9: Run migration setup again**
 
