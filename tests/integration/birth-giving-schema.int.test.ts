@@ -144,18 +144,72 @@ describe("Birth Giving simplification migration", () => {
 
   it("keeps only enums that validate the current model", async () => {
     await withRollback(async (client) => {
-      const { rows } = await client.query<{ typname: string }>(
-        `select typname
-           from pg_type
-          where typname like 'birth_giving_%'
-            and typtype = 'e'
-          order by typname`,
+      const { rows } = await client.query<{ typname: string; labels: string }>(
+        `select t.typname,
+                string_agg(e.enumlabel, ',' order by e.enumsortorder) as labels
+           from pg_type t
+           join pg_enum e on e.enumtypid = t.oid
+          where t.typname like 'birth_giving_%'
+            and t.typtype = 'e'
+          group by t.typname
+          order by t.typname`,
       );
-      expect(rows.map((row) => row.typname)).toEqual([
-        "birth_giving_assignment_state",
-        "birth_giving_duration",
-        "birth_giving_event_status",
-        "birth_giving_team_result_state",
+      expect(rows).toEqual([
+        {
+          typname: "birth_giving_assignment_state",
+          labels: "present,missing,none",
+        },
+        { typname: "birth_giving_duration", labels: "8h,24h" },
+        { typname: "birth_giving_event_status", labels: "draft,published" },
+        {
+          typname: "birth_giving_team_result_state",
+          labels: "pending,present,missing",
+        },
+      ]);
+    });
+  });
+
+  it("keeps the composite team key and the membership team foreign key", async () => {
+    await withRollback(async (client) => {
+      const { rows } = await client.query<{
+        name: string;
+        kind: string;
+        columns: string;
+        references: string;
+      }>(
+        `select
+           c.conname as name,
+           case c.contype when 'u' then 'unique' when 'f' then 'fk' end as kind,
+           (select string_agg(a.attname, ',' order by o.ord)
+              from unnest(c.conkey) with ordinality o(attnum, ord)
+              join pg_attribute a on a.attrelid = c.conrelid and a.attnum = o.attnum) as columns,
+           coalesce(
+             (select string_agg(a.attname, ',' order by o.ord)
+                from unnest(c.confkey) with ordinality o(attnum, ord)
+                join pg_attribute a on a.attrelid = c.confrelid and a.attnum = o.attnum),
+             ''
+           ) as references
+           from pg_constraint c
+           join pg_class t on t.oid = c.conrelid
+           join pg_namespace n on n.oid = t.relnamespace
+          where n.nspname = 'public'
+            and t.relname in ('birth_giving_teams', 'birth_giving_team_members')
+            and c.conname in ('birth_giving_teams_event_id_id_key', 'birth_giving_team_members_event_team_fkey')
+          order by c.conname`,
+      );
+      expect(rows).toEqual([
+        {
+          name: "birth_giving_team_members_event_team_fkey",
+          kind: "fk",
+          columns: "event_id,team_id",
+          references: "event_id,id",
+        },
+        {
+          name: "birth_giving_teams_event_id_id_key",
+          kind: "unique",
+          columns: "event_id,id",
+          references: "",
+        },
       ]);
     });
   });
@@ -203,8 +257,8 @@ describe("Birth Giving relational invariants", () => {
         `insert into public.birth_giving_events (
            name, customer, starts_at, duration, status, organizer_profile_ids,
            created_by_profile_id, updated_by_profile_id
-         ) values ('  Café　Launch  ', ' Město ', $1, '8h', 'draft', $2::uuid[], $2, $2)`,
-        [startsAt, organizer.profileId],
+         ) values ('  Café　Launch  ', ' Město ', $1, '8h', 'draft', $2::uuid[], $3, $3)`,
+        [startsAt, [organizer.profileId], organizer.profileId],
       );
 
       await expectConstraintViolation(
@@ -213,8 +267,8 @@ describe("Birth Giving relational invariants", () => {
           `insert into public.birth_giving_events (
              name, customer, starts_at, duration, status, organizer_profile_ids,
              created_by_profile_id, updated_by_profile_id
-           ) values ('Café Launch', 'Město', $1, '8h', 'draft', $2::uuid[], $2, $2)`,
-          [startsAt, organizer.profileId],
+           ) values ('Café Launch', 'Město', $1, '8h', 'draft', $2::uuid[], $3, $3)`,
+          [startsAt, [organizer.profileId], organizer.profileId],
         ),
         /unique|duplicate/i,
       );
@@ -287,6 +341,84 @@ describe("Birth Giving relational invariants", () => {
               set reflection_contribution = 'Contribution'
             where event_id = $1 and profile_id = $2`,
           [eventId, member.profileId],
+        ),
+        /check/i,
+      );
+    });
+  });
+
+  it("rejects inconsistent assignment metadata, cancellation fields, and removal pairing", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "consistency");
+      const teamId = await insertTeam(client, eventId, organizer.profileId, "Consistency team");
+
+      // 'present' requires every metadata column plus a path under the event prefix.
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `update public.birth_giving_events
+              set assignment_state = 'present',
+                  assignment_storage_path = 'birth-giving/assignments/other/file.pdf',
+                  assignment_file_name = 'file.pdf',
+                  assignment_mime_type = 'application/pdf',
+                  assignment_file_size = 1024,
+                  assignment_uploaded_at = now(),
+                  assignment_uploaded_by_profile_id = $1
+            where id = $2`,
+          [organizer.profileId, eventId],
+        ),
+        /check/i,
+      );
+
+      // 'none' and 'missing' require every metadata column to stay null.
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `update public.birth_giving_events
+              set assignment_state = 'none',
+                  assignment_file_name = 'file.pdf'
+            where id = $1`,
+          [eventId],
+        ),
+        /check/i,
+      );
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          `update public.birth_giving_events
+              set assignment_state = 'missing',
+                  assignment_storage_path = 'birth-giving/assignments/' || $1::text || '/file.pdf'
+            where id = $1`,
+          [eventId],
+        ),
+        /check/i,
+      );
+
+      // Cancellation fields are paired and the reason is non-empty.
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          "update public.birth_giving_teams set cancelled_at = now() where id = $1",
+          [teamId],
+        ),
+        /check/i,
+      );
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          "update public.birth_giving_teams set cancellation_reason = 'Zrušeno' where id = $1",
+          [teamId],
+        ),
+        /check/i,
+      );
+
+      // Removal fields are paired too.
+      await expectConstraintViolation(
+        client,
+        () => client.query(
+          "update public.birth_giving_events set removed_at = now() where id = $1",
+          [eventId],
         ),
         /check/i,
       );

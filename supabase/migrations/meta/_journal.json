@@ -652,6 +652,13 @@
       "when": 1787587783257,
       "tag": "20260824160943_drop_obsolete_birth_giving_enums",
       "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1787591011310,
+      "tag": "20260824170331_create_simplified_birth_giving_schema",
+      "breakpoints": true
     }
   ]
 }
