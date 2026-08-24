@@ -136,8 +136,10 @@ export async function listBirthGivingEvents(
       ${BIRTH_GIVING_SAFE_EVENT_COLUMNS.join(", ")},
       teams:birth_giving_teams(
         id,
+        name,
+        is_winner,
         cancelled_at,
-        members:birth_giving_team_members(profile_id)
+        members:birth_giving_team_members(profile_id, reflection_contribution, reflection_learning)
       )
     `)
     .is("removed_at", null)
@@ -145,10 +147,18 @@ export async function listBirthGivingEvents(
 
   if (error) throw error;
 
+  interface RawMember {
+    profile_id: string;
+    reflection_contribution: string | null;
+    reflection_learning: string | null;
+  }
+
   interface RawTeamWithMembers {
     id: string;
+    name: string;
+    is_winner: boolean;
     cancelled_at: string | null;
-    members: { profile_id: string }[];
+    members: RawMember[];
   }
 
   interface RawEventWithTeams extends BirthGivingSafeEventRow {
@@ -169,6 +179,7 @@ export async function listBirthGivingEvents(
       team_count: activeTeams.length,
       participant_count: participantIds.length,
       participant_profile_ids: participantIds,
+      teams: activeTeams,
     };
   });
 }

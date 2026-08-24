@@ -42,7 +42,7 @@ export function BirthGivingEventDetail({
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-5">
       <PageBack href="/birth-giving" label="Zpět na přehled" />
 
       <BirthGivingEventMetadata
@@ -55,20 +55,22 @@ export function BirthGivingEventDetail({
 
       <BirthGivingEventOverviewStrip event={event} />
 
-      <BirthGivingAssignmentPanel
-        event={event}
-        profileId={profileId}
-        now={now}
-        onEventChange={handleEventChange}
-      />
+      <div className="space-y-6 pt-2">
+        <BirthGivingAssignmentPanel
+          event={event}
+          profileId={profileId}
+          now={now}
+          onEventChange={handleEventChange}
+        />
 
-      <BirthGivingTeamList
-        event={event}
-        profileId={profileId}
-        now={now}
-        organizerProfiles={organizerProfiles}
-        onEventChange={handleEventChange}
-      />
+        <BirthGivingTeamList
+          event={event}
+          profileId={profileId}
+          now={now}
+          organizerProfiles={organizerProfiles}
+          onEventChange={handleEventChange}
+        />
+      </div>
     </div>
   );
 }

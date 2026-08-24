@@ -28,6 +28,20 @@ const upcoming1 = makeEventIndexItem({
   organizer_profile_ids: ["org-1"],
   team_count: 1,
   participant_count: 2,
+  participant_profile_ids: ["user-1"],
+  teams: [
+    {
+      id: "team-1",
+      name: "Tým Alfa",
+      members: [
+        {
+          profile_id: "user-1",
+          reflection_contribution: "Navrhl:a jsem frontend.",
+          reflection_learning: "Naučil:a jsem se lépe pracovat s časem.",
+        },
+      ],
+    },
+  ],
 });
 
 const upcoming2 = makeEventIndexItem({
@@ -35,6 +49,7 @@ const upcoming2 = makeEventIndexItem({
   name: "Podzimní BG",
   customer: "Zákazník Beta",
   starts_at: "2026-09-10T08:00:00.000Z",
+  organizer_profile_ids: ["user-1"],
 });
 
 const past = makeEventIndexItem({
@@ -44,60 +59,92 @@ const past = makeEventIndexItem({
   starts_at: "2026-06-01T08:00:00.000Z",
 });
 
+const todayEvent = makeEventIndexItem({
+  id: "today-event",
+  name: "Dnešní Hackathon",
+  customer: "Inovace s.r.o.",
+  starts_at: "2026-08-19T08:00:00.000Z",
+  duration: "24h",
+  participant_profile_ids: ["user-1"],
+  teams: [
+    {
+      id: "team-today",
+      name: "Rychlíci",
+      members: [{ profile_id: "user-1", reflection_contribution: null, reflection_learning: null }],
+    },
+  ],
+});
+
 describe("BirthGivingIndex", () => {
-  it("groups events into the right tabs and shows counts", () => {
+  it("renders all events and filter badge triggers", () => {
     render(
       <BirthGivingIndex
         events={[upcoming1, upcoming2, past]}
-        profileId="org-1"
+        profileId="user-1"
         now={NOW}
         organizerProfiles={makeOrganizerSummaries()}
       />,
     );
 
-    expect(screen.getByRole("tab", { name: /Nadcházející/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Moje/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Historie/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Všechny/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Zúčastnil:a jsem se/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Pořádal:a jsem/ })).toBeInTheDocument();
 
     expect(screen.getByText("Letní BG")).toBeInTheDocument();
     expect(screen.getByText("Podzimní BG")).toBeInTheDocument();
-    expect(screen.queryByText("Jarní BG")).not.toBeInTheDocument();
+    expect(screen.getByText("Jarní BG")).toBeInTheDocument();
   });
 
-  it("switches to the history tab on demand", async () => {
+  it("filters to only events I participated in", async () => {
     const user = userEvent.setup();
     render(
       <BirthGivingIndex
-        events={[upcoming1, past]}
-        profileId="org-1"
+        events={[upcoming1, upcoming2, past]}
+        profileId="user-1"
         now={NOW}
         organizerProfiles={makeOrganizerSummaries()}
       />,
     );
 
-    await user.click(screen.getByRole("tab", { name: /Historie/ }));
+    await user.click(screen.getByRole("button", { name: /Zúčastnil:a jsem se/ }));
 
-    expect(screen.getByText("Jarní BG")).toBeInTheDocument();
-    expect(screen.queryByText("Letní BG")).not.toBeInTheDocument();
+    expect(screen.getByText("Letní BG")).toBeInTheDocument();
+    expect(screen.queryByText("Podzimní BG")).not.toBeInTheDocument();
+    expect(screen.queryByText("Jarní BG")).not.toBeInTheDocument();
   });
 
-  it("shows my events", () => {
+  it("filters to only events I organized", async () => {
+    const user = userEvent.setup();
     render(
       <BirthGivingIndex
-        events={[
-          makeEventIndexItem({
-            id: "mine-draft",
-            name: "Můj event",
-            starts_at: "2026-09-20T08:00:00.000Z",
-            participant_profile_ids: ["me-1"],
-          }),
-        ]}
-        profileId="me-1"
+        events={[upcoming1, upcoming2, past]}
+        profileId="user-1"
         now={NOW}
         organizerProfiles={makeOrganizerSummaries()}
       />,
     );
 
-    expect(screen.getByText("Můj event")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Pořádal:a jsem/ }));
+
+    expect(screen.getByText("Podzimní BG")).toBeInTheDocument();
+    expect(screen.queryByText("Letní BG")).not.toBeInTheDocument();
+    expect(screen.queryByText("Jarní BG")).not.toBeInTheDocument();
+  });
+
+  it("renders today live hero banner when user is attending a today/active event", () => {
+    render(
+      <BirthGivingIndex
+        events={[todayEvent, upcoming1]}
+        profileId="user-1"
+        now={NOW}
+        organizerProfiles={makeOrganizerSummaries()}
+      />,
+    );
+
+    expect(screen.getByText("Dnes probíhá")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Přejít na zadání a tým/ })).toHaveAttribute(
+      "href",
+      "/birth-giving/today-event",
+    );
   });
 });

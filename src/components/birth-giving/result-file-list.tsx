@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, FolderSearch, Trash2 } from "lucide-react";
+import { DownloadCloud, FileText, FolderSearch, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -54,11 +54,10 @@ export function BirthGivingResultFileList({
   onEventChange,
 }: BirthGivingResultFileListProps) {
   const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null);
-  const [missingConfirmOpen, setMissingConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const canManage = canUploadResults(event, team, profileId);
-  const canMarkMissing = canManage;
+  // When disabled (e.g. event concluded), uploading/deleting results is locked
+  const canManage = !disabled && canUploadResults(event, team, profileId);
 
   async function removeFile() {
     const file = pendingRemoval?.file;
@@ -82,77 +81,94 @@ export function BirthGivingResultFileList({
     }
   }
 
-  async function markMissing() {
-    setBusy(true);
-    try {
-      const result = await birthGivingMutationRequest(
-        `/api/birth-giving/events/${event.id}/teams/${team.id}/results/missing`,
-      );
-      if (result.ok) {
-        toast.success("Výsledek byl označen jako nedohledaný");
-        setMissingConfirmOpen(false);
-        onEventChange(null);
-        return;
-      }
-      toast.error(result.body.error ?? "Výsledek se nepodařilo označit jako nedohledaný");
-      onEventChange(result.body.data ?? null);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <div className="space-y-2">
       {team.result_state === "missing" && (
-        <Badge variant="outline" className="gap-1">
+        <Badge variant="outline" className="gap-1 text-muted-foreground text-xs">
           <FolderSearch className="size-3" />
           Výsledek nedohledán
         </Badge>
       )}
 
+      {/* Uploaded files list */}
       {team.result_files.length > 0 && (
         <ul className="space-y-1.5">
-          {team.result_files.map((file) => (
-            <li
-              key={file.id}
-              className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5 text-xs"
-            >
-              <FileText className="size-4 shrink-0 text-muted-foreground" />
-              <a
-                href={`/api/birth-giving/result-files/${file.id}/download`}
-                className="min-w-0 flex-1 truncate font-medium underline-offset-4 hover:underline"
+          {team.result_files.map((file) => {
+            const uploadedDate = file.uploaded_at ? new Date(file.uploaded_at) : null;
+            const formattedDate = uploadedDate
+              ? `${uploadedDate.toLocaleDateString("cs-CZ", {
+                  day: "numeric",
+                  month: "numeric",
+                })} v ${uploadedDate.toLocaleTimeString("cs-CZ", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`
+              : null;
+
+            return (
+              <li
+                key={file.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/40 bg-muted/20 p-2.5 text-xs"
               >
-                {file.original_file_name}
-              </a>
-              <span className="text-muted-foreground">{formatFileSize(file.file_size)}</span>
-              {canManage && (
-                <Button
-                  type="button"
-                  size="xs"
-                  variant="outline"
-                  aria-label={`Smazat soubor ${file.original_file_name}`}
-                  disabled={busy || disabled}
-                  onClick={() => setPendingRemoval({ file })}
-                >
-                  <Trash2 className="size-3" />
-                </Button>
-              )}
-            </li>
-          ))}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <FileText className="size-4 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={`/api/birth-giving/result-files/${file.id}/download`}
+                      className="inline-block truncate font-semibold text-foreground hover:text-primary hover:underline underline-offset-4"
+                      title={file.original_file_name}
+                    >
+                      {file.original_file_name}
+                    </a>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span>{formatFileSize(file.file_size)}</span>
+                      {formattedDate && <span>· Odevzdáno {formattedDate}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button size="xs" variant="ghost" className="size-7 p-0" asChild>
+                    <a
+                      href={`/api/birth-giving/result-files/${file.id}/download`}
+                      aria-label="Stáhnout"
+                    >
+                      <DownloadCloud className="size-3.5 text-muted-foreground hover:text-foreground" />
+                    </a>
+                  </Button>
+                  {canManage && (
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="ghost"
+                      className="size-7 p-0 text-muted-foreground hover:text-destructive"
+                      aria-label={`Smazat soubor ${file.original_file_name}`}
+                      disabled={busy || disabled}
+                      onClick={() => setPendingRemoval({ file })}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
-      {team.result_files.length === 0 && team.result_state !== "missing" && (
-        <Empty className="gap-3 border-dashed p-4">
+      {/* If non-member or disabled and no files */}
+      {team.result_files.length === 0 && !canManage && team.result_state !== "missing" && (
+        <Empty className="gap-2 border-dashed p-3">
           <EmptyMedia variant="icon">
-            <FileText className="size-5" />
+            <FileText className="size-4 text-muted-foreground" />
           </EmptyMedia>
           <EmptyHeader>
-            <EmptyTitle className="text-sm">Zatím žádné soubory s výsledky.</EmptyTitle>
+            <EmptyTitle className="text-xs text-muted-foreground">Zatím žádné soubory s výsledky.</EmptyTitle>
           </EmptyHeader>
         </Empty>
       )}
 
+      {/* Drag & drop upload area for active team members / organizers */}
       {canManage && (
         <BirthGivingFileUpload
           kind="results"
@@ -163,38 +179,7 @@ export function BirthGivingResultFileList({
         />
       )}
 
-      {canMarkMissing && team.result_state !== "missing" && (
-        <AlertDialog open={missingConfirmOpen} onOpenChange={setMissingConfirmOpen}>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={busy || disabled}
-            onClick={() => setMissingConfirmOpen(true)}
-          >
-            Označit výsledek jako nedohledaný
-          </Button>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Označit výsledek jako nedohledaný?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Nahrané soubory se smažou a výsledek se označí jako nedohledaný.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel asChild>
-                <Button type="button" variant="outline">Zrušit</Button>
-              </AlertDialogCancel>
-              <AlertDialogAction asChild>
-                <Button type="button" disabled={busy} onClick={() => void markMissing()}>
-                  Potvrdit
-                </Button>
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-
+      {/* Remove file confirmation */}
       <AlertDialog open={pendingRemoval !== null} onOpenChange={(open) => { if (!open) setPendingRemoval(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>

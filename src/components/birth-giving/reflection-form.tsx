@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquarePlus, Loader2 } from "lucide-react";
+import { MessageSquarePlus, Loader2, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ interface BirthGivingReflectionFormProps {
   eventId: string;
   currentContribution?: string;
   currentLearning?: string;
+  trigger?: React.ReactNode;
   onEventChange: (event: BirthGivingEventDetail | null) => void;
 }
 
@@ -29,6 +30,7 @@ export function BirthGivingReflectionForm({
   eventId,
   currentContribution = "",
   currentLearning = "",
+  trigger,
   onEventChange,
 }: BirthGivingReflectionFormProps) {
   const [open, setOpen] = useState(false);
@@ -36,6 +38,8 @@ export function BirthGivingReflectionForm({
   const [learning, setLearning] = useState(currentLearning);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const hasReflection = Boolean(currentContribution.trim() || currentLearning.trim());
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,14 +76,25 @@ export function BirthGivingReflectionForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="xs" variant="outline" className="gap-1">
-          <MessageSquarePlus className="size-3.5" />
-          {currentContribution ? "Upravit reflexi" : "Napsat reflexi"}
-        </Button>
+        {trigger ?? (
+          <Button size="xs" variant={hasReflection ? "ghost" : "outline"} className="gap-1 text-xs">
+            {hasReflection ? (
+              <>
+                <PencilLine className="size-3.5" />
+                Upravit reflexi
+              </>
+            ) : (
+              <>
+                <MessageSquarePlus className="size-3.5" />
+                Napsat reflexi
+              </>
+            )}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{currentContribution ? "Upravit reflexi" : "Napsat reflexi"}</DialogTitle>
+          <DialogTitle>{hasReflection ? "Upravit reflexi" : "Napsat reflexi"}</DialogTitle>
           <DialogDescription>
             Popište svůj osobní přínos a co jste se během práce na projektu naučili:y.
           </DialogDescription>

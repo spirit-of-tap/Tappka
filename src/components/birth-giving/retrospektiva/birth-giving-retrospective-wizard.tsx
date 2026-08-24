@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BirthGivingRetrospectiveEventStep } from "./birth-giving-retrospective-event-step";
 import { BirthGivingRetrospectiveZadaniStep } from "./birth-giving-retrospective-zadani-step";
@@ -104,20 +105,19 @@ export function BirthGivingRetrospectiveWizard({
               onEventChange={setEvent}
             />
             <div className="flex justify-end gap-2 pt-2">
-              <button
+              <Button
                 type="button"
-                className="btn btn-outline"
+                variant="outline"
                 onClick={() => setStepIndex(0)}
               >
                 Zpět
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="btn btn-primary"
                 onClick={() => setStepIndex(2)}
               >
                 Pokračovat na Týmy a výsledky
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -132,20 +132,19 @@ export function BirthGivingRetrospectiveWizard({
               onEventChange={setEvent}
             />
             <div className="flex justify-end gap-2 pt-2">
-              <button
+              <Button
                 type="button"
-                className="btn btn-outline"
+                variant="outline"
                 onClick={() => setStepIndex(1)}
               >
                 Zpět
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="btn btn-primary"
                 onClick={() => setStepIndex(3)}
               >
                 Pokračovat na kontrolu
-              </button>
+              </Button>
             </div>
           </div>
         )}

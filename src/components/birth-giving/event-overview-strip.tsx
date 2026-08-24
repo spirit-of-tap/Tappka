@@ -24,15 +24,16 @@ export function BirthGivingEventOverviewStrip({ event }: BirthGivingEventOvervie
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Badge variant="outline" className="gap-1 text-muted-foreground">
-        <UsersRound className="size-3" />
-        {teams.length} {pluralizeCz(teams.length, ["tým", "týmy", "týmů"])}
+      <Badge variant="outline" className="gap-1.5 text-muted-foreground text-xs">
+        <UsersRound className="size-3.5" />
+        <span className="font-medium text-foreground">{teams.length}</span>{" "}
+        {pluralizeCz(teams.length, ["tým", "týmy", "týmů"])}
       </Badge>
-      <Badge variant="outline" className="gap-1 text-muted-foreground">
-        <MessageSquareText className="size-3" />
-        {reflectionsDone}/{reflectionsTotal} reflexí
+      <Badge variant="outline" className="gap-1.5 text-muted-foreground text-xs">
+        <MessageSquareText className="size-3.5" />
+        <span className="font-medium text-foreground">{reflectionsDone}/{reflectionsTotal}</span>{" "}
+        {pluralizeCz(reflectionsDone, ["reflexe", "reflexe", "reflexí"])}
       </Badge>
     </div>
   );
 }
-

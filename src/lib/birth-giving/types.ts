@@ -89,10 +89,23 @@ export interface BirthGivingEventDetail extends BirthGivingEvent {
   teams: BirthGivingTeamDetail[];
 }
 
+export interface BirthGivingIndexTeamSummary {
+  id: string;
+  name: string;
+  is_winner?: boolean;
+  cancelled_at?: string | null;
+  members: {
+    profile_id: string;
+    reflection_contribution: string | null;
+    reflection_learning: string | null;
+  }[];
+}
+
 export interface BirthGivingEventIndexItem extends BirthGivingEvent {
   team_count: number;
   participant_count: number;
   participant_profile_ids: string[];
+  teams?: BirthGivingIndexTeamSummary[];
 }
 
 export interface GroupableBirthGivingEvent {

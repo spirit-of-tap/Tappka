@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BirthGivingProfilePicker } from "./profile-picker";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import { BIRTH_GIVING_DURATION_LABELS } from "@/lib/birth-giving/constants";
-import { parseBirthGivingDateTimeInput } from "@/lib/birth-giving/time";
+import { calculateEventEnd, parseBirthGivingDateTimeInput } from "@/lib/birth-giving/time";
 import type {
   BirthGivingDuration,
   BirthGivingEventDetail,
@@ -56,6 +56,20 @@ export function BirthGivingEventForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Automatically calculate end time based on start date + duration (8h or 24h)
+  const startsAtDate = parseBirthGivingDateTimeInput(startsAt);
+  const calculatedEnd = startsAtDate ? calculateEventEnd(startsAtDate, duration) : null;
+  const calculatedEndFormatted = calculatedEnd
+    ? `${calculatedEnd.toLocaleDateString("cs-CZ", {
+        day: "numeric",
+        month: "numeric",
+        year: "numeric",
+      })} v ${calculatedEnd.toLocaleTimeString("cs-CZ", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    : "–";
+
   async function handleSubmit(formEvent: React.FormEvent) {
     formEvent.preventDefault();
     setError(null);
@@ -65,7 +79,6 @@ export function BirthGivingEventForm({
     if (!trimmedName) { setError("Název události je povinný"); return; }
     if (!trimmedCustomer) { setError("Zákazník je povinný"); return; }
     if (!startsAt) { setError("Začátek je povinný"); return; }
-    const startsAtDate = parseBirthGivingDateTimeInput(startsAt);
     if (startsAtDate === null) {
       toast.error("Zadejte platné datum začátku");
       return;
@@ -128,7 +141,7 @@ export function BirthGivingEventForm({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="bg-event-start">Začátek</Label>
           <Input
@@ -152,6 +165,16 @@ export function BirthGivingEventForm({
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="bg-event-end">Konec (automaticky)</Label>
+          <Input
+            id="bg-event-end"
+            value={calculatedEndFormatted}
+            readOnly
+            disabled
+            className="bg-muted/40 text-muted-foreground cursor-not-allowed text-xs sm:text-sm"
+          />
         </div>
       </div>
 

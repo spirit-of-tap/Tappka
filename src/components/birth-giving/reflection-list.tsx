@@ -1,14 +1,5 @@
 "use client";
 
-import { MessageSquarePlus } from "lucide-react";
-
-import {
-  Empty,
-  EmptyHeader,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyMedia,
-} from "@/components/ui/empty";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import type {
   BirthGivingEventDetail,
@@ -35,43 +26,37 @@ export function BirthGivingReflectionList({
   return (
     <div className="space-y-2">
       {membersWithReflection.length === 0 && (
-        <Empty className="gap-3 p-4 md:p-4">
-          <EmptyMedia variant="icon">
-            <MessageSquarePlus className="size-5" />
-          </EmptyMedia>
-          <EmptyHeader>
-            <EmptyTitle className="text-sm">Zatím žádné reflexe</EmptyTitle>
-            <EmptyDescription className="text-xs">
-              Každý člen:ka týmu může přidat svou osobní reflexi.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <p className="text-xs text-muted-foreground italic py-1">
+          Zatím žádné odevzdané reflexe.
+        </p>
       )}
 
-      <ul className="space-y-2">
-        {membersWithReflection.map((member) => (
-          <li key={member.id} className="space-y-1.5 rounded-md border bg-muted/30 p-3">
-            <div className="flex items-center gap-2">
-              <ProfileAvatar picture={member.profile.picture} name={member.profile.name} size={22} />
-              <span className="text-sm font-medium">{member.profile.name}</span>
-            </div>
-            <div className="space-y-1 text-xs pt-1">
-              {member.reflection_contribution && (
-                <p>
-                  <span className="font-medium text-muted-foreground">Přínos: </span>
-                  {member.reflection_contribution}
-                </p>
-              )}
-              {member.reflection_learning && (
-                <p>
-                  <span className="font-medium text-muted-foreground">Poučení: </span>
-                  {member.reflection_learning}
-                </p>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
+      {membersWithReflection.length > 0 && (
+        <ul className="divide-y divide-border/30">
+          {membersWithReflection.map((member) => (
+            <li key={member.id} className="space-y-1.5 py-2 first:pt-0 last:pb-0">
+              <div className="flex items-center gap-2">
+                <ProfileAvatar picture={member.profile.picture} name={member.profile.name} size={18} />
+                <span className="font-medium text-xs text-foreground">{member.profile.name}</span>
+              </div>
+              <div className="space-y-1 pl-6 text-xs leading-relaxed text-muted-foreground">
+                {member.reflection_contribution && (
+                  <p>
+                    <span className="font-medium text-foreground/90">Přínos: </span>
+                    <span>{member.reflection_contribution}</span>
+                  </p>
+                )}
+                {member.reflection_learning && (
+                  <p>
+                    <span className="font-medium text-foreground/90">Poučení: </span>
+                    <span>{member.reflection_learning}</span>
+                  </p>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

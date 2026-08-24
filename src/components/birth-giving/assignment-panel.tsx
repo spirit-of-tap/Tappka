@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Lock, DownloadCloud } from "lucide-react";
+import { FileText, Lock, DownloadCloud, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ import { BirthGivingFileUpload } from "./file-upload";
 import { formatFileSize } from "@/lib/birth-giving/format";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
 import { isBirthGivingOrganizer } from "@/lib/birth-giving/permissions";
-import { MINUTE_MILLISECONDS } from "@/lib/birth-giving/time";
+import { formatBirthGivingCountdown, MINUTE_MILLISECONDS } from "@/lib/birth-giving/time";
 import type { BirthGivingEventDetail } from "@/lib/birth-giving/types";
 
 interface BirthGivingAssignmentPanelProps {
@@ -62,6 +62,7 @@ export function BirthGivingAssignmentPanel({
   const isOrganizer = isBirthGivingOrganizer(event, profileId);
   const state = event.assignment_state;
   const canDownload = state === "present" && (released || isOrganizer);
+  const remainingMs = startsAt.getTime() - clientNow.getTime();
 
   async function markMissing() {
     setMarkingMissing(true);
@@ -85,18 +86,27 @@ export function BirthGivingAssignmentPanel({
   return (
     <BirthGivingDetailSection
       title="Zadání"
-      badge={state === "missing" && <Badge variant="outline">Zadání nedohledáno</Badge>}
+      icon={FileText}
+      boxed={false}
+      badge={state === "missing" && <Badge variant="outline" className="text-muted-foreground text-xs font-normal">Zadání nedohledáno</Badge>}
     >
       {state === "present" && canDownload && (
-        <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 px-3 py-2">
-          <FileText className="size-4 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">
-            {event.assignment_file_name ?? "Zadání"}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {formatFileSize(event.assignment_file_size ?? 0)}
-          </span>
-          <Button size="sm" variant="outline" asChild>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/50 bg-card/60 p-3 sm:p-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <FileText className="size-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-foreground">
+                {event.assignment_file_name ?? "Zadání"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {formatFileSize(event.assignment_file_size ?? 0)}
+                {!released && isOrganizer && " · Viditelné pouze organizátorům:kám do začátku akce"}
+              </span>
+            </div>
+          </div>
+          <Button size="sm" asChild>
             <a href={`/api/birth-giving/events/${event.id}/assignment/download`}>
               <DownloadCloud className="size-4" />
               Stáhnout zadání
@@ -106,27 +116,37 @@ export function BirthGivingAssignmentPanel({
       )}
 
       {!released && !isOrganizer && (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Lock className="size-4" />
-          Zadání se zveřejní na začátku akce.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-border/60 bg-muted/20 p-3.5 text-sm text-muted-foreground">
+          <p className="flex items-center gap-2 text-xs sm:text-sm">
+            <Lock className="size-4 shrink-0 text-muted-foreground" />
+            Zadání se zveřejní na začátku akce.
+          </p>
+          {remainingMs > 0 && remainingMs < 24 * 60 * 60 * 1000 && (
+            <span className="flex items-center gap-1 text-xs font-medium text-foreground">
+              <Clock className="size-3.5" />
+              Zbývá {formatBirthGivingCountdown(remainingMs)}
+            </span>
+          )}
+        </div>
       )}
 
       {released && state === "none" && !isOrganizer && (
-        <p className="text-sm text-muted-foreground">Zadání zatím nebylo nahráno.</p>
+        <p className="text-xs text-muted-foreground">Zadání zatím nebylo nahráno.</p>
       )}
 
       {isOrganizer && (
-        <BirthGivingFileUpload
-          kind="assignment"
-          eventId={event.id}
-          onUploaded={() => onEventChange(null)}
-        />
+        <div className="space-y-3 pt-1">
+          <BirthGivingFileUpload
+            kind="assignment"
+            eventId={event.id}
+            onUploaded={() => onEventChange(null)}
+          />
+        </div>
       )}
 
       {isOrganizer && state !== "present" && state !== "missing" && (
         <AlertDialog open={missingConfirmOpen} onOpenChange={setMissingConfirmOpen}>
-          <Button type="button" variant="outline" onClick={() => setMissingConfirmOpen(true)}>
+          <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => setMissingConfirmOpen(true)}>
             Označit zadání jako nedohledané
           </Button>
           <AlertDialogContent>

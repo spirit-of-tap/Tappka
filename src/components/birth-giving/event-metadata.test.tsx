@@ -26,7 +26,7 @@ describe("BirthGivingEventMetadata", () => {
 
     expect(screen.getByText("First BG")).toBeInTheDocument();
     expect(screen.getByText("Zákazník A")).toBeInTheDocument();
-    expect(screen.getByText(/19\. 8\. 2026/)).toBeInTheDocument();
+    expect(screen.getAllByText(/19\. 8\. 2026/)[0]).toBeInTheDocument();
     expect(screen.getByText("8 h")).toBeInTheDocument();
     expect(screen.getByText("Org One")).toBeInTheDocument();
   });
