@@ -248,6 +248,23 @@ describe("assignment confirm route", () => {
 
     expect(response.status).toBe(500);
   });
+
+  it("re-confirming the same path does not delete the just-committed object", async () => {
+    // A retry after a lost response or a double-submit replays the exact path
+    // the RPC already committed, so it reports it back as the "previous" path.
+    // Deleting it would remove the object the row now references.
+    const { supabase } = createSupabase(ASSIGNMENT_PATH);
+    mocks.requireBirthGivingApiContext.mockResolvedValue({ profileId: PROFILE_ID, supabase });
+
+    const response = await confirmAssignment(postRequest(ASSIGNMENT_PATH) as never, {
+      params: Promise.resolve({ eventId: EVENT_ID }),
+    });
+
+    expect(mocks.deleteFile).not.toHaveBeenCalledWith("documents", ASSIGNMENT_PATH);
+    expect(mocks.deleteFile).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ data: { storagePath: ASSIGNMENT_PATH } });
+  });
 });
 
 describe("assignment missing route", () => {

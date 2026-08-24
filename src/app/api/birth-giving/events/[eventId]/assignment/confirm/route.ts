@@ -50,7 +50,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   // uploaded_at and uploaded_by are derived by the RPC, never accepted from
   // the caller. The RPC returns the previous storage path (if any) so the
-  // displaced object can be removed after the database commit.
+  // displaced object can be removed after the database commit. Re-confirming
+  // the very path just committed (retry after a lost response or a
+  // double-submit) reports that same path back as "previous"; never delete it,
+  // it is the object the row now references.
   const { data: previousPath, error } = await callBirthGivingRpc<string>(
     context.supabase,
     "birth_giving_set_assignment",
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return birthGivingMutationErrorResponse(error, context.supabase, eventId);
   }
 
-  if (previousPath) {
+  if (previousPath && previousPath !== storagePath) {
     try {
       await deleteFile("documents", previousPath);
     } catch (cleanupError) {
