@@ -1719,11 +1719,20 @@ describe("Birth Giving assignment visibility", () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
       const outsider = await insertVerifiedProfile(client, { name: "Outsider" });
-      const withAssignment = await insertEvent(client, organizer.profileId, "vis-embargo-has");
+      // The embargo applies to published-but-not-started events: a draft is
+      // invisible to non-organizers entirely (the visibility gate below), so
+      // these must be published for the blurring rule to come into play.
+      const withAssignment = await insertEvent(
+        client,
+        organizer.profileId,
+        "vis-embargo-has",
+        "published",
+      );
       const withoutAssignment = await insertEvent(
         client,
         organizer.profileId,
         "vis-embargo-none",
+        "published",
       );
 
       await asClaims(client, { sub: organizer.authUserId });
@@ -1759,7 +1768,7 @@ describe("Birth Giving assignment visibility", () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
       const outsider = await insertVerifiedProfile(client, { name: "Outsider" });
-      const eventId = await insertEvent(client, organizer.profileId, "vis-reveal");
+      const eventId = await insertEvent(client, organizer.profileId, "vis-reveal", "published");
       const path = `${assignmentPrefix(eventId)}zadani.pdf`;
 
       await asClaims(client, { sub: organizer.authUserId });
@@ -1791,7 +1800,7 @@ describe("Birth Giving assignment visibility", () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
       const outsider = await insertVerifiedProfile(client, { name: "Outsider" });
-      const eventId = await insertEvent(client, organizer.profileId, "vis-boundary");
+      const eventId = await insertEvent(client, organizer.profileId, "vis-boundary", "published");
       const path = `${assignmentPrefix(eventId)}zadani.pdf`;
 
       await asClaims(client, { sub: organizer.authUserId });
@@ -1842,6 +1851,77 @@ describe("Birth Giving assignment visibility", () => {
       // The organizer gets no row either once the event is removed.
       await asClaims(client, { sub: organizer.authUserId });
       expect(await callGetVisibleAssignment(client, eventId)).toBeNull();
+    });
+  });
+
+  it("returns no row to a non-organizer for a draft event, collapsing draft/nonexistent/removed", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const outsider = await insertVerifiedProfile(client, { name: "Outsider" });
+      const draftWithAssignment = await insertEvent(client, organizer.profileId, "vis-draft-has");
+      const draftWithoutAssignment = await insertEvent(
+        client,
+        organizer.profileId,
+        "vis-draft-none",
+      );
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await callSetAssignment(client, {
+        eventId: draftWithAssignment,
+        state: "present",
+        storagePath: `${assignmentPrefix(draftWithAssignment)}zadani.pdf`,
+        originalFileName: "zadani.pdf",
+        mimeType: "application/pdf",
+        fileSize: 2048,
+      });
+
+      // A draft is invisible to non-organizers through the read RLS, so the
+      // assignment function mirrors that visibility: a draft event id -- with
+      // or without an assignment -- is indistinguishable from a nonexistent id
+      // (same no-row response), removing the draft existence oracle.
+      await asClaims(client, { sub: outsider.authUserId });
+      const withAssignment = await callGetVisibleAssignment(client, draftWithAssignment);
+      const withoutAssignment = await callGetVisibleAssignment(client, draftWithoutAssignment);
+      const nonexistent = await callGetVisibleAssignment(
+        client,
+        "00000000-0000-0000-0000-000000000000",
+      );
+      expect(withAssignment).toBeNull();
+      expect(withoutAssignment).toBeNull();
+      expect(nonexistent).toBeNull();
+    });
+  });
+
+  it("always shows the real assignment to a draft's organizer, even once the event is past due", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "vis-draft-org");
+      const path = `${assignmentPrefix(eventId)}zadani.pdf`;
+
+      await asClaims(client, { sub: organizer.authUserId });
+      await callSetAssignment(client, {
+        eventId,
+        state: "present",
+        storagePath: path,
+        originalFileName: "zadani.pdf",
+        mimeType: "application/pdf",
+        fileSize: 2048,
+      });
+
+      // A draft whose start is long past is still only visible to its
+      // organizers through RLS; they must always see the real assignment,
+      // regardless of time.
+      await client.query("reset role");
+      await client.query(
+        "update public.birth_giving_events set starts_at = now() - interval '1 hour' where id = $1",
+        [eventId],
+      );
+
+      await asClaims(client, { sub: organizer.authUserId });
+      const visible = await callGetVisibleAssignment(client, eventId);
+      expect(visible?.assignment_state).toBe("present");
+      expect(visible?.assignment_storage_path).toBe(path);
+      expect(visible?.assignment_uploaded_by_profile_id).toBe(organizer.profileId);
     });
   });
 });
@@ -1961,6 +2041,90 @@ describe("Birth Giving result file mutation security", () => {
     });
   });
 
+  it("accepts '..'-containing filenames under the exact prefix while rejecting traversal segments", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const eventId = await insertEvent(client, organizer.profileId, "path-boundary");
+      const teamId = await insertTeam(client, eventId, organizer.profileId, "Cesta OK");
+
+      await asClaims(client, { sub: organizer.authUserId });
+
+      // 'report..final.pdf' merely contains two dots inside a filename segment;
+      // it is not a `..` path segment and must be accepted under the prefix.
+      const fileId = await callAddResultFile(client, {
+        eventId,
+        teamId,
+        storagePath: `${resultPrefix(eventId, teamId)}report..final.pdf`,
+        originalFileName: "report..final.pdf",
+        mimeType: "application/pdf",
+        fileSize: 1024,
+      });
+      expect(fileId).toBeTruthy();
+
+      // A real `..` traversal segment is still rejected wherever it appears.
+      await expectSqlState(client, "23514", () =>
+        callAddResultFile(client, {
+          eventId,
+          teamId,
+          storagePath: `${resultPrefix(eventId, teamId)}../x.pdf`,
+          originalFileName: "x.pdf",
+          mimeType: "application/pdf",
+          fileSize: 1024,
+        }),
+      );
+      await expectSqlState(client, "23514", () =>
+        callAddResultFile(client, {
+          eventId,
+          teamId,
+          storagePath: `${resultPrefix(eventId, teamId)}sub/..`,
+          originalFileName: "x.pdf",
+          mimeType: "application/pdf",
+          fileSize: 1024,
+        }),
+      );
+      await expectSqlState(client, "23514", () =>
+        callAddResultFile(client, {
+          eventId,
+          teamId,
+          storagePath: `${resultPrefix(eventId, teamId)}sub/../x.pdf`,
+          originalFileName: "x.pdf",
+          mimeType: "application/pdf",
+          fileSize: 1024,
+        }),
+      );
+
+      // The same boundary-aware rule applies to the assignment path.
+      await callSetAssignment(client, {
+        eventId,
+        state: "present",
+        storagePath: `${assignmentPrefix(eventId)}report..final.pdf`,
+        originalFileName: "report..final.pdf",
+        mimeType: "application/pdf",
+        fileSize: 1024,
+      });
+      await expectSqlState(client, "23514", () =>
+        callSetAssignment(client, {
+          eventId,
+          state: "present",
+          storagePath: `${assignmentPrefix(eventId)}../x.pdf`,
+          originalFileName: "x.pdf",
+          mimeType: "application/pdf",
+          fileSize: 1024,
+        }),
+      );
+      await expectSqlState(client, "23514", () =>
+        callSetAssignment(client, {
+          eventId,
+          state: "present",
+          storagePath: `${assignmentPrefix(eventId)}sub/..`,
+          originalFileName: "x.pdf",
+          mimeType: "application/pdf",
+          fileSize: 1024,
+        }),
+      );
+    });
+  });
+
   it("removes one result file, returns its path, and moves pending when it was the last", async () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
@@ -2065,6 +2229,61 @@ describe("Birth Giving result file mutation security", () => {
     });
   });
 
+  it("keeps a non-organizer from probing team existence in a draft event (authz before P0002)", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const outsider = await insertVerifiedProfile(client, { name: "Outsider" });
+      const eventId = await insertEvent(client, organizer.profileId, "result-probe");
+      const teamId = await insertTeam(client, eventId, organizer.profileId, "Skrytý tým");
+      const unknownTeamId = "00000000-0000-0000-0000-000000000000";
+
+      await asClaims(client, { sub: outsider.authUserId });
+
+      // A real team the caller is not part of is already 42501; a nonexistent
+      // team id must be indistinguishable from it (and from a nonexistent or
+      // removed event), so the P0002 "team not found" can never reveal that a
+      // draft event or team exists. The event-level authorization runs before
+      // the team lookup for exactly this reason.
+      await expectSqlState(client, "42501", () =>
+        callAddResultFile(client, {
+          eventId,
+          teamId,
+          storagePath: `${resultPrefix(eventId, teamId)}utek.pdf`,
+          originalFileName: "utek.pdf",
+          mimeType: "application/pdf",
+          fileSize: 1024,
+        }),
+      );
+      await expectSqlState(client, "42501", () =>
+        callAddResultFile(client, {
+          eventId,
+          teamId: unknownTeamId,
+          storagePath: `${resultPrefix(eventId, unknownTeamId)}utek.pdf`,
+          originalFileName: "utek.pdf",
+          mimeType: "application/pdf",
+          fileSize: 1024,
+        }),
+      );
+      await expectSqlState(client, "42501", () =>
+        callMarkResultMissing(client, eventId, unknownTeamId),
+      );
+      await expectSqlState(client, "42501", () => callMarkResultMissing(client, eventId, teamId));
+
+      // An organizer is still privileged to learn the team does not exist.
+      await asClaims(client, { sub: organizer.authUserId });
+      await expectSqlState(client, "P0002", () =>
+        callAddResultFile(client, {
+          eventId,
+          teamId: unknownTeamId,
+          storagePath: `${resultPrefix(eventId, unknownTeamId)}utek.pdf`,
+          originalFileName: "utek.pdf",
+          mimeType: "application/pdf",
+          fileSize: 1024,
+        }),
+      );
+    });
+  });
+
   it("preserves both appends when two transactions race on the same team (row lock)", async () => {
     const pool = getPool();
     const writer1 = await pool.connect();
@@ -2131,6 +2350,115 @@ describe("Birth Giving result file mutation security", () => {
       await purgeBirthGivingRows(cleanup, [organizer], eventId);
     } finally {
       for (const connection of [writer1, writer2, cleanup]) {
+        await connection.query("rollback").catch(() => {});
+        connection.release();
+      }
+    }
+  });
+
+  it("re-checks event removal under the lock so a concurrent removal is never mutated", async () => {
+    // The un-locked file lookup and the event lock are separate moments: a
+    // removal committed between them must still abort the operation (42501)
+    // instead of silently mutating a removed event's team.
+    const pool = getPool();
+    const caller = await pool.connect();
+    const remover = await pool.connect();
+    const cleanup = await pool.connect();
+    try {
+      // Seed in its own committed transaction so the writers below see it.
+      await caller.query("begin");
+      const organizer = await insertVerifiedProfile(caller, { name: "Race organizer" });
+      const eventId = await insertEvent(caller, organizer.profileId, "result-race");
+      const teamId = await insertTeam(caller, eventId, organizer.profileId, "Závodní tým");
+      const filePath = `${resultPrefix(eventId, teamId)}vysledek.pdf`;
+      await asClaims(caller, { sub: organizer.authUserId });
+      const fileId = await callAddResultFile(caller, {
+        eventId,
+        teamId,
+        storagePath: filePath,
+        originalFileName: "vysledek.pdf",
+        mimeType: "application/pdf",
+        fileSize: 1024,
+      });
+      await caller.query("reset role");
+      await caller.query("commit");
+
+      // The remover holds the event row lock with removed_at set but has not
+      // committed yet, so the caller's initial (un-locked) file lookup still
+      // sees the pre-removal state and locates the owning team.
+      await remover.query("begin");
+      await asClaims(remover, { sub: organizer.authUserId });
+      await remover.query("select public.birth_giving_remove_event($1)", [eventId]);
+
+      // The caller's remove_result_file blocks on the event lock, then resumes
+      // after the remover commits. It must observe the removal and refuse to
+      // touch the removed event's team (42501) instead of deleting the file.
+      await caller.query("begin");
+      await asClaims(caller, { sub: organizer.authUserId });
+      const { rows: pidRows } = await caller.query<{ pid: number }>(
+        "select pg_backend_pid() as pid",
+      );
+      const callerPid = pidRows[0].pid;
+      await caller.query("savepoint expected_removal_denial");
+
+      const pendingRemoval = caller.query(
+        "select public.birth_giving_remove_result_file($1::uuid) as path",
+        [fileId],
+      );
+
+      // Deterministically wait until the caller's backend is blocked trying to
+      // lock the event row (its initial un-locked lookup already ran and
+      // located the team by then), then commit the removal behind it.
+      const monitor = await pool.connect();
+      try {
+        let blocked = false;
+        for (let attempt = 0; attempt < 400; attempt++) {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+          const { rows: activity } = await monitor.query<{
+            wait_event_type: string | null;
+          }>("select wait_event_type from pg_stat_activity where pid = $1", [callerPid]);
+          if (activity[0]?.wait_event_type === "Lock") {
+            blocked = true;
+            break;
+          }
+        }
+        expect(blocked).toBe(true);
+      } finally {
+        monitor.release();
+      }
+      await remover.query("commit");
+      await expect(pendingRemoval).rejects.toMatchObject({ code: "42501" });
+      await caller.query("rollback to savepoint expected_removal_denial");
+      await caller.query("release savepoint expected_removal_denial");
+      await caller.query("commit");
+
+      // The file survives untouched and the event stays removed.
+      const verify = await pool.connect();
+      try {
+        await verify.query("begin");
+        const { rows } = await verify.query<{
+          result_files: unknown;
+          removed_at: string | null;
+        }>(
+          `select t.result_files, e.removed_at
+             from public.birth_giving_teams t
+             join public.birth_giving_events e on e.id = t.event_id
+            where t.id = $1`,
+          [teamId],
+        );
+        expect(rows[0].removed_at).not.toBeNull();
+        const files = rows[0].result_files as { id: string }[];
+        expect(files).toHaveLength(1);
+        expect(files[0].id).toBe(fileId);
+        await verify.query("commit");
+      } finally {
+        await verify.query("rollback").catch(() => {});
+        verify.release();
+      }
+
+      await purgeBirthGivingRows(cleanup, [organizer], eventId);
+    } finally {
+      for (const connection of [caller, remover, cleanup]) {
         await connection.query("rollback").catch(() => {});
         connection.release();
       }
@@ -2306,6 +2634,79 @@ describe("Birth Giving table grants and column privileges", () => {
     });
   });
 
+  it("keeps the exact 13 safe event columns readable with real values for a published event", async () => {
+    await withRollback(async (client) => {
+      const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
+      const member = await insertVerifiedProfile(client, { name: "Member" });
+      const eventId = await insertEvent(
+        client,
+        organizer.profileId,
+        "grants-safe",
+        "published",
+      );
+      const teamId = await insertTeam(client, eventId, organizer.profileId, "Safe tým");
+      await insertMember(client, eventId, teamId, member.profileId, organizer.profileId);
+
+      await asClaims(client, { sub: member.authUserId });
+
+      // Pairing guard for the safe-column projection: the read path (Task 8)
+      // will select exactly these 13 non-assignment columns, so each one must
+      // be granted to authenticated AND return the real row of a published
+      // event. If the column grant list and the projection ever drift, this
+      // test fails.
+      const { rows } = await client.query<{
+        id: string;
+        name: string;
+        customer: string;
+        starts_at: Date;
+        duration: string;
+        status: string;
+        organizer_profile_ids: string[];
+        removed_at: Date | null;
+        removed_by_profile_id: string | null;
+        created_at: Date;
+        updated_at: Date;
+        created_by_profile_id: string;
+        updated_by_profile_id: string;
+      }>(
+        `select id, name, customer, starts_at, duration, status, organizer_profile_ids,
+                removed_at, removed_by_profile_id, created_at, updated_at,
+                created_by_profile_id, updated_by_profile_id
+           from public.birth_giving_events
+          where id = $1`,
+        [eventId],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].id).toBe(eventId);
+      expect(rows[0].name).toBe("Event grants-safe");
+      expect(rows[0].customer).toBe("Customer");
+      expect(rows[0].starts_at).toBeInstanceOf(Date);
+      expect(rows[0].duration).toBe("8h");
+      expect(rows[0].status).toBe("published");
+      expect(rows[0].organizer_profile_ids).toEqual([organizer.profileId]);
+      expect(rows[0].removed_at).toBeNull();
+      expect(rows[0].removed_by_profile_id).toBeNull();
+      expect(rows[0].created_at).toBeInstanceOf(Date);
+      expect(rows[0].updated_at).toBeInstanceOf(Date);
+      expect(rows[0].created_by_profile_id).toBe(organizer.profileId);
+      expect(rows[0].updated_by_profile_id).toBe(organizer.profileId);
+
+      // teams and team_members keep a full-relation SELECT grant (all columns).
+      const teams = await client.query(
+        "select * from public.birth_giving_teams where id = $1",
+        [teamId],
+      );
+      expect(teams.rows).toHaveLength(1);
+      expect((teams.rows[0] as { id: string }).id).toBe(teamId);
+      const memberships = await client.query(
+        "select * from public.birth_giving_team_members where team_id = $1",
+        [teamId],
+      );
+      expect(memberships.rows).toHaveLength(1);
+      expect((memberships.rows[0] as { profile_id: string }).profile_id).toBe(member.profileId);
+    });
+  });
+
   it("fires the updated-at trigger so direct row updates advance updated_at", async () => {
     const pool = getPool();
     const actor = await pool.connect();
@@ -2371,6 +2772,111 @@ describe("Birth Giving table grants and column privileges", () => {
       expect(eventAfter).toBeGreaterThan(eventBefore);
       expect(teamAfter).toBeGreaterThan(teamBefore);
       expect(memberAfter).toBeGreaterThan(memberBefore);
+
+      await purgeBirthGivingRows(cleanup, [organizer, member], eventId);
+    } finally {
+      for (const connection of [actor, updater, cleanup]) {
+        await connection.query("rollback").catch(() => {});
+        connection.release();
+      }
+    }
+  });
+
+  it("advances updated_at through the triggers when mutations come from the RPCs", async () => {
+    // Guard for the trigger-owned updated_at convention: the RPCs no longer
+    // write updated_at themselves, so each committed function mutation must
+    // still advance it through the BEFORE UPDATE handle_updated_at() trigger.
+    const pool = getPool();
+    const actor = await pool.connect();
+    const updater = await pool.connect();
+    const cleanup = await pool.connect();
+    try {
+      await actor.query("begin");
+      const organizer = await insertVerifiedProfile(actor, { name: "RPC trigger org" });
+      const member = await insertVerifiedProfile(actor, { name: "RPC trigger member" });
+      const eventId = await insertEvent(actor, organizer.profileId, "rpc-trigger");
+      const teamId = await insertTeam(actor, eventId, organizer.profileId, "RPC tým");
+      await insertMember(actor, eventId, teamId, member.profileId, organizer.profileId);
+      await actor.query("commit");
+
+      const readTimestamp = async (
+        connection: typeof actor,
+        sql: string,
+        id: string,
+      ): Promise<number> => {
+        const { rows } = await connection.query<{ updated_at: Date }>(sql, [id]);
+        expect(rows).toHaveLength(1);
+        return rows[0].updated_at.getTime();
+      };
+
+      const before = {
+        event: await readTimestamp(
+          updater,
+          "select updated_at from public.birth_giving_events where id = $1",
+          eventId,
+        ),
+        team: await readTimestamp(
+          updater,
+          "select updated_at from public.birth_giving_teams where id = $1",
+          teamId,
+        ),
+        member: await readTimestamp(
+          updater,
+          "select updated_at from public.birth_giving_team_members where team_id = $1 limit 1",
+          teamId,
+        ),
+      };
+
+      // One committed transaction per RPC so now() actually advances.
+      await updater.query("begin");
+      await asClaims(updater, { sub: organizer.authUserId });
+      await callSetAssignment(updater, {
+        eventId,
+        state: "present",
+        storagePath: `${assignmentPrefix(eventId)}zadani.pdf`,
+        originalFileName: "zadani.pdf",
+        mimeType: "application/pdf",
+        fileSize: 1024,
+      });
+      await callAddResultFile(updater, {
+        eventId,
+        teamId,
+        storagePath: `${resultPrefix(eventId, teamId)}vysledek.pdf`,
+        originalFileName: "vysledek.pdf",
+        mimeType: "application/pdf",
+        fileSize: 1024,
+      });
+      await updater.query("commit");
+
+      await updater.query("begin");
+      await asClaims(updater, { sub: member.authUserId });
+      await callUpsertReflection(updater, {
+        eventId,
+        contribution: "Příspěvek",
+        learning: "Učení",
+      });
+      await updater.query("commit");
+
+      const after = {
+        event: await readTimestamp(
+          updater,
+          "select updated_at from public.birth_giving_events where id = $1",
+          eventId,
+        ),
+        team: await readTimestamp(
+          updater,
+          "select updated_at from public.birth_giving_teams where id = $1",
+          teamId,
+        ),
+        member: await readTimestamp(
+          updater,
+          "select updated_at from public.birth_giving_team_members where team_id = $1 limit 1",
+          teamId,
+        ),
+      };
+      expect(after.event).toBeGreaterThan(before.event);
+      expect(after.team).toBeGreaterThan(before.team);
+      expect(after.member).toBeGreaterThan(before.member);
 
       await purgeBirthGivingRows(cleanup, [organizer, member], eventId);
     } finally {

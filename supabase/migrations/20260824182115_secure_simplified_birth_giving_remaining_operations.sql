@@ -13,6 +13,10 @@
 --     in that fixed order, so embedded-JSON read-modify-write is safe.
 --   - None of the six new functions accept caller-supplied ids, uploader ids,
 --     or timestamps: uploaded_at/uploaded_by are always derived from the caller.
+--   - The BEFORE UPDATE handle_updated_at() triggers (created below) own the
+--     updated_at column: the six functions above never write it. They keep the
+--     *_at audit timestamps (assignment_uploaded_at, reflection_submitted_at,
+--     and the JSON result-file uploaded_at) from clock_timestamp().
 --
 -- Approved SQLSTATEs used here:
 --   42501 authorization (organizer / team-member requirements, non-leaky),
@@ -79,10 +83,11 @@ begin
   if p_state = 'present' then
     -- The path must sit under this event's own prefix and must not traverse
     -- out of it. The column-level check repeats the prefix rule; the explicit
-    -- '..' rejection closes the traversal hole the check cannot express.
+    -- boundary-aware `..` segment rejection closes the traversal hole the
+    -- check cannot express ('report..final.pdf' is a filename, not a segment).
     if p_storage_path is null
        or length(trim(p_storage_path)) = 0
-       or p_storage_path like '%..%'
+       or ('/' || p_storage_path || '/') like '%/../%'
        or p_storage_path not like 'birth-giving/assignments/' || v_event.id::text || '/%' then
       raise exception 'The assignment path must live under the event prefix'
         using errcode = '23514';
@@ -106,8 +111,7 @@ begin
            assignment_file_size = p_file_size,
            assignment_uploaded_at = clock_timestamp(),
            assignment_uploaded_by_profile_id = v_profile_id,
-           updated_by_profile_id = v_profile_id,
-           updated_at = clock_timestamp()
+           updated_by_profile_id = v_profile_id
      where id = p_event_id;
   elsif p_state = 'missing' then
     update public.birth_giving_events
@@ -118,8 +122,7 @@ begin
            assignment_file_size = null,
            assignment_uploaded_at = null,
            assignment_uploaded_by_profile_id = null,
-           updated_by_profile_id = v_profile_id,
-           updated_at = clock_timestamp()
+           updated_by_profile_id = v_profile_id
      where id = p_event_id;
   else
     raise exception 'Only present or missing assignment transitions are supported'
@@ -136,10 +139,13 @@ $$;
 --               assignment_mime_type, assignment_file_size, assignment_uploaded_at,
 --               assignment_uploaded_by_profile_id)
 -- Enforces the assignment embargo. An organizer always receives the real row.
--- A non-organizer receives the real row only once starts_at has arrived
+-- Visibility mirrors the read RLS for events: a non-organizer receives no row
+-- at all for draft, removed, or nonexistent events (the same no-row response,
+-- so a draft event id/assignment existence stays unprobeable); for a published
+-- event a non-organizer receives the real row once starts_at has arrived
 -- (starts_at <= now()); before that the function returns a fully blurred row
 -- ('none' plus NULL metadata) so the caller cannot learn whether an assignment
--- even exists. Nonexistent and removed events return no row at all.
+-- even exists.
 -- ---------------------------------------------------------------------------
 
 create function public.birth_giving_get_visible_assignment(p_event_id uuid)
@@ -170,8 +176,13 @@ begin
     from public.birth_giving_events
    where id = p_event_id;
 
-  -- No row for events that do not exist or have been removed.
-  if v_event.id is null or v_event.removed_at is not null then
+  -- No row unless the caller could read the event row itself: a removed or
+  -- nonexistent event and a draft the caller does not organize all collapse
+  -- into the same no-row response (mirroring the read RLS visibility), which
+  -- removes the draft existence oracle.
+  if v_event.id is null
+     or v_event.removed_at is not null
+     or (v_event.status <> 'published' and not (v_profile_id = any(v_event.organizer_profile_ids))) then
     return;
   end if;
 
@@ -248,17 +259,13 @@ begin
       using errcode = '42501';
   end if;
 
-  select * into v_team
-    from public.birth_giving_teams
-   where id = p_team_id
-     and event_id = p_event_id
-   for update;
-
-  if v_team.id is null then
-    raise exception 'The team does not exist in this event'
-      using errcode = 'P0002';
-  end if;
-
+  -- Event-level organizer or matching-membership authorization runs BEFORE the
+  -- distinguishing P0002 so an active caller who is not an event organizer (or
+  -- a member of the team) cannot probe whether a team id exists in a draft
+  -- event: a real team the caller has no right to, a nonexistent team, and a
+  -- nonexistent/removed event all collapse into the same 42501 (the
+  -- upsert_reflection non-leak pattern). Only an organizer or a matching team
+  -- member can reach the P0002 'team not found' below.
   if not (v_profile_id = any(v_event.organizer_profile_ids))
      and not exists (
        select 1
@@ -271,9 +278,24 @@ begin
       using errcode = '42501';
   end if;
 
+  select * into v_team
+    from public.birth_giving_teams
+   where id = p_team_id
+     and event_id = p_event_id
+   for update;
+
+  if v_team.id is null then
+    raise exception 'The team does not exist in this event'
+      using errcode = 'P0002';
+  end if;
+
   if p_storage_path is null
      or length(trim(p_storage_path)) = 0
-     or p_storage_path like '%..%'
+     -- Boundary-aware traversal rejection: only a path segment equal to `..`
+     -- is dangerous, so 'report..final.pdf' is fine while `../`, `sub/..`, or
+     -- `sub/../../x` are not. The prefix rule below binds the path to this
+     -- exact event/team directory regardless.
+     or ('/' || p_storage_path || '/') like '%/../%'
      or p_storage_path not like 'birth-giving/results/' || p_event_id::text || '/' || p_team_id::text || '/%' then
     raise exception 'Result paths must live under the event and team prefix'
       using errcode = '23514';
@@ -302,8 +324,7 @@ begin
            'uploaded_by_profile_id', v_profile_id
          ),
          result_state = 'present',
-         updated_by_profile_id = v_profile_id,
-         updated_at = clock_timestamp()
+         updated_by_profile_id = v_profile_id
    where id = p_team_id;
 
   return v_file_id::uuid;
@@ -340,7 +361,13 @@ begin
   end if;
 
   -- Find the owning team without locking; the lock below re-verifies, so a
-  -- concurrent removal of the same file is still caught (P0002).
+  -- concurrent removal of the same file is still caught (P0002). Best-effort
+  -- ordering: the file lookup inherently precedes knowing the owning team, and
+  -- the only check that could run earlier would distinguish 'this file id does
+  -- not exist anywhere' from 'exists but the caller is not authorized' -- an
+  -- accepted residual limitation because file ids are server-generated,
+  -- unguessable UUIDs, and nonexistent/removed-event files collapse into the
+  -- same P0002 as an unknown id.
   select t.event_id, t.id
     into v_event_id, v_team_id
     from public.birth_giving_teams t
@@ -359,6 +386,14 @@ begin
     from public.birth_giving_events
    where id = v_event_id
    for update;
+
+  -- Re-verify under the lock (mirroring the other team mutations): the event
+  -- may have been removed between the un-locked lookup above and this lock, in
+  -- which case the call is indistinguishable from an unauthorized one (42501).
+  if v_event.id is null or v_event.removed_at is not null then
+    raise exception 'Result changes require an organizer or matching team membership'
+      using errcode = '42501';
+  end if;
 
   select * into v_team
     from public.birth_giving_teams
@@ -402,8 +437,7 @@ begin
            when jsonb_array_length(v_files) = 0 then 'pending'::public.birth_giving_team_result_state
            else 'present'::public.birth_giving_team_result_state
          end,
-         updated_by_profile_id = v_profile_id,
-         updated_at = clock_timestamp()
+         updated_by_profile_id = v_profile_id
    where id = v_team_id;
 
   return v_removed_path;
@@ -447,17 +481,9 @@ begin
       using errcode = '42501';
   end if;
 
-  select * into v_team
-    from public.birth_giving_teams
-   where id = p_team_id
-     and event_id = p_event_id
-   for update;
-
-  if v_team.id is null then
-    raise exception 'The team does not exist in this event'
-      using errcode = 'P0002';
-  end if;
-
+  -- Same non-leak ordering as birth_giving_add_result_file: the event-level
+  -- authorization runs before the distinguishing P0002 so a non-organizer /
+  -- non-member cannot probe team existence in a draft event.
   if not (v_profile_id = any(v_event.organizer_profile_ids))
      and not exists (
        select 1
@@ -470,14 +496,24 @@ begin
       using errcode = '42501';
   end if;
 
+  select * into v_team
+    from public.birth_giving_teams
+   where id = p_team_id
+     and event_id = p_event_id
+   for update;
+
+  if v_team.id is null then
+    raise exception 'The team does not exist in this event'
+      using errcode = 'P0002';
+  end if;
+
   select coalesce(array_agg(entry->>'storage_path'), '{}'::text[]) into v_paths
     from jsonb_array_elements(v_team.result_files) as entry;
 
   update public.birth_giving_teams
      set result_state = 'missing',
          result_files = '[]'::jsonb,
-         updated_by_profile_id = v_profile_id,
-         updated_at = clock_timestamp()
+         updated_by_profile_id = v_profile_id
    where id = p_team_id;
 
   return v_paths;
@@ -527,8 +563,7 @@ begin
      set reflection_contribution = p_contribution,
          reflection_learning = p_learning,
          reflection_submitted_at = clock_timestamp(),
-         updated_by_profile_id = v_profile_id,
-         updated_at = clock_timestamp()
+         updated_by_profile_id = v_profile_id
     from public.birth_giving_teams team
     join public.birth_giving_events event_row on event_row.id = team.event_id
    where member.event_id = p_event_id
