@@ -13,6 +13,8 @@ import type {
   EssayViewWithProfile,
   EssayCoachReadWithProfile,
   CoachReviewEssay,
+  CoachReviewFilters,
+  CoachReviewResult,
   EssayFilters,
   EssayRevisionSummary,
 } from './types';
@@ -443,42 +445,306 @@ export async function getEssayCoachViewers(
   );
 }
 
+export async function getCoachReviewEssays(
+  supabase: SupabaseClient<Database>,
+  coachProfileId: string,
+  filters: CoachReviewFilters = {},
+): Promise<CoachReviewResult> {
+  const studentIds = await getReviewStudentIds(supabase, coachProfileId, filters.teamId);
+  if (studentIds.length === 0) {
+    return {
+      essays: [],
+      totalCount: 0,
+      unreadCount: 0,
+      readCount: 0,
+      hasMore: false,
+      authorPointsMap: {},
+      commentsMap: {},
+      coachReadsMap: {},
+    };
+  }
+
+  const { data: reads, error: readsError } = await supabase
+    .from('essay_coach_reads')
+    .select('essay_id, read_at')
+    .eq('coach_profile_id', coachProfileId);
+  if (readsError) throw readsError;
+  const readRows = (reads ?? []) as { essay_id: string; read_at: string }[];
+  const readMap = new Map(readRows.map((r) => [r.essay_id, r.read_at]));
+  const readIds = Array.from(readMap.keys());
+
+  let rocketBookIds: string[] | null = null;
+  if (filters.rocket === 'rocket' || filters.rocket === 'non-rocket') {
+    const { data: rocketBooks, error: rocketError } = await supabase
+      .from('books')
+      .select('id')
+      .eq('is_rocket_model', true);
+    if (rocketError) throw rocketError;
+    rocketBookIds = (rocketBooks ?? []).map((b) => b.id);
+    if (filters.rocket === 'rocket' && rocketBookIds.length === 0) {
+      return {
+        essays: [],
+        totalCount: 0,
+        unreadCount: 0,
+        readCount: 0,
+        hasMore: false,
+        authorPointsMap: {},
+        commentsMap: {},
+        coachReadsMap: {},
+      };
+    }
+  }
+
+  let pointsBookIds: string[] | null = null;
+  let nonZeroBookIds: string[] | null = null;
+  if (filters.points && filters.points !== 'all') {
+    if (filters.points === '0') {
+      const { data: nonZeroBooks, error: ptsError } = await supabase
+        .from('books')
+        .select('id')
+        .gt('book_points', 0)
+        .in('list_status', ['shortlist', 'longlist']);
+      if (ptsError) throw ptsError;
+      nonZeroBookIds = (nonZeroBooks ?? []).map((b) => b.id);
+    } else {
+      const ptsNum = Number(filters.points);
+      const { data: ptsBooks, error: ptsError } = await supabase
+        .from('books')
+        .select('id')
+        .eq('book_points', ptsNum)
+        .in('list_status', ['shortlist', 'longlist']);
+      if (ptsError) throw ptsError;
+      pointsBookIds = (ptsBooks ?? []).map((b) => b.id);
+      if (pointsBookIds.length === 0) {
+        return {
+          essays: [],
+          totalCount: 0,
+          unreadCount: 0,
+          readCount: 0,
+          hasMore: false,
+          authorPointsMap: {},
+          commentsMap: {},
+          coachReadsMap: {},
+        };
+      }
+    }
+  }
+
+  let replyIncludeEssayIds: string[] | null = null;
+  let replyExcludeEssayIds: string[] | null = null;
+
+  if (filters.reply && filters.reply !== 'all') {
+    const { data: comments, error: commError } = await supabase
+      .from('essay_comments')
+      .select(`
+        id, essay_id, author_profile_id, parent_id, created_at,
+        author:profiles!author_profile_id(id, role)
+      `)
+      .is('removed_at', null);
+
+    if (commError) throw commError;
+
+    const commentsByEssay = new Map<string, EssayCommentWithAuthor[]>();
+    for (const c of (comments ?? []) as EssayCommentWithAuthor[]) {
+      const list = commentsByEssay.get(c.essay_id) ?? [];
+      list.push(c);
+      commentsByEssay.set(c.essay_id, list);
+    }
+
+    if (filters.reply === 'no-coach-comment') {
+      const coachCommentedEssayIds: string[] = [];
+      for (const [essayId, comms] of commentsByEssay.entries()) {
+        if (comms.some((c) => c.author?.role === 'coach' || c.author?.role === 'admin')) {
+          coachCommentedEssayIds.push(essayId);
+        }
+      }
+      replyExcludeEssayIds = coachCommentedEssayIds;
+    } else {
+      const matchingIds: string[] = [];
+      const { data: candidateEssays, error: candError } = await supabase
+        .from('essays')
+        .select('id, author_profile_id, updated_at')
+        .in('author_profile_id', studentIds)
+        .not('published_at', 'is', null)
+        .is('removed_at', null);
+
+      if (candError) throw candError;
+
+      for (const essay of candidateEssays ?? []) {
+        const comms = commentsByEssay.get(essay.id) ?? [];
+        const coachComments = comms.filter(
+          (c) => c.author?.role === 'coach' || c.author?.role === 'admin',
+        );
+        if (coachComments.length === 0) continue;
+
+        const latestCoachCommentTime = Math.max(
+          ...coachComments.map((c) => new Date(c.created_at).getTime()),
+        );
+        const authorComments = comms.filter(
+          (c) => c.author_profile_id === essay.author_profile_id,
+        );
+        const authorRepliesAfterCoach = authorComments.filter(
+          (c) => new Date(c.created_at).getTime() > latestCoachCommentTime,
+        );
+        const hasAuthorReply = authorRepliesAfterCoach.length > 0;
+
+        if (filters.reply === 'with-reply' && hasAuthorReply) {
+          matchingIds.push(essay.id);
+        } else if (filters.reply === 'without-reply' && !hasAuthorReply) {
+          matchingIds.push(essay.id);
+        } else if (filters.reply === 'edited-after-comment') {
+          const hasEditedAfterCoach =
+            new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
+          if (hasEditedAfterCoach) {
+            matchingIds.push(essay.id);
+          }
+        }
+      }
+
+      replyIncludeEssayIds = matchingIds;
+      if (matchingIds.length === 0) {
+        return {
+          essays: [],
+          totalCount: 0,
+          unreadCount: 0,
+          readCount: 0,
+          hasMore: false,
+          authorPointsMap: {},
+          commentsMap: {},
+          coachReadsMap: {},
+        };
+      }
+    }
+  }
+
+  function buildQuery(
+    targetTab: 'unread' | 'read',
+    selectStr: string,
+    options?: { countExact?: boolean; headOnly?: boolean },
+  ) {
+    let q = supabase
+      .from('essays')
+      .select(
+        selectStr,
+        options?.countExact ? { count: 'exact', head: options?.headOnly } : undefined,
+      )
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .in('author_profile_id', studentIds);
+
+    if (targetTab === 'unread') {
+      if (readIds.length > 0) {
+        q = q.not('id', 'in', `(${readIds.join(',')})`);
+      }
+      q = q.order('created_at', { ascending: false });
+    } else {
+      if (readIds.length === 0) return null;
+      q = q.in('id', readIds);
+      q = q.order('created_at', { ascending: false });
+    }
+
+    if (filters.rocket === 'rocket' && rocketBookIds) {
+      q = q.in('book_id', rocketBookIds);
+    } else if (filters.rocket === 'non-rocket' && rocketBookIds && rocketBookIds.length > 0) {
+      q = q.or(`book_id.is.null,book_id.not.in.(${rocketBookIds.join(',')})`);
+    }
+
+    if (pointsBookIds) {
+      q = q.in('book_id', pointsBookIds);
+    } else if (nonZeroBookIds && nonZeroBookIds.length > 0) {
+      q = q.or(`book_id.is.null,book_id.not.in.(${nonZeroBookIds.join(',')})`);
+    }
+
+    if (replyIncludeEssayIds) {
+      q = q.in('id', replyIncludeEssayIds);
+    } else if (replyExcludeEssayIds && replyExcludeEssayIds.length > 0) {
+      q = q.not('id', 'in', `(${replyExcludeEssayIds.join(',')})`);
+    }
+
+    return q;
+  }
+
+  const activeTab = filters.tab ?? 'unread';
+  const otherTab = activeTab === 'unread' ? 'read' : 'unread';
+
+  const mainQuery = buildQuery(activeTab, ESSAY_DETAIL_SELECT, { countExact: true });
+  const otherCountQuery = buildQuery(otherTab, 'id', { countExact: true, headOnly: true });
+
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = Math.max(1, filters.pageSize ?? 50);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  if (!mainQuery) {
+    const otherRes = otherCountQuery ? await otherCountQuery : { count: 0 };
+    const otherCount = otherRes.count ?? 0;
+    return {
+      essays: [],
+      totalCount: 0,
+      unreadCount: activeTab === 'unread' ? 0 : otherCount,
+      readCount: activeTab === 'read' ? 0 : otherCount,
+      hasMore: false,
+      authorPointsMap: {},
+      commentsMap: {},
+      coachReadsMap: {},
+    };
+  }
+
+  const [mainRes, otherRes] = await Promise.all([
+    mainQuery.range(from, to),
+    otherCountQuery ? otherCountQuery : Promise.resolve({ count: 0 }),
+  ]);
+
+  if (mainRes.error) throw mainRes.error;
+
+  const rawEssays = (mainRes.data ?? []) as unknown as EssayRawRow[];
+  const totalCount = mainRes.count ?? 0;
+  const otherCount = otherRes.count ?? 0;
+
+  const unreadCount = activeTab === 'unread' ? totalCount : otherCount;
+  const readCount = activeTab === 'read' ? totalCount : otherCount;
+
+  const essays = mapEssayRows(rawEssays).map((essay) => ({
+    ...essay,
+    read_at: readMap.get(essay.id) ?? null,
+  }));
+
+  const authorIds = Array.from(new Set(essays.map((e) => e.author_profile_id)));
+  const essayIds = Array.from(new Set(essays.map((e) => e.id)));
+
+  const [authorPointsMap, commentsMap, coachReadsMap] = await Promise.all([
+    getAuthorsApprovedBookPoints(supabase, authorIds),
+    getCommentsForEssays(supabase, essayIds),
+    getCoachReadsForEssays(supabase, essayIds),
+  ]);
+
+  const hasMore = totalCount > to + 1;
+
+  return {
+    essays,
+    totalCount,
+    unreadCount,
+    readCount,
+    hasMore,
+    authorPointsMap,
+    commentsMap,
+    coachReadsMap,
+  };
+}
+
 export async function getUnreadTeamEssaysForCoach(
   supabase: SupabaseClient<Database>,
   coachProfileId: string,
   teamId?: string | null,
   limit: number = 100,
 ): Promise<CoachReviewEssay[]> {
-  const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
-  if (studentIds.length === 0) return [];
-
-  const { data: reads, error: readsError } = await supabase
-    .from('essay_coach_reads')
-    .select('essay_id')
-    .eq('coach_profile_id', coachProfileId);
-  if (readsError) throw readsError;
-  const readIds = (reads ?? []).map((r: { essay_id: string }) => r.essay_id);
-
-  let query = supabase
-    .from('essays')
-    .select(ESSAY_DETAIL_SELECT)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .in('author_profile_id', studentIds)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (readIds.length > 0) {
-    query = query.not('id', 'in', `(${readIds.join(',')})`);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return mapEssayRows((data ?? []) as unknown as EssayRawRow[]).map((essay) => ({
-    ...essay,
-    read_at: null,
-  }));
+  const result = await getCoachReviewEssays(supabase, coachProfileId, {
+    tab: 'unread',
+    teamId,
+    pageSize: limit,
+    page: 1,
+  });
+  return result.essays;
 }
 
 export async function getReadTeamEssaysForCoach(
@@ -487,33 +753,13 @@ export async function getReadTeamEssaysForCoach(
   teamId?: string | null,
   limit: number = 100,
 ): Promise<CoachReviewEssay[]> {
-  const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
-  if (studentIds.length === 0) return [];
-
-  const { data: reads, error: readsError } = await supabase
-    .from('essay_coach_reads')
-    .select('essay_id, read_at')
-    .eq('coach_profile_id', coachProfileId)
-    .order('read_at', { ascending: false })
-    .limit(limit);
-  if (readsError) throw readsError;
-
-  const readRows = (reads ?? []) as { essay_id: string; read_at: string }[];
-  if (readRows.length === 0) return [];
-
-  const readAtById = new Map(readRows.map((r) => [r.essay_id, r.read_at]));
-
-  const { data, error } = await supabase
-    .from('essays')
-    .select(ESSAY_DETAIL_SELECT)
-    .in('id', readRows.map((r) => r.essay_id))
-    .in('author_profile_id', studentIds)
-    .is('removed_at', null);
-  if (error) throw error;
-
-  return mapEssayRows((data ?? []) as unknown as EssayRawRow[])
-    .map((essay) => ({ ...essay, read_at: readAtById.get(essay.id) ?? null }))
-    .sort((a, b) => (b.read_at ?? '').localeCompare(a.read_at ?? ''));
+  const result = await getCoachReviewEssays(supabase, coachProfileId, {
+    tab: 'read',
+    teamId,
+    pageSize: limit,
+    page: 1,
+  });
+  return result.essays;
 }
 
 export async function getCoachUnreadCount(
@@ -543,6 +789,33 @@ export async function getCoachUnreadCount(
   }
 
   const { count, error } = await query;
+  if (error) throw error;
+  return count ?? 0;
+}
+
+export async function getCoachReadCount(
+  supabase: SupabaseClient<Database>,
+  coachProfileId: string,
+  teamId?: string | null,
+): Promise<number> {
+  const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
+  if (studentIds.length === 0) return 0;
+
+  const { data: reads, error: readsError } = await supabase
+    .from('essay_coach_reads')
+    .select('essay_id')
+    .eq('coach_profile_id', coachProfileId);
+  if (readsError) throw readsError;
+  const readIds = (reads ?? []).map((r: { essay_id: string }) => r.essay_id);
+  if (readIds.length === 0) return 0;
+
+  const { count, error } = await supabase
+    .from('essays')
+    .select('id', { count: 'exact', head: true })
+    .in('id', readIds)
+    .in('author_profile_id', studentIds)
+    .is('removed_at', null);
+
   if (error) throw error;
   return count ?? 0;
 }
