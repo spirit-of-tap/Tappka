@@ -680,6 +680,13 @@
       "when": 1787595675054,
       "tag": "20260824182115_secure_simplified_birth_giving_remaining_operations",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1787616225434,
+      "tag": "20260825000345_allow_publishing_active_draft_events",
+      "breakpoints": true
     }
   ]
 }
