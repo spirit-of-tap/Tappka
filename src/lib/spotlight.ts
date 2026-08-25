@@ -253,6 +253,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
       "smlouvy",
       "finance",
       "finanční politika",
+      "contract",
       "soubory",
       "pravidla týmu",
       "kde najdu smlouvy",
