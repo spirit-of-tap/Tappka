@@ -3,6 +3,7 @@ import {
   cleanupTestData,
   createTestTeam,
   getSetupSessionCookie,
+  grantBetaAccess,
   setAuthCookie,
 } from "./fixtures/auth";
 
@@ -26,7 +27,8 @@ async function uploadCustomTest(page: import("@playwright/test").Page, testName:
 async function deleteOnlyTest(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Smazat test" }).click();
   await page.getByRole("button", { name: "Odstranit" }).click();
-  await expect(page.getByRole("button", { name: "Smazat test" })).toHaveCount(0);
+  await expect(page.getByText("Test odstraněn")).toBeVisible();
+  await expect(page.getByText("Zatím nemáš nahraný žádný osobnostní test")).toBeVisible();
 }
 
 test.describe("osobnostní testy - single user", () => {
@@ -38,6 +40,7 @@ test.describe("osobnostní testy - single user", () => {
   test.beforeAll(async () => {
     const teamId = await createTestTeam();
     const user = await getSetupSessionCookie(teamId);
+    await grantBetaAccess(user.profileId);
     cookieValue = user.cookie;
     profileId = user.profileId;
   });
@@ -115,6 +118,7 @@ test.describe("osobnostní testy - single user", () => {
     await page.getByRole("button", { name: "Smazat test" }).click();
     await page.getByRole("button", { name: "Odstranit" }).click();
 
+    await expect(page.getByText("Test odstraněn")).toBeVisible();
     await expect(page.getByText(testName)).toHaveCount(0);
     await expect(page.getByText("Zatím nemáš nahraný žádný osobnostní test")).toBeVisible();
   });
@@ -128,6 +132,8 @@ test.describe("osobnostní testy - two users", () => {
     const teamId = await createTestTeam();
     const owner = await getSetupSessionCookie(teamId);
     const viewer = await getSetupSessionCookie(teamId);
+    await grantBetaAccess(owner.profileId);
+    await grantBetaAccess(viewer.profileId);
     ownerCookie = owner.cookie;
     viewerCookie = viewer.cookie;
   });
