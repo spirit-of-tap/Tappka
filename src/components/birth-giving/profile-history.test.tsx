@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
 import { BirthGivingProfileHistory } from "@/components/birth-giving/profile-history";
-import { makeHistoryItem, makeMember, makeOrganizer } from "@/tests/component/birth-giving-fixtures";
+import { makeHistoryItem, makeOrganizer } from "@/tests/component/birth-giving-fixtures";
 
 describe("BirthGivingProfileHistory", () => {
   it("renders valid participations grouped by year with links, teams, customers, dates, durations and organizers", () => {
@@ -15,7 +15,7 @@ describe("BirthGivingProfileHistory", () => {
             customer: "Zákazník A",
             starts_at: "2026-08-19T08:00:00.000Z",
             duration: "8h",
-            team: { id: "team-1", name: "Tým Alfa", status: "confirmed" },
+            team: { id: "team-1", name: "Tým Alfa", is_winner: true },
             organizers: [makeOrganizer("org-1", "Org One")],
           }),
           makeHistoryItem({
@@ -24,7 +24,7 @@ describe("BirthGivingProfileHistory", () => {
             customer: "Zákazník B",
             starts_at: "2024-06-01T08:00:00.000Z",
             duration: "24h",
-            team: { id: "team-2", name: "Tým Beta", status: "confirmed" },
+            team: { id: "team-2", name: "Tým Beta", is_winner: false },
             organizers: [makeOrganizer("org-2", "Org Two")],
           }),
         ]}
@@ -36,6 +36,7 @@ describe("BirthGivingProfileHistory", () => {
     expect(screen.getByRole("heading", { name: "2024" })).toBeInTheDocument();
 
     expect(screen.getByText("First BG")).toBeInTheDocument();
+    expect(screen.getByText(/Vítěz/)).toBeInTheDocument();
     expect(screen.getByText(/Zákazník A/)).toBeInTheDocument();
     expect(screen.getByText(/Tým Alfa/)).toBeInTheDocument();
     expect(screen.getByText(/19\. srpna 2026/)).toBeInTheDocument();
@@ -79,57 +80,5 @@ describe("BirthGivingProfileHistory", () => {
       "/birth-giving/newer",
       "/birth-giving/old",
     ]);
-  });
-
-  it("excludes participations in cancelled teams", () => {
-    render(
-      <BirthGivingProfileHistory
-        items={[
-          makeHistoryItem({ id: "valid", name: "Valid BG" }),
-          makeHistoryItem({
-            id: "cancelled",
-            name: "Cancelled BG",
-            team: { id: "team-2", name: "Zrušený tým", status: "cancelled" },
-          }),
-        ]}
-      />,
-    );
-
-    expect(screen.getByText("Valid BG")).toBeInTheDocument();
-    expect(screen.queryByText("Cancelled BG")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/birth-giving/valid"]);
-  });
-
-  it("excludes participations added after processing without a frozen membership", () => {
-    render(
-      <BirthGivingProfileHistory
-        items={[
-          makeHistoryItem({ id: "valid", name: "Valid BG" }),
-          makeHistoryItem({ id: "late", name: "Late BG", membership: makeMember({ frozen_at: null }) }),
-        ]}
-      />,
-    );
-
-    expect(screen.getByText("Valid BG")).toBeInTheDocument();
-    expect(screen.queryByText("Late BG")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/birth-giving/valid"]);
-  });
-
-  it("shows an empty state with no items or when every participation is invalid", () => {
-    const { rerender } = render(<BirthGivingProfileHistory items={[]} />);
-    expect(screen.getByText("Žádná absolvovaná participace")).toBeInTheDocument();
-
-    rerender(
-      <BirthGivingProfileHistory
-        items={[
-          makeHistoryItem({
-            id: "cancelled",
-            name: "Cancelled BG",
-            team: { id: "team-2", name: "Zrušený tým", status: "cancelled" },
-          }),
-        ]}
-      />,
-    );
-    expect(screen.getByText("Žádná absolvovaná participace")).toBeInTheDocument();
   });
 });

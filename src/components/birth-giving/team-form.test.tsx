@@ -21,7 +21,15 @@ describe("BirthGivingTeamForm", () => {
     } as Response);
     const onSuccess = vi.fn();
 
-    render(<BirthGivingTeamForm eventId="event-1" onSuccess={onSuccess} onCancel={vi.fn()} />);
+    render(
+      <BirthGivingTeamForm
+        eventId="event-1"
+        callerProfileId="p1"
+        availableProfiles={[]}
+        onSuccess={onSuccess}
+        onCancel={vi.fn()}
+      />,
+    );
     await user.type(screen.getByLabelText("Název týmu"), "Tým Alfa");
     await user.click(screen.getByRole("button", { name: "Vytvořit tým" }));
 
@@ -30,7 +38,7 @@ describe("BirthGivingTeamForm", () => {
         "/api/birth-giving/events/event-1/teams",
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ name: "Tým Alfa" }),
+          body: JSON.stringify({ name: "Tým Alfa", memberProfileIds: [] }),
         }),
       ),
     );
@@ -39,7 +47,15 @@ describe("BirthGivingTeamForm", () => {
 
   it("requires a team name", async () => {
     const user = userEvent.setup();
-    render(<BirthGivingTeamForm eventId="event-1" onSuccess={vi.fn()} onCancel={vi.fn()} />);
+    render(
+      <BirthGivingTeamForm
+        eventId="event-1"
+        callerProfileId="p1"
+        availableProfiles={[]}
+        onSuccess={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "Vytvořit tým" }));
 

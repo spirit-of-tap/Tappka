@@ -631,6 +631,62 @@
       "when": 1787525902096,
       "tag": "20260823225822_complete_annual_reflection_entries",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1787587744897,
+      "tag": "20260824160904_drop_legacy_birth_giving_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1787587764709,
+      "tag": "20260824160924_retire_legacy_birth_giving_routines",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1787587783257,
+      "tag": "20260824160943_drop_obsolete_birth_giving_enums",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1787591011310,
+      "tag": "20260824170331_create_simplified_birth_giving_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1787592475414,
+      "tag": "20260824172755_secure_simplified_birth_giving_event_operations",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1787593286879,
+      "tag": "20260824174126_secure_simplified_birth_giving_team_operations",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1787595675054,
+      "tag": "20260824182115_secure_simplified_birth_giving_remaining_operations",
+      "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1787616225434,
+      "tag": "20260825000345_allow_publishing_active_draft_events",
+      "breakpoints": true
     }
   ]
 }

@@ -12,12 +12,7 @@ interface BirthGivingProfileHistoryProps {
 }
 
 function isValidParticipation(item: BirthGivingProfileHistoryItem): boolean {
-  return (
-    item.membership.frozen_at !== null &&
-    item.team.status !== "cancelled" &&
-    item.status === "published" &&
-    item.removed_at === null
-  );
+  return item.status === "published" && item.removed_at === null;
 }
 
 export function BirthGivingProfileHistory({ items }: BirthGivingProfileHistoryProps) {
@@ -32,7 +27,7 @@ export function BirthGivingProfileHistory({ items }: BirthGivingProfileHistoryPr
         <EmptyHeader>
           <EmptyTitle>Žádná absolvovaná participace</EmptyTitle>
           <EmptyDescription>
-            Zatím žádné zveřejněné Birth Giving participace v platném týmu.
+            Zatím žádné zveřejněné Birth Giving participace.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -70,7 +65,7 @@ export function BirthGivingProfileHistory({ items }: BirthGivingProfileHistoryPr
                   year: "numeric",
                 });
                 const durationLabel = BIRTH_GIVING_DURATION_LABELS[item.duration];
-                const organizerNames = item.organizers.map((organizer) => organizer.profile.name).join(", ");
+                const organizerNames = item.organizers.map((organizer) => organizer.name).filter(Boolean).join(", ");
                 return (
                   <Item key={item.id} asChild>
                     <Link href={`/birth-giving/${item.id}`} className="w-full rounded-md focus-ring">
@@ -78,14 +73,20 @@ export function BirthGivingProfileHistory({ items }: BirthGivingProfileHistoryPr
                         <CalendarDays className="size-4" />
                       </ItemMedia>
                       <ItemContent>
-                        <ItemTitle>
+                        <ItemTitle className="flex items-center gap-2">
                           <span className="truncate">{item.name}</span>
+                          {item.team.is_winner && (
+                            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1 text-[10px]">
+                              <Trophy className="size-3" />
+                              Vítěz
+                            </Badge>
+                          )}
                         </ItemTitle>
                         <ItemDescription>
                           {item.customer} · {item.team.name}
                         </ItemDescription>
                         <p className="text-xs text-muted-foreground">
-                          {dateLabel} · {durationLabel} · Organizátor:ky {organizerNames}
+                          {dateLabel} · {durationLabel} {organizerNames ? `· Organizátor:ky ${organizerNames}` : ""}
                         </p>
                       </ItemContent>
                     </Link>

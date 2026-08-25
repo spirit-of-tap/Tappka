@@ -48,26 +48,9 @@ describe("BirthGivingResultFileList", () => {
 
     const empty = screen.getByText("Zatím žádné soubory s výsledky.");
     expect(empty.closest('[data-slot="empty"]')).not.toBeNull();
-    expect(empty.tagName.toLowerCase()).not.toBe("p");
   });
 
-  it("does not offer upload or delete controls to a member before the start", () => {
-    const team = makeTeam({
-      members: [makeMemberWithProfile()],
-      result_files: [makeResultFile()],
-    });
-    const event = makeEvent({ starts_at: "2026-08-19T15:00:00.000Z", teams: [team] });
-    render(
-      <BirthGivingResultFileList event={event} team={team} profileId="member-1" now={NOW} onEventChange={vi.fn()} />,
-    );
-
-    expect(screen.queryByRole("button", { name: "Vybrat soubory s výsledky" })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Smazat soubor vysledky.pdf" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("offers upload and delete to a member during the event", () => {
+  it("offers upload and delete to a team member", () => {
     const team = makeTeam({
       members: [makeMemberWithProfile()],
       result_files: [makeResultFile()],
@@ -81,7 +64,6 @@ describe("BirthGivingResultFileList", () => {
     expect(
       screen.getByRole("button", { name: "Smazat soubor vysledky.pdf" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Označit výsledek jako nedohledaný" })).not.toBeInTheDocument();
   });
 
   it("deletes a file after confirmation and asks the parent to refresh", async () => {
@@ -113,37 +95,6 @@ describe("BirthGivingResultFileList", () => {
       expect(fetchSpy).toHaveBeenCalledWith(
         "/api/birth-giving/result-files/file-1",
         expect.objectContaining({ method: "DELETE" }),
-      ),
-    );
-    await waitFor(() => expect(onEventChange).toHaveBeenCalledWith(null));
-  });
-
-  it("marks a result as not recovered only for a historical event", async () => {
-    const user = userEvent.setup();
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: { state: "missing" } }),
-    } as Response);
-    const onEventChange = vi.fn();
-    const team = makeTeam({ result_files: [] });
-    const event = makeEvent({ teams: [team] });
-    render(
-      <BirthGivingResultFileList
-        event={event}
-        team={team}
-        profileId="org-1"
-        now="2026-08-19T18:00:00.000Z"
-        onEventChange={onEventChange}
-      />,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Označit výsledek jako nedohledaný" }));
-    await user.click(await screen.findByRole("button", { name: "Potvrdit" }));
-
-    await waitFor(() =>
-      expect(fetchSpy).toHaveBeenCalledWith(
-        "/api/birth-giving/events/event-1/teams/team-1/results/missing",
-        expect.objectContaining({ method: "POST" }),
       ),
     );
     await waitFor(() => expect(onEventChange).toHaveBeenCalledWith(null));

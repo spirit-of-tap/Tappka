@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -11,12 +11,6 @@ import {
 import { getBirthGivingEvent } from "@/lib/birth-giving/queries";
 import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
-
-export interface BirthGivingIdentity {
-  eventName: string;
-  customer: string;
-  startsAt: string;
-}
 
 interface BirthGivingApiContext {
   profileId: string;
@@ -62,50 +56,43 @@ export function isBirthGivingApiGateFailure(
 }
 
 export function invalidPayloadResponse(): NextResponse {
-  return NextResponse.json({ error: "Neplatná data požadavku" }, { status: 400 });
-}
-
-export async function birthGivingIdentityConflictResponse(
-  supabase: SupabaseClient<Database>,
-  identity: BirthGivingIdentity | null,
-): Promise<NextResponse> {
-  if (identity) {
-    const { data } = await supabase.rpc("birth_giving_find_event_conflict", {
-      p_normalized_customer: identity.customer,
-      p_normalized_name: identity.eventName,
-      p_starts_at: identity.startsAt,
-    });
-    const conflict = data?.[0];
-    if (conflict?.id) {
-      return NextResponse.json(
-        {
-          code: BIRTH_GIVING_ERROR_CODES.duplicateEvent,
-          error: "Stejná Birth Giving událost už existuje.",
-          data: {
-            id: conflict.id,
-            status: conflict.status,
-            identity,
-          },
-        },
-        { status: 409 },
-      );
-    }
-  }
   return NextResponse.json(
-    {
-      code: BIRTH_GIVING_ERROR_CODES.duplicateEvent,
-      error: "Stejná událost s těmito údaji už existuje.",
-    },
-    { status: 409 },
+    { code: BIRTH_GIVING_ERROR_CODES.invalidPayload, error: "Neplatná data požadavku" },
+    { status: 400 },
   );
 }
 
 export function validateBirthGivingRouteIds(...ids: string[]): NextResponse | null {
   if (ids.every((id) => z.uuid().safeParse(id).success)) return null;
   return NextResponse.json(
-    { code: "INVALID_ID", error: "Neplatný identifikátor" },
+    { code: BIRTH_GIVING_ERROR_CODES.invalidId, error: "Neplatný identifikátor" },
     { status: 400 },
   );
+}
+
+/**
+ * The Birth Giving mutation/reporting RPCs accept a nullable `p_event_id` for
+ * the create case, which the generated typed overloads don't express. Route
+ * handlers call them through this narrowly typed adapter (bound to the
+ * SupabaseClient so supabase-js retains its `this` context), keeping handler
+ * code fully typed without hand-writing database types.
+ */
+type BirthGivingRpcCaller = (
+  functionName: string,
+  args?: Record<string, unknown>,
+) => Promise<{ data: unknown; error: PostgrestError | null }>;
+
+export async function callBirthGivingRpc<TData = null>(
+  supabase: SupabaseClient<Database>,
+  functionName: string,
+  args: Record<string, unknown>,
+): Promise<{ data: TData | null; error: PostgrestError | null }> {
+  // supabase-js `rpc()` reads `this.rest`, so the method must stay bound to the
+  // client. Calling `supabase.rpc(...)` directly here is impossible because the
+  // stored `p_event_id: null` create-arg doesn't fit the generated `string` type.
+  const caller = (supabase.rpc as unknown as BirthGivingRpcCaller).bind(supabase);
+  const result = await caller(functionName, args);
+  return { data: result.data as TData | null, error: result.error };
 }
 
 export async function birthGivingMutationErrorResponse(
@@ -119,21 +106,6 @@ export async function birthGivingMutationErrorResponse(
     return NextResponse.json(
       { code: mapped.code, error: mapped.message, data },
       { status: mapped.status },
-    );
-  }
-
-  if (error.code === "42501") {
-    return NextResponse.json({ error: "Pro tuto akci nemáte oprávnění" }, { status: 403 });
-  }
-  if (error.code === "23503") {
-    const data = eventId ? await safelyRefreshEvent(supabase, eventId) : null;
-    return NextResponse.json(
-      {
-        code: "INVALID_RELATION",
-        error: "Požadovaná vazba není pro tuto událost platná.",
-        data,
-      },
-      { status: 409 },
     );
   }
 

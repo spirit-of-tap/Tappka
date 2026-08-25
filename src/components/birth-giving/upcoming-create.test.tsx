@@ -30,9 +30,7 @@ describe("BirthGivingUpcomingCreate", () => {
   it("uses the shared event form and routes to the new event on success", async () => {
     const user = userEvent.setup();
     const created = makeEvent();
-    fetchSpy
-      .mockResolvedValueOnce(jsonResponse({ data: [] }))
-      .mockResolvedValueOnce(jsonResponse({ data: created }, 201));
+    fetchSpy.mockResolvedValueOnce(jsonResponse({ data: created }, 201));
 
     render(
       <BirthGivingUpcomingCreate

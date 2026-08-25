@@ -1,17 +1,50 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
 
 import {
-  applyBirthGivingParticipationValidityFilters,
-  buildBirthGivingEventIndexWindow,
   countProfileBirthGivingParticipations,
   getBirthGivingEvent,
   listBirthGivingEvents,
-  listPendingBirthGivingEventProposals,
   listProfileBirthGivingHistory,
 } from "./queries";
+
+// Pairing guard for the Task 5 column grants: these seven assignment columns
+// are revoked from authenticated and must never appear in an event projection.
+const SEVEN_ASSIGNMENT_COLUMNS = [
+  "assignment_state",
+  "assignment_storage_path",
+  "assignment_file_name",
+  "assignment_mime_type",
+  "assignment_file_size",
+  "assignment_uploaded_at",
+  "assignment_uploaded_by_profile_id",
+] as const;
+
+// The 13 columns authenticated callers may select directly (mirrors the SQL
+// pairing guard in birth-giving-authorization.int.test.ts).
+const THIRTEEN_SAFE_EVENT_COLUMNS = [
+  "id",
+  "name",
+  "customer",
+  "starts_at",
+  "duration",
+  "status",
+  "organizer_profile_ids",
+  "removed_at",
+  "removed_by_profile_id",
+  "created_at",
+  "updated_at",
+  "created_by_profile_id",
+  "updated_by_profile_id",
+] as const;
+
+const VISIBILITY_RPC = "birth_giving_get_visible_assignment";
+
+// `birth_giving_team_members` has three FKs to `profiles`; the member embed must
+// pin the relationship or PostgREST raises PGRST201.
+const MEMBER_PROFILE_EMBED = "profiles!birth_giving_team_members_profile_id_fkey(id, name, picture)";
 
 interface RecordedCall {
   method: string;
@@ -30,8 +63,8 @@ class FakeChain {
     this.count = count;
   }
 
-  select(select: string): this {
-    this.calls.push({ method: "select", args: [select] });
+  select(select: string, options?: unknown): this {
+    this.calls.push({ method: "select", args: [select, options] });
     return this;
   }
 
@@ -40,23 +73,13 @@ class FakeChain {
     return this;
   }
 
+  in(column: string, values: unknown[]): this {
+    this.calls.push({ method: "in", args: [column, values] });
+    return this;
+  }
+
   is(column: string, value: unknown): this {
     this.calls.push({ method: "is", args: [column, value] });
-    return this;
-  }
-
-  not(column: string, operator: string, value: unknown): this {
-    this.calls.push({ method: "not", args: [column, operator, value] });
-    return this;
-  }
-
-  gte(column: string, value: unknown): this {
-    this.calls.push({ method: "gte", args: [column, value] });
-    return this;
-  }
-
-  lt(column: string, value: unknown): this {
-    this.calls.push({ method: "lt", args: [column, value] });
     return this;
   }
 
@@ -65,8 +88,8 @@ class FakeChain {
     return this;
   }
 
-  limit(count: number, options?: { referencedTable?: string }): this {
-    this.calls.push({ method: "limit", args: options ? [count, options] : [count] });
+  rpc(functionName: string, args?: Record<string, unknown>): this {
+    this.calls.push({ method: "rpc", args: [functionName, args] });
     return this;
   }
 
@@ -80,10 +103,16 @@ class FakeChain {
   }
 }
 
+interface FakeChainEntry {
+  table: string;
+  chain: FakeChain;
+}
+
 function fakeSupabase(
   queues: Record<string, { data?: unknown; error?: unknown; count?: unknown }[]> = {},
 ) {
-  const chains: { table: string; chain: FakeChain }[] = [];
+  const chains: FakeChainEntry[] = [];
+  const rpcCalls: { functionName: string; args?: Record<string, unknown> }[] = [];
   const client = {
     from(table: string) {
       const entry = queues[table]?.shift() ?? {};
@@ -91,398 +120,344 @@ function fakeSupabase(
       chains.push({ table, chain });
       return chain;
     },
+    rpc(this: { rpc: (fn: string, args?: Record<string, unknown>) => FakeChain }, functionName: string, args?: Record<string, unknown>) {
+      if (!this || typeof this.rpc !== "function") {
+        throw new TypeError("Cannot read properties of undefined (reading 'rest')");
+      }
+      const entry = queues[`rpc:${functionName}`]?.shift() ?? {};
+      const chain = new FakeChain(entry.data, entry.error, entry.count);
+      chains.push({ table: `rpc:${functionName}`, chain });
+      rpcCalls.push({ functionName, args });
+      return chain;
+    },
   };
-  return { client: client as unknown as SupabaseClient<Database>, chains };
+  return { client: client as unknown as SupabaseClient<Database>, chains, rpcCalls };
 }
 
-function callsOf(chain: FakeChain, method: string): unknown[][] {
-  return chain.calls.filter((call) => call.method === method).map((call) => call.args);
-}
-
-function selectOf(chain: FakeChain): string {
-  return callsOf(chain, "select")[0][0] as string;
-}
-
-afterEach(() => {
-  vi.useRealTimers();
-});
-
-describe("applyBirthGivingParticipationValidityFilters", () => {
-  it("applies every production history and count validity predicate", () => {
-    const calls: string[] = [];
-    const query = {
-      not(column: "frozen_at", operator: "is", value: null) {
-        calls.push(`not:${column}:${operator}:${String(value)}`);
-        return this;
-      },
-      eq(
-        column: "team.status" | "team.event.status",
-        value: "confirmed" | "published",
-      ) {
-        calls.push(`eq:${column}:${value}`);
-        return this;
-      },
-      is(column: "team.event.removed_at", value: null) {
-        calls.push(`is:${column}:${String(value)}`);
-        return this;
-      },
-    };
-
-    expect(applyBirthGivingParticipationValidityFilters(query)).toBe(query);
-    expect(calls).toEqual([
-      "not:frozen_at:is:null",
-      "eq:team.status:confirmed",
-      "eq:team.event.status:published",
-      "is:team.event.removed_at:null",
-    ]);
-  });
-});
-
-describe("listProfileBirthGivingHistory", () => {
-  it("selects memberships with nested event, team and organizer profiles, filtered to valid participation", async () => {
-    const { client, chains } = fakeSupabase();
-
-    const items = await listProfileBirthGivingHistory(client, "profile-1");
-
-    expect(items).toEqual([]);
-    expect(chains).toHaveLength(1);
-    expect(chains[0].table).toBe("birth_giving_team_members");
-    const chain = chains[0].chain;
-
-    expect(callsOf(chain, "eq")).toEqual([
-      ["profile_id", "profile-1"],
-      ["team.status", "confirmed"],
-      ["team.event.status", "published"],
-    ]);
-    expect(callsOf(chain, "not")).toEqual([["frozen_at", "is", null]]);
-    expect(callsOf(chain, "is")).toEqual([["team.event.removed_at", null]]);
-
-    const select = selectOf(chain);
-    expect(select).toContain("team:birth_giving_teams!inner");
-    expect(select).toContain("event:birth_giving_events!inner");
-    expect(select).toContain(
-      "organizers:birth_giving_event_organizers(profile:profiles!birth_giving_event_organizers_profile_id_fkey(id, name, picture))",
+function selectCallsOf(chains: FakeChainEntry[], tables: string[]): string[] {
+  return chains
+    .filter(({ table }) => tables.includes(table))
+    .flatMap(({ chain }) =>
+      chain.calls
+        .filter((call) => call.method === "select")
+        .map((call) => call.args[0] as string),
     );
-    expect(callsOf(chain, "order")).toEqual([["confirmed_at", { ascending: false }]]);
-  });
+}
 
-  it("maps rows into profile history items with team and organizers", async () => {
-    const { client } = fakeSupabase({
-      birth_giving_team_members: [
-        {
-          data: [
-            {
-              id: "member-1",
-              team_id: "team-1",
-              profile_id: "profile-1",
-              confirmed_at: "2026-08-19T07:00:00.000Z",
-              frozen_at: "2026-08-19T08:00:00.000Z",
-              team: {
-                id: "team-1",
-                name: "Tým Alfa",
-                status: "confirmed",
-                event: {
-                  id: "event-1",
-                  name: "First BG",
-                  customer: "Zákazník A",
-                  starts_at: "2026-08-19T08:00:00.000Z",
-                  duration: "8h",
-                  status: "published",
-                  organizers: [
-                    {
-                      event_id: "event-1",
-                      profile_id: "org-1",
-                      profile: { id: "org-1", name: "Org One", picture: null },
-                    },
-                  ],
-                },
-              },
-            },
-          ],
-        },
-      ],
-    });
+describe("Birth Giving queries", () => {
+  it("selects only the safe event columns in list, detail, and history (never the seven assignment columns)", async () => {
+    // Regression guard for the Task 5 DB grants: every event projection must
+    // use the 13-column safe list, because the seven assignment columns are
+    // revoked from authenticated and reachable only via the visibility RPC.
+    const { client, chains } = fakeSupabase();
+    await listBirthGivingEvents(client);
+    await getBirthGivingEvent(client, "event-1");
+    await listProfileBirthGivingHistory(client, "p1");
 
-    const items = await listProfileBirthGivingHistory(client, "profile-1");
-
-    expect(items).toHaveLength(1);
-    expect(items[0].name).toBe("First BG");
-    expect(items[0].customer).toBe("Zákazník A");
-    expect(items[0].team).toEqual({ id: "team-1", name: "Tým Alfa", status: "confirmed" });
-    expect(items[0].membership.frozen_at).toBe("2026-08-19T08:00:00.000Z");
-    expect(items[0].organizers).toHaveLength(1);
-    expect(items[0].organizers[0].profile.name).toBe("Org One");
-  });
-
-  it("returns an empty list for an unknown profile", async () => {
-    const { client } = fakeSupabase();
-
-    const items = await listProfileBirthGivingHistory(client, "nobody");
-
-    expect(items).toEqual([]);
-  });
-});
-
-describe("countProfileBirthGivingParticipations", () => {
-  it("counts only valid published participations for the profile", async () => {
-    const { client, chains } = fakeSupabase({
-      birth_giving_team_members: [{ data: [], count: 3 }],
-    });
-
-    const count = await countProfileBirthGivingParticipations(client, "profile-1");
-
-    expect(count).toBe(3);
-    expect(chains).toHaveLength(1);
-    expect(chains[0].table).toBe("birth_giving_team_members");
-    const chain = chains[0].chain;
-    expect(selectOf(chain)).toContain("team:birth_giving_teams!inner(status, event:birth_giving_events!inner(status, removed_at))");
-    expect(callsOf(chain, "eq")).toEqual([
-      ["profile_id", "profile-1"],
-      ["team.status", "confirmed"],
-      ["team.event.status", "published"],
+    const eventSelects = selectCallsOf(chains, [
+      "birth_giving_events",
+      "birth_giving_team_members",
     ]);
-    expect(callsOf(chain, "not")).toEqual([["frozen_at", "is", null]]);
-    expect(callsOf(chain, "is")).toEqual([["team.event.removed_at", null]]);
+    expect(eventSelects.length).toBeGreaterThanOrEqual(3);
+
+    for (const select of eventSelects) {
+      for (const column of SEVEN_ASSIGNMENT_COLUMNS) {
+        expect(select).not.toContain(column);
+      }
+      for (const column of THIRTEEN_SAFE_EVENT_COLUMNS) {
+        expect(select).toMatch(new RegExp(`\\b${column}\\b`));
+      }
+    }
   });
-});
 
-describe("buildBirthGivingEventIndexWindow", () => {
-  it("bounds the history window to the named number of days", () => {
-    const now = new Date("2026-08-19T12:00:00.000Z");
-
-    const window = buildBirthGivingEventIndexWindow(now);
-
-    expect(window.nowIso).toBe("2026-08-19T12:00:00.000Z");
-    expect(window.historyStartIso).toBe("2026-05-21T12:00:00.000Z");
-  });
-});
-
-describe("listBirthGivingEvents", () => {
-  const NOW_ISO = "2026-08-19T12:00:00.000Z";
-
-  function eventRow(overrides: Record<string, unknown> = {}) {
-    return {
+  it("listBirthGivingEvents fills redacted assignment defaults without calling the visibility RPC", async () => {
+    const rawEvent: Record<string, unknown> = {
       id: "event-1",
-      name: "First BG",
-      normalized_name: "first bg",
-      customer: "Zákazník A",
-      normalized_customer: "zakaznik a",
+      name: "Event 1",
+      customer: "Customer A",
       starts_at: "2026-08-19T08:00:00.000Z",
       duration: "8h",
-      minimum_team_size: 2,
-      maximum_team_size: 4,
-      joining_open: true,
       status: "published",
-      start_processed_at: null,
-      start_emails_queued_at: null,
+      organizer_profile_ids: ["org-1"],
       removed_at: null,
       removed_by_profile_id: null,
       created_at: "2026-08-19T06:00:00.000Z",
       updated_at: "2026-08-19T06:00:00.000Z",
       created_by_profile_id: "org-1",
       updated_by_profile_id: "org-1",
-      organizers: [{ profile_id: "org-1" }],
-      teams: [],
-      ...overrides,
-    };
-  }
-
-  it("queries recent history and active upcoming events with bounded nested rows", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(NOW_ISO));
-    const { client, chains } = fakeSupabase();
-
-    await listBirthGivingEvents(client);
-
-    expect(chains).toHaveLength(2);
-    const history = chains.find(({ chain }) => callsOf(chain, "lt").length > 0)!;
-    const upcoming = chains.find(({ chain }) => callsOf(chain, "lt").length === 0)!;
-    expect(history.table).toBe("birth_giving_events");
-    expect(upcoming.table).toBe("birth_giving_events");
-
-    for (const { chain } of [history, upcoming]) {
-      expect(callsOf(chain, "eq")).toEqual([["status", "published"]]);
-      expect(callsOf(chain, "is")).toEqual([["removed_at", null]]);
-      expect(selectOf(chain)).not.toContain("limit=");
-      expect(selectOf(chain)).toContain("members:birth_giving_team_members(profile_id)");
-      expect(selectOf(chain)).toContain(
-        "proposals:birth_giving_team_proposals(candidate_profile_id, state)",
-      );
-    }
-
-    const scopedLimits = [
-      [50, { referencedTable: "teams.members" }],
-      [50, { referencedTable: "teams.proposals" }],
-    ];
-    expect(callsOf(history.chain, "lt")).toEqual([["starts_at", NOW_ISO]]);
-    expect(callsOf(history.chain, "gte")).toEqual([
-      ["starts_at", "2026-05-21T12:00:00.000Z"],
-    ]);
-    expect(callsOf(history.chain, "order")).toEqual([
-      ["starts_at", { ascending: false }],
-    ]);
-    expect(callsOf(history.chain, "limit")).toEqual([...scopedLimits, [20]]);
-
-    expect(callsOf(upcoming.chain, "lt")).toEqual([]);
-    expect(callsOf(upcoming.chain, "gte")).toEqual([["starts_at", NOW_ISO]]);
-    expect(callsOf(upcoming.chain, "order")).toEqual([
-      ["starts_at", { ascending: true }],
-    ]);
-    expect(callsOf(upcoming.chain, "limit")).toEqual([...scopedLimits, [50]]);
-  });
-
-  it("derives team and participant counts from bounded rows and sorts the merge", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(NOW_ISO));
-    const pastEvent = eventRow({
-      id: "past-1",
-      starts_at: "2026-08-10T08:00:00.000Z",
       teams: [
         {
           id: "team-1",
-          status: "confirmed",
-          members: [{ profile_id: "member-1" }, { profile_id: "member-2" }],
-          proposals: [
-            { candidate_profile_id: "candidate-1", state: "pending" },
-            { candidate_profile_id: "candidate-1", state: "pending" },
-            { candidate_profile_id: "candidate-2", state: "accepted" },
-          ],
+          cancelled_at: null,
+          members: [{ profile_id: "p1" }, { profile_id: "p2" }],
         },
-        {
-          id: "team-2",
-          status: "cancelled",
-          members: [{ profile_id: "ghost-1" }],
-          proposals: [{ candidate_profile_id: "ghost-2", state: "pending" }],
-        },
-      ],
-    });
-    const futureEvent = eventRow({
-      id: "future-1",
-      starts_at: "2026-09-01T08:00:00.000Z",
-    });
-    const { client } = fakeSupabase({
-      birth_giving_events: [{ data: [pastEvent] }, { data: [futureEvent] }],
-    });
-
-    const events = await listBirthGivingEvents(client);
-
-    expect(events.map((event) => event.id)).toEqual(["past-1", "future-1"]);
-    const past = events[0];
-    expect(past.organizer_profile_ids).toEqual(["org-1"]);
-    expect(past.team_count).toBe(1);
-    expect(past.participant_profile_ids).toEqual(["member-1", "member-2"]);
-    expect(past.pending_proposal_profile_ids).toEqual(["candidate-1"]);
-    expect(past).not.toHaveProperty("teams");
-    expect(past).not.toHaveProperty("organizers");
-  });
-});
-
-describe("listPendingBirthGivingEventProposals", () => {
-  it("filters pending proposals server-side for the given event", async () => {
-    const { client, chains } = fakeSupabase();
-
-    await listPendingBirthGivingEventProposals(client, "event-1");
-
-    expect(chains).toHaveLength(1);
-    expect(chains[0].table).toBe("birth_giving_team_proposals");
-    const chain = chains[0].chain;
-    expect(callsOf(chain, "eq")).toEqual([
-      ["state", "pending"],
-      ["team.event_id", "event-1"],
-    ]);
-    const select = selectOf(chain);
-    expect(select).toContain("candidate:profiles!birth_giving_team_proposals_candidate_profile_id_fkey");
-    expect(select).toContain("initiator:profiles!birth_giving_team_proposals_initiated_by_profile_id_fkey");
-    expect(select).toContain("team:birth_giving_teams!inner(event_id)");
-    expect(callsOf(chain, "order")).toEqual([["created_at", { ascending: true }]]);
-  });
-});
-
-describe("getBirthGivingEvent", () => {
-  function eventRow() {
-    return {
-      id: "event-1",
-      name: "First BG",
-      customer: "Zákazník A",
-      starts_at: "2026-08-19T08:00:00.000Z",
-      status: "published",
-      assignment: null,
-      organizers: [],
-      team_searches: [],
-      teams: [
-        { id: "team-1", name: "Tým Alfa", status: "forming", members: [], result_files: [] },
-        { id: "team-2", name: "Tým Beta", status: "forming", members: [], result_files: [] },
-        { id: "team-3", name: "Tým Gama", status: "forming", members: [], result_files: [] },
       ],
     };
-  }
 
-  it("no longer embeds proposals into the detail query", async () => {
+    const { client, rpcCalls } = fakeSupabase({
+      birth_giving_events: [{ data: [rawEvent] }],
+    });
+
+    const result = await listBirthGivingEvents(client);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("event-1");
+    expect(result[0].team_count).toBe(1);
+    expect(result[0].participant_count).toBe(2);
+    expect(result[0].participant_profile_ids).toEqual(["p1", "p2"]);
+    expect(result[0].assignment_state).toBe("none");
+    expect(result[0].assignment_storage_path).toBeNull();
+    expect(result[0].assignment_file_name).toBeNull();
+    expect(result[0].assignment_mime_type).toBeNull();
+    expect(result[0].assignment_file_size).toBeNull();
+    expect(result[0].assignment_uploaded_at).toBeNull();
+    expect(result[0].assignment_uploaded_by_profile_id).toBeNull();
+    expect(rpcCalls).toHaveLength(0);
+  });
+
+  it("getBirthGivingEvent calls the visibility RPC once and merges the returned assignment row", async () => {
+    const rawEvent: Record<string, unknown> = {
+      id: "event-1",
+      name: "Event 1",
+      customer: "Customer A",
+      starts_at: "2026-08-19T08:00:00.000Z",
+      duration: "8h",
+      status: "published",
+      organizer_profile_ids: ["org-1"],
+      removed_at: null,
+      removed_by_profile_id: null,
+      created_at: "2026-08-19T06:00:00.000Z",
+      updated_at: "2026-08-19T06:00:00.000Z",
+      created_by_profile_id: "org-1",
+      updated_by_profile_id: "org-1",
+      teams: [
+        {
+          id: "team-1",
+          event_id: "event-1",
+          name: "Team A",
+          is_winner: true,
+          result_state: "present",
+          result_files: [],
+          cancelled_at: null,
+          cancellation_reason: null,
+          created_at: "2026-08-19T06:30:00.000Z",
+          updated_at: "2026-08-19T06:30:00.000Z",
+          created_by_profile_id: "org-1",
+          updated_by_profile_id: "org-1",
+          members: [
+            {
+              id: "m1",
+              event_id: "event-1",
+              team_id: "team-1",
+              profile_id: "p1",
+              confirmed_at: "2026-08-19T08:00:00.000Z",
+              reflection_contribution: "Contribution",
+              reflection_learning: "Learning",
+              reflection_submitted_at: "2026-08-19T09:00:00.000Z",
+              profile: { id: "p1", name: "Participant 1", picture: null },
+            },
+          ],
+        },
+      ],
+    };
+
+    const assignmentRow = {
+      assignment_state: "present",
+      assignment_storage_path: "birth-giving/assignments/event-1/zadani.pdf",
+      assignment_file_name: "zadani.pdf",
+      assignment_mime_type: "application/pdf",
+      assignment_file_size: "2048",
+      assignment_uploaded_at: "2026-08-19T09:00:00.000Z",
+      assignment_uploaded_by_profile_id: "org-1",
+    };
+
+    const { client, rpcCalls } = fakeSupabase({
+      birth_giving_events: [{ data: rawEvent }],
+      profiles: [{ data: [{ id: "org-1", name: "Organizer", picture: null }] }],
+      [`rpc:${VISIBILITY_RPC}`]: [{ data: [assignmentRow] }],
+    });
+
+    const result = await getBirthGivingEvent(client, "event-1");
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe("event-1");
+    expect(result?.teams[0].is_winner).toBe(true);
+    expect(result?.teams[0].members[0].reflection_contribution).toBe("Contribution");
+    expect(result?.organizers).toEqual([{ id: "org-1", name: "Organizer", picture: null }]);
+    expect(result?.assignment_state).toBe("present");
+    expect(result?.assignment_storage_path).toBe(
+      "birth-giving/assignments/event-1/zadani.pdf",
+    );
+    expect(result?.assignment_file_name).toBe("zadani.pdf");
+    expect(result?.assignment_mime_type).toBe("application/pdf");
+    expect(result?.assignment_file_size).toBe(2048);
+    expect(result?.assignment_uploaded_at).toBe("2026-08-19T09:00:00.000Z");
+    expect(result?.assignment_uploaded_by_profile_id).toBe("org-1");
+    expect(rpcCalls).toEqual([{ functionName: VISIBILITY_RPC, args: { p_event_id: "event-1" } }]);
+  });
+
+  it("getBirthGivingEvent disambiguates the member->profile embed (PGRST201 guard)", async () => {
+    const rawEvent: Record<string, unknown> = {
+      id: "event-1",
+      name: "Event 1",
+      customer: "Customer A",
+      starts_at: "2026-08-19T08:00:00.000Z",
+      duration: "8h",
+      status: "published",
+      organizer_profile_ids: ["org-1"],
+      removed_at: null,
+      removed_by_profile_id: null,
+      created_at: "2026-08-19T06:00:00.000Z",
+      updated_at: "2026-08-19T06:00:00.000Z",
+      created_by_profile_id: "org-1",
+      updated_by_profile_id: "org-1",
+      teams: [],
+    };
+
     const { client, chains } = fakeSupabase({
-      birth_giving_events: [{ data: eventRow() }],
+      birth_giving_events: [{ data: rawEvent }],
+      [`rpc:${VISIBILITY_RPC}`]: [{ data: [] }],
     });
 
     await getBirthGivingEvent(client, "event-1");
 
-    expect(chains).toHaveLength(2);
-    expect(chains[0].table).toBe("birth_giving_events");
-    expect(selectOf(chains[0].chain)).not.toContain("proposals");
-    expect(callsOf(chains[0].chain, "maybeSingle")).toEqual([[]]);
+    const eventEntry = chains.find(({ table }) => table === "birth_giving_events");
+    const selectCall = eventEntry?.chain.calls.find(({ method }) => method === "select");
+    const projection = selectCall?.args[0];
+    expect(typeof projection).toBe("string");
+    expect(projection as string).toContain(MEMBER_PROFILE_EMBED);
+    // The ambiguous bare embed must never be used.
+    expect(projection as string).not.toContain("profile:profiles(id, name, picture)");
   });
 
-  it("merges only pending proposals into their teams", async () => {
-    const { client } = fakeSupabase({
-      birth_giving_events: [{ data: eventRow() }],
-      birth_giving_team_proposals: [
-        {
-          data: [
-            {
-              id: "proposal-1",
-              event_id: "event-1",
-              team_id: "team-1",
-              candidate_profile_id: "candidate-1",
-              initiated_by_profile_id: "member-1",
-              direction: "join_request",
-              state: "pending",
-              created_at: "2026-08-19T09:00:00.000Z",
-              candidate: { id: "candidate-1", name: "Candidate One", picture: null },
-              initiator: { id: "member-1", name: "Member One", picture: null },
-            },
-            {
-              id: "proposal-2",
-              event_id: "event-1",
-              team_id: "team-2",
-              candidate_profile_id: "candidate-2",
-              initiated_by_profile_id: "member-2",
-              direction: "invitation",
-              state: "pending",
-              created_at: "2026-08-19T09:30:00.000Z",
-              candidate: { id: "candidate-2", name: "Candidate Two", picture: null },
-              initiator: { id: "member-2", name: "Member Two", picture: null },
-            },
-          ],
+  it("getBirthGivingEvent falls back to redacted 'none' assignment fields when the RPC returns no row", async () => {
+    const rawEvent: Record<string, unknown> = {
+      id: "event-1",
+      name: "Event 1",
+      customer: "Customer A",
+      starts_at: "2026-08-19T08:00:00.000Z",
+      duration: "8h",
+      status: "published",
+      organizer_profile_ids: ["org-1"],
+      removed_at: null,
+      removed_by_profile_id: null,
+      created_at: "2026-08-19T06:00:00.000Z",
+      updated_at: "2026-08-19T06:00:00.000Z",
+      created_by_profile_id: "org-1",
+      updated_by_profile_id: "org-1",
+      teams: [],
+    };
+
+    const { client, rpcCalls } = fakeSupabase({
+      birth_giving_events: [{ data: rawEvent }],
+      profiles: [{ data: [] }],
+      [`rpc:${VISIBILITY_RPC}`]: [{ data: [] }],
+    });
+
+    const result = await getBirthGivingEvent(client, "event-1");
+    expect(result).not.toBeNull();
+    expect(result?.assignment_state).toBe("none");
+    expect(result?.assignment_storage_path).toBeNull();
+    expect(result?.assignment_file_name).toBeNull();
+    expect(result?.assignment_mime_type).toBeNull();
+    expect(result?.assignment_file_size).toBeNull();
+    expect(result?.assignment_uploaded_at).toBeNull();
+    expect(result?.assignment_uploaded_by_profile_id).toBeNull();
+    expect(rpcCalls).toHaveLength(1);
+  });
+
+  it("countProfileBirthGivingParticipations counts only valid participations (cancelled team and draft event excluded)", async () => {
+    // Seeds model the rows PostgREST sees server-side; the head-count the mock
+    // reports (2) is the count the server returns once the validity filters
+    // asserted below are applied. Only m-valid-1 and m-valid-2 satisfy the same
+    // validity predicate as listProfileBirthGivingHistory (team NOT cancelled
+    // AND event published AND event NOT removed); m-cancelled has a cancelled
+    // team and m-draft belongs to a draft event.
+    const memberships = [
+      { id: "m-valid-1", event_id: "e-valid-1" },
+      { id: "m-valid-2", event_id: "e-valid-2" },
+      { id: "m-cancelled", event_id: "e-cancelled" },
+      { id: "m-draft", event_id: "e-draft" },
+    ];
+
+    const { client, chains } = fakeSupabase({
+      birth_giving_team_members: [{ data: memberships, count: 2 }],
+    });
+
+    const count = await countProfileBirthGivingParticipations(client, "p1");
+    expect(count).toBe(2);
+
+    const memberChain = chains.find(
+      ({ table }) => table === "birth_giving_team_members",
+    );
+    expect(memberChain).toBeDefined();
+    const calls = memberChain!.chain.calls;
+
+    // Head count with the aliased `!inner` embeds so the nested validity filters
+    // resolve and force inner joins (same shape as listProfileBirthGivingHistory).
+    const selectCall = calls.find((call) => call.method === "select");
+    expect(selectCall).toBeDefined();
+    const projection = selectCall!.args[0] as string;
+    expect(projection).toContain("team:birth_giving_teams!inner");
+    expect(projection).toContain("event:birth_giving_events!inner");
+    expect(selectCall!.args[1]).toEqual({ count: "exact", head: true });
+
+    expect(calls).toContainEqual({ method: "eq", args: ["profile_id", "p1"] });
+    // Validity predicate shared with listProfileBirthGivingHistory.
+    expect(calls).toContainEqual({ method: "is", args: ["team.cancelled_at", null] });
+    expect(calls).toContainEqual({ method: "eq", args: ["team.event.status", "published"] });
+    expect(calls).toContainEqual({ method: "is", args: ["team.event.removed_at", null] });
+  });
+
+  it("listProfileBirthGivingHistory returns profile participations with redacted assignment defaults and no visibility RPC", async () => {
+    const rawMemberships = [
+      {
+        id: "m1",
+        event_id: "e1",
+        team_id: "t1",
+        profile_id: "p1",
+        confirmed_at: "2026-08-19T08:00:00.000Z",
+        reflection_contribution: null,
+        reflection_learning: null,
+        reflection_submitted_at: null,
+        team: {
+          id: "t1",
+          name: "Team 1",
+          is_winner: true,
+          cancelled_at: null,
+          event: {
+            id: "e1",
+            name: "Event 1",
+            customer: "Customer 1",
+            starts_at: "2026-08-19T08:00:00.000Z",
+            duration: "8h",
+            status: "published",
+            organizer_profile_ids: ["org-1"],
+            removed_at: null,
+            removed_by_profile_id: null,
+            created_at: "2026-08-19T06:00:00.000Z",
+            updated_at: "2026-08-19T06:00:00.000Z",
+            created_by_profile_id: "org-1",
+            updated_by_profile_id: "org-1",
+          },
         },
-      ],
+      },
+    ];
+
+    const { client, rpcCalls } = fakeSupabase({
+      birth_giving_team_members: [{ data: rawMemberships }],
     });
 
-    const event = await getBirthGivingEvent(client, "event-1");
-
-    expect(event?.teams.find((team) => team.id === "team-1")?.proposals).toEqual([
-      expect.objectContaining({ id: "proposal-1" }),
-    ]);
-    expect(event?.teams.find((team) => team.id === "team-2")?.proposals).toEqual([
-      expect.objectContaining({ id: "proposal-2" }),
-    ]);
-    expect(event?.teams.find((team) => team.id === "team-3")?.proposals).toEqual([]);
-  });
-
-  it("returns null when the event does not exist", async () => {
-    const { client } = fakeSupabase({
-      birth_giving_events: [{ data: null }],
-    });
-
-    const event = await getBirthGivingEvent(client, "missing-1");
-
-    expect(event).toBeNull();
+    const history = await listProfileBirthGivingHistory(client, "p1");
+    expect(history).toHaveLength(1);
+    expect(history[0].id).toBe("e1");
+    expect(history[0].team.is_winner).toBe(true);
+    expect(history[0].organizers).toEqual([]);
+    expect(history[0].assignment_state).toBe("none");
+    expect(history[0].assignment_storage_path).toBeNull();
+    expect(history[0].assignment_file_name).toBeNull();
+    expect(history[0].assignment_mime_type).toBeNull();
+    expect(history[0].assignment_file_size).toBeNull();
+    expect(history[0].assignment_uploaded_at).toBeNull();
+    expect(history[0].assignment_uploaded_by_profile_id).toBeNull();
+    expect(rpcCalls).toHaveLength(0);
   });
 });

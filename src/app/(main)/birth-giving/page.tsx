@@ -5,12 +5,10 @@ import { getSessionProfile } from "@/lib/auth/session"
 import { listBirthGivingEvents, listBirthGivingOrganizerProfiles } from "@/lib/birth-giving/queries"
 import { BirthGivingIndex } from "@/components/birth-giving/birth-giving-index"
 import { PageShell } from "@/components/ui/page-shell"
-import { PageHeader } from "@/components/ui/page-header"
-import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
 export const metadata = {
   title: "Birth Giving | Tappka",
-  description: "Přehled Birth Giving událostí, týmů a výsledků",
+  description: "Přehled hackathonů, týmových řešení a odevzdaných výstupů",
 }
 
 export default async function BirthGivingIndexPage() {
@@ -31,14 +29,6 @@ export default async function BirthGivingIndexPage() {
 
   return (
     <PageShell>
-      <PageHeader
-        title="Birth Giving"
-        description="Přehled Birth Giving událostí, týmů a výsledků"
-        count={{
-          value: events.length,
-          label: pluralizeCz(events.length, ["událost", "události", "událostí"]),
-        }}
-      />
       <BirthGivingIndex
         events={events}
         profileId={profile.id}

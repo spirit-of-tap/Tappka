@@ -22,13 +22,11 @@ export interface BirthGivingRetrospectiveReview {
 export function buildBirthGivingRetrospectiveReview(
   event: BirthGivingEventDetail,
 ): BirthGivingRetrospectiveReview {
-  const teams = event.teams.filter(({ status }) => status !== "cancelled");
+  const teams = event.teams.filter(({ cancelled_at }) => !cancelled_at);
   return {
-    assignmentPending: event.assignment === null,
+    assignmentPending: event.assignment_state === "none",
     teamsMissing: teams.length === 0,
-    teamIssues: teams.map((team) =>
-      buildTeamIssue(team, event.minimum_team_size, event.maximum_team_size),
-    ),
+    teamIssues: teams.map((team) => buildTeamIssue(team)),
     affectedProfiles: collectBirthGivingAffectedProfiles(event),
   };
 }
@@ -39,7 +37,7 @@ export function collectBirthGivingAffectedProfiles(
   const seen = new Set<string>();
   const profiles: BirthGivingProfileSummary[] = [];
   for (const team of event.teams) {
-    if (team.status === "cancelled") continue;
+    if (team.cancelled_at) continue;
     for (const member of team.members) {
       if (seen.has(member.profile_id)) continue;
       seen.add(member.profile_id);
@@ -51,14 +49,12 @@ export function collectBirthGivingAffectedProfiles(
 
 function buildTeamIssue(
   team: BirthGivingTeamDetail,
-  minimumTeamSize: number,
-  maximumTeamSize: number,
 ): BirthGivingRetrospectiveTeamIssue {
   const memberCount = team.members.length;
   return {
     team,
     memberCount,
-    sizeValid: memberCount >= minimumTeamSize && memberCount <= maximumTeamSize,
+    sizeValid: memberCount >= 1,
     resultStatePending: team.result_state === "pending",
     resultPresentWithoutFiles:
       team.result_state === "present" && team.result_files.length === 0,

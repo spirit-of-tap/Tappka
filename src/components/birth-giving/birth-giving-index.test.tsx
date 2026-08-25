@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BirthGivingIndex } from "@/components/birth-giving/birth-giving-index";
-import { makeEvent, makeEventIndexItem, makeOrganizerSummaries } from "@/tests/component/birth-giving-fixtures";
+import { makeEventIndexItem, makeOrganizerSummaries } from "@/tests/component/birth-giving-fixtures";
 
 const push = vi.fn();
 
@@ -20,23 +20,36 @@ beforeEach(() => {
 
 const NOW = "2026-08-19T12:00:00.000Z";
 
-const upcomingOpen = makeEventIndexItem({
-  id: "upcoming-open",
+const upcoming1 = makeEventIndexItem({
+  id: "upcoming-1",
   name: "Letní BG",
   customer: "Zákazník Alfa",
   starts_at: "2026-09-01T08:00:00.000Z",
-  joining_open: true,
   organizer_profile_ids: ["org-1"],
   team_count: 1,
   participant_count: 2,
+  participant_profile_ids: ["user-1"],
+  teams: [
+    {
+      id: "team-1",
+      name: "Tým Alfa",
+      members: [
+        {
+          profile_id: "user-1",
+          reflection_contribution: "Navrhl:a jsem frontend.",
+          reflection_learning: "Naučil:a jsem se lépe pracovat s časem.",
+        },
+      ],
+    },
+  ],
 });
 
-const upcomingClosed = makeEventIndexItem({
-  id: "upcoming-closed",
+const upcoming2 = makeEventIndexItem({
+  id: "upcoming-2",
   name: "Podzimní BG",
   customer: "Zákazník Beta",
   starts_at: "2026-09-10T08:00:00.000Z",
-  joining_open: false,
+  organizer_profile_ids: ["user-1"],
 });
 
 const past = makeEventIndexItem({
@@ -44,150 +57,95 @@ const past = makeEventIndexItem({
   name: "Jarní BG",
   customer: "Zákazník Gama",
   starts_at: "2026-06-01T08:00:00.000Z",
-  joining_open: false,
+});
+
+const todayEvent = makeEventIndexItem({
+  id: "today-event",
+  name: "Dnešní Hackathon",
+  customer: "Inovace s.r.o.",
+  starts_at: "2026-08-19T08:00:00.000Z",
+  duration: "24h",
+  participant_profile_ids: ["user-1"],
+  teams: [
+    {
+      id: "team-today",
+      name: "Rychlíci",
+      members: [{ profile_id: "user-1", reflection_contribution: null, reflection_learning: null }],
+    },
+  ],
 });
 
 describe("BirthGivingIndex", () => {
-  it("groups events into the right tabs and shows counts", () => {
+  it("renders all events and filter badge triggers", () => {
     render(
       <BirthGivingIndex
-        events={[upcomingOpen, upcomingClosed, past]}
-        profileId="org-1"
+        events={[upcoming1, upcoming2, past]}
+        profileId="user-1"
         now={NOW}
         organizerProfiles={makeOrganizerSummaries()}
       />,
     );
 
-    expect(screen.getByRole("tab", { name: /Nadcházející/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Moje/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Historie/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Všechny/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Zúčastnil:a jsem se/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Pořádal:a jsem/ })).toBeInTheDocument();
 
     expect(screen.getByText("Letní BG")).toBeInTheDocument();
     expect(screen.getByText("Podzimní BG")).toBeInTheDocument();
-    expect(screen.queryByText("Jarní BG")).not.toBeInTheDocument();
-  });
-
-  it("switches to the history tab on demand", async () => {
-    const user = userEvent.setup();
-    render(
-      <BirthGivingIndex
-        events={[upcomingOpen, past]}
-        profileId="org-1"
-        now={NOW}
-        organizerProfiles={makeOrganizerSummaries()}
-      />,
-    );
-
-    await user.click(screen.getByRole("tab", { name: /Historie/ }));
-
     expect(screen.getByText("Jarní BG")).toBeInTheDocument();
-    expect(screen.queryByText("Letní BG")).not.toBeInTheDocument();
   });
 
-  it("shows my events including pending proposals", () => {
-    render(
-      <BirthGivingIndex
-        events={[
-          makeEventIndexItem({
-            id: "mine-draft",
-            name: "Můj event",
-            starts_at: "2026-09-20T08:00:00.000Z",
-            joining_open: true,
-            participant_profile_ids: ["me-1"],
-          }),
-        ]}
-        profileId="me-1"
-        now={NOW}
-        organizerProfiles={makeOrganizerSummaries()}
-      />,
-    );
-
-    expect(screen.getByText("Můj event")).toBeInTheDocument();
-  });
-
-  it("filters by event name case-insensitively", async () => {
+  it("filters to only events I participated in", async () => {
     const user = userEvent.setup();
     render(
       <BirthGivingIndex
-        events={[upcomingOpen, upcomingClosed]}
-        profileId="org-1"
+        events={[upcoming1, upcoming2, past]}
+        profileId="user-1"
         now={NOW}
         organizerProfiles={makeOrganizerSummaries()}
       />,
     );
 
-    await user.type(screen.getByLabelText("Hledat událost"), "letni");
+    await user.click(screen.getByRole("button", { name: /Zúčastnil:a jsem se/ }));
 
     expect(screen.getByText("Letní BG")).toBeInTheDocument();
     expect(screen.queryByText("Podzimní BG")).not.toBeInTheDocument();
+    expect(screen.queryByText("Jarní BG")).not.toBeInTheDocument();
   });
 
-  it("filters by customer without diacritics", async () => {
+  it("filters to only events I organized", async () => {
     const user = userEvent.setup();
     render(
       <BirthGivingIndex
-        events={[upcomingOpen, upcomingClosed]}
-        profileId="org-1"
+        events={[upcoming1, upcoming2, past]}
+        profileId="user-1"
         now={NOW}
         organizerProfiles={makeOrganizerSummaries()}
       />,
     );
 
-    await user.type(screen.getByLabelText("Hledat událost"), "zakaznik beta");
+    await user.click(screen.getByRole("button", { name: /Pořádal:a jsem/ }));
 
     expect(screen.getByText("Podzimní BG")).toBeInTheDocument();
     expect(screen.queryByText("Letní BG")).not.toBeInTheDocument();
+    expect(screen.queryByText("Jarní BG")).not.toBeInTheDocument();
   });
 
-  it("shows an empty state when a tab has no events", () => {
+  it("pins and highlights today/active event in the events list", () => {
     render(
       <BirthGivingIndex
-        events={[]}
-        profileId="org-1"
+        events={[upcoming1, todayEvent]}
+        profileId="user-1"
         now={NOW}
         organizerProfiles={makeOrganizerSummaries()}
       />,
     );
 
-    expect(screen.getByText("Žádné nadcházející události")).toBeInTheDocument();
-  });
-
-  it("routes to the created draft so completion is never a dead end", async () => {
-    const user = userEvent.setup();
-    const draft = makeEvent({ id: "draft-1", status: "draft", name: "Nový BG" });
-    fetchSpy
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ data: [] }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 201,
-        json: async () => ({ data: draft }),
-      } as Response);
-
-    render(
-      <BirthGivingIndex
-        events={[]}
-        profileId="org-1"
-        now={NOW}
-        organizerProfiles={makeOrganizerSummaries()}
-      />,
+    expect(screen.getByText("Dnešní Hackathon")).toBeInTheDocument();
+    expect(screen.getByText("Právě probíhá")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Dnešní Hackathon/ })).toHaveAttribute(
+      "href",
+      "/birth-giving/today-event",
     );
-
-    await user.click(screen.getByRole("button", { name: "Nová událost" }));
-    await user.type(await screen.findByLabelText("Název události"), "Nový BG");
-    await user.type(screen.getByLabelText("Zákazník"), "Zákazník A");
-    await user.type(screen.getByLabelText("Začátek"), "2026-08-20T08:00");
-    const minInput = screen.getByLabelText("Min. velikost týmu") as HTMLInputElement;
-    const maxInput = screen.getByLabelText("Max. velikost týmu") as HTMLInputElement;
-    await user.clear(minInput);
-    await user.type(minInput, "2");
-    await user.clear(maxInput);
-    await user.type(maxInput, "4");
-    await user.click(screen.getByRole("button", { name: "Vytvořit událost" }));
-
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/birth-giving/draft-1"));
   });
 });

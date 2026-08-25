@@ -20,10 +20,6 @@ import {
 import { BirthGivingFileUpload } from "@/components/birth-giving/file-upload";
 import { formatFileSize } from "@/lib/birth-giving/format";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
-import {
-  canManageBirthGivingAssignment,
-  canMarkBirthGivingAssignmentMissing,
-} from "@/lib/birth-giving/permissions";
 import type { BirthGivingEventDetail } from "@/lib/birth-giving/types";
 
 interface BirthGivingRetrospectiveZadaniStepProps {
@@ -35,16 +31,12 @@ interface BirthGivingRetrospectiveZadaniStepProps {
 
 export function BirthGivingRetrospectiveZadaniStep({
   event,
-  profileId,
-  now,
+  profileId: _profileId,
+  now: _now,
   onEventChange,
 }: BirthGivingRetrospectiveZadaniStepProps) {
   const [missingOpen, setMissingOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const clientNow = new Date(now);
-  const assignment = event.assignment;
-  const canManage = canManageBirthGivingAssignment(event, profileId, clientNow);
-  const canMarkMissing = canMarkBirthGivingAssignmentMissing(event, profileId, clientNow);
 
   async function markMissing() {
     setBusy(true);
@@ -72,71 +64,80 @@ export function BirthGivingRetrospectiveZadaniStep({
         že se zadání nepodařilo dohledat.
       </p>
 
-      {assignment?.state === "present" && (
+      {event.assignment_state === "present" && (
         <Card className="flex flex-wrap items-center gap-3 p-3">
           <FileText className="size-4 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium">
-            {assignment.original_file_name}
+            {event.assignment_file_name ?? "Zadání"}
           </span>
           <span className="text-xs text-muted-foreground">
-            {formatFileSize(assignment.file_size ?? 0)}
+            {formatFileSize(event.assignment_file_size ?? 0)}
           </span>
           <Badge variant="outline">Zadání nahráno</Badge>
         </Card>
       )}
 
-      {assignment?.state === "missing" && (
+      {event.assignment_state === "missing" && (
         <Badge variant="outline" className="gap-1">
           <FolderSearch className="size-3" />
           Zadání nedohledáno
         </Badge>
       )}
 
-      {!assignment && (
+      {event.assignment_state === "none" && (
         <p className="text-sm text-muted-foreground">
-          Zadání zatím nebylo potvrzeno. Nedohledané zadání zveřejnění nezablokuje.
+          Zadání zatím nebylo nahráno. Nedohledané zadání zveřejnění nezablokuje.
         </p>
       )}
 
-      {canManage && (
-        <BirthGivingFileUpload
-          kind="assignment"
-          eventId={event.id}
-          onUploaded={() => onEventChange(null)}
-          disabled={busy}
-        />
-      )}
+      <BirthGivingFileUpload
+        kind="assignment"
+        eventId={event.id}
+        onUploaded={() => onEventChange(null)}
+      />
 
-      {canMarkMissing && (!assignment || assignment.state === "present") && (
-        <AlertDialog open={missingOpen} onOpenChange={setMissingOpen}>
+      {event.assignment_state !== "missing" && (
+        <div>
           <Button
             type="button"
             variant="outline"
-            disabled={busy || !canManage}
+            size="sm"
             onClick={() => setMissingOpen(true)}
           >
             Označit zadání jako nedohledané
           </Button>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Označit zadání jako nedohledané?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Zadání se nepodařilo dohledat. Tento stav událost zveřejnění nezablokuje.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel asChild>
-                <Button type="button" variant="outline">Zrušit</Button>
-              </AlertDialogCancel>
-              <AlertDialogAction asChild>
-                <Button type="button" disabled={busy} onClick={() => void markMissing()}>
-                  {busy && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
-                  Potvrdit
-                </Button>
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+
+          <AlertDialog open={missingOpen} onOpenChange={setMissingOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Označit zadání jako nedohledané?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Potvrďte, že se původní zadání nepodařilo najít. Tento stav nezablokuje
+                  zveřejnění události.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel asChild>
+                  <Button type="button" variant="outline">
+                    Zrušit
+                  </Button>
+                </AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <Button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void markMissing()}
+                  >
+                    {busy && (
+                      <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+                    )}
+                    Potvrdit
+                  </Button>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       )}
     </div>
   );

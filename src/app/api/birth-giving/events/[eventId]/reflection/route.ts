@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 
 import { birthGivingReflectionSchema } from "@/lib/birth-giving/api";
-
 import {
   birthGivingMutationErrorResponse,
+  callBirthGivingRpc,
   invalidPayloadResponse,
   isBirthGivingApiGateFailure,
   refreshedEventResponse,
@@ -23,16 +23,14 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   if (invalidId) return invalidId;
   const parsed = birthGivingReflectionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return invalidPayloadResponse();
+  const payload = parsed.data;
 
-  const { error } = await context.supabase.rpc(
-    "birth_giving_upsert_reflection",
-    {
-      p_contribution: parsed.data.contribution,
-      p_event_id: eventId,
-      p_learning: parsed.data.learning,
-    },
-  );
+  const { error } = await callBirthGivingRpc(context.supabase, "birth_giving_upsert_reflection", {
+    p_event_id: eventId,
+    p_contribution: payload.contribution,
+    p_learning: payload.learning,
+  });
+
   if (error) return birthGivingMutationErrorResponse(error, context.supabase, eventId);
-
   return refreshedEventResponse(context.supabase, eventId);
 }
