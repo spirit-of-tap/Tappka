@@ -41,7 +41,7 @@ test.describe("týmová reflexe - single user", () => {
     const response = await page.goto("/tymova-reflexe");
     expect(response?.status()).toBeLessThan(400);
     await expect(page.getByRole("heading", { name: "Týmová reflexe" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kalendář reflexí" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Plán reflexí za studium" })).toBeVisible();
   });
 
   test("creating a reflection redirects to its detail page", async ({ page }) => {
@@ -57,14 +57,14 @@ test.describe("týmová reflexe - single user", () => {
     await page.waitForURL(/\/tymova-reflexe\/[0-9a-f-]+$/);
 
     const unique = `E2E edit ${Date.now()}`;
-    await page.getByLabel("Co se nepovedlo").fill(unique);
+    await page.getByLabel("Co se povedlo").fill(unique);
     await expect(page.getByText("Neuložené změny")).toBeVisible();
     // exact: true matters — "Uloženo" is a case-insensitive substring of "Neuloženo",
     // so a loose match would resolve immediately on the transient unsaved state.
     await expect(page.getByText("Uloženo", { exact: true })).toBeVisible({ timeout: 5000 });
 
     await page.reload();
-    await expect(page.getByLabel("Co se nepovedlo")).toHaveValue(unique);
+    await expect(page.getByLabel("Co se povedlo")).toHaveValue(unique);
   });
 
   test("visiting /nova for a month that already has a reflection redirects to it instead of showing a raw DB error", async ({ page }) => {
@@ -90,10 +90,9 @@ test.describe("týmová reflexe - single user", () => {
     await page.waitForURL(/\/tymova-reflexe\/[0-9a-f-]+$/);
     const firstId = page.url().split("/").pop();
 
-    await page.goto("/tymova-reflexe");
-    const card = page.locator(`a[href="/tymova-reflexe/${firstId}"]`).locator("xpath=..");
-    await card.getByRole("button", { name: /Smazat/i }).click();
+    await page.getByRole("button", { name: /Smazat/i }).click();
     await page.getByRole("button", { name: "Odstranit" }).click();
+    await page.waitForURL("/tymova-reflexe");
     await expect(page.locator(`a[href="/tymova-reflexe/${firstId}"]`)).toHaveCount(0);
 
     // The row is soft-deleted (removed_at set), not gone — a plain unique
@@ -128,9 +127,9 @@ test.describe("ročník v kalendáři", () => {
     // Ročník is the primary label (calendar years are secondary detail), and
     // all 3 ročníky of the fixed program show up as a roadmap — including
     // ročník 3, which is still entirely in the future for this team.
-    await expect(page.getByText("1. ročník")).toBeVisible();
-    await expect(page.getByText("2. ročník")).toBeVisible();
-    await expect(page.getByText("3. ročník")).toBeVisible();
+    await expect(page.getByRole("button", { name: /1\. ročník/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /2\. ročník/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /3\. ročník/ })).toBeVisible();
 
     const yearSections = page.getByRole("button").filter({ hasText: /ročník/ });
     await expect(yearSections).toHaveCount(3);
@@ -142,7 +141,7 @@ test.describe("ročník v kalendáři", () => {
   });
 });
 
-test.describe("semestrální reflexe", () => {
+test.describe("ročníková reflexe", () => {
   let cookieValue: string;
 
   test.beforeAll(async () => {
@@ -156,18 +155,18 @@ test.describe("semestrální reflexe", () => {
     await setAuthCookie(context, cookieValue);
   });
 
-  test("creating a semester reflection shows all topics and autosaves a field", async ({ page }) => {
+  test("creating a ročníková reflection shows all topics and autosaves a field", async ({ page }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (err) => pageErrors.push(err.message));
     page.on("console", (msg) => {
       if (msg.type() === "error") pageErrors.push(msg.text());
     });
 
-    await page.goto("/tymova-reflexe/semestralni/nova?semester=2026-01-01");
+    await page.goto("/tymova-reflexe/rocnikova/nova?month=2026-05-01");
     await page.getByRole("button", { name: /Založit reflexi/i }).click();
-    await page.waitForURL(/\/tymova-reflexe\/semestralni\/[0-9a-f-]+$/);
+    await page.waitForURL(/\/tymova-reflexe\/rocnikova\/[0-9a-f-]+$/);
 
-    await expect(page.getByRole("heading", { name: /Semestrální reflexe/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Ročníková reflexe/i })).toBeVisible();
 
     await page.getByRole("button", { name: /Předměty, zkoušky, vyučující/i }).click();
     const unique = `E2E semester ${Date.now()}`;
@@ -179,8 +178,8 @@ test.describe("semestrální reflexe", () => {
     await expect(page.getByLabel("Co se povedlo").first()).toHaveValue(unique);
 
     await page.goto("/tymova-reflexe");
-    await expect(page.getByText("Zimní semestr 2026")).toBeVisible();
-    await expect(page.getByText("1/11 témat vyplněno")).toBeVisible();
+    await expect(page.getByText("Ročníková reflexe 2026")).toBeVisible();
+    await expect(page.getByText(/1 z 11/)).toBeVisible();
 
     // Regression guard: a card wrapped in <Link> with a nested <Link>-as-button
     // inside it renders <a> inside <a>, which React only complains about via
@@ -190,22 +189,21 @@ test.describe("semestrální reflexe", () => {
     expect(hydrationErrors).toEqual([]);
   });
 
-  test("deleting a semester reflection and creating a new one for the same period works", async ({ page }) => {
+  test("deleting a ročníková reflection and creating a new one for the same period works", async ({ page }) => {
     // Different year from the test above so the two don't collide on the same team.
-    await page.goto("/tymova-reflexe/semestralni/nova?semester=2027-01-01");
+    await page.goto("/tymova-reflexe/rocnikova/nova?month=2027-05-01");
     await page.getByRole("button", { name: /Založit reflexi/i }).click();
-    await page.waitForURL(/\/tymova-reflexe\/semestralni\/[0-9a-f-]+$/);
+    await page.waitForURL(/\/tymova-reflexe\/rocnikova\/[0-9a-f-]+$/);
     const firstId = page.url().split("/").pop();
 
-    await page.goto("/tymova-reflexe");
-    const card = page.locator(`a[href="/tymova-reflexe/semestralni/${firstId}"]`).locator("xpath=..");
-    await card.getByRole("button", { name: /Smazat/i }).click();
+    await page.getByRole("button", { name: /Smazat/i }).click();
     await page.getByRole("button", { name: "Odstranit" }).click();
-    await expect(page.locator(`a[href="/tymova-reflexe/semestralni/${firstId}"]`)).toHaveCount(0);
+    await page.waitForURL("/tymova-reflexe");
+    await expect(page.locator(`a[href="/tymova-reflexe/rocnikova/${firstId}"]`)).toHaveCount(0);
 
-    await page.goto("/tymova-reflexe/semestralni/nova?semester=2027-01-01");
+    await page.goto("/tymova-reflexe/rocnikova/nova?month=2027-05-01");
     await page.getByRole("button", { name: /Založit reflexi/i }).click();
-    await page.waitForURL(/\/tymova-reflexe\/semestralni\/[0-9a-f-]+$/);
+    await page.waitForURL(/\/tymova-reflexe\/rocnikova\/[0-9a-f-]+$/);
     const secondId = page.url().split("/").pop();
 
     expect(secondId).not.toBe(firstId);
@@ -239,7 +237,7 @@ test.describe("týmová reflexe - concurrent editing", () => {
       await pageA.getByLabel("Co se povedlo").fill(inProgressText);
 
       // B edits a different field and lets it fully save+broadcast while A is still mid-edit.
-      await pageB.getByLabel("Zodpovědná osoba za AK").fill("Karel");
+      await pageB.getByLabel("Co uděláme jinak").fill("Karel");
       await expect(pageB.getByText("Uloženo", { exact: true })).toBeVisible({ timeout: 5000 });
 
       // Give the broadcast a moment to reach A, then confirm A's in-progress text survived.
@@ -252,7 +250,7 @@ test.describe("týmová reflexe - concurrent editing", () => {
       // Reload B and confirm both edits persisted — no data loss either direction.
       await pageB.reload();
       await expect(pageB.getByLabel("Co se povedlo")).toHaveValue(inProgressText);
-      await expect(pageB.getByLabel("Zodpovědná osoba za AK")).toHaveValue("Karel");
+      await expect(pageB.getByLabel("Co uděláme jinak")).toHaveValue("Karel");
     } finally {
       await contextA.close();
       await contextB.close();

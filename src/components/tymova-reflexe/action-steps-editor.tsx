@@ -139,6 +139,7 @@ export function ActionStepsEditor({
                 {/* Content */}
                 <div className="flex-1 space-y-1.5 min-w-0">
                   <Textarea
+                    aria-label="Plánovaný akční krok"
                     value={step.text}
                     onChange={(e) => handleTextChange(step.id, e.target.value)}
                     placeholder="Co konkrétně uděláme (akční krok)…"
@@ -179,6 +180,7 @@ export function ActionStepsEditor({
                       /* Custom Name Input Mode */
                       <div className="flex items-center gap-1.5 flex-1 min-w-[180px] max-w-xs">
                         <Input
+                          aria-label="Zodpovědná osoba za AK"
                           value={step.assignee}
                           onChange={(e) => {
                             const val = e.target.value

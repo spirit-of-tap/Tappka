@@ -245,6 +245,7 @@ export function TeamReflectionDetail({
           </div>
           <Textarea
             id="what-went-well"
+            aria-label="Co se povedlo"
             value={data.what_went_well ?? ""}
             onChange={(e) => setField("what_went_well", e.target.value)}
             placeholder="Úspěchy, zvládnuté výzvy a pozitiva za uplynulý měsíc…"
@@ -270,6 +271,7 @@ export function TeamReflectionDetail({
           </div>
           <Textarea
             id="what-we-do-differently"
+            aria-label="Co uděláme jinak"
             value={data.what_we_do_differently ?? ""}
             onChange={(e) => setField("what_we_do_differently", e.target.value)}
             placeholder="Co příště změníme, zkusíme nebo upravíme v přístupu…"
