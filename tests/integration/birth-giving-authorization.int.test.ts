@@ -539,7 +539,7 @@ describe("Birth Giving event mutation functions", () => {
     });
   });
 
-  it("rejects publishing a started retrospective draft whose assignment state is 'none'", async () => {
+  it("publishes an active draft event even when started and lacking assignment or teams", async () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
       const eventId = await insertEvent(client, organizer.profileId, "past-none");
@@ -549,39 +549,37 @@ describe("Birth Giving event mutation functions", () => {
       );
 
       await asClaims(client, { sub: organizer.authUserId });
-      await expectSqlState(client, "23514", () => callPublishEvent(client, eventId));
+      await callPublishEvent(client, eventId);
+
+      const { rows } = await client.query<{
+        status: string;
+        updated_by_profile_id: string;
+      }>("select status, updated_by_profile_id from public.birth_giving_events where id = $1", [
+        eventId,
+      ]);
+      expect(rows[0].status).toBe("published");
+      expect(rows[0].updated_by_profile_id).toBe(organizer.profileId);
     });
   });
 
-  it("rejects publishing a started retrospective with no teams", async () => {
+  it("rejects publishing an event that is already published", async () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
-      const eventId = await insertEvent(client, organizer.profileId, "past-noteam");
-      await client.query(
-        `update public.birth_giving_events
-            set starts_at = $2, assignment_state = 'missing'
-          where id = $1`,
-        [eventId, pastTimestamp()],
-      );
+      const eventId = await insertEvent(client, organizer.profileId, "already-pub", "published");
 
       await asClaims(client, { sub: organizer.authUserId });
       await expectSqlState(client, "23514", () => callPublishEvent(client, eventId));
     });
   });
 
-  it("rejects publishing a started retrospective with a pending team result", async () => {
+  it("rejects publishing an event that is removed", async () => {
     await withRollback(async (client) => {
       const organizer = await insertVerifiedProfile(client, { name: "Organizer" });
-      const member = await insertVerifiedProfile(client, { name: "Member" });
-      const eventId = await insertEvent(client, organizer.profileId, "past-pending");
+      const eventId = await insertEvent(client, organizer.profileId, "removed");
       await client.query(
-        `update public.birth_giving_events
-            set starts_at = $2, assignment_state = 'missing'
-          where id = $1`,
-        [eventId, pastTimestamp()],
+        "update public.birth_giving_events set removed_at = clock_timestamp(), removed_by_profile_id = $2 where id = $1",
+        [eventId, organizer.profileId],
       );
-      const teamId = await insertTeam(client, eventId, organizer.profileId, "Tým");
-      await insertMember(client, eventId, teamId, member.profileId, organizer.profileId);
 
       await asClaims(client, { sub: organizer.authUserId });
       await expectSqlState(client, "23514", () => callPublishEvent(client, eventId));
