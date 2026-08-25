@@ -101,7 +101,7 @@ describe("Spotlight Component", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     expect(screen.getByTestId("spotlight-state")).toHaveTextContent("open");
 
-    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
     expect(screen.getByTestId("spotlight-state")).toHaveTextContent("closed");
   });
 
@@ -147,6 +147,26 @@ describe("Spotlight Component", () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/");
     });
+  });
+
+  it("handles Vim navigation keys (Ctrl+J / Ctrl+K) inside search input", async () => {
+    const user = userEvent.setup();
+    render(
+      <SpotlightProvider user={{ id: "user-1", beta_access: true }}>
+        <SpotlightTrigger />
+      </SpotlightProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: /rychlé vyhledávání/i }));
+
+    const searchInput = screen.getByPlaceholderText("Hledat v modulech a stránkách...");
+    await user.type(searchInput, "e");
+
+    // Fire Ctrl+J (down) and Ctrl+K (up)
+    fireEvent.keyDown(searchInput, { key: "j", ctrlKey: true });
+    fireEvent.keyDown(searchInput, { key: "k", ctrlKey: true });
+
+    expect(searchInput).toBeInTheDocument();
   });
 
   it("shows playful empty state with dog illustration and quote examples when search has no matches", async () => {

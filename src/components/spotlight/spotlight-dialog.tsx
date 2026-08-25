@@ -225,6 +225,38 @@ export function SpotlightDialog() {
     [close, router],
   );
 
+  // Vim keyboard navigation support: Ctrl+J / Ctrl+N (Down), Ctrl+K / Ctrl+P (Up)
+  const handleInputKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.ctrlKey && !e.metaKey) {
+        if (e.key === "j" || e.key === "n") {
+          e.preventDefault();
+          const event = new KeyboardEvent("keydown", {
+            key: "ArrowDown",
+            code: "ArrowDown",
+            keyCode: 40,
+            which: 40,
+            bubbles: true,
+            cancelable: true,
+          });
+          e.currentTarget.dispatchEvent(event);
+        } else if (e.key === "k" || e.key === "p") {
+          e.preventDefault();
+          const event = new KeyboardEvent("keydown", {
+            key: "ArrowUp",
+            code: "ArrowUp",
+            keyCode: 38,
+            which: 38,
+            bubbles: true,
+            cancelable: true,
+          });
+          e.currentTarget.dispatchEvent(event);
+        }
+      }
+    },
+    [],
+  );
+
   const isSearchEmpty = search.trim().length === 0;
 
   return (
@@ -240,6 +272,7 @@ export function SpotlightDialog() {
       <CommandInput
         value={search}
         onValueChange={setSearch}
+        onKeyDown={handleInputKeyDown}
         placeholder="Hledat v modulech a stránkách..."
         className="text-base sm:text-sm"
       />
@@ -340,40 +373,40 @@ export function SpotlightDialog() {
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/50 text-muted-foreground transition-colors group-data-[selected=true]:border-primary/20 group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-primary">
-                      <item.icon className="size-4" />
-                    </div>
-                    <div className="flex flex-col min-w-0 gap-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground truncate">
-                          {item.title}
-                        </span>
-                        {item.betaOnly && (
-                          <Badge
-                            variant="secondary"
-                            className="h-4 px-1 text-[9px] font-medium leading-none"
-                          >
-                            Beta
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground truncate leading-tight">
-                        {item.description}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-1.5 pl-2">
-                    <span className="hidden items-center gap-1 text-[11px] text-muted-foreground group-data-[selected=true]:inline-flex">
-                      <span className="text-[10px]">Přejít</span>
-                      <CornerDownLeft className="size-3" />
+                  <item.icon className="size-4" />
+                </div>
+                <div className="flex flex-col min-w-0 gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground truncate">
+                      {item.title}
                     </span>
+                    {item.betaOnly && (
+                      <Badge
+                        variant="secondary"
+                        className="h-4 px-1 text-[9px] font-medium leading-none"
+                      >
+                        Beta
+                      </Badge>
+                    )}
                   </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
-        )}
-      </CommandList>
+                  <span className="text-xs text-muted-foreground truncate leading-tight">
+                    {item.description}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1.5 pl-2">
+                <span className="hidden items-center gap-1 text-[11px] text-muted-foreground group-data-[selected=true]:inline-flex">
+                  <span className="text-[10px]">Přejít</span>
+                  <CornerDownLeft className="size-3" />
+                </span>
+              </div>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </>
+    )}
+  </CommandList>
 
       <div className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
         <div className="flex items-center gap-3.5">
@@ -381,6 +414,9 @@ export function SpotlightDialog() {
             <kbd className="inline-flex h-4.5 min-w-4.5 items-center justify-center rounded bg-muted px-1.5 font-mono text-[10px] font-medium text-foreground/70 shadow-2xs">
               ↑↓
             </kbd>
+            <span className="hidden md:inline text-muted-foreground/50 font-mono text-[10px]">
+              (^J ^K)
+            </span>
             <span>Pohyb</span>
           </span>
           <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/70">

@@ -38,11 +38,20 @@ export function SpotlightProvider({ children, user }: SpotlightProviderProps) {
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Cmd+K or Ctrl+K
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      // Cmd+K always toggles
+      if (event.metaKey && event.key.toLowerCase() === "k") {
         event.preventDefault();
         toggle();
         return;
+      }
+
+      // Ctrl+K opens when closed; when open, it navigates up (Vim mode)
+      if (event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "k") {
+        if (!isOpen) {
+          event.preventDefault();
+          open();
+          return;
+        }
       }
 
       // Quick slash / shortcut when not inside an input, textarea, select or contenteditable
