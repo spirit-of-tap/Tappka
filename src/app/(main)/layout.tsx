@@ -1,8 +1,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+
 import { getSessionProfile } from "@/lib/auth/session";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/navigation/mobile-bottom-nav";
+import { SpotlightProvider } from "@/components/spotlight";
 import {
   SidebarInset,
   SidebarProvider,
@@ -38,7 +40,7 @@ export default async function DashboardLayout({
   };
 
   return (
-    <>
+    <SpotlightProvider user={sidebarUser}>
       <SidebarProvider>
         <AppSidebar user={sidebarUser} />
         <SidebarInset>
@@ -51,6 +53,6 @@ export default async function DashboardLayout({
         </SidebarInset>
       </SidebarProvider>
       <MobileBottomNav />
-    </>
+    </SpotlightProvider>
   );
 }
