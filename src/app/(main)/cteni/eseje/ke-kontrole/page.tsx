@@ -1,13 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import {
-  getUnreadTeamEssaysForCoach,
-  getReadTeamEssaysForCoach,
-  getAuthorsApprovedBookPoints,
-  getCommentsForEssays,
-  getCoachReadsForEssays,
-} from '@/lib/essays/queries';
+import { getCoachReviewEssays } from '@/lib/essays/queries';
 import { CoachReviewList } from '@/components/essays/coach-review-list';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
@@ -29,25 +23,22 @@ export default async function CoachReviewPage() {
     redirect('/');
   }
 
-  const [teamsResult, unread, read] = await Promise.all([
+  const defaultTeamId = profile.team_id ?? 'all';
+  const [teamsResult, initialResult] = await Promise.all([
     supabase
       .from('teams')
       .select('id, name')
       .is('removed_at', null)
       .order('name', { ascending: true }),
-    getUnreadTeamEssaysForCoach(supabase, profile.id, null),
-    getReadTeamEssaysForCoach(supabase, profile.id, null),
+    getCoachReviewEssays(supabase, profile.id, {
+      tab: 'unread',
+      teamId: defaultTeamId === 'all' ? null : defaultTeamId,
+      page: 1,
+      pageSize: 50,
+    }),
   ]);
 
   const teams = (teamsResult.data ?? []) as { id: string; name: string }[];
-  const authorIds = Array.from(new Set([...unread, ...read].map((e) => e.author_profile_id)));
-  const essayIds = Array.from(new Set([...unread, ...read].map((e) => e.id)));
-
-  const [authorPointsMap, commentsMap, coachReadsMap] = await Promise.all([
-    getAuthorsApprovedBookPoints(supabase, authorIds),
-    getCommentsForEssays(supabase, essayIds),
-    getCoachReadsForEssays(supabase, essayIds),
-  ]);
 
   return (
     <PageShell size="medium">
@@ -57,13 +48,15 @@ export default async function CoachReviewPage() {
       />
 
       <CoachReviewList
-        initialUnread={unread}
-        initialRead={read}
+        initialUnread={initialResult.essays}
+        initialUnreadCount={initialResult.unreadCount}
+        initialReadCount={initialResult.readCount}
+        initialHasMore={initialResult.hasMore}
         teams={teams}
-        defaultTeamId={profile.team_id ?? 'all'}
-        authorPointsMap={authorPointsMap}
-        commentsMap={commentsMap}
-        coachReadsMap={coachReadsMap}
+        defaultTeamId={defaultTeamId}
+        authorPointsMap={initialResult.authorPointsMap}
+        commentsMap={initialResult.commentsMap}
+        coachReadsMap={initialResult.coachReadsMap}
         currentCoachId={profile.id}
         currentCoachName={profile.name ?? 'Kouč:ka'}
       />

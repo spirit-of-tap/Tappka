@@ -72,6 +72,37 @@ export interface CoachReviewEssay extends EssayWithDetails {
   read_at: string | null;
 }
 
+export type CoachReviewTab = 'unread' | 'read';
+export type CoachReviewRocketFilter = 'all' | 'rocket' | 'non-rocket';
+export type CoachReviewPointsFilter = 'all' | '1' | '2' | '3' | '0';
+export type CoachReviewReplyFilter =
+  | 'all'
+  | 'with-reply'
+  | 'without-reply'
+  | 'edited-after-comment'
+  | 'no-coach-comment';
+
+export interface CoachReviewFilters {
+  tab?: CoachReviewTab;
+  teamId?: string | null;
+  rocket?: CoachReviewRocketFilter;
+  points?: CoachReviewPointsFilter;
+  reply?: CoachReviewReplyFilter;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CoachReviewResult {
+  essays: CoachReviewEssay[];
+  totalCount: number;
+  unreadCount: number;
+  readCount: number;
+  hasMore: boolean;
+  authorPointsMap: Record<string, number>;
+  commentsMap: Record<string, EssayCommentWithAuthor[]>;
+  coachReadsMap: Record<string, EssayCoachReadWithProfile[]>;
+}
+
 export interface EssayRevisionSummary {
   revision_no: number;
   title: string;
