@@ -35,7 +35,6 @@ import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab";
 import { InfoCard } from "./info-card";
 import { BirthGivingEventCard } from "./event-card";
 import { BirthGivingEventForm } from "./event-form";
-import { TodayHeroBanner } from "./today-hero-banner";
 import { normalizeBirthGivingSearchQuery } from "@/lib/birth-giving/search";
 import { getCurrentSemesterRange } from "@/lib/metrics/periods";
 import { getMetric } from "@/lib/metrics/config";
@@ -100,20 +99,6 @@ export function BirthGivingIndex({
     }
 
     return { semesterCount: semester, studyCount: total };
-  }, [events, profileId, nowDate]);
-
-  // Find active or today's event that the user participates in or organizes
-  const todayActiveEvent = useMemo(() => {
-    return events.find((event) => {
-      if (event.status !== "published" || event.removed_at !== null) return false;
-      const isParticipant = event.participant_profile_ids?.includes(profileId);
-      const isOrganizer = event.organizer_profile_ids?.includes(profileId);
-      if (!isParticipant && !isOrganizer) return false;
-
-      const eventDate = new Date(event.starts_at);
-      const timeState = getEventTimeState(eventDate, event.duration, nowDate);
-      return timeState === "active" || isSameDay(eventDate, nowDate);
-    });
   }, [events, profileId, nowDate]);
 
   // Categorized counts for filter badges: Všechny, Zúčastnil:a jsem se, Pořádal:a jsem
@@ -335,15 +320,6 @@ export function BirthGivingIndex({
               label: "za studium",
             },
           ]}
-        />
-      )}
-
-      {/* Prominent Today / Live Event Hero Banner */}
-      {!searching && todayActiveEvent && (
-        <TodayHeroBanner
-          event={todayActiveEvent}
-          profileId={profileId}
-          now={now}
         />
       )}
 

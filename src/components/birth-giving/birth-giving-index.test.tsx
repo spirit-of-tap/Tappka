@@ -131,18 +131,19 @@ describe("BirthGivingIndex", () => {
     expect(screen.queryByText("Jarní BG")).not.toBeInTheDocument();
   });
 
-  it("renders today live hero banner when user is attending a today/active event", () => {
+  it("pins and highlights today/active event in the events list", () => {
     render(
       <BirthGivingIndex
-        events={[todayEvent, upcoming1]}
+        events={[upcoming1, todayEvent]}
         profileId="user-1"
         now={NOW}
         organizerProfiles={makeOrganizerSummaries()}
       />,
     );
 
-    expect(screen.getByText("Dnes probíhá")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Přejít na zadání a tým/ })).toHaveAttribute(
+    expect(screen.getByText("Dnešní Hackathon")).toBeInTheDocument();
+    expect(screen.getByText("Právě probíhá")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Dnešní Hackathon/ })).toHaveAttribute(
       "href",
       "/birth-giving/today-event",
     );
