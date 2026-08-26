@@ -29,7 +29,7 @@ const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
 
 const ESSAY_DETAIL_SELECT = `
   *,
-  essay_revisions(title, content_json, revision_no, invalid_since),
+  essay_revisions(title, content_json, revision_no, invalid_since, created_at, updated_at),
   essay_votes(count),
   essay_views(count),
   essay_comments(count),
@@ -42,6 +42,8 @@ interface EssayRevisionEmbed {
   content_json: Json;
   revision_no: number;
   invalid_since: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface CountEmbed {
@@ -100,9 +102,15 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
 
     const revision = pickLatestRevision(essay_revisions);
     const content_json = (revision?.content_json ?? {}) as object;
+    const revisionTime = revision?.updated_at || revision?.created_at;
+    const effectiveUpdatedAt =
+      revisionTime && new Date(revisionTime) > new Date(rest.updated_at)
+        ? revisionTime
+        : rest.updated_at;
 
     return {
       ...rest,
+      updated_at: effectiveUpdatedAt,
       book: book
         ? { ...book, highlight_category: Array.isArray(book.highlight_category) ? book.highlight_category[0] ?? null : book.highlight_category ?? null }
         : null,
@@ -534,75 +542,15 @@ export async function getCoachReviewEssays(
   let replyExcludeEssayIds: string[] | null = null;
 
   if (filters.reply && filters.reply !== 'all') {
-    const { data: comments, error: commError } = await supabase
-      .from('essay_comments')
-      .select(`
-        id, essay_id, author_profile_id, parent_id, created_at,
-        author:profiles!author_profile_id(id, role)
-      `)
-      .is('removed_at', null);
+    const { data: coachProfiles, error: coachErr } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('role', ['coach', 'admin']);
+    if (coachErr) throw coachErr;
+    const coachProfileIds = (coachProfiles ?? []).map((p: { id: string }) => p.id);
 
-    if (commError) throw commError;
-
-    const commentsByEssay = new Map<string, EssayCommentWithAuthor[]>();
-    for (const c of (comments ?? []) as EssayCommentWithAuthor[]) {
-      const list = commentsByEssay.get(c.essay_id) ?? [];
-      list.push(c);
-      commentsByEssay.set(c.essay_id, list);
-    }
-
-    if (filters.reply === 'no-coach-comment') {
-      const coachCommentedEssayIds: string[] = [];
-      for (const [essayId, comms] of commentsByEssay.entries()) {
-        if (comms.some((c) => c.author?.role === 'coach' || c.author?.role === 'admin')) {
-          coachCommentedEssayIds.push(essayId);
-        }
-      }
-      replyExcludeEssayIds = coachCommentedEssayIds;
-    } else {
-      const matchingIds: string[] = [];
-      const { data: candidateEssays, error: candError } = await supabase
-        .from('essays')
-        .select('id, author_profile_id, updated_at')
-        .in('author_profile_id', studentIds)
-        .not('published_at', 'is', null)
-        .is('removed_at', null);
-
-      if (candError) throw candError;
-
-      for (const essay of candidateEssays ?? []) {
-        const comms = commentsByEssay.get(essay.id) ?? [];
-        const coachComments = comms.filter(
-          (c) => c.author?.role === 'coach' || c.author?.role === 'admin',
-        );
-        if (coachComments.length === 0) continue;
-
-        const latestCoachCommentTime = Math.max(
-          ...coachComments.map((c) => new Date(c.created_at).getTime()),
-        );
-        const authorComments = comms.filter(
-          (c) => c.author_profile_id === essay.author_profile_id,
-        );
-        const authorRepliesAfterCoach = authorComments.filter(
-          (c) => new Date(c.created_at).getTime() > latestCoachCommentTime,
-        );
-        const hasAuthorReply = authorRepliesAfterCoach.length > 0;
-
-        if (filters.reply === 'with-reply' && hasAuthorReply) {
-          matchingIds.push(essay.id);
-        } else if (filters.reply === 'without-reply' && !hasAuthorReply) {
-          matchingIds.push(essay.id);
-        } else if (filters.reply === 'edited-after-comment') {
-          const hasEditedAfterCoach =
-            new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
-          if (hasEditedAfterCoach) {
-            matchingIds.push(essay.id);
-          }
-        }
-      }
-
-      replyIncludeEssayIds = matchingIds;
-      if (matchingIds.length === 0) {
+    if (coachProfileIds.length === 0) {
+      if (filters.reply !== 'no-coach-comment') {
         return {
           essays: [],
           totalCount: 0,
@@ -613,6 +561,117 @@ export async function getCoachReviewEssays(
           commentsMap: {},
           coachReadsMap: {},
         };
+      }
+    } else {
+      const { data: coachComments, error: coachCommErr } = await supabase
+        .from('essay_comments')
+        .select('id, essay_id, author_profile_id, created_at')
+        .in('author_profile_id', coachProfileIds)
+        .is('removed_at', null);
+
+      if (coachCommErr) throw coachCommErr;
+
+      const latestCoachCommentTimeByEssay = new Map<string, number>();
+      for (const c of (coachComments ?? []) as { essay_id: string; created_at: string }[]) {
+        const t = new Date(c.created_at).getTime();
+        const existing = latestCoachCommentTimeByEssay.get(c.essay_id) ?? 0;
+        if (t > existing) {
+          latestCoachCommentTimeByEssay.set(c.essay_id, t);
+        }
+      }
+
+      if (filters.reply === 'no-coach-comment') {
+        replyExcludeEssayIds = Array.from(latestCoachCommentTimeByEssay.keys());
+      } else {
+        const essayIdsWithCoachComment = Array.from(latestCoachCommentTimeByEssay.keys());
+        if (essayIdsWithCoachComment.length === 0) {
+          return {
+            essays: [],
+            totalCount: 0,
+            unreadCount: 0,
+            readCount: 0,
+            hasMore: false,
+            authorPointsMap: {},
+            commentsMap: {},
+            coachReadsMap: {},
+          };
+        }
+
+        const [repliesRes, essaysMetaRes] = await Promise.all([
+          supabase
+            .from('essay_comments')
+            .select('id, essay_id, author_profile_id, created_at')
+            .in('essay_id', essayIdsWithCoachComment)
+            .is('removed_at', null),
+          supabase
+            .from('essays')
+            .select('id, author_profile_id, updated_at, essay_revisions(created_at, updated_at, invalid_since)')
+            .in('id', essayIdsWithCoachComment)
+            .is('removed_at', null),
+        ]);
+
+        if (repliesRes.error) throw repliesRes.error;
+        if (essaysMetaRes.error) throw essaysMetaRes.error;
+
+        const replies = (repliesRes.data ?? []) as {
+          id: string;
+          essay_id: string;
+          author_profile_id: string;
+          created_at: string;
+        }[];
+        const essaysMeta = (essaysMetaRes.data ?? []) as {
+          id: string;
+          author_profile_id: string;
+          updated_at: string;
+          essay_revisions?: { created_at: string; updated_at?: string | null; invalid_since: string | null }[] | null;
+        }[];
+
+        const matchingIds: string[] = [];
+
+        for (const essay of essaysMeta) {
+          const latestCoachTime = latestCoachCommentTimeByEssay.get(essay.id) ?? 0;
+          const authorReplies = replies.filter(
+            (r) =>
+              r.essay_id === essay.id &&
+              r.author_profile_id === essay.author_profile_id &&
+              new Date(r.created_at).getTime() > latestCoachTime,
+          );
+          const hasAuthorReply = authorReplies.length > 0;
+
+          const validRevisions = (essay.essay_revisions ?? []).filter((r) => r.invalid_since == null);
+          const maxRevTime =
+            validRevisions.length > 0
+              ? Math.max(
+                  ...validRevisions.map((r) =>
+                    new Date(r.updated_at || r.created_at).getTime(),
+                  ),
+                )
+              : 0;
+          const latestEditTime = Math.max(new Date(essay.updated_at).getTime(), maxRevTime);
+          const hasEditedAfterCoach = latestEditTime > latestCoachTime + 60_000;
+
+          if (filters.reply === 'with-reply' && hasAuthorReply) {
+            matchingIds.push(essay.id);
+          } else if (filters.reply === 'without-reply' && !hasAuthorReply) {
+            matchingIds.push(essay.id);
+          } else if (filters.reply === 'edited-after-comment' && hasEditedAfterCoach) {
+            matchingIds.push(essay.id);
+          }
+        }
+
+        replyIncludeEssayIds = matchingIds;
+        if (matchingIds.length === 0) {
+          return {
+            essays: [],
+            totalCount: 0,
+            unreadCount: 0,
+            readCount: 0,
+            hasMore: false,
+            authorPointsMap: {},
+            commentsMap: {},
+            coachReadsMap: {},
+          };
+        }
       }
     }
   }
