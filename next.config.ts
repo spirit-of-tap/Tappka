@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     "localhost",
   ],
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
