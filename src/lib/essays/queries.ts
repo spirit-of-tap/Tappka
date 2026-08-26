@@ -571,19 +571,31 @@ export async function getCoachReviewEssays(
 
       if (coachCommErr) throw coachCommErr;
 
-      const latestCoachCommentTimeByEssay = new Map<string, number>();
-      for (const c of (coachComments ?? []) as { essay_id: string; created_at: string }[]) {
+      const coachCommentsByEssay = new Map<
+        string,
+        { ids: Set<string>; earliestTime: number; latestTime: number }
+      >();
+
+      for (const c of (coachComments ?? []) as { id: string; essay_id: string; created_at: string }[]) {
         const t = new Date(c.created_at).getTime();
-        const existing = latestCoachCommentTimeByEssay.get(c.essay_id) ?? 0;
-        if (t > existing) {
-          latestCoachCommentTimeByEssay.set(c.essay_id, t);
+        const existing = coachCommentsByEssay.get(c.essay_id);
+        if (!existing) {
+          coachCommentsByEssay.set(c.essay_id, {
+            ids: new Set([c.id]),
+            earliestTime: t,
+            latestTime: t,
+          });
+        } else {
+          existing.ids.add(c.id);
+          if (t < existing.earliestTime) existing.earliestTime = t;
+          if (t > existing.latestTime) existing.latestTime = t;
         }
       }
 
       if (filters.reply === 'no-coach-comment') {
-        replyExcludeEssayIds = Array.from(latestCoachCommentTimeByEssay.keys());
+        replyExcludeEssayIds = Array.from(coachCommentsByEssay.keys());
       } else {
-        const essayIdsWithCoachComment = Array.from(latestCoachCommentTimeByEssay.keys());
+        const essayIdsWithCoachComment = Array.from(coachCommentsByEssay.keys());
         if (essayIdsWithCoachComment.length === 0) {
           return {
             essays: [],
@@ -600,7 +612,7 @@ export async function getCoachReviewEssays(
         const [repliesRes, essaysMetaRes] = await Promise.all([
           supabase
             .from('essay_comments')
-            .select('id, essay_id, author_profile_id, created_at')
+            .select('id, essay_id, author_profile_id, parent_id, created_at')
             .in('essay_id', essayIdsWithCoachComment)
             .is('removed_at', null),
           supabase
@@ -617,6 +629,7 @@ export async function getCoachReviewEssays(
           id: string;
           essay_id: string;
           author_profile_id: string;
+          parent_id: string | null;
           created_at: string;
         }[];
         const essaysMeta = (essaysMetaRes.data ?? []) as {
@@ -626,17 +639,29 @@ export async function getCoachReviewEssays(
           essay_revisions?: { created_at: string; updated_at?: string | null; invalid_since: string | null }[] | null;
         }[];
 
+        const commentsByEssay = new Map<string, typeof replies>();
+        for (const c of replies) {
+          const list = commentsByEssay.get(c.essay_id) ?? [];
+          list.push(c);
+          commentsByEssay.set(c.essay_id, list);
+        }
+
         const matchingIds: string[] = [];
 
         for (const essay of essaysMeta) {
-          const latestCoachTime = latestCoachCommentTimeByEssay.get(essay.id) ?? 0;
-          const authorReplies = replies.filter(
-            (r) =>
-              r.essay_id === essay.id &&
-              r.author_profile_id === essay.author_profile_id &&
-              new Date(r.created_at).getTime() > latestCoachTime,
+          const coachData = coachCommentsByEssay.get(essay.id);
+          if (!coachData) continue;
+
+          const essayComments = commentsByEssay.get(essay.id) ?? [];
+          const authorComments = essayComments.filter(
+            (c) => c.author_profile_id === essay.author_profile_id,
           );
-          const hasAuthorReply = authorReplies.length > 0;
+
+          const hasAuthorReply = authorComments.some(
+            (c) =>
+              (c.parent_id && coachData.ids.has(c.parent_id)) ||
+              new Date(c.created_at).getTime() > coachData.earliestTime,
+          );
 
           const validRevisions = (essay.essay_revisions ?? []).filter((r) => r.invalid_since == null);
           const maxRevTime =
@@ -648,7 +673,7 @@ export async function getCoachReviewEssays(
                 )
               : 0;
           const latestEditTime = Math.max(new Date(essay.updated_at).getTime(), maxRevTime);
-          const hasEditedAfterCoach = latestEditTime > latestCoachTime + 60_000;
+          const hasEditedAfterCoach = latestEditTime > coachData.earliestTime + 60_000;
 
           if (filters.reply === 'with-reply' && hasAuthorReply) {
             matchingIds.push(essay.id);
