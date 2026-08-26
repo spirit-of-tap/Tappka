@@ -505,21 +505,26 @@ export function getEssayCommentThreads(
       coachComments: [],
       hasCoachComment: false,
       hasAuthorReply: false,
+      earliestCoachCommentTime: 0,
       latestCoachCommentTime: 0,
       threads: [],
     };
   }
 
+  const coachCommentIds = new Set(coachComments.map((c) => c.id));
+  const earliestCoachCommentTime = Math.min(
+    ...coachComments.map((c) => new Date(c.created_at).getTime()),
+  );
   const latestCoachCommentTime = Math.max(
     ...coachComments.map((c) => new Date(c.created_at).getTime()),
   );
 
   const authorComments = comments.filter((c) => c.author_profile_id === authorProfileId);
-  const authorRepliesAfterLatestCoach = authorComments.filter(
-    (c) => new Date(c.created_at).getTime() > latestCoachCommentTime,
+  const hasAuthorReply = authorComments.some(
+    (c) =>
+      (c.parent_id && coachCommentIds.has(c.parent_id)) ||
+      new Date(c.created_at).getTime() > earliestCoachCommentTime,
   );
-
-  const hasAuthorReply = authorRepliesAfterLatestCoach.length > 0;
 
   const threads = coachComments.map((coachComment) => {
     const directReplies = comments.filter((c) => c.parent_id === coachComment.id);
@@ -550,6 +555,7 @@ export function getEssayCommentThreads(
     coachComments,
     hasCoachComment: true,
     hasAuthorReply,
+    earliestCoachCommentTime,
     latestCoachCommentTime,
     threads,
   };
@@ -565,7 +571,7 @@ function ReviewRow({
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
   const bookPoints = pointsNumber(essay.book?.book_points);
 
-  const { coachComments, hasCoachComment, latestCoachCommentTime, threads } =
+  const { coachComments, hasCoachComment, earliestCoachCommentTime, threads } =
     useMemo(
       () => getEssayCommentThreads(comments, essay.author_profile_id),
       [comments, essay.author_profile_id],
@@ -573,7 +579,7 @@ function ReviewRow({
 
   const hasEditedAfterCoach =
     hasCoachComment &&
-    new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
+    new Date(essay.updated_at).getTime() > earliestCoachCommentTime + 60_000;
 
   return (
     <Card className="py-0">
