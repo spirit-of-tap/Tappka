@@ -2523,6 +2523,19 @@ export type Database = {
         Returns: undefined
       }
       coach_can_review_essay: { Args: { p_essay_id: string }; Returns: boolean }
+      coach_review_filtered_ids: {
+        Args: {
+          p_coach_profile_id: string
+          p_page: number
+          p_page_size: number
+          p_points: string
+          p_reply: string
+          p_rocket: string
+          p_tab: string
+          p_team_id: string
+        }
+        Returns: Json
+      }
       current_profile_id: { Args: never; Returns: string }
       get_best_books_per_category: {
         Args: { top_n?: number }

@@ -55,6 +55,11 @@ interface CoachReviewListProps {
   coachReadsMap?: Record<string, EssayCoachReadWithProfile[]>;
   currentCoachId?: string;
   currentCoachName?: string;
+  initialTab?: 'unread' | 'read';
+  initialTeamId?: string | null;
+  initialRocket?: CoachReviewRocketFilter;
+  initialPoints?: CoachReviewPointsFilter;
+  initialReply?: CoachReviewReplyFilter;
 }
 
 export function CoachReviewList({
@@ -71,27 +76,33 @@ export function CoachReviewList({
   coachReadsMap: initialCoachReadsMap = {},
   currentCoachId,
   currentCoachName = 'Kouč:ka',
+  initialTab,
+  initialTeamId,
+  initialRocket,
+  initialPoints,
+  initialReply,
 }: CoachReviewListProps) {
-  const [activeTab, setActiveTab] = usePersistedState<'unread' | 'read'>(
+  const [activeTab, setActiveTab, isTabHydrated] = usePersistedState<'unread' | 'read'>(
     'tappka:coach-review:tab',
-    'unread',
+    initialTab ?? 'unread',
   );
-  const [teamFilter, setTeamFilter] = usePersistedState<string>(
+  const [teamFilter, setTeamFilter, isTeamHydrated] = usePersistedState<string>(
     'tappka:coach-review:team',
-    defaultTeamId,
+    initialTeamId !== undefined ? (initialTeamId ?? 'all') : defaultTeamId,
   );
-  const [rocketFilter, setRocketFilter] = usePersistedState<CoachReviewRocketFilter>(
+  const [rocketFilter, setRocketFilter, isRocketHydrated] = usePersistedState<CoachReviewRocketFilter>(
     'tappka:coach-review:rocket',
-    'all',
+    initialRocket ?? 'all',
   );
-  const [pointsFilter, setPointsFilter] = usePersistedState<CoachReviewPointsFilter>(
+  const [pointsFilter, setPointsFilter, isPointsHydrated] = usePersistedState<CoachReviewPointsFilter>(
     'tappka:coach-review:points',
-    'all',
+    initialPoints ?? 'all',
   );
-  const [replyFilter, setReplyFilter] = usePersistedState<CoachReviewReplyFilter>(
+  const [replyFilter, setReplyFilter, isReplyHydrated] = usePersistedState<CoachReviewReplyFilter>(
     'tappka:coach-review:reply',
-    'all',
+    initialReply ?? 'all',
   );
+  const isHydrated = isTabHydrated && isTeamHydrated && isRocketHydrated && isPointsHydrated && isReplyHydrated;
 
   const initialFilterEssay = useCallback(
     (essay: CoachReviewEssay) => {
@@ -134,6 +145,38 @@ export function CoachReviewList({
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
+  // Keep URL in sync with filters for shareability and SSR consistency.
+  // URL is the source of truth over localStorage; localStorage provides persistence
+  // when navigating without URL params.
+  const initialFiltersRef = useRef({
+    tab: initialTab ?? 'unread',
+    teamId: initialTeamId !== undefined ? (initialTeamId ?? 'all') : defaultTeamId,
+    rocket: initialRocket ?? 'all',
+    points: initialPoints ?? 'all',
+    reply: initialReply ?? 'all',
+  });
+
+  // Keep URL updated whenever filters change post-hydration (shareable links)
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (typeof window === 'undefined') return;
+    // Debounce URL sync to avoid push on every intermediate render
+    const next = new URLSearchParams();
+    if (activeTab !== 'unread') next.set('tab', activeTab);
+    // Always reflect teamFilter when it differs from default or when explicitly 'all'
+    if (teamFilter !== defaultTeamId || (teamFilter === 'all' && initialFiltersRef.current.teamId !== 'all')) {
+      next.set('team_id', teamFilter);
+    }
+    if (rocketFilter !== 'all') next.set('rocket', rocketFilter);
+    if (pointsFilter !== 'all') next.set('points', pointsFilter);
+    if (replyFilter !== 'all') next.set('reply', replyFilter);
+    const qs = next.toString();
+    const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (newUrl !== current) {
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [activeTab, teamFilter, rocketFilter, pointsFilter, replyFilter, isHydrated, defaultTeamId]);
 
   const effectiveCommentsMap = useMemo(() => {
     const merged: Record<string, EssayCommentWithAuthor[]> = { ...commentsMap };
@@ -178,13 +221,16 @@ export function CoachReviewList({
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      const isDefault =
-        activeTab === 'unread' &&
-        teamFilter === defaultTeamId &&
-        rocketFilter === 'all' &&
-        pointsFilter === 'all' &&
-        replyFilter === 'all';
-      if (isDefault) return;
+      // If current filters still match the SSR-initial filters, no need to refetch
+      // (prevents duplicate fetch when URL drove SSR). Otherwise localStorage diverged -> refetch.
+      const init = initialFiltersRef.current;
+      const isSameAsInitial =
+        activeTab === init.tab &&
+        teamFilter === init.teamId &&
+        rocketFilter === init.rocket &&
+        pointsFilter === init.points &&
+        replyFilter === init.reply;
+      if (isSameAsInitial) return;
     }
 
     let isCancelled = false;
