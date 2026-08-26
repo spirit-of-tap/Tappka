@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { Loader2, Plus, Users } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Plus, Trophy, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,13 +16,6 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { BirthGivingProfilePicker } from "@/components/birth-giving/profile-picker";
 import { BirthGivingResultFileList } from "@/components/birth-giving/result-file-list";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
@@ -30,7 +23,6 @@ import type {
   BirthGivingEventDetail,
   BirthGivingProfileSummary,
   BirthGivingTeamDetail,
-  BirthGivingTeamResultState,
 } from "@/lib/birth-giving/types";
 
 interface BirthGivingRetrospectiveTeamsStepProps {
@@ -49,7 +41,7 @@ export function BirthGivingRetrospectiveTeamsStep({
   onEventChange,
 }: BirthGivingRetrospectiveTeamsStepProps) {
   const [adding, setAdding] = useState(false);
-  const teams = event.teams.filter(({ status }) => status !== "cancelled");
+  const teams = event.teams.filter(({ cancelled_at }) => !cancelled_at);
 
   function refreshAfterMutation(updated: BirthGivingEventDetail | null) {
     onEventChange(updated);
@@ -58,8 +50,8 @@ export function BirthGivingRetrospectiveTeamsStep({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Vytvořte každý skutečný tým, vyberte osoby z existujících profilů a nahrajte
-        soubory s výsledky. Každá osoba smí být v jediném týmu.
+        Vytvořte týmy, vyberte jejich členy:ky a nahrajte soubory s výsledky.
+        Můžete také označit vítězný tým.
       </p>
 
       {teams.length === 0 && (
@@ -70,7 +62,7 @@ export function BirthGivingRetrospectiveTeamsStep({
           <EmptyHeader>
             <EmptyTitle className="text-sm">Zatím nejsou vytvořené žádné týmy.</EmptyTitle>
             <EmptyDescription className="text-xs">
-              Přidejte první tým, abyste mohli retrospektivu dokončit.
+              Přidejte první tým, abyste mohli událost dokončit.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -121,7 +113,7 @@ function otherTeamMemberProfileIds(
   teamId: string,
 ): string[] {
   return event.teams
-    .filter(({ id, status }) => id !== teamId && status !== "cancelled")
+    .filter(({ id, cancelled_at }) => id !== teamId && !cancelled_at)
     .flatMap(({ members }) => members.map(({ profile_id }) => profile_id));
 }
 
@@ -148,25 +140,22 @@ function BirthGivingRetrospectiveTeamEditor({
   const [saving, setSaving] = useState(false);
 
   const memberProfileIds = team.members.map(({ profile_id }) => profile_id);
-  const sizeValid =
-    memberProfileIds.length >= event.minimum_team_size
-    && memberProfileIds.length <= event.maximum_team_size;
 
   async function patchTeam(changes: {
     name?: string;
     memberProfileIds?: string[];
-    resultState?: BirthGivingTeamResultState;
+    isWinner?: boolean;
   }) {
     setSaving(true);
     try {
       const result = await birthGivingMutationRequest(
-        `/api/birth-giving/events/${event.id}/historical-teams/${team.id}`,
+        `/api/birth-giving/events/${event.id}/teams/${team.id}`,
         {
           method: "PATCH",
           body: {
             name: changes.name ?? (name.trim() || team.name),
             memberProfileIds: changes.memberProfileIds ?? memberProfileIds,
-            resultState: changes.resultState ?? team.result_state,
+            isWinner: changes.isWinner !== undefined ? changes.isWinner : team.is_winner,
           },
         },
       );
@@ -184,27 +173,35 @@ function BirthGivingRetrospectiveTeamEditor({
   return (
     <Card className="space-y-4 p-3 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">{team.name}</h3>
-        {team.result_state === "missing" && (
-          <Badge variant="outline" className="gap-1">
-            Výsledek nedohledán
-          </Badge>
-        )}
-        {!sizeValid && (
-          <Badge variant="destructive" className="gap-1">
-            Velikost týmu mimo rozmezí {event.minimum_team_size}–{event.maximum_team_size}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold">{team.name}</h3>
+          {team.is_winner && (
+            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1 text-xs">
+              <Trophy className="size-3" />
+              Vítěz
+            </Badge>
+          )}
+        </div>
+        <Button
+          type="button"
+          variant={team.is_winner ? "secondary" : "outline"}
+          size="xs"
+          disabled={saving}
+          onClick={() => void patchTeam({ isWinner: !team.is_winner })}
+        >
+          <Trophy className="size-3 mr-1" />
+          {team.is_winner ? "Zrušit vítěze" : "Označit za vítěze"}
+        </Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor={`bg-historical-team-name-${team.id}`}>Název týmu</Label>
+          <Label htmlFor={`bg-team-name-${team.id}`}>Název týmu</Label>
           <Input
-            id={`bg-historical-team-name-${team.id}`}
+            id={`bg-team-name-${team.id}`}
             value={name}
             disabled={saving}
-            onChange={(changeEvent) => setName(changeEvent.target.value)}
+            onChange={(e) => setName(e.target.value)}
             onBlur={() => {
               if (name.trim() && name.trim() !== team.name) void patchTeam({ name: name.trim() });
             }}
@@ -215,7 +212,7 @@ function BirthGivingRetrospectiveTeamEditor({
             profiles={organizerProfiles}
             selected={memberProfileIds}
             onChange={(next) => void patchTeam({ memberProfileIds: next })}
-            label="Člen:ky týmu"
+            label="Členové:ky týmu"
             placeholder="Vyberte osoby"
             excludeIds={otherTeamMemberIds}
             disabled={saving}
@@ -223,17 +220,7 @@ function BirthGivingRetrospectiveTeamEditor({
         </div>
       </div>
 
-      {team.result_state === "missing" ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={saving}
-          onClick={() => void patchTeam({ resultState: "present" })}
-        >
-          Označit výsledek jako přítomný
-        </Button>
-      ) : (
+      <div className="pt-2">
         <BirthGivingResultFileList
           event={event}
           team={team}
@@ -242,7 +229,7 @@ function BirthGivingRetrospectiveTeamEditor({
           disabled={saving}
           onEventChange={onEventChange}
         />
-      )}
+      </div>
     </Card>
   );
 }
@@ -250,7 +237,7 @@ function BirthGivingRetrospectiveTeamEditor({
 interface BirthGivingRetrospectiveTeamCreateProps {
   event: BirthGivingEventDetail;
   organizerProfiles: BirthGivingProfileSummary[];
-  onCreated: (event: BirthGivingEventDetail | null) => void;
+  onCreated: (event: BirthGivingEventDetail) => void;
   onCancel: () => void;
 }
 
@@ -262,107 +249,79 @@ function BirthGivingRetrospectiveTeamCreate({
 }: BirthGivingRetrospectiveTeamCreateProps) {
   const [name, setName] = useState("");
   const [memberProfileIds, setMemberProfileIds] = useState<string[]>([]);
-  const [resultState, setResultState] = useState<BirthGivingTeamResultState>("present");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const inFlight = useRef(false);
-  const excludedIds = useMemo(() => otherTeamMemberProfileIds(event, ""), [event]);
 
-  async function handleSubmit(formEvent: React.FormEvent) {
-    formEvent.preventDefault();
+  const existingMemberIds = event.teams
+    .filter(({ cancelled_at }) => !cancelled_at)
+    .flatMap(({ members }) => members.map(({ profile_id }) => profile_id));
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
     setError(null);
-    const trimmedName = name.trim();
-    if (!trimmedName) {
+    const trimmed = name.trim();
+    if (!trimmed) {
       setError("Název týmu je povinný");
       return;
     }
-    if (memberProfileIds.length === 0) {
-      setError("Vyberte alespoň jednu osobu do týmu");
-      return;
-    }
-    if (inFlight.current) return;
-    inFlight.current = true;
     setSaving(true);
     try {
       const result = await birthGivingMutationRequest(
-        `/api/birth-giving/events/${event.id}/historical-teams`,
+        `/api/birth-giving/events/${event.id}/teams`,
         {
+          method: "POST",
           body: {
-            name: trimmedName,
+            name: trimmed,
             memberProfileIds,
-            resultState,
           },
         },
       );
       if (result.ok && result.body.data) {
-        toast.success("Tým byl vytvořen");
+        toast.success("Tým byl přidán");
         onCreated(result.body.data);
         return;
       }
       toast.error(result.body.error ?? "Tým se nepodařilo vytvořit");
-      onCreated(result.body.data ?? null);
     } finally {
-      inFlight.current = false;
       setSaving(false);
     }
   }
 
   return (
-    <Card className="space-y-3 p-3 sm:p-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </p>
-        )}
+    <Card className="space-y-4 p-3 sm:p-4 border-primary/40">
+      <h3 className="text-sm font-semibold">Nový tým</h3>
+      <form onSubmit={handleCreate} className="space-y-4">
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="bg-historical-team-create-name">Název týmu</Label>
+            <Label htmlFor="bg-new-retro-team-name">Název týmu</Label>
             <Input
-              id="bg-historical-team-create-name"
+              id="bg-new-retro-team-name"
               value={name}
               disabled={saving}
-              onChange={(changeEvent) => setName(changeEvent.target.value)}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Např. Tým Alfa"
             />
           </div>
           <div className="space-y-2">
-            <Label>Stav výsledku</Label>
-            <Select
-              value={resultState}
-              onValueChange={(value) => setResultState(value as BirthGivingTeamResultState)}
+            <BirthGivingProfilePicker
+              profiles={organizerProfiles}
+              selected={memberProfileIds}
+              onChange={setMemberProfileIds}
+              label="Členové:ky týmu"
+              placeholder="Vyberte osoby"
+              excludeIds={existingMemberIds}
               disabled={saving}
-            >
-              <SelectTrigger aria-label="Stav výsledku">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="present">Soubory s výsledky</SelectItem>
-                <SelectItem value="missing">Výsledek nedohledán</SelectItem>
-              </SelectContent>
-            </Select>
+            />
           </div>
         </div>
-
-        <BirthGivingProfilePicker
-          profiles={organizerProfiles}
-          selected={memberProfileIds}
-          onChange={setMemberProfileIds}
-          label="Člen:ky týmu"
-          placeholder="Vyberte osoby"
-          excludeIds={excludedIds}
-          disabled={saving}
-        />
-
         <div className="flex items-center justify-end gap-2">
-          <Button type="button" variant="outline" disabled={saving} onClick={onCancel}>
+          <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
             Zrušit
           </Button>
-          <Button type="submit" disabled={saving}>
-            {saving && (
-              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
-            )}
-            Vytvořit tým
+          <Button type="submit" size="sm" disabled={saving}>
+            {saving && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
+            Přidat tým
           </Button>
         </div>
       </form>

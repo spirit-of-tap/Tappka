@@ -292,4 +292,23 @@ describe('CoachReviewList', () => {
 
     expect(screen.getByText('Upraveno po komentáři')).toBeInTheDocument();
   });
+
+  it('displays exact total unread and read counts on tab badges when thousands exist in database', () => {
+    const essay = mockEssay();
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        initialUnreadCount={4000}
+        initialReadCount={125}
+        teams={teams}
+        defaultTeamId="all"
+      />,
+    );
+
+    // Unread count badge displays 4000
+    expect(screen.getByText('4000')).toBeInTheDocument();
+    // Read count badge displays 125
+    expect(screen.getByText('125')).toBeInTheDocument();
+  });
 });

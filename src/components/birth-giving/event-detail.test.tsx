@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { BirthGivingEventDetail } from "@/components/birth-giving/event-detail";
@@ -30,7 +30,6 @@ function renderDetail({
     starts_at: "2026-08-20T08:00:00.000Z",
     teams: [
       makeTeam({
-        status: "confirmed",
         members: [makeMemberWithProfile()],
         result_files: [makeResultFile()],
       }),
@@ -49,12 +48,11 @@ function renderDetail({
 }
 
 describe("BirthGivingEventDetail", () => {
-  it("renders the canonical collaboration surface", () => {
+  it("renders the canonical event detail sections", () => {
     renderDetail();
 
     expect(screen.getByText("First BG")).toBeInTheDocument();
     expect(screen.getByText("Tým Alfa")).toBeInTheDocument();
-    expect(screen.getByText("Hledají tým")).toBeInTheDocument();
     expect(screen.getByText("Zadání")).toBeInTheDocument();
   });
 
@@ -62,7 +60,7 @@ describe("BirthGivingEventDetail", () => {
     const user = userEvent.setup();
     const refreshed = makeEvent({
       teams: [
-        makeTeam({ id: "team-2", name: "Tým Beta", status: "forming", members: [makeMemberWithProfile()] }),
+        makeTeam({ id: "team-2", name: "Tým Beta", members: [makeMemberWithProfile()] }),
       ],
     });
     fetchSpy.mockResolvedValueOnce({
@@ -78,29 +76,5 @@ describe("BirthGivingEventDetail", () => {
 
     expect(await screen.findByText("Tým Beta")).toBeInTheDocument();
     expect(refresh).not.toHaveBeenCalled();
-  });
-
-  it("falls back to a router refresh when a mutation returns no event data", async () => {
-    const user = userEvent.setup();
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true }),
-    } as Response);
-    renderDetail({
-      event: makeEvent({
-        teams: [
-          makeTeam({
-            status: "confirmed",
-            members: [makeMemberWithProfile()],
-            result_files: [makeResultFile()],
-          }),
-        ],
-      }),
-    });
-
-    await user.click(screen.getByRole("button", { name: "Smazat soubor vysledky.pdf" }));
-    await user.click(await screen.findByRole("button", { name: "Potvrdit" }));
-
-    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
   });
 });

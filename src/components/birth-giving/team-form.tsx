@@ -7,17 +7,36 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BirthGivingProfilePicker } from "./profile-picker";
 import { birthGivingMutationRequest } from "@/lib/birth-giving/mutation";
-import type { BirthGivingEventDetail } from "@/lib/birth-giving/types";
+import type {
+  BirthGivingEventDetail,
+  BirthGivingProfileSummary,
+  BirthGivingTeamDetail,
+} from "@/lib/birth-giving/types";
 
 interface BirthGivingTeamFormProps {
   eventId: string;
+  callerProfileId: string;
+  availableProfiles: BirthGivingProfileSummary[];
+  team?: BirthGivingTeamDetail;
   onSuccess: (event: BirthGivingEventDetail | null) => void;
   onCancel: () => void;
 }
 
-export function BirthGivingTeamForm({ eventId, onSuccess, onCancel }: BirthGivingTeamFormProps) {
-  const [name, setName] = useState("");
+export function BirthGivingTeamForm({
+  eventId,
+  callerProfileId,
+  availableProfiles,
+  team,
+  onSuccess,
+  onCancel,
+}: BirthGivingTeamFormProps) {
+  const isEdit = Boolean(team);
+  const [name, setName] = useState(team?.name ?? "");
+  const [memberIds, setMemberIds] = useState<string[]>(
+    () => team?.members.map((m) => m.profile_id) ?? [],
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -31,14 +50,21 @@ export function BirthGivingTeamForm({ eventId, onSuccess, onCancel }: BirthGivin
     }
     setLoading(true);
     try {
-      const result = await birthGivingMutationRequest(`/api/birth-giving/events/${eventId}/teams`, {
-        body: { name: trimmed },
+      const path = isEdit && team
+        ? `/api/birth-giving/events/${eventId}/teams/${team.id}`
+        : `/api/birth-giving/events/${eventId}/teams`;
+      const result = await birthGivingMutationRequest(path, {
+        method: isEdit ? "PATCH" : "POST",
+        body: {
+          name: trimmed,
+          memberProfileIds: memberIds,
+        },
       });
       if (result.ok && result.body.data) {
-        toast.success("Tým byl vytvořen");
+        toast.success(isEdit ? "Tým byl upraven" : "Tým byl vytvořen");
         onSuccess(result.body.data);
       } else {
-        toast.error(result.body.error ?? "Tým se nepodařilo vytvořit");
+        toast.error(result.body.error ?? (isEdit ? "Tým se nepodařilo upravit" : "Tým se nepodařilo vytvořit"));
         if (!result.body.data) onSuccess(null);
       }
     } finally {
@@ -58,13 +84,25 @@ export function BirthGivingTeamForm({ eventId, onSuccess, onCancel }: BirthGivin
           placeholder="Např. Tým Alfa"
         />
       </div>
-      <div className="flex items-center justify-end gap-2">
+
+      <div className="space-y-2">
+        <BirthGivingProfilePicker
+          profiles={availableProfiles}
+          selected={memberIds}
+          onChange={setMemberIds}
+          excludeIds={isEdit ? [] : [callerProfileId]}
+          label={isEdit ? "Členové:ky týmu" : "Přidat další členy:ky"}
+          placeholder="Vyberte členy:ky týmu"
+        />
+      </div>
+
+      <div className="flex items-center justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Zrušit
         </Button>
         <Button type="submit" disabled={loading}>
           {loading && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />}
-          Vytvořit tým
+          {isEdit ? "Uložit změny" : "Vytvořit tým"}
         </Button>
       </div>
     </form>

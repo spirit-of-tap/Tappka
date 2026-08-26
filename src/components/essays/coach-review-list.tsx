@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -17,6 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Select,
   SelectContent,
@@ -33,13 +34,19 @@ import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import { pointsNumber } from '@/lib/books/points';
 import type {
   CoachReviewEssay,
+  CoachReviewPointsFilter,
+  CoachReviewReplyFilter,
+  CoachReviewRocketFilter,
   EssayCoachReadWithProfile,
   EssayCommentWithAuthor,
 } from '@/lib/essays/types';
 
 interface CoachReviewListProps {
-  initialUnread: CoachReviewEssay[];
-  initialRead: CoachReviewEssay[];
+  initialUnread?: CoachReviewEssay[];
+  initialRead?: CoachReviewEssay[];
+  initialUnreadCount?: number;
+  initialReadCount?: number;
+  initialHasMore?: boolean;
   teams?: { id: string; name: string }[];
   defaultTeamId?: string;
   authorPointsMap?: Record<string, number>;
@@ -51,26 +58,82 @@ interface CoachReviewListProps {
 }
 
 export function CoachReviewList({
-  initialUnread,
-  initialRead,
+  initialUnread = [],
+  initialRead = [],
+  initialUnreadCount,
+  initialReadCount,
+  initialHasMore = false,
   teams = [],
   defaultTeamId = 'all',
-  authorPointsMap: _authorPointsMap = {},
-  commentsMap = {},
+  authorPointsMap: _initialAuthorPointsMap = {},
+  commentsMap: initialCommentsMap = {},
   coachCommentsMap = {},
-  coachReadsMap = {},
+  coachReadsMap: initialCoachReadsMap = {},
   currentCoachId,
   currentCoachName = 'Kouč:ka',
 }: CoachReviewListProps) {
-  const [activeTab, setActiveTab] = usePersistedState<'unread' | 'read'>('tappka:coach-review:tab', 'unread');
-  const [unread, setUnread] = useState(initialUnread);
-  const [read, setRead] = useState(initialRead);
-  const [readsMap, setReadsMap] = useState<Record<string, EssayCoachReadWithProfile[]>>(coachReadsMap);
+  const [activeTab, setActiveTab] = usePersistedState<'unread' | 'read'>(
+    'tappka:coach-review:tab',
+    'unread',
+  );
+  const [teamFilter, setTeamFilter] = usePersistedState<string>(
+    'tappka:coach-review:team',
+    defaultTeamId,
+  );
+  const [rocketFilter, setRocketFilter] = usePersistedState<CoachReviewRocketFilter>(
+    'tappka:coach-review:rocket',
+    'all',
+  );
+  const [pointsFilter, setPointsFilter] = usePersistedState<CoachReviewPointsFilter>(
+    'tappka:coach-review:points',
+    'all',
+  );
+  const [replyFilter, setReplyFilter] = usePersistedState<CoachReviewReplyFilter>(
+    'tappka:coach-review:reply',
+    'all',
+  );
 
-  const [teamFilter, setTeamFilter] = usePersistedState<string>('tappka:coach-review:team', defaultTeamId);
-  const [rocketFilter, setRocketFilter] = usePersistedState<string>('tappka:coach-review:rocket', 'all');
-  const [pointsFilter, setPointsFilter] = usePersistedState<string>('tappka:coach-review:points', 'all');
-  const [replyFilter, setReplyFilter] = usePersistedState<string>('tappka:coach-review:reply', 'all');
+  const initialFilterEssay = useCallback(
+    (essay: CoachReviewEssay) => {
+      if (defaultTeamId !== 'all') {
+        if (essay.author?.team_id !== defaultTeamId) return false;
+      }
+      return true;
+    },
+    [defaultTeamId],
+  );
+
+  const [essays, setEssays] = useState<CoachReviewEssay[]>(() => {
+    const list = activeTab === 'unread' ? initialUnread : initialRead;
+    return defaultTeamId === 'all' ? list : list.filter(initialFilterEssay);
+  });
+
+  const [unreadCount, setUnreadCount] = useState<number>(() => {
+    if (initialUnreadCount !== undefined) return initialUnreadCount;
+    return defaultTeamId === 'all'
+      ? initialUnread.length
+      : initialUnread.filter(initialFilterEssay).length;
+  });
+
+  const [readCount, setReadCount] = useState<number>(() => {
+    if (initialReadCount !== undefined) return initialReadCount;
+    return defaultTeamId === 'all'
+      ? initialRead.length
+      : initialRead.filter(initialFilterEssay).length;
+  });
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const [commentsMap, setCommentsMap] =
+    useState<Record<string, EssayCommentWithAuthor[]>>(initialCommentsMap);
+  const [readsMap, setReadsMap] =
+    useState<Record<string, EssayCoachReadWithProfile[]>>(initialCoachReadsMap);
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
   const effectiveCommentsMap = useMemo(() => {
     const merged: Record<string, EssayCommentWithAuthor[]> = { ...commentsMap };
@@ -96,9 +159,112 @@ export function CoachReviewList({
     setReplyFilter('all');
   };
 
+  const buildUrl = useCallback(
+    (tab: string, pageNum: number) => {
+      const params = new URLSearchParams({
+        tab,
+        page: String(pageNum),
+        page_size: '50',
+      });
+      if (teamFilter) params.set('team_id', teamFilter);
+      if (rocketFilter !== 'all') params.set('rocket', rocketFilter);
+      if (pointsFilter !== 'all') params.set('points', pointsFilter);
+      if (replyFilter !== 'all') params.set('reply', replyFilter);
+      return `/api/essays/coach-review?${params.toString()}`;
+    },
+    [teamFilter, rocketFilter, pointsFilter, replyFilter],
+  );
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      const isDefault =
+        activeTab === 'unread' &&
+        teamFilter === defaultTeamId &&
+        rocketFilter === 'all' &&
+        pointsFilter === 'all' &&
+        replyFilter === 'all';
+      if (isDefault) return;
+    }
+
+    let isCancelled = false;
+    async function fetchFiltered() {
+      setLoading(true);
+      try {
+        const res = await fetch(buildUrl(activeTab, 1));
+        if (!res.ok) throw new Error('Fetch failed');
+        const json = await res.json();
+        if (isCancelled) return;
+        setEssays(json.data ?? []);
+        setUnreadCount(json.unreadCount ?? 0);
+        setReadCount(json.readCount ?? 0);
+        setHasMore(json.hasMore ?? false);
+        setPage(1);
+        if (json.commentsMap) setCommentsMap((prev) => ({ ...prev, ...json.commentsMap }));
+        if (json.coachReadsMap) setReadsMap((prev) => ({ ...prev, ...json.coachReadsMap }));
+      } catch (err) {
+        console.error('Failed to fetch filtered essays:', err);
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    }
+
+    fetchFiltered();
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeTab, teamFilter, rocketFilter, pointsFilter, replyFilter, defaultTeamId, buildUrl]);
+
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const res = await fetch(buildUrl(activeTab, nextPage));
+      if (!res.ok) throw new Error('Fetch failed');
+      const json = await res.json();
+      const newItems = (json.data ?? []) as CoachReviewEssay[];
+      if (newItems.length === 0) {
+        setHasMore(false);
+      } else {
+        setEssays((prev) => {
+          const existingIds = new Set(prev.map((e) => e.id));
+          const toAdd = newItems.filter((e) => !existingIds.has(e.id));
+          return [...prev, ...toAdd];
+        });
+        setPage(nextPage);
+        setHasMore(json.hasMore ?? false);
+        if (json.commentsMap) setCommentsMap((prev) => ({ ...prev, ...json.commentsMap }));
+        if (json.coachReadsMap) setReadsMap((prev) => ({ ...prev, ...json.coachReadsMap }));
+      }
+    } catch (err) {
+      console.error('Failed to load more essays:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [activeTab, buildUrl, hasMore, loading, loadingMore, page]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { rootMargin: '300px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
   const markRead = (essay: CoachReviewEssay) => {
-    setUnread((prev) => prev.filter((e) => e.id !== essay.id));
-    setRead((prev) => (prev.some((e) => e.id === essay.id) ? prev : [essay, ...prev]));
+    if (activeTab === 'unread') {
+      setEssays((prev) => prev.filter((e) => e.id !== essay.id));
+    }
+    setUnreadCount((c) => Math.max(0, c - 1));
+    setReadCount((c) => c + 1);
     if (currentCoachId) {
       const newEntry: EssayCoachReadWithProfile = {
         essay_id: essay.id,
@@ -108,14 +274,20 @@ export function CoachReviewList({
       };
       setReadsMap((prev) => ({
         ...prev,
-        [essay.id]: [...(prev[essay.id]?.filter((r) => r.coach_profile_id !== currentCoachId) ?? []), newEntry],
+        [essay.id]: [
+          ...(prev[essay.id]?.filter((r) => r.coach_profile_id !== currentCoachId) ?? []),
+          newEntry,
+        ],
       }));
     }
   };
 
   const markUnread = (essay: CoachReviewEssay) => {
-    setRead((prev) => prev.filter((e) => e.id !== essay.id));
-    setUnread((prev) => (prev.some((e) => e.id === essay.id) ? prev : [essay, ...prev]));
+    if (activeTab === 'read') {
+      setEssays((prev) => prev.filter((e) => e.id !== essay.id));
+    }
+    setReadCount((c) => Math.max(0, c - 1));
+    setUnreadCount((c) => c + 1);
     if (currentCoachId) {
       setReadsMap((prev) => {
         const existing = prev[essay.id] ?? [];
@@ -126,59 +298,6 @@ export function CoachReviewList({
       });
     }
   };
-
-  const filterEssay = useCallback(
-    (essay: CoachReviewEssay) => {
-      if (teamFilter !== 'all') {
-        if (essay.author?.team_id !== teamFilter) return false;
-      }
-      if (rocketFilter === 'rocket') {
-        if (!essay.book?.is_rocket_model) return false;
-      } else if (rocketFilter === 'non-rocket') {
-        if (essay.book?.is_rocket_model) return false;
-      }
-      if (pointsFilter !== 'all') {
-        const pts = pointsNumber(essay.book?.book_points);
-        if (pointsFilter === '0') {
-          if (essay.book && pts > 0) return false;
-        } else {
-          if (!essay.book || Math.round(pts) !== Number(pointsFilter)) return false;
-        }
-      }
-      if (replyFilter !== 'all') {
-        const essayComments = effectiveCommentsMap[essay.id] ?? [];
-        const { hasCoachComment, hasAuthorReply, latestCoachCommentTime } = getEssayCommentThreads(
-          essayComments,
-          essay.author_profile_id,
-        );
-
-        if (replyFilter === 'with-reply') {
-          if (!hasAuthorReply) return false;
-        } else if (replyFilter === 'without-reply') {
-          if (!hasCoachComment || hasAuthorReply) return false;
-        } else if (replyFilter === 'edited-after-comment') {
-          const hasEditedAfterCoach =
-            hasCoachComment &&
-            new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
-          if (!hasEditedAfterCoach) return false;
-        } else if (replyFilter === 'no-coach-comment') {
-          if (hasCoachComment) return false;
-        }
-      }
-      return true;
-    },
-    [teamFilter, rocketFilter, pointsFilter, replyFilter, effectiveCommentsMap],
-  );
-
-  const filteredUnread = useMemo(
-    () => unread.filter(filterEssay),
-    [unread, filterEssay],
-  );
-
-  const filteredRead = useMemo(
-    () => read.filter(filterEssay),
-    [read, filterEssay],
-  );
 
   return (
     <div className="space-y-4">
@@ -203,7 +322,10 @@ export function CoachReviewList({
         )}
 
         <div className="w-[140px] sm:w-[160px]">
-          <Select value={rocketFilter} onValueChange={setRocketFilter}>
+          <Select
+            value={rocketFilter}
+            onValueChange={(v) => setRocketFilter(v as CoachReviewRocketFilter)}
+          >
             <SelectTrigger size="sm" className="w-full">
               <SelectValue placeholder="Rocket model" />
             </SelectTrigger>
@@ -216,7 +338,10 @@ export function CoachReviewList({
         </div>
 
         <div className="w-[130px] sm:w-[150px]">
-          <Select value={pointsFilter} onValueChange={setPointsFilter}>
+          <Select
+            value={pointsFilter}
+            onValueChange={(v) => setPointsFilter(v as CoachReviewPointsFilter)}
+          >
             <SelectTrigger size="sm" className="w-full">
               <SelectValue placeholder="Knižní body" />
             </SelectTrigger>
@@ -231,7 +356,10 @@ export function CoachReviewList({
         </div>
 
         <div className="w-[160px] sm:w-[185px]">
-          <Select value={replyFilter} onValueChange={setReplyFilter}>
+          <Select
+            value={replyFilter}
+            onValueChange={(v) => setReplyFilter(v as CoachReviewReplyFilter)}
+          >
             <SelectTrigger size="sm" className="w-full">
               <SelectValue placeholder="Reakce Téčka" />
             </SelectTrigger>
@@ -263,17 +391,21 @@ export function CoachReviewList({
           <TabsTrigger value="unread">
             <Inbox />
             Nepřečtené
-            <TabsTriggerCount count={filteredUnread.length} tone="attention" />
+            <TabsTriggerCount count={unreadCount} tone="attention" />
           </TabsTrigger>
           <TabsTrigger value="read">
             <CheckCheck />
             Přečtené
-            <TabsTriggerCount count={filteredRead.length} />
+            <TabsTriggerCount count={readCount} />
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="unread" className="mt-4">
-          {filteredUnread.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Spinner className="size-6 text-muted-foreground" />
+            </div>
+          ) : essays.length === 0 ? (
             <EmptyState
               label={
                 hasActiveFilters
@@ -284,7 +416,7 @@ export function CoachReviewList({
             />
           ) : (
             <div className="space-y-3">
-              {filteredUnread.map((essay) => (
+              {essays.map((essay) => (
                 <ReviewRow
                   key={essay.id}
                   essay={essay}
@@ -294,12 +426,19 @@ export function CoachReviewList({
                   onToggled={() => markRead(essay)}
                 />
               ))}
+              <div ref={sentinelRef} className="flex justify-center py-4">
+                {loadingMore && <Spinner className="size-5" />}
+              </div>
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="read" className="mt-4">
-          {filteredRead.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Spinner className="size-6 text-muted-foreground" />
+            </div>
+          ) : essays.length === 0 ? (
             <EmptyState
               label={
                 hasActiveFilters
@@ -310,7 +449,7 @@ export function CoachReviewList({
             />
           ) : (
             <div className="space-y-3">
-              {filteredRead.map((essay) => (
+              {essays.map((essay) => (
                 <ReviewRow
                   key={essay.id}
                   essay={essay}
@@ -320,6 +459,9 @@ export function CoachReviewList({
                   onToggled={() => markUnread(essay)}
                 />
               ))}
+              <div ref={sentinelRef} className="flex justify-center py-4">
+                {loadingMore && <Spinner className="size-5" />}
+              </div>
             </div>
           )}
         </TabsContent>

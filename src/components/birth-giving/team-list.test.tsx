@@ -35,8 +35,8 @@ describe("BirthGivingTeamList", () => {
     expect(screen.getByRole("button", { name: "Vytvořit tým" })).toBeInTheDocument();
   });
 
-  it("does not promise future visibility on a closed published event with no teams", () => {
-    const event = makeEvent({ starts_at: "2026-08-19T08:00:00.000Z", joining_open: false, teams: [] });
+  it("shows no teams description on published event with no teams", () => {
+    const event = makeEvent({ starts_at: "2026-08-19T08:00:00.000Z", teams: [] });
     render(
       <BirthGivingTeamList event={event} profileId="member-1" now={NOW} organizerProfiles={makeAllProfiles()} onEventChange={vi.fn()} />,
     );

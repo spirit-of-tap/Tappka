@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, UploadCloud, X, FileCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -10,9 +10,7 @@ import {
   birthGivingFileSchema,
 } from "@/lib/birth-giving/files";
 import { formatFileSize } from "@/lib/birth-giving/format";
-
-const EXTERNAL_LINK_WARNING = "Nahrajte exportovanou kopii souboru. Odkazy na Canvu, Google Drive a další služby mohou později ztratit přístup, takže nejsou spolehlivým výsledkem BG.";
-const ASSIGNMENT_RELEASE_WARNING = "Soubor se zadáním bude týmům dostupný až od začátku BG. Pokud ho během BG nahradíte, odešleme týmům e-mail s upozorněním.";
+import { cn } from "@/lib/utils";
 
 interface AssignmentFileUploadProps {
   kind: "assignment";
@@ -58,19 +56,60 @@ export function BirthGivingFileUpload(props: BirthGivingFileUploadProps) {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
   const isResults = props.kind === "results";
   const inputId = isResults ? `bg-results-${props.teamId}` : `bg-assignment-${props.eventId}`;
   const inputLabel = isResults ? "Soubory s výsledky" : "Soubor se zadáním";
 
-  function pickFiles(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleFileSelection(selected: File[]) {
     setError(null);
-    setFiles(Array.from(event.target.files ?? []));
+    setFiles(selected);
+  }
+
+  function pickFiles(event: React.ChangeEvent<HTMLInputElement>) {
+    handleFileSelection(Array.from(event.target.files ?? []));
   }
 
   function clearSelection() {
     setFiles([]);
     setError(null);
     if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function removeSelectedFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleDragOver(event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!props.disabled && !uploading) {
+      setIsDragging(true);
+    }
+  }
+
+  function handleDragLeave(event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    if (props.disabled || uploading) return;
+
+    const droppedFiles = Array.from(event.dataTransfer.files ?? []);
+    if (droppedFiles.length === 0) return;
+
+    if (isResults) {
+      handleFileSelection(droppedFiles);
+    } else {
+      const first = droppedFiles[0];
+      if (first) handleFileSelection([first]);
+    }
   }
 
   async function upload() {
@@ -125,7 +164,7 @@ export function BirthGivingFileUpload(props: BirthGivingFileUploadProps) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 pt-1">
       <input
         ref={inputRef}
         id={inputId}
@@ -139,58 +178,129 @@ export function BirthGivingFileUpload(props: BirthGivingFileUploadProps) {
       />
 
       {files.length === 0 ? (
-        <Button
-          type="button"
-          variant="outline"
-          disabled={props.disabled || uploading}
+        <div
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          className="w-full justify-start gap-2 border-dashed text-muted-foreground"
+          className={cn(
+            "group relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-all cursor-pointer select-none",
+            isDragging
+              ? "border-primary bg-primary/10 scale-[1.01]"
+              : "border-border/60 bg-muted/20 hover:border-primary/50 hover:bg-muted/40",
+            (props.disabled || uploading) && "pointer-events-none opacity-50",
+          )}
         >
-          <Upload className="size-4" />
-          {isResults ? "Vybrat soubory s výsledky" : "Vybrat soubor se zadáním"}
-        </Button>
+          <div
+            className={cn(
+              "flex size-11 items-center justify-center rounded-full transition-colors mb-2.5",
+              isDragging ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary",
+            )}
+          >
+            <UploadCloud className="size-5" />
+          </div>
+
+          <p className="text-xs sm:text-sm font-semibold text-foreground">
+            {isDragging
+              ? "Pusťte soubory pro nahrání"
+              : isResults
+              ? "Přetáhněte výsledky sem nebo klikněte pro výběr"
+              : "Přetáhněte zadání sem nebo klikněte pro výběr"}
+          </p>
+
+          <p className="text-[11px] text-muted-foreground mt-1">
+            PDF, prezentace, kód, archivy (max. 50 MB)
+          </p>
+
+          {/* Accessible trigger for testing & keyboard navigation */}
+          <button
+            type="button"
+            className="sr-only"
+            disabled={props.disabled || uploading}
+            onClick={(e) => {
+              e.stopPropagation();
+              inputRef.current?.click();
+            }}
+          >
+            {isResults ? "Vybrat soubory s výsledky" : "Vybrat soubor se zadáním"}
+          </button>
+        </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5 rounded-2xl border border-border/60 bg-muted/20 p-3.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <FileCheck className="size-4 text-primary" />
+              Vybrané soubory ({files.length})
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="text-[11px] h-6 text-muted-foreground hover:text-foreground"
+              disabled={uploading}
+              onClick={clearSelection}
+            >
+              Zrušit výběr
+            </Button>
+          </div>
+
           <ul className="space-y-1.5">
             {files.map((file, index) => (
               <li
                 key={`${file.name}-${index}`}
-                className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5 text-xs"
+                className="flex items-center justify-between gap-2 rounded-xl border border-border/40 bg-card/70 px-3 py-2 text-xs"
               >
-                <span className="min-w-0 flex-1 truncate font-medium">{file.name}</span>
-                <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
+                <div className="min-w-0 flex-1 truncate font-medium text-foreground">
+                  {file.name}
+                  <span className="ml-2 text-[11px] text-muted-foreground font-normal">
+                    {formatFileSize(file.size)}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  aria-label={`Odebrat ${file.name}`}
+                  disabled={uploading}
+                  onClick={() => removeSelectedFile(index)}
+                  className="size-6 p-0 text-muted-foreground hover:text-destructive"
+                >
+                  <X className="size-3" />
+                </Button>
               </li>
             ))}
           </ul>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" size="sm" disabled={props.disabled || uploading} onClick={() => void upload()}>
-              {uploading ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" /> : <Upload className="size-4" />}
-              {isResults ? "Nahrát soubory" : "Nahrát soubor"}
-            </Button>
+
+          <div className="flex items-center justify-end gap-2 pt-1">
             <Button
               type="button"
-              variant="outline"
-              size="xs"
-              aria-label="Zrušit výběr souboru"
-              disabled={uploading}
-              onClick={clearSelection}
+              size="sm"
+              disabled={props.disabled || uploading}
+              onClick={() => void upload()}
+              className="gap-1.5 font-medium shadow-xs"
             >
-              <X className="size-3" />
+              {uploading ? (
+                <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" />
+              ) : (
+                <Upload className="size-3.5" />
+              )}
+              {isResults ? "Nahrát soubory" : "Nahrát soubor"}
             </Button>
           </div>
         </div>
       )}
 
-      {!isResults && <p className="text-xs text-muted-foreground">{ASSIGNMENT_RELEASE_WARNING}</p>}
-      <p className="text-xs text-muted-foreground">{EXTERNAL_LINK_WARNING}</p>
-
       {uploading && (
-        <div className="flex items-center gap-3" aria-live="polite">
+        <div className="space-y-1 pt-1" aria-live="polite">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Nahrávání…</span>
+            <span className="tabular-nums font-medium text-foreground">{progress} %</span>
+          </div>
           <Progress value={progress} aria-label="Průběh nahrávání" />
-          <span className="min-w-12 text-sm tabular-nums">{progress} %</span>
         </div>
       )}
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

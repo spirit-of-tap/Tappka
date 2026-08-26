@@ -17,6 +17,14 @@ function migrationFiles(): string[] {
     .sort();
 }
 
+export function readMigrationBySuffix(suffix: string): string {
+  const matches = migrationFiles().filter((file) => file.endsWith(suffix));
+  if (matches.length !== 1) {
+    throw new Error(`Expected one migration ending in ${suffix}, found ${matches.length}`);
+  }
+  return readFileSync(join(MIGRATIONS_DIR, matches[0]), "utf8");
+}
+
 function extractRelationFromSQL(sql: string): string | null {
   const patterns = [
     /(?:create\s+(?:unique\s+)?index\s+(?:\S+\s+)*?on\s+)(\S+)/i,

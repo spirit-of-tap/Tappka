@@ -1,33 +1,28 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  birthGivingDraftSchema,
+  BIRTH_GIVING_ERROR_CODES,
+  birthGivingEventCreateSchema,
   birthGivingEventPatchSchema,
-  birthGivingHistoricalTeamSchema,
-  birthGivingJoiningSchema,
-  birthGivingLookingForTeamSchema,
-  birthGivingProposalSchema,
   birthGivingReflectionSchema,
-  birthGivingTeamSchema,
+  birthGivingResultFileAddSchema,
+  birthGivingTeamCreateSchema,
+  birthGivingTeamUpdateSchema,
   mapBirthGivingPostgresError,
+  type BirthGivingPostgresError,
 } from "./api";
 
 const PROFILE_ID = "11111111-1111-4111-8111-111111111111";
 const OTHER_PROFILE_ID = "22222222-2222-4222-8222-222222222222";
-const EVENT_ID = "33333333-3333-4333-8333-333333333333";
-const TEAM_ID = "44444444-4444-4444-8444-444444444444";
 
 describe("Birth Giving API payload schemas", () => {
-  it("parses and trims a strict draft payload", () => {
+  it("parses and trims event create payload", () => {
     expect(
-      birthGivingDraftSchema.parse({
+      birthGivingEventCreateSchema.parse({
         name: "  BG pro knihovnu  ",
         customer: "  Městská knihovna  ",
         startsAt: "2026-09-01T08:00:00.000Z",
         duration: "8h",
-        minimumTeamSize: 2,
-        maximumTeamSize: 5,
-        joiningOpen: true,
         organizerProfileIds: [PROFILE_ID, OTHER_PROFILE_ID],
       }),
     ).toEqual({
@@ -35,144 +30,170 @@ describe("Birth Giving API payload schemas", () => {
       customer: "Městská knihovna",
       startsAt: "2026-09-01T08:00:00.000Z",
       duration: "8h",
-      minimumTeamSize: 2,
-      maximumTeamSize: 5,
-      joiningOpen: true,
       organizerProfileIds: [PROFILE_ID, OTHER_PROFILE_ID],
     });
   });
 
-  it("rejects invalid draft ranges, duplicate organizers, and unknown keys", () => {
-    const payload = {
-      name: "BG",
-      customer: "Klientstvo",
-      startsAt: "2026-09-01T08:00:00.000Z",
-      duration: "24h",
-      minimumTeamSize: 5,
-      maximumTeamSize: 2,
-      joiningOpen: false,
-      organizerProfileIds: [PROFILE_ID, PROFILE_ID],
-      unexpected: true,
-    };
-
-    expect(birthGivingDraftSchema.safeParse(payload).success).toBe(false);
-  });
-
-  it("accepts only non-empty partial event patches", () => {
+  it("accepts event patches", () => {
     expect(birthGivingEventPatchSchema.parse({ name: "  Nový název  " })).toEqual({
       name: "Nový název",
     });
-    expect(birthGivingEventPatchSchema.parse({ joiningOpen: false })).toEqual({
-      joiningOpen: false,
+    expect(birthGivingEventPatchSchema.parse({ duration: "24h" })).toEqual({
+      duration: "24h",
     });
-    expect(birthGivingEventPatchSchema.safeParse({}).success).toBe(false);
-    expect(birthGivingEventPatchSchema.safeParse({ unknown: true }).success).toBe(false);
+    expect(birthGivingEventPatchSchema.safeParse({}).success).toBe(true);
   });
 
-  it("parses joining, team-search, team, and proposal payloads", () => {
-    expect(birthGivingJoiningSchema.parse({ joiningOpen: false })).toEqual({ joiningOpen: false });
-    expect(birthGivingLookingForTeamSchema.parse({ looking: true })).toEqual({ looking: true });
-    expect(birthGivingTeamSchema.parse({ name: "  Tým Aurora  " })).toEqual({ name: "Tým Aurora" });
+  it("rejects status in an event create payload", () => {
     expect(
-      birthGivingProposalSchema.parse({
-        teamId: TEAM_ID,
-        candidateProfileId: PROFILE_ID,
-        direction: "join_request",
-        acknowledgeMove: false,
-      }),
-    ).toEqual({
-      teamId: TEAM_ID,
-      candidateProfileId: PROFILE_ID,
-      direction: "join_request",
-      acknowledgeMove: false,
-    });
-    expect(
-      birthGivingProposalSchema.safeParse({
-        teamId: TEAM_ID,
-        candidateProfileId: PROFILE_ID,
-        direction: "join_request",
+      birthGivingEventCreateSchema.safeParse({
+        name: "BG pro knihovnu",
+        customer: "Městská knihovna",
+        startsAt: "2026-09-01T08:00:00.000Z",
+        duration: "8h",
+        organizerProfileIds: [PROFILE_ID],
+        status: "published",
       }).success,
     ).toBe(false);
   });
 
-  it("parses historical team correction and reflection payloads", () => {
+  it("rejects assignment metadata in an event create payload", () => {
     expect(
-      birthGivingHistoricalTeamSchema.parse({
-        name: "  Tým Atlas  ",
-        memberProfileIds: [PROFILE_ID, OTHER_PROFILE_ID],
-        resultState: "missing",
-      }),
-    ).toEqual({
-      name: "Tým Atlas",
-      memberProfileIds: [PROFILE_ID, OTHER_PROFILE_ID],
-      resultState: "missing",
-    });
-    expect(
-      birthGivingReflectionSchema.parse({ contribution: "  Výzkum  ", learning: "  Facilitace  " }),
-    ).toEqual({ contribution: "Výzkum", learning: "Facilitace" });
-  });
-
-  it("rejects malformed identifiers, empty text, and unsupported enum values", () => {
-    expect(
-      birthGivingProposalSchema.safeParse({
-        teamId: EVENT_ID,
-        candidateProfileId: "not-a-uuid",
-        direction: "move",
-        acknowledgeMove: false,
+      birthGivingEventCreateSchema.safeParse({
+        name: "BG pro knihovnu",
+        customer: "Městská knihovna",
+        startsAt: "2026-09-01T08:00:00.000Z",
+        duration: "8h",
+        organizerProfileIds: [PROFILE_ID],
+        assignmentState: "present",
       }).success,
     ).toBe(false);
-    expect(birthGivingTeamSchema.safeParse({ name: "   " }).success).toBe(false);
+  });
+
+  it("rejects status and assignment metadata in event patch payloads", () => {
+    expect(birthGivingEventPatchSchema.safeParse({ status: "published" }).success).toBe(false);
+    expect(birthGivingEventPatchSchema.safeParse({ assignmentState: "present" }).success).toBe(
+      false,
+    );
+  });
+
+  it("accepts a solo team with an empty member list", () => {
     expect(
-      birthGivingHistoricalTeamSchema.safeParse({
-        name: "Tým",
+      birthGivingTeamCreateSchema.parse({
+        name: "  Tým Aurora  ",
         memberProfileIds: [],
-        resultState: "pending",
-      }).success,
-    ).toBe(false);
-    expect(birthGivingReflectionSchema.safeParse({ contribution: "", learning: "Poznatek" }).success).toBe(false);
+      }),
+    ).toEqual({
+      name: "Tým Aurora",
+      memberProfileIds: [],
+    });
+    expect(birthGivingTeamUpdateSchema.parse({ memberProfileIds: [] })).toEqual({
+      memberProfileIds: [],
+    });
+  });
+
+  it("parses team create payload with members", () => {
+    expect(
+      birthGivingTeamCreateSchema.parse({
+        name: "  Tým Aurora  ",
+        memberProfileIds: [PROFILE_ID],
+      }),
+    ).toEqual({
+      name: "Tým Aurora",
+      memberProfileIds: [PROFILE_ID],
+    });
+  });
+
+  it("parses team update payload", () => {
+    expect(
+      birthGivingTeamUpdateSchema.parse({
+        isWinner: true,
+      }),
+    ).toEqual({
+      isWinner: true,
+    });
+  });
+
+  it("parses reflection payload", () => {
+    expect(
+      birthGivingReflectionSchema.parse({
+        contribution: "  Kódování  ",
+        learning: "  Testování  ",
+      }),
+    ).toEqual({
+      contribution: "Kódování",
+      learning: "Testování",
+    });
+  });
+
+  it("parses result file add payload", () => {
+    expect(
+      birthGivingResultFileAddSchema.parse({
+        storagePath: "path/to/file.pdf",
+        originalFileName: "file.pdf",
+        mimeType: "application/pdf",
+        fileSize: 1024,
+      }),
+    ).toEqual({
+      storagePath: "path/to/file.pdf",
+      originalFileName: "file.pdf",
+      mimeType: "application/pdf",
+      fileSize: 1024,
+    });
   });
 });
 
+function postgresError(code: string): BirthGivingPostgresError {
+  return {
+    code,
+    message: `test message for ${code}`,
+    details: "some details",
+    hint: "some hint",
+  };
+}
+
 describe("mapBirthGivingPostgresError", () => {
-  it.each([
-    ["55000", "Team formation is closed for this event", "FORMATION_CLOSED", 409],
-    ["55000", "Joining can only change before the event start", "FORMATION_CLOSED", 409],
-    ["23514", "Target team is at maximum capacity", "TEAM_FULL", 409],
-    ["55000", "Proposal is missing or already resolved", "PROPOSAL_RESOLVED", 409],
-    ["23505", "Profile already belongs to a team in this event", "ALREADY_JOINED", 409],
-    ["23505", "duplicate key value violates unique constraint birth_giving_team_members_event_profile_key", "ALREADY_JOINED", 409],
-    ["55000", "Assignment is not released yet", "ASSIGNMENT_NOT_RELEASED", 409],
-    ["55000", "Assignment is locked after event end", "ASSIGNMENT_LOCKED", 409],
-    ["55000", "Assignment can only be marked missing for a historical event", "ASSIGNMENT_LOCKED", 409],
-    ["55000", "Only an active event can be updated before it has ended", "EVENT_LOCKED", 409],
-    ["55000", "Started event lifecycle fields are immutable and joining must remain closed", "EVENT_LOCKED", 409],
-    ["23505", "duplicate key value violates unique constraint birth_giving_events_identity_key", "DUPLICATE_EVENT", 409],
-    ["55000", "MOVE_REQUIRES_ACKNOWLEDGEMENT", "MOVE_REQUIRES_ACKNOWLEDGEMENT", 409],
-    ["23503", "Target team does not belong to the open event", "INVALID_RELATION", 409],
-    ["23514", "Every retrospective team requires a result state and valid team size", "PUBLICATION_INVALID", 422],
-    ["55000", "Only an active draft can be published", "PUBLICATION_INVALID", 422],
-    ["23514", "Historical team size is outside event capacity", "PUBLICATION_INVALID", 422],
-    ["55000", "Team result storage limit is 100 MiB", "RESULT_STORAGE_LIMIT", 409],
-    ["55000", "Result can only be marked missing for a historical event", "RESULT_LOCKED", 409],
-    ["22023", "Internal organizer validation details", "VALIDATION_ERROR", 422],
-  ] as const)("maps %s %s to %s", (code, message, expectedCode, expectedStatus) => {
-    expect(mapBirthGivingPostgresError({ code, message })).toMatchObject({
-      code: expectedCode,
-      status: expectedStatus,
+  it("maps SQLSTATE 42501 to an unauthorized 403", () => {
+    expect(mapBirthGivingPostgresError(postgresError("42501"))).toEqual({
+      code: BIRTH_GIVING_ERROR_CODES.unauthorized,
+      message: "K provedení této akce nemáte oprávnění.",
+      status: 403,
     });
   });
 
-  it("returns null for an unexpected database error", () => {
-    expect(mapBirthGivingPostgresError({ code: "XX000", message: "Unexpected failure" })).toBeNull();
+  it("maps SQLSTATE P0002 to a not-found 404", () => {
+    expect(mapBirthGivingPostgresError(postgresError("P0002"))).toEqual({
+      code: BIRTH_GIVING_ERROR_CODES.notFound,
+      message: "Požadovaná událost nebo tým neexistují.",
+      status: 404,
+    });
   });
 
-  it("does not expose SQL validation details", () => {
-    expect(
-      mapBirthGivingPostgresError({ code: "22023", message: "Sensitive internal SQL details" }),
-    ).toEqual({
-      code: "VALIDATION_ERROR",
-      message: "Zadané údaje nejsou platné.",
-      status: 422,
+  it("maps SQLSTATE 23505 to a duplicate 409", () => {
+    expect(mapBirthGivingPostgresError(postgresError("23505"))).toEqual({
+      code: BIRTH_GIVING_ERROR_CODES.duplicateEvent,
+      message: "Stejná Birth Giving událost už existuje.",
+      status: 409,
     });
+  });
+
+  it("maps SQLSTATE 23503 to an invalid-relation 409", () => {
+    expect(mapBirthGivingPostgresError(postgresError("23503"))).toEqual({
+      code: BIRTH_GIVING_ERROR_CODES.invalidRelation,
+      message: "Požadovaná vazba není pro tuto událost platná.",
+      status: 409,
+    });
+  });
+
+  it("maps SQLSTATE 23514 to an invalid-state 409", () => {
+    expect(mapBirthGivingPostgresError(postgresError("23514"))).toEqual({
+      code: BIRTH_GIVING_ERROR_CODES.invalidState,
+      message: "Požadovaná akce není v aktuálním stavu události možná.",
+      status: 409,
+    });
+  });
+
+  it("returns null for unmapped SQLSTATEs", () => {
+    expect(mapBirthGivingPostgresError(postgresError("42P01"))).toBeNull();
   });
 });

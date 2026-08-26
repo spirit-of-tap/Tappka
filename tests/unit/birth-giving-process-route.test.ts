@@ -16,14 +16,7 @@ describe("Birth Giving combined process route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.CRON_SECRET = "configured-secret";
-    mocks.processBirthGiving.mockResolvedValue({
-      startsProcessed: 0,
-      claimed: 0,
-      sent: 0,
-      failed: 0,
-      persistenceErrors: 0,
-      manualReview: 2,
-    });
+    mocks.processBirthGiving.mockResolvedValue({ sent: 2 });
   });
 
   it("exports only an authenticated GET handler", async () => {
@@ -37,7 +30,7 @@ describe("Birth Giving combined process route", () => {
     }));
     expect(authorized.status).toBe(200);
     expect(mocks.processBirthGiving).toHaveBeenCalledOnce();
-    await expect(authorized.json()).resolves.toMatchObject({ data: { manualReview: 2 } });
+    await expect(authorized.json()).resolves.toMatchObject({ data: { sent: 2 } });
   });
 
   it("fails closed when CRON_SECRET is absent", async () => {

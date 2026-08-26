@@ -10,7 +10,9 @@ interface BirthGivingTeamReadinessBadgeProps {
 export function BirthGivingTeamReadinessBadge({ team }: BirthGivingTeamReadinessBadgeProps) {
   const resultsReady = team.result_state === "present" && team.result_files.length > 0;
   const resultsMissing = team.result_state === "missing";
-  const reflectionsDone = team.members.filter((member) => member.reflection !== null).length;
+  const reflectionsDone = team.members.filter(
+    (member) => member.reflection_contribution || member.reflection_learning,
+  ).length;
   const reflectionsTotal = team.members.length;
   const reflectionsReady = reflectionsTotal > 0 && reflectionsDone === reflectionsTotal;
 

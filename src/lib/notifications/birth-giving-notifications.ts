@@ -1,11 +1,6 @@
+import type { Tables } from "@/lib/supabase/tables";
 import { createAdminClient } from "@/lib/supabase/admin";
-
 import { sendEmail } from "./send-email";
-
-const START_BATCH_SIZE = 25;
-const DELIVERY_BATCH_SIZE = 25;
-const DELIVERY_IDEMPOTENCY_PREFIX = "birth-giving-delivery-";
-const EVENT_PATH_PREFIX = "/birth-giving/";
 
 interface BirthGivingEmailContext {
   eventName: string;
@@ -13,32 +8,57 @@ interface BirthGivingEmailContext {
   eventUrl: string;
 }
 
-interface EmailContent {
-  subject: string;
-  html: string;
-}
+/** Stable provider idempotency-key prefix for assignment-release emails. */
+const ASSIGNMENT_EMAIL_KEY_PREFIX = "bg-assignment";
 
-interface ClaimedDelivery {
-  delivery_id: string;
-  processing_token: string;
-  recipient_email: string;
-  message_type: "assignment_release" | "assignment_replacement";
-  replacement_id: string | null;
-  event_id: string;
-  event_name: string;
-  customer: string;
-  email_subject: string | null;
-  email_html: string | null;
-}
+/** Origin used when neither `APP_URL` nor `SITE_URL` is configured. */
+const FALLBACK_APP_URL = "https://tappka.cz";
 
-export interface BirthGivingNotificationResult {
-  startsProcessed: number;
-  claimed: number;
-  sent: number;
-  failed: number;
-  persistenceErrors: number;
-  manualReview: number;
-}
+/**
+ * The event columns the cron reads directly on `birth_giving_events` through
+ * the admin (service-role) client. Service role bypasses RLS and the column
+ * grants, so the embargoed `assignment_*` metadata is readable here without
+ * exposing it to `authenticated` callers.
+ */
+const ASSIGNMENT_RELEASE_EVENT_COLUMNS = [
+  "id",
+  "name",
+  "customer",
+  "status",
+  "starts_at",
+  "removed_at",
+  "assignment_state",
+  "assignment_uploaded_at",
+  "assignment_storage_path",
+] as const;
+
+/**
+ * The event row `notifyParticipantsOfAssignment` reads. Everything except the
+ * `assignment_*` columns comes from the generated `Tables` types; those three
+ * columns are not in `database.types.ts` yet (the file predates the assignment
+ * metadata and is regenerated later), so they are appended here and the row is
+ * snapshot-typed via `as unknown as` at the query site.
+ */
+type AssignmentReleaseEvent = Pick<
+  Tables<"birth_giving_events">,
+  "id" | "name" | "customer" | "status" | "starts_at" | "removed_at"
+> & {
+  assignment_state: "none" | "missing" | "present";
+  assignment_uploaded_at: string | null;
+  assignment_storage_path: string | null;
+};
+
+/**
+ * A current team member joined to their profile. The service-role client
+ * bypasses RLS, so recipient gating mirrors the app's profile activeness rule
+ * (`access_removed_at IS NULL` and `beta_access_granted_at IS NOT NULL`) in
+ * code instead of relying on the database.
+ */
+type AssignmentReleaseMember = {
+  profile: Pick<Tables<"profiles">, "access_removed_at" | "beta_access_granted_at"> & {
+    user: Pick<Tables<"users">, "verified_work_email">;
+  };
+};
 
 function escapeHtml(value: string): string {
   return value
@@ -49,11 +69,9 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function assignmentEmail(ctx: BirthGivingEmailContext, replacement: boolean): EmailContent {
-  const title = replacement ? "Nová verze zadání" : "Zadání je dostupné";
-  const introduction = replacement
-    ? "K dispozici je nová verze zadání. Před zahájením práce si prosím otevřete aktuální soubor."
-    : "Zadání je nyní dostupné. Otevřete si detail akce a můžete začít.";
+export function assignmentReleaseEmail(ctx: BirthGivingEmailContext) {
+  const title = "Zadání je dostupné";
+  const introduction = "Zadání pro Birth Giving je nyní dostupné. Otevřete si detail události a můžete začít.";
   return {
     subject: `${title}: ${ctx.eventName}`,
     html: `<!doctype html>
@@ -61,121 +79,131 @@ function assignmentEmail(ctx: BirthGivingEmailContext, replacement: boolean): Em
   <h1>${title}</h1>
   <p>${introduction}</p>
   <p><strong>${escapeHtml(ctx.eventName)}</strong><br>${escapeHtml(ctx.customer)}</p>
-  <p><a href="${escapeHtml(ctx.eventUrl)}">Otevřít zadání</a></p>
+  <p><a href="${escapeHtml(ctx.eventUrl)}">Otevřít zadání v Tappce</a></p>
 </body></html>`,
   };
 }
 
-export function assignmentReleaseEmail(ctx: BirthGivingEmailContext): EmailContent {
-  return assignmentEmail(ctx, false);
-}
-
-export function assignmentReplacementEmail(ctx: BirthGivingEmailContext): EmailContent {
-  return assignmentEmail(ctx, true);
-}
-
-export function birthGivingDeliveryIdempotencyKey(deliveryId: string): string {
-  return `${DELIVERY_IDEMPOTENCY_PREFIX}${deliveryId}`;
-}
-
-function canonicalEventUrl(eventId: string): string {
-  const configuredUrl = process.env.APP_URL ?? process.env.SITE_URL;
-  if (!configuredUrl) throw new Error("APP_URL or SITE_URL is not configured");
-
-  const appUrl = new URL(configuredUrl);
-  if (appUrl.protocol !== "https:" && appUrl.protocol !== "http:") {
-    throw new Error("APP_URL or SITE_URL must use HTTP or HTTPS");
-  }
-  return new URL(`${EVENT_PATH_PREFIX}${encodeURIComponent(eventId)}`, appUrl.origin).toString();
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-export async function processBirthGivingNotifications(): Promise<BirthGivingNotificationResult> {
+/**
+ * Notifies the current members of an event that its assignment is available.
+ * Sends only while the assignment is actually released: the event must be
+ * published, not removed, already started (`starts_at <= now()`), and carry a
+ * `present` assignment, so drafts, future events, and replaced-but-not-yet
+ * started assignments never advertise early.
+ *
+ * The provider idempotency key is keyed on the assignment's storage path
+ * rather than its upload timestamp: re-confirming the same object (a retry or
+ * a double-submit) refreshes `assignment_uploaded_at` but keeps the path, so
+ * the reuse of the same key dedupes the send at the provider, while a genuine
+ * replacement (a new path) produces a new key and thus a new send. There is no
+ * local delivery-tracking table; one recipient's failure never aborts the
+ * remaining recipients.
+ *
+ * Query failures are surfaced (thrown) instead of being swallowed: an event or
+ * member lookup that fails must not degrade into a silently successful zero-
+ * send, which a cron would otherwise record as "nothing to do".
+ */
+export async function notifyParticipantsOfAssignment(eventId: string): Promise<number> {
   const admin = createAdminClient();
-  const startResult = await admin.rpc("birth_giving_process_due_starts", { p_limit: START_BATCH_SIZE });
-  if (startResult.error) throw new Error(`Failed to process Birth Giving starts: ${startResult.error.message}`);
-  const reconciliation = await admin.rpc("birth_giving_reconcile_email_deliveries");
-  if (reconciliation.error) {
-    throw new Error(`Failed to reconcile Birth Giving deliveries: ${reconciliation.error.message}`);
+
+  const { data: rawEvent, error: eventError } = await admin
+    .from("birth_giving_events")
+    .select(ASSIGNMENT_RELEASE_EVENT_COLUMNS.join(", "))
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (eventError) {
+    throw new Error(`Failed to load Birth Giving event ${eventId}: ${eventError.message}`);
   }
 
-  const claimResult = await admin.rpc("birth_giving_claim_email_deliveries", { p_limit: DELIVERY_BATCH_SIZE });
-  if (claimResult.error) throw new Error(`Failed to claim Birth Giving deliveries: ${claimResult.error.message}`);
-  const claims = (claimResult.data ?? []) as ClaimedDelivery[];
+  const event = (rawEvent ?? null) as unknown as AssignmentReleaseEvent | null;
+  if (!event) return 0;
+  if (event.status !== "published" || event.removed_at !== null) return 0;
+  if (event.assignment_state !== "present" || !event.assignment_uploaded_at || !event.assignment_storage_path) {
+    return 0;
+  }
+  if (Date.parse(event.starts_at) > Date.now()) return 0;
+
+  const { data: members, error: membersError } = await admin
+    .from("birth_giving_team_members")
+    .select(
+      // `birth_giving_team_members` has three FKs to `profiles`
+      // (profile_id, created_by_profile_id, updated_by_profile_id), so the
+      // embed must name the FK hint or PostgREST rejects it as ambiguous
+      // (PGRST201) and `members` comes back null — a silent zero-send.
+      "profile:profiles!birth_giving_team_members_profile_id_fkey!inner(access_removed_at,beta_access_granted_at,user:users!inner(verified_work_email))",
+    )
+    .eq("event_id", eventId);
+
+  if (membersError) {
+    throw new Error(`Failed to load Birth Giving members for event ${eventId}: ${membersError.message}`);
+  }
+
+  const baseUrl = process.env.APP_URL ?? process.env.SITE_URL ?? FALLBACK_APP_URL;
+  const eventUrl = `${baseUrl}/birth-giving/${eventId}`;
+  const emailContent = assignmentReleaseEmail({
+    eventName: event.name,
+    customer: event.customer,
+    eventUrl,
+  });
+
   let sent = 0;
-  let failed = 0;
-  let persistenceErrors = 0;
-
-  for (const claim of claims) {
-    let providerMessageId: string;
+  for (const m of (members ?? []) as unknown as AssignmentReleaseMember[]) {
+    const profile = m.profile;
+    // The admin client bypasses RLS, so skip members whose profile is no
+    // longer active by the app's definition.
+    if (!profile || profile.access_removed_at !== null || profile.beta_access_granted_at === null) continue;
+    const email = profile.user?.verified_work_email;
+    if (!email) continue;
     try {
-      let content: EmailContent;
-      if (claim.email_subject !== null && claim.email_html !== null) {
-        content = { subject: claim.email_subject, html: claim.email_html };
-      } else {
-        const context = {
-          eventName: claim.event_name,
-          customer: claim.customer,
-          eventUrl: canonicalEventUrl(claim.event_id),
-        };
-        const generated = claim.message_type === "assignment_replacement"
-          ? assignmentReplacementEmail(context)
-          : assignmentReleaseEmail(context);
-        const preparation = await admin.rpc("birth_giving_prepare_email_delivery", {
-          p_delivery_id: claim.delivery_id,
-          p_processing_token: claim.processing_token,
-          p_email_subject: generated.subject,
-          p_email_html: generated.html,
-        });
-        if (preparation.error || !preparation.data?.[0]) {
-          throw new Error(preparation.error?.message ?? "Delivery processing lease is no longer current");
-        }
-        content = { subject: preparation.data[0].email_subject, html: preparation.data[0].email_html };
-      }
-      const provider = await sendEmail(
-        { to: claim.recipient_email, ...content },
-        { idempotencyKey: birthGivingDeliveryIdempotencyKey(claim.delivery_id) },
+      await sendEmail(
+        {
+          to: email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+        },
+        {
+          idempotencyKey: `${ASSIGNMENT_EMAIL_KEY_PREFIX}-${eventId}-${event.assignment_storage_path}-${email}`,
+        },
       );
-      providerMessageId = provider.id;
-    } catch (error) {
-      const failure = await admin.rpc("birth_giving_fail_email_delivery", {
-        p_delivery_id: claim.delivery_id,
-        p_processing_token: claim.processing_token,
-        p_error: errorMessage(error),
-      });
-      if (failure.error || !failure.data) {
-        persistenceErrors += 1;
-      } else {
-        failed += 1;
-      }
-      continue;
+      sent += 1;
+    } catch (err) {
+      console.error(`Failed to send assignment email to ${email}:`, err);
     }
-
-    const completion = await admin.rpc("birth_giving_complete_email_delivery", {
-      p_delivery_id: claim.delivery_id,
-      p_processing_token: claim.processing_token,
-      p_provider_message_id: providerMessageId,
-    });
-    if (completion.error || !completion.data) {
-      persistenceErrors += 1;
-      continue;
-    }
-    sent += 1;
   }
 
-  return {
-    startsProcessed: startResult.data ?? 0,
-    claimed: claims.length,
-    sent,
-    failed,
-    persistenceErrors,
-    manualReview: reconciliation.data ?? 0,
-  };
+  return sent;
 }
 
-export async function processBirthGiving() {
-  return processBirthGivingNotifications();
+/**
+ * Cron entry point: processes all currently released Birth Giving assignments.
+ * Enumerates published, non-removed events whose assignment is `present` and
+ * whose start has passed, then notifies each event's current members. The
+ * helper re-checks the release conditions for the event (an event may have
+ * changed since enumeration) and returns 0 when nothing is due.
+ */
+export async function processBirthGiving(): Promise<{ sent: number }> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  const { data: rawEvents, error: listError } = await admin
+    .from("birth_giving_events")
+    .select("id")
+    .eq("status", "published")
+    .is("removed_at", null)
+    .eq("assignment_state", "present")
+    .lte("starts_at", now);
+
+  if (listError) {
+    throw new Error(`Failed to enumerate Birth Giving events: ${listError.message}`);
+  }
+
+  const events = (rawEvents ?? []) as Array<{ id: string }>;
+
+  let sent = 0;
+  for (const event of events) {
+    sent += await notifyParticipantsOfAssignment(event.id);
+  }
+
+  return { sent };
 }

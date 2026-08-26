@@ -14,6 +14,7 @@ import { NAV_MODULES, type NavModule } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
+import { SpotlightTrigger } from "@/components/spotlight"
 import {
   Sidebar,
   SidebarContent,
@@ -65,7 +66,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
 
   return (
     <>
-      <SidebarHeader>
+      <SidebarHeader className="gap-2.5">
         <div className="flex items-center gap-2 px-4 py-2">
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <span className="font-heading font-bold text-sm">T</span>
@@ -74,6 +75,9 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
             <span className="font-heading font-bold">Tappka</span>
             <span className="text-xs text-muted-foreground">Tiimiakatemia Prague</span>
           </div>
+        </div>
+        <div className="px-2">
+          <SpotlightTrigger />
         </div>
       </SidebarHeader>
       <SidebarContent>
