@@ -4,6 +4,8 @@ import { getSessionProfile } from "@/lib/auth/session"
 import { listPersonalityTests } from "@/lib/personality-tests/queries"
 import { PersonalityTestsView } from "@/components/personality-tests/personality-tests-view"
 import { PageShell } from "@/components/ui/page-shell"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
   title: "Osobnostní testy | Tappka",
@@ -17,7 +19,18 @@ export default async function OsobnostniTestyPage() {
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "personalityTests",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Osobnostní testy" />
+  }
 
   const tests = await listPersonalityTests(supabase, profile.id)
 

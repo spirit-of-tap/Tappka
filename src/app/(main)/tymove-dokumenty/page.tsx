@@ -7,6 +7,8 @@ import { getSessionProfile } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase/server"
 import { listTeamDocuments } from "@/lib/team-documents/queries"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
   title: "Týmové dokumenty | Tappka",
@@ -20,7 +22,19 @@ export default async function TeamDocumentsPage() {
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at || !profile.team_id) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "teamDocuments",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Týmové dokumenty" />
+  }
+  if (!profile.team_id) redirect("/")
 
   const documents = await listTeamDocuments(supabase, profile.team_id)
 

@@ -5,6 +5,8 @@ import { getCustomerMeeting } from "@/lib/customer-meetings/queries"
 import { CustomerMeetingDetail } from "@/components/customer-meetings/customer-meeting-detail"
 import { Badge } from "@/components/ui/badge"
 import { PageBack } from "@/components/ui/page-back"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { getMeetingLoop, LOOP_LABELS, type MeetingLoop } from "@/lib/customer-meetings/status"
 
 interface MeetingDetailPageProps {
@@ -28,7 +30,18 @@ export default async function MeetingDetailPage({ params }: MeetingDetailPagePro
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "customerMeetings",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Zákaznické schůzky" />
+  }
 
   const meeting = await getCustomerMeeting(supabase, meetingId)
   if (!meeting || meeting.profile_id !== profile.id) {

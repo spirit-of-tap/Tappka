@@ -4,6 +4,8 @@ import { getSessionProfile } from "@/lib/auth/session"
 import { listCustomerMeetings } from "@/lib/customer-meetings/queries"
 import { CustomerMeetingsView } from "@/components/customer-meetings/customer-meetings-view"
 import { PageShell } from "@/components/ui/page-shell"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
   title: "Zákaznické schůzky | Tappka",
@@ -17,7 +19,18 @@ export default async function SchuzkyPage() {
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "customerMeetings",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Zákaznické schůzky" />
+  }
 
   const meetings = await listCustomerMeetings(supabase, profile.id)
 
