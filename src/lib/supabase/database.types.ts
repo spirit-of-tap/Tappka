@@ -1349,6 +1349,7 @@ export type Database = {
           access_removed_at: string | null
           access_removed_by_profile_id: string | null
           beta_access_granted_at: string | null
+          beta_cohort: Database["public"]["Enums"]["beta_cohort"]
           created_at: string
           created_by_profile_id: string | null
           date_of_birth: string | null
@@ -1368,6 +1369,7 @@ export type Database = {
           access_removed_at?: string | null
           access_removed_by_profile_id?: string | null
           beta_access_granted_at?: string | null
+          beta_cohort?: Database["public"]["Enums"]["beta_cohort"]
           created_at?: string
           created_by_profile_id?: string | null
           date_of_birth?: string | null
@@ -1387,6 +1389,7 @@ export type Database = {
           access_removed_at?: string | null
           access_removed_by_profile_id?: string | null
           beta_access_granted_at?: string | null
+          beta_cohort?: Database["public"]["Enums"]["beta_cohort"]
           created_at?: string
           created_by_profile_id?: string | null
           date_of_birth?: string | null
@@ -2601,6 +2604,7 @@ export type Database = {
         | "zacleneni_tucnaku"
         | "dalsi"
       attendance_status: "present" | "absent" | "excused" | "late"
+      beta_cohort: "A" | "B"
       birth_giving_assignment_state: "present" | "missing" | "none"
       birth_giving_duration: "8h" | "24h"
       birth_giving_event_status: "draft" | "published"
@@ -2760,6 +2764,7 @@ export const Constants = {
         "dalsi",
       ],
       attendance_status: ["present", "absent", "excused", "late"],
+      beta_cohort: ["A", "B"],
       birth_giving_assignment_state: ["present", "missing", "none"],
       birth_giving_duration: ["8h", "24h"],
       birth_giving_event_status: ["draft", "published"],
