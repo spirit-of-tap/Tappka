@@ -37,6 +37,8 @@ export default async function DashboardLayout({
     email: profile.work_email,
     role: profile.role,
     beta_access: profile.beta_access_granted_at != null,
+    beta_access_granted_at: profile.beta_access_granted_at,
+    beta_cohort: ((profile as unknown as { beta_cohort: "A" | "B" }).beta_cohort ?? "A") as "A" | "B",
   };
 
   return (

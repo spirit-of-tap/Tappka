@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 
 import { NAV_MODULES, type NavModule } from "@/lib/navigation"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
@@ -44,13 +45,22 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     email: string
     role?: string
     beta_access?: boolean
+    beta_access_granted_at?: string | null
+    beta_cohort?: BetaCohort
   }
 }
 
 function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const pathname = usePathname()
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
-  const isBeta = user?.beta_access ?? false
+  const accessProfile = user
+    ? {
+        role: user.role ?? "student",
+        beta_access_granted_at:
+          user.beta_access_granted_at ?? (user.beta_access ? "1970-01-01T00:00:00Z" : null) ?? null,
+        beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
+      }
+    : null
   const isReservationsActive = pathname.startsWith("/reservations")
   const isDevelopment = process.env.NODE_ENV === "development"
 
@@ -136,9 +146,9 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                     )
                   }
 
-                  // Beta-gated modules — badge item, hidden without beta access.
-                  if (item.betaOnly) {
-                    if (!isBeta) return null
+                  // Feature-gated modules — badge item, hidden without cohort access.
+                  if (item.feature) {
+                    if (!canAccessFeature(accessProfile, item.feature)) return null
 
                     return (
                       <SidebarMenuItem key={item.title}>

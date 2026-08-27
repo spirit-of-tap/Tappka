@@ -15,6 +15,7 @@ import {
   availableWidgets,
   type DashboardWidgetId,
 } from "@/lib/dashboard/types";
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access";
 import { FirstLoginConfetti } from "@/components/first-login-confetti";
 import { DashboardEditor } from "@/components/dashboard/dashboard-editor";
 import { QuickActions } from "@/components/dashboard/quick-actions";
@@ -68,11 +69,18 @@ export default async function DashboardPage() {
     .select("widgets")
     .eq("profile_id", profile.id)
     .maybeSingle();
-  const hasMetricsAccess = !!profile.beta_access_granted_at;
-  const layout = availableWidgetIds(
+  const accessProfile = {
+    role: profile.role,
+    beta_access_granted_at: profile.beta_access_granted_at,
+    beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+  };
+  const hasMetricsAccess = canAccessFeature(accessProfile, "dashboardMetrics");
+  const hasReadingAccess = canAccessFeature(accessProfile, "reading");
+  const rawLayout = availableWidgetIds(
     sanitizeWidgetIds(layoutRow?.widgets, profile.role),
     hasMetricsAccess,
   );
+  const layout = hasReadingAccess ? rawLayout : rawLayout.filter((id) => id !== "reading");
 
   const has = (id: DashboardWidgetId) => layout.includes(id);
   const needsUnread =
@@ -102,7 +110,7 @@ export default async function DashboardPage() {
       <QuickActions isCoach={isCoach} unreadCount={unreadEssays.length} />
     );
   }
-  if (has("reading") && stats) {
+  if (has("reading") && hasReadingAccess && stats) {
     nodes["reading"] = <ReadingProgressCard stats={stats} />;
   }
   if (has("reservation")) {
@@ -122,7 +130,7 @@ export default async function DashboardPage() {
       />
     );
   }
-  if (has("metrics") && stats && profile.beta_access_granted_at) {
+  if (has("metrics") && hasMetricsAccess && stats) {
     nodes["metrics"] = (
       <MetricsCard
         bookPoints={stats.approved_points}
@@ -147,7 +155,11 @@ export default async function DashboardPage() {
 
       <DashboardEditor
         initialLayout={layout}
-        catalog={availableWidgets(widgetsForRole(profile.role), hasMetricsAccess)}
+        catalog={
+          hasReadingAccess
+            ? availableWidgets(widgetsForRole(profile.role), hasMetricsAccess)
+            : availableWidgets(widgetsForRole(profile.role), hasMetricsAccess).filter((w) => w.id !== "reading")
+        }
         nodes={nodes}
       />
 

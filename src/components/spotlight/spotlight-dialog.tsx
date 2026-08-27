@@ -380,7 +380,7 @@ export function SpotlightDialog() {
                     <span className="font-medium text-foreground truncate">
                       {item.title}
                     </span>
-                    {item.betaOnly && (
+                    {item.feature && (
                       <Badge
                         variant="secondary"
                         className="h-4 px-1 text-[9px] font-medium leading-none"
