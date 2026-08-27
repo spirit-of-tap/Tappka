@@ -24,10 +24,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     const beta_access_granted_at = beta_access ? new Date().toISOString() : null
+    const patch: Record<string, unknown> = { beta_access_granted_at }
+    const currentCohort = (profile as unknown as { beta_cohort?: string | null }).beta_cohort
+    if (beta_access && !currentCohort) patch.beta_cohort = "A"
 
     const { error } = await supabase
       .from("profiles")
-      .update({ beta_access_granted_at })
+      .update(patch as never)
       .eq("id", profile.id)
 
     if (error) {
