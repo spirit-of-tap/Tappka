@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { getAvatarUrl } from "@/lib/storage/public-url"
 import { createClient } from "@/lib/supabase/client"
+import posthog from "posthog-js"
 
 interface ProfileHubProps {
   user: {
@@ -61,6 +62,11 @@ export function ProfileHub({ user }: ProfileHubProps) {
       .slice(0, 2)
 
   const logout = async () => {
+    try {
+      posthog.reset()
+    } catch {
+      // ignore
+    }
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")

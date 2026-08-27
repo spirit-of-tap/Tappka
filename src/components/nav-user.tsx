@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/sidebar"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { createClient } from "@/lib/supabase/client"
+import posthog from "posthog-js"
 
 interface NavUserProps {
   user: {
@@ -61,6 +62,11 @@ export function NavUser({ user }: NavUserProps) {
   const canViewPortfolio = canAccessFeature(accessProfile, "portfolio")
 
   const logout = async () => {
+    try {
+      posthog.reset()
+    } catch {
+      // ignore
+    }
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")
