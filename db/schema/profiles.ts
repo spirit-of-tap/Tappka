@@ -7,6 +7,8 @@ import { teams } from "./teams"
 
 export const profileRole = pgEnum("profile_role", ['student', 'mentor', 'coach', 'admin'])
 
+export const betaCohort = pgEnum("beta_cohort", ["A", "B"])
+
 export const users = pgTable("users", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	authUserId: uuid("auth_user_id"),
@@ -46,6 +48,7 @@ export const profiles = pgTable("profiles", {
 	accessRemovedAt: timestamp("access_removed_at", { withTimezone: true, mode: 'string' }),
 	accessRemovedByProfileId: uuid("access_removed_by_profile_id"),
 	betaAccessGrantedAt: timestamp("beta_access_granted_at", { withTimezone: true, mode: 'string' }),
+	betaCohort: betaCohort("beta_cohort").default("A").notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdByProfileId: uuid("created_by_profile_id"),
