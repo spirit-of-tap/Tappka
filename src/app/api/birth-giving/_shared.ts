@@ -11,6 +11,7 @@ import {
 import { getBirthGivingEvent } from "@/lib/birth-giving/queries";
 import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access";
 
 interface BirthGivingApiContext {
   profileId: string;
@@ -37,7 +38,16 @@ export async function requireBirthGivingApiContext(): Promise<
   if (!profile) {
     return { response: NextResponse.json({ error: "Profil nenalezen" }, { status: 403 }) };
   }
-  if (!profile.beta_access_granted_at) {
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "birthGiving",
+    )
+  ) {
     return {
       response: NextResponse.json(
         { error: "Tato funkce vyžaduje beta přístup" },

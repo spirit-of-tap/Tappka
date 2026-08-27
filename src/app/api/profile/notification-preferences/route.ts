@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserProfile } from "@/lib/auth-helpers"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 const TOGGLE_KEYS = ["essay_coach_read_email", "essay_comment_email", "essay_vote_email", "book_submitted_email"] as const
 type ToggleKey = (typeof TOGGLE_KEYS)[number]
@@ -14,7 +15,16 @@ export async function PATCH(request: NextRequest) {
 
     const profile = await getCurrentUserProfile(supabase, { user })
     if (!profile) return NextResponse.json({ error: "Profil nenalezen" }, { status: 403 })
-    if (!profile.beta_access_granted_at) {
+    if (
+      !canAccessFeature(
+        {
+          role: profile.role,
+          beta_access_granted_at: profile.beta_access_granted_at,
+          beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+        },
+        "reading",
+      )
+    ) {
       return NextResponse.json({ error: "Tato funkce vyžaduje beta přístup" }, { status: 403 })
     }
 
