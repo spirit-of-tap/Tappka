@@ -82,7 +82,7 @@ export function BetaAdminPanel({ participants: initial }: BetaAdminPanelProps) {
               <TableRow>
                 <TableHead>Jméno</TableHead>
                 <TableHead>E-mail</TableHead>
-                <TableHead className="w-[140px]">Kohorta</TableHead>
+                <TableHead className="w-[160px]">Kohorta</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -103,7 +103,7 @@ export function BetaAdminPanel({ participants: initial }: BetaAdminPanelProps) {
                         onValueChange={(v) => handleCohortChange(p.id, v as "A" | "B")}
                         disabled={savingId === p.id}
                       >
-                        <SelectTrigger className="w-[100px]" aria-label={`Kohorta pro ${p.name ?? p.work_email}`}>
+                        <SelectTrigger className="w-[135px]" aria-label={`Kohorta pro ${p.name ?? p.work_email}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
