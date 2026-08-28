@@ -986,7 +986,7 @@ export interface UpdateEssayInput {
 - [ ] **Step 6: Verify it typechecks**
 
 Run: `pnpm exec tsc --noEmit -p tsconfig.json`
-Expected: errors in `src/lib/essays/queries.ts` and any fixture constructing a literal `EssayWithDetails`/`Essay` without `content_source`/`content_source_id` — expected at this point; Task 10 and Task 14's fixture update resolve them.
+Expected: errors in `src/lib/essays/queries.ts` and any fixture constructing a literal `EssayWithDetails`/`Essay` without `content_source`/`content_source_id` — expected at this point; Task 10 resolves the `queries.ts` errors, and Task 15's fixture update (to the pre-existing `essay-editor-form.test.tsx`) resolves the fixture error. Task 14 adds a brand-new test file with its own fixture, so it introduces no pre-existing-fixture error to resolve.
 
 - [ ] **Step 7: Commit**
 
@@ -1571,8 +1571,8 @@ git commit -m "feat: add source-agnostic essay display helper"
 - Create: `src/components/content-sources/content-source-illustration.tsx`
 
 **Interfaces:**
-- Consumes: `ContentSourceKind`, `CONTENT_SOURCE_KIND_LABELS` from `@/lib/content-sources/types` (Task 5).
-- Produces: `ContentSourceIllustration`.
+- Consumes: `ContentSourceKind` from `@/lib/content-sources/types` (Task 5).
+- Produces: `ContentSourceIllustration` (purely decorative — callers are responsible for their own accessible label via adjacent visible text).
 
 - [ ] **Step 1: Write the component**
 
@@ -1580,7 +1580,6 @@ git commit -m "feat: add source-agnostic essay display helper"
 // src/components/content-sources/content-source-illustration.tsx
 import { Podcast, Presentation, GraduationCap, Sparkles, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import type { ContentSourceKind } from '@/lib/content-sources/types';
 
 const KIND_ICON: Record<ContentSourceKind, LucideIcon> = {
@@ -1605,16 +1604,23 @@ interface ContentSourceIllustrationProps {
 /**
  * Predefined icon tile standing in for a cover image — content sources have
  * no uploaded artwork, so every source of a given kind looks the same.
+ *
+ * Purely decorative (`aria-hidden`, no role/label of its own): every place
+ * this renders already carries the kind as visible text right next to it
+ * (a button label, a card title row, a picker's kind name) — giving the tile
+ * its own `role="img"`/`aria-label` would double up that text in the
+ * accessible name of any ancestor that derives its name from content, e.g.
+ * a `<button>` wrapping both the icon and the label "Podcast" would compute
+ * an accessible name of "Podcast Podcast" instead of "Podcast".
  */
 export function ContentSourceIllustration({ kind, className }: ContentSourceIllustrationProps) {
   const Icon = KIND_ICON[kind];
   return (
     <div
-      role="img"
-      aria-label={CONTENT_SOURCE_KIND_LABELS[kind]}
+      aria-hidden="true"
       className={cn('flex items-center justify-center rounded', KIND_COLOR[kind], className)}
     >
-      <Icon className="size-1/2" aria-hidden="true" />
+      <Icon className="size-1/2" />
     </div>
   );
 }
@@ -1793,7 +1799,7 @@ git commit -m "feat: render content sources on the essay card"
 - Modify: `src/components/essays/essay-editor-form.test.tsx`
 
 **Interfaces:**
-- Consumes: `CONTENT_SOURCE_KIND_LABELS`, `ContentSource` from `@/lib/content-sources/types` (Task 5); `ContentSourceIllustration` from Task 13; `/api/content-sources/search` from Task 8.
+- Consumes: `CONTENT_SOURCE_KIND_LABELS`, `ContentSource` from `@/lib/content-sources/types` (Task 5); `ContentSourceIllustration` from Task 13; `GET /api/content-sources/search` and `GET /api/content-sources/[id]` from Task 8.
 - Produces: essay-editor persists `content_source_id` alongside `book_id`, mutually exclusive at the UI level (picking one clears the other).
 
 - [ ] **Step 1: Update the existing test fixture**
@@ -1921,7 +1927,76 @@ Add a `handleSourceChange` next to `handleBookChange`, and make `handleBookChang
   };
 ```
 
-- [ ] **Step 5: Add the mode toggle and content-source picker to the JSX**
+- [ ] **Step 5: Add `?source=` preselection, mirroring the existing `?book=` flow**
+
+`ContentSourceForm` (Task 16) redirects to `/cteni/eseje/nova?source=<id>` after creating a source — the editor must pick that up the same way it already picks up `?book=` after `/cteni/knihy/nova`. Right after the existing book-preselect `useEffect` (the one reading `preselectBookId`), add:
+
+```typescript
+  const preselectSourceId = searchParams.get('source');
+
+  useEffect(() => {
+    if (!preselectSourceId || selectedSource) return;
+
+    let cancelled = false;
+    setIsPreselectingSource(true);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/content-sources/${preselectSourceId}`);
+        if (!res.ok) {
+          toast.error('Zdroj se nepodařilo načíst.');
+          return;
+        }
+        const { data } = await res.json();
+        if (!cancelled && data) {
+          setSourceMode('other');
+          handleSourceChange(data as ContentSource);
+        }
+      } catch {
+        if (!cancelled) toast.error('Zdroj se nepodařilo načíst.');
+      } finally {
+        if (!cancelled) setIsPreselectingSource(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preselectSourceId, selectedSource, handleSourceChange]);
+```
+
+This needs one more state variable declared alongside `isPreselectingBook`:
+
+```typescript
+  const [isPreselectingSource, setIsPreselectingSource] = useState(false);
+```
+
+- [ ] **Step 6: Test the preselect flow**
+
+Add to `src/components/essays/essay-editor-form.test.tsx`, in the same file as the new test from Step 2 above (or as its own `describe` block, mirroring the existing `describe('EssayEditorForm — book preselect', ...)` block found just above `describe('EssayEditorForm — add-book entry', ...)`):
+
+```typescript
+describe('EssayEditorForm — content source preselect', () => {
+  it('selects the source named in ?source= after returning from the add-source flow', async () => {
+    mockSearchParams.set('source', 'src-1');
+    fetchSpy.mockResolvedValue(
+      jsonResponse({
+        data: { id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' },
+      }),
+    );
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await waitFor(() => expect(screen.getByText('Founders')).toBeInTheDocument());
+    expect(
+      fetchSpy.mock.calls.some(([url]) => url === '/api/content-sources/src-1'),
+    ).toBe(true);
+  });
+});
+```
+
+Also add `mockSearchParams.delete('source');` next to the existing `mockSearchParams.delete('book');` in the file's `beforeEach`, so this preselect does not leak into unrelated tests.
+
+- [ ] **Step 7: Add the mode toggle and content-source picker to the JSX**
 
 Replace the section heading and its wrapping `<section>` opening:
 
@@ -2011,12 +2086,12 @@ Right after that new heading block, wrap the existing book-picker JSX (from `{se
         )}
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [ ] **Step 8: Run tests to verify they pass**
 
 Run: `pnpm vitest run src/components/essays/essay-editor-form.test.tsx`
-Expected: PASS, including the new test.
+Expected: PASS, including both new tests (the mode-switch/search test from Step 2 and the preselect test from Step 6).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add src/components/essays/essay-editor-form.tsx src/components/essays/essay-editor-form.test.tsx
