@@ -47,6 +47,30 @@ describe('ContentSourceReviewList', () => {
     expect(screen.queryByText('Founders')).not.toBeInTheDocument();
   });
 
+  it('sends the coach-edited points instead of the self-assigned value', async () => {
+    fetchSpy.mockResolvedValue(new Response(JSON.stringify({ data: {} }), { status: 200 }));
+    const user = userEvent.setup();
+
+    render(<ContentSourceReviewList initialPending={pending} />);
+
+    const pointsInput = screen.getByLabelText('Body');
+    expect(pointsInput).toHaveValue(0.5);
+
+    await user.clear(pointsInput);
+    await user.type(pointsInput, '2');
+    await user.click(screen.getByRole('button', { name: 'Schválit' }));
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/content-sources/src-1',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'approved', points: 2 }),
+        }),
+      );
+    });
+  });
+
   it('archives a pending source', async () => {
     fetchSpy.mockResolvedValue(new Response(JSON.stringify({ data: {} }), { status: 200 }));
     const user = userEvent.setup();
