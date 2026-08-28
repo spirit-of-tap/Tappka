@@ -189,6 +189,17 @@ describe('EssayEditorForm — content source preselect', () => {
   });
 });
 
+describe('EssayEditorForm — mount behavior', () => {
+  it('does not autosave an existing essay just from opening the editor', async () => {
+    render(<EssayEditorForm initialEssay={publishedEssay} />);
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(
+      fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
+    ).toBe(false);
+  });
+});
+
 describe('EssayEditorForm — content source', () => {
   it('lets the author switch to "Jiný zdroj" and search for one', async () => {
     fetchSpy.mockImplementation((url) => {

@@ -231,7 +231,17 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   // flips `hasSomethingToSave`, so that call still reads the *previous*
   // render's (stale) `enabled` value and no-ops. Re-arming here, once the
   // selection has actually committed, picks up the fresh value.
+  //
+  // This must skip the initial mount: an existing essay already has
+  // `selectedBook`/`selectedSource` set from `initialEssay`, so an unguarded
+  // effect would call `schedule()` (and a few seconds later PATCH the
+  // essay with an unchanged payload) purely from opening the editor.
+  const hasMountedSelectionRef = useRef(false);
   useEffect(() => {
+    if (!hasMountedSelectionRef.current) {
+      hasMountedSelectionRef.current = true;
+      return;
+    }
     schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBook, selectedSource]);
