@@ -519,6 +519,16 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                   {selectedSource.creator ? ` · ${selectedSource.creator}` : ''}
                 </p>
               </div>
+
+              {selectedSource.status !== 'archived' && (
+                <p className="shrink-0 text-right leading-none">
+                  <span className="font-heading text-2xl font-bold tabular-nums text-primary">
+                    {formatPoints(selectedSource.points)}
+                  </span>
+                  <span className="ml-1 text-xs text-muted-foreground">b.</span>
+                </p>
+              )}
+
               <Button variant="ghost" size="sm" className="shrink-0" onClick={() => handleSourceChange(null)}>
                 Změnit
               </Button>
@@ -617,6 +627,11 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                             <p className="truncate text-sm font-medium">{source.title}</p>
                             <p className="truncate text-xs text-muted-foreground">{CONTENT_SOURCE_KIND_LABELS[source.kind]}</p>
                           </div>
+                          {source.status !== 'archived' && (
+                            <Badge variant="secondary" className="shrink-0 text-xs">
+                              {formatPoints(source.points)} b.
+                            </Badge>
+                          )}
                         </button>
                       </li>
                     ))}

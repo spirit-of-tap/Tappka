@@ -267,9 +267,14 @@ describe('EssayEditorForm — content source', () => {
     await waitFor(() => {
       expect(screen.getByText('Founders')).toBeInTheDocument();
     });
+    // Points show in the search result row, same as a book result would.
+    expect(screen.getByText('0,50 b.')).toBeInTheDocument();
 
     await user.click(screen.getByText('Founders'));
     await vi.advanceTimersByTimeAsync(3000);
+
+    // …and again once selected, in the same spot the book card shows them.
+    expect(screen.getByText('0,50')).toBeInTheDocument();
 
     await waitFor(() => {
       const creates = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays');
