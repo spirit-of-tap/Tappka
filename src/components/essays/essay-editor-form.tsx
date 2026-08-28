@@ -236,13 +236,28 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   // `selectedBook`/`selectedSource` set from `initialEssay`, so an unguarded
   // effect would call `schedule()` (and a few seconds later PATCH the
   // essay with an unchanged payload) purely from opening the editor.
-  const hasMountedSelectionRef = useRef(false);
+  //
+  // A boolean "have I mounted" ref is not safe here: React 18 StrictMode
+  // (on by default in `next dev` under the App Router) double-invokes
+  // effects that have no cleanup function, on mount, on the SAME component
+  // instance and the SAME ref object. Invocation 1 would flip the boolean
+  // to `true` and return; invocation 2 then sees it already `true` and
+  // calls `schedule()` anyway — reproducing the exact spurious-autosave bug
+  // this guard exists to prevent (only in `next dev`, not production
+  // builds, which don't double-invoke). Comparing against the actual
+  // previous selection instead is immune to this: both invocations of a
+  // mount see identical current-vs-stored values, so both correctly no-op
+  // no matter how many times React runs the effect.
+  const prevSelectionRef = useRef({
+    bookId: selectedBook?.id ?? null,
+    sourceId: selectedSource?.id ?? null,
+  });
   useEffect(() => {
-    if (!hasMountedSelectionRef.current) {
-      hasMountedSelectionRef.current = true;
-      return;
-    }
-    schedule();
+    const bookId = selectedBook?.id ?? null;
+    const sourceId = selectedSource?.id ?? null;
+    const changed = prevSelectionRef.current.bookId !== bookId || prevSelectionRef.current.sourceId !== sourceId;
+    prevSelectionRef.current = { bookId, sourceId };
+    if (changed) schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBook, selectedSource]);
 

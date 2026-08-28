@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -197,6 +198,54 @@ describe('EssayEditorForm — mount behavior', () => {
     expect(
       fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
     ).toBe(false);
+  });
+});
+
+describe('EssayEditorForm — StrictMode double-invoke', () => {
+  it('does not autosave on mount under StrictMode, but does autosave a real selection change', async () => {
+    fetchSpy.mockImplementation((url) => {
+      if (typeof url === 'string' && url.startsWith('/api/content-sources/search')) {
+        return Promise.resolve(jsonResponse({
+          data: [{ id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' }],
+        }));
+      }
+      return Promise.resolve(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    // Rendering under <StrictMode> (which Next's App Router enables by
+    // default) makes React double-invoke this effect on mount, on the same
+    // component instance and the same ref — the exact scenario a
+    // boolean "have I mounted" ref gets wrong (invocation 1 flips the
+    // flag and returns; invocation 2 sees it already flipped and calls
+    // `schedule()` anyway). The comparison-based guard sees identical
+    // current-vs-stored selection values on both invocations, so it must
+    // stay silent here regardless of how many times React runs it.
+    render(
+      <StrictMode>
+        <EssayEditorForm initialEssay={publishedEssay} />
+      </StrictMode>,
+    );
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(
+      fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
+    ).toBe(false);
+
+    // A genuine post-mount selection change must still schedule a save —
+    // proving the guard isn't just permanently disabled.
+    await user.click(screen.getByRole('button', { name: 'Jiný zdroj' }));
+    await user.type(screen.getByLabelText('Hledat jiný zdroj'), 'Founders');
+    await vi.advanceTimersByTimeAsync(400);
+    await waitFor(() => expect(screen.getByText('Founders')).toBeInTheDocument());
+    await user.click(screen.getByText('Founders'));
+    await vi.advanceTimersByTimeAsync(3000);
+
+    await waitFor(() => {
+      expect(
+        fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
+      ).toBe(true);
+    });
   });
 });
 
