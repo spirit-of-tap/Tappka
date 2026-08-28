@@ -463,6 +463,79 @@ export type Database = {
           },
         ]
       }
+      content_sources: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          creator: string | null
+          description: string | null
+          external_url: string | null
+          id: string
+          kind: Database["public"]["Enums"]["content_source_kind"]
+          points: number | null
+          status: Database["public"]["Enums"]["content_source_status"]
+          status_changed_at: string | null
+          status_changed_by_profile_id: string | null
+          title: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          creator?: string | null
+          description?: string | null
+          external_url?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["content_source_kind"]
+          points?: number | null
+          status?: Database["public"]["Enums"]["content_source_status"]
+          status_changed_at?: string | null
+          status_changed_by_profile_id?: string | null
+          title: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          creator?: string | null
+          description?: string | null
+          external_url?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["content_source_kind"]
+          points?: number | null
+          status?: Database["public"]["Enums"]["content_source_status"]
+          status_changed_at?: string | null
+          status_changed_by_profile_id?: string | null
+          title?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_sources_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_sources_status_changed_by_profile_id_fkey"
+            columns: ["status_changed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_sources_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_meetings: {
         Row: {
           company: string
@@ -899,6 +972,7 @@ export type Database = {
         Row: {
           author_profile_id: string
           book_id: string | null
+          content_source_id: string | null
           created_at: string
           created_by_profile_id: string
           external_id: string | null
@@ -913,6 +987,7 @@ export type Database = {
         Insert: {
           author_profile_id: string
           book_id?: string | null
+          content_source_id?: string | null
           created_at?: string
           created_by_profile_id: string
           external_id?: string | null
@@ -927,6 +1002,7 @@ export type Database = {
         Update: {
           author_profile_id?: string
           book_id?: string | null
+          content_source_id?: string | null
           created_at?: string
           created_by_profile_id?: string
           external_id?: string | null
@@ -958,6 +1034,13 @@ export type Database = {
             columns: ["book_id"]
             isOneToOne: false
             referencedRelation: "books_with_essay_count"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "essays_content_source_id_fkey"
+            columns: ["content_source_id"]
+            isOneToOne: false
+            referencedRelation: "content_sources"
             referencedColumns: ["id"]
           },
           {
@@ -2611,6 +2694,8 @@ export type Database = {
       birth_giving_team_result_state: "pending" | "present" | "missing"
       book_list_status: "processing" | "shortlist" | "longlist" | "archived"
       book_source: "manual" | "google_books" | "open_library"
+      content_source_kind: "podcast" | "conference" | "program" | "other"
+      content_source_status: "pending_review" | "approved" | "archived"
       personality_test_type:
         | "gallup"
         | "mbti"
@@ -2771,6 +2856,8 @@ export const Constants = {
       birth_giving_team_result_state: ["pending", "present", "missing"],
       book_list_status: ["processing", "shortlist", "longlist", "archived"],
       book_source: ["manual", "google_books", "open_library"],
+      content_source_kind: ["podcast", "conference", "program", "other"],
+      content_source_status: ["pending_review", "approved", "archived"],
       personality_test_type: [
         "gallup",
         "mbti",
