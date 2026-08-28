@@ -85,7 +85,7 @@ export function ContentSourceForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="content-source-creator">Autor / lektor</Label>
+        <Label htmlFor="content-source-creator">Autor:ka nebo lektor:ka</Label>
         <Input id="content-source-creator" value={creator} onChange={(e) => setCreator(e.target.value)} />
       </div>
 
@@ -103,8 +103,10 @@ export function ContentSourceForm() {
         <Label htmlFor="content-source-points">Body</Label>
         <Input
           id="content-source-points"
-          type="text"
-          inputMode="decimal"
+          type="number"
+          step="0.5"
+          min="0"
+          max="3"
           value={points}
           onChange={(e) => setPoints(e.target.value)}
           list="content-source-point-values"

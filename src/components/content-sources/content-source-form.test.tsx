@@ -20,7 +20,7 @@ describe('ContentSourceForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Podcast' }));
 
-    expect(screen.getByLabelText('Body')).toHaveValue('0.5');
+    expect(screen.getByLabelText('Body')).toHaveValue(0.5);
   });
 
   it('leaves points blank for Konference', async () => {
@@ -29,7 +29,7 @@ describe('ContentSourceForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Konference' }));
 
-    expect(screen.getByLabelText('Body')).toHaveValue('');
+    expect(screen.getByLabelText('Body')).toHaveValue(null);
   });
 
   it('submits the form and redirects to the essay editor with the new source', async () => {
