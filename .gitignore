@@ -75,6 +75,20 @@ scripts/essayimport/
 # Generated print sheets — regenerate on demand, don't version
 scripts/output/
 
+# Throwaway čtení launch video tooling — regenerate on demand, don't version
+scripts/video-demo/
+
+# Local data dumps, SQL exports and scratchpad files — never commit
+/data/
+/sql/
+
+# Python cache & one-off migration/enrichment scripts
+__pycache__/
+*.py[cod]
+scripts/enrich_books_from_perplexity.py
+scripts/import-prod-books-essays.py
+scripts/push_descriptions_to_prod.py
+
 # Playwright
 /test-results/
 /playwright-report/
@@ -85,3 +99,4 @@ scripts/output/
 docs/.vitepress/cache
 docs/.vitepress/dist
 .vitepress
+

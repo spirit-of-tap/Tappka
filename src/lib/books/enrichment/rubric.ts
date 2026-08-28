@@ -55,17 +55,21 @@ const OVERRIDE_UNSCIENTIFIC = `Výjimka D (Pseudověda, dezinformace a nízká k
 Knihy, které odporují vědeckým poznatkům, šíří dezinformace, konspirační teorie nebo nepravdivé narativy (např. popírání klimatu, pseudověda typu "zákon přitažlivosti", homeopatie prezentovaná jako medicína), NIKDY nezařazuj, i kdyby jinak zapadaly do kategorie. Stejně tak zamítni knihy s jednoznačně špatným veřejným hodnocením (na Goodreads nebo databazeknih.cz přibližně pod 3,5) a knihy nízké kvality — povrchní, bez dat a frameworků, jen motivační fráze. Pokud veřejné hodnocení neexistuje, nezamítej jen kvůli jeho absenci. Takové knize přiděl 0 bodů a do pole "description" napiš pouze: "ZAMÍTNUTO: Kniha je v rozporu s vědeckými poznatky nebo má nízkou kvalitu." Do pole "points_reason" napiš stručný důvod zamítnutí. Tato výjimka má přednost před kategoriemi 1–3 i před Výjimkou B.`;
 
 const VOICE = `Jak psát pole "description":
-Píšeš česky, ve druhé osobě, pro Téčko. Struktura: nejdřív jednou nebo dvěma větami, co kniha je a co si z ní Téčko odnese konkrétně — co bude po přečtení umět, ne jaká témata kniha „pokrývá“. Pak upřímně to, co může Téčko od čtení odradit: příliš velký rozsah, hustý text, slabá opora v datech, příklady jen z USA, velký překryv s knihami, které v BOBovi už jsou. Pokud najdeš veřejné hodnocení (přednostně Goodreads, jinak databazeknih.cz), uveď ho na konci včetně zdroje.
-Nepiš marketingový blurb z přebalu. Nepiš, že kniha je „must-read“. Nevymýšlej si.`;
+Píšeš česky pro Téčko (studující v TAPu) genderově inkluzivně — bez generického maskulina. Oslovuj neutrálně: "můžeš / budeš umět / Téčko si odnese", ne "čtenář získá". Osobu jmenuj jen s dvojtečkou (čtenář:ka, autor:ka), jinak neutralizuj (studující, tým, lidé). Preferuj přítomný čas.
+
+Struktura: 1–2 věty co kniha je a co budeš po ní umět konkrétně, pak co odradí (rozsah, hustý text, data, USA příklady, překryv). Pokud má kniha závažné koncepční problémy, nedostatek vědecké opory nebo jde přímo proti hodnotám programu (manipulace, pseudověda), stručně to zmíň přímo v této části — jinak nic nevymýšlej, nehledej problém za každou cenu.
+
+Nepiš blurb. Nevymýšlej si. Nepiš žádné hodnocení ani počet hodnocení (Goodreads, databazeknih.cz) — veřejná hodnocení se do popisu nikdy neuvádí.`;
 
 const TAGS = `Tematické zařazení — pole "tag" musí být PŘESNĚ jedna z těchto hodnot, opsaná znak po znaku:
 ${BOOK_CATEGORIES.map((tag) => `- ${tag}`).join('\n')}`;
 
-const RULES = `Další pravidla:
-- title_cs je český název, title_en anglický (originální). Vyplň oba; pokud český překlad neexistuje, dej do title_cs anglický název.
-- Pozor na podtitul: skutečný název knihy nemusí být to, co vyhledávač zobrazí jako první (kniha Tiimiakatemia se často uvádí pod svým podtitulem How to Grow into a Teampreneur).
+const RULES = `Další pravidla — NÁZVY (povinné, bez podtitulu, správný jazyk):
+- title_cs = POUZE český název, BEZ podtitulu (část před ":" / " – " / " - " odstraň). Nikdy nevracej "Název: Podtitul", jen "Název". Pokud české vydání neexistuje, PŘELOŽ title_en do češtiny a dej tam překlad. title_cs musí být vždy česky.
+- title_en = POUZE anglický originál, BEZ podtitulu (stejné ořezání). Pokud anglický originál neexistuje, PŘELOŽ title_cs do angličtiny a dej tam překlad. title_en musí být vždy anglicky. Nikdy nenechávej title_en prázdné ani česky.
+- Pozor na záměnu: vyhledávač často vrátí podtitul jako hlavní název (např. Tiimiakatemia kniha "How to Grow into a Teampreneur" je podtitul). Vždy ověř skutečný hlavní název a podtitul zahod.
 - page_count potřebujeme pro korekci rozsahem. Když ho nenajdeš, vrať null a nastav confidence na "low".
-- Když si nejsi jistý autorem, rozsahem nebo obsahem knihy, vypiš ta pole do "low_confidence_fields" a nastav confidence na "low". Možné hodnoty: title_cs, title_en, author, isbn_13, page_count, description, tag, suggested_points. Nikdy si nevymýšlej fakta, abys pole zaplnil.`;
+- Když si nejsi jistý jakýmkoli údajem (včetně překladu názvu), vypiš pole do "low_confidence_fields" a nastav confidence na "low". Možné hodnoty: title_cs, title_en, author, isbn_13, page_count, description, tag, suggested_points. Nikdy si nevymýšlej fakta, abys pole zaplnil.`;
 
 /** The full system prompt. Stable across every book — Perplexity has no prompt caching, so keep it tight. */
 export function buildSystemPrompt(): string {
