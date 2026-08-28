@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import { contentTextFromJson } from '@/lib/essays/content-text';
+import { validateEssaySourceIds } from '@/lib/essays/validate-source';
 import type { EssayListView, EssaySortOrder } from '@/lib/essays/types';
 import type { Database } from '@/lib/supabase/database.types';
 
@@ -75,7 +76,12 @@ export async function POST(request: NextRequest) {
     if (!profile) return NextResponse.json({ error: 'Profil nenalezen' }, { status: 403 });
 
     const body = await request.json();
-    const { title, content_json, content_text, book_id } = body;
+    const { title, content_json, content_text, book_id, content_source_id } = body;
+
+    const sourceError = validateEssaySourceIds(book_id, content_source_id);
+    if (sourceError) {
+      return NextResponse.json({ error: sourceError }, { status: 400 });
+    }
 
     // A koncept may be empty in every field — it exists so autosave has
     // somewhere to write. Publishing is where the content rules apply.
@@ -97,6 +103,7 @@ export async function POST(request: NextRequest) {
       .insert({
         author_profile_id: profile.id,
         book_id: book_id ?? null,
+        content_source_id: content_source_id ?? null,
         published_at: null,
         created_by_profile_id: profile.id,
         updated_by_profile_id: profile.id,
