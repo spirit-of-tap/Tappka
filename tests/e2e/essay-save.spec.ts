@@ -11,9 +11,10 @@ const RELOAD_TITLE = "E2E esej — reload";
 const VISIBILITY_TITLE = "E2E esej — viditelnost";
 const HISTORY_TITLE = "E2E esej — historie";
 const DELETE_TITLE = "E2E esej — smazání";
+const GUARD_TITLE = "E2E esej — neuložené změny";
 const DRAFT_BODY = "Tohle je text, který musí přežít reload stránky.";
 
-test.describe("essay autosave and auto-publish", () => {
+test.describe("essay manual save and auto-publish", () => {
   let cookieValue: string;
 
   test.beforeAll(async () => {
@@ -25,7 +26,7 @@ test.describe("essay autosave and auto-publish", () => {
     await cleanupTestData();
   });
 
-  test("autosaves a new essay and survives a reload", async ({ page, context }) => {
+  test("saves a new essay via the Uložit button and survives a reload", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
     await page.goto("/cteni/eseje/nova");
 
@@ -33,7 +34,10 @@ test.describe("essay autosave and auto-publish", () => {
     await page.locator(".ProseMirror").click();
     await page.keyboard.type(DRAFT_BODY);
 
-    // The URL swaps to the editor route once the essay row exists.
+    // Nothing is persisted until the author explicitly saves.
+    await expect(page).toHaveURL(/\/cteni\/eseje\/nova$/);
+    await page.getByRole("button", { name: "Uložit" }).click();
+
     await expect(page).toHaveURL(/\/cteni\/eseje\/[0-9a-f-]{36}\/upravit$/, { timeout: 15_000 });
     await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
 
@@ -45,19 +49,31 @@ test.describe("essay autosave and auto-publish", () => {
     expect(page.url()).toBe(editorUrl);
   });
 
-  test("an essay becomes visible in Moje eseje as soon as it gets a title — no publish step", async ({ page, context }) => {
+  test("saves via Cmd/Ctrl+S as well as the button", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
     await page.goto("/cteni/eseje/nova");
 
-    // There is no publish button: filling in the title is the only thing
-    // that makes the essay visible, and it happens through the ordinary
-    // autosave flow.
+    await page.getByLabel("Název eseje").fill(`${VISIBILITY_TITLE} (shortcut)`);
+    await page.keyboard.press("ControlOrMeta+s");
+
+    await expect(page).toHaveURL(/\/upravit$/, { timeout: 15_000 });
+    await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("an essay becomes visible in Moje eseje as soon as it gets a title saved — no publish step", async ({ page, context }) => {
+    await setAuthCookie(context, cookieValue);
+    await page.goto("/cteni/eseje/nova");
+
+    // There is no publish button — Uložit is the only persistence action.
     await expect(page.getByRole("button", { name: "Zveřejnit" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Uložit změny" })).toHaveCount(0);
+    const saveButton = page.getByRole("button", { name: "Uložit" });
+    await expect(saveButton).toBeDisabled();
 
     await page.getByLabel("Název eseje").fill(VISIBILITY_TITLE);
     await page.locator(".ProseMirror").click();
     await page.keyboard.type(DRAFT_BODY);
+    await expect(saveButton).toBeEnabled();
+    await saveButton.click();
     await expect(page).toHaveURL(/\/upravit$/, { timeout: 15_000 });
     await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
 
@@ -72,6 +88,27 @@ test.describe("essay autosave and auto-publish", () => {
     ).toHaveCount(1);
   });
 
+  test("warns before leaving with unsaved changes, and Zůstat keeps the draft", async ({ page, context }) => {
+    await setAuthCookie(context, cookieValue);
+    await page.goto("/cteni/eseje/nova");
+
+    await page.getByLabel("Název eseje").fill(GUARD_TITLE);
+    await expect(page.getByText("Neuložené změny")).toBeVisible();
+
+    await page.getByRole("button", { name: "Zpět" }).click();
+    await expect(page.getByText("Neuložené změny?")).toBeVisible();
+
+    await page.getByRole("button", { name: "Zůstat" }).click();
+    await expect(page.getByText("Neuložené změny?")).toBeHidden();
+    await expect(page.getByLabel("Název eseje")).toHaveValue(GUARD_TITLE);
+
+    // Confirming actually leaves, and the draft was never persisted.
+    await page.getByRole("button", { name: "Zpět" }).click();
+    await page.getByRole("button", { name: "Odejít bez uložení" }).click();
+    await expect(page).toHaveURL(/\/cteni\/prehled$/, { timeout: 15_000 });
+    await expect(page.getByText(GUARD_TITLE)).toHaveCount(0);
+  });
+
   test("history lists at least the current version", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
     await page.goto("/cteni/eseje/nova");
@@ -79,6 +116,7 @@ test.describe("essay autosave and auto-publish", () => {
     await page.getByLabel("Název eseje").fill(HISTORY_TITLE);
     await page.locator(".ProseMirror").click();
     await page.keyboard.type(DRAFT_BODY);
+    await page.getByRole("button", { name: "Uložit" }).click();
     await expect(page).toHaveURL(/\/upravit$/, { timeout: 15_000 });
     await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
 
@@ -97,6 +135,7 @@ test.describe("essay autosave and auto-publish", () => {
     await page.getByLabel("Název eseje").fill(DELETE_TITLE);
     await page.locator(".ProseMirror").click();
     await page.keyboard.type(DRAFT_BODY);
+    await page.getByRole("button", { name: "Uložit" }).click();
     await expect(page).toHaveURL(/\/upravit$/, { timeout: 15_000 });
     await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
     const essayId = new URL(page.url()).pathname.split("/").at(-2);

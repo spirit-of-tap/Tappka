@@ -5,9 +5,10 @@ import userEvent from '@testing-library/user-event';
 import { EssayEditorForm } from '@/components/essays/essay-editor-form';
 
 const push = vi.fn();
+const replace = vi.fn();
 const mockSearchParams = new URLSearchParams();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push, replace: vi.fn() }),
+  useRouter: () => ({ push, replace }),
   useSearchParams: () => mockSearchParams,
 }));
 
@@ -53,32 +54,58 @@ const baseEssay = {
 const draftEssay = { ...baseEssay, published_at: null };
 const publishedEssay = { ...baseEssay, published_at: '2026-08-01T10:00:00Z' };
 
+function saveButton() {
+  return screen.getByRole('button', { name: 'Uložit' });
+}
+
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   fetchSpy.mockReset();
   push.mockReset();
+  replace.mockReset();
   mockSearchParams.delete('book');
   mockSearchParams.delete('source');
+  // jsdom starts with a single history entry, so BackButton's fallback path
+  // (router.replace) is what actually fires in these tests. Stub only
+  // `length` — `history.replaceState` is still real and used by persist().
+  Object.defineProperty(window.history, 'length', { value: 1, configurable: true });
 });
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('EssayEditorForm — koncept creation', () => {
+describe('EssayEditorForm — essay creation', () => {
   it('does not touch the network while the form is empty', async () => {
     render(<EssayEditorForm />);
     await vi.advanceTimersByTimeAsync(5000);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('creates the koncept exactly once on the first real change', async () => {
+  it('does not save just from typing — only clicking Uložit does', async () => {
     fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<EssayEditorForm />);
     await user.type(screen.getByLabelText('Název eseje'), 'Atomic Habits');
-    await vi.advanceTimersByTimeAsync(3000);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    await user.click(saveButton());
+
+    await waitFor(() => {
+      const creates = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays');
+      expect(creates).toHaveLength(1);
+    });
+  });
+
+  it('saves via Cmd/Ctrl+S as well as the button', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm />);
+    await user.type(screen.getByLabelText('Název eseje'), 'Atomic Habits');
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(() => {
       const creates = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays');
@@ -87,38 +114,68 @@ describe('EssayEditorForm — koncept creation', () => {
   });
 });
 
-describe('EssayEditorForm — autosave status', () => {
-  it('shows the saved state after a successful autosave', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-
-    render(<EssayEditorForm />);
-    await user.type(screen.getByLabelText('Název eseje'), 'Titul');
-    await vi.advanceTimersByTimeAsync(3000);
-
-    await waitFor(() => expect(screen.getByText(/Uloženo/)).toBeInTheDocument());
+describe('EssayEditorForm — save button', () => {
+  it('is disabled until there is an unsaved change', () => {
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+    expect(saveButton()).toBeDisabled();
   });
 
-  it('offers a retry after the save keeps failing', async () => {
-    fetchSpy.mockRejectedValue(new Error('network down'));
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-
-    render(<EssayEditorForm />);
-    await user.type(screen.getByLabelText('Název eseje'), 'Titul');
-    await vi.advanceTimersByTimeAsync(10_000);
-
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Zkusit znovu/ })).toBeInTheDocument(),
-    );
-  });
-
-  it('autosaves a title change on an existing essay', async () => {
+  it('enables after a change and disables again once the save completes', async () => {
     fetchSpy.mockResolvedValue(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<EssayEditorForm initialEssay={publishedEssay} />);
     await user.type(screen.getByLabelText('Název eseje'), ' upraveno');
-    await vi.advanceTimersByTimeAsync(3000);
+    expect(saveButton()).toBeEnabled();
+
+    await user.click(saveButton());
+    await waitFor(() => expect(saveButton()).toBeDisabled());
+  });
+});
+
+describe('EssayEditorForm — save status', () => {
+  it('shows a dirty indicator after a change, before saving', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await user.type(screen.getByLabelText('Název eseje'), ' upraveno');
+    expect(screen.getByText('Neuložené změny')).toBeInTheDocument();
+  });
+
+  it('shows the saved state after clicking Uložit', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm />);
+    await user.type(screen.getByLabelText('Název eseje'), 'Titul');
+    await user.click(saveButton());
+
+    await waitFor(() => expect(screen.getByText(/Uloženo/)).toBeInTheDocument());
+  });
+
+  it('shows an error status after a failed save, and the same button retries it', async () => {
+    fetchSpy.mockRejectedValueOnce(new Error('network down'));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm />);
+    await user.type(screen.getByLabelText('Název eseje'), 'Titul');
+    await user.click(saveButton());
+
+    await waitFor(() => expect(screen.getByText('Neuloženo')).toBeInTheDocument());
+    expect(saveButton()).toBeEnabled();
+
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
+    await user.click(saveButton());
+    await waitFor(() => expect(screen.getByText(/Uloženo/)).toBeInTheDocument());
+  });
+
+  it('saves a title change on an existing essay when the author clicks Uložit', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={publishedEssay} />);
+    await user.type(screen.getByLabelText('Název eseje'), ' upraveno');
+    await user.click(saveButton());
 
     await waitFor(() => {
       const patches = fetchSpy.mock.calls.filter(([, init]) => init?.method === 'PATCH');
@@ -127,16 +184,11 @@ describe('EssayEditorForm — autosave status', () => {
   });
 });
 
-describe('EssayEditorForm — no manual publish step', () => {
-  it('has no publish or manual save button', () => {
+describe('EssayEditorForm — no publish step', () => {
+  it('has no publish button, but does have Uložit', () => {
     render(<EssayEditorForm initialEssay={draftEssay} />);
     expect(screen.queryByRole('button', { name: 'Zveřejnit' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Uložit změny' })).not.toBeInTheDocument();
-  });
-
-  it('tells the author saving happens automatically', () => {
-    render(<EssayEditorForm initialEssay={draftEssay} />);
-    expect(screen.getByText('Ukládá se automaticky')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Uložit' })).toBeInTheDocument();
   });
 
   it('labels deletion as a title-less essay before the author has typed a title', async () => {
@@ -179,13 +231,13 @@ describe('EssayEditorForm — header actions', () => {
 });
 
 describe('EssayEditorForm — save status glow', () => {
-  it('briefly glows the save status right after an autosave completes, then settles', async () => {
+  it('briefly glows the save status right after a save completes, then settles', async () => {
     fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const { container } = render(<EssayEditorForm />);
 
     await user.type(screen.getByLabelText('Název eseje'), 'Titul');
-    await vi.advanceTimersByTimeAsync(3000);
+    await user.click(saveButton());
     await waitFor(() => expect(screen.getByText(/Uloženo/)).toBeInTheDocument());
 
     expect(container.querySelector('.save-glow')).not.toBeNull();
@@ -246,36 +298,17 @@ describe('EssayEditorForm — content source preselect', () => {
 });
 
 describe('EssayEditorForm — mount behavior', () => {
-  it('does not autosave an existing essay just from opening the editor', async () => {
+  it('does not mark the essay dirty just from opening the editor', async () => {
     render(<EssayEditorForm initialEssay={publishedEssay} />);
     await vi.advanceTimersByTimeAsync(5000);
 
+    expect(saveButton()).toBeDisabled();
     expect(
       fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
     ).toBe(false);
   });
-});
 
-describe('EssayEditorForm — StrictMode double-invoke', () => {
-  it('does not autosave on mount under StrictMode, but does autosave a real selection change', async () => {
-    fetchSpy.mockImplementation((url) => {
-      if (typeof url === 'string' && url.startsWith('/api/essays/source-search')) {
-        return Promise.resolve(jsonResponse({
-          data: { books: [], sources: [{ id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' }] },
-        }));
-      }
-      return Promise.resolve(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
-    });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-
-    // Rendering under <StrictMode> (which Next's App Router enables by
-    // default) makes React double-invoke this effect on mount, on the same
-    // component instance and the same ref — the exact scenario a
-    // boolean "have I mounted" ref gets wrong (invocation 1 flips the
-    // flag and returns; invocation 2 sees it already flipped and calls
-    // `schedule()` anyway). The comparison-based guard sees identical
-    // current-vs-stored selection values on both invocations, so it must
-    // stay silent here regardless of how many times React runs it.
+  it('does not mark the essay dirty on mount under StrictMode', async () => {
     render(
       <StrictMode>
         <EssayEditorForm initialEssay={publishedEssay} />
@@ -283,28 +316,12 @@ describe('EssayEditorForm — StrictMode double-invoke', () => {
     );
     await vi.advanceTimersByTimeAsync(5000);
 
-    expect(
-      fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
-    ).toBe(false);
-
-    // A genuine post-mount selection change must still schedule a save —
-    // proving the guard isn't just permanently disabled.
-    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'Founders');
-    await vi.advanceTimersByTimeAsync(400);
-    await waitFor(() => expect(screen.getByText('Founders')).toBeInTheDocument());
-    await user.click(screen.getByText('Founders'));
-    await vi.advanceTimersByTimeAsync(3000);
-
-    await waitFor(() => {
-      expect(
-        fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
-      ).toBe(true);
-    });
+    expect(saveButton()).toBeDisabled();
   });
 });
 
 describe('EssayEditorForm — content source', () => {
-  it('lets the author search for and select a content source', async () => {
+  it('lets the author search for and select a content source, then save it', async () => {
     fetchSpy.mockImplementation((url) => {
       if (typeof url === 'string' && url.startsWith('/api/essays/source-search')) {
         return Promise.resolve(jsonResponse({
@@ -326,10 +343,12 @@ describe('EssayEditorForm — content source', () => {
     expect(screen.getByText('0,50 b.')).toBeInTheDocument();
 
     await user.click(screen.getByText('Founders'));
-    await vi.advanceTimersByTimeAsync(3000);
 
     // …and again once selected, in the same spot the book card shows them.
     expect(screen.getByText('0,50')).toBeInTheDocument();
+    expect(saveButton()).toBeEnabled();
+
+    await user.click(saveButton());
 
     await waitFor(() => {
       const creates = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays');
@@ -382,7 +401,7 @@ describe('EssayEditorForm — content source', () => {
     // The old source is gone, not merely hidden behind another pane.
     expect(screen.queryByText('Founders')).not.toBeInTheDocument();
 
-    await vi.advanceTimersByTimeAsync(3000);
+    await user.click(saveButton());
     await waitFor(() => {
       const saves = fetchSpy.mock.calls.filter(([url]) => url === `/api/essays/${publishedEssay.id}`);
       expect(saves.length).toBeGreaterThan(0);
@@ -432,7 +451,7 @@ describe('EssayEditorForm — content source', () => {
 
     expect(screen.queryByText('Atomic Habits')).not.toBeInTheDocument();
 
-    await vi.advanceTimersByTimeAsync(3000);
+    await user.click(saveButton());
     await waitFor(() => {
       const saves = fetchSpy.mock.calls.filter(([url]) => url === `/api/essays/${publishedEssay.id}`);
       expect(saves.length).toBeGreaterThan(0);
@@ -490,5 +509,62 @@ describe('EssayEditorForm — source not found', () => {
     );
 
     expect(screen.queryByText('Přidat knihu')).not.toBeInTheDocument();
+  });
+});
+
+describe('EssayEditorForm — unsaved changes guard', () => {
+  it('navigates back immediately via the Back button when there are no unsaved changes', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await user.click(screen.getByRole('button', { name: /Zpět/ }));
+
+    expect(replace).toHaveBeenCalledWith('/cteni/prehled');
+    expect(screen.queryByText(/Neuložené změny/)).not.toBeInTheDocument();
+  });
+
+  it('confirms before leaving via the Back button when there are unsaved changes', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await user.type(screen.getByLabelText('Název eseje'), ' upraveno');
+    await user.click(screen.getByRole('button', { name: /Zpět/ }));
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(await screen.findByText('Neuložené změny?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Odejít bez uložení' }));
+    expect(replace).toHaveBeenCalledWith('/cteni/prehled');
+  });
+
+  it('stays on the page when the author cancels the confirm dialog', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await user.type(screen.getByLabelText('Název eseje'), ' upraveno');
+    await user.click(screen.getByRole('button', { name: /Zpět/ }));
+    await user.click(screen.getByRole('button', { name: 'Zůstat' }));
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(screen.queryByText('Neuložené změny?')).not.toBeInTheDocument();
+  });
+
+  it('confirms before leaving through an in-app link click elsewhere on the page', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(
+      <div>
+        <a href="/cteni/prehled">Přehled</a>
+        <EssayEditorForm initialEssay={draftEssay} />
+      </div>,
+    );
+
+    await user.type(screen.getByLabelText('Název eseje'), ' upraveno');
+    await user.click(screen.getByRole('link', { name: 'Přehled' }));
+
+    expect(push).not.toHaveBeenCalled();
+    expect(await screen.findByText('Neuložené změny?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Odejít bez uložení' }));
+    expect(push).toHaveBeenCalledWith('/cteni/prehled');
   });
 });

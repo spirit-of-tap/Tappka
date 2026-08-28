@@ -20,11 +20,16 @@ import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/responsive-alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
-import { useAutosave, type AutosaveStatus } from '@/lib/essays/use-autosave';
+import { useEssaySave, type EssaySaveStatus } from '@/lib/essays/use-essay-save';
+import { useUnsavedChangesGuard } from '@/lib/essays/use-unsaved-changes-guard';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
@@ -41,20 +46,18 @@ interface EssayEditorFormProps {
 }
 
 /**
- * The only persistence UI in the editor now — there is no manual save or
- * publish button, so this pill (plus the "Ukládá se automaticky" label
- * folded into it) is what tells the author their work isn't lost. A brief
- * green glow marks the moment a save actually lands, so the passive status
- * text has one active beat authors coming from a manual Save button can feel.
+ * Reflects `status`/`isDirty` from `useEssaySave`. A brief green glow marks
+ * the moment a save actually lands, giving the passive status text one
+ * active beat the author can feel.
  */
 function SaveStatus({
   status,
+  isDirty,
   lastSavedAt,
-  onRetry,
 }: {
-  status: AutosaveStatus;
+  status: EssaySaveStatus;
+  isDirty: boolean;
   lastSavedAt: Date | null;
-  onRetry: () => void;
 }) {
   const [justSaved, setJustSaved] = useState(false);
   const prevStatusRef = useRef(status);
@@ -76,28 +79,21 @@ function SaveStatus({
         justSaved && 'save-glow border-success/40 bg-success/10',
       )}
     >
-      {status === 'error' && (
+      {status === 'error' ? (
         <span className="inline-flex items-center gap-1.5 font-medium text-destructive">
           <CloudOff className="size-3.5" />
           Neuloženo
-          <button
-            type="button"
-            onClick={onRetry}
-            className="focus-ring rounded underline underline-offset-2 hover:no-underline"
-          >
-            Zkusit znovu
-          </button>
         </span>
-      )}
-
-      {status === 'saving' && (
+      ) : status === 'saving' ? (
         <span className="inline-flex items-center gap-1.5 text-muted-foreground">
           <span className="size-1.5 rounded-full bg-muted-foreground/60 motion-safe:animate-pulse" />
           Ukládám…
         </span>
-      )}
-
-      {status === 'saved' && lastSavedAt && (
+      ) : isDirty ? (
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+          Neuložené změny
+        </span>
+      ) : status === 'saved' && lastSavedAt ? (
         <span className="inline-flex items-center gap-1.5 text-muted-foreground">
           <Check className="size-3.5 text-success-strong" />
           Uloženo{' '}
@@ -105,18 +101,7 @@ function SaveStatus({
             {lastSavedAt.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </span>
-      )}
-
-      {/* Nothing saved yet — say up front that the author does not have to. */}
-      {status === 'idle' && (
-        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-          <Check className="size-3.5 text-muted-foreground/50" />
-          Ukládá se samo
-        </span>
-      )}
-
-      <span aria-hidden className="hidden text-muted-foreground/40 sm:inline">·</span>
-      <span className="hidden text-muted-foreground sm:inline">Ukládá se automaticky</span>
+      ) : null}
     </span>
   );
 }
@@ -189,22 +174,23 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
 
   const hasSomethingToSave = title.trim().length > 0 || content.text.trim().length > 0
     || selectedBook !== null || selectedSource !== null;
-  const { status, lastSavedAt, schedule, retry } = useAutosave({
+  const { status, lastSavedAt, isDirty, markDirty, save } = useEssaySave({
     save: persist,
     enabled: hasSomethingToSave,
   });
+  const guard = useUnsavedChangesGuard(isDirty || status === 'saving');
 
   const handleContentChange = useCallback((json: object, text: string) => {
     setContent({ json, text });
     latestRef.current.content = { json, text };
-    schedule();
-  }, [schedule]);
+    markDirty();
+  }, [markDirty]);
 
   const handleTitleChange = useCallback((value: string) => {
     setTitle(value);
     latestRef.current.title = value;
-    schedule();
-  }, [schedule]);
+    markDirty();
+  }, [markDirty]);
 
   const handleBookChange = useCallback((book: BookSearchResult | null) => {
     setSelectedBook(book);
@@ -213,8 +199,8 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       setSelectedSource(null);
       latestRef.current.contentSourceId = null;
     }
-    schedule();
-  }, [schedule]);
+    markDirty();
+  }, [markDirty]);
 
   const handleSourceChange = useCallback((source: ContentSource | null) => {
     setSelectedSource(source);
@@ -223,8 +209,8 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       setSelectedBook(null);
       latestRef.current.bookId = null;
     }
-    schedule();
-  }, [schedule]);
+    markDirty();
+  }, [markDirty]);
 
   /** One search across both books and content sources, in a single round trip. */
   const searchSources = async (q: string) => {
@@ -246,42 +232,6 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       if (requestId === sourceSearchRef.current) setIsSearchingSources(false);
     }
   };
-
-  // Picking a book/source is itself a savable change even when the author
-  // hasn't typed a title or any text yet. `handleBookChange`/`handleSourceChange`
-  // call `schedule()` synchronously in the same tick as the state update that
-  // flips `hasSomethingToSave`, so that call still reads the *previous*
-  // render's (stale) `enabled` value and no-ops. Re-arming here, once the
-  // selection has actually committed, picks up the fresh value.
-  //
-  // This must skip the initial mount: an existing essay already has
-  // `selectedBook`/`selectedSource` set from `initialEssay`, so an unguarded
-  // effect would call `schedule()` (and a few seconds later PATCH the
-  // essay with an unchanged payload) purely from opening the editor.
-  //
-  // A boolean "have I mounted" ref is not safe here: React 18 StrictMode
-  // (on by default in `next dev` under the App Router) double-invokes
-  // effects that have no cleanup function, on mount, on the SAME component
-  // instance and the SAME ref object. Invocation 1 would flip the boolean
-  // to `true` and return; invocation 2 then sees it already `true` and
-  // calls `schedule()` anyway — reproducing the exact spurious-autosave bug
-  // this guard exists to prevent (only in `next dev`, not production
-  // builds, which don't double-invoke). Comparing against the actual
-  // previous selection instead is immune to this: both invocations of a
-  // mount see identical current-vs-stored values, so both correctly no-op
-  // no matter how many times React runs the effect.
-  const prevSelectionRef = useRef({
-    bookId: selectedBook?.id ?? null,
-    sourceId: selectedSource?.id ?? null,
-  });
-  useEffect(() => {
-    const bookId = selectedBook?.id ?? null;
-    const sourceId = selectedSource?.id ?? null;
-    const changed = prevSelectionRef.current.bookId !== bookId || prevSelectionRef.current.sourceId !== sourceId;
-    prevSelectionRef.current = { bookId, sourceId };
-    if (changed) schedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBook, selectedSource]);
 
   const searchParams = useSearchParams();
   const preselectBookId = searchParams.get('book');
@@ -350,14 +300,22 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   return (
     <div className="space-y-4">
       {/* Top navigation & action bar: Back button alone on the left, save
-          status + history + more options grouped on the right. There is no
-          publish or manual save button — autosave is the only persistence
-          mechanism. */}
+          status + Uložit + history + more options grouped on the right. */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
-        <BackButton />
+        <BackButton requestNavigation={guard.requestNavigation} />
 
         <div className="flex items-center gap-1">
-          <SaveStatus status={status} lastSavedAt={lastSavedAt} onRetry={() => void retry()} />
+          <SaveStatus status={status} isDirty={isDirty} lastSavedAt={lastSavedAt} />
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            disabled={!isDirty || status === 'saving'}
+            onClick={() => void save()}
+          >
+            Uložit
+          </Button>
 
           {essayId && (
             <>
@@ -405,6 +363,26 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
           />
         </>
       )}
+
+      <AlertDialog open={guard.isDialogOpen} onOpenChange={(open) => { if (!open) guard.cancelLeave(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Neuložené změny?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Máš neuložené změny. Pokud teď odejdeš, ztratíš je.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={guard.cancelLeave}>Zůstat</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={guard.confirmLeave}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Odejít bez uložení
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Source selector */}
       <section aria-label="Zdroj eseje">
