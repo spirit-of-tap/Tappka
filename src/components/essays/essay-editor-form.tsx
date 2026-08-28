@@ -26,7 +26,11 @@ import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { BookNotFoundCard } from '@/components/books/book-not-found-card';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
+import { cn } from '@/lib/utils';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
+import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import type { Book, HighlightCategory } from '@/lib/books/types';
+import type { ContentSource } from '@/lib/content-sources/types';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 /** `/api/books/search` returns `BookWithProfiles`-shaped rows; the raw `Book` type is missing the joined highlight_category. */
@@ -104,10 +108,19 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     text: initialEssay?.content_text ?? '',
   });
   const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(initialEssay?.book as BookSearchResult | null ?? null);
+  const [selectedSource, setSelectedSource] = useState<ContentSource | null>(
+    (initialEssay?.content_source as ContentSource | null) ?? null,
+  );
+  const [sourceMode, setSourceMode] = useState<'book' | 'other'>(selectedSource ? 'other' : 'book');
+  const [sourceQuery, setSourceQuery] = useState('');
+  const [sourceResults, setSourceResults] = useState<ContentSource[]>([]);
+  const [isSearchingSources, setIsSearchingSources] = useState(false);
+  const sourceSearchRef = useRef(0);
   const [bookQuery, setBookQuery] = useState('');
   const [bookResults, setBookResults] = useState<BookSearchResult[]>([]);
   const [isSearchingBooks, setIsSearchingBooks] = useState(false);
   const [isPreselectingBook, setIsPreselectingBook] = useState(false);
+  const [isPreselectingSource, setIsPreselectingSource] = useState(false);
   // A keystroke fires a fresh request; only the newest one may write state, or
   // a stale empty response would flash the "Nemůžeš najít knihu?" card wrongly.
   const bookSearchRef = useRef(0);
@@ -119,14 +132,14 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
 
   // The save closure must read the newest values, not the ones captured when
   // the debounce timer was armed.
-  const latestRef = useRef({ title, content, bookId: selectedBook?.id ?? null, essayId });
-  latestRef.current = { title, content, bookId: selectedBook?.id ?? null, essayId };
+  const latestRef = useRef({ title, content, bookId: selectedBook?.id ?? null, contentSourceId: selectedSource?.id ?? null, essayId });
+  latestRef.current = { title, content, bookId: selectedBook?.id ?? null, contentSourceId: selectedSource?.id ?? null, essayId };
 
   const creatingRef = useRef(false);
 
   const persist = useCallback(async () => {
-    const { title: t, content: c, bookId, essayId: id } = latestRef.current;
-    const payload = { title: t, content_json: c.json, content_text: c.text, book_id: bookId };
+    const { title: t, content: c, bookId, contentSourceId, essayId: id } = latestRef.current;
+    const payload = { title: t, content_json: c.json, content_text: c.text, book_id: bookId, content_source_id: contentSourceId };
 
     if (!id) {
       if (creatingRef.current) return;
@@ -160,7 +173,8 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     if (!res.ok) throw new Error('save failed');
   }, []);
 
-  const hasSomethingToSave = title.trim().length > 0 || content.text.trim().length > 0;
+  const hasSomethingToSave = title.trim().length > 0 || content.text.trim().length > 0
+    || selectedBook !== null || selectedSource !== null;
   const { status, lastSavedAt, statusRef, schedule, flush, retry } = useAutosave({
     save: persist,
     enabled: hasSomethingToSave,
@@ -181,8 +195,46 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const handleBookChange = useCallback((book: BookSearchResult | null) => {
     setSelectedBook(book);
     latestRef.current.bookId = book?.id ?? null;
+    if (book) {
+      setSelectedSource(null);
+      latestRef.current.contentSourceId = null;
+    }
     schedule();
   }, [schedule]);
+
+  const handleSourceChange = useCallback((source: ContentSource | null) => {
+    setSelectedSource(source);
+    latestRef.current.contentSourceId = source?.id ?? null;
+    if (source) {
+      setSelectedBook(null);
+      latestRef.current.bookId = null;
+    }
+    schedule();
+  }, [schedule]);
+
+  const searchSources = async (q: string) => {
+    if (!q.trim()) { setSourceResults([]); return; }
+    const requestId = ++sourceSearchRef.current;
+    setIsSearchingSources(true);
+    try {
+      const res = await fetch(`/api/content-sources/search?q=${encodeURIComponent(q)}`);
+      const { data } = await res.json();
+      if (requestId === sourceSearchRef.current) setSourceResults(data ?? []);
+    } finally {
+      if (requestId === sourceSearchRef.current) setIsSearchingSources(false);
+    }
+  };
+
+  // Picking a book/source is itself a savable change even when the author
+  // hasn't typed a title or any text yet. `handleBookChange`/`handleSourceChange`
+  // call `schedule()` synchronously in the same tick as the state update that
+  // flips `hasSomethingToSave`, so that call still reads the *previous*
+  // render's (stale) `enabled` value and no-ops. Re-arming here, once the
+  // selection has actually committed, picks up the fresh value.
+  useEffect(() => {
+    schedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBook, selectedSource]);
 
   const searchParams = useSearchParams();
   const preselectBookId = searchParams.get('book');
@@ -213,6 +265,39 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       cancelled = true;
     };
   }, [preselectBookId, selectedBook, handleBookChange]);
+
+  const preselectSourceId = searchParams.get('source');
+
+  // Returning from /cteni/eseje/nova?source=... (ContentSourceForm's redirect):
+  // attach the content source the author just created.
+  useEffect(() => {
+    if (!preselectSourceId || selectedSource) return;
+
+    let cancelled = false;
+    setIsPreselectingSource(true);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/content-sources/${preselectSourceId}`);
+        if (!res.ok) {
+          toast.error('Zdroj se nepodařilo načíst.');
+          return;
+        }
+        const { data } = await res.json();
+        if (!cancelled && data) {
+          setSourceMode('other');
+          handleSourceChange(data as ContentSource);
+        }
+      } catch {
+        if (!cancelled) toast.error('Zdroj se nepodařilo načíst.');
+      } finally {
+        if (!cancelled) setIsPreselectingSource(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preselectSourceId, selectedSource, handleSourceChange]);
 
   const handlePrimaryAction = async () => {
     if (isPublishing) return;
@@ -361,11 +446,30 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       {/* The book comes first: it is the choice that decides whether the essay
           earns BookPoints, and it is the one thing an author can get wrong. */}
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Kniha, o které píšeš
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            {sourceMode === 'book' ? 'Kniha, o které píšeš' : 'Zdroj, o kterém píšeš'}
+          </h2>
+          <div className="flex gap-1 rounded-full border p-0.5 text-xs">
+            <button
+              type="button"
+              className={cn('rounded-full px-2.5 py-1 font-medium transition-colors', sourceMode === 'book' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
+              onClick={() => setSourceMode('book')}
+            >
+              Kniha
+            </button>
+            <button
+              type="button"
+              className={cn('rounded-full px-2.5 py-1 font-medium transition-colors', sourceMode === 'other' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
+              onClick={() => setSourceMode('other')}
+            >
+              Jiný zdroj
+            </button>
+          </div>
+        </div>
 
-        {selectedBook ? (
+        {sourceMode === 'book' && (
+        selectedBook ? (
           <div className="space-y-2 rounded-xl border bg-card p-3 sm:p-4">
             <div className="flex items-center gap-4">
               <div className="flex h-[68px] w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border/40 bg-muted">
@@ -497,6 +601,62 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
               </div>
             </div>
           </div>
+        )
+        )}
+
+        {sourceMode === 'other' && (
+          selectedSource ? (
+            <div className="space-y-2 rounded-xl border bg-card p-3 sm:p-4">
+              <div className="flex items-center gap-4">
+                <ContentSourceIllustration kind={selectedSource.kind} className="h-[68px] w-12 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-heading font-semibold">{selectedSource.title}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {CONTENT_SOURCE_KIND_LABELS[selectedSource.kind]}
+                    {selectedSource.creator ? ` · ${selectedSource.creator}` : ''}
+                  </p>
+                </div>
+                <Button variant="ghost" size="sm" className="shrink-0" onClick={() => handleSourceChange(null)}>
+                  Změnit
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border bg-muted/40 p-3 sm:p-4">
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground/60" />
+                <Input
+                  value={sourceQuery}
+                  aria-label="Hledat jiný zdroj"
+                  onChange={(e) => { setSourceQuery(e.target.value); searchSources(e.target.value); }}
+                  placeholder="Hledat podcast, konferenci, program…"
+                  className="h-10 bg-background pr-9 pl-9"
+                />
+                {isSearchingSources && (
+                  <Spinner className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                )}
+              </div>
+              {sourceResults.length > 0 && (
+                <ul className="mt-2 max-h-80 divide-y overflow-y-auto rounded-lg border bg-background">
+                  {sourceResults.map((source) => (
+                    <li key={source.id}>
+                      <button
+                        type="button"
+                        className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
+                        onClick={() => { handleSourceChange(source); setSourceResults([]); setSourceQuery(''); }}
+                      >
+                        <ContentSourceIllustration kind={source.kind} className="h-11 w-8 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{source.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">{CONTENT_SOURCE_KIND_LABELS[source.kind]}</p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )
         )}
       </section>
 

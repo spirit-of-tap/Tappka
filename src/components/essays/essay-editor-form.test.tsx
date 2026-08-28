@@ -32,6 +32,7 @@ const baseEssay = {
   id: 'essay-1',
   author_profile_id: 'profile-1',
   book_id: null,
+  content_source_id: null,
   title: 'Atomic Habits',
   content_json: { type: 'doc', content: [] },
   content_text: 'Nějaký text',
@@ -45,6 +46,7 @@ const baseEssay = {
   removed_at: null,
   author: null,
   book: null,
+  content_source: null,
 } satisfies Omit<import('@/lib/essays/types').EssayWithDetails, 'published_at'>;
 
 const draftEssay = { ...baseEssay, published_at: null };
@@ -55,6 +57,7 @@ beforeEach(() => {
   fetchSpy.mockReset();
   push.mockReset();
   mockSearchParams.delete('book');
+  mockSearchParams.delete('source');
 });
 
 afterEach(() => {
@@ -165,6 +168,58 @@ describe('EssayEditorForm — book preselect', () => {
     expect(
       fetchSpy.mock.calls.some(([url]) => url === '/api/books/new-1'),
     ).toBe(true);
+  });
+});
+
+describe('EssayEditorForm — content source preselect', () => {
+  it('selects the source named in ?source= after returning from the add-source flow', async () => {
+    mockSearchParams.set('source', 'src-1');
+    fetchSpy.mockResolvedValue(
+      jsonResponse({
+        data: { id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' },
+      }),
+    );
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await waitFor(() => expect(screen.getByText('Founders')).toBeInTheDocument());
+    expect(
+      fetchSpy.mock.calls.some(([url]) => url === '/api/content-sources/src-1'),
+    ).toBe(true);
+  });
+});
+
+describe('EssayEditorForm — content source', () => {
+  it('lets the author switch to "Jiný zdroj" and search for one', async () => {
+    fetchSpy.mockImplementation((url) => {
+      if (typeof url === 'string' && url.startsWith('/api/content-sources/search')) {
+        return Promise.resolve(jsonResponse({
+          data: [{ id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' }],
+        }));
+      }
+      return Promise.resolve(jsonResponse({ data: { id: 'essay-1' } }, 201));
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm />);
+    await user.click(screen.getByRole('button', { name: 'Jiný zdroj' }));
+    await user.type(screen.getByLabelText('Hledat jiný zdroj'), 'Founders');
+    await vi.advanceTimersByTimeAsync(400);
+
+    await waitFor(() => {
+      expect(screen.getByText('Founders')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Founders'));
+    await vi.advanceTimersByTimeAsync(3000);
+
+    await waitFor(() => {
+      const creates = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays');
+      expect(creates.length).toBeGreaterThan(0);
+      const payload = JSON.parse((creates[0][1] as RequestInit).body as string);
+      expect(payload.content_source_id).toBe('src-1');
+      expect(payload.book_id).toBeNull();
+    });
   });
 });
 
