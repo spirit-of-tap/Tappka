@@ -4,6 +4,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import { getBooks, getRocketModelBooks, getHighlightedBooks, getHighlightCategories } from '@/lib/books/queries';
 import { getBookIdsInLibrary } from '@/lib/library/book-ids';
+import { getContentSources } from '@/lib/content-sources/queries';
 import { groupHighlightedBooks } from '@/lib/books/highlight-groups';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import type { BookListStatus, HighlightCategory } from '@/lib/books/types';
@@ -28,6 +29,7 @@ export default async function HledatPage() {
     rocketModelBooks,
     highlightedBooks,
     highlightCategories,
+    contentSources,
   ] = await Promise.all([
     getBooks(supabase, { listStatus: 'shortlist', minEssayCount: 2, sortBy: 'popular', pageSize: 60 }),
     getBookIdsInLibrary(supabase),
@@ -39,6 +41,7 @@ export default async function HledatPage() {
     getRocketModelBooks(supabase),
     getHighlightedBooks(supabase),
     getHighlightCategories(supabase),
+    getContentSources(supabase, { pageSize: 12 }),
   ]);
 
   type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number; list_status: BookListStatus; is_rocket_model: boolean; highlight_category: HighlightCategory | null };
@@ -147,6 +150,7 @@ export default async function HledatPage() {
       categoryBestBooks={categoryBestBooks}
       rocketModelBooks={rocketModelBooks}
       highlightedByCategory={highlightedByCategory}
+      contentSources={contentSources}
     />
   );
 }

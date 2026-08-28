@@ -29,6 +29,7 @@ import { BookCard } from '@/components/books/book-card';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { BookNotFoundCard } from '@/components/books/book-not-found-card';
 import { type BookEssayItem } from '@/components/books/feed-book-card';
+import { ContentSourceCard } from '@/components/content-sources/content-source-card';
 import { DiscoveryMixedFeed } from './discovery-mixed-feed';
 import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
@@ -37,6 +38,7 @@ import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 import type { HighlightedGroup } from '@/lib/books/highlight-groups';
+import type { ContentSource } from '@/lib/content-sources/types';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
 type BookResult = {
@@ -65,6 +67,7 @@ interface SearchPageClientProps {
   categoryBestBooks: Record<string, CategoryBook[]>;
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
+  contentSources?: ContentSource[];
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
@@ -95,6 +98,7 @@ export function SearchPageClient({
   categoryBestBooks,
   rocketModelBooks,
   highlightedByCategory,
+  contentSources = [],
 }: SearchPageClientProps) {
   const [query, setQuery] = usePersistedState('tappka:search:query', '', { storage: 'sessionStorage' });
   const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
@@ -211,6 +215,7 @@ export function SearchPageClient({
             categoryBestBooks={categoryBestBooks}
             rocketModelBooks={rocketModelBooks}
             highlightedByCategory={highlightedByCategory}
+            contentSources={contentSources}
             onSelectCategory={setSelectedCategory}
           />
         )}
@@ -235,6 +240,7 @@ function DiscoveryView({
   categoryBestBooks,
   rocketModelBooks,
   highlightedByCategory,
+  contentSources,
   onSelectCategory,
 }: {
   books: BookWithProfiles[];
@@ -250,6 +256,7 @@ function DiscoveryView({
   categoryBestBooks: Record<string, CategoryBook[]>;
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
+  contentSources: ContentSource[];
   onSelectCategory: (key: string) => void;
 }) {
   return (
@@ -267,6 +274,23 @@ function DiscoveryView({
         categoryBestBooks={categoryBestBooks}
         onSelectCategory={onSelectCategory}
       />
+
+      {/* 2b. Other content sources: podcasts, conferences, programs */}
+      {contentSources.length > 0 && (
+        <section className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-semibold">Ostatní zdroje</h2>
+            <Link href="/cteni/zdroje" className="text-sm font-medium text-primary hover:underline">
+              Zobrazit vše
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {contentSources.slice(0, 5).map((source) => (
+              <ContentSourceCard key={source.id} source={source} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 3. Mixed Stream: Books with Interleaved Community Essays */}
       <DiscoveryMixedFeed
