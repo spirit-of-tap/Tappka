@@ -11,6 +11,7 @@ const mockEssay: EssayWithDetails = {
   id: 'essay-10',
   author_profile_id: 'p1',
   book_id: 'b1',
+  content_source_id: null,
   title: 'Jak postavit MVP za víkend podle Lean Startup',
   content_json: {},
   content_text: 'Po přečtení knihy jsme v týmu udělali první experiment a za 48 hodin jsme získali první platící zákazníky.',
@@ -40,6 +41,7 @@ const mockEssay: EssayWithDetails = {
     google_books_cover_url: null,
     highlight_category: null,
   },
+  content_source: null,
 };
 
 describe('SocialEssayFeedCard', () => {

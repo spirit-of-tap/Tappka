@@ -39,6 +39,7 @@ const mockEssays: EssayWithDetails[] = [
     id: 'e1',
     author_profile_id: 'p1',
     book_id: 'b-123',
+    content_source_id: null,
     title: 'MVP za víkend',
     content_json: {},
     content_text: 'Tento text popisuje jak jsme postavili MVP za vikend.',
@@ -68,11 +69,13 @@ const mockEssays: EssayWithDetails[] = [
       google_books_cover_url: null,
       highlight_category: null,
     },
+    content_source: null,
   },
   {
     id: 'e2',
     author_profile_id: 'p2',
     book_id: 'b-123',
+    content_source_id: null,
     title: 'Pohled na Lean po 2 letech v byznysu',
     content_json: {},
     content_text: 'Dnes s odstupem casu vidim jak nam tato kniha pomohla.',
@@ -102,6 +105,7 @@ const mockEssays: EssayWithDetails[] = [
       google_books_cover_url: null,
       highlight_category: null,
     },
+    content_source: null,
   },
 ];
 

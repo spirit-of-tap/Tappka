@@ -35,6 +35,7 @@ describe('EssayViewerWithDiff', () => {
     id: 'essay-1',
     author_profile_id: 'user-1',
     book_id: 'book-1',
+    content_source_id: null,
     title: 'Moje esej',
     content_json: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Nová verze textu po úpravě.' }] }] },
     content_text: 'Nová verze textu po úpravě.',
@@ -49,6 +50,7 @@ describe('EssayViewerWithDiff', () => {
     removed_at: null,
     author: { id: 'user-1', name: 'Student', picture: null, role: 'student', team_id: 'team-1' },
     book: null,
+    content_source: null,
   };
 
   const coachComment: EssayCommentWithAuthor = {
