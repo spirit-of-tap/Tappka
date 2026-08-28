@@ -26,6 +26,8 @@ export const contentSources = pgTable("content_sources", {
 }, (table) => [
 	index("content_sources_created_by_idx").using("btree", table.createdByProfileId.asc().nullsLast().op("uuid_ops")),
 	index("content_sources_status_idx").using("btree", table.status.asc().nullsLast().op("enum_ops")),
+	index("content_sources_title_trgm_idx").using("gin", table.title.asc().nullsLast().op("gin_trgm_ops")),
+	index("content_sources_creator_trgm_idx").using("gin", table.creator.asc().nullsLast().op("gin_trgm_ops")),
 	foreignKey({
 			columns: [table.createdByProfileId],
 			foreignColumns: [profiles.id],
