@@ -23,10 +23,9 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
-import { BookNotFoundCard } from '@/components/books/book-not-found-card';
+import { SourceNotFoundCard } from './source-not-found-card';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
-import { cn } from '@/lib/utils';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import type { Book, HighlightCategory } from '@/lib/books/types';
@@ -111,19 +110,15 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const [selectedSource, setSelectedSource] = useState<ContentSource | null>(
     (initialEssay?.content_source as ContentSource | null) ?? null,
   );
-  const [sourceMode, setSourceMode] = useState<'book' | 'other'>(selectedSource ? 'other' : 'book');
   const [sourceQuery, setSourceQuery] = useState('');
-  const [sourceResults, setSourceResults] = useState<ContentSource[]>([]);
-  const [isSearchingSources, setIsSearchingSources] = useState(false);
-  const sourceSearchRef = useRef(0);
-  const [bookQuery, setBookQuery] = useState('');
   const [bookResults, setBookResults] = useState<BookSearchResult[]>([]);
-  const [isSearchingBooks, setIsSearchingBooks] = useState(false);
+  const [contentSourceResults, setContentSourceResults] = useState<ContentSource[]>([]);
+  const [isSearchingSources, setIsSearchingSources] = useState(false);
   const [isPreselectingBook, setIsPreselectingBook] = useState(false);
   const [isPreselectingSource, setIsPreselectingSource] = useState(false);
   // A keystroke fires a fresh request; only the newest one may write state, or
-  // a stale empty response would flash the "Nemůžeš najít knihu?" card wrongly.
-  const bookSearchRef = useRef(0);
+  // a stale empty response would flash the "not found" card wrongly.
+  const sourceSearchRef = useRef(0);
   const [isPublishing, setIsPublishing] = useState(false);
   const [essayId, setEssayId] = useState<string | null>(initialEssay?.id ?? null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -212,30 +207,22 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     schedule();
   }, [schedule]);
 
-  /**
-   * The toggle is a choice of source, not just of which pane is visible:
-   * leaving the other mode's selection attached would keep the essay pointing
-   * at a content source while the author is staring at an empty book search.
-   * Only clears when there is something to clear, so a stray toggle click
-   * never schedules a no-op autosave.
-   */
-  const handleSourceModeChange = useCallback((mode: 'book' | 'other') => {
-    setSourceMode(mode);
-    if (mode === 'book') {
-      if (selectedSource) handleSourceChange(null);
-    } else if (selectedBook) {
-      handleBookChange(null);
-    }
-  }, [selectedBook, selectedSource, handleBookChange, handleSourceChange]);
-
+  /** One search across both books and content sources, in a single round trip. */
   const searchSources = async (q: string) => {
-    if (!q.trim()) { setSourceResults([]); return; }
+    if (!q.trim()) {
+      setBookResults([]);
+      setContentSourceResults([]);
+      return;
+    }
     const requestId = ++sourceSearchRef.current;
     setIsSearchingSources(true);
     try {
-      const res = await fetch(`/api/content-sources/search?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/essays/source-search?q=${encodeURIComponent(q)}`);
       const { data } = await res.json();
-      if (requestId === sourceSearchRef.current) setSourceResults(data ?? []);
+      if (requestId === sourceSearchRef.current) {
+        setBookResults(data?.books ?? []);
+        setContentSourceResults(data?.sources ?? []);
+      }
     } finally {
       if (requestId === sourceSearchRef.current) setIsSearchingSources(false);
     }
@@ -325,7 +312,6 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         }
         const { data } = await res.json();
         if (!cancelled && data) {
-          setSourceMode('other');
           handleSourceChange(data as ContentSource);
         }
       } catch {
@@ -372,19 +358,6 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       router.push(`/cteni/eseje/${id}`);
     } finally {
       setIsPublishing(false);
-    }
-  };
-
-  const searchBooks = async (q: string) => {
-    if (!q.trim()) { setBookResults([]); return; }
-    const requestId = ++bookSearchRef.current;
-    setIsSearchingBooks(true);
-    try {
-      const res = await fetch(`/api/books/search?q=${encodeURIComponent(q)}`);
-      const { data } = await res.json();
-      if (requestId === bookSearchRef.current) setBookResults(data ?? []);
-    } finally {
-      if (requestId === bookSearchRef.current) setIsSearchingBooks(false);
     }
   };
 
@@ -484,33 +457,14 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         </>
       )}
 
-      {/* The book comes first: it is the choice that decides whether the essay
-          earns BookPoints, and it is the one thing an author can get wrong. */}
+      {/* The source comes first: it is the choice that decides whether the
+          essay earns points, and it is the one thing an author can get wrong. */}
       <section className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            {sourceMode === 'book' ? 'Kniha, o které píšeš' : 'Zdroj, o kterém píšeš'}
-          </h2>
-          <div className="flex gap-1 rounded-full border p-0.5 text-xs">
-            <button
-              type="button"
-              className={cn('rounded-full px-2.5 py-1 font-medium transition-colors', sourceMode === 'book' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
-              onClick={() => handleSourceModeChange('book')}
-            >
-              Kniha
-            </button>
-            <button
-              type="button"
-              className={cn('rounded-full px-2.5 py-1 font-medium transition-colors', sourceMode === 'other' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
-              onClick={() => handleSourceModeChange('other')}
-            >
-              Jiný zdroj
-            </button>
-          </div>
-        </div>
+        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          O čem píšeš?
+        </h2>
 
-        {sourceMode === 'book' && (
-        selectedBook ? (
+        {selectedBook ? (
           <div className="space-y-2 rounded-xl border bg-card p-3 sm:p-4">
             <div className="flex items-center gap-4">
               <div className="flex h-[68px] w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border/40 bg-muted">
@@ -554,48 +508,69 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
               </Button>
             </div>
           </div>
+        ) : selectedSource ? (
+          <div className="space-y-2 rounded-xl border bg-card p-3 sm:p-4">
+            <div className="flex items-center gap-4">
+              <ContentSourceIllustration kind={selectedSource.kind} className="h-[68px] w-12 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-heading font-semibold">{selectedSource.title}</p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {CONTENT_SOURCE_KIND_LABELS[selectedSource.kind]}
+                  {selectedSource.creator ? ` · ${selectedSource.creator}` : ''}
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" className="shrink-0" onClick={() => handleSourceChange(null)}>
+                Změnit
+              </Button>
+            </div>
+          </div>
         ) : (
           <div className="rounded-xl border bg-muted/40 p-3 sm:p-4">
             <div className="flex items-start gap-3">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-primary">
-                <BookOpen className="size-4" />
+                <Search className="size-4" />
               </span>
               <div className="min-w-0 flex-1 space-y-3">
                 <div>
-                  {isPreselectingBook ? (
+                  {isPreselectingBook || isPreselectingSource ? (
                     <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <Spinner className="size-3.5" />
-                      Načítám knihu…
+                      Načítám…
                     </p>
                   ) : (
-                    <p className="font-medium">Vyber knihu, ke které esej patří</p>
+                    <p className="font-medium">Vyber knihu nebo jiný zdroj, ke kterému esej patří</p>
                   )}
                 </div>
 
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground/60" />
                   <Input
-                    value={bookQuery}
-                    aria-label="Hledat knihu"
-                    onChange={(e) => { setBookQuery(e.target.value); searchBooks(e.target.value); }}
-                    placeholder="Hledat knihu podle názvu nebo autora…"
+                    value={sourceQuery}
+                    aria-label="Hledat knihu nebo jiný zdroj"
+                    onChange={(e) => { setSourceQuery(e.target.value); searchSources(e.target.value); }}
+                    placeholder="Hledat knihu, podcast, konferenci…"
                     className="h-10 bg-background pr-9 pl-9"
                   />
-                  {isSearchingBooks && (
+                  {isSearchingSources && (
                     <Spinner className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
                   )}
                 </div>
 
-                {/* Capped so a broad query does not shove the title and the
-                    writing surface off the screen. */}
-                {bookResults.length > 0 && (
+                {/* Books first, then everything else — capped per kind so a
+                    broad query does not shove the writing surface off screen. */}
+                {(bookResults.length > 0 || contentSourceResults.length > 0) && (
                   <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border bg-background">
                     {bookResults.map((book) => (
-                      <li key={book.id}>
+                      <li key={`book-${book.id}`}>
                         <button
                           type="button"
                           className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
-                          onClick={() => { handleBookChange(book); setBookResults([]); setBookQuery(''); }}
+                          onClick={() => {
+                            handleBookChange(book);
+                            setBookResults([]);
+                            setContentSourceResults([]);
+                            setSourceQuery('');
+                          }}
                         >
                           <div className="flex h-11 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
                             {book.google_books_cover_url ? (
@@ -625,6 +600,26 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                         </button>
                       </li>
                     ))}
+                    {contentSourceResults.map((source) => (
+                      <li key={`source-${source.id}`}>
+                        <button
+                          type="button"
+                          className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
+                          onClick={() => {
+                            handleSourceChange(source);
+                            setBookResults([]);
+                            setContentSourceResults([]);
+                            setSourceQuery('');
+                          }}
+                        >
+                          <ContentSourceIllustration kind={source.kind} className="h-11 w-8 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{source.title}</p>
+                            <p className="truncate text-xs text-muted-foreground">{CONTENT_SOURCE_KIND_LABELS[source.kind]}</p>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
                   </ul>
                 )}
 
@@ -634,70 +629,14 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
                 </p>
 
                 {/* Only a search that came up empty deserves the invitation to
-                    add the book — it is the moment the author is stuck, not a
+                    add something — it is the moment the author is stuck, not a
                     standing banner. */}
-                {bookQuery.trim() && bookResults.length === 0 && !isSearchingBooks && (
-                  <BookNotFoundCard query={bookQuery} from="esej" essayId={essayId ?? undefined} />
+                {sourceQuery.trim() && bookResults.length === 0 && contentSourceResults.length === 0 && !isSearchingSources && (
+                  <SourceNotFoundCard query={sourceQuery} essayId={essayId ?? undefined} />
                 )}
               </div>
             </div>
           </div>
-        )
-        )}
-
-        {sourceMode === 'other' && (
-          selectedSource ? (
-            <div className="space-y-2 rounded-xl border bg-card p-3 sm:p-4">
-              <div className="flex items-center gap-4">
-                <ContentSourceIllustration kind={selectedSource.kind} className="h-[68px] w-12 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-heading font-semibold">{selectedSource.title}</p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {CONTENT_SOURCE_KIND_LABELS[selectedSource.kind]}
-                    {selectedSource.creator ? ` · ${selectedSource.creator}` : ''}
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" className="shrink-0" onClick={() => handleSourceChange(null)}>
-                  Změnit
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border bg-muted/40 p-3 sm:p-4">
-              <div className="relative">
-                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground/60" />
-                <Input
-                  value={sourceQuery}
-                  aria-label="Hledat jiný zdroj"
-                  onChange={(e) => { setSourceQuery(e.target.value); searchSources(e.target.value); }}
-                  placeholder="Hledat podcast, konferenci, program…"
-                  className="h-10 bg-background pr-9 pl-9"
-                />
-                {isSearchingSources && (
-                  <Spinner className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                )}
-              </div>
-              {sourceResults.length > 0 && (
-                <ul className="mt-2 max-h-80 divide-y overflow-y-auto rounded-lg border bg-background">
-                  {sourceResults.map((source) => (
-                    <li key={source.id}>
-                      <button
-                        type="button"
-                        className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
-                        onClick={() => { handleSourceChange(source); setSourceResults([]); setSourceQuery(''); }}
-                      >
-                        <ContentSourceIllustration kind={source.kind} className="h-11 w-8 shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{source.title}</p>
-                          <p className="truncate text-xs text-muted-foreground">{CONTENT_SOURCE_KIND_LABELS[source.kind]}</p>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )
         )}
       </section>
 

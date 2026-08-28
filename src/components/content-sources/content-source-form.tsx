@@ -13,10 +13,17 @@ import { CONTENT_SOURCE_POINT_VALUES, defaultContentSourcePoints } from '@/lib/c
 import { ContentSourceIllustration } from './content-source-illustration';
 import type { ContentSourceKind } from '@/lib/content-sources/types';
 
-export function ContentSourceForm() {
+interface ContentSourceFormProps {
+  /** Prefills the title from what the author already typed in the essay editor's search box. */
+  initialTitle?: string;
+  /** Essay edit page to return to after saving; falls back to starting a new essay. */
+  returnTo?: string | null;
+}
+
+export function ContentSourceForm({ initialTitle = '', returnTo = null }: ContentSourceFormProps) {
   const router = useRouter();
   const [kind, setKind] = useState<ContentSourceKind | null>(null);
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle);
   const [creator, setCreator] = useState('');
   const [description, setDescription] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
@@ -51,7 +58,7 @@ export function ContentSourceForm() {
         return;
       }
       const { data } = await res.json();
-      router.push(`/cteni/eseje/nova?source=${data.id}`);
+      router.push(returnTo ? `${returnTo}?source=${data.id}` : `/cteni/eseje/nova?source=${data.id}`);
     } finally {
       setIsSubmitting(false);
     }

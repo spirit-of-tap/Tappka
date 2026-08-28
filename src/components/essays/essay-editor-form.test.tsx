@@ -204,9 +204,9 @@ describe('EssayEditorForm — mount behavior', () => {
 describe('EssayEditorForm — StrictMode double-invoke', () => {
   it('does not autosave on mount under StrictMode, but does autosave a real selection change', async () => {
     fetchSpy.mockImplementation((url) => {
-      if (typeof url === 'string' && url.startsWith('/api/content-sources/search')) {
+      if (typeof url === 'string' && url.startsWith('/api/essays/source-search')) {
         return Promise.resolve(jsonResponse({
-          data: [{ id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' }],
+          data: { books: [], sources: [{ id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' }] },
         }));
       }
       return Promise.resolve(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
@@ -234,8 +234,7 @@ describe('EssayEditorForm — StrictMode double-invoke', () => {
 
     // A genuine post-mount selection change must still schedule a save —
     // proving the guard isn't just permanently disabled.
-    await user.click(screen.getByRole('button', { name: 'Jiný zdroj' }));
-    await user.type(screen.getByLabelText('Hledat jiný zdroj'), 'Founders');
+    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'Founders');
     await vi.advanceTimersByTimeAsync(400);
     await waitFor(() => expect(screen.getByText('Founders')).toBeInTheDocument());
     await user.click(screen.getByText('Founders'));
@@ -250,11 +249,11 @@ describe('EssayEditorForm — StrictMode double-invoke', () => {
 });
 
 describe('EssayEditorForm — content source', () => {
-  it('lets the author switch to "Jiný zdroj" and search for one', async () => {
+  it('lets the author search for and select a content source', async () => {
     fetchSpy.mockImplementation((url) => {
-      if (typeof url === 'string' && url.startsWith('/api/content-sources/search')) {
+      if (typeof url === 'string' && url.startsWith('/api/essays/source-search')) {
         return Promise.resolve(jsonResponse({
-          data: [{ id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' }],
+          data: { books: [], sources: [{ id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' }] },
         }));
       }
       return Promise.resolve(jsonResponse({ data: { id: 'essay-1' } }, 201));
@@ -262,8 +261,7 @@ describe('EssayEditorForm — content source', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<EssayEditorForm />);
-    await user.click(screen.getByRole('button', { name: 'Jiný zdroj' }));
-    await user.type(screen.getByLabelText('Hledat jiný zdroj'), 'Founders');
+    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'Founders');
     await vi.advanceTimersByTimeAsync(400);
 
     await waitFor(() => {
@@ -282,8 +280,21 @@ describe('EssayEditorForm — content source', () => {
     });
   });
 
-  it('clears the selected content source when the author switches back to "Kniha"', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+  it('replaces a selected content source when the author picks a book instead', async () => {
+    fetchSpy.mockImplementation((url) => {
+      if (typeof url === 'string' && url.startsWith('/api/essays/source-search')) {
+        return Promise.resolve(jsonResponse({
+          data: {
+            books: [{
+              id: 'b1', title_cs: 'Atomic Habits', author: 'James Clear', book_points: 3,
+              list_status: 'shortlist', is_rocket_model: false, google_books_cover_url: null, highlight_category: null,
+            }],
+            sources: [],
+          },
+        }));
+      }
+      return Promise.resolve(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+    });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     const essayWithSource = {
@@ -302,24 +313,37 @@ describe('EssayEditorForm — content source', () => {
     render(<EssayEditorForm initialEssay={essayWithSource} />);
     expect(screen.getByText('Founders')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Kniha' }));
+    await user.click(screen.getByRole('button', { name: 'Změnit' }));
+    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'Atomic');
+    await vi.advanceTimersByTimeAsync(400);
+    await waitFor(() => expect(screen.getByText('Atomic Habits')).toBeInTheDocument());
+    await user.click(screen.getByText('Atomic Habits'));
 
-    // The selection is gone, not merely hidden behind the other pane…
+    // The old source is gone, not merely hidden behind another pane.
     expect(screen.queryByText('Founders')).not.toBeInTheDocument();
 
-    // …and the cleared link is persisted rather than left dangling on the row.
     await vi.advanceTimersByTimeAsync(3000);
     await waitFor(() => {
       const saves = fetchSpy.mock.calls.filter(([url]) => url === `/api/essays/${publishedEssay.id}`);
       expect(saves.length).toBeGreaterThan(0);
       const payload = JSON.parse((saves[0][1] as RequestInit).body as string);
+      expect(payload.book_id).toBe('b1');
       expect(payload.content_source_id).toBeNull();
-      expect(payload.book_id).toBeNull();
     });
   });
 
-  it('clears the selected book when the author switches to "Jiný zdroj"', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+  it('replaces a selected book when the author picks a content source instead', async () => {
+    fetchSpy.mockImplementation((url) => {
+      if (typeof url === 'string' && url.startsWith('/api/essays/source-search')) {
+        return Promise.resolve(jsonResponse({
+          data: {
+            books: [],
+            sources: [{ id: 'src-1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' }],
+          },
+        }));
+      }
+      return Promise.resolve(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+    });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     const essayWithBook = {
@@ -340,7 +364,11 @@ describe('EssayEditorForm — content source', () => {
     render(<EssayEditorForm initialEssay={essayWithBook} />);
     expect(screen.getByText('Atomic Habits')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Jiný zdroj' }));
+    await user.click(screen.getByRole('button', { name: 'Změnit' }));
+    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'Founders');
+    await vi.advanceTimersByTimeAsync(400);
+    await waitFor(() => expect(screen.getByText('Founders')).toBeInTheDocument());
+    await user.click(screen.getByText('Founders'));
 
     expect(screen.queryByText('Atomic Habits')).not.toBeInTheDocument();
 
@@ -349,26 +377,13 @@ describe('EssayEditorForm — content source', () => {
       const saves = fetchSpy.mock.calls.filter(([url]) => url === `/api/essays/${publishedEssay.id}`);
       expect(saves.length).toBeGreaterThan(0);
       const payload = JSON.parse((saves[0][1] as RequestInit).body as string);
+      expect(payload.content_source_id).toBe('src-1');
       expect(payload.book_id).toBeNull();
-      expect(payload.content_source_id).toBeNull();
     });
-  });
-
-  it('does not autosave when the toggle is flipped with nothing selected', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-
-    render(<EssayEditorForm initialEssay={publishedEssay} />);
-    await user.click(screen.getByRole('button', { name: 'Jiný zdroj' }));
-    await vi.advanceTimersByTimeAsync(5000);
-
-    expect(
-      fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
-    ).toBe(false);
   });
 });
 
-describe('EssayEditorForm — add-book entry', () => {
+describe('EssayEditorForm — source not found', () => {
   const searchHit = {
     id: 'b1',
     title_cs: 'Atomic Habits',
@@ -380,40 +395,40 @@ describe('EssayEditorForm — add-book entry', () => {
     highlight_category: null,
   };
 
-  it('does not show Nemůžeš najít knihu? before the author searches', () => {
+  it('does not show the not-found card before the author searches', () => {
     render(<EssayEditorForm initialEssay={draftEssay} />);
-    expect(screen.queryByText('Nemůžeš najít knihu?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Přidat knihu')).not.toBeInTheDocument();
   });
 
-  it('shows Nemůžeš najít knihu? only when a search comes up empty', async () => {
-    fetchSpy.mockImplementation(() => Promise.resolve(jsonResponse({ data: [] })));
+  it('shows the not-found card only when a search comes up empty', async () => {
+    fetchSpy.mockImplementation(() => Promise.resolve(jsonResponse({ data: { books: [], sources: [] } })));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<EssayEditorForm />);
-    await user.type(screen.getByLabelText('Hledat knihu'), 'kniha co neexistuje');
+    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'kniha co neexistuje');
 
-    await waitFor(() => expect(screen.getByText('Nemůžeš najít knihu?')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Přidat knihu')).toBeInTheDocument());
+    expect(screen.getByText('Přidat jiný zdroj')).toBeInTheDocument();
   });
 
-  it('keeps Nemůžeš najít knihu? hidden while the search has matches', async () => {
-    fetchSpy.mockImplementation(() => Promise.resolve(jsonResponse({ data: [searchHit] })));
+  it('keeps the not-found card hidden while the search has matches', async () => {
+    fetchSpy.mockImplementation(() => Promise.resolve(jsonResponse({ data: { books: [searchHit], sources: [] } })));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<EssayEditorForm />);
-    await user.type(screen.getByLabelText('Hledat knihu'), 'Atomic');
+    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'Atomic');
 
     expect(await screen.findByText('Atomic Habits')).toBeInTheDocument();
-    expect(screen.queryByText('Nemůžeš najít knihu?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Přidat knihu')).not.toBeInTheDocument();
   });
 
-  it('does not show the Add Book CTA when a book is already selected', () => {
+  it('does not show the not-found card when a book is already selected', () => {
     render(
       <EssayEditorForm
         initialEssay={{ ...publishedEssay, book: { ...searchHit, book_points: 3 } }}
       />,
     );
 
-    expect(screen.queryByText(/Přidat novou do BOBa/)).not.toBeInTheDocument();
-    expect(screen.queryByText('Nemůžeš najít knihu?')).not.toBeInTheDocument();
+    expect(screen.queryByText('Přidat knihu')).not.toBeInTheDocument();
   });
 });

@@ -32,7 +32,7 @@ describe('ContentSourceForm', () => {
     expect(screen.getByLabelText('Body')).toHaveValue(null);
   });
 
-  it('submits the form and redirects to the essay editor with the new source', async () => {
+  it('submits the form and redirects to a new essay with the new source by default', async () => {
     fetchSpy.mockResolvedValue(
       new Response(JSON.stringify({ data: { id: 'src-1' } }), { status: 201 }),
     );
@@ -45,5 +45,25 @@ describe('ContentSourceForm', () => {
 
     expect(fetchSpy).toHaveBeenCalledWith('/api/content-sources', expect.objectContaining({ method: 'POST' }));
     expect(push).toHaveBeenCalledWith('/cteni/eseje/nova?source=src-1');
+  });
+
+  it('prefills the title from initialTitle', () => {
+    render(<ContentSourceForm initialTitle="Founders" />);
+
+    expect(screen.getByLabelText('Název')).toHaveValue('Founders');
+  });
+
+  it('redirects back to returnTo when set, instead of starting a new essay', async () => {
+    fetchSpy.mockResolvedValue(
+      new Response(JSON.stringify({ data: { id: 'src-1' } }), { status: 201 }),
+    );
+    const user = userEvent.setup();
+    render(<ContentSourceForm returnTo="/cteni/eseje/essay-1/upravit" />);
+
+    await user.click(screen.getByRole('button', { name: 'Podcast' }));
+    await user.type(screen.getByLabelText('Název'), 'Founders');
+    await user.click(screen.getByRole('button', { name: 'Uložit' }));
+
+    expect(push).toHaveBeenCalledWith('/cteni/eseje/essay-1/upravit?source=src-1');
   });
 });

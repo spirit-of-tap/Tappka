@@ -29,7 +29,10 @@ export async function getContentSources(
 
   query = query.eq('status', filters.status ?? 'approved');
   if (filters.createdBy) query = query.eq('created_by_profile_id', filters.createdBy);
-  if (filters.search?.trim()) query = query.ilike('title', `%${filters.search.trim()}%`);
+  if (filters.search?.trim()) {
+    const q = filters.search.trim();
+    query = query.or(`title.ilike.%${q}%,creator.ilike.%${q}%`);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
