@@ -281,6 +281,91 @@ describe('EssayEditorForm — content source', () => {
       expect(payload.book_id).toBeNull();
     });
   });
+
+  it('clears the selected content source when the author switches back to "Kniha"', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    const essayWithSource = {
+      ...publishedEssay,
+      content_source_id: 'src-1',
+      content_source: {
+        id: 'src-1',
+        kind: 'podcast' as const,
+        title: 'Founders',
+        creator: 'David Senra',
+        points: 0.5,
+        status: 'approved' as const,
+      },
+    };
+
+    render(<EssayEditorForm initialEssay={essayWithSource} />);
+    expect(screen.getByText('Founders')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Kniha' }));
+
+    // The selection is gone, not merely hidden behind the other pane…
+    expect(screen.queryByText('Founders')).not.toBeInTheDocument();
+
+    // …and the cleared link is persisted rather than left dangling on the row.
+    await vi.advanceTimersByTimeAsync(3000);
+    await waitFor(() => {
+      const saves = fetchSpy.mock.calls.filter(([url]) => url === `/api/essays/${publishedEssay.id}`);
+      expect(saves.length).toBeGreaterThan(0);
+      const payload = JSON.parse((saves[0][1] as RequestInit).body as string);
+      expect(payload.content_source_id).toBeNull();
+      expect(payload.book_id).toBeNull();
+    });
+  });
+
+  it('clears the selected book when the author switches to "Jiný zdroj"', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    const essayWithBook = {
+      ...publishedEssay,
+      book_id: 'b1',
+      book: {
+        id: 'b1',
+        title_cs: 'Atomic Habits',
+        author: 'James Clear',
+        book_points: 3,
+        list_status: 'shortlist' as const,
+        is_rocket_model: false,
+        google_books_cover_url: null,
+        highlight_category: null,
+      },
+    };
+
+    render(<EssayEditorForm initialEssay={essayWithBook} />);
+    expect(screen.getByText('Atomic Habits')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Jiný zdroj' }));
+
+    expect(screen.queryByText('Atomic Habits')).not.toBeInTheDocument();
+
+    await vi.advanceTimersByTimeAsync(3000);
+    await waitFor(() => {
+      const saves = fetchSpy.mock.calls.filter(([url]) => url === `/api/essays/${publishedEssay.id}`);
+      expect(saves.length).toBeGreaterThan(0);
+      const payload = JSON.parse((saves[0][1] as RequestInit).body as string);
+      expect(payload.book_id).toBeNull();
+      expect(payload.content_source_id).toBeNull();
+    });
+  });
+
+  it('does not autosave when the toggle is flipped with nothing selected', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { revision_no: 2, updated_at: '2026-08-10T12:00:00Z' } }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={publishedEssay} />);
+    await user.click(screen.getByRole('button', { name: 'Jiný zdroj' }));
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(
+      fetchSpy.mock.calls.some(([url]) => url === `/api/essays/${publishedEssay.id}`),
+    ).toBe(false);
+  });
 });
 
 describe('EssayEditorForm — add-book entry', () => {

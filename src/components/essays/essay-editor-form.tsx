@@ -212,6 +212,22 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     schedule();
   }, [schedule]);
 
+  /**
+   * The toggle is a choice of source, not just of which pane is visible:
+   * leaving the other mode's selection attached would keep the essay pointing
+   * at a content source while the author is staring at an empty book search.
+   * Only clears when there is something to clear, so a stray toggle click
+   * never schedules a no-op autosave.
+   */
+  const handleSourceModeChange = useCallback((mode: 'book' | 'other') => {
+    setSourceMode(mode);
+    if (mode === 'book') {
+      if (selectedSource) handleSourceChange(null);
+    } else if (selectedBook) {
+      handleBookChange(null);
+    }
+  }, [selectedBook, selectedSource, handleBookChange, handleSourceChange]);
+
   const searchSources = async (q: string) => {
     if (!q.trim()) { setSourceResults([]); return; }
     const requestId = ++sourceSearchRef.current;
@@ -479,14 +495,14 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
             <button
               type="button"
               className={cn('rounded-full px-2.5 py-1 font-medium transition-colors', sourceMode === 'book' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
-              onClick={() => setSourceMode('book')}
+              onClick={() => handleSourceModeChange('book')}
             >
               Kniha
             </button>
             <button
               type="button"
               className={cn('rounded-full px-2.5 py-1 font-medium transition-colors', sourceMode === 'other' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
-              onClick={() => setSourceMode('other')}
+              onClick={() => handleSourceModeChange('other')}
             >
               Jiný zdroj
             </button>
