@@ -42,7 +42,10 @@ export const contentSources = pgTable("content_sources", {
 			name: "content_sources_status_changed_by_profile_id_fkey"
 		}).onDelete("set null"),
 	pgPolicy("Authenticated users can view all content sources", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
-	pgPolicy("Authenticated users can add content sources", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(created_by_profile_id = current_profile_id())` }),
+	// A student may only ever file a source for review: without the status clause
+	// they could POST straight to PostgREST with status 'approved' and any points,
+	// skipping the API route and the coach queue entirely.
+	pgPolicy("Authenticated users can add content sources", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`((created_by_profile_id = current_profile_id()) AND (status = 'pending_review'::content_source_status))` }),
 	pgPolicy("Coaches and admins can update content sources", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
 	pgPolicy("Coaches and admins can delete content sources", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
 	check("content_sources_points_check", sql`(points IS NULL) OR ((points >= (0)::numeric) AND (points <= (3)::numeric))`),
