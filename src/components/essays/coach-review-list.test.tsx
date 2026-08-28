@@ -313,4 +313,48 @@ describe('CoachReviewList', () => {
     // Read count badge displays 125
     expect(screen.getByText('125')).toBeInTheDocument();
   });
+
+  it('renders a content source essay with its source title and points', () => {
+    const essay = mockEssay({
+      book_id: null,
+      book: null,
+      content_source_id: 'src-1',
+      content_source: {
+        id: 'src-1',
+        kind: 'podcast',
+        title: 'Founders',
+        creator: 'David Senra',
+        points: 2,
+        status: 'approved',
+      },
+    });
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+      />,
+    );
+
+    expect(screen.getByText('Founders')).toBeInTheDocument();
+    expect(screen.getByText('2 body')).toBeInTheDocument();
+    expect(screen.queryByText('Nad rámec četby')).not.toBeInTheDocument();
+  });
+
+  it('still marks a sourceless essay as "Nad rámec četby"', () => {
+    const essay = mockEssay({ book_id: null, book: null });
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+      />,
+    );
+
+    expect(screen.getByText('Nad rámec četby')).toBeInTheDocument();
+  });
 });

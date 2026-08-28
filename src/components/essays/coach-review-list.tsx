@@ -28,10 +28,12 @@ import {
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { CoachReadButton } from './coach-read-button';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 
-import { pointsNumber } from '@/lib/books/points';
+import { formatPoints, pointsLabel } from '@/lib/books/points';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type {
   CoachReviewEssay,
   CoachReviewPointsFilter,
@@ -615,7 +617,7 @@ function ReviewRow({
   onToggled,
 }: ReviewRowProps) {
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
-  const bookPoints = pointsNumber(essay.book?.book_points);
+  const source = getEssaySourceDisplay(essay);
 
   const { coachComments, hasCoachComment, earliestCoachCommentTime, threads } =
     useMemo(
@@ -648,6 +650,8 @@ function ReviewRow({
                 />
               ) : essay.book ? (
                 <BookOpen className="size-4 text-muted-foreground/30" />
+              ) : essay.content_source ? (
+                <ContentSourceIllustration kind={essay.content_source.kind} className="size-full" />
               ) : (
                 <Sparkles className="size-4 text-amber-500/40" />
               )}
@@ -683,17 +687,17 @@ function ReviewRow({
 
               {/* Book status badges */}
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                {essay.book ? (
+                {source.kind !== 'none' ? (
                   <>
                     <span className="truncate font-medium text-foreground/80">
-                      {essay.book.title_cs}
+                      {source.title}
                     </span>
-                    {bookPoints > 0 && (
+                    {source.points > 0 && (
                       <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
-                        {bookPoints} {bookPoints === 1 ? 'bod' : bookPoints < 5 ? 'body' : 'bodů'}
+                        {formatPoints(source.points)} {pointsLabel(source.points)}
                       </span>
                     )}
-                    <BookStatusBadges book={essay.book} />
+                    {essay.book && <BookStatusBadges book={essay.book} />}
                   </>
                 ) : (
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">

@@ -79,3 +79,32 @@ describe('MyEssayList koncepty', () => {
     expect(screen.queryByText(/slov/)).not.toBeInTheDocument();
   });
 });
+
+describe('MyEssayList source buckets', () => {
+  it('shows a content source essay with its title and points, not as "Nad rámec četby"', () => {
+    const sourced = essay({
+      id: 'essay-3',
+      title: 'Co jsem si odnesl z Founders',
+      content_source_id: 'src-1',
+      content_source: {
+        id: 'src-1',
+        kind: 'podcast',
+        title: 'Founders',
+        creator: 'David Senra',
+        points: 0.5,
+        status: 'approved',
+      },
+    });
+
+    render(<MyEssayList essays={[sourced]} />);
+
+    expect(screen.getByText('Founders')).toBeInTheDocument();
+    expect(screen.getByText('0,50 b.')).toBeInTheDocument();
+    expect(screen.queryByText('Nad rámec četby')).not.toBeInTheDocument();
+  });
+
+  it('still shows "Nad rámec četby" for an essay with no source at all', () => {
+    render(<MyEssayList essays={[essay()]} />);
+    expect(screen.getByText('Nad rámec četby')).toBeInTheDocument();
+  });
+});

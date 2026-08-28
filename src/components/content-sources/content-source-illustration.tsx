@@ -2,7 +2,12 @@ import { Podcast, Presentation, GraduationCap, Sparkles, type LucideIcon } from 
 import { cn } from '@/lib/utils';
 import type { ContentSourceKind } from '@/lib/content-sources/types';
 
-const KIND_ICON: Record<ContentSourceKind, LucideIcon> = {
+/**
+ * Exported so a renderer that needs the bare glyph (an inline icon in a text
+ * row, where the tinted tile below would be too small to read) picks the same
+ * icon per kind as the tile does.
+ */
+export const CONTENT_SOURCE_KIND_ICONS: Record<ContentSourceKind, LucideIcon> = {
   podcast: Podcast,
   conference: Presentation,
   program: GraduationCap,
@@ -34,7 +39,7 @@ interface ContentSourceIllustrationProps {
  * an accessible name of "Podcast Podcast" instead of "Podcast".
  */
 export function ContentSourceIllustration({ kind, className }: ContentSourceIllustrationProps) {
-  const Icon = KIND_ICON[kind];
+  const Icon = CONTENT_SOURCE_KIND_ICONS[kind];
   return (
     <div
       aria-hidden="true"

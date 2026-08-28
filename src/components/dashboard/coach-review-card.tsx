@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
 interface CoachReviewCardProps {
@@ -51,7 +52,9 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
           </p>
         ) : (
           <ul className="space-y-3">
-            {preview.map((essay) => (
+            {preview.map((essay) => {
+              const sourceTitle = getEssaySourceDisplay(essay).title;
+              return (
               <li key={essay.id}>
                 <Link href={`/cteni/eseje/${essay.id}`} className="group block">
                   <p className="text-sm font-medium group-hover:underline underline-offset-4 line-clamp-1">
@@ -59,7 +62,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
                   </p>
                   <p className="text-xs text-muted-foreground line-clamp-1">
                     {essay.author?.name ?? 'Neznámý:á autor:ka'}
-                    {essay.book && ` · ${essay.book.title_cs}`}
+                    {sourceTitle && ` · ${sourceTitle}`}
                     {' · '}
                     {new Date(essay.created_at).toLocaleDateString('cs-CZ', {
                       day: 'numeric',
@@ -68,7 +71,8 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
                   </p>
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </CardContent>

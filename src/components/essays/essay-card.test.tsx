@@ -41,6 +41,22 @@ describe('EssayCard — content source', () => {
     expect(screen.getByText('0,50 b.')).toBeInTheDocument();
   });
 
+  it('uses the source kind icon in the source row instead of a book glyph', () => {
+    const { container } = render(
+      <EssayCard
+        essay={{
+          ...baseEssay,
+          content_source: { id: 's1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0.5, status: 'approved' },
+        }}
+      />,
+    );
+
+    // The cover tile and the source row both speak "podcast"…
+    expect(container.querySelectorAll('.lucide-podcast')).toHaveLength(2);
+    // …and nothing on the card claims this essay came from a book.
+    expect(container.querySelector('.lucide-book-open')).toBeNull();
+  });
+
   it('still shows "Nad rámec četby" when neither source is set', () => {
     render(<EssayCard essay={baseEssay} />);
     expect(screen.getByText('Nad rámec četby')).toBeInTheDocument();

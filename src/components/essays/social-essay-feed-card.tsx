@@ -6,9 +6,12 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { EssayVoteButton } from './essay-vote-button';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import { countWords, formatReadingTime } from '@/lib/essays/text-stats';
 import { formatRelativeTime, isRecentEssay } from '@/lib/essays/date-helpers';
 import { cn } from '@/lib/utils';
@@ -87,6 +90,7 @@ export function SocialEssayFeedCard({
   const relativeTime = formatRelativeTime(essay.created_at);
   const badge = getEssayGamificationBadge(essay, authorStats);
   const snippet = extractEssaySnippet(essay);
+  const source = getEssaySourceDisplay(essay);
 
   const isSpotlight = Boolean(spotlightLabel);
 
@@ -144,7 +148,7 @@ export function SocialEssayFeedCard({
         )}
       </div>
 
-      {/* 2. Book Connection Capsule */}
+      {/* 2. Source Connection Capsule (book or content source) */}
       {essay.book ? (
         <Link
           href={`/cteni/knihy/${essay.book.id}`}
@@ -180,6 +184,27 @@ export function SocialEssayFeedCard({
             </Badge>
           )}
         </Link>
+      ) : essay.content_source ? (
+        /* Content sources have no detail page to link to — same capsule, no link. */
+        <div className="flex items-center gap-2.5 rounded-xl border bg-muted/40 p-2">
+          <ContentSourceIllustration kind={essay.content_source.kind} className="h-10 w-7 shrink-0" />
+
+          <div className="min-w-0 flex-1">
+            <span className="block truncate text-xs font-medium text-foreground">
+              {source.title}
+            </span>
+            <p className="truncate text-[11px] text-muted-foreground">
+              {CONTENT_SOURCE_KIND_LABELS[essay.content_source.kind]}
+              {source.author ? ` · ${source.author}` : ''}
+            </p>
+          </div>
+
+          {!source.isArchived && source.points > 0 && (
+            <Badge variant="secondary" className="shrink-0 text-xs font-semibold">
+              {formatPoints(source.points)} b.
+            </Badge>
+          )}
+        </div>
       ) : null}
 
       {/* 3. Essay Title & Excerpt */}

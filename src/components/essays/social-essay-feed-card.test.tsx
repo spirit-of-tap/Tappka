@@ -81,4 +81,35 @@ describe('SocialEssayFeedCard', () => {
 
     expect(screen.getByText(/Po přečtení knihy jsme v týmu udělali první experiment/)).toBeInTheDocument();
   });
+
+  it('renders the content source capsule with title, kind and points', () => {
+    render(
+      <SocialEssayFeedCard
+        essay={{
+          ...mockEssay,
+          book_id: null,
+          book: null,
+          content_source_id: 'src-1',
+          content_source: {
+            id: 'src-1',
+            kind: 'podcast',
+            title: 'Founders',
+            creator: 'David Senra',
+            points: 0.5,
+            status: 'approved',
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Founders')).toBeInTheDocument();
+    expect(screen.getByText(/Podcast · David Senra/)).toBeInTheDocument();
+    expect(screen.getByText('0,50 b.')).toBeInTheDocument();
+  });
+
+  it('renders no source capsule when the essay has neither a book nor a content source', () => {
+    render(<SocialEssayFeedCard essay={{ ...mockEssay, book_id: null, book: null }} />);
+
+    expect(screen.queryByText('The Lean Startup')).not.toBeInTheDocument();
+  });
 });

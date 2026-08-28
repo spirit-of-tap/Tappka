@@ -24,6 +24,9 @@ export const metadata = {
 };
 import { formatPoints } from '@/lib/books/points';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
+import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 
 interface PageProps {
   params: Promise<{ essayId: string }>;
@@ -71,6 +74,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
     canReview = reviewable.data === true;
   }
   const alreadyRead = profile ? coachReads.some((r) => r.coach_profile_id === profile.id) : false;
+  const source = getEssaySourceDisplay(essay);
 
   return (
     <PageShell size="narrow">
@@ -135,8 +139,8 @@ export default async function EssayDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Book source */}
-      {essay.book && (
+      {/* Source (book or content source) */}
+      {essay.book ? (
         <Link href={`/cteni/knihy/${essay.book.id}`} className="group block mb-8">
           <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors">
             <div className="shrink-0 w-9 h-12 rounded overflow-hidden bg-muted flex items-center justify-center">
@@ -165,7 +169,23 @@ export default async function EssayDetailPage({ params }: PageProps) {
             )}
           </div>
         </Link>
-      )}
+      ) : essay.content_source ? (
+        /* Content sources have no detail page of their own — this is a plain card. */
+        <div className="mb-8 flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+          <ContentSourceIllustration kind={essay.content_source.kind} className="shrink-0 w-9 h-12" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground mb-0.5">Zdroj</p>
+            <p className="text-sm font-medium truncate">{source.title}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {CONTENT_SOURCE_KIND_LABELS[essay.content_source.kind]}
+              {source.author ? ` · ${source.author}` : ''}
+            </p>
+          </div>
+          {!source.isArchived && source.points > 0 && (
+            <Badge variant="secondary" className="shrink-0">{formatPoints(source.points)} b.</Badge>
+          )}
+        </div>
+      ) : null}
 
       {/* Content with Revision Diff support */}
       <EssayViewerWithDiff

@@ -5,7 +5,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { EssayVoteButton } from './essay-vote-button';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
-import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
+import { ContentSourceIllustration, CONTENT_SOURCE_KIND_ICONS } from '@/components/content-sources/content-source-illustration';
 import { formatPoints } from '@/lib/books/points';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { EssayWithDetails } from '@/lib/essays/types';
@@ -20,6 +20,11 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
   const snippet = (essay.content_text ?? '').slice(0, 160).trimEnd();
   const source = getEssaySourceDisplay(essay);
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
+  // The icon sits next to the source's own title, so it has to describe the
+  // source — a podcast row showing a book glyph reads as a mislabelled essay.
+  const SourceIcon = essay.content_source
+    ? CONTENT_SOURCE_KIND_ICONS[essay.content_source.kind]
+    : BookOpen;
 
   return (
     <Link href={`/cteni/eseje/${essay.id}`} className="group block h-full">
@@ -67,7 +72,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground border-t pt-2">
             {source.kind !== 'none' ? (
               <>
-                <BookOpen className="size-3 shrink-0" />
+                <SourceIcon className="size-3 shrink-0" />
                 <span className="truncate">{source.title}</span>
                 {essay.book && <BookStatusBadges book={essay.book} />}
                 {!source.isArchived && source.points > 0 && (

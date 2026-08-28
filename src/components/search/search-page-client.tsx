@@ -35,6 +35,7 @@ import type { AuthorGamificationStats } from '@/components/essays/social-essay-f
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 import type { HighlightedGroup } from '@/lib/books/highlight-groups';
@@ -527,7 +528,9 @@ function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[];
             Eseje ({essays.length})
           </h2>
           <div className="divide-y rounded-xl border overflow-hidden bg-card">
-            {essays.map((essay) => (
+            {essays.map((essay) => {
+              const sourceTitle = getEssaySourceDisplay(essay).title;
+              return (
               <Link
                 key={essay.id}
                 href={`/cteni/eseje/${essay.id}`}
@@ -543,7 +546,7 @@ function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[];
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{essay.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {essay.author?.name}{essay.book ? ` · ${essay.book.title_cs}` : ''}
+                    {essay.author?.name}{sourceTitle ? ` · ${sourceTitle}` : ''}
                   </p>
                 </div>
                 <span className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground">
@@ -554,7 +557,8 @@ function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[];
                   {essay.vote_count}
                 </span>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

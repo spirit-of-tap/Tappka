@@ -5,9 +5,11 @@ import { Eye, BookOpen, MessageCircle, Sparkles, Pin, PenLine, ArrowRight } from
 
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { EssayVoteButton } from './essay-vote-button';
 
-import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { formatPoints } from '@/lib/books/points';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
 interface MyEssayListProps {
@@ -17,8 +19,10 @@ interface MyEssayListProps {
 }
 
 export function MyEssayList({ essays, drafts = [], votedEssayIds = new Set() }: MyEssayListProps) {
-  const bookEssays = essays.filter((e) => e.book);
-  const topicEssays = essays.filter((e) => !e.book);
+  // "Nad rámec četby" means no source at all — a content-source essay belongs
+  // with the sourced ones, not with the beyond-the-list bucket.
+  const bookEssays = essays.filter((e) => getEssaySourceDisplay(e).kind !== 'none');
+  const topicEssays = essays.filter((e) => getEssaySourceDisplay(e).kind === 'none');
 
   const sortPinned = (a: EssayWithDetails, b: EssayWithDetails) => {
     const aPinned = isEssayPinned(a);
@@ -95,10 +99,11 @@ export function MyEssayList({ essays, drafts = [], votedEssayIds = new Set() }: 
           month: 'short',
           year: 'numeric',
         });
-        const points = pointsNumber(essay.book?.book_points);
-        const hasPoints = essay.book?.list_status !== 'archived' && points > 0;
-        const isRejected = essay.book?.list_status === 'archived';
-        const isTopic = !essay.book;
+        const source = getEssaySourceDisplay(essay);
+        const points = source.points;
+        const hasPoints = !source.isArchived && points > 0;
+        const isRejected = source.isArchived;
+        const isTopic = source.kind === 'none';
 
         return (
           <Link
@@ -126,6 +131,8 @@ export function MyEssayList({ essays, drafts = [], votedEssayIds = new Set() }: 
                   height={56}
                   className="w-full h-full object-cover"
                 />
+              ) : essay.content_source ? (
+                <ContentSourceIllustration kind={essay.content_source.kind} className="size-full" />
               ) : isTopic ? (
                 <Sparkles className="size-4 text-amber-500/40" />
               ) : (
@@ -161,6 +168,8 @@ export function MyEssayList({ essays, drafts = [], votedEssayIds = new Set() }: 
                     {essay.book.title_cs}
                     <BookStatusBadges book={essay.book} />
                   </>
+                ) : source.kind === 'content_source' ? (
+                  source.title
                 ) : (
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                     <Sparkles className="size-3" />
