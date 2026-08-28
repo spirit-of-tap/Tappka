@@ -5,6 +5,21 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { tagNamesFromJoin } from '@/lib/books/tags';
 import { patchEsejeSheetXml } from '@/lib/portfolio/generate-eseje-sheet';
+import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
+import type { ContentSourceKind } from '@/lib/content-sources/types';
+
+interface PortfolioContentSourceRow {
+  kind: ContentSourceKind;
+  title: string;
+  creator: string | null;
+  points: number | string | null;
+}
+
+/** PostgREST returns a to-one embed as an object, but types it as possibly an array. */
+function firstEmbed<T>(embed: T | T[] | null | undefined): T | null {
+  if (Array.isArray(embed)) return embed[0] ?? null;
+  return embed ?? null;
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -32,24 +47,33 @@ export async function POST(request: NextRequest) {
         book_points,
         source,
         book_tags(tags(name))
+      ),
+      content_source:content_sources!content_source_id(
+        id,
+        kind,
+        title,
+        creator,
+        points
       )
     `)
     .eq('author_profile_id', profile.id)
     .not('published_at', 'is', null)
     .is('removed_at', null)
-    .not('book_id', 'is', null)
+    // Every essay that carries a source, book or otherwise — an essay with
+    // neither is "nad rámec četby" and has nothing to itemize.
+    .or('book_id.not.is.null,content_source_id.not.is.null')
     .order('created_at', { ascending: true });
 
   if (essayData.error) throw essayData.error;
 
   const rows = (essayData.data ?? []).map((essay, i) => {
-    const rawBook = Array.isArray(essay.book) ? essay.book[0] : essay.book;
-    const book = rawBook as {
+    const book = firstEmbed(essay.book) as {
       title_cs: string;
       author: string;
       book_points: number | null;
       book_tags?: { tags: { name: string } | null }[] | null;
     } | null;
+    const contentSource = firstEmbed(essay.content_source) as PortfolioContentSourceRow | null;
     const tags = tagNamesFromJoin(book?.book_tags);
     const firstTag = tags[0] ?? '';
     const category = BOOK_CATEGORY_LABELS[firstTag] ?? firstTag;
@@ -61,14 +85,14 @@ export async function POST(request: NextRequest) {
 
     return {
       index: i + 1,
-      bookTitle: book?.title_cs ?? '',
-      author: book?.author ?? '',
+      bookTitle: book?.title_cs ?? contentSource?.title ?? '',
+      author: book?.author ?? contentSource?.creator ?? '',
       essayId: essay.id,
       essayTitle,
       essayUrl: `${origin}/cteni/eseje/${essay.id}`,
       category,
-      source: 'Kniha',
-      points: Number(book?.book_points ?? 0),
+      source: book ? 'Kniha' : contentSource ? CONTENT_SOURCE_KIND_LABELS[contentSource.kind] : '',
+      points: Number(book?.book_points ?? contentSource?.points ?? 0),
     };
   });
 
