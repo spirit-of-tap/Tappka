@@ -5,7 +5,9 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { EssayVoteButton } from './essay-vote-button';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
-import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
+import { formatPoints } from '@/lib/books/points';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 interface EssayCardProps {
@@ -16,6 +18,7 @@ interface EssayCardProps {
 
 export function EssayCard({ essay, showVoteButton = false, initialVoted = false }: EssayCardProps) {
   const snippet = (essay.content_text ?? '').slice(0, 160).trimEnd();
+  const source = getEssaySourceDisplay(essay);
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
 
   return (
@@ -45,7 +48,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
                 <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{snippet}</p>
               )}
             </div>
-            {essay.book?.google_books_cover_url && (
+            {essay.book?.google_books_cover_url ? (
               <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted">
                 <StorageImage
                   storageKey={essay.book.google_books_cover_url}
@@ -55,20 +58,22 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
                   className="w-full h-full object-cover"
                 />
               </div>
-            )}
+            ) : source.illustrationKind ? (
+              <ContentSourceIllustration kind={source.illustrationKind as never} className="shrink-0 w-10 h-14" />
+            ) : null}
           </div>
 
-          {/* Book source */}
+          {/* Source (book or content source) */}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground border-t pt-2">
-            {essay.book ? (
+            {source.kind !== 'none' ? (
               <>
                 <BookOpen className="size-3 shrink-0" />
-                <span className="truncate">{essay.book.title_cs}</span>
-                <BookStatusBadges book={essay.book} />
-                {essay.book.list_status !== 'archived' && pointsNumber(essay.book.book_points) > 0 && (
-                  <span className="shrink-0 ml-auto font-medium text-foreground">{formatPoints(essay.book.book_points)} b.</span>
+                <span className="truncate">{source.title}</span>
+                {essay.book && <BookStatusBadges book={essay.book} />}
+                {!source.isArchived && source.points > 0 && (
+                  <span className="shrink-0 ml-auto font-medium text-foreground">{formatPoints(source.points)} b.</span>
                 )}
-                {essay.book.list_status === 'archived' && (
+                {source.isArchived && (
                   <span className="shrink-0 ml-auto text-destructive">0 b.</span>
                 )}
               </>
