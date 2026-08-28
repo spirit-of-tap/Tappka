@@ -5,15 +5,15 @@ import {
   setAuthCookie,
 } from "./fixtures/auth";
 
-// One title per test: the three tests share a profile, and a draft left behind
-// by an earlier test would make a title-based locator ambiguous.
-const RELOAD_TITLE = "E2E koncept — reload";
-const PUBLISH_TITLE = "E2E koncept — zveřejnění";
-const HISTORY_TITLE = "E2E koncept — historie";
-const DELETE_TITLE = "E2E koncept — smazání";
+// One title per test: the four tests share a profile, and an essay left
+// behind by an earlier test would make a title-based locator ambiguous.
+const RELOAD_TITLE = "E2E esej — reload";
+const VISIBILITY_TITLE = "E2E esej — viditelnost";
+const HISTORY_TITLE = "E2E esej — historie";
+const DELETE_TITLE = "E2E esej — smazání";
 const DRAFT_BODY = "Tohle je text, který musí přežít reload stránky.";
 
-test.describe("essay autosave and koncepty", () => {
+test.describe("essay autosave and auto-publish", () => {
   let cookieValue: string;
 
   test.beforeAll(async () => {
@@ -25,7 +25,7 @@ test.describe("essay autosave and koncepty", () => {
     await cleanupTestData();
   });
 
-  test("autosaves a new essay as a koncept and survives a reload", async ({ page, context }) => {
+  test("autosaves a new essay and survives a reload", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
     await page.goto("/cteni/eseje/nova");
 
@@ -33,7 +33,7 @@ test.describe("essay autosave and koncepty", () => {
     await page.locator(".ProseMirror").click();
     await page.keyboard.type(DRAFT_BODY);
 
-    // The URL swaps to the editor route once the koncept row exists.
+    // The URL swaps to the editor route once the essay row exists.
     await expect(page).toHaveURL(/\/cteni\/eseje\/[0-9a-f-]{36}\/upravit$/, { timeout: 15_000 });
     await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
 
@@ -45,33 +45,31 @@ test.describe("essay autosave and koncepty", () => {
     expect(page.url()).toBe(editorUrl);
   });
 
-  test("a koncept appears under Koncepty and disappears once published", async ({ page, context }) => {
+  test("an essay becomes visible in Moje eseje as soon as it gets a title — no publish step", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
     await page.goto("/cteni/eseje/nova");
 
-    await page.getByLabel("Název eseje").fill(PUBLISH_TITLE);
+    // There is no publish button: filling in the title is the only thing
+    // that makes the essay visible, and it happens through the ordinary
+    // autosave flow.
+    await expect(page.getByRole("button", { name: "Zveřejnit" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Uložit změny" })).toHaveCount(0);
+
+    await page.getByLabel("Název eseje").fill(VISIBILITY_TITLE);
     await page.locator(".ProseMirror").click();
     await page.keyboard.type(DRAFT_BODY);
     await expect(page).toHaveURL(/\/upravit$/, { timeout: 15_000 });
     await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
 
+    const essayId = new URL(page.url()).pathname.split("/").at(-2);
+
     await page.goto("/cteni/prehled");
-    await expect(page.getByText(/Koncepty \(/)).toBeVisible();
-    await expect(page.getByRole("link", { name: new RegExp(PUBLISH_TITLE) })).toBeVisible();
-
-    await page.getByRole("link", { name: new RegExp(PUBLISH_TITLE) }).click();
-    await page.getByRole("button", { name: "Zveřejnit" }).click();
-
-    await expect(page).toHaveURL(/\/cteni\/eseje\/[0-9a-f-]{36}$/);
-    await expect(page.getByRole("heading", { name: PUBLISH_TITLE })).toBeVisible();
-    const essayId = new URL(page.url()).pathname.split("/").at(-1);
-
-    // Asserted per essay rather than on the whole Koncepty group: the other
-    // tests in this file leave their own drafts on the same profile.
-    await page.goto("/cteni/prehled");
+    await expect(page.getByRole("link", { name: new RegExp(VISIBILITY_TITLE) })).toBeVisible();
+    // Reading it directly (not via "continue editing") confirms it's a normal,
+    // already-visible essay rather than something waiting on a further step.
     await expect(
-      page.locator(`a[href="/cteni/eseje/${essayId}/upravit"]`),
-    ).toHaveCount(0);
+      page.locator(`a[href="/cteni/eseje/${essayId}"]`),
+    ).toHaveCount(1);
   });
 
   test("history lists at least the current version", async ({ page, context }) => {
@@ -92,7 +90,7 @@ test.describe("essay autosave and koncepty", () => {
     await expect(history.getByText(/slov/).first()).toBeVisible();
   });
 
-  test("deletes a koncept and takes it out of the list", async ({ page, context }) => {
+  test("deletes an essay and takes it out of the list", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
     await page.goto("/cteni/eseje/nova");
 
@@ -103,13 +101,16 @@ test.describe("essay autosave and koncepty", () => {
     await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
     const essayId = new URL(page.url()).pathname.split("/").at(-2);
 
+    // The title is already filled in, so the essay has been auto-published —
+    // deleting it goes through the full ("Smazat esej", not the title-less
+    // "Smazat rozepsanou esej") confirmation copy.
     await page.getByRole("button", { name: "Další akce" }).click();
-    await page.getByRole("menuitem", { name: "Smazat koncept" }).click();
-    await expect(page.getByText("Smazat koncept?")).toBeVisible();
+    await page.getByRole("menuitem", { name: "Smazat esej" }).click();
+    await expect(page.getByText("Smazat esej?")).toBeVisible();
     await page.getByRole("button", { name: "Smazat", exact: true }).click();
 
     await expect(page).toHaveURL(/\/cteni\/prehled$/, { timeout: 15_000 });
-    await expect(page.locator(`a[href="/cteni/eseje/${essayId}/upravit"]`)).toHaveCount(0);
+    await expect(page.locator(`a[href="/cteni/eseje/${essayId}"]`)).toHaveCount(0);
 
     // The author can no longer reach it.
     await page.goto(`/cteni/eseje/${essayId}/upravit`);

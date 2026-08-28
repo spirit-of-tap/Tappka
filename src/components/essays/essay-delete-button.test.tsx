@@ -35,18 +35,18 @@ async function openConfirm(user: ReturnType<typeof userEvent.setup>) {
 describe('EssayDeleteButton', () => {
   it('asks before deleting anything', async () => {
     const user = userEvent.setup();
-    render(<EssayDeleteButton essayId="essay-1" isDraft />);
+    render(<EssayDeleteButton essayId="essay-1" hasTitle={false} />);
 
     await user.click(screen.getByRole('button', { name: /Smazat/ }));
 
-    expect(await screen.findByText('Smazat koncept?')).toBeInTheDocument();
+    expect(await screen.findByText('Smazat rozepsanou esej?')).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('soft-deletes the essay and leaves the editor behind', async () => {
     fetchSpy.mockResolvedValue(jsonResponse({ success: true }));
     const user = userEvent.setup();
-    render(<EssayDeleteButton essayId="essay-1" isDraft />);
+    render(<EssayDeleteButton essayId="essay-1" hasTitle={false} />);
 
     const confirm = await openConfirm(user);
     await user.click(confirm);
@@ -58,9 +58,9 @@ describe('EssayDeleteButton', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/cteni/prehled'));
   });
 
-  it('warns a published author about the points they give up', async () => {
+  it('warns an author about the points they give up', async () => {
     const user = userEvent.setup();
-    render(<EssayDeleteButton essayId="essay-1" isDraft={false} points={3} />);
+    render(<EssayDeleteButton essayId="essay-1" hasTitle points={3} />);
 
     await user.click(screen.getByRole('button', { name: /Smazat/ }));
 
@@ -70,7 +70,7 @@ describe('EssayDeleteButton', () => {
 
   it('does not mention points when the essay earns none', async () => {
     const user = userEvent.setup();
-    render(<EssayDeleteButton essayId="essay-1" isDraft={false} />);
+    render(<EssayDeleteButton essayId="essay-1" hasTitle />);
 
     await user.click(screen.getByRole('button', { name: /Smazat/ }));
 
@@ -81,7 +81,7 @@ describe('EssayDeleteButton', () => {
   it('reports a refused delete and stays on the page', async () => {
     fetchSpy.mockResolvedValue(jsonResponse({ error: 'Esej nenalezena' }, 404));
     const user = userEvent.setup();
-    render(<EssayDeleteButton essayId="essay-1" isDraft />);
+    render(<EssayDeleteButton essayId="essay-1" hasTitle={false} />);
 
     const confirm = await openConfirm(user);
     await user.click(confirm);

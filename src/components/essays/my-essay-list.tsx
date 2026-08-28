@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Eye, BookOpen, MessageCircle, Sparkles, Pin, PenLine, ArrowRight } from 'lucide-react';
+import { Eye, BookOpen, MessageCircle, Sparkles, Pin } from 'lucide-react';
 
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
@@ -14,11 +14,10 @@ import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
 interface MyEssayListProps {
   essays: EssayWithDetails[];
-  drafts?: EssayWithDetails[];
   votedEssayIds?: Set<string>;
 }
 
-export function MyEssayList({ essays, drafts = [], votedEssayIds = new Set() }: MyEssayListProps) {
+export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListProps) {
   // "Nad rámec četby" means no source at all — a content-source essay belongs
   // with the sourced ones, not with the beyond-the-list bucket.
   const bookEssays = essays.filter((e) => getEssaySourceDisplay(e).kind !== 'none');
@@ -36,61 +35,7 @@ export function MyEssayList({ essays, drafts = [], votedEssayIds = new Set() }: 
 
   return (
     <div className="space-y-6">
-      {drafts.length > 0 && (
-        <section
-          aria-label="Rozepsané koncepty"
-          className="rounded-lg border border-dashed border-border/80 bg-muted/20 px-3 py-2"
-        >
-          <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-border/40">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-              <PenLine className="size-3.5 text-primary" />
-              <span>Koncepty ({drafts.length})</span>
-            </h3>
-            <span className="text-[11px] text-muted-foreground">Vidíš jen ty</span>
-          </div>
-
-          <ul className="divide-y divide-border/30">
-            {drafts.map((draft) => (
-              <li key={draft.id}>
-                <Link
-                  href={`/cteni/eseje/${draft.id}/upravit`}
-                  className="group focus-ring -mx-1.5 flex items-center justify-between gap-3 rounded-md px-1.5 py-2 transition-colors hover:bg-muted/50"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="truncate text-sm font-medium group-hover:text-primary transition-colors">
-                      {draft.title.trim() ? draft.title : 'Bez názvu'}
-                    </span>
-                    {draft.book && (
-                      <span className="hidden sm:inline text-xs text-muted-foreground truncate">
-                        · {draft.book.title_cs}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                    <span className="text-[11px] hidden sm:inline">
-                      upraveno{' '}
-                      {new Date(draft.updated_at).toLocaleDateString('cs-CZ', {
-                        day: 'numeric',
-                        month: 'short',
-                      })}
-                    </span>
-                    <span className="flex items-center gap-0.5 font-medium text-primary">
-                      Pokračovat
-                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-                    </span>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       <div className="space-y-2">
-      {drafts.length > 0 && sorted.length > 0 && (
-        <h3 className="text-sm font-semibold">Zveřejněné ({sorted.length})</h3>
-      )}
-
       <div className="divide-y divide-border/50">
       {sorted.map((essay, i) => {
         const snippet = (essay.content_text ?? '').slice(0, 120).trimEnd();

@@ -410,3 +410,13 @@ mark[data-color="orange"] { background-color: #fdba74; }
   .borrow-check-pop { animation: borrow-check-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
   .borrow-fade-up { animation: borrow-fade-up 0.4s ease-out 0.15s both; }
 }
+
+/* ── Essay autosave save-glow ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes save-glow {
+    0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--success) 55%, transparent); }
+    100% { box-shadow: 0 0 0 6px color-mix(in oklch, var(--success) 0%, transparent); }
+  }
+
+  .save-glow { animation: save-glow 0.8s ease-out; }
+}

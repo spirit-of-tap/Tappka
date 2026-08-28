@@ -83,8 +83,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: sourceError }, { status: 400 });
     }
 
-    // A koncept may be empty in every field — it exists so autosave has
-    // somewhere to write. Publishing is where the content rules apply.
+    // The essay may be empty in every field at creation time — it exists so
+    // autosave has somewhere to write. It becomes visible to others once
+    // autosave gives it a title (see PATCH /api/essays/[id]).
     const trimmedTitle = typeof title === 'string' ? title.trim() : '';
     if (trimmedTitle.length > MAX_TITLE_LENGTH) {
       return NextResponse.json({ error: 'Název eseje je příliš dlouhý' }, { status: 400 });

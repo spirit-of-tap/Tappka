@@ -20,7 +20,6 @@ interface PrehledContentProps {
     approved_points_this_semester: number;
   };
   myEssays: EssayWithDetails[];
-  drafts: EssayWithDetails[];
   teamStats: {
     profile: { id: string; name: string; picture: string | null };
     approved_points: number;
@@ -37,7 +36,6 @@ const KNIZNI_BODY_METRIC = getMetric('knizni-body');
 export function PrehledContent({
   stats,
   myEssays,
-  drafts,
   teamStats,
   hasTeam,
   teamId,
@@ -73,7 +71,7 @@ export function PrehledContent({
           <div>
             <h2 className="font-heading text-lg font-semibold">Moje eseje</h2>
             <p className="text-xs text-muted-foreground">
-              Rozepsané koncepty a odevzdané eseje
+              Tvoje odevzdané eseje
             </p>
           </div>
           <Button asChild size="sm" className="hidden sm:inline-flex">
@@ -84,13 +82,13 @@ export function PrehledContent({
           </Button>
         </div>
 
-        {myEssays.length === 0 && drafts.length === 0 ? (
+        {myEssays.length === 0 ? (
           <div className="space-y-3 rounded-xl border border-dashed px-6 py-12 text-center">
             <FileText className="mx-auto size-8 text-muted-foreground/50" />
             <div className="space-y-1">
               <p className="font-medium">Ještě tu nic není</p>
               <p className="text-sm text-muted-foreground">
-                První esej si můžeš rozepsat a dokončit kdykoliv později.
+                Piš průběžně, ukládá se to samo. Esej uvidí ostatní, jakmile jí dáš název.
               </p>
             </div>
             <Button asChild>
@@ -98,7 +96,7 @@ export function PrehledContent({
             </Button>
           </div>
         ) : (
-          <MyEssayList essays={myEssays} drafts={drafts} votedEssayIds={votedEssayIds} />
+          <MyEssayList essays={myEssays} votedEssayIds={votedEssayIds} />
         )}
       </section>
 

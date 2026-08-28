@@ -127,21 +127,76 @@ describe('EssayEditorForm — autosave status', () => {
   });
 });
 
-describe('EssayEditorForm — publishing', () => {
-  it('publishes a koncept and navigates to the detail page', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }));
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-
+describe('EssayEditorForm — no manual publish step', () => {
+  it('has no publish or manual save button', () => {
     render(<EssayEditorForm initialEssay={draftEssay} />);
-    await user.click(screen.getByRole('button', { name: 'Zveřejnit' }));
-
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/cteni/eseje/essay-1'));
-    expect(fetchSpy.mock.calls.some(([url]) => url === '/api/essays/essay-1/publish')).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Zveřejnit' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Uložit změny' })).not.toBeInTheDocument();
   });
 
-  it('labels the action Uložit změny for a published essay', () => {
-    render(<EssayEditorForm initialEssay={publishedEssay} />);
-    expect(screen.getByRole('button', { name: 'Uložit změny' })).toBeInTheDocument();
+  it('tells the author saving happens automatically', () => {
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+    expect(screen.getByText('Ukládá se automaticky')).toBeInTheDocument();
+  });
+
+  it('labels deletion as a title-less essay before the author has typed a title', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<EssayEditorForm initialEssay={{ ...draftEssay, title: '' }} />);
+
+    await user.click(screen.getByRole('button', { name: 'Další akce' }));
+    expect(screen.getByRole('menuitem', { name: 'Smazat rozepsanou esej' })).toBeInTheDocument();
+  });
+
+  it('labels deletion as a full essay once the author has typed a title', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await user.click(screen.getByRole('button', { name: 'Další akce' }));
+    expect(screen.getByRole('menuitem', { name: 'Smazat esej' })).toBeInTheDocument();
+  });
+});
+
+describe('EssayEditorForm — header actions', () => {
+  it('exposes version history as its own button, not tucked behind the menu', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: [] }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    expect(screen.getByRole('button', { name: 'Historie verzí' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Další akce' }));
+    expect(screen.queryByRole('menuitem', { name: 'Historie verzí' })).not.toBeInTheDocument();
+  });
+
+  it('opens the version history sheet from its own button', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: [] }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await user.click(screen.getByRole('button', { name: 'Historie verzí' }));
+    expect(await screen.findByText('Kontrolní body z tvého psaní. Náhled je jen ke čtení.')).toBeInTheDocument();
+  });
+});
+
+describe('EssayEditorForm — save status glow', () => {
+  it('briefly glows the save status right after an autosave completes, then settles', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { container } = render(<EssayEditorForm />);
+
+    await user.type(screen.getByLabelText('Název eseje'), 'Titul');
+    await vi.advanceTimersByTimeAsync(3000);
+    await waitFor(() => expect(screen.getByText(/Uloženo/)).toBeInTheDocument());
+
+    expect(container.querySelector('.save-glow')).not.toBeNull();
+
+    await vi.advanceTimersByTimeAsync(900);
+    await waitFor(() => expect(container.querySelector('.save-glow')).toBeNull());
+  });
+
+  it('does not glow before anything has been saved', () => {
+    const { container } = render(<EssayEditorForm initialEssay={draftEssay} />);
+    expect(container.querySelector('.save-glow')).toBeNull();
   });
 });
 

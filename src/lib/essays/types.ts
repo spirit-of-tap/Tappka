@@ -129,8 +129,6 @@ export interface EssayFilters {
   sort?: EssaySortOrder;
   page?: number;
   pageSize?: number;
-  /** Defaults to 'published' so every existing caller keeps its behaviour. */
-  status?: 'draft' | 'published';
 }
 
 export interface CreateEssayInput {

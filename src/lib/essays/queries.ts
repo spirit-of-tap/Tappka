@@ -227,16 +227,12 @@ export async function getEssays(
   // has to happen *after* ranking by votes/views, not before, or the ranking
   // only ever reorders whatever page of recent rows happened to be fetched.
   const buildQuery = (sinceIso?: string) => {
-    const status = filters?.status ?? 'published';
     let q = supabase
       .from('essays')
       .select(ESSAY_DETAIL_SELECT)
+      .not('published_at', 'is', null)
       .is('removed_at', null)
       .order('created_at', { ascending: false });
-
-    q = status === 'draft'
-      ? q.is('published_at', null)
-      : q.not('published_at', 'is', null);
 
     if (isPopularSort) {
       if (sinceIso) q = q.gte('created_at', sinceIso);
