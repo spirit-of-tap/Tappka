@@ -5,6 +5,7 @@ import type { Database, Json } from '@/lib/supabase/database.types';
 
 import { contentTextFromJson } from './content-text';
 import { countWords } from './text-stats';
+import { pointsNumber } from '@/lib/books/points';
 import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
 import { getCurrentSemesterRange } from '@/lib/metrics/periods';
 import type { HighlightCategory } from '@/lib/books/types';
@@ -1293,7 +1294,7 @@ export async function getUserBookPointsStats(
 }> {
   const { data: bookEssays, error } = await supabase
     .from('essays')
-    .select('book_id, published_at, books!inner(book_points, list_status)')
+    .select('book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .eq('author_profile_id', profileId)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -1311,22 +1312,33 @@ export async function getUserBookPointsStats(
 
   if (sourceError) throw sourceError;
 
-  type BookRow = { book_id: string; published_at: string; books: { book_points: number; list_status: string } };
+  type BookRow = {
+    book_id: string;
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
+  };
   type SourceRow = { content_source_id: string; published_at: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const approved = new Map<string, number>();
+  const approvedAt = new Map<string, string>(); // key -> published_at of the row currently credited, for earliest-wins
   const pending = new Set<string>();
   const semesterApproved = new Set<string>();
   const { start: semesterStart } = getCurrentSemesterRange(now);
 
   for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
     if (!row.book_id) continue;
+    const key = `book:${row.book_id}`;
     if (ELIGIBLE.has(row.books.list_status)) {
-      approved.set(`book:${row.book_id}`, Number(row.books.book_points));
-      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(`book:${row.book_id}`);
+      const existingAt = approvedAt.get(key);
+      if (!existingAt || row.published_at < existingAt) {
+        approved.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
+        approvedAt.set(key, row.published_at);
+      }
+      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(key);
     } else if (row.books.list_status === 'processing') {
-      pending.add(`book:${row.book_id}`);
+      pending.add(key);
     }
   }
 
