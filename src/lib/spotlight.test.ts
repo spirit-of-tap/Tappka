@@ -77,7 +77,7 @@ describe("spotlight", () => {
   });
 
   describe("getSpotlightItems", () => {
-    it("filters out feature-gated items when user does not have beta access", () => {
+    it("filters out feature-gated items when user does not have beta access, but keeps public reading", () => {
       const nonBetaItems = getSpotlightItems({
         user: { id: "user-1", beta_access_granted_at: null, beta_cohort: "A" },
       });
@@ -85,7 +85,7 @@ describe("spotlight", () => {
       const featureItems = nonBetaItems.filter((i) => i.feature);
       expect(featureItems).toHaveLength(0);
       expect(nonBetaItems.some((i) => i.id === "page-dashboard")).toBe(true);
-      expect(nonBetaItems.some((i) => i.id === "page-cteni")).toBe(false);
+      expect(nonBetaItems.some((i) => i.id === "page-cteni")).toBe(true);
     });
 
     it("shows reading for cohort A but not birthGiving (cohort gating)", () => {

@@ -2,18 +2,14 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 
 import { Switch } from "@/components/ui/switch"
-import { canAccessFeature, type AccessProfile } from "@/lib/feature-access"
 
 interface NotificationPreferencesFormProps {
   initialCoachReadEmail: boolean
   initialCommentEmail: boolean
   initialVoteEmail: boolean
   initialBookSubmittedEmail: boolean
-  hasBetaAccess?: boolean
-  profile?: AccessProfile | null
 }
 
 type ToggleKey = "essay_coach_read_email" | "essay_comment_email" | "essay_vote_email" | "book_submitted_email"
@@ -30,10 +26,7 @@ export function NotificationPreferencesForm({
   initialCommentEmail,
   initialVoteEmail,
   initialBookSubmittedEmail,
-  hasBetaAccess,
-  profile,
 }: NotificationPreferencesFormProps) {
-  const hasAccess = profile ? canAccessFeature(profile, "reading") : (hasBetaAccess ?? false)
   const router = useRouter()
   const [values, setValues] = useState<Record<ToggleKey, boolean>>({
     essay_coach_read_email: initialCoachReadEmail,
@@ -44,7 +37,6 @@ export function NotificationPreferencesForm({
   const [savingKey, setSavingKey] = useState<ToggleKey | null>(null)
 
   const handleToggle = async (key: ToggleKey, value: boolean) => {
-    if (!hasAccess) return
     setSavingKey(key)
     setValues((prev) => ({ ...prev, [key]: value }))
 
@@ -67,23 +59,14 @@ export function NotificationPreferencesForm({
 
   return (
     <div className="space-y-3">
-      {!hasAccess && (
-        <p className="text-sm text-muted-foreground">
-          Tato funkce je součástí bety. Beta přístup si můžeš zapnout na stránce{" "}
-          <Link href="/beta" className="underline underline-offset-2">
-            Beta přístup
-          </Link>
-          .
-        </p>
-      )}
       {TOGGLES.map(({ key, label }) => (
         <div key={key} className="flex items-center justify-between rounded-lg border bg-background px-4 py-3">
           <span className="text-sm">{label}</span>
           <Switch
             aria-label={label}
-            checked={hasAccess ? values[key] : false}
+            checked={values[key]}
             onCheckedChange={(value) => handleToggle(key, value)}
-            disabled={!hasAccess || savingKey === key}
+            disabled={savingKey === key}
           />
         </div>
       ))}

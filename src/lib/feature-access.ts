@@ -1,5 +1,4 @@
 export const BETA_FEATURES = {
-  reading: ["A", "B"],
   customerMeetings: ["B"],
   coaching: ["B"],
   teamReflection: ["B"],

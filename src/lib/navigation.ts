@@ -45,7 +45,7 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Osobnostní testy", url: "/osobnostni-testy", icon: Brain, feature: "personalityTests", description: "Výsledky osobnostních testů a jejich vývoj v čase." },
   // Čtení renders as a plain link; its sub-navigation lives in
   // src/app/(main)/cteni/layout.tsx as a tab bar.
-  { title: "Čtení", url: "/cteni/prehled", icon: BookOpen, feature: "reading", featured: true, description: "Knihovna knih, eseje a jejich hodnocení." },
+  { title: "Čtení", url: "/cteni/prehled", icon: BookOpen, featured: true, description: "Knihovna knih, eseje a jejich hodnocení." },
   { title: "Birth Giving", url: "/birth-giving", icon: Gift, feature: "birthGiving", description: "Týmová setkání Birth Giving a retrospektivy." },
 ];
 
