@@ -243,6 +243,7 @@ export async function getEssays(
 
     if (filters?.authorProfileId) q = q.eq('author_profile_id', filters.authorProfileId);
     if (filters?.bookId) q = q.eq('book_id', filters.bookId);
+    if (filters?.contentSourceId) q = q.eq('content_source_id', filters.contentSourceId);
     if (tagBookIds) q = q.in('book_id', tagBookIds);
     if (searchEssayIds) q = q.in('id', searchEssayIds);
 

@@ -124,6 +124,7 @@ export interface EssayFilters {
   authorProfileId?: string;
   teamId?: string;
   bookId?: string;
+  contentSourceId?: string;
   search?: string;
   tag?: string;
   sort?: EssaySortOrder;
