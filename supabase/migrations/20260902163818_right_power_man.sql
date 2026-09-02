@@ -1,0 +1,1 @@
+ALTER TABLE "essays" ADD COLUMN "frozen_book_points" numeric(3, 2);

@@ -729,6 +729,13 @@
       "when": 1787950713366,
       "tag": "20260828205833_silky_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1788367098103,
+      "tag": "20260902163818_right_power_man",
+      "breakpoints": true
     }
   ]
 }

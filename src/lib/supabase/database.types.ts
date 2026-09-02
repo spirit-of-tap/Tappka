@@ -976,6 +976,7 @@ export type Database = {
           created_at: string
           created_by_profile_id: string
           external_id: string | null
+          frozen_book_points: number | null
           id: string
           pinned_at: string | null
           pinned_by_profile_id: string | null
@@ -991,6 +992,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id: string
           external_id?: string | null
+          frozen_book_points?: number | null
           id?: string
           pinned_at?: string | null
           pinned_by_profile_id?: string | null
@@ -1006,6 +1008,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id?: string
           external_id?: string | null
+          frozen_book_points?: number | null
           id?: string
           pinned_at?: string | null
           pinned_by_profile_id?: string | null
