@@ -4,6 +4,8 @@ import { getSessionProfile } from "@/lib/auth/session"
 import { listTeamActivities, listTeamMembers } from "@/lib/tymovy-denik/queries"
 import { TeamActivityDetail } from "@/components/tymovy-denik/team-activity-detail"
 import { PageBack } from "@/components/ui/page-back"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 interface TeamActivityDetailPageProps {
   params: Promise<{ id: string }>
@@ -21,7 +23,18 @@ export default async function TeamActivityDetailPage({ params }: TeamActivityDet
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "teamDiary",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Týmový deník" />
+  }
   if (!profile.team_id) redirect("/")
 
   const [activities, teamMembers] = await Promise.all([

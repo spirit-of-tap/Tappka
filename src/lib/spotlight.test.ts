@@ -77,18 +77,41 @@ describe("spotlight", () => {
   });
 
   describe("getSpotlightItems", () => {
-    it("filters out beta items when user does not have beta access", () => {
+    it("filters out feature-gated items when user does not have beta access", () => {
       const nonBetaItems = getSpotlightItems({
-        user: { id: "user-1", beta_access: false },
+        user: { id: "user-1", beta_access_granted_at: null, beta_cohort: "A" },
       });
 
-      const betaItems = nonBetaItems.filter((i) => i.betaOnly);
-      expect(betaItems).toHaveLength(0);
+      const featureItems = nonBetaItems.filter((i) => i.feature);
+      expect(featureItems).toHaveLength(0);
       expect(nonBetaItems.some((i) => i.id === "page-dashboard")).toBe(true);
       expect(nonBetaItems.some((i) => i.id === "page-cteni")).toBe(false);
     });
 
-    it("includes beta items when user has beta access", () => {
+    it("shows reading for cohort A but not birthGiving (cohort gating)", () => {
+      const cohortAItems = getSpotlightItems({
+        user: { id: "user-1", beta_access_granted_at: "2026-01-01T00:00:00Z", beta_cohort: "A", role: "student" },
+      });
+
+      expect(cohortAItems.some((i) => i.id === "page-cteni")).toBe(true);
+      expect(cohortAItems.some((i) => i.id === "page-birth-giving")).toBe(false);
+      expect(cohortAItems.some((i) => i.id === "page-schuzky")).toBe(false);
+      expect(cohortAItems.some((i) => i.id === "page-portfolio")).toBe(false);
+    });
+
+    it("shows all feature items for cohort B", () => {
+      const cohortBItems = getSpotlightItems({
+        user: { id: "user-1", beta_access_granted_at: "2026-01-01T00:00:00Z", beta_cohort: "B", role: "student" },
+      });
+
+      expect(cohortBItems.some((i) => i.id === "page-cteni")).toBe(true);
+      expect(cohortBItems.some((i) => i.id === "page-schuzky")).toBe(true);
+      expect(cohortBItems.some((i) => i.id === "page-koucovani")).toBe(true);
+      expect(cohortBItems.some((i) => i.id === "page-birth-giving")).toBe(true);
+      expect(cohortBItems.some((i) => i.id === "page-portfolio")).toBe(true);
+    });
+
+    it("includes beta items via legacy beta_access boolean (maps to B)", () => {
       const betaItems = getSpotlightItems({
         user: { id: "user-1", beta_access: true },
       });
@@ -96,6 +119,13 @@ describe("spotlight", () => {
       expect(betaItems.some((i) => i.id === "page-cteni")).toBe(true);
       expect(betaItems.some((i) => i.id === "page-schuzky")).toBe(true);
       expect(betaItems.some((i) => i.id === "page-koucovani")).toBe(true);
+    });
+
+    it("supports legacy non-beta via beta_access false", () => {
+      const items = getSpotlightItems({
+        user: { id: "user-1", beta_access: false },
+      });
+      expect(items.filter((i) => i.feature)).toHaveLength(0);
     });
 
     it("respects coach and admin role gates for room settings", () => {

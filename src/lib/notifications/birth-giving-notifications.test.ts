@@ -40,6 +40,7 @@ interface EmailMember {
   profile: {
     access_removed_at: string | null;
     beta_access_granted_at: string | null;
+    beta_cohort?: string | null;
     user: { verified_work_email: string | null };
   };
 }
@@ -169,6 +170,7 @@ const activeMember = (email: string | null): EmailMember => ({
   profile: {
     access_removed_at: null,
     beta_access_granted_at: BETA_GRANTED_AT,
+    beta_cohort: "B",
     user: { verified_work_email: email },
   },
 });
@@ -270,7 +272,7 @@ describe("Birth Giving notifications", () => {
     await notifyParticipantsOfAssignment(EVENT_ID);
 
     expect(admin.memberSnapshots[0].selectCols).toBe(
-      "profile:profiles!birth_giving_team_members_profile_id_fkey!inner(access_removed_at,beta_access_granted_at,user:users!inner(verified_work_email))",
+      "profile:profiles!birth_giving_team_members_profile_id_fkey!inner(access_removed_at,beta_access_granted_at,beta_cohort,user:users!inner(verified_work_email))",
     );
     expect(admin.memberSnapshots[0].filters).toContainEqual({ method: "eq", column: "event_id", value: EVENT_ID });
   });
@@ -320,6 +322,7 @@ describe("Birth Giving notifications", () => {
           profile: {
             access_removed_at: "2026-08-24T10:00:00.000Z",
             beta_access_granted_at: BETA_GRANTED_AT,
+            beta_cohort: "B",
             user: { verified_work_email: "gone@example.com" },
           },
         },
@@ -327,7 +330,16 @@ describe("Birth Giving notifications", () => {
           profile: {
             access_removed_at: null,
             beta_access_granted_at: null,
+            beta_cohort: "B",
             user: { verified_work_email: "no-beta@example.com" },
+          },
+        },
+        {
+          profile: {
+            access_removed_at: null,
+            beta_access_granted_at: BETA_GRANTED_AT,
+            beta_cohort: "A",
+            user: { verified_work_email: "cohort-a@example.com" },
           },
         },
         activeMember("active@example.com"),

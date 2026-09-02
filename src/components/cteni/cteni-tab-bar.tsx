@@ -37,7 +37,8 @@ export function getActiveCteniTabUrl(pathname: string, isCoachOrAdmin: boolean):
   }
   if (
     isCoachOrAdmin &&
-    (pathname === '/cteni/sprava' || pathname.startsWith('/cteni/sprava/'))
+    (pathname === '/cteni/sprava' || pathname.startsWith('/cteni/sprava/') ||
+     pathname === '/cteni/zdroje/ke-schvaleni' || pathname.startsWith('/cteni/zdroje/ke-schvaleni/'))
   ) {
     return '/cteni/sprava';
   }
@@ -57,7 +58,8 @@ export function getActiveCteniTabUrl(pathname: string, isCoachOrAdmin: boolean):
     pathname === '/cteni/hledat' ||
     pathname.startsWith('/cteni/hledat/') ||
     pathname.startsWith('/cteni/knihy') ||
-    pathname.startsWith('/cteni/eseje')
+    pathname.startsWith('/cteni/eseje') ||
+    (pathname.startsWith('/cteni/zdroje') && !pathname.startsWith('/cteni/zdroje/ke-schvaleni'))
   ) {
     return '/cteni/hledat';
   }

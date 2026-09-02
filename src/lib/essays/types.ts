@@ -1,5 +1,6 @@
 import type { Profile } from '@/lib/auth-helpers';
 import type { Book, HighlightCategory } from '@/lib/books/types';
+import type { ContentSource } from '@/lib/content-sources/types';
 
 /**
  * Application-facing essay shape. Title/content come from the latest valid
@@ -9,6 +10,9 @@ export interface Essay {
   id: string;
   author_profile_id: string;
   book_id: string | null;
+  /** Points frozen from the old system for pre-2026-09-03 essays; null uses the book's live book_points. */
+  frozen_book_points: string | null;
+  content_source_id: string | null;
   title: string;
   content_json: object;
   /** Plain text derived from `content_json` for snippets (not stored). */
@@ -28,6 +32,7 @@ export interface EssayWithDetails extends Essay {
   book: (Pick<Book, 'id' | 'title_cs' | 'author' | 'book_points' | 'list_status' | 'is_rocket_model' | 'google_books_cover_url'> & {
     highlight_category: HighlightCategory | null;
   }) | null;
+  content_source: Pick<ContentSource, 'id' | 'kind' | 'title' | 'creator' | 'points' | 'status'> | null;
   comment_count: number;
 }
 
@@ -121,13 +126,12 @@ export interface EssayFilters {
   authorProfileId?: string;
   teamId?: string;
   bookId?: string;
+  contentSourceId?: string;
   search?: string;
   tag?: string;
   sort?: EssaySortOrder;
   page?: number;
   pageSize?: number;
-  /** Defaults to 'published' so every existing caller keeps its behaviour. */
-  status?: 'draft' | 'published';
 }
 
 export interface CreateEssayInput {
@@ -135,6 +139,7 @@ export interface CreateEssayInput {
   content_json: object;
   content_text?: string;
   book_id?: string;
+  content_source_id?: string;
 }
 
 export interface UpdateEssayInput {
@@ -142,6 +147,7 @@ export interface UpdateEssayInput {
   content_json?: object;
   content_text?: string;
   book_id?: string | null;
+  content_source_id?: string | null;
 }
 
 export const ESSAY_LIST_VIEW_LABELS: Record<EssayListView, string> = {

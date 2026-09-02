@@ -5,6 +5,7 @@ import type { Database, Json } from '@/lib/supabase/database.types';
 
 import { contentTextFromJson } from './content-text';
 import { countWords } from './text-stats';
+import { pointsNumber } from '@/lib/books/points';
 import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
 import { getCurrentSemesterRange } from '@/lib/metrics/periods';
 import type { HighlightCategory } from '@/lib/books/types';
@@ -35,7 +36,8 @@ const ESSAY_DETAIL_SELECT = `
   essay_views(count),
   essay_comments(count),
   author:profiles!author_profile_id(id, name, picture, role, team_id),
-  book:books!book_id(id, title_cs, author, book_points, list_status, is_rocket_model, google_books_cover_url, highlight_category:highlight_categories(*))
+  book:books!book_id(id, title_cs, author, book_points, list_status, is_rocket_model, google_books_cover_url, highlight_category:highlight_categories(*)),
+  content_source:content_sources!content_source_id(id, kind, title, creator, points, status)
 `;
 
 interface EssayRevisionEmbed {
@@ -55,6 +57,7 @@ interface EssayRawRow {
   id: string;
   author_profile_id: string;
   book_id: string | null;
+  frozen_book_points: string | null;
   published_at: string | null;
   pinned_at: string | null;
   pinned_by_profile_id: string | null;
@@ -71,6 +74,8 @@ interface EssayRawRow {
   book: (Omit<NonNullable<EssayWithDetails['book']>, 'highlight_category'> & {
     highlight_category?: HighlightCategory | HighlightCategory[] | null;
   }) | null;
+  content_source_id: string | null;
+  content_source: EssayWithDetails['content_source'];
 }
 
 /**
@@ -98,6 +103,7 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
       created_by_profile_id: _createdBy,
       updated_by_profile_id: _updatedBy,
       book,
+      content_source,
       ...rest
     } = row;
 
@@ -115,6 +121,7 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
       book: book
         ? { ...book, highlight_category: Array.isArray(book.highlight_category) ? book.highlight_category[0] ?? null : book.highlight_category ?? null }
         : null,
+      content_source: content_source ?? null,
       title: revision?.title ?? '',
       content_json,
       content_text: contentTextFromJson(content_json),
@@ -222,16 +229,12 @@ export async function getEssays(
   // has to happen *after* ranking by votes/views, not before, or the ranking
   // only ever reorders whatever page of recent rows happened to be fetched.
   const buildQuery = (sinceIso?: string) => {
-    const status = filters?.status ?? 'published';
     let q = supabase
       .from('essays')
       .select(ESSAY_DETAIL_SELECT)
+      .not('published_at', 'is', null)
       .is('removed_at', null)
       .order('created_at', { ascending: false });
-
-    q = status === 'draft'
-      ? q.is('published_at', null)
-      : q.not('published_at', 'is', null);
 
     if (isPopularSort) {
       if (sinceIso) q = q.gte('created_at', sinceIso);
@@ -242,6 +245,7 @@ export async function getEssays(
 
     if (filters?.authorProfileId) q = q.eq('author_profile_id', filters.authorProfileId);
     if (filters?.bookId) q = q.eq('book_id', filters.bookId);
+    if (filters?.contentSourceId) q = q.eq('content_source_id', filters.contentSourceId);
     if (tagBookIds) q = q.in('book_id', tagBookIds);
     if (searchEssayIds) q = q.in('id', searchEssayIds);
 
@@ -1288,9 +1292,9 @@ export async function getUserBookPointsStats(
   /** Points approved in the current semester (winter Sep–Jan, summer Feb–Aug). */
   approved_points_this_semester: number;
 }> {
-  const { data: essays, error } = await supabase
+  const { data: bookEssays, error } = await supabase
     .from('essays')
-    .select('book_id, published_at, books!inner(book_points, list_status)')
+    .select('book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .eq('author_profile_id', profileId)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -1298,21 +1302,53 @@ export async function getUserBookPointsStats(
 
   if (error) throw error;
 
-  type Row = { book_id: string; published_at: string; books: { book_points: number; list_status: string } };
+  const { data: sourceEssays, error: sourceError } = await supabase
+    .from('essays')
+    .select('content_source_id, published_at, content_sources!inner(points, status)')
+    .eq('author_profile_id', profileId)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .not('content_source_id', 'is', null);
+
+  if (sourceError) throw sourceError;
+
+  type BookRow = {
+    book_id: string;
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
+  };
+  type SourceRow = { content_source_id: string; published_at: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const approved = new Map<string, number>();
+  const approvedAt = new Map<string, string>(); // key -> published_at of the row currently credited, for earliest-wins
   const pending = new Set<string>();
   const semesterApproved = new Set<string>();
   const { start: semesterStart } = getCurrentSemesterRange(now);
 
-  for (const row of (essays ?? []) as unknown as Row[]) {
+  for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
     if (!row.book_id) continue;
+    const key = `book:${row.book_id}`;
     if (ELIGIBLE.has(row.books.list_status)) {
-      approved.set(row.book_id, Number(row.books.book_points));
-      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(row.book_id);
+      const existingAt = approvedAt.get(key);
+      if (!existingAt || row.published_at < existingAt) {
+        approved.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
+        approvedAt.set(key, row.published_at);
+      }
+      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(key);
     } else if (row.books.list_status === 'processing') {
-      pending.add(row.book_id);
+      pending.add(key);
+    }
+  }
+
+  for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
+    if (!row.content_source_id) continue;
+    if (row.content_sources.status === 'approved') {
+      approved.set(`source:${row.content_source_id}`, Number(row.content_sources.points));
+      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(`source:${row.content_source_id}`);
+    } else if (row.content_sources.status === 'pending_review') {
+      pending.add(`source:${row.content_source_id}`);
     }
   }
 
@@ -1330,7 +1366,7 @@ export async function getUserBookPointsStats(
     pending_points: pending.size,
     essay_count: count ?? 0,
     approved_points_this_semester: Array.from(semesterApproved).reduce(
-      (sum, bookId) => sum + (approved.get(bookId) ?? 0),
+      (sum, key) => sum + (approved.get(key) ?? 0),
       0,
     ),
   };
@@ -1345,9 +1381,9 @@ export async function getAuthorsApprovedBookPoints(
 ): Promise<Record<string, number>> {
   if (authorProfileIds.length === 0) return {};
 
-  const { data: essays, error } = await supabase
+  const { data: bookEssays, error } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
+    .select('author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .in('author_profile_id', authorProfileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -1355,29 +1391,54 @@ export async function getAuthorsApprovedBookPoints(
 
   if (error) throw error;
 
-  type Row = {
+  const { data: sourceEssays, error: sourceError } = await supabase
+    .from('essays')
+    .select('author_profile_id, content_source_id, content_sources!inner(points, status)')
+    .in('author_profile_id', authorProfileIds)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .not('content_source_id', 'is', null);
+
+  if (sourceError) throw sourceError;
+
+  type BookRow = {
     author_profile_id: string;
     book_id: string;
-    books: { book_points: number; list_status: string };
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
   };
+  type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const pointsByAuthor: Record<string, Map<string, number>> = {};
+  const atByAuthor: Record<string, Map<string, string>> = {};
   for (const authorId of authorProfileIds) {
     pointsByAuthor[authorId] = new Map();
+    atByAuthor[authorId] = new Map();
   }
 
-  for (const row of (essays ?? []) as unknown as Row[]) {
+  for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
     if (!row.book_id || !ELIGIBLE.has(row.books.list_status)) continue;
-    const authorMap = pointsByAuthor[row.author_profile_id];
-    if (authorMap) {
-      authorMap.set(row.book_id, Number(row.books.book_points));
+    const key = `book:${row.book_id}`;
+    const at = atByAuthor[row.author_profile_id];
+    const points = pointsByAuthor[row.author_profile_id];
+    if (!at || !points) continue;
+    const existingAt = at.get(key);
+    if (!existingAt || row.published_at < existingAt) {
+      points.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
+      at.set(key, row.published_at);
     }
   }
 
+  for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
+    if (!row.content_source_id || row.content_sources.status !== 'approved') continue;
+    pointsByAuthor[row.author_profile_id]?.set(`source:${row.content_source_id}`, Number(row.content_sources.points));
+  }
+
   const result: Record<string, number> = {};
-  for (const [authorId, bookMap] of Object.entries(pointsByAuthor)) {
-    result[authorId] = Array.from(bookMap.values()).reduce((sum, p) => sum + p, 0);
+  for (const [authorId, pointsMap] of Object.entries(pointsByAuthor)) {
+    result[authorId] = Array.from(pointsMap.values()).reduce((sum, p) => sum + p, 0);
   }
 
   return result;
@@ -1398,9 +1459,9 @@ export async function getTeamBookPointsStats(
 
   const profileIds = teamProfiles.map((p: { id: string }) => p.id);
 
-  const { data: essays, error: essayError } = await supabase
+  const { data: bookEssays, error: essayError } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
+    .select('author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .in('author_profile_id', profileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -1408,49 +1469,60 @@ export async function getTeamBookPointsStats(
 
   if (essayError) throw essayError;
 
-  type EssayRow = {
+  const { data: sourceEssays, error: sourceError } = await supabase
+    .from('essays')
+    .select('author_profile_id, content_source_id, content_sources!inner(points, status)')
+    .in('author_profile_id', profileIds)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .not('content_source_id', 'is', null);
+
+  if (sourceError) throw sourceError;
+
+  type BookRow = {
     author_profile_id: string;
     book_id: string;
-    books: { book_points: number; list_status: string };
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
   };
+  type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
-  const byProfile: Record<string, { approved: Set<string>; pending: Set<string> }> = {};
+  const byProfile: Record<string, { approved: Map<string, number>; approvedAt: Map<string, string>; pending: Set<string> }> = {};
   for (const profileId of profileIds) {
-    byProfile[profileId] = { approved: new Set(), pending: new Set() };
+    byProfile[profileId] = { approved: new Map(), approvedAt: new Map(), pending: new Set() };
   }
 
-  for (const essay of (essays ?? []) as unknown as EssayRow[]) {
+  for (const essay of (bookEssays ?? []) as unknown as BookRow[]) {
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.book_id) continue;
+    const key = `book:${essay.book_id}`;
     if (ELIGIBLE.has(essay.books.list_status)) {
-      bucket.approved.add(essay.book_id);
+      const existingAt = bucket.approvedAt.get(key);
+      if (!existingAt || essay.published_at < existingAt) {
+        bucket.approved.set(key, pointsNumber(essay.frozen_book_points ?? essay.books.book_points));
+        bucket.approvedAt.set(key, essay.published_at);
+      }
     } else if (essay.books.list_status === 'processing') {
-      bucket.pending.add(essay.book_id);
+      bucket.pending.add(key);
     }
   }
 
-  const { data: approvedBooks, error: booksError } = await supabase
-    .from('books')
-    .select('id, book_points')
-    .in('list_status', ['shortlist', 'longlist']);
-
-  if (booksError) throw booksError;
-
-  const pointsMap: Record<string, number> = {};
-  for (const book of (approvedBooks ?? []) as { id: string; book_points: number }[]) {
-    pointsMap[book.id] = Number(book.book_points);
+  for (const essay of (sourceEssays ?? []) as unknown as SourceRow[]) {
+    const bucket = byProfile[essay.author_profile_id];
+    if (!bucket || !essay.content_source_id) continue;
+    const key = `source:${essay.content_source_id}`;
+    if (essay.content_sources.status === 'approved') {
+      if (!bucket.approved.has(key)) bucket.approved.set(key, pointsNumber(essay.content_sources.points));
+    } else if (essay.content_sources.status === 'pending_review') {
+      bucket.pending.add(key);
+    }
   }
 
   return teamProfiles.map((profile) => {
     const bucket = byProfile[profile.id];
-    let approved_points = 0;
-    let pending_points = 0;
-
-    for (const bookId of bucket.approved) {
-      approved_points += pointsMap[bookId] ?? 0;
-    }
-    pending_points = bucket.pending.size;
+    const approved_points = Array.from(bucket.approved.values()).reduce((sum, p) => sum + p, 0);
 
     return {
       profile: {
@@ -1459,7 +1531,7 @@ export async function getTeamBookPointsStats(
         picture: profile.picture,
       },
       approved_points,
-      pending_points,
+      pending_points: bucket.pending.size,
     };
   });
 }

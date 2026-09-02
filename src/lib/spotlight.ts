@@ -21,12 +21,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { canAccessFeature, type BetaCohort, type BetaFeature } from "./feature-access";
+
 export interface SpotlightItem {
   id: string;
   title: string;
   description: string;
   url: string;
-  betaOnly?: boolean;
+  feature?: BetaFeature;
   adminOnly?: boolean;
   coachOrAdminOnly?: boolean;
   icon: LucideIcon;
@@ -39,6 +41,8 @@ export interface SpotlightUser {
   email?: string;
   role?: string;
   beta_access?: boolean;
+  beta_access_granted_at?: string | null;
+  beta_cohort?: BetaCohort;
 }
 
 export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
@@ -115,7 +119,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Knihovna knih, eseje a jejich hodnocení",
     url: "/cteni/prehled",
     icon: BookOpen,
-    betaOnly: true,
+    feature: "reading",
     keywords: [
       "čtení",
       "knihy",
@@ -156,7 +160,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Evidence a přehled zákaznických schůzek",
     url: "/schuzky",
     icon: Handshake,
-    betaOnly: true,
+    feature: "customerMeetings",
     keywords: [
       "schůzky",
       "zákaznické schůzky",
@@ -182,7 +186,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Evidence a záznamy koučovacích sezení",
     url: "/koucovani",
     icon: GraduationCap,
-    betaOnly: true,
+    feature: "coaching",
     keywords: [
       "koučování",
       "kouč:ka",
@@ -203,7 +207,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Reflexe týmové spolupráce a ročníková hodnocení",
     url: "/tymova-reflexe",
     icon: NotebookPen,
-    betaOnly: true,
+    feature: "teamReflection",
     keywords: [
       "reflexe",
       "týmová reflexe",
@@ -225,7 +229,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Denní zápisy a přehled týmových aktivit",
     url: "/tymovy-denik",
     icon: Activity,
-    betaOnly: true,
+    feature: "teamDiary",
     keywords: [
       "týmový deník",
       "kde najdu týmový deník",
@@ -246,7 +250,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Smlouvy, finanční politika a další dokumenty",
     url: "/tymove-dokumenty",
     icon: Files,
-    betaOnly: true,
+    feature: "teamDocuments",
     keywords: [
       "dokumenty",
       "týmové dokumenty",
@@ -268,7 +272,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Katalog modelů, technik a nástrojů pro práci",
     url: "/nastroje-techniky",
     icon: Wrench,
-    betaOnly: true,
+    feature: "toolsTechniques",
     keywords: [
       "nástroje a techniky",
       "nástroje",
@@ -289,7 +293,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Výsledky osobnostních testů a jejich vývoj v čase",
     url: "/osobnostni-testy",
     icon: Brain,
-    betaOnly: true,
+    feature: "personalityTests",
     keywords: [
       "osobnostní testy",
       "testy",
@@ -307,7 +311,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Týmová setkání Birth Giving a retrospektivy",
     url: "/birth-giving",
     icon: Gift,
-    betaOnly: true,
+    feature: "birthGiving",
     keywords: [
       "birth giving",
       "setkání",
@@ -341,7 +345,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Přehled tvých projektů a výstupů",
     url: "/portfolio",
     icon: BriefcaseBusiness,
-    betaOnly: true,
+    feature: "portfolio",
     keywords: [
       "portfolio",
       "projekty",
@@ -570,12 +574,19 @@ export function getSpotlightItems({
 }: {
   user?: SpotlightUser;
 }): SpotlightItem[] {
-  const isBeta = user?.beta_access ?? false;
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin";
   const isAdmin = user?.role === "admin";
+  const accessProfile = user
+    ? {
+        role: user.role ?? "student",
+        beta_access_granted_at:
+          user.beta_access_granted_at ?? (user.beta_access ? "1970-01-01T00:00:00Z" : null) ?? null,
+        beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
+      }
+    : null;
 
   return RAW_SPOTLIGHT_ITEMS.filter((item) => {
-    if (item.betaOnly && !isBeta) {
+    if (item.feature && !canAccessFeature(accessProfile, item.feature)) {
       return false;
     }
     if (item.adminOnly && !isAdmin) {

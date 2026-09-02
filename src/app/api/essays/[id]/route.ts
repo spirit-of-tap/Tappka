@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById } from '@/lib/essays/queries';
 import { contentTextFromJson } from '@/lib/essays/content-text';
 import { shouldCoalesceRevision } from '@/lib/essays/revisions';
+import { validateEssaySourceIds } from '@/lib/essays/validate-source';
 
 const MAX_TITLE_LENGTH = 500;
 const MAX_CONTENT_TEXT_LENGTH = 100_000;
@@ -44,9 +45,17 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const hasContentUpdate =
       body.title !== undefined || body.content_json !== undefined;
     const hasBookUpdate = 'book_id' in body;
+    const hasSourceUpdate = 'content_source_id' in body;
 
-    if (!hasContentUpdate && !hasBookUpdate) {
+    if (!hasContentUpdate && !hasBookUpdate && !hasSourceUpdate) {
       return NextResponse.json({ error: 'Žádné změny' }, { status: 400 });
+    }
+
+    if (hasBookUpdate || hasSourceUpdate) {
+      const sourceError = validateEssaySourceIds(body.book_id, body.content_source_id);
+      if (sourceError) {
+        return NextResponse.json({ error: sourceError }, { status: 400 });
+      }
     }
 
     const { data: existing, error: existingError } = await supabase
@@ -64,6 +73,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const now = new Date().toISOString();
     let revisionNo: number | null = null;
     let revisionUpdatedAt = now;
+    // There is no explicit publish step: the essay becomes visible to
+    // everyone the moment it first has a title, as a side effect of autosave.
+    let shouldAutoPublish = false;
 
     if (hasContentUpdate) {
       const { data: latest, error: latestError } = await supabase
@@ -83,12 +95,17 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         ? body.content_json
         : (latest?.content_json ?? {});
 
-      // A koncept is allowed to be untitled; a published essay is not.
+      // An essay is allowed to be untitled before it's ever been visible; once
+      // it has a title (and so has been auto-published), the title can't be
+      // cleared back out.
       if (existing.published_at != null && !nextTitle) {
         return NextResponse.json({ error: 'Název eseje je povinný' }, { status: 400 });
       }
       if (nextTitle.length > MAX_TITLE_LENGTH) {
         return NextResponse.json({ error: 'Název eseje je příliš dlouhý' }, { status: 400 });
+      }
+      if (existing.published_at == null && nextTitle) {
+        shouldAutoPublish = true;
       }
 
       const plainText = typeof body.content_text === 'string'
@@ -145,6 +162,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       updated_by_profile_id: string;
       updated_at: string;
       book_id?: string | null;
+      content_source_id?: string | null;
+      published_at?: string;
     } = {
       updated_by_profile_id: profile.id,
       updated_at: now,
@@ -152,6 +171,12 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     if (hasBookUpdate) {
       essayUpdates.book_id = body.book_id ?? null;
+    }
+    if (hasSourceUpdate) {
+      essayUpdates.content_source_id = body.content_source_id ?? null;
+    }
+    if (shouldAutoPublish) {
+      essayUpdates.published_at = now;
     }
 
     const { error: updateError } = await supabase

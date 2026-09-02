@@ -1,15 +1,18 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
 // Please look at CONTRIBUTING.md for more information on how to change the schema.
-import { pgTable, foreignKey, pgPolicy, uuid, text, jsonb, integer, timestamp, index, check, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgPolicy, uuid, text, jsonb, integer, timestamp, index, check, primaryKey, numeric } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
 import { books } from "./books"
+import { contentSources } from "./content-sources"
 
 export const essays = pgTable("essays", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	externalId: text("external_id"),
 	authorProfileId: uuid("author_profile_id").notNull(),
 	bookId: uuid("book_id"),
+	frozenBookPoints: numeric("frozen_book_points", { precision: 3, scale: 2 }),
+	contentSourceId: uuid("content_source_id"),
 	publishedAt: timestamp("published_at", { withTimezone: true, mode: 'string' }),
 	pinnedAt: timestamp("pinned_at", { withTimezone: true, mode: 'string' }),
 	pinnedByProfileId: uuid("pinned_by_profile_id"),
@@ -21,6 +24,7 @@ export const essays = pgTable("essays", {
 }, (table) => [
 	index("essays_author_idx").using("btree", table.authorProfileId.asc().nullsLast().op("uuid_ops")),
 	index("essays_book_idx").using("btree", table.bookId.asc().nullsLast().op("uuid_ops")),
+	index("essays_content_source_idx").using("btree", table.contentSourceId.asc().nullsLast().op("uuid_ops")),
 	index("essays_created_desc_idx").using("btree", table.createdAt.desc().nullsFirst().op("timestamptz_ops")),
 	foreignKey({
 			columns: [table.authorProfileId],
@@ -31,6 +35,11 @@ export const essays = pgTable("essays", {
 			columns: [table.bookId],
 			foreignColumns: [books.id],
 			name: "essays_book_id_fkey"
+		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.contentSourceId],
+			foreignColumns: [contentSources.id],
+			name: "essays_content_source_id_fkey"
 		}).onDelete("set null"),
 	foreignKey({
 			columns: [table.pinnedByProfileId],
@@ -51,6 +60,8 @@ export const essays = pgTable("essays", {
 	pgPolicy("Authenticated users can view all essays", { as: "permissive", for: "select", to: ["authenticated"], using: sql`((published_at IS NOT NULL) OR (author_profile_id = ( SELECT current_profile_id())) OR ( SELECT is_admin()))` }),
 	pgPolicy("Authors and admins can delete essays", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((author_profile_id = current_profile_id()) OR is_admin())` }),
 	pgPolicy("Authors can update their own essays", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(author_profile_id = current_profile_id())`, withCheck: sql`(author_profile_id = current_profile_id())` }),
+	check("essays_source_exclusive_check", sql`NOT ((book_id IS NOT NULL) AND (content_source_id IS NOT NULL))`),
+	check("essays_frozen_book_points_check", sql`(frozen_book_points IS NULL) OR ((frozen_book_points >= (0)::numeric) AND (frozen_book_points <= (3)::numeric))`),
 ]).enableRLS();
 
 export const essayRevisions = pgTable("essay_revisions", {

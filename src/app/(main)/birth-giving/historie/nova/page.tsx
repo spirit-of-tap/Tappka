@@ -6,6 +6,8 @@ import { listBirthGivingOrganizerProfiles } from "@/lib/birth-giving/queries"
 import { BirthGivingRetrospectiveWizard } from "@/components/birth-giving/retrospektiva/birth-giving-retrospective-wizard"
 import { PageShell } from "@/components/ui/page-shell"
 import { PageHeader } from "@/components/ui/page-header"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
   title: "Historická Birth Giving událost | Tappka",
@@ -21,7 +23,18 @@ export default async function BirthGivingHistorieNovaPage() {
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "birthGiving",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Birth Giving" />
+  }
 
   const organizerProfiles = await listBirthGivingOrganizerProfiles(supabase)
 

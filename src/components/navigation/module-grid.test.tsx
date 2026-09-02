@@ -13,7 +13,7 @@ describe("ModuleGrid", () => {
 
   it("shows a Beta badge on beta-only modules", () => {
     render(<ModuleGrid modules={NAV_MODULES} profileId="user-1" />);
-    expect(screen.getAllByText("Beta").length).toBe(NAV_MODULES.filter((m) => m.betaOnly).length);
+    expect(screen.getAllByText("Beta").length).toBe(NAV_MODULES.filter((m) => m.feature).length);
     const mistnosti = screen.getByRole("link", { name: /Místnosti/ });
     expect(within(mistnosti).queryByText("Beta")).not.toBeInTheDocument();
   });

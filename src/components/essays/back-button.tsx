@@ -5,12 +5,17 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 
-export function BackButton({ fallbackHref = '/cteni/prehled' }: { fallbackHref?: string }) {
+interface BackButtonProps {
+  fallbackHref?: string;
+  /** When passed, navigation is deferred to this (e.g. an unsaved-changes confirm) instead of running immediately. */
+  requestNavigation?: (action: () => void) => void;
+}
+
+export function BackButton({ fallbackHref = '/cteni/prehled', requestNavigation }: BackButtonProps) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
-  const goBack = () => {
-    if (pending) return;
+  const navigate = () => {
     // router.back() on an empty history is a silent no-op — land somewhere
     // sensible instead of leaving the button spinning forever.
     if (window.history.length <= 1) {
@@ -19,6 +24,12 @@ export function BackButton({ fallbackHref = '/cteni/prehled' }: { fallbackHref?:
     }
     setPending(true);
     router.back();
+  };
+
+  const goBack = () => {
+    if (pending) return;
+    if (requestNavigation) requestNavigation(navigate);
+    else navigate();
   };
 
   // Same visual language as ui/page-back.tsx, but history-aware for flows

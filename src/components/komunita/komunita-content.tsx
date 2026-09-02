@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Search, X, Users } from 'lucide-react';
+import { Search, X, Users, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { TeamBadges } from '@/components/komunita/team-badges';
 import { UserCard } from '@/components/komunita/user-card';
 import type { ProfileWithTeam, TeamWithCount } from '@/lib/komunita/types';
+import { cn } from '@/lib/utils';
 
 interface KomunitaContentProps {
   profiles: ProfileWithTeam[];
@@ -30,6 +31,7 @@ export function KomunitaContent({
   initialQuery = '',
 }: KomunitaContentProps) {
   const [query, setQuery] = useState(initialQuery);
+  const [showOldTeams, setShowOldTeams] = useState(false);
 
   // Keep ?search= in the URL without triggering a server navigation/refetch.
   useEffect(() => {
@@ -55,6 +57,21 @@ export function KomunitaContent({
       );
     });
   }, [profiles, query]);
+
+  const { activeProfiles, oldTeamProfiles } = useMemo(() => {
+    const active: ProfileWithTeam[] = [];
+    const oldTeams: ProfileWithTeam[] = [];
+
+    for (const profile of filtered) {
+      if (profile.team?.removed_at) {
+        oldTeams.push(profile);
+      } else {
+        active.push(profile);
+      }
+    }
+
+    return { activeProfiles: active, oldTeamProfiles: oldTeams };
+  }, [filtered]);
 
   return (
     <div className="space-y-6">
@@ -106,14 +123,49 @@ export function KomunitaContent({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {filtered.map((profile) => (
-            <UserCard
-              key={profile.id}
-              profile={profile}
-              pictureUrl={pictureUrls[profile.id] ?? null}
-            />
-          ))}
+        <div className="space-y-6">
+          {activeProfiles.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {activeProfiles.map((profile) => (
+                <UserCard
+                  key={profile.id}
+                  profile={profile}
+                  pictureUrl={pictureUrls[profile.id] ?? null}
+                />
+              ))}
+            </div>
+          )}
+
+          {oldTeamProfiles.length > 0 && (
+            <div className="space-y-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowOldTeams((v) => !v)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
+              >
+                <ChevronDown
+                  className={cn(
+                    'size-3.5 transition-transform duration-200',
+                    showOldTeams && 'rotate-180'
+                  )}
+                />
+                Lidé ze starých týmů
+                <span className="text-muted-foreground/70">({oldTeamProfiles.length})</span>
+              </button>
+
+              {showOldTeams && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {oldTeamProfiles.map((profile) => (
+                    <UserCard
+                      key={profile.id}
+                      profile={profile}
+                      pictureUrl={pictureUrls[profile.id] ?? null}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

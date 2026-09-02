@@ -6,6 +6,7 @@ import { getCurrentUserProfile } from "@/lib/auth-helpers"
 import type { Database } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
 import { deleteFile, generateFileKey, uploadFile } from "@/lib/storage/service"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { TEAM_ACTIVITY_IMAGE } from "@/lib/tymovy-denik/image"
 import { getWebpDimensions } from "@/lib/tymovy-denik/webp"
 
@@ -86,7 +87,19 @@ export async function requireTeamActivityApiContext(): Promise<TeamActivityApiCo
   }
 
   const profile = await getCurrentUserProfile(supabase, { user })
-  if (!profile?.team_id || !profile.beta_access_granted_at) {
+  if (!profile?.team_id) {
+    return { response: NextResponse.json({ error: "K této funkci nemáte přístup" }, { status: 403 }) }
+  }
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "teamDiary",
+    )
+  ) {
     return { response: NextResponse.json({ error: "K této funkci nemáte přístup" }, { status: 403 }) }
   }
 

@@ -24,6 +24,31 @@ export function formatPointsWithLabel(p: number | string | null | undefined): st
   return `${formatPoints(p)} ${pointsLabel(p)}`;
 }
 
+export interface ResolveEssayPointsInput {
+  /** `essays.frozen_book_points` — the legacy value a pre-2026-09-03 essay is pinned to, if any. */
+  frozenBookPoints?: number | string | null;
+  book?: { book_points: number | string | null; list_status: string } | null;
+  contentSource?: { points: number | string | null } | null;
+}
+
+/**
+ * The single place that resolves what an essay's book-points contribution
+ * actually is: prefer the frozen (legacy) value over the live one, but an
+ * archived book always contributes 0 regardless of any frozen value —
+ * matching `books_archived_points_check`, which forces `book_points = 0` on
+ * archived books. Content-source essays have no freeze concept (frozen
+ * points only apply to book-linked essays), so they just read the source's
+ * live points.
+ */
+export function resolveEssayPoints({ frozenBookPoints, book, contentSource }: ResolveEssayPointsInput): number {
+  if (book) {
+    if (book.list_status === 'archived') return 0;
+    return pointsNumber(frozenBookPoints ?? book.book_points);
+  }
+  if (contentSource) return pointsNumber(contentSource.points);
+  return 0;
+}
+
 /**
  * A coach's verdict on a pending book. The score *is* the decision: 0 rejects the
  * book into the archive, 1–3 approve it into the longlist. The classify route

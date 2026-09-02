@@ -56,6 +56,7 @@ type AssignmentReleaseEvent = Pick<
  */
 type AssignmentReleaseMember = {
   profile: Pick<Tables<"profiles">, "access_removed_at" | "beta_access_granted_at"> & {
+    beta_cohort?: string | null;
     user: Pick<Tables<"users">, "verified_work_email">;
   };
 };
@@ -131,7 +132,7 @@ export async function notifyParticipantsOfAssignment(eventId: string): Promise<n
       // (profile_id, created_by_profile_id, updated_by_profile_id), so the
       // embed must name the FK hint or PostgREST rejects it as ambiguous
       // (PGRST201) and `members` comes back null — a silent zero-send.
-      "profile:profiles!birth_giving_team_members_profile_id_fkey!inner(access_removed_at,beta_access_granted_at,user:users!inner(verified_work_email))",
+      "profile:profiles!birth_giving_team_members_profile_id_fkey!inner(access_removed_at,beta_access_granted_at,beta_cohort,user:users!inner(verified_work_email))",
     )
     .eq("event_id", eventId);
 
@@ -151,8 +152,15 @@ export async function notifyParticipantsOfAssignment(eventId: string): Promise<n
   for (const m of (members ?? []) as unknown as AssignmentReleaseMember[]) {
     const profile = m.profile;
     // The admin client bypasses RLS, so skip members whose profile is no
-    // longer active by the app's definition.
-    if (!profile || profile.access_removed_at !== null || profile.beta_access_granted_at === null) continue;
+    // longer active by the app's definition. Birth Giving is B-only, so only
+    // B cohort receives assignment emails.
+    if (
+      !profile ||
+      profile.access_removed_at !== null ||
+      profile.beta_access_granted_at === null ||
+      (profile as { beta_cohort?: string | null }).beta_cohort !== "B"
+    )
+      continue;
     const email = profile.user?.verified_work_email;
     if (!email) continue;
     try {

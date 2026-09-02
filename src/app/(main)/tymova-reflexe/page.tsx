@@ -6,6 +6,8 @@ import { listTeamSemesterReflectionsWithProgress } from "@/lib/tymova-reflexe/se
 import { listTeamMembers } from "@/lib/tymovy-denik/queries"
 import { TeamReflectionView } from "@/components/tymova-reflexe/team-reflection-view"
 import { PageShell } from "@/components/ui/page-shell"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
   title: "Týmová reflexe | Tappka",
@@ -21,7 +23,18 @@ export default async function TymovaReflexePage() {
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "teamReflection",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Týmová reflexe" />
+  }
   if (!profile.team_id) redirect("/")
 
   const [reflections, rocnikovaReflections, teamMembers] = await Promise.all([

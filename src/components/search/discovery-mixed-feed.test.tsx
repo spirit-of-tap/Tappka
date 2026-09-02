@@ -55,6 +55,8 @@ const mockEssay1: EssayWithVoted = {
   id: 'essay-1',
   author_profile_id: 'p1',
   book_id: 'b-1',
+  frozen_book_points: null,
+  content_source_id: null,
   title: 'Skvělá reflexe o leadershipu',
   content_json: {},
   content_text: 'Tato kniha změnila náš přístup k týmovému rozhodování.',
@@ -78,6 +80,7 @@ const mockEssay1: EssayWithVoted = {
     google_books_cover_url: null,
     highlight_category: null,
   },
+  content_source: null,
 };
 
 beforeEach(() => {

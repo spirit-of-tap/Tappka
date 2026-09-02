@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { NotificationPreferencesForm } from '@/components/settings/notification-preferences-form';
 import { PageHeader } from '@/components/ui/page-header';
+import type { BetaCohort } from '@/lib/feature-access';
 
 export const metadata = {
   title: 'Notifikace | Tappka',
@@ -36,6 +37,11 @@ export default async function NotificationSettingsPage() {
         initialVoteEmail={preferences?.essay_vote_email ?? true}
         initialBookSubmittedEmail={preferences?.book_submitted_email ?? false}
         hasBetaAccess={Boolean(profile.beta_access_granted_at)}
+        profile={{
+          role: profile.role,
+          beta_access_granted_at: profile.beta_access_granted_at,
+          beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+        }}
       />
     </div>
   );

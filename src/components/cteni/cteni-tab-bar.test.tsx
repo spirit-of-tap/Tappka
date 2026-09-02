@@ -97,6 +97,18 @@ describe('CteniTabBar', () => {
     );
   });
 
+  it('highlights Objevovat on the content source catalog and submission pages', () => {
+    mockPathname.mockReturnValue('/cteni/zdroje');
+    renderBar({ isCoachOrAdmin: true });
+    expect(screen.getByRole('link', { name: 'Objevovat' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('highlights Správa on the content source review queue', () => {
+    mockPathname.mockReturnValue('/cteni/zdroje/ke-schvaleni');
+    renderBar({ isCoachOrAdmin: true });
+    expect(screen.getByRole('link', { name: 'Správa' })).toHaveAttribute('aria-current', 'page');
+  });
+
   it('carries the review count badge only while essays are waiting', () => {
     mockPathname.mockReturnValue('/cteni/sprava');
     const { rerender } = renderBar({ isCoachOrAdmin: true, reviewCount: 3 });

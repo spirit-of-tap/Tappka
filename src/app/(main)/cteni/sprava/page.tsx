@@ -40,12 +40,19 @@ export default async function SpravaKnihovnyPage() {
         title="Správa knihovny"
         description="Zařaď knihy do seznamů a spravuj výběr"
         action={
-          <Button asChild size="sm" className="gap-2 shrink-0">
-            <Link href="/cteni/knihy/nova">
-              <Plus className="size-4" />
-              Přidat knihu
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild size="sm" variant="outline" className="gap-2 shrink-0">
+              <Link href="/cteni/zdroje/ke-schvaleni">
+                Zdroje ke schválení
+              </Link>
+            </Button>
+            <Button asChild size="sm" className="gap-2 shrink-0">
+              <Link href="/cteni/knihy/nova">
+                <Plus className="size-4" />
+                Přidat knihu
+              </Link>
+            </Button>
+          </div>
         }
       />
       <CoachDashboard

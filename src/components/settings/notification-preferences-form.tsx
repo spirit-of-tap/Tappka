@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 
 import { Switch } from "@/components/ui/switch"
+import { canAccessFeature, type AccessProfile } from "@/lib/feature-access"
 
 interface NotificationPreferencesFormProps {
   initialCoachReadEmail: boolean
   initialCommentEmail: boolean
   initialVoteEmail: boolean
   initialBookSubmittedEmail: boolean
-  hasBetaAccess: boolean
+  hasBetaAccess?: boolean
+  profile?: AccessProfile | null
 }
 
 type ToggleKey = "essay_coach_read_email" | "essay_comment_email" | "essay_vote_email" | "book_submitted_email"
@@ -29,7 +31,9 @@ export function NotificationPreferencesForm({
   initialVoteEmail,
   initialBookSubmittedEmail,
   hasBetaAccess,
+  profile,
 }: NotificationPreferencesFormProps) {
+  const hasAccess = profile ? canAccessFeature(profile, "reading") : (hasBetaAccess ?? false)
   const router = useRouter()
   const [values, setValues] = useState<Record<ToggleKey, boolean>>({
     essay_coach_read_email: initialCoachReadEmail,
@@ -40,7 +44,7 @@ export function NotificationPreferencesForm({
   const [savingKey, setSavingKey] = useState<ToggleKey | null>(null)
 
   const handleToggle = async (key: ToggleKey, value: boolean) => {
-    if (!hasBetaAccess) return
+    if (!hasAccess) return
     setSavingKey(key)
     setValues((prev) => ({ ...prev, [key]: value }))
 
@@ -63,7 +67,7 @@ export function NotificationPreferencesForm({
 
   return (
     <div className="space-y-3">
-      {!hasBetaAccess && (
+      {!hasAccess && (
         <p className="text-sm text-muted-foreground">
           Tato funkce je součástí bety. Beta přístup si můžeš zapnout na stránce{" "}
           <Link href="/beta" className="underline underline-offset-2">
@@ -77,9 +81,9 @@ export function NotificationPreferencesForm({
           <span className="text-sm">{label}</span>
           <Switch
             aria-label={label}
-            checked={hasBetaAccess ? values[key] : false}
+            checked={hasAccess ? values[key] : false}
             onCheckedChange={(value) => handleToggle(key, value)}
-            disabled={!hasBetaAccess || savingKey === key}
+            disabled={!hasAccess || savingKey === key}
           />
         </div>
       ))}
