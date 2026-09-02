@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
 
-import { getUserBookPointsStats } from "./queries";
+import { getAuthorsApprovedBookPoints, getUserBookPointsStats } from "./queries";
 
 interface RecordedCall {
   method: string;
@@ -29,6 +29,11 @@ class FakeChain {
 
   eq(column: string, value: unknown): this {
     this.calls.push({ method: "eq", args: [column, value] });
+    return this;
+  }
+
+  in(column: string, values: unknown[]): this {
+    this.calls.push({ method: "in", args: [column, values] });
     return this;
   }
 
@@ -132,5 +137,37 @@ describe("getUserBookPointsStats", () => {
     const result = await getUserBookPointsStats(client, "profile-1");
 
     expect(result.approved_points).toBe(1);
+  });
+});
+
+describe("getAuthorsApprovedBookPoints", () => {
+  it("credits the earliest essay's value per (author, book) when rows are out of order", async () => {
+    const client = fakeSupabase({
+      essays: [
+        {
+          data: [
+            {
+              author_profile_id: "author-1",
+              book_id: "book-1",
+              frozen_book_points: null,
+              published_at: "2026-09-10T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+            {
+              author_profile_id: "author-1",
+              book_id: "book-1",
+              frozen_book_points: "1.00",
+              published_at: "2026-08-01T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+      ],
+    });
+
+    const result = await getAuthorsApprovedBookPoints(client, ["author-1"]);
+
+    expect(result["author-1"]).toBe(1);
   });
 });

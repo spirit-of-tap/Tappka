@@ -1383,7 +1383,7 @@ export async function getAuthorsApprovedBookPoints(
 
   const { data: bookEssays, error } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
+    .select('author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .in('author_profile_id', authorProfileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -1401,18 +1401,34 @@ export async function getAuthorsApprovedBookPoints(
 
   if (sourceError) throw sourceError;
 
-  type BookRow = { author_profile_id: string; book_id: string; books: { book_points: number; list_status: string } };
+  type BookRow = {
+    author_profile_id: string;
+    book_id: string;
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
+  };
   type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const pointsByAuthor: Record<string, Map<string, number>> = {};
+  const atByAuthor: Record<string, Map<string, string>> = {};
   for (const authorId of authorProfileIds) {
     pointsByAuthor[authorId] = new Map();
+    atByAuthor[authorId] = new Map();
   }
 
   for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
     if (!row.book_id || !ELIGIBLE.has(row.books.list_status)) continue;
-    pointsByAuthor[row.author_profile_id]?.set(`book:${row.book_id}`, Number(row.books.book_points));
+    const key = `book:${row.book_id}`;
+    const at = atByAuthor[row.author_profile_id];
+    const points = pointsByAuthor[row.author_profile_id];
+    if (!at || !points) continue;
+    const existingAt = at.get(key);
+    if (!existingAt || row.published_at < existingAt) {
+      points.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
+      at.set(key, row.published_at);
+    }
   }
 
   for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
