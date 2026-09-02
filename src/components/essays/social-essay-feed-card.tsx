@@ -178,9 +178,13 @@ export function SocialEssayFeedCard({
             <p className="truncate text-[11px] text-muted-foreground">{essay.book.author}</p>
           </div>
 
-          {essay.book.list_status !== 'archived' && pointsNumber(essay.book.book_points) > 0 && (
-            <Badge variant="secondary" className="shrink-0 text-xs font-semibold">
-              {formatPoints(essay.book.book_points)} b.
+          {essay.book.list_status !== 'archived' && pointsNumber(essay.frozen_book_points ?? essay.book.book_points) > 0 && (
+            <Badge
+              variant="secondary"
+              className="shrink-0 text-xs font-semibold"
+              title={essay.frozen_book_points != null ? 'Body za tuto esej jsou zamčené ze staršího systému.' : undefined}
+            >
+              {formatPoints(essay.frozen_book_points ?? essay.book.book_points)} b.
             </Badge>
           )}
         </Link>

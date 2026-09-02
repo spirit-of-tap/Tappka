@@ -165,7 +165,13 @@ export default async function EssayDetailPage({ params }: PageProps) {
               <p className="text-xs text-muted-foreground truncate">{essay.book.author}</p>
             </div>
             {essay.book.list_status !== 'archived' && (
-              <Badge variant="secondary" className="shrink-0">{formatPoints(essay.book.book_points)} b.</Badge>
+              <Badge
+                variant="secondary"
+                className="shrink-0"
+                title={essay.frozen_book_points != null ? 'Body za tuto esej jsou zamčené ze staršího systému.' : undefined}
+              >
+                {formatPoints(essay.frozen_book_points ?? essay.book.book_points)} b.
+              </Badge>
             )}
           </div>
         </Link>
