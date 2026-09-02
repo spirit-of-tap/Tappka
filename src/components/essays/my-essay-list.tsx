@@ -97,12 +97,13 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
                   </h3>
                 </div>
                 {hasPoints && (
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {source.isFrozen && <LegacyPointsBadge />}
+                  source.isFrozen ? (
+                    <LegacyPointsBadge points={points} className="shrink-0" />
+                  ) : (
                     <span className="shrink-0 text-xs font-semibold tabular-nums bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
                       {formatPoints(points)} b.
                     </span>
-                  </div>
+                  )
                 )}
                 {isRejected && (
                   <span className="shrink-0 text-xs font-semibold tabular-nums bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">

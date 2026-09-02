@@ -694,12 +694,17 @@ function ReviewRow({
                       {source.title}
                     </span>
                     {source.points > 0 && (
-                      <>
-                        {source.isFrozen && <LegacyPointsBadge />}
+                      source.isFrozen ? (
+                        <LegacyPointsBadge
+                          points={source.points}
+                          label={pointsLabel(source.points)}
+                          className="shrink-0"
+                        />
+                      ) : (
                         <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
                           {formatPoints(source.points)} {pointsLabel(source.points)}
                         </span>
-                      </>
+                      )
                     )}
                     {essay.book && <BookStatusBadges book={essay.book} />}
                   </>
