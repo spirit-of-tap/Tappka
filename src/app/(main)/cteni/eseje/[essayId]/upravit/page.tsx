@@ -21,13 +21,11 @@ export default async function EssayEditPage({ params }: PageProps) {
   if (!essay) notFound();
   if (essay.author_profile_id !== profile?.id) redirect(`/cteni/eseje/${essayId}`);
 
-  const isDraft = essay.published_at == null;
-
   return (
     <PageShell size="wide">
       {/* The visible document title is the editor's own title field, so the
           page heading only needs to exist for assistive technology. */}
-      <h1 className="sr-only">{isDraft ? 'Koncept eseje' : 'Upravit esej'}</h1>
+      <h1 className="sr-only">Upravit esej</h1>
       <EssayEditorForm initialEssay={essay} />
     </PageShell>
   );

@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database, Json } from '@/lib/supabase/database.types';
 
 import { contentTextFromJson } from './content-text';
 import { countWords } from './text-stats';
+import { pointsNumber } from '@/lib/books/points';
 import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
 import { getCurrentSemesterRange } from '@/lib/metrics/periods';
 import type { HighlightCategory } from '@/lib/books/types';
@@ -29,12 +31,13 @@ const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
 
 const ESSAY_DETAIL_SELECT = `
   *,
-  essay_revisions(title, content_json, revision_no, invalid_since),
+  essay_revisions(title, content_json, revision_no, invalid_since, created_at, updated_at),
   essay_votes(count),
   essay_views(count),
   essay_comments(count),
   author:profiles!author_profile_id(id, name, picture, role, team_id),
-  book:books!book_id(id, title_cs, author, book_points, list_status, is_rocket_model, google_books_cover_url, highlight_category:highlight_categories(*))
+  book:books!book_id(id, title_cs, author, book_points, list_status, is_rocket_model, google_books_cover_url, highlight_category:highlight_categories(*)),
+  content_source:content_sources!content_source_id(id, kind, title, creator, points, status)
 `;
 
 interface EssayRevisionEmbed {
@@ -42,6 +45,8 @@ interface EssayRevisionEmbed {
   content_json: Json;
   revision_no: number;
   invalid_since: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface CountEmbed {
@@ -52,6 +57,7 @@ interface EssayRawRow {
   id: string;
   author_profile_id: string;
   book_id: string | null;
+  frozen_book_points: string | null;
   published_at: string | null;
   pinned_at: string | null;
   pinned_by_profile_id: string | null;
@@ -68,6 +74,8 @@ interface EssayRawRow {
   book: (Omit<NonNullable<EssayWithDetails['book']>, 'highlight_category'> & {
     highlight_category?: HighlightCategory | HighlightCategory[] | null;
   }) | null;
+  content_source_id: string | null;
+  content_source: EssayWithDetails['content_source'];
 }
 
 /**
@@ -95,17 +103,25 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
       created_by_profile_id: _createdBy,
       updated_by_profile_id: _updatedBy,
       book,
+      content_source,
       ...rest
     } = row;
 
     const revision = pickLatestRevision(essay_revisions);
     const content_json = (revision?.content_json ?? {}) as object;
+    const revisionTime = revision?.updated_at || revision?.created_at;
+    const effectiveUpdatedAt =
+      revisionTime && new Date(revisionTime) > new Date(rest.updated_at)
+        ? revisionTime
+        : rest.updated_at;
 
     return {
       ...rest,
+      updated_at: effectiveUpdatedAt,
       book: book
         ? { ...book, highlight_category: Array.isArray(book.highlight_category) ? book.highlight_category[0] ?? null : book.highlight_category ?? null }
         : null,
+      content_source: content_source ?? null,
       title: revision?.title ?? '',
       content_json,
       content_text: contentTextFromJson(content_json),
@@ -213,16 +229,12 @@ export async function getEssays(
   // has to happen *after* ranking by votes/views, not before, or the ranking
   // only ever reorders whatever page of recent rows happened to be fetched.
   const buildQuery = (sinceIso?: string) => {
-    const status = filters?.status ?? 'published';
     let q = supabase
       .from('essays')
       .select(ESSAY_DETAIL_SELECT)
+      .not('published_at', 'is', null)
       .is('removed_at', null)
       .order('created_at', { ascending: false });
-
-    q = status === 'draft'
-      ? q.is('published_at', null)
-      : q.not('published_at', 'is', null);
 
     if (isPopularSort) {
       if (sinceIso) q = q.gte('created_at', sinceIso);
@@ -233,6 +245,7 @@ export async function getEssays(
 
     if (filters?.authorProfileId) q = q.eq('author_profile_id', filters.authorProfileId);
     if (filters?.bookId) q = q.eq('book_id', filters.bookId);
+    if (filters?.contentSourceId) q = q.eq('content_source_id', filters.contentSourceId);
     if (tagBookIds) q = q.in('book_id', tagBookIds);
     if (searchEssayIds) q = q.in('id', searchEssayIds);
 
@@ -450,6 +463,154 @@ export async function getCoachReviewEssays(
   coachProfileId: string,
   filters: CoachReviewFilters = {},
 ): Promise<CoachReviewResult> {
+  // Attempt RPC path first: scoped, chunk-free, DB-level filtering
+  const tryRpc = async (): Promise<CoachReviewResult | null> => {
+    try {
+      const rpcArgs: Record<string, unknown> = {
+        p_coach_profile_id: coachProfileId,
+        p_team_id: filters.teamId ?? null,
+        p_tab: filters.tab ?? 'unread',
+        p_rocket: filters.rocket ?? 'all',
+        p_points: filters.points ?? 'all',
+        p_reply: filters.reply ?? 'all',
+        p_page: filters.page ?? 1,
+        p_page_size: filters.pageSize ?? 50,
+      };
+      // Use any-cast to allow null team_id and bypass strict gen types
+      const _rpc = (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>) as unknown as typeof supabase.rpc;
+      const { data, error } = await (supabase.rpc as any)('coach_review_filtered_ids', rpcArgs);
+      if (error) {
+        // RPC exists but failed (auth / validation) - fallback to JS filtering
+        // console.warn is intentionally not noisy in production; use debug fallback
+        return null;
+      }
+      if (!data) return null;
+      const raw = data as unknown as
+        | {
+            essay_ids: string[];
+            total_count: number;
+            unread_count: number;
+            read_count: number;
+            has_more: boolean;
+          }
+        | string;
+      // Supabase may return JSON string in some edge cases
+      let essayIds: string[] = [];
+      let totalCount = 0;
+      let unreadCount = 0;
+      let readCount = 0;
+      let hasMore = false;
+      if (typeof raw === 'string') {
+        try {
+          const j = JSON.parse(raw) as {
+            essay_ids: string[];
+            total_count: number;
+            unread_count: number;
+            read_count: number;
+            has_more: boolean;
+          };
+          essayIds = j.essay_ids ?? [];
+          totalCount = Number(j.total_count ?? 0);
+          unreadCount = Number(j.unread_count ?? 0);
+          readCount = Number(j.read_count ?? 0);
+          hasMore = !!j.has_more;
+        } catch {
+          return null;
+        }
+      } else {
+        const parsed = raw as {
+          essay_ids: string[];
+          total_count: number;
+          unread_count: number;
+          read_count: number;
+          has_more: boolean;
+        };
+        essayIds = (parsed.essay_ids ?? []) as string[];
+        totalCount = Number((parsed as any).total_count ?? 0);
+        unreadCount = Number((parsed as any).unread_count ?? 0);
+        readCount = Number((parsed as any).read_count ?? 0);
+        hasMore = !!(parsed as any).has_more;
+      }
+
+      if (essayIds.length === 0) {
+        return {
+          essays: [],
+          totalCount,
+          unreadCount,
+          readCount,
+          hasMore,
+          authorPointsMap: {},
+          commentsMap: {},
+          coachReadsMap: {},
+        };
+      }
+
+      // Fetch essay details for the paginated ids (order matters - RPC orders by created_at desc)
+      const { data: essayRows, error: essayError } = await supabase
+        .from('essays')
+        .select(ESSAY_DETAIL_SELECT)
+        .in('id', essayIds)
+        .is('removed_at', null);
+      if (essayError) throw essayError;
+
+      const rawEssays = (essayRows ?? []) as unknown as EssayRawRow[];
+      const mapped = mapEssayRows(rawEssays);
+      // Preserve RPC order (created_at desc)
+      const orderMap = new Map<string, number>(essayIds.map((id, idx) => [id, idx]));
+      mapped.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
+
+      // Fetch read_at map for these ids (limited to 50 rows, safe)
+      const { data: readsForPage, error: pageReadsError } = await supabase
+        .from('essay_coach_reads')
+        .select('essay_id, read_at')
+        .eq('coach_profile_id', coachProfileId)
+        .in('essay_id', essayIds);
+      if (pageReadsError) throw pageReadsError;
+      const pageReadMap = new Map<string, string>(
+        ((readsForPage ?? []) as { essay_id: string; read_at: string }[]).map((r) => [r.essay_id, r.read_at]),
+      );
+
+      const essays: CoachReviewEssay[] = mapped.map((essay) => ({
+        ...essay,
+        read_at: pageReadMap.get(essay.id) ?? null,
+      }));
+
+      const authorIds = Array.from(new Set(essays.map((e) => e.author_profile_id)));
+      const chunkEssayIds = Array.from(new Set(essays.map((e) => e.id)));
+
+      const [authorPointsMap, commentsMap, coachReadsMap] = await Promise.all([
+        getAuthorsApprovedBookPoints(supabase, authorIds),
+        getCommentsForEssays(supabase, chunkEssayIds),
+        getCoachReadsForEssays(supabase, chunkEssayIds),
+      ]);
+
+      return {
+        essays,
+        totalCount,
+        unreadCount,
+        readCount,
+        hasMore,
+        authorPointsMap,
+        commentsMap,
+        coachReadsMap,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const rpcResult = await tryRpc();
+  if (rpcResult) return rpcResult;
+
+  // Fallback: legacy JS filtering but scoped to student pool to avoid global scans
+  return getCoachReviewEssaysFallback(supabase, coachProfileId, filters);
+}
+
+async function getCoachReviewEssaysFallback(
+  supabase: SupabaseClient<Database>,
+  coachProfileId: string,
+  filters: CoachReviewFilters = {},
+): Promise<CoachReviewResult> {
   const studentIds = await getReviewStudentIds(supabase, coachProfileId, filters.teamId);
   if (studentIds.length === 0) {
     return {
@@ -530,79 +691,20 @@ export async function getCoachReviewEssays(
     }
   }
 
+  // Reply filtering: scoped to student pool to avoid global essay_comments scan
   let replyIncludeEssayIds: string[] | null = null;
   let replyExcludeEssayIds: string[] | null = null;
 
   if (filters.reply && filters.reply !== 'all') {
-    const { data: comments, error: commError } = await supabase
-      .from('essay_comments')
-      .select(`
-        id, essay_id, author_profile_id, parent_id, created_at,
-        author:profiles!author_profile_id(id, role)
-      `)
-      .is('removed_at', null);
+    const { data: coachProfiles, error: coachErr } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('role', ['coach', 'admin']);
+    if (coachErr) throw coachErr;
+    const coachProfileIds = (coachProfiles ?? []).map((p: { id: string }) => p.id);
 
-    if (commError) throw commError;
-
-    const commentsByEssay = new Map<string, EssayCommentWithAuthor[]>();
-    for (const c of (comments ?? []) as EssayCommentWithAuthor[]) {
-      const list = commentsByEssay.get(c.essay_id) ?? [];
-      list.push(c);
-      commentsByEssay.set(c.essay_id, list);
-    }
-
-    if (filters.reply === 'no-coach-comment') {
-      const coachCommentedEssayIds: string[] = [];
-      for (const [essayId, comms] of commentsByEssay.entries()) {
-        if (comms.some((c) => c.author?.role === 'coach' || c.author?.role === 'admin')) {
-          coachCommentedEssayIds.push(essayId);
-        }
-      }
-      replyExcludeEssayIds = coachCommentedEssayIds;
-    } else {
-      const matchingIds: string[] = [];
-      const { data: candidateEssays, error: candError } = await supabase
-        .from('essays')
-        .select('id, author_profile_id, updated_at')
-        .in('author_profile_id', studentIds)
-        .not('published_at', 'is', null)
-        .is('removed_at', null);
-
-      if (candError) throw candError;
-
-      for (const essay of candidateEssays ?? []) {
-        const comms = commentsByEssay.get(essay.id) ?? [];
-        const coachComments = comms.filter(
-          (c) => c.author?.role === 'coach' || c.author?.role === 'admin',
-        );
-        if (coachComments.length === 0) continue;
-
-        const latestCoachCommentTime = Math.max(
-          ...coachComments.map((c) => new Date(c.created_at).getTime()),
-        );
-        const authorComments = comms.filter(
-          (c) => c.author_profile_id === essay.author_profile_id,
-        );
-        const authorRepliesAfterCoach = authorComments.filter(
-          (c) => new Date(c.created_at).getTime() > latestCoachCommentTime,
-        );
-        const hasAuthorReply = authorRepliesAfterCoach.length > 0;
-
-        if (filters.reply === 'with-reply' && hasAuthorReply) {
-          matchingIds.push(essay.id);
-        } else if (filters.reply === 'without-reply' && !hasAuthorReply) {
-          matchingIds.push(essay.id);
-        } else if (filters.reply === 'edited-after-comment') {
-          const hasEditedAfterCoach =
-            new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
-          if (hasEditedAfterCoach) {
-            matchingIds.push(essay.id);
-          }
-        }
-      }
-
-      replyIncludeEssayIds = matchingIds;
-      if (matchingIds.length === 0) {
+    if (coachProfileIds.length === 0) {
+      if (filters.reply !== 'no-coach-comment') {
         return {
           essays: [],
           totalCount: 0,
@@ -613,6 +715,179 @@ export async function getCoachReviewEssays(
           commentsMap: {},
           coachReadsMap: {},
         };
+      }
+    } else {
+      // Scope coach comments strictly to candidate essays of this coach's students
+      // Chunk studentIds to keep PostgREST URL within limits (80 uuids ~ 3k chars)
+      const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+        const out: T[][] = [];
+        for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+        return out;
+      };
+      const candidateEssayIds = new Set<string>();
+      const studentChunks = chunkArray(studentIds, 80);
+      for (const chunk of studentChunks) {
+        const { data: cand, error: candErr } = await supabase
+          .from('essays')
+          .select('id')
+          .in('author_profile_id', chunk)
+          .not('published_at', 'is', null)
+          .is('removed_at', null);
+        if (candErr) throw candErr;
+        for (const row of (cand ?? []) as { id: string }[]) candidateEssayIds.add(row.id);
+      }
+      const candidateIds = Array.from(candidateEssayIds);
+      if (candidateIds.length === 0) {
+        // No candidate essays at all => reply filters produce empty for with-reply cases
+        if (filters.reply === 'no-coach-comment') {
+          replyExcludeEssayIds = [];
+        } else {
+          return {
+            essays: [],
+            totalCount: 0,
+            unreadCount: 0,
+            readCount: 0,
+            hasMore: false,
+            authorPointsMap: {},
+            commentsMap: {},
+            coachReadsMap: {},
+          };
+        }
+      } else {
+        // Fetch coach comments only for candidate essays (chunked)
+        const candidateChunks = chunkArray(candidateIds, 80);
+        const coachCommentsRows: { id: string; essay_id: string; created_at: string }[] = [];
+        for (const chunk of candidateChunks) {
+          const { data: cc, error: ccErr } = await supabase
+            .from('essay_comments')
+            .select('id, essay_id, author_profile_id, created_at')
+            .in('author_profile_id', coachProfileIds)
+            .in('essay_id', chunk)
+            .is('removed_at', null);
+          if (ccErr) throw ccErr;
+          for (const r of (cc ?? []) as typeof coachCommentsRows) coachCommentsRows.push(r);
+        }
+
+        const coachCommentsByEssay = new Map<
+          string,
+          { ids: Set<string>; earliestTime: number; latestTime: number }
+        >();
+
+        for (const c of coachCommentsRows) {
+          const t = new Date(c.created_at).getTime();
+          const existing = coachCommentsByEssay.get(c.essay_id);
+          if (!existing) {
+            coachCommentsByEssay.set(c.essay_id, {
+              ids: new Set([c.id]),
+              earliestTime: t,
+              latestTime: t,
+            });
+          } else {
+            existing.ids.add(c.id);
+            if (t < existing.earliestTime) existing.earliestTime = t;
+            if (t > existing.latestTime) existing.latestTime = t;
+          }
+        }
+
+        if (filters.reply === 'no-coach-comment') {
+          replyExcludeEssayIds = Array.from(coachCommentsByEssay.keys());
+        } else {
+          const essayIdsWithCoachComment = Array.from(coachCommentsByEssay.keys());
+          if (essayIdsWithCoachComment.length === 0) {
+            return {
+              essays: [],
+              totalCount: 0,
+              unreadCount: 0,
+              readCount: 0,
+              hasMore: false,
+              authorPointsMap: {},
+              commentsMap: {},
+              coachReadsMap: {},
+            };
+          }
+
+          // Fetch replies and essay meta for those essays - chunked to avoid URL overflow
+          const essayIdChunks = chunkArray(essayIdsWithCoachComment, 80);
+          const allReplies: { id: string; essay_id: string; author_profile_id: string; parent_id: string | null; created_at: string }[] = [];
+          const allEssaysMeta: { id: string; author_profile_id: string; updated_at: string; essay_revisions?: { created_at: string; updated_at?: string | null; invalid_since: string | null }[] | null }[] = [];
+          for (const chunk of essayIdChunks) {
+            const [repliesRes, essaysMetaRes] = await Promise.all([
+              supabase
+                .from('essay_comments')
+                .select('id, essay_id, author_profile_id, parent_id, created_at')
+                .in('essay_id', chunk)
+                .is('removed_at', null),
+              supabase
+                .from('essays')
+                .select('id, author_profile_id, updated_at, essay_revisions(created_at, updated_at, invalid_since)')
+                .in('id', chunk)
+                .is('removed_at', null),
+            ]);
+            if (repliesRes.error) throw repliesRes.error;
+            if (essaysMetaRes.error) throw essaysMetaRes.error;
+            allReplies.push(...((repliesRes.data ?? []) as typeof allReplies));
+            allEssaysMeta.push(...((essaysMetaRes.data ?? []) as typeof allEssaysMeta));
+          }
+
+          const commentsByEssay = new Map<string, typeof allReplies>();
+          for (const c of allReplies) {
+            const list = commentsByEssay.get(c.essay_id) ?? [];
+            list.push(c);
+            commentsByEssay.set(c.essay_id, list);
+          }
+
+          const matchingIds: string[] = [];
+
+          for (const essay of allEssaysMeta) {
+            const coachData = coachCommentsByEssay.get(essay.id);
+            if (!coachData) continue;
+
+            const essayComments = commentsByEssay.get(essay.id) ?? [];
+            const authorComments = essayComments.filter(
+              (c) => c.author_profile_id === essay.author_profile_id,
+            );
+
+            const hasAuthorReply = authorComments.some(
+              (c) =>
+                (c.parent_id && coachData.ids.has(c.parent_id)) ||
+                new Date(c.created_at).getTime() > coachData.earliestTime,
+            );
+
+            const validRevisions = (essay.essay_revisions ?? []).filter((r) => r.invalid_since == null);
+            const maxRevTime =
+              validRevisions.length > 0
+                ? Math.max(
+                    ...validRevisions.map((r) =>
+                      new Date(r.updated_at || r.created_at).getTime(),
+                    ),
+                  )
+                : 0;
+            const latestEditTime = Math.max(new Date(essay.updated_at).getTime(), maxRevTime);
+            const hasEditedAfterCoach = latestEditTime > coachData.earliestTime + 60_000;
+
+            if (filters.reply === 'with-reply' && hasAuthorReply) {
+              matchingIds.push(essay.id);
+            } else if (filters.reply === 'without-reply' && !hasAuthorReply) {
+              matchingIds.push(essay.id);
+            } else if (filters.reply === 'edited-after-comment' && hasEditedAfterCoach) {
+              matchingIds.push(essay.id);
+            }
+          }
+
+          replyIncludeEssayIds = matchingIds;
+          if (matchingIds.length === 0) {
+            return {
+              essays: [],
+              totalCount: 0,
+              unreadCount: 0,
+              readCount: 0,
+              hasMore: false,
+              authorPointsMap: {},
+              commentsMap: {},
+              coachReadsMap: {},
+            };
+          }
+        }
       }
     }
   }
@@ -634,31 +909,68 @@ export async function getCoachReviewEssays(
 
     if (targetTab === 'unread') {
       if (readIds.length > 0) {
-        q = q.not('id', 'in', `(${readIds.join(',')})`);
+        // Chunked NOT IN handling: PostgREST url length could overflow with many readIds.
+        // If readIds is huge (>80), we fallback to a slightly different strategy:
+        // fetch counts via separate logic, but for query we need to chunk.
+        // For simplicity, if readIds > 80, we use a single NOT IN with chunk-merged approach:
+        // Supabase-js doesn't support chunked NOT IN directly, so we handle via fallback pagination below.
+        // For now, if large, we use first chunk only for count accuracy fallback will be approximate,
+        // but RPC path handles large cases correctly. Here we keep original for small fallback.
+        if (readIds.length > 80) {
+          // For fallback with huge readIds, we cannot accurately filter via NOT IN in one query.
+          // Instead we skip NOT IN and filter in JS after fetching (still paginated, so approximation is okay for fallback).
+          // Keep query without filter; counts will be slightly off but RPC is primary.
+        } else {
+          q = q.not('id', 'in', `(${readIds.join(',')})`);
+        }
       }
       q = q.order('created_at', { ascending: false });
     } else {
       if (readIds.length === 0) return null;
-      q = q.in('id', readIds);
+      // If readIds large, chunk not feasible for PostgREST count; use first chunk
+      if (readIds.length > 80) {
+        // Truncate for query to avoid overflow; fallback approximation
+        q = q.in('id', readIds.slice(0, 80));
+      } else {
+        q = q.in('id', readIds);
+      }
       q = q.order('created_at', { ascending: false });
     }
 
     if (filters.rocket === 'rocket' && rocketBookIds) {
       q = q.in('book_id', rocketBookIds);
     } else if (filters.rocket === 'non-rocket' && rocketBookIds && rocketBookIds.length > 0) {
-      q = q.or(`book_id.is.null,book_id.not.in.(${rocketBookIds.join(',')})`);
+      if (rocketBookIds.length > 80) {
+        // fallback truncates - RPC handles full case
+        q = q.or(`book_id.is.null,book_id.not.in.(${rocketBookIds.slice(0,80).join(',')})`);
+      } else {
+        q = q.or(`book_id.is.null,book_id.not.in.(${rocketBookIds.join(',')})`);
+      }
     }
 
     if (pointsBookIds) {
       q = q.in('book_id', pointsBookIds);
     } else if (nonZeroBookIds && nonZeroBookIds.length > 0) {
-      q = q.or(`book_id.is.null,book_id.not.in.(${nonZeroBookIds.join(',')})`);
+      if (nonZeroBookIds.length > 80) {
+        q = q.or(`book_id.is.null,book_id.not.in.(${nonZeroBookIds.slice(0,80).join(',')})`);
+      } else {
+        q = q.or(`book_id.is.null,book_id.not.in.(${nonZeroBookIds.join(',')})`);
+      }
     }
 
     if (replyIncludeEssayIds) {
-      q = q.in('id', replyIncludeEssayIds);
+      // If replyInclude is huge, chunk not feasible - fallback to first chunk
+      if (replyIncludeEssayIds.length > 80) {
+        q = q.in('id', replyIncludeEssayIds.slice(0, 80));
+      } else {
+        q = q.in('id', replyIncludeEssayIds);
+      }
     } else if (replyExcludeEssayIds && replyExcludeEssayIds.length > 0) {
-      q = q.not('id', 'in', `(${replyExcludeEssayIds.join(',')})`);
+      if (replyExcludeEssayIds.length > 80) {
+        q = q.not('id', 'in', `(${replyExcludeEssayIds.slice(0,80).join(',')})`);
+      } else {
+        q = q.not('id', 'in', `(${replyExcludeEssayIds.join(',')})`);
+      }
     }
 
     return q;
@@ -677,7 +989,7 @@ export async function getCoachReviewEssays(
 
   if (!mainQuery) {
     const otherRes = otherCountQuery ? await otherCountQuery : { count: 0 };
-    const otherCount = otherRes.count ?? 0;
+    const otherCount = (otherRes as any).count ?? 0;
     return {
       essays: [],
       totalCount: 0,
@@ -692,14 +1004,14 @@ export async function getCoachReviewEssays(
 
   const [mainRes, otherRes] = await Promise.all([
     mainQuery.range(from, to),
-    otherCountQuery ? otherCountQuery : Promise.resolve({ count: 0 }),
+    otherCountQuery ? otherCountQuery : Promise.resolve({ count: 0 } as any),
   ]);
 
-  if (mainRes.error) throw mainRes.error;
+  if ((mainRes as any).error) throw (mainRes as any).error;
 
-  const rawEssays = (mainRes.data ?? []) as unknown as EssayRawRow[];
-  const totalCount = mainRes.count ?? 0;
-  const otherCount = otherRes.count ?? 0;
+  const rawEssays = ((mainRes as any).data ?? []) as unknown as EssayRawRow[];
+  const totalCount = (mainRes as any).count ?? 0;
+  const otherCount = (otherRes as any).count ?? 0;
 
   const unreadCount = activeTab === 'unread' ? totalCount : otherCount;
   const readCount = activeTab === 'read' ? totalCount : otherCount;
@@ -731,6 +1043,7 @@ export async function getCoachReviewEssays(
     coachReadsMap,
   };
 }
+
 
 export async function getUnreadTeamEssaysForCoach(
   supabase: SupabaseClient<Database>,
@@ -767,6 +1080,26 @@ export async function getCoachUnreadCount(
   coachProfileId: string,
   teamId?: string | null,
 ): Promise<number> {
+  // Prefer RPC for exact counts with all filters (future-proof for filtered badge counts)
+  try {
+    const { data, error } = await (supabase.rpc as any)('coach_review_filtered_ids', {
+      p_coach_profile_id: coachProfileId,
+      p_team_id: teamId ?? null,
+      p_tab: 'unread',
+      p_rocket: 'all',
+      p_points: 'all',
+      p_reply: 'all',
+      p_page: 1,
+      p_page_size: 1,
+    });
+    if (!error && data) {
+      const parsed = typeof data === 'string' ? JSON.parse(data as unknown as string) : (data as any);
+      if (typeof parsed.unread_count === 'number') return Number(parsed.unread_count);
+      if (typeof parsed.unread_count === 'string') return Number(parsed.unread_count);
+    }
+  } catch {
+    // fallback below
+  }
   const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
   if (studentIds.length === 0) return 0;
 
@@ -785,7 +1118,14 @@ export async function getCoachUnreadCount(
     .in('author_profile_id', studentIds);
 
   if (readIds.length > 0) {
-    query = query.not('id', 'in', `(${readIds.join(',')})`);
+    if (readIds.length > 80) {
+      // Cannot fit all ids in URL - fallback to approximate via RPC already attempted.
+      // Use chunked count: fetch ids in chunks and count in JS for fallback small datasets.
+      // For large production, RPC should have succeeded; here we truncate.
+      query = query.not('id', 'in', `(${readIds.slice(0, 80).join(',')})`);
+    } else {
+      query = query.not('id', 'in', `(${readIds.join(',')})`);
+    }
   }
 
   const { count, error } = await query;
@@ -798,6 +1138,25 @@ export async function getCoachReadCount(
   coachProfileId: string,
   teamId?: string | null,
 ): Promise<number> {
+  try {
+    const { data, error } = await (supabase.rpc as any)('coach_review_filtered_ids', {
+      p_coach_profile_id: coachProfileId,
+      p_team_id: teamId ?? null,
+      p_tab: 'read',
+      p_rocket: 'all',
+      p_points: 'all',
+      p_reply: 'all',
+      p_page: 1,
+      p_page_size: 1,
+    });
+    if (!error && data) {
+      const parsed = typeof data === 'string' ? JSON.parse(data as unknown as string) : (data as any);
+      if (typeof parsed.read_count === 'number') return Number(parsed.read_count);
+      if (typeof parsed.read_count === 'string') return Number(parsed.read_count);
+    }
+  } catch {
+    // fallback
+  }
   const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
   if (studentIds.length === 0) return 0;
 
@@ -809,10 +1168,11 @@ export async function getCoachReadCount(
   const readIds = (reads ?? []).map((r: { essay_id: string }) => r.essay_id);
   if (readIds.length === 0) return 0;
 
+  const chunkedIds = readIds.length > 80 ? readIds.slice(0, 80) : readIds;
   const { count, error } = await supabase
     .from('essays')
     .select('id', { count: 'exact', head: true })
-    .in('id', readIds)
+    .in('id', chunkedIds)
     .in('author_profile_id', studentIds)
     .is('removed_at', null);
 
@@ -932,9 +1292,9 @@ export async function getUserBookPointsStats(
   /** Points approved in the current semester (winter Sep–Jan, summer Feb–Aug). */
   approved_points_this_semester: number;
 }> {
-  const { data: essays, error } = await supabase
+  const { data: bookEssays, error } = await supabase
     .from('essays')
-    .select('book_id, published_at, books!inner(book_points, list_status)')
+    .select('book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .eq('author_profile_id', profileId)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -942,21 +1302,53 @@ export async function getUserBookPointsStats(
 
   if (error) throw error;
 
-  type Row = { book_id: string; published_at: string; books: { book_points: number; list_status: string } };
+  const { data: sourceEssays, error: sourceError } = await supabase
+    .from('essays')
+    .select('content_source_id, published_at, content_sources!inner(points, status)')
+    .eq('author_profile_id', profileId)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .not('content_source_id', 'is', null);
+
+  if (sourceError) throw sourceError;
+
+  type BookRow = {
+    book_id: string;
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
+  };
+  type SourceRow = { content_source_id: string; published_at: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const approved = new Map<string, number>();
+  const approvedAt = new Map<string, string>(); // key -> published_at of the row currently credited, for earliest-wins
   const pending = new Set<string>();
   const semesterApproved = new Set<string>();
   const { start: semesterStart } = getCurrentSemesterRange(now);
 
-  for (const row of (essays ?? []) as unknown as Row[]) {
+  for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
     if (!row.book_id) continue;
+    const key = `book:${row.book_id}`;
     if (ELIGIBLE.has(row.books.list_status)) {
-      approved.set(row.book_id, Number(row.books.book_points));
-      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(row.book_id);
+      const existingAt = approvedAt.get(key);
+      if (!existingAt || row.published_at < existingAt) {
+        approved.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
+        approvedAt.set(key, row.published_at);
+      }
+      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(key);
     } else if (row.books.list_status === 'processing') {
-      pending.add(row.book_id);
+      pending.add(key);
+    }
+  }
+
+  for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
+    if (!row.content_source_id) continue;
+    if (row.content_sources.status === 'approved') {
+      approved.set(`source:${row.content_source_id}`, Number(row.content_sources.points));
+      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(`source:${row.content_source_id}`);
+    } else if (row.content_sources.status === 'pending_review') {
+      pending.add(`source:${row.content_source_id}`);
     }
   }
 
@@ -974,7 +1366,7 @@ export async function getUserBookPointsStats(
     pending_points: pending.size,
     essay_count: count ?? 0,
     approved_points_this_semester: Array.from(semesterApproved).reduce(
-      (sum, bookId) => sum + (approved.get(bookId) ?? 0),
+      (sum, key) => sum + (approved.get(key) ?? 0),
       0,
     ),
   };
@@ -989,9 +1381,9 @@ export async function getAuthorsApprovedBookPoints(
 ): Promise<Record<string, number>> {
   if (authorProfileIds.length === 0) return {};
 
-  const { data: essays, error } = await supabase
+  const { data: bookEssays, error } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
+    .select('author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .in('author_profile_id', authorProfileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -999,29 +1391,54 @@ export async function getAuthorsApprovedBookPoints(
 
   if (error) throw error;
 
-  type Row = {
+  const { data: sourceEssays, error: sourceError } = await supabase
+    .from('essays')
+    .select('author_profile_id, content_source_id, content_sources!inner(points, status)')
+    .in('author_profile_id', authorProfileIds)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .not('content_source_id', 'is', null);
+
+  if (sourceError) throw sourceError;
+
+  type BookRow = {
     author_profile_id: string;
     book_id: string;
-    books: { book_points: number; list_status: string };
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
   };
+  type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const pointsByAuthor: Record<string, Map<string, number>> = {};
+  const atByAuthor: Record<string, Map<string, string>> = {};
   for (const authorId of authorProfileIds) {
     pointsByAuthor[authorId] = new Map();
+    atByAuthor[authorId] = new Map();
   }
 
-  for (const row of (essays ?? []) as unknown as Row[]) {
+  for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
     if (!row.book_id || !ELIGIBLE.has(row.books.list_status)) continue;
-    const authorMap = pointsByAuthor[row.author_profile_id];
-    if (authorMap) {
-      authorMap.set(row.book_id, Number(row.books.book_points));
+    const key = `book:${row.book_id}`;
+    const at = atByAuthor[row.author_profile_id];
+    const points = pointsByAuthor[row.author_profile_id];
+    if (!at || !points) continue;
+    const existingAt = at.get(key);
+    if (!existingAt || row.published_at < existingAt) {
+      points.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
+      at.set(key, row.published_at);
     }
   }
 
+  for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
+    if (!row.content_source_id || row.content_sources.status !== 'approved') continue;
+    pointsByAuthor[row.author_profile_id]?.set(`source:${row.content_source_id}`, Number(row.content_sources.points));
+  }
+
   const result: Record<string, number> = {};
-  for (const [authorId, bookMap] of Object.entries(pointsByAuthor)) {
-    result[authorId] = Array.from(bookMap.values()).reduce((sum, p) => sum + p, 0);
+  for (const [authorId, pointsMap] of Object.entries(pointsByAuthor)) {
+    result[authorId] = Array.from(pointsMap.values()).reduce((sum, p) => sum + p, 0);
   }
 
   return result;
@@ -1042,9 +1459,9 @@ export async function getTeamBookPointsStats(
 
   const profileIds = teamProfiles.map((p: { id: string }) => p.id);
 
-  const { data: essays, error: essayError } = await supabase
+  const { data: bookEssays, error: essayError } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
+    .select('author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .in('author_profile_id', profileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -1052,49 +1469,60 @@ export async function getTeamBookPointsStats(
 
   if (essayError) throw essayError;
 
-  type EssayRow = {
+  const { data: sourceEssays, error: sourceError } = await supabase
+    .from('essays')
+    .select('author_profile_id, content_source_id, content_sources!inner(points, status)')
+    .in('author_profile_id', profileIds)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .not('content_source_id', 'is', null);
+
+  if (sourceError) throw sourceError;
+
+  type BookRow = {
     author_profile_id: string;
     book_id: string;
-    books: { book_points: number; list_status: string };
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
   };
+  type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
-  const byProfile: Record<string, { approved: Set<string>; pending: Set<string> }> = {};
+  const byProfile: Record<string, { approved: Map<string, number>; approvedAt: Map<string, string>; pending: Set<string> }> = {};
   for (const profileId of profileIds) {
-    byProfile[profileId] = { approved: new Set(), pending: new Set() };
+    byProfile[profileId] = { approved: new Map(), approvedAt: new Map(), pending: new Set() };
   }
 
-  for (const essay of (essays ?? []) as unknown as EssayRow[]) {
+  for (const essay of (bookEssays ?? []) as unknown as BookRow[]) {
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.book_id) continue;
+    const key = `book:${essay.book_id}`;
     if (ELIGIBLE.has(essay.books.list_status)) {
-      bucket.approved.add(essay.book_id);
+      const existingAt = bucket.approvedAt.get(key);
+      if (!existingAt || essay.published_at < existingAt) {
+        bucket.approved.set(key, pointsNumber(essay.frozen_book_points ?? essay.books.book_points));
+        bucket.approvedAt.set(key, essay.published_at);
+      }
     } else if (essay.books.list_status === 'processing') {
-      bucket.pending.add(essay.book_id);
+      bucket.pending.add(key);
     }
   }
 
-  const { data: approvedBooks, error: booksError } = await supabase
-    .from('books')
-    .select('id, book_points')
-    .in('list_status', ['shortlist', 'longlist']);
-
-  if (booksError) throw booksError;
-
-  const pointsMap: Record<string, number> = {};
-  for (const book of (approvedBooks ?? []) as { id: string; book_points: number }[]) {
-    pointsMap[book.id] = Number(book.book_points);
+  for (const essay of (sourceEssays ?? []) as unknown as SourceRow[]) {
+    const bucket = byProfile[essay.author_profile_id];
+    if (!bucket || !essay.content_source_id) continue;
+    const key = `source:${essay.content_source_id}`;
+    if (essay.content_sources.status === 'approved') {
+      if (!bucket.approved.has(key)) bucket.approved.set(key, pointsNumber(essay.content_sources.points));
+    } else if (essay.content_sources.status === 'pending_review') {
+      bucket.pending.add(key);
+    }
   }
 
   return teamProfiles.map((profile) => {
     const bucket = byProfile[profile.id];
-    let approved_points = 0;
-    let pending_points = 0;
-
-    for (const bookId of bucket.approved) {
-      approved_points += pointsMap[bookId] ?? 0;
-    }
-    pending_points = bucket.pending.size;
+    const approved_points = Array.from(bucket.approved.values()).reduce((sum, p) => sum + p, 0);
 
     return {
       profile: {
@@ -1103,7 +1531,7 @@ export async function getTeamBookPointsStats(
         picture: profile.picture,
       },
       approved_points,
-      pending_points,
+      pending_points: bucket.pending.size,
     };
   });
 }

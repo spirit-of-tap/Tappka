@@ -1,32 +1,41 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  Save, Send, BookOpen, Check, CloudOff, PenLine, Globe, Search,
-  MoreHorizontal, History, Trash2,
+  BookOpen, Check, CloudOff, Search,
+  MoreHorizontal, History, Trash2, X,
 } from 'lucide-react';
+
 import { BackButton } from './back-button';
 import { TiptapEditor } from './tiptap-editor';
 import { EssayHistorySheet } from './essay-history-sheet';
 import { EssayDeleteButton } from './essay-delete-button';
-import { useAutosave, type AutosaveStatus } from '@/lib/essays/use-autosave';
+import { SourceNotFoundCard } from './source-not-found-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/responsive-alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
-import { BookNotFoundCard } from '@/components/books/book-not-found-card';
-import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
+import { useEssaySave, type EssaySaveStatus } from '@/lib/essays/use-essay-save';
+import { useUnsavedChangesGuard } from '@/lib/essays/use-unsaved-changes-guard';
+import { formatPoints, resolveEssayPoints } from '@/lib/books/points';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
+import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
+import { cn } from '@/lib/utils';
 import type { Book, HighlightCategory } from '@/lib/books/types';
+import type { ContentSource } from '@/lib/content-sources/types';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 /** `/api/books/search` returns `BookWithProfiles`-shaped rows; the raw `Book` type is missing the joined highlight_category. */
@@ -37,96 +46,99 @@ interface EssayEditorFormProps {
 }
 
 /**
- * Reads as plain text right next to the Koncept badge, not as a pill at the
- * other end of the row: "what this essay is" and "whether it is safe" are one
- * thought, and nobody should have to connect two corners of the page to get it.
+ * Reflects `status`/`isDirty` from `useEssaySave`. A brief green glow marks
+ * the moment a save actually lands, giving the passive status text one
+ * active beat the author can feel.
  */
 function SaveStatus({
   status,
+  isDirty,
   lastSavedAt,
-  onRetry,
 }: {
-  status: AutosaveStatus;
+  status: EssaySaveStatus;
+  isDirty: boolean;
   lastSavedAt: Date | null;
-  onRetry: () => void;
 }) {
-  if (status === 'error') {
-    return (
-      <span className="inline-flex items-center gap-1.5 font-medium text-destructive">
-        <CloudOff className="size-3.5" />
-        Neuloženo
-        <button
-          type="button"
-          onClick={onRetry}
-          className="focus-ring rounded underline underline-offset-2 hover:no-underline"
-        >
-          Zkusit znovu
-        </button>
-      </span>
-    );
-  }
+  const [justSaved, setJustSaved] = useState(false);
+  const prevStatusRef = useRef(status);
 
-  if (status === 'saving') {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-        <span className="size-1.5 rounded-full bg-muted-foreground/60 motion-safe:animate-pulse" />
-        Ukládám…
-      </span>
-    );
-  }
+  useEffect(() => {
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = status;
+    if (status !== 'saved' || prevStatus === 'saved') return;
 
-  if (status === 'saved' && lastSavedAt) {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-        <Check className="size-3.5 text-success-strong" />
-        Uloženo{' '}
-        <span className="tabular-nums">
-          {lastSavedAt.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-        </span>
-      </span>
-    );
-  }
+    setJustSaved(true);
+    const timer = setTimeout(() => setJustSaved(false), 800);
+    return () => clearTimeout(timer);
+  }, [status]);
 
-  // Nothing saved yet — say up front that the author does not have to.
   return (
-    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-      <Check className="size-3.5 text-muted-foreground/50" />
-      Ukládá se samo
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1 text-xs transition-colors',
+        justSaved && 'save-glow border-success/40 bg-success/10',
+      )}
+    >
+      {status === 'error' ? (
+        <span className="inline-flex items-center gap-1.5 font-medium text-destructive">
+          <CloudOff className="size-3.5" />
+          Neuloženo
+        </span>
+      ) : status === 'saving' ? (
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+          <span className="size-1.5 rounded-full bg-muted-foreground/60 motion-safe:animate-pulse" />
+          Ukládám…
+        </span>
+      ) : isDirty ? (
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+          Neuložené změny
+        </span>
+      ) : status === 'saved' && lastSavedAt ? (
+        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+          <Check className="size-3.5 text-success-strong" />
+          Uloženo{' '}
+          <span className="tabular-nums">
+            {lastSavedAt.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </span>
+      ) : null}
     </span>
   );
 }
 
 export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
-  const router = useRouter();
   const [title, setTitle] = useState(initialEssay?.title ?? '');
   const [content, setContent] = useState<{ json: object; text: string }>({
     json: initialEssay?.content_json ?? {},
     text: initialEssay?.content_text ?? '',
   });
   const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(initialEssay?.book as BookSearchResult | null ?? null);
-  const [bookQuery, setBookQuery] = useState('');
+  const [selectedSource, setSelectedSource] = useState<ContentSource | null>(
+    (initialEssay?.content_source as ContentSource | null) ?? null,
+  );
+  const [sourceQuery, setSourceQuery] = useState('');
   const [bookResults, setBookResults] = useState<BookSearchResult[]>([]);
-  const [isSearchingBooks, setIsSearchingBooks] = useState(false);
+  const [contentSourceResults, setContentSourceResults] = useState<ContentSource[]>([]);
+  const [isSearchingSources, setIsSearchingSources] = useState(false);
   const [isPreselectingBook, setIsPreselectingBook] = useState(false);
+  const [isPreselectingSource, setIsPreselectingSource] = useState(false);
   // A keystroke fires a fresh request; only the newest one may write state, or
-  // a stale empty response would flash the "Nemůžeš najít knihu?" card wrongly.
-  const bookSearchRef = useRef(0);
-  const [isPublishing, setIsPublishing] = useState(false);
+  // a stale empty response would flash the "not found" card wrongly.
+  const sourceSearchRef = useRef(0);
   const [essayId, setEssayId] = useState<string | null>(initialEssay?.id ?? null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const isDraft = initialEssay?.published_at == null;
 
   // The save closure must read the newest values, not the ones captured when
   // the debounce timer was armed.
-  const latestRef = useRef({ title, content, bookId: selectedBook?.id ?? null, essayId });
-  latestRef.current = { title, content, bookId: selectedBook?.id ?? null, essayId };
+  const latestRef = useRef({ title, content, bookId: selectedBook?.id ?? null, contentSourceId: selectedSource?.id ?? null, essayId });
+  latestRef.current = { title, content, bookId: selectedBook?.id ?? null, contentSourceId: selectedSource?.id ?? null, essayId };
 
   const creatingRef = useRef(false);
 
   const persist = useCallback(async () => {
-    const { title: t, content: c, bookId, essayId: id } = latestRef.current;
-    const payload = { title: t, content_json: c.json, content_text: c.text, book_id: bookId };
+    const { title: t, content: c, bookId, contentSourceId, essayId: id } = latestRef.current;
+    const payload = { title: t, content_json: c.json, content_text: c.text, book_id: bookId, content_source_id: contentSourceId };
 
     if (!id) {
       if (creatingRef.current) return;
@@ -160,29 +172,66 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     if (!res.ok) throw new Error('save failed');
   }, []);
 
-  const hasSomethingToSave = title.trim().length > 0 || content.text.trim().length > 0;
-  const { status, lastSavedAt, statusRef, schedule, flush, retry } = useAutosave({
+  const hasSomethingToSave = title.trim().length > 0 || content.text.trim().length > 0
+    || selectedBook !== null || selectedSource !== null;
+  const { status, lastSavedAt, isDirty, markDirty, save } = useEssaySave({
     save: persist,
     enabled: hasSomethingToSave,
   });
+  const guard = useUnsavedChangesGuard(isDirty || status === 'saving');
 
   const handleContentChange = useCallback((json: object, text: string) => {
     setContent({ json, text });
     latestRef.current.content = { json, text };
-    schedule();
-  }, [schedule]);
+    markDirty();
+  }, [markDirty]);
 
   const handleTitleChange = useCallback((value: string) => {
     setTitle(value);
     latestRef.current.title = value;
-    schedule();
-  }, [schedule]);
+    markDirty();
+  }, [markDirty]);
 
   const handleBookChange = useCallback((book: BookSearchResult | null) => {
     setSelectedBook(book);
     latestRef.current.bookId = book?.id ?? null;
-    schedule();
-  }, [schedule]);
+    if (book) {
+      setSelectedSource(null);
+      latestRef.current.contentSourceId = null;
+    }
+    markDirty();
+  }, [markDirty]);
+
+  const handleSourceChange = useCallback((source: ContentSource | null) => {
+    setSelectedSource(source);
+    latestRef.current.contentSourceId = source?.id ?? null;
+    if (source) {
+      setSelectedBook(null);
+      latestRef.current.bookId = null;
+    }
+    markDirty();
+  }, [markDirty]);
+
+  /** One search across both books and content sources, in a single round trip. */
+  const searchSources = async (q: string) => {
+    if (!q.trim()) {
+      setBookResults([]);
+      setContentSourceResults([]);
+      return;
+    }
+    const requestId = ++sourceSearchRef.current;
+    setIsSearchingSources(true);
+    try {
+      const res = await fetch(`/api/essays/source-search?q=${encodeURIComponent(q)}`);
+      const { data } = await res.json();
+      if (requestId === sourceSearchRef.current) {
+        setBookResults(data?.books ?? []);
+        setContentSourceResults(data?.sources ?? []);
+      }
+    } finally {
+      if (requestId === sourceSearchRef.current) setIsSearchingSources(false);
+    }
+  };
 
   const searchParams = useSearchParams();
   const preselectBookId = searchParams.get('book');
@@ -214,132 +263,101 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     };
   }, [preselectBookId, selectedBook, handleBookChange]);
 
-  const handlePrimaryAction = async () => {
-    if (isPublishing) return;
-    setIsPublishing(true);
-    try {
-      await flush();
-      // Autosave exhausted its retries — publishing would ship stale content.
-      if (statusRef.current === 'error') {
-        toast.error('Automatické ukládání selhalo. Zkus uložit znovu a pak publikuj.');
-        return;
-      }
-      const id = latestRef.current.essayId;
-      if (!id) {
-        toast.error('Esej se zatím nepodařilo uložit.');
-        return;
-      }
+  const preselectSourceId = searchParams.get('source');
 
-      if (!isDraft) {
-        toast.success('Změny uloženy.');
-        router.push(`/cteni/eseje/${id}`);
-        return;
-      }
+  // Returning from /cteni/eseje/nova?source=... (ContentSourceForm's redirect):
+  // attach the content source the author just created.
+  useEffect(() => {
+    if (!preselectSourceId || selectedSource) return;
 
-      const res = await fetch(`/api/essays/${id}/publish`, { method: 'POST' });
-      if (!res.ok) {
-        const { error } = await res.json();
-        toast.error(error ?? 'Nepodařilo se zveřejnit esej.');
-        return;
+    let cancelled = false;
+    setIsPreselectingSource(true);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/content-sources/${preselectSourceId}`);
+        if (!res.ok) {
+          toast.error('Zdroj se nepodařilo načíst.');
+          return;
+        }
+        const { data } = await res.json();
+        if (!cancelled && data) {
+          handleSourceChange(data as ContentSource);
+        }
+      } catch {
+        if (!cancelled) toast.error('Zdroj se nepodařilo načíst.');
+      } finally {
+        if (!cancelled) setIsPreselectingSource(false);
       }
-      toast.success('Esej publikována.');
-      router.push(`/cteni/eseje/${id}`);
-    } finally {
-      setIsPublishing(false);
-    }
-  };
+    })();
 
-  const searchBooks = async (q: string) => {
-    if (!q.trim()) { setBookResults([]); return; }
-    const requestId = ++bookSearchRef.current;
-    setIsSearchingBooks(true);
-    try {
-      const res = await fetch(`/api/books/search?q=${encodeURIComponent(q)}`);
-      const { data } = await res.json();
-      if (requestId === bookSearchRef.current) setBookResults(data ?? []);
-    } finally {
-      if (requestId === bookSearchRef.current) setIsSearchingBooks(false);
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [preselectSourceId, selectedSource, handleSourceChange]);
 
   const wordCount = countWords(content.text);
-  const needsTitle = isDraft && !title.trim();
 
+  // frozen_book_points is tied to this essay's original book — a legacy
+  // value the essay froze when it was published/backfilled. If the author
+  // swaps in a different book while editing, that value no longer applies to
+  // the newly selected book, so only use it while selectedBook is still the
+  // essay's original one.
+  const selectedBookPoints = selectedBook
+    ? resolveEssayPoints({
+        frozenBookPoints: selectedBook.id === initialEssay?.book?.id ? initialEssay?.frozen_book_points : null,
+        book: selectedBook,
+      })
+    : 0;
 
   return (
     <div className="space-y-4">
-      {/* Top navigation & action bar: Back button on the left, Primary action + more options on the right */}
-      <div className="flex items-center justify-between gap-3">
-        <BackButton />
+      {/* Top navigation & action bar: Back button alone on the left, save
+          status + Uložit + history + more options grouped on the right. */}
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+        <BackButton requestNavigation={guard.requestNavigation} />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
+          <SaveStatus status={status} isDirty={isDirty} lastSavedAt={lastSavedAt} />
+
           <Button
-            onClick={() => void handlePrimaryAction()}
-            disabled={isPublishing || needsTitle}
+            variant="outline"
             size="sm"
+            className="h-8"
+            disabled={!isDirty || status === 'saving'}
+            onClick={() => void save()}
           >
-            {isPublishing ? (
-              <Spinner className="mr-1.5 size-4" />
-            ) : isDraft ? (
-              <Send className="mr-1.5 size-4" />
-            ) : (
-              <Save className="mr-1.5 size-4" />
-            )}
-            {isDraft ? 'Zveřejnit' : 'Uložit změny'}
+            Uložit
           </Button>
 
           {essayId && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-8" aria-label="Další akce">
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setHistoryOpen(true)}>
-                  <History className="size-4" />
-                  Historie verzí
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-                  <Trash2 className="size-4" />
-                  {isDraft ? 'Smazat koncept' : 'Smazat esej'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
-
-      {/* Status strip: Draft/published badge + live autosave status */}
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-xs border-b pb-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          {isDraft ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/40 bg-primary/5 px-2.5 py-0.5 font-medium text-primary text-xs">
-              <PenLine className="size-3" />
-              Koncept
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-0.5 font-medium text-muted-foreground text-xs">
-              <Globe className="size-3" />
-              Zveřejněná
-            </span>
-          )}
-          <SaveStatus status={status} lastSavedAt={lastSavedAt} onRetry={() => void retry()} />
-          {isDraft && (
             <>
-              <span aria-hidden className="hidden text-muted-foreground/40 sm:inline">·</span>
-              <span className="hidden text-muted-foreground sm:inline">
-                Uvidíš ji jenom ty, dokud ji nezveřejníš.
-              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                aria-label="Historie verzí"
+                onClick={() => setHistoryOpen(true)}
+              >
+                <History className="size-4" />
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="size-8" aria-label="Další akce">
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+                    <Trash2 className="size-4" />
+                    {title.trim() ? 'Smazat esej' : 'Smazat rozepsanou esej'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
-
-        {needsTitle && (
-          <p className="text-xs text-muted-foreground">Esej potřebuje název, aby šla zveřejnit.</p>
-        )}
-      </div>
+      </header>
 
       {essayId && (
         <>
@@ -350,151 +368,236 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
           />
           <EssayDeleteButton
             essayId={essayId}
-            isDraft={isDraft}
-            points={pointsNumber(selectedBook?.book_points)}
+            hasTitle={!!title.trim()}
+            points={selectedBookPoints}
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
           />
         </>
       )}
 
-      {/* The book comes first: it is the choice that decides whether the essay
-          earns BookPoints, and it is the one thing an author can get wrong. */}
-      <section className="space-y-2">
-        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Kniha, o které píšeš
-        </h2>
+      <AlertDialog open={guard.isDialogOpen} onOpenChange={(open) => { if (!open) guard.cancelLeave(); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Neuložené změny?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Máš neuložené změny. Pokud teď odejdeš, ztratíš je.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={guard.cancelLeave}>Zůstat</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={guard.confirmLeave}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Odejít bez uložení
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
+      {/* Source selector */}
+      <section aria-label="Zdroj eseje">
         {selectedBook ? (
-          <div className="space-y-2 rounded-xl border bg-card p-3 sm:p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-[68px] w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border/40 bg-muted">
+          <div className="flex items-center justify-between gap-3 rounded-lg border bg-card p-2.5 sm:p-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-8 shrink-0 items-center justify-center overflow-hidden rounded border border-border/40 bg-muted">
                 {selectedBook.google_books_cover_url ? (
                   <StorageImage
                     storageKey={selectedBook.google_books_cover_url}
                     alt={selectedBook.title_cs}
-                    width={48}
-                    height={68}
+                    width={32}
+                    height={44}
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <BookOpen className="size-5 text-muted-foreground/60" />
+                  <BookOpen className="size-4 text-muted-foreground/60" />
                 )}
               </div>
 
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <p className="truncate font-heading font-semibold">{selectedBook.title_cs}</p>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <p className="truncate text-sm font-semibold">{selectedBook.title_cs}</p>
                   <BookStatusBadges book={selectedBook} />
                 </div>
-                <p className="truncate text-sm text-muted-foreground">{selectedBook.author}</p>
+                <p className="truncate text-xs text-muted-foreground">{selectedBook.author}</p>
               </div>
+            </div>
 
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {selectedBook.list_status !== 'archived' && (
-                <p className="shrink-0 text-right leading-none">
-                  <span className="font-heading text-2xl font-bold tabular-nums text-primary">
-                    {formatPoints(selectedBook.book_points)}
-                  </span>
-                  <span className="ml-1 text-xs text-muted-foreground">b.</span>
-                </p>
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                  <span className="font-heading tabular-nums">{formatPoints(selectedBookPoints)}</span>
+                  <span className="ml-1 text-[11px] font-normal text-primary/80">b.</span>
+                </span>
               )}
 
               <Button
                 variant="ghost"
                 size="sm"
-                className="shrink-0"
+                className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => handleBookChange(null)}
               >
                 Změnit
               </Button>
             </div>
           </div>
-        ) : (
-          <div className="rounded-xl border bg-muted/40 p-3 sm:p-4">
-            <div className="flex items-start gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-primary">
-                <BookOpen className="size-4" />
-              </span>
-              <div className="min-w-0 flex-1 space-y-3">
-                <div>
-                  {isPreselectingBook ? (
-                    <p className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                      <Spinner className="size-3.5" />
-                      Načítám knihu…
-                    </p>
-                  ) : (
-                    <p className="font-medium">Vyber knihu, ke které esej patří</p>
-                  )}
-                </div>
-
-                <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground/60" />
-                  <Input
-                    value={bookQuery}
-                    aria-label="Hledat knihu"
-                    onChange={(e) => { setBookQuery(e.target.value); searchBooks(e.target.value); }}
-                    placeholder="Hledat knihu podle názvu nebo autora…"
-                    className="h-10 bg-background pr-9 pl-9"
-                  />
-                  {isSearchingBooks && (
-                    <Spinner className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  )}
-                </div>
-
-                {/* Capped so a broad query does not shove the title and the
-                    writing surface off the screen. */}
-                {bookResults.length > 0 && (
-                  <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border bg-background">
-                    {bookResults.map((book) => (
-                      <li key={book.id}>
-                        <button
-                          type="button"
-                          className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
-                          onClick={() => { handleBookChange(book); setBookResults([]); setBookQuery(''); }}
-                        >
-                          <div className="flex h-11 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-                            {book.google_books_cover_url ? (
-                              <StorageImage
-                                storageKey={book.google_books_cover_url}
-                                alt={book.title_cs}
-                                width={32}
-                                height={44}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <BookOpen className="size-4 text-muted-foreground/60" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <p className="truncate text-sm font-medium">{book.title_cs}</p>
-                              <BookStatusBadges book={book} />
-                            </div>
-                            <p className="truncate text-xs text-muted-foreground">{book.author}</p>
-                          </div>
-                          {book.list_status !== 'archived' && (
-                            <Badge variant="secondary" className="shrink-0 text-xs">
-                              {formatPoints(book.book_points)} b.
-                            </Badge>
-                          )}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <p className="text-xs text-muted-foreground">
-                  Píšeš o něčem mimo seznam? Nech pole prázdné — esej se počítá jako četba nad
-                  rámec.
+        ) : selectedSource ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg border bg-card p-2.5 sm:p-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <ContentSourceIllustration kind={selectedSource.kind} className="h-11 w-8 shrink-0" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{selectedSource.title}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {CONTENT_SOURCE_KIND_LABELS[selectedSource.kind]}
+                  {selectedSource.creator ? ` · ${selectedSource.creator}` : ''}
                 </p>
-
-                {/* Only a search that came up empty deserves the invitation to
-                    add the book — it is the moment the author is stuck, not a
-                    standing banner. */}
-                {bookQuery.trim() && bookResults.length === 0 && !isSearchingBooks && (
-                  <BookNotFoundCard query={bookQuery} from="esej" essayId={essayId ?? undefined} />
-                )}
               </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {selectedSource.status !== 'archived' && (
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                  <span className="font-heading tabular-nums">{formatPoints(selectedSource.points)}</span>
+                  <span className="ml-1 text-[11px] font-normal text-primary/80">b.</span>
+                </span>
+              )}
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => handleSourceChange(null)}
+              >
+                Změnit
+              </Button>
+            </div>
+          </div>
+        ) : isPreselectingBook || isPreselectingSource ? (
+          <div className="flex h-12 items-center gap-2 rounded-xl border border-dashed bg-muted/20 px-3 text-sm text-muted-foreground">
+            <Spinner className="size-4" />
+            <span>Načítám zdroj…</span>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed bg-muted/20 p-2.5 sm:p-3 transition-colors hover:border-primary/30 hover:bg-muted/30">
+            <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                <BookOpen className="size-3.5 text-primary" />
+                <span>Kniha nebo zdroj</span>
+                <span className="text-muted-foreground font-normal">(volitelné)</span>
+              </div>
+              <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                Připojením získáš body za četbu
+              </span>
+            </div>
+
+            <div className="relative">
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground/60" />
+                <Input
+                  value={sourceQuery}
+                  aria-label="Hledat knihu nebo jiný zdroj"
+                  onChange={(e) => {
+                    setSourceQuery(e.target.value);
+                    searchSources(e.target.value);
+                  }}
+                  placeholder="Hledat knihu, podcast, konferenci…"
+                  className="h-9.5 bg-background pr-9 pl-9 text-sm shadow-2xs placeholder:text-muted-foreground/70 focus-visible:ring-1"
+                />
+                {sourceQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSourceQuery('');
+                      setBookResults([]);
+                      setContentSourceResults([]);
+                    }}
+                    className="focus-ring absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                    aria-label="Vymazat hledání"
+                  >
+                    <X className="size-4" />
+                  </button>
+                ) : isSearchingSources ? (
+                  <Spinner className="absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                ) : null}
+              </div>
+
+              {/* Dropdown search results */}
+              {(bookResults.length > 0 || contentSourceResults.length > 0) && (
+                <ul className="absolute top-full left-0 right-0 z-20 mt-1.5 max-h-72 divide-y overflow-y-auto rounded-lg border bg-popover text-popover-foreground shadow-lg">
+                  {bookResults.map((book) => (
+                    <li key={`book-${book.id}`}>
+                      <button
+                        type="button"
+                        className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
+                        onClick={() => {
+                          handleBookChange(book);
+                          setBookResults([]);
+                          setContentSourceResults([]);
+                          setSourceQuery('');
+                        }}
+                      >
+                        <div className="flex h-10 w-7 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
+                          {book.google_books_cover_url ? (
+                            <StorageImage
+                              storageKey={book.google_books_cover_url}
+                              alt={book.title_cs}
+                              width={28}
+                              height={40}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <BookOpen className="size-4 text-muted-foreground/60" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="truncate text-sm font-medium">{book.title_cs}</p>
+                            <BookStatusBadges book={book} />
+                          </div>
+                          <p className="truncate text-xs text-muted-foreground">{book.author}</p>
+                        </div>
+                        {book.list_status !== 'archived' && (
+                          <Badge variant="secondary" className="shrink-0 text-xs">
+                            {formatPoints(book.book_points)} b.
+                          </Badge>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                  {contentSourceResults.map((source) => (
+                    <li key={`source-${source.id}`}>
+                      <button
+                        type="button"
+                        className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
+                        onClick={() => {
+                          handleSourceChange(source);
+                          setBookResults([]);
+                          setContentSourceResults([]);
+                          setSourceQuery('');
+                        }}
+                      >
+                        <ContentSourceIllustration kind={source.kind} className="h-10 w-7 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{source.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">{CONTENT_SOURCE_KIND_LABELS[source.kind]}</p>
+                        </div>
+                        {source.status !== 'archived' && (
+                          <Badge variant="secondary" className="shrink-0 text-xs">
+                            {formatPoints(source.points)} b.
+                          </Badge>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {sourceQuery.trim() && bookResults.length === 0 && contentSourceResults.length === 0 && !isSearchingSources && (
+                <div className="mt-2">
+                  <SourceNotFoundCard query={sourceQuery} essayId={essayId ?? undefined} />
+                </div>
+              )}
             </div>
           </div>
         )}

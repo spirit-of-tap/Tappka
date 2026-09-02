@@ -29,7 +29,6 @@ describe('PrehledContent', () => {
       approved_points_this_semester: 12,
     },
     myEssays: [],
-    drafts: [],
     teamStats: [
       {
         profile: { id: 'user-1', name: 'Jan Novák', picture: null },

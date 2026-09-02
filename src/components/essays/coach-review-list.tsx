@@ -28,10 +28,12 @@ import {
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { CoachReadButton } from './coach-read-button';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 
-import { pointsNumber } from '@/lib/books/points';
+import { formatPoints, pointsLabel } from '@/lib/books/points';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type {
   CoachReviewEssay,
   CoachReviewPointsFilter,
@@ -55,6 +57,11 @@ interface CoachReviewListProps {
   coachReadsMap?: Record<string, EssayCoachReadWithProfile[]>;
   currentCoachId?: string;
   currentCoachName?: string;
+  initialTab?: 'unread' | 'read';
+  initialTeamId?: string | null;
+  initialRocket?: CoachReviewRocketFilter;
+  initialPoints?: CoachReviewPointsFilter;
+  initialReply?: CoachReviewReplyFilter;
 }
 
 export function CoachReviewList({
@@ -71,27 +78,33 @@ export function CoachReviewList({
   coachReadsMap: initialCoachReadsMap = {},
   currentCoachId,
   currentCoachName = 'Kouč:ka',
+  initialTab,
+  initialTeamId,
+  initialRocket,
+  initialPoints,
+  initialReply,
 }: CoachReviewListProps) {
-  const [activeTab, setActiveTab] = usePersistedState<'unread' | 'read'>(
+  const [activeTab, setActiveTab, isTabHydrated] = usePersistedState<'unread' | 'read'>(
     'tappka:coach-review:tab',
-    'unread',
+    initialTab ?? 'unread',
   );
-  const [teamFilter, setTeamFilter] = usePersistedState<string>(
+  const [teamFilter, setTeamFilter, isTeamHydrated] = usePersistedState<string>(
     'tappka:coach-review:team',
-    defaultTeamId,
+    initialTeamId !== undefined ? (initialTeamId ?? 'all') : defaultTeamId,
   );
-  const [rocketFilter, setRocketFilter] = usePersistedState<CoachReviewRocketFilter>(
+  const [rocketFilter, setRocketFilter, isRocketHydrated] = usePersistedState<CoachReviewRocketFilter>(
     'tappka:coach-review:rocket',
-    'all',
+    initialRocket ?? 'all',
   );
-  const [pointsFilter, setPointsFilter] = usePersistedState<CoachReviewPointsFilter>(
+  const [pointsFilter, setPointsFilter, isPointsHydrated] = usePersistedState<CoachReviewPointsFilter>(
     'tappka:coach-review:points',
-    'all',
+    initialPoints ?? 'all',
   );
-  const [replyFilter, setReplyFilter] = usePersistedState<CoachReviewReplyFilter>(
+  const [replyFilter, setReplyFilter, isReplyHydrated] = usePersistedState<CoachReviewReplyFilter>(
     'tappka:coach-review:reply',
-    'all',
+    initialReply ?? 'all',
   );
+  const isHydrated = isTabHydrated && isTeamHydrated && isRocketHydrated && isPointsHydrated && isReplyHydrated;
 
   const initialFilterEssay = useCallback(
     (essay: CoachReviewEssay) => {
@@ -134,6 +147,38 @@ export function CoachReviewList({
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
+  // Keep URL in sync with filters for shareability and SSR consistency.
+  // URL is the source of truth over localStorage; localStorage provides persistence
+  // when navigating without URL params.
+  const initialFiltersRef = useRef({
+    tab: initialTab ?? 'unread',
+    teamId: initialTeamId !== undefined ? (initialTeamId ?? 'all') : defaultTeamId,
+    rocket: initialRocket ?? 'all',
+    points: initialPoints ?? 'all',
+    reply: initialReply ?? 'all',
+  });
+
+  // Keep URL updated whenever filters change post-hydration (shareable links)
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (typeof window === 'undefined') return;
+    // Debounce URL sync to avoid push on every intermediate render
+    const next = new URLSearchParams();
+    if (activeTab !== 'unread') next.set('tab', activeTab);
+    // Always reflect teamFilter when it differs from default or when explicitly 'all'
+    if (teamFilter !== defaultTeamId || (teamFilter === 'all' && initialFiltersRef.current.teamId !== 'all')) {
+      next.set('team_id', teamFilter);
+    }
+    if (rocketFilter !== 'all') next.set('rocket', rocketFilter);
+    if (pointsFilter !== 'all') next.set('points', pointsFilter);
+    if (replyFilter !== 'all') next.set('reply', replyFilter);
+    const qs = next.toString();
+    const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (newUrl !== current) {
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [activeTab, teamFilter, rocketFilter, pointsFilter, replyFilter, isHydrated, defaultTeamId]);
 
   const effectiveCommentsMap = useMemo(() => {
     const merged: Record<string, EssayCommentWithAuthor[]> = { ...commentsMap };
@@ -178,13 +223,16 @@ export function CoachReviewList({
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      const isDefault =
-        activeTab === 'unread' &&
-        teamFilter === defaultTeamId &&
-        rocketFilter === 'all' &&
-        pointsFilter === 'all' &&
-        replyFilter === 'all';
-      if (isDefault) return;
+      // If current filters still match the SSR-initial filters, no need to refetch
+      // (prevents duplicate fetch when URL drove SSR). Otherwise localStorage diverged -> refetch.
+      const init = initialFiltersRef.current;
+      const isSameAsInitial =
+        activeTab === init.tab &&
+        teamFilter === init.teamId &&
+        rocketFilter === init.rocket &&
+        pointsFilter === init.points &&
+        replyFilter === init.reply;
+      if (isSameAsInitial) return;
     }
 
     let isCancelled = false;
@@ -505,21 +553,26 @@ export function getEssayCommentThreads(
       coachComments: [],
       hasCoachComment: false,
       hasAuthorReply: false,
+      earliestCoachCommentTime: 0,
       latestCoachCommentTime: 0,
       threads: [],
     };
   }
 
+  const coachCommentIds = new Set(coachComments.map((c) => c.id));
+  const earliestCoachCommentTime = Math.min(
+    ...coachComments.map((c) => new Date(c.created_at).getTime()),
+  );
   const latestCoachCommentTime = Math.max(
     ...coachComments.map((c) => new Date(c.created_at).getTime()),
   );
 
   const authorComments = comments.filter((c) => c.author_profile_id === authorProfileId);
-  const authorRepliesAfterLatestCoach = authorComments.filter(
-    (c) => new Date(c.created_at).getTime() > latestCoachCommentTime,
+  const hasAuthorReply = authorComments.some(
+    (c) =>
+      (c.parent_id && coachCommentIds.has(c.parent_id)) ||
+      new Date(c.created_at).getTime() > earliestCoachCommentTime,
   );
-
-  const hasAuthorReply = authorRepliesAfterLatestCoach.length > 0;
 
   const threads = coachComments.map((coachComment) => {
     const directReplies = comments.filter((c) => c.parent_id === coachComment.id);
@@ -550,6 +603,7 @@ export function getEssayCommentThreads(
     coachComments,
     hasCoachComment: true,
     hasAuthorReply,
+    earliestCoachCommentTime,
     latestCoachCommentTime,
     threads,
   };
@@ -563,9 +617,9 @@ function ReviewRow({
   onToggled,
 }: ReviewRowProps) {
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
-  const bookPoints = pointsNumber(essay.book?.book_points);
+  const source = getEssaySourceDisplay(essay);
 
-  const { coachComments, hasCoachComment, latestCoachCommentTime, threads } =
+  const { coachComments, hasCoachComment, earliestCoachCommentTime, threads } =
     useMemo(
       () => getEssayCommentThreads(comments, essay.author_profile_id),
       [comments, essay.author_profile_id],
@@ -573,7 +627,7 @@ function ReviewRow({
 
   const hasEditedAfterCoach =
     hasCoachComment &&
-    new Date(essay.updated_at).getTime() > latestCoachCommentTime + 60_000;
+    new Date(essay.updated_at).getTime() > earliestCoachCommentTime + 60_000;
 
   return (
     <Card className="py-0">
@@ -596,6 +650,8 @@ function ReviewRow({
                 />
               ) : essay.book ? (
                 <BookOpen className="size-4 text-muted-foreground/30" />
+              ) : essay.content_source ? (
+                <ContentSourceIllustration kind={essay.content_source.kind} className="size-full" />
               ) : (
                 <Sparkles className="size-4 text-amber-500/40" />
               )}
@@ -631,17 +687,17 @@ function ReviewRow({
 
               {/* Book status badges */}
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                {essay.book ? (
+                {source.kind !== 'none' ? (
                   <>
                     <span className="truncate font-medium text-foreground/80">
-                      {essay.book.title_cs}
+                      {source.title}
                     </span>
-                    {bookPoints > 0 && (
+                    {source.points > 0 && (
                       <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
-                        {bookPoints} {bookPoints === 1 ? 'bod' : bookPoints < 5 ? 'body' : 'bodů'}
+                        {formatPoints(source.points)} {pointsLabel(source.points)}
                       </span>
                     )}
-                    <BookStatusBadges book={essay.book} />
+                    {essay.book && <BookStatusBadges book={essay.book} />}
                   </>
                 ) : (
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">

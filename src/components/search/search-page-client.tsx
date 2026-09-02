@@ -29,14 +29,17 @@ import { BookCard } from '@/components/books/book-card';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { BookNotFoundCard } from '@/components/books/book-not-found-card';
 import { type BookEssayItem } from '@/components/books/feed-book-card';
+import { ContentSourceCard } from '@/components/content-sources/content-source-card';
 import { DiscoveryMixedFeed } from './discovery-mixed-feed';
 import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
 import type { HighlightedGroup } from '@/lib/books/highlight-groups';
+import type { ContentSource } from '@/lib/content-sources/types';
 
 type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
 type BookResult = {
@@ -65,6 +68,7 @@ interface SearchPageClientProps {
   categoryBestBooks: Record<string, CategoryBook[]>;
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
+  contentSources?: ContentSource[];
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
@@ -95,9 +99,10 @@ export function SearchPageClient({
   categoryBestBooks,
   rocketModelBooks,
   highlightedByCategory,
+  contentSources = [],
 }: SearchPageClientProps) {
   const [query, setQuery] = usePersistedState('tappka:search:query', '', { storage: 'sessionStorage' });
-  const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
+  const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[]; sources: ContentSource[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = usePersistedState<string | null>('tappka:search:category', null, { storage: 'sessionStorage' });
   const [categoryBooks, setCategoryBooks] = useState<(BookWithProfiles & { essay_count?: number })[]>([]);
@@ -124,13 +129,14 @@ export function SearchPageClient({
       setLoading(true);
       try {
         const q = encodeURIComponent(query.trim());
-        const [eRes, bRes] = await Promise.all([
+        const [eRes, bRes, sRes] = await Promise.all([
           fetch(`/api/essays?q=${q}`),
           fetch(`/api/books/search?q=${q}`),
+          fetch(`/api/content-sources?q=${q}`),
         ]);
-        const [{ data: essays }, { data: books }] = await Promise.all([eRes.json(), bRes.json()]);
+        const [{ data: essays }, { data: books }, { data: sources }] = await Promise.all([eRes.json(), bRes.json(), sRes.json()]);
         if (requestId === searchIdRef.current) {
-          setResults({ essays: essays ?? [], books: books ?? [] });
+          setResults({ essays: essays ?? [], books: books ?? [], sources: sources ?? [] });
         }
       } finally {
         if (requestId === searchIdRef.current) setLoading(false);
@@ -183,7 +189,7 @@ export function SearchPageClient({
       <div className="space-y-10">
         {hasQuery ? (
           results ? (
-            <SearchResultsView essays={results.essays} books={results.books} query={query} />
+            <SearchResultsView essays={results.essays} books={results.books} sources={results.sources} query={query} />
           ) : (
             <p className="text-center text-muted-foreground text-sm py-12">Hledám…</p>
           )
@@ -211,6 +217,7 @@ export function SearchPageClient({
             categoryBestBooks={categoryBestBooks}
             rocketModelBooks={rocketModelBooks}
             highlightedByCategory={highlightedByCategory}
+            contentSources={contentSources}
             onSelectCategory={setSelectedCategory}
           />
         )}
@@ -235,6 +242,7 @@ function DiscoveryView({
   categoryBestBooks,
   rocketModelBooks,
   highlightedByCategory,
+  contentSources,
   onSelectCategory,
 }: {
   books: BookWithProfiles[];
@@ -250,6 +258,7 @@ function DiscoveryView({
   categoryBestBooks: Record<string, CategoryBook[]>;
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
+  contentSources: ContentSource[];
   onSelectCategory: (key: string) => void;
 }) {
   return (
@@ -267,6 +276,23 @@ function DiscoveryView({
         categoryBestBooks={categoryBestBooks}
         onSelectCategory={onSelectCategory}
       />
+
+      {/* 2b. Other content sources: podcasts, conferences, programs */}
+      {contentSources.length > 0 && (
+        <section className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-lg font-semibold">Ostatní zdroje</h2>
+            <Link href="/cteni/zdroje" className="text-sm font-medium text-primary hover:underline">
+              Zobrazit vše
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {contentSources.slice(0, 5).map((source) => (
+              <ContentSourceCard key={source.id} source={source} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 3. Mixed Stream: Books with Interleaved Community Essays */}
       <DiscoveryMixedFeed
@@ -443,8 +469,18 @@ function CategoryBooksView({
 
 // ─── Search results ─────────────────────────────────────────────────────────────
 
-function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[]; books: BookResult[]; query: string }) {
-  if (essays.length === 0 && books.length === 0) {
+function SearchResultsView({
+  essays,
+  books,
+  sources,
+  query,
+}: {
+  essays: EssayWithVoted[];
+  books: BookResult[];
+  sources: ContentSource[];
+  query: string;
+}) {
+  if (essays.length === 0 && books.length === 0 && sources.length === 0) {
     return (
       <div className="space-y-4">
         <div className="space-y-2 py-12 text-center">
@@ -495,6 +531,19 @@ function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[];
         </section>
       )}
 
+      {sources.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Ostatní zdroje ({sources.length})
+          </h2>
+          <div className="space-y-2">
+            {sources.map((source) => (
+              <ContentSourceCard key={source.id} source={source} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <BookNotFoundCard query={query} from="hledat" />
 
       {essays.length > 0 && (
@@ -503,7 +552,9 @@ function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[];
             Eseje ({essays.length})
           </h2>
           <div className="divide-y rounded-xl border overflow-hidden bg-card">
-            {essays.map((essay) => (
+            {essays.map((essay) => {
+              const sourceTitle = getEssaySourceDisplay(essay).title;
+              return (
               <Link
                 key={essay.id}
                 href={`/cteni/eseje/${essay.id}`}
@@ -519,7 +570,7 @@ function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[];
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{essay.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {essay.author?.name}{essay.book ? ` · ${essay.book.title_cs}` : ''}
+                    {essay.author?.name}{sourceTitle ? ` · ${sourceTitle}` : ''}
                   </p>
                 </div>
                 <span className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground">
@@ -530,7 +581,8 @@ function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[];
                   {essay.vote_count}
                 </span>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

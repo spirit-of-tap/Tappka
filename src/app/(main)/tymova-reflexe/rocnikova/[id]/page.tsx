@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { getSessionProfile } from "@/lib/auth/session"
 import { getSemesterReflectionWithEntries } from "@/lib/tymova-reflexe/semester-queries"
 import { RocnikovaReflectionDetail } from "@/components/tymova-reflexe/rocnikova-reflection-detail"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
   title: "Ročníková reflexe | Tappka",
@@ -23,7 +25,18 @@ export default async function RocnikovaReflexeDetailPage({
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "teamReflection",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Týmová reflexe" />
+  }
 
   const result = await getSemesterReflectionWithEntries(supabase, id)
   if (!result) notFound()

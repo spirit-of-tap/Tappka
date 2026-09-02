@@ -1,0 +1,1 @@
+ALTER POLICY "Authenticated users can add content sources" ON "content_sources" TO authenticated WITH CHECK (((created_by_profile_id = current_profile_id()) AND (status = 'pending_review'::content_source_status)));

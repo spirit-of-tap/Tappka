@@ -4,6 +4,8 @@ import { getSessionProfile } from "@/lib/auth/session"
 import { listIndividualCoachingSessions, listCoachProfiles } from "@/lib/individual-coaching-sessions/queries"
 import { IndividualCoachingSessionsView } from "@/components/individual-coaching-sessions/individual-coaching-sessions-view"
 import { PageShell } from "@/components/ui/page-shell"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
   title: "Individuální koučování | Tappka",
@@ -17,7 +19,18 @@ export default async function KoucovaniPage() {
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "coaching",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Koučování" />
+  }
 
   const [sessions, coachProfiles] = await Promise.all([
     listIndividualCoachingSessions(supabase, profile.id),

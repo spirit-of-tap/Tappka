@@ -18,8 +18,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { getAvatarUrl } from "@/lib/storage/public-url"
 import { createClient } from "@/lib/supabase/client"
+import posthog from "posthog-js"
 
 interface ProfileHubProps {
   user: {
@@ -30,6 +32,8 @@ interface ProfileHubProps {
     picture?: string | null
     role?: string
     beta_access?: boolean
+    beta_access_granted_at?: string | null
+    beta_cohort?: BetaCohort
   }
 }
 
@@ -42,6 +46,12 @@ const THEME_OPTIONS = [
 export function ProfileHub({ user }: ProfileHubProps) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const accessProfile = {
+    role: user.role ?? "student",
+    beta_access_granted_at: user.beta_access_granted_at ?? (user.beta_access ? "1970-01-01T00:00:00Z" : null) ?? null,
+    beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
+  }
+  const canViewPortfolio = canAccessFeature(accessProfile, "portfolio")
 
   const getInitials = (name: string) =>
     name
@@ -52,6 +62,11 @@ export function ProfileHub({ user }: ProfileHubProps) {
       .slice(0, 2)
 
   const logout = async () => {
+    try {
+      posthog.reset()
+    } catch {
+      // ignore
+    }
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")
@@ -82,7 +97,7 @@ export function ProfileHub({ user }: ProfileHubProps) {
           <Bell className="size-4 text-muted-foreground" />
           Notifikace
         </Link>
-        {user.beta_access && (
+        {canViewPortfolio && (
           <Link href="/portfolio" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
             <BriefcaseBusiness className="size-4 text-muted-foreground" />
             <span className="flex-1">Portfolio</span>

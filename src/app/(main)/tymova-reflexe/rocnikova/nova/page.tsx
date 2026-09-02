@@ -6,6 +6,8 @@ import { RocnikovaInfoCard } from "@/components/tymova-reflexe/rocnikova-info-ca
 import { RocnikovaReflectionCreate } from "@/components/tymova-reflexe/rocnikova-reflection-create"
 import { HelpDialog } from "@/components/help-dialog"
 import { PageHeader } from "@/components/ui/page-header"
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 function defaultMayMonth(): string {
   const now = new Date()
@@ -45,7 +47,18 @@ export default async function NovaRocnikovaReflexePage({
 
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
-  if (!profile.beta_access_granted_at) redirect("/")
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "teamReflection",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Týmová reflexe" />
+  }
   if (!profile.team_id) redirect("/")
 
   const existing = await getSemesterReflectionForTeamMonth(supabase, profile.team_id, semesterMonth)

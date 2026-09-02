@@ -21,8 +21,8 @@ import {
 
 interface EssayDeleteButtonProps {
   essayId: string;
-  /** A koncept was never public, so deleting it costs the author nothing. */
-  isDraft: boolean;
+  /** An essay without a title yet was never visible to anyone, so deleting it costs the author nothing. */
+  hasTitle: boolean;
   /** BookPoints the essay currently earns, so the author learns what they lose. */
   points?: number;
   /** Pass to drive the dialog from elsewhere (a menu); omit to get a trigger button. */
@@ -32,7 +32,7 @@ interface EssayDeleteButtonProps {
 
 export function EssayDeleteButton({
   essayId,
-  isDraft,
+  hasTitle,
   points = 0,
   open: openProp,
   onOpenChange,
@@ -50,7 +50,7 @@ export function EssayDeleteButton({
         setIsDeleting(false);
         return;
       }
-      toast.success(isDraft ? 'Koncept smazán.' : 'Esej smazána.');
+      toast.success(hasTitle ? 'Esej smazána.' : 'Rozepsaná esej smazána.');
       // replace, not push: the editor URL now points at a deleted essay, and
       // Back should not walk into a 404.
       router.replace('/cteni/prehled');
@@ -77,13 +77,13 @@ export function EssayDeleteButton({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {isDraft ? 'Smazat koncept?' : 'Smazat esej?'}
+            {hasTitle ? 'Smazat esej?' : 'Smazat rozepsanou esej?'}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {isDraft
-              ? 'Rozepsaný text se ztratí. Tuhle akci nevrátíš.'
-              : 'Esej zmizí z tvého přehledu i z týmové stránky. Tuhle akci nevrátíš.'}
-            {!isDraft && points > 0 && ` Přijdeš i o ${formatPointsWithLabel(points)}, které za ni máš.`}
+            {hasTitle
+              ? 'Esej zmizí z tvého přehledu i z týmové stránky. Tuhle akci nevrátíš.'
+              : 'Rozepsaný text se ztratí. Tuhle akci nevrátíš.'}
+            {hasTitle && points > 0 && ` Přijdeš i o ${formatPointsWithLabel(points)}, které za ni máš.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

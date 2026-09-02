@@ -14,6 +14,7 @@ import { ProfilePicture } from '@/components/profile-picture';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { BirthGivingProfileHistory } from '@/components/birth-giving/profile-history';
 import { Badge } from '@/components/ui/badge';
 import { PageBack } from '@/components/ui/page-back';
@@ -24,7 +25,8 @@ export const metadata = {
 };
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
-import { formatPointsWithLabel, pointsNumber } from '@/lib/books/points';
+import { formatPointsWithLabel } from '@/lib/books/points';
+import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
@@ -64,8 +66,10 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   }
 
   const totalVotes = essays.reduce((s, e) => s + (e.vote_count ?? 0), 0);
-  const bookEssays = essays.filter((e) => e.book);
-  const topicEssays = essays.filter((e) => !e.book);
+  // "Nad rámec četby" means no source at all; a content-source essay earns
+  // points and belongs in the sourced bucket alongside book essays.
+  const bookEssays = essays.filter((e) => getEssaySourceDisplay(e).kind !== 'none');
+  const topicEssays = essays.filter((e) => getEssaySourceDisplay(e).kind === 'none');
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
   const isOwnProfile = currentUserProfile?.id === profile.id;
   const teamColor = profile.team?.color ?? null;
@@ -214,11 +218,14 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                     return 0;
                   }).map((essay) => {
                     const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
+                    const source = getEssaySourceDisplay(essay);
                     return (
                       <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
                         <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5">
-                          {essay.book!.google_books_cover_url ? (
-                            <StorageImage storageKey={essay.book!.google_books_cover_url} alt={essay.book!.title_cs} width={44} height={60} className="w-full h-full object-cover" />
+                          {essay.book?.google_books_cover_url ? (
+                            <StorageImage storageKey={essay.book.google_books_cover_url} alt={essay.book.title_cs} width={44} height={60} className="w-full h-full object-cover" />
+                          ) : essay.content_source ? (
+                            <ContentSourceIllustration kind={essay.content_source.kind} className="size-full" />
                           ) : (
                             <BookOpen className="size-4 text-muted-foreground/30" />
                           )}
@@ -231,9 +238,9 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                             </span>
                           </Link>
                           <p className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
-                            {essay.book!.title_cs}
-                            <BookStatusBadges book={essay.book!} />
-                            {pointsNumber(essay.book!.book_points) > 0 && <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(essay.book!.book_points)}</span>}
+                            {source.title}
+                            {essay.book && <BookStatusBadges book={essay.book} />}
+                            {source.points > 0 && <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(source.points)}</span>}
                           </p>
                           {excerpt && excerpt.length > 20 && (
                             <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{excerpt}…</p>

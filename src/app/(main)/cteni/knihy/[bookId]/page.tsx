@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation';
 import {
+  AlertCircle,
   BookOpen,
   BookText,
   ExternalLink,
 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
@@ -151,6 +153,15 @@ export default async function BookDetailPage({ params }: PageProps) {
               </span>
             ))}
           </div>
+
+          {/* Rejection reason — visible for archived (RED) books */}
+          {book.list_status === 'archived' && book.list_status_reason && (
+            <Alert>
+              <AlertCircle />
+              <AlertTitle>Důvod zamítnutí</AlertTitle>
+              <AlertDescription>{book.list_status_reason}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Description — what the book is about, the first thing a student wants to know */}
           {book.description && (

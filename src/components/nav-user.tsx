@@ -34,7 +34,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { createClient } from "@/lib/supabase/client"
+import posthog from "posthog-js"
 
 interface NavUserProps {
   user: {
@@ -43,6 +45,8 @@ interface NavUserProps {
     email: string
     role?: string
     beta_access?: boolean
+    beta_access_granted_at?: string | null
+    beta_cohort?: BetaCohort
   }
 }
 
@@ -50,8 +54,19 @@ export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar()
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const accessProfile = {
+    role: user.role ?? "student",
+    beta_access_granted_at: user.beta_access_granted_at ?? (user.beta_access ? "1970-01-01T00:00:00Z" : null) ?? null,
+    beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
+  }
+  const canViewPortfolio = canAccessFeature(accessProfile, "portfolio")
 
   const logout = async () => {
+    try {
+      posthog.reset()
+    } catch {
+      // ignore
+    }
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")
@@ -120,7 +135,7 @@ export function NavUser({ user }: NavUserProps) {
                 <Bell className="mr-2 h-4 w-4" />
                 Notifikace
               </DropdownMenuItem>
-              {user.beta_access && (
+              {canViewPortfolio && (
                 <DropdownMenuItem onClick={() => router.push("/portfolio")}>
                   <BriefcaseBusiness className="mr-2 h-4 w-4" />
                   <span className="flex-1">Portfolio</span>

@@ -54,7 +54,9 @@ describe("requireTeamActivityApiContext", () => {
     mocks.getCurrentUserProfile.mockResolvedValue({
       id: "profile-1",
       team_id: "team-1",
+      role: "student",
       beta_access_granted_at: "2026-08-22T12:00:00Z",
+      beta_cohort: "B",
     })
 
     const result = await requireTeamActivityApiContext()

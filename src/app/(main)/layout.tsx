@@ -5,6 +5,7 @@ import { getSessionProfile } from "@/lib/auth/session";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/navigation/mobile-bottom-nav";
 import { SpotlightProvider } from "@/components/spotlight";
+import { PostHogIdentify } from "@/components/posthog/posthog-identify";
 import {
   SidebarInset,
   SidebarProvider,
@@ -37,10 +38,17 @@ export default async function DashboardLayout({
     email: profile.work_email,
     role: profile.role,
     beta_access: profile.beta_access_granted_at != null,
+    beta_access_granted_at: profile.beta_access_granted_at,
+    beta_cohort: ((profile as unknown as { beta_cohort: "A" | "B" }).beta_cohort ?? "A") as "A" | "B",
   };
 
   return (
     <SpotlightProvider user={sidebarUser}>
+      <PostHogIdentify
+        distinctId={profile.id}
+        betaAccess={profile.beta_access_granted_at != null}
+        betaCohort={sidebarUser.beta_cohort}
+      />
       <SidebarProvider>
         <AppSidebar user={sidebarUser} />
         <SidebarInset>

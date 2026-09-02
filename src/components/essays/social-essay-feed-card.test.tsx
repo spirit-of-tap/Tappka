@@ -11,6 +11,8 @@ const mockEssay: EssayWithDetails = {
   id: 'essay-10',
   author_profile_id: 'p1',
   book_id: 'b1',
+  frozen_book_points: null,
+  content_source_id: null,
   title: 'Jak postavit MVP za víkend podle Lean Startup',
   content_json: {},
   content_text: 'Po přečtení knihy jsme v týmu udělali první experiment a za 48 hodin jsme získali první platící zákazníky.',
@@ -40,6 +42,7 @@ const mockEssay: EssayWithDetails = {
     google_books_cover_url: null,
     highlight_category: null,
   },
+  content_source: null,
 };
 
 describe('SocialEssayFeedCard', () => {
@@ -78,5 +81,36 @@ describe('SocialEssayFeedCard', () => {
     render(<SocialEssayFeedCard essay={mockEssay} />);
 
     expect(screen.getByText(/Po přečtení knihy jsme v týmu udělali první experiment/)).toBeInTheDocument();
+  });
+
+  it('renders the content source capsule with title, kind and points', () => {
+    render(
+      <SocialEssayFeedCard
+        essay={{
+          ...mockEssay,
+          book_id: null,
+          book: null,
+          content_source_id: 'src-1',
+          content_source: {
+            id: 'src-1',
+            kind: 'podcast',
+            title: 'Founders',
+            creator: 'David Senra',
+            points: 0.5,
+            status: 'approved',
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText('Founders')).toBeInTheDocument();
+    expect(screen.getByText(/Podcast · David Senra/)).toBeInTheDocument();
+    expect(screen.getByText('0,50 b.')).toBeInTheDocument();
+  });
+
+  it('renders no source capsule when the essay has neither a book nor a content source', () => {
+    render(<SocialEssayFeedCard essay={{ ...mockEssay, book_id: null, book: null }} />);
+
+    expect(screen.queryByText('The Lean Startup')).not.toBeInTheDocument();
   });
 });

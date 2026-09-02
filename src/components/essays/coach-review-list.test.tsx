@@ -14,6 +14,8 @@ function mockEssay(overrides: Partial<CoachReviewEssay> = {}): CoachReviewEssay 
     id: 'essay-1',
     author_profile_id: 'user-1',
     book_id: 'book-1',
+    frozen_book_points: null,
+    content_source_id: null,
     title: 'Reflexe a aplikace v týmu',
     content_json: {},
     content_text: 'Tento text shrnuje klíčové myšlenky z knihy...',
@@ -44,6 +46,7 @@ function mockEssay(overrides: Partial<CoachReviewEssay> = {}): CoachReviewEssay 
       google_books_cover_url: 'covers/lean-startup.jpg',
       highlight_category: null,
     },
+    content_source: null,
     ...overrides,
   };
 }
@@ -310,5 +313,49 @@ describe('CoachReviewList', () => {
     expect(screen.getByText('4000')).toBeInTheDocument();
     // Read count badge displays 125
     expect(screen.getByText('125')).toBeInTheDocument();
+  });
+
+  it('renders a content source essay with its source title and points', () => {
+    const essay = mockEssay({
+      book_id: null,
+      book: null,
+      content_source_id: 'src-1',
+      content_source: {
+        id: 'src-1',
+        kind: 'podcast',
+        title: 'Founders',
+        creator: 'David Senra',
+        points: 2,
+        status: 'approved',
+      },
+    });
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+      />,
+    );
+
+    expect(screen.getByText('Founders')).toBeInTheDocument();
+    expect(screen.getByText('2 body')).toBeInTheDocument();
+    expect(screen.queryByText('Nad rámec četby')).not.toBeInTheDocument();
+  });
+
+  it('still marks a sourceless essay as "Nad rámec četby"', () => {
+    const essay = mockEssay({ book_id: null, book: null });
+
+    render(
+      <CoachReviewList
+        initialUnread={[essay]}
+        initialRead={[]}
+        teams={teams}
+        defaultTeamId="all"
+      />,
+    );
+
+    expect(screen.getByText('Nad rámec četby')).toBeInTheDocument();
   });
 });

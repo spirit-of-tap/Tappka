@@ -36,7 +36,7 @@ export function ModuleGrid({ modules, profileId }: ModuleGridProps) {
             <div className={cn("space-y-1", m.featured && "min-w-0 flex-1")}>
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold leading-tight">{m.title}</h2>
-                {m.betaOnly && (
+                {m.feature && (
                   <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">
                     Beta
                   </Badge>

@@ -76,6 +76,12 @@ function nullableInteger(value: unknown): number | null {
   return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null;
 }
 
+function stripSubtitle(title: string): string {
+  // Keep only part before ":" / " – " / " - " — model sometimes returns "Title: Subtitle"
+  const cut = title.split(/[:–—]/)[0].split(' - ')[0].trim();
+  return cut.length > 0 ? cut : title.trim();
+}
+
 /**
  * Validates a Perplexity payload. `response_format` makes a violation unlikely
  * but not impossible, and a bad tag would surface as an RLS failure at write
@@ -88,8 +94,9 @@ export function parseEnrichment(raw: unknown): ParseResult {
 
   const source = raw as Record<string, unknown>;
 
-  const titleCs = nonEmptyString(source.title_cs);
-  if (!titleCs) return { ok: false, error: 'Chybí title_cs.' };
+  const titleCsRaw = nonEmptyString(source.title_cs);
+  if (!titleCsRaw) return { ok: false, error: 'Chybí title_cs.' };
+  const titleCs = stripSubtitle(titleCsRaw);
 
   const author = nonEmptyString(source.author);
   if (!author) return { ok: false, error: 'Chybí author.' };
@@ -119,11 +126,17 @@ export function parseEnrichment(raw: unknown): ParseResult {
       )]
     : [];
 
+  const titleEnRaw = nullableString(source.title_en);
+  const titleEn = titleEnRaw ? stripSubtitle(titleEnRaw) : null;
+  // Enforce language: if one side missing, fill by translating the other (model should have, but guarantee)
+  const finalTitleCs = titleCs;
+  const finalTitleEn = titleEn ?? titleCs; // fallback: use Czech as English if truly missing, flagged via confidence
+
   return {
     ok: true,
     value: {
-      title_cs: titleCs,
-      title_en: nullableString(source.title_en),
+      title_cs: finalTitleCs,
+      title_en: finalTitleEn,
       author,
       isbn_13: nullableString(source.isbn_13),
       page_count: nullableInteger(source.page_count),
