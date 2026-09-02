@@ -157,14 +157,14 @@ export const bookTags = pgTable("book_tags", {
 export const libraryBooks = pgTable("library_books", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	bookId: uuid("book_id").notNull(),
-	isbn13: text("isbn_13"),
+	labelCode: integer("label_code"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdByProfileId: uuid("created_by_profile_id").notNull(),
 	updatedByProfileId: uuid("updated_by_profile_id").notNull(),
 }, (table) => [
 	index("library_books_book_id_idx").using("btree", table.bookId.asc().nullsLast().op("uuid_ops")),
-	index("library_books_isbn_13_idx").using("btree", table.isbn13.asc().nullsLast().op("text_ops")).where(sql`(isbn_13 IS NOT NULL)`),
+	unique("library_books_label_code_key").on(table.labelCode),
 	foreignKey({
 			columns: [table.bookId],
 			foreignColumns: [books.id],
@@ -184,6 +184,7 @@ export const libraryBooks = pgTable("library_books", {
 	pgPolicy("Coaches and admins can add library books", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`is_coach_or_admin()` }),
 	pgPolicy("Coaches and admins can update library books", { as: "permissive", for: "update", to: ["authenticated"], using: sql`is_coach_or_admin()`, withCheck: sql`is_coach_or_admin()` }),
 	pgPolicy("Coaches and admins can delete library books", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`is_coach_or_admin()` }),
+	check("library_books_label_code_check", sql`(label_code IS NULL) OR (label_code > 0)`),
 ]).enableRLS();
 
 export const bookLoans = pgTable("book_loans", {

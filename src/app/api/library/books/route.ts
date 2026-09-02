@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
       return {
         id: lb.id,
         book_id: lb.book_id,
-        isbn_13: lb.isbn_13,
         created_at: lb.created_at,
         book: lb.book,
         totalCopies: info.totalCopies,
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nemáš oprávnění' }, { status: 403 });
     }
 
-    const body: { book_id: string; isbn_13?: string } = await request.json();
+    const body: { book_id: string } = await request.json();
 
     if (!body.book_id?.trim()) {
       return NextResponse.json({ error: 'ID knihy je povinné' }, { status: 400 });
@@ -69,7 +68,6 @@ export async function POST(request: NextRequest) {
       .from('library_books')
       .insert({
         book_id: body.book_id.trim(),
-        isbn_13: body.isbn_13 ?? null,
         created_by_profile_id: profile.id,
         updated_by_profile_id: profile.id,
       })

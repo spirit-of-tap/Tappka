@@ -2,8 +2,12 @@ import { NextRequest, NextResponse, after } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getAvailableCopyForBook } from '@/lib/library/queries';
+import { parseLibraryLabelCode } from '@/lib/library/label-code';
+import { getAvailableCopyByLabelCode, getAvailableCopyForBook } from '@/lib/library/queries';
 import { notifyBookBorrowed } from '@/lib/notifications/library-notifications';
+
+const LOAN_DURATION_DAYS = 30;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 interface RouteContext {
   params: Promise<{ bookId: string }>;
@@ -19,13 +23,22 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const profile = await getCurrentUserProfile(supabase, { user });
     if (!profile) return NextResponse.json({ error: 'Profil nenalezen' }, { status: 403 });
 
-    const availableCopyId = await getAvailableCopyForBook(supabase, bookId);
+    const rawLabelCode = request.nextUrl.searchParams.get('label');
+    const labelCode = rawLabelCode == null ? null : parseLibraryLabelCode(rawLabelCode);
+    if (rawLabelCode != null && labelCode == null) {
+      return NextResponse.json({ error: 'Neplatný kód štítku' }, { status: 400 });
+    }
+
+    const availableCopyId = labelCode == null
+      ? await getAvailableCopyForBook(supabase, bookId)
+      : await getAvailableCopyByLabelCode(supabase, bookId, labelCode);
     if (!availableCopyId) {
-      return NextResponse.json({ error: 'Žádná dostupná kopie' }, { status: 409 });
+      const message = labelCode == null ? 'Žádná dostupná kopie' : 'Tento výtisk není dostupný';
+      return NextResponse.json({ error: message }, { status: 409 });
     }
 
     const now = new Date().toISOString();
-    const dueAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const dueAt = new Date(Date.now() + LOAN_DURATION_DAYS * MILLISECONDS_PER_DAY).toISOString();
 
     const { data: loan, error } = await supabase
       .from('book_loans')

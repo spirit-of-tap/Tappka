@@ -3,7 +3,13 @@ import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
-import { getBookLibraryInfo, getUserActiveLoanDetails } from '@/lib/library/queries';
+import { parseLibraryLabelCode } from '@/lib/library/label-code';
+import {
+  getAvailableCopyByLabelCode,
+  getBookLibraryInfo,
+  getLibraryCopyByLabelCode,
+  getUserActiveLoanDetails,
+} from '@/lib/library/queries';
 import { BorrowPanel } from '@/components/library/borrow-panel';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { PageBack } from '@/components/ui/page-back';
@@ -15,10 +21,15 @@ export const metadata = {
 
 interface PageProps {
   params: Promise<{ bookId: string }>;
+  searchParams: Promise<{ label?: string }>;
 }
 
-export default async function BorrowBookPage({ params }: PageProps) {
+export default async function BorrowBookPage({ params, searchParams }: PageProps) {
   const { bookId } = await params;
+  const { label: rawLabelCode } = await searchParams;
+  const labelCode = rawLabelCode == null ? null : parseLibraryLabelCode(rawLabelCode);
+  if (rawLabelCode != null && labelCode == null) notFound();
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
@@ -32,6 +43,13 @@ export default async function BorrowBookPage({ params }: PageProps) {
   ]);
 
   if (!book) notFound();
+
+  let selectedCopyAvailable: boolean | null = null;
+  if (labelCode != null) {
+    const selectedCopy = await getLibraryCopyByLabelCode(supabase, labelCode);
+    if (!selectedCopy || selectedCopy.bookId !== bookId) notFound();
+    selectedCopyAvailable = (await getAvailableCopyByLabelCode(supabase, bookId, labelCode)) != null;
+  }
 
   if (!libraryInfo.inLibrary) {
     return (
@@ -55,8 +73,9 @@ export default async function BorrowBookPage({ params }: PageProps) {
         title={book.title_cs}
         author={book.author}
         coverUrl={book.google_books_cover_url}
-        availableCopies={libraryInfo.availableCopies}
-        totalCopies={libraryInfo.totalCopies}
+        availableCopies={selectedCopyAvailable == null ? libraryInfo.availableCopies : Number(selectedCopyAvailable)}
+        totalCopies={selectedCopyAvailable == null ? libraryInfo.totalCopies : 1}
+        labelCode={labelCode}
         initialDueAt={activeLoan?.due_at ?? null}
         book={{
           list_status: book.list_status,

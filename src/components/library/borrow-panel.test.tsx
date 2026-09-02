@@ -75,6 +75,22 @@ describe('BorrowPanel', () => {
     expect(screen.getByText('30. srpna 2026')).toBeInTheDocument();
   });
 
+  it('borrows the exact labelled copy opened from its QR code', async () => {
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { due_at: '2026-08-30T00:00:00.000Z' } }),
+    } as Response);
+
+    const user = userEvent.setup();
+    render(<BorrowPanel {...base} labelCode={7} availableCopies={1} totalCopies={1} />);
+
+    expect(screen.getByText('Výtisk #007')).toBeInTheDocument();
+    expect(screen.getByText('Tento výtisk je k dispozici.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Půjčit si/i }));
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/library/books/book-1/borrow?label=7', { method: 'POST' });
+  });
+
   it('shows an error toast and returns to idle when borrowing fails', async () => {
     const toastModule = await import('sonner');
     const errorSpy = vi.spyOn(toastModule.toast, 'error').mockImplementation(() => '');
