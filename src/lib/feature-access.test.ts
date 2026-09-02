@@ -12,8 +12,7 @@ describe("canAccessFeature", () => {
       expect(canAccessFeature(nonBeta, f)).toBe(false)
     }
   })
-  it("A gets reading only", () => {
-    expect(canAccessFeature(a, "reading")).toBe(true)
+  it("A gets no beta features (only cohort B is gated in)", () => {
     expect(canAccessFeature(a, "customerMeetings")).toBe(false)
     expect(canAccessFeature(a, "birthGiving")).toBe(false)
   })

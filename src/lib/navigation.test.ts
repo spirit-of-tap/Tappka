@@ -37,7 +37,6 @@ describe("navigation config", () => {
       "/tymove-dokumenty",
       "/nastroje-techniky",
       "/osobnostni-testy",
-      "/cteni/prehled",
       "/birth-giving",
     ]);
   });
@@ -51,13 +50,15 @@ describe("navigation config", () => {
     }
   });
 
-  it("maps reading to A,B and others to B only", () => {
-    const reading = NAV_MODULES.find((m) => m.url === "/cteni/prehled")!;
-    expect(reading.feature).toBe("reading");
-    expect(BETA_FEATURES[reading.feature!]).toEqual(["A", "B"]);
-    for (const m of NAV_MODULES.filter((m) => m.feature && m.url !== "/cteni/prehled")) {
+  it("maps all remaining beta features to cohort B only (reading is public)", () => {
+    for (const m of NAV_MODULES.filter((m) => m.feature)) {
       expect(BETA_FEATURES[m.feature!]).toEqual(["B"]);
     }
+  });
+
+  it("does not gate reading behind a beta feature", () => {
+    const reading = NAV_MODULES.find((m) => m.url === "/cteni/prehled")!;
+    expect(reading.feature).toBeUndefined();
   });
 
   it("maps each url to its expected feature key", () => {
@@ -69,14 +70,13 @@ describe("navigation config", () => {
       "/tymove-dokumenty": "teamDocuments",
       "/nastroje-techniky": "toolsTechniques",
       "/osobnostni-testy": "personalityTests",
-      "/cteni/prehled": "reading",
       "/birth-giving": "birthGiving",
     };
     for (const [url, feature] of Object.entries(map)) {
       expect(NAV_MODULES.find((m) => m.url === url)!.feature).toBe(feature);
     }
     for (const m of NAV_MODULES.filter((m) => !m.feature)) {
-      expect(["/", "/reservations", "/komunita"]).toContain(m.url);
+      expect(["/", "/reservations", "/komunita", "/cteni/prehled"]).toContain(m.url);
     }
   });
 });
@@ -112,10 +112,10 @@ describe("getHubModules", () => {
     ]);
   });
 
-  it("keeps only non-feature modules for non-beta users, preserving hub order", () => {
-    expect(getHubModules(null).map((m) => m.url)).toEqual(["/reservations"]);
-    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/reservations"]);
-    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/reservations"]);
+  it("keeps only non-feature modules (incl. public reading) for non-beta users, preserving hub order", () => {
+    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
+    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
+    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
   });
 
   it("shows reading plus stable for cohort A", () => {
@@ -164,6 +164,6 @@ describe("getHubModules", () => {
       "/birth-giving",
       "/osobnostni-testy",
     ]);
-    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/reservations"]);
+    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
   });
 });

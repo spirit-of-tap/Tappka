@@ -119,7 +119,6 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     description: "Knihovna knih, eseje a jejich hodnocení",
     url: "/cteni/prehled",
     icon: BookOpen,
-    feature: "reading",
     keywords: [
       "čtení",
       "knihy",

@@ -75,12 +75,10 @@ export default async function DashboardPage() {
     beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
   };
   const hasMetricsAccess = canAccessFeature(accessProfile, "dashboardMetrics");
-  const hasReadingAccess = canAccessFeature(accessProfile, "reading");
-  const rawLayout = availableWidgetIds(
+  const layout = availableWidgetIds(
     sanitizeWidgetIds(layoutRow?.widgets, profile.role),
     hasMetricsAccess,
   );
-  const layout = hasReadingAccess ? rawLayout : rawLayout.filter((id) => id !== "reading");
 
   const has = (id: DashboardWidgetId) => layout.includes(id);
   const needsUnread =
@@ -110,7 +108,7 @@ export default async function DashboardPage() {
       <QuickActions isCoach={isCoach} unreadCount={unreadEssays.length} />
     );
   }
-  if (has("reading") && hasReadingAccess && stats) {
+  if (has("reading") && stats) {
     nodes["reading"] = <ReadingProgressCard stats={stats} />;
   }
   if (has("reservation")) {
@@ -155,11 +153,7 @@ export default async function DashboardPage() {
 
       <DashboardEditor
         initialLayout={layout}
-        catalog={
-          hasReadingAccess
-            ? availableWidgets(widgetsForRole(profile.role), hasMetricsAccess)
-            : availableWidgets(widgetsForRole(profile.role), hasMetricsAccess).filter((w) => w.id !== "reading")
-        }
+        catalog={availableWidgets(widgetsForRole(profile.role), hasMetricsAccess)}
         nodes={nodes}
       />
 
