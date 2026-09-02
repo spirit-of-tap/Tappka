@@ -743,6 +743,13 @@
       "when": 1788370165293,
       "tag": "20260902172925_team_stats_frozen_points_and_lockdown",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1788371394730,
+      "tag": "20260902174954_breezy_wind_dancer",
+      "breakpoints": true
     }
   ]
 }
