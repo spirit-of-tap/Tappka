@@ -1,6 +1,6 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
 // Please look at CONTRIBUTING.md for more information on how to change the schema.
-import { pgTable, foreignKey, pgPolicy, uuid, text, jsonb, integer, timestamp, index, check, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgPolicy, uuid, text, jsonb, integer, timestamp, index, check, primaryKey, numeric } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
 import { books } from "./books"
@@ -11,6 +11,7 @@ export const essays = pgTable("essays", {
 	externalId: text("external_id"),
 	authorProfileId: uuid("author_profile_id").notNull(),
 	bookId: uuid("book_id"),
+	frozenBookPoints: numeric("frozen_book_points", { precision: 3, scale: 2 }),
 	contentSourceId: uuid("content_source_id"),
 	publishedAt: timestamp("published_at", { withTimezone: true, mode: 'string' }),
 	pinnedAt: timestamp("pinned_at", { withTimezone: true, mode: 'string' }),
