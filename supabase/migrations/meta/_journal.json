@@ -736,6 +736,13 @@
       "when": 1788367098103,
       "tag": "20260902163818_right_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1788370165293,
+      "tag": "20260902172925_team_stats_frozen_points_and_lockdown",
+      "breakpoints": true
     }
   ]
 }

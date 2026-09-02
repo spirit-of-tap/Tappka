@@ -61,6 +61,7 @@ export const essays = pgTable("essays", {
 	pgPolicy("Authors and admins can delete essays", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((author_profile_id = current_profile_id()) OR is_admin())` }),
 	pgPolicy("Authors can update their own essays", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(author_profile_id = current_profile_id())`, withCheck: sql`(author_profile_id = current_profile_id())` }),
 	check("essays_source_exclusive_check", sql`NOT ((book_id IS NOT NULL) AND (content_source_id IS NOT NULL))`),
+	check("essays_frozen_book_points_check", sql`(frozen_book_points IS NULL) OR ((frozen_book_points >= (0)::numeric) AND (frozen_book_points <= (3)::numeric))`),
 ]).enableRLS();
 
 export const essayRevisions = pgTable("essay_revisions", {
