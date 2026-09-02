@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
 
-import { getAuthorsApprovedBookPoints, getUserBookPointsStats } from "./queries";
+import { getAuthorsApprovedBookPoints, getTeamBookPointsStats, getUserBookPointsStats } from "./queries";
 
 interface RecordedCall {
   method: string;
@@ -169,5 +169,40 @@ describe("getAuthorsApprovedBookPoints", () => {
     const result = await getAuthorsApprovedBookPoints(client, ["author-1"]);
 
     expect(result["author-1"]).toBe(1);
+  });
+});
+
+describe("getTeamBookPointsStats", () => {
+  it("credits the earliest essay's frozen value per (profile, book)", async () => {
+    const client = fakeSupabase({
+      profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
+      essays: [
+        {
+          data: [
+            {
+              author_profile_id: "profile-1",
+              book_id: "book-1",
+              frozen_book_points: null,
+              published_at: "2026-09-10T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+            {
+              author_profile_id: "profile-1",
+              book_id: "book-1",
+              frozen_book_points: "1.00",
+              published_at: "2026-08-01T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+      ],
+    });
+
+    const result = await getTeamBookPointsStats(client, "team-1");
+
+    expect(result).toEqual([
+      { profile: { id: "profile-1", name: "Test Student", picture: null }, approved_points: 1, pending_points: 0 },
+    ]);
   });
 });

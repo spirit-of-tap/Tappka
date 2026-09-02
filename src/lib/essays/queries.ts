@@ -1461,7 +1461,7 @@ export async function getTeamBookPointsStats(
 
   const { data: bookEssays, error: essayError } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, books!inner(book_points, list_status)')
+    .select('author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .in('author_profile_id', profileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -1479,64 +1479,50 @@ export async function getTeamBookPointsStats(
 
   if (sourceError) throw sourceError;
 
-  type EssayRow = { author_profile_id: string; book_id: string; books: { book_points: number; list_status: string } };
+  type BookRow = {
+    author_profile_id: string;
+    book_id: string;
+    frozen_book_points: string | null;
+    published_at: string;
+    books: { book_points: number | string; list_status: string };
+  };
   type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
-  const byProfile: Record<string, { approved: Set<string>; pending: Set<string> }> = {};
+  const byProfile: Record<string, { approved: Map<string, number>; approvedAt: Map<string, string>; pending: Set<string> }> = {};
   for (const profileId of profileIds) {
-    byProfile[profileId] = { approved: new Set(), pending: new Set() };
+    byProfile[profileId] = { approved: new Map(), approvedAt: new Map(), pending: new Set() };
   }
 
-  for (const essay of (bookEssays ?? []) as unknown as EssayRow[]) {
+  for (const essay of (bookEssays ?? []) as unknown as BookRow[]) {
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.book_id) continue;
+    const key = `book:${essay.book_id}`;
     if (ELIGIBLE.has(essay.books.list_status)) {
-      bucket.approved.add(`book:${essay.book_id}`);
+      const existingAt = bucket.approvedAt.get(key);
+      if (!existingAt || essay.published_at < existingAt) {
+        bucket.approved.set(key, pointsNumber(essay.frozen_book_points ?? essay.books.book_points));
+        bucket.approvedAt.set(key, essay.published_at);
+      }
     } else if (essay.books.list_status === 'processing') {
-      bucket.pending.add(`book:${essay.book_id}`);
+      bucket.pending.add(key);
     }
   }
 
   for (const essay of (sourceEssays ?? []) as unknown as SourceRow[]) {
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.content_source_id) continue;
+    const key = `source:${essay.content_source_id}`;
     if (essay.content_sources.status === 'approved') {
-      bucket.approved.add(`source:${essay.content_source_id}`);
+      if (!bucket.approved.has(key)) bucket.approved.set(key, pointsNumber(essay.content_sources.points));
     } else if (essay.content_sources.status === 'pending_review') {
-      bucket.pending.add(`source:${essay.content_source_id}`);
+      bucket.pending.add(key);
     }
-  }
-
-  const { data: approvedBooks, error: booksError } = await supabase
-    .from('books')
-    .select('id, book_points')
-    .in('list_status', ['shortlist', 'longlist']);
-
-  if (booksError) throw booksError;
-
-  const { data: approvedSources, error: sourcesLookupError } = await supabase
-    .from('content_sources')
-    .select('id, points')
-    .eq('status', 'approved');
-
-  if (sourcesLookupError) throw sourcesLookupError;
-
-  const pointsMap: Record<string, number> = {};
-  for (const book of (approvedBooks ?? []) as { id: string; book_points: number }[]) {
-    pointsMap[`book:${book.id}`] = Number(book.book_points);
-  }
-  for (const source of (approvedSources ?? []) as { id: string; points: number }[]) {
-    pointsMap[`source:${source.id}`] = Number(source.points);
   }
 
   return teamProfiles.map((profile) => {
     const bucket = byProfile[profile.id];
-    let approved_points = 0;
-
-    for (const key of bucket.approved) {
-      approved_points += pointsMap[key] ?? 0;
-    }
+    const approved_points = Array.from(bucket.approved.values()).reduce((sum, p) => sum + p, 0);
 
     return {
       profile: {
