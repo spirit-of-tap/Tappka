@@ -2,10 +2,12 @@ import { resolveEssayPoints } from '@/lib/books/points';
 import type { EssayWithDetails } from './types';
 
 export interface EssaySourceDisplay {
-  kind: 'book' | 'content_source' | 'none';
+  /** 'legacy': a frozen pre-cutover essay whose old-system book was never linked/imported — earns points but has no title/author to show. */
+  kind: 'book' | 'content_source' | 'legacy' | 'none';
   title: string | null;
   author: string | null;
   points: number;
+  /** True when `points` is zeroed by archival — never true for a frozen essay, since archival can't touch a frozen value. */
   isArchived: boolean;
   /** True when `points` came from `frozen_book_points` rather than the live value. */
   isFrozen: boolean;
@@ -28,7 +30,7 @@ export function getEssaySourceDisplay(
       title: essay.book.title_cs,
       author: essay.book.author,
       points: resolveEssayPoints({ frozenBookPoints: essay.frozen_book_points, book: essay.book }),
-      isArchived: essay.book.list_status === 'archived',
+      isArchived: essay.book.list_status === 'archived' && essay.frozen_book_points == null,
       isFrozen: essay.frozen_book_points != null,
       illustrationKind: null,
     };
@@ -43,6 +45,22 @@ export function getEssaySourceDisplay(
       isArchived: essay.content_source.status === 'archived',
       isFrozen: false,
       illustrationKind: essay.content_source.kind,
+    };
+  }
+
+  // No book or content source linked at all. A frozen essay can still land
+  // here — some legacy essays reference an old-system book that was never
+  // imported into the catalog — so its points still count, just with
+  // nothing real to show as a title/author.
+  if (essay.frozen_book_points != null) {
+    return {
+      kind: 'legacy',
+      title: 'Esej ze starého systému',
+      author: null,
+      points: resolveEssayPoints({ frozenBookPoints: essay.frozen_book_points }),
+      isArchived: false,
+      isFrozen: true,
+      illustrationKind: null,
     };
   }
 

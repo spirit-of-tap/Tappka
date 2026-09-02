@@ -34,6 +34,7 @@ import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 
 import { formatPoints, pointsLabel } from '@/lib/books/points';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import type {
   CoachReviewEssay,
   CoachReviewPointsFilter,
@@ -693,9 +694,12 @@ function ReviewRow({
                       {source.title}
                     </span>
                     {source.points > 0 && (
-                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
-                        {formatPoints(source.points)} {pointsLabel(source.points)}
-                      </span>
+                      <>
+                        {source.isFrozen && <LegacyPointsBadge />}
+                        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                          {formatPoints(source.points)} {pointsLabel(source.points)}
+                        </span>
+                      </>
                     )}
                     {essay.book && <BookStatusBadges book={essay.book} />}
                   </>

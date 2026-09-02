@@ -138,6 +138,69 @@ describe("getUserBookPointsStats", () => {
 
     expect(result.approved_points).toBe(1);
   });
+
+  it("counts a frozen essay even when its book is now archived — earned credit is immune to later archival", async () => {
+    const client = fakeSupabase({
+      essays: [
+        {
+          data: [
+            {
+              book_id: "book-1",
+              frozen_book_points: "2.00",
+              published_at: "2026-08-01T00:00:00Z",
+              books: { book_points: "0.00", list_status: "archived" },
+            },
+          ],
+        },
+        { data: [] },
+        { count: 1 },
+      ],
+    });
+
+    const result = await getUserBookPointsStats(client, "profile-1");
+
+    expect(result.approved_points).toBe(2);
+  });
+
+  it("still zeroes a live (unfrozen) essay when its book is archived", async () => {
+    const client = fakeSupabase({
+      essays: [
+        {
+          data: [
+            {
+              book_id: "book-1",
+              frozen_book_points: null,
+              published_at: "2026-09-05T00:00:00Z",
+              books: { book_points: "3.00", list_status: "archived" },
+            },
+          ],
+        },
+        { data: [] },
+        { count: 1 },
+      ],
+    });
+
+    const result = await getUserBookPointsStats(client, "profile-1");
+
+    expect(result.approved_points).toBe(0);
+  });
+
+  it("counts a frozen essay with no book_id at all — the old-system book was never imported", async () => {
+    const client = fakeSupabase({
+      essays: [
+        { data: [] }, // book essays (none)
+        { data: [] }, // content-source essays (none)
+        {
+          data: [{ id: "essay-1", frozen_book_points: "2.00", published_at: "2026-08-01T00:00:00Z" }],
+        },
+        { count: 1 },
+      ],
+    });
+
+    const result = await getUserBookPointsStats(client, "profile-1");
+
+    expect(result.approved_points).toBe(2);
+  });
 });
 
 describe("getAuthorsApprovedBookPoints", () => {
@@ -192,6 +255,22 @@ describe("getAuthorsApprovedBookPoints", () => {
     const result = await getAuthorsApprovedBookPoints(client, ["author-1"]);
 
     expect(result["author-1"]).toBe(3);
+  });
+
+  it("counts a frozen essay with no book_id at all — the old-system book was never imported", async () => {
+    const client = fakeSupabase({
+      essays: [
+        { data: [] }, // book essays (none)
+        { data: [] }, // content-source essays (none)
+        {
+          data: [{ id: "essay-1", author_profile_id: "author-1", frozen_book_points: "2.00" }],
+        },
+      ],
+    });
+
+    const result = await getAuthorsApprovedBookPoints(client, ["author-1"]);
+
+    expect(result["author-1"]).toBe(2);
   });
 });
 
@@ -300,6 +379,25 @@ describe("getTeamBookPointsStats", () => {
 
     expect(result).toEqual([
       { profile: { id: "profile-1", name: "Test Student", picture: null }, approved_points: 0, pending_points: 1 },
+    ]);
+  });
+
+  it("counts a frozen essay with no book_id at all — the old-system book was never imported", async () => {
+    const client = fakeSupabase({
+      profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
+      essays: [
+        { data: [] }, // book essays (none)
+        { data: [] }, // content-source essays (none)
+        {
+          data: [{ id: "essay-1", author_profile_id: "profile-1", frozen_book_points: "2.00" }],
+        },
+      ],
+    });
+
+    const result = await getTeamBookPointsStats(client, "team-1");
+
+    expect(result).toEqual([
+      { profile: { id: "profile-1", name: "Test Student", picture: null }, approved_points: 2, pending_points: 0 },
     ]);
   });
 });

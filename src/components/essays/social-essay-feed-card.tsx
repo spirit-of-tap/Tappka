@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { formatPoints } from '@/lib/books/points';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { countWords, formatReadingTime } from '@/lib/essays/text-stats';
 import { formatRelativeTime, isRecentEssay } from '@/lib/essays/date-helpers';
 import { cn } from '@/lib/utils';
@@ -179,13 +180,12 @@ export function SocialEssayFeedCard({
           </div>
 
           {!source.isArchived && source.points > 0 && (
-            <Badge
-              variant="secondary"
-              className="shrink-0 text-xs font-semibold"
-              title={source.isFrozen ? 'Body za tuto esej jsou zamčené ze staršího systému.' : undefined}
-            >
-              {formatPoints(source.points)} b.
-            </Badge>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {source.isFrozen && <LegacyPointsBadge />}
+              <Badge variant="secondary" className="shrink-0 text-xs font-semibold">
+                {formatPoints(source.points)} b.
+              </Badge>
+            </div>
           )}
         </Link>
       ) : essay.content_source ? (

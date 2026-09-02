@@ -33,19 +33,24 @@ export interface ResolveEssayPointsInput {
 
 /**
  * The single place that resolves what an essay's book-points contribution
- * actually is: prefer the frozen (legacy) value over the live one, but an
- * archived book always contributes 0 regardless of any frozen value —
- * matching `books_archived_points_check`, which forces `book_points = 0` on
- * archived books. Content-source essays have no freeze concept (frozen
- * points only apply to book-linked essays), so they just read the source's
- * live points.
+ * actually is. A frozen (legacy, pre-2026-09-03) value is baked into the
+ * essay for good: once earned, it's immune to anything that happens to the
+ * book afterward — a rescore, a book_id reassignment, archival, or even the
+ * essay never getting a book linked at all (some legacy essays reference a
+ * book that was never imported into the catalog; the frozen value still
+ * counts). Only a *live* (unfrozen) essay is zeroed when its book is
+ * archived, matching `books_archived_points_check`, which forces
+ * `book_points = 0` on archived books. Content-source essays have no freeze
+ * concept (frozen points only apply to book-linked essays), so they just
+ * read the source's live points.
  */
 export function resolveEssayPoints({ frozenBookPoints, book, contentSource }: ResolveEssayPointsInput): number {
+  if (contentSource) return pointsNumber(contentSource.points);
+  if (frozenBookPoints != null) return pointsNumber(frozenBookPoints);
   if (book) {
     if (book.list_status === 'archived') return 0;
-    return pointsNumber(frozenBookPoints ?? book.book_points);
+    return pointsNumber(book.book_points);
   }
-  if (contentSource) return pointsNumber(contentSource.points);
   return 0;
 }
 
