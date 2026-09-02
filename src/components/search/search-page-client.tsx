@@ -102,7 +102,7 @@ export function SearchPageClient({
   contentSources = [],
 }: SearchPageClientProps) {
   const [query, setQuery] = usePersistedState('tappka:search:query', '', { storage: 'sessionStorage' });
-  const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[] } | null>(null);
+  const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[]; sources: ContentSource[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = usePersistedState<string | null>('tappka:search:category', null, { storage: 'sessionStorage' });
   const [categoryBooks, setCategoryBooks] = useState<(BookWithProfiles & { essay_count?: number })[]>([]);
@@ -129,13 +129,14 @@ export function SearchPageClient({
       setLoading(true);
       try {
         const q = encodeURIComponent(query.trim());
-        const [eRes, bRes] = await Promise.all([
+        const [eRes, bRes, sRes] = await Promise.all([
           fetch(`/api/essays?q=${q}`),
           fetch(`/api/books/search?q=${q}`),
+          fetch(`/api/content-sources?q=${q}`),
         ]);
-        const [{ data: essays }, { data: books }] = await Promise.all([eRes.json(), bRes.json()]);
+        const [{ data: essays }, { data: books }, { data: sources }] = await Promise.all([eRes.json(), bRes.json(), sRes.json()]);
         if (requestId === searchIdRef.current) {
-          setResults({ essays: essays ?? [], books: books ?? [] });
+          setResults({ essays: essays ?? [], books: books ?? [], sources: sources ?? [] });
         }
       } finally {
         if (requestId === searchIdRef.current) setLoading(false);
@@ -188,7 +189,7 @@ export function SearchPageClient({
       <div className="space-y-10">
         {hasQuery ? (
           results ? (
-            <SearchResultsView essays={results.essays} books={results.books} query={query} />
+            <SearchResultsView essays={results.essays} books={results.books} sources={results.sources} query={query} />
           ) : (
             <p className="text-center text-muted-foreground text-sm py-12">Hledám…</p>
           )
@@ -468,8 +469,18 @@ function CategoryBooksView({
 
 // ─── Search results ─────────────────────────────────────────────────────────────
 
-function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[]; books: BookResult[]; query: string }) {
-  if (essays.length === 0 && books.length === 0) {
+function SearchResultsView({
+  essays,
+  books,
+  sources,
+  query,
+}: {
+  essays: EssayWithVoted[];
+  books: BookResult[];
+  sources: ContentSource[];
+  query: string;
+}) {
+  if (essays.length === 0 && books.length === 0 && sources.length === 0) {
     return (
       <div className="space-y-4">
         <div className="space-y-2 py-12 text-center">
@@ -515,6 +526,19 @@ function SearchResultsView({ essays, books, query }: { essays: EssayWithVoted[];
                   </Badge>
                 )}
               </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {sources.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Ostatní zdroje ({sources.length})
+          </h2>
+          <div className="space-y-2">
+            {sources.map((source) => (
+              <ContentSourceCard key={source.id} source={source} />
             ))}
           </div>
         </section>
