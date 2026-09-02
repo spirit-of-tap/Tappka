@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { pointsNumber } from '@/lib/books/points';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { tagNamesFromJoin } from '@/lib/books/tags';
 import { patchEsejeSheetXml } from '@/lib/portfolio/generate-eseje-sheet';
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
     .from('essays')
     .select(`
       id,
+      frozen_book_points,
       essay_revisions(title, revision_no, invalid_since),
       book:books!book_id(
         id,
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
       essayUrl: `${origin}/cteni/eseje/${essay.id}`,
       category,
       source: book ? 'Kniha' : contentSource ? CONTENT_SOURCE_KIND_LABELS[contentSource.kind] : '',
-      points: Number(book?.book_points ?? contentSource?.points ?? 0),
+      points: pointsNumber(essay.frozen_book_points ?? book?.book_points ?? contentSource?.points),
     };
   });
 
