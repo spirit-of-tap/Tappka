@@ -31,6 +31,7 @@ import { ContentSourceIllustration } from '@/components/content-sources/content-
 import { useEssaySave, type EssaySaveStatus } from '@/lib/essays/use-essay-save';
 import { useUnsavedChangesGuard } from '@/lib/essays/use-unsaved-changes-guard';
 import { formatPoints, resolveEssayPoints } from '@/lib/books/points';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { cn } from '@/lib/utils';
@@ -302,12 +303,12 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   // swaps in a different book while editing, that value no longer applies to
   // the newly selected book, so only use it while selectedBook is still the
   // essay's original one.
+  const selectedBookIsOriginal = selectedBook?.id === initialEssay?.book?.id;
+  const selectedBookFrozenPoints = selectedBookIsOriginal ? initialEssay?.frozen_book_points : null;
   const selectedBookPoints = selectedBook
-    ? resolveEssayPoints({
-        frozenBookPoints: selectedBook.id === initialEssay?.book?.id ? initialEssay?.frozen_book_points : null,
-        book: selectedBook,
-      })
+    ? resolveEssayPoints({ frozenBookPoints: selectedBookFrozenPoints, book: selectedBook })
     : 0;
+  const selectedBookPointsFrozen = selectedBookFrozenPoints != null;
 
   return (
     <div className="space-y-4">
@@ -425,11 +426,14 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {selectedBook.list_status !== 'archived' && (
-                <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                  <span className="font-heading tabular-nums">{formatPoints(selectedBookPoints)}</span>
-                  <span className="ml-1 text-[11px] font-normal text-primary/80">b.</span>
-                </span>
+              {(selectedBook.list_status !== 'archived' || selectedBookPointsFrozen) && (
+                <>
+                  {selectedBookPointsFrozen && <LegacyPointsBadge />}
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                    <span className="font-heading tabular-nums">{formatPoints(selectedBookPoints)}</span>
+                    <span className="ml-1 text-[11px] font-normal text-primary/80">b.</span>
+                  </span>
+                </>
               )}
 
               <Button

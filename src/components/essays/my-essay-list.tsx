@@ -10,6 +10,7 @@ import { EssayVoteButton } from './essay-vote-button';
 
 import { formatPoints } from '@/lib/books/points';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
 
 interface MyEssayListProps {
@@ -96,9 +97,12 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
                   </h3>
                 </div>
                 {hasPoints && (
-                  <span className="shrink-0 text-xs font-semibold tabular-nums bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                    {formatPoints(points)} b.
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {source.isFrozen && <LegacyPointsBadge />}
+                    <span className="shrink-0 text-xs font-semibold tabular-nums bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                      {formatPoints(points)} b.
+                    </span>
+                  </div>
                 )}
                 {isRejected && (
                   <span className="shrink-0 text-xs font-semibold tabular-nums bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">
@@ -113,7 +117,7 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
                     {essay.book.title_cs}
                     <BookStatusBadges book={essay.book} />
                   </>
-                ) : source.kind === 'content_source' ? (
+                ) : source.kind === 'content_source' || source.kind === 'legacy' ? (
                   source.title
                 ) : (
                   <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">

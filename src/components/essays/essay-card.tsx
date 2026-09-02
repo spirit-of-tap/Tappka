@@ -8,6 +8,7 @@ import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration, CONTENT_SOURCE_KIND_ICONS } from '@/components/content-sources/content-source-illustration';
 import { formatPoints } from '@/lib/books/points';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 interface EssayCardProps {
@@ -76,7 +77,12 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
                 <span className="truncate">{source.title}</span>
                 {essay.book && <BookStatusBadges book={essay.book} />}
                 {!source.isArchived && source.points > 0 && (
-                  <span className="shrink-0 ml-auto font-medium text-foreground">{formatPoints(source.points)} b.</span>
+                  <div className="flex shrink-0 ml-auto items-center gap-1.5">
+                    {source.isFrozen && <LegacyPointsBadge />}
+                    <span className="shrink-0 font-medium text-foreground">
+                      {formatPoints(source.points)} b.
+                    </span>
+                  </div>
                 )}
                 {source.isArchived && (
                   <span className="shrink-0 ml-auto text-destructive">0 b.</span>

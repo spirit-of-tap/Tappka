@@ -1312,6 +1312,20 @@ export async function getUserBookPointsStats(
 
   if (sourceError) throw sourceError;
 
+  // Frozen essays whose old-system book was never linked/imported at all —
+  // no book_id to key on, but the earned credit still counts.
+  const { data: orphanFrozenEssays, error: orphanError } = await supabase
+    .from('essays')
+    .select('id, frozen_book_points, published_at')
+    .eq('author_profile_id', profileId)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .is('book_id', null)
+    .is('content_source_id', null)
+    .not('frozen_book_points', 'is', null);
+
+  if (orphanError) throw orphanError;
+
   type BookRow = {
     book_id: string;
     frozen_book_points: string | null;
@@ -1319,6 +1333,7 @@ export async function getUserBookPointsStats(
     books: { book_points: number | string; list_status: string };
   };
   type SourceRow = { content_source_id: string; published_at: string; content_sources: { points: number; status: string } };
+  type OrphanRow = { id: string; frozen_book_points: string; published_at: string };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const approved = new Map<string, number>();
@@ -1330,7 +1345,9 @@ export async function getUserBookPointsStats(
   for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
     if (!row.book_id) continue;
     const key = `book:${row.book_id}`;
-    if (ELIGIBLE.has(row.books.list_status)) {
+    // A frozen essay counts regardless of the book's current list_status —
+    // once earned, credit is baked in and immune to a later archival.
+    if (ELIGIBLE.has(row.books.list_status) || row.frozen_book_points != null) {
       const existingAt = approvedAt.get(key);
       if (!existingAt || row.published_at < existingAt) {
         approved.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
@@ -1340,6 +1357,13 @@ export async function getUserBookPointsStats(
     } else if (row.books.list_status === 'processing') {
       pending.add(key);
     }
+  }
+
+  for (const row of (orphanFrozenEssays ?? []) as unknown as OrphanRow[]) {
+    // No book_id to dedupe on — each essay is its own credit.
+    const key = `orphan:${row.id}`;
+    approved.set(key, pointsNumber(row.frozen_book_points));
+    if (new Date(row.published_at) >= semesterStart) semesterApproved.add(key);
   }
 
   for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
@@ -1401,6 +1425,20 @@ export async function getAuthorsApprovedBookPoints(
 
   if (sourceError) throw sourceError;
 
+  // Frozen essays whose old-system book was never linked/imported at all —
+  // no book_id to key on, but the earned credit still counts.
+  const { data: orphanFrozenEssays, error: orphanError } = await supabase
+    .from('essays')
+    .select('id, author_profile_id, frozen_book_points')
+    .in('author_profile_id', authorProfileIds)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .is('book_id', null)
+    .is('content_source_id', null)
+    .not('frozen_book_points', 'is', null);
+
+  if (orphanError) throw orphanError;
+
   type BookRow = {
     author_profile_id: string;
     book_id: string;
@@ -1409,6 +1447,7 @@ export async function getAuthorsApprovedBookPoints(
     books: { book_points: number | string; list_status: string };
   };
   type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
+  type OrphanRow = { id: string; author_profile_id: string; frozen_book_points: string };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const pointsByAuthor: Record<string, Map<string, number>> = {};
@@ -1419,7 +1458,9 @@ export async function getAuthorsApprovedBookPoints(
   }
 
   for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
-    if (!row.book_id || !ELIGIBLE.has(row.books.list_status)) continue;
+    // A frozen essay counts regardless of the book's current list_status —
+    // once earned, credit is baked in and immune to a later archival.
+    if (!row.book_id || (!ELIGIBLE.has(row.books.list_status) && row.frozen_book_points == null)) continue;
     const key = `book:${row.book_id}`;
     const at = atByAuthor[row.author_profile_id];
     const points = pointsByAuthor[row.author_profile_id];
@@ -1429,6 +1470,11 @@ export async function getAuthorsApprovedBookPoints(
       points.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
       at.set(key, row.published_at);
     }
+  }
+
+  for (const row of (orphanFrozenEssays ?? []) as unknown as OrphanRow[]) {
+    // No book_id to dedupe on — each essay is its own credit.
+    pointsByAuthor[row.author_profile_id]?.set(`orphan:${row.id}`, pointsNumber(row.frozen_book_points));
   }
 
   for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
@@ -1479,6 +1525,20 @@ export async function getTeamBookPointsStats(
 
   if (sourceError) throw sourceError;
 
+  // Frozen essays whose old-system book was never linked/imported at all —
+  // no book_id to key on, but the earned credit still counts.
+  const { data: orphanFrozenEssays, error: orphanError } = await supabase
+    .from('essays')
+    .select('id, author_profile_id, frozen_book_points')
+    .in('author_profile_id', profileIds)
+    .not('published_at', 'is', null)
+    .is('removed_at', null)
+    .is('book_id', null)
+    .is('content_source_id', null)
+    .not('frozen_book_points', 'is', null);
+
+  if (orphanError) throw orphanError;
+
   type BookRow = {
     author_profile_id: string;
     book_id: string;
@@ -1487,6 +1547,7 @@ export async function getTeamBookPointsStats(
     books: { book_points: number | string; list_status: string };
   };
   type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
+  type OrphanRow = { id: string; author_profile_id: string; frozen_book_points: string };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
   const byProfile: Record<string, { approved: Map<string, number>; approvedAt: Map<string, string>; pending: Set<string> }> = {};
@@ -1498,7 +1559,9 @@ export async function getTeamBookPointsStats(
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.book_id) continue;
     const key = `book:${essay.book_id}`;
-    if (ELIGIBLE.has(essay.books.list_status)) {
+    // A frozen essay counts regardless of the book's current list_status —
+    // once earned, credit is baked in and immune to a later archival.
+    if (ELIGIBLE.has(essay.books.list_status) || essay.frozen_book_points != null) {
       const existingAt = bucket.approvedAt.get(key);
       if (!existingAt || essay.published_at < existingAt) {
         bucket.approved.set(key, pointsNumber(essay.frozen_book_points ?? essay.books.book_points));
@@ -1507,6 +1570,13 @@ export async function getTeamBookPointsStats(
     } else if (essay.books.list_status === 'processing') {
       bucket.pending.add(key);
     }
+  }
+
+  for (const essay of (orphanFrozenEssays ?? []) as unknown as OrphanRow[]) {
+    const bucket = byProfile[essay.author_profile_id];
+    if (!bucket) continue;
+    // No book_id to dedupe on — each essay is its own credit.
+    bucket.approved.set(`orphan:${essay.id}`, pointsNumber(essay.frozen_book_points));
   }
 
   for (const essay of (sourceEssays ?? []) as unknown as SourceRow[]) {
