@@ -317,7 +317,7 @@ function TopPicksCard({ groups }: { groups: HighlightedGroup[] }) {
   return (
     <Link
       href="/cteni/knihy/top-bob"
-      className="group flex items-center gap-2 sm:gap-3 rounded-xl border border-amber-200/70 bg-gradient-to-r from-amber-500/10 via-card to-card p-2.5 sm:p-3 transition-all hover:border-amber-400 hover:shadow-sm dark:border-amber-900/50 dark:from-amber-950/30"
+      className="group flex items-center gap-2 sm:gap-3 rounded-xl border border-amber-200/70 bg-gradient-to-r from-amber-500/10 via-card to-card p-2.5 sm:p-3 transition-all hover:border-amber-400 hover:shadow-sm dark:border-amber-900/50 dark:from-amber-950/30 cursor-pointer"
     >
       <span className="flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
         <Medal className="size-3.5 sm:size-4" />
@@ -340,7 +340,7 @@ function RocketModelCard({ books }: { books: BookWithProfiles[] }) {
   return (
     <Link
       href="/cteni/knihy/rocket-model"
-      className="group flex items-center gap-2 sm:gap-3 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-card to-card p-2.5 sm:p-3 transition-all hover:border-primary/50 hover:shadow-sm dark:border-primary/30 dark:from-primary/15"
+      className="group flex items-center gap-2 sm:gap-3 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-card to-card p-2.5 sm:p-3 transition-all hover:border-primary/50 hover:shadow-sm dark:border-primary/30 dark:from-primary/15 cursor-pointer"
     >
       <span className="flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
         <Rocket className="size-3.5 sm:size-4" />
@@ -382,7 +382,7 @@ function CategoryGridSection({
               key={key}
               type="button"
               onClick={() => onSelectCategory(key)}
-              className="group flex items-center gap-2.5 sm:gap-3 rounded-xl border bg-card p-2.5 sm:p-3 text-left transition-all hover:border-primary/40 hover:shadow-xs focus-ring"
+              className="group flex items-center gap-2.5 sm:gap-3 rounded-xl border bg-card p-2.5 sm:p-3 text-left transition-all hover:border-primary/40 hover:shadow-xs focus-ring cursor-pointer"
             >
               <span className={cn('flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-lg', meta.color)}>
                 <Icon className="size-4 sm:size-4.5" />
@@ -428,7 +428,7 @@ function CategoryBooksView({
           <button
             type="button"
             onClick={onBack}
-            className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <ArrowLeft className="size-3.5" />
             Zpět na přehled
