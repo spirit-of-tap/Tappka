@@ -11,6 +11,7 @@ const mockEssay: EssayWithDetails = {
   id: 'essay-10',
   author_profile_id: 'p1',
   book_id: 'b1',
+  frozen_book_points: null,
   content_source_id: null,
   title: 'Jak postavit MVP za víkend podle Lean Startup',
   content_json: {},

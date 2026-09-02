@@ -7,6 +7,7 @@ const baseEssay = {
   id: 'essay-1',
   author_profile_id: 'profile-1',
   book_id: null,
+  frozen_book_points: null,
   content_source_id: null,
   title: 'O čem podcast mluvil',
   content_json: {},

@@ -35,6 +35,7 @@ describe('EssayViewerWithDiff', () => {
     id: 'essay-1',
     author_profile_id: 'user-1',
     book_id: 'book-1',
+    frozen_book_points: null,
     content_source_id: null,
     title: 'Moje esej',
     content_json: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Nová verze textu po úpravě.' }] }] },

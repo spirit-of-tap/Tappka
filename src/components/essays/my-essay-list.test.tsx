@@ -8,6 +8,7 @@ function essay(overrides: Partial<EssayWithDetails> = {}): EssayWithDetails {
     id: 'essay-1',
     author_profile_id: 'profile-1',
     book_id: null,
+    frozen_book_points: null,
     content_source_id: null,
     title: 'Zveřejněná esej',
     content_json: {},

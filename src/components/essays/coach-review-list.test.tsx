@@ -14,6 +14,7 @@ function mockEssay(overrides: Partial<CoachReviewEssay> = {}): CoachReviewEssay 
     id: 'essay-1',
     author_profile_id: 'user-1',
     book_id: 'book-1',
+    frozen_book_points: null,
     content_source_id: null,
     title: 'Reflexe a aplikace v týmu',
     content_json: {},
