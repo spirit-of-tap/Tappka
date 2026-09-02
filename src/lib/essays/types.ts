@@ -10,6 +10,8 @@ export interface Essay {
   id: string;
   author_profile_id: string;
   book_id: string | null;
+  /** Points frozen from the old system for pre-2026-09-03 essays; null uses the book's live book_points. */
+  frozen_book_points: string | null;
   content_source_id: string | null;
   title: string;
   content_json: object;

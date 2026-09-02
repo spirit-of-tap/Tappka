@@ -56,6 +56,7 @@ interface EssayRawRow {
   id: string;
   author_profile_id: string;
   book_id: string | null;
+  frozen_book_points: string | null;
   published_at: string | null;
   pinned_at: string | null;
   pinned_by_profile_id: string | null;
