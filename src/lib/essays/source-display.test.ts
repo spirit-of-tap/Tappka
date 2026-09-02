@@ -61,7 +61,7 @@ describe('getEssaySourceDisplay', () => {
     expect(display.isFrozen).toBe(true);
   });
 
-  it('forces points to 0 for an archived book even when frozen_book_points is set', () => {
+  it('keeps a frozen value even when the book is later archived — earned credit is immune to archival', () => {
     const display = getEssaySourceDisplay({
       book: {
         id: 'b1', title_cs: 'Sprint', author: 'Jake Knapp', book_points: 0,
@@ -71,10 +71,35 @@ describe('getEssaySourceDisplay', () => {
       content_source: null,
       frozen_book_points: '2.00',
     });
+    expect(display.points).toBe(2);
+    expect(display.isArchived).toBe(false);
+    expect(display.isFrozen).toBe(true);
+  });
+
+  it('still counts a frozen value when the essay has no book or content source at all', () => {
+    const display = getEssaySourceDisplay({
+      book: null,
+      content_source: null,
+      frozen_book_points: '2.00',
+    });
+    expect(display.kind).toBe('legacy');
+    expect(display.points).toBe(2);
+    expect(display.isFrozen).toBe(true);
+    expect(display.isArchived).toBe(false);
+  });
+
+  it('forces points to 0 for an archived book when there is no frozen value (live points only)', () => {
+    const display = getEssaySourceDisplay({
+      book: {
+        id: 'b1', title_cs: 'Sprint', author: 'Jake Knapp', book_points: 3,
+        list_status: 'archived', is_rocket_model: false, google_books_cover_url: null,
+        highlight_category: null,
+      },
+      content_source: null,
+      frozen_book_points: null,
+    });
     expect(display.points).toBe(0);
     expect(display.isArchived).toBe(true);
-    // Legacy value still exists, so the badge concept ("isFrozen") stays true
-    // even though the archived book overrides its numeric contribution.
-    expect(display.isFrozen).toBe(true);
+    expect(display.isFrozen).toBe(false);
   });
 });

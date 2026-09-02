@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/co
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
@@ -240,7 +241,14 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                           <p className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
                             {source.title}
                             {essay.book && <BookStatusBadges book={essay.book} />}
-                            {source.points > 0 && <span className="ml-1 font-medium text-foreground">· {formatPointsWithLabel(source.points)}</span>}
+                            {source.points > 0 && (
+                              <>
+                                {source.isFrozen && <LegacyPointsBadge />}
+                                <span className="ml-1 font-medium text-foreground">
+                                  · {formatPointsWithLabel(source.points)}
+                                </span>
+                              </>
+                            )}
                           </p>
                           {excerpt && excerpt.length > 20 && (
                             <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{excerpt}…</p>
