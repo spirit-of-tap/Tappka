@@ -30,7 +30,7 @@ import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { useEssaySave, type EssaySaveStatus } from '@/lib/essays/use-essay-save';
 import { useUnsavedChangesGuard } from '@/lib/essays/use-unsaved-changes-guard';
-import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { formatPoints, resolveEssayPoints } from '@/lib/books/points';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { cn } from '@/lib/utils';
@@ -297,6 +297,18 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
 
   const wordCount = countWords(content.text);
 
+  // frozen_book_points is tied to this essay's original book — a legacy
+  // value the essay froze when it was published/backfilled. If the author
+  // swaps in a different book while editing, that value no longer applies to
+  // the newly selected book, so only use it while selectedBook is still the
+  // essay's original one.
+  const selectedBookPoints = selectedBook
+    ? resolveEssayPoints({
+        frozenBookPoints: selectedBook.id === initialEssay?.book?.id ? initialEssay?.frozen_book_points : null,
+        book: selectedBook,
+      })
+    : 0;
+
   return (
     <div className="space-y-4">
       {/* Top navigation & action bar: Back button alone on the left, save
@@ -357,7 +369,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
           <EssayDeleteButton
             essayId={essayId}
             hasTitle={!!title.trim()}
-            points={pointsNumber(selectedBook?.book_points)}
+            points={selectedBookPoints}
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
           />
@@ -415,7 +427,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {selectedBook.list_status !== 'archived' && (
                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                  <span className="font-heading tabular-nums">{formatPoints(selectedBook.book_points)}</span>
+                  <span className="font-heading tabular-nums">{formatPoints(selectedBookPoints)}</span>
                   <span className="ml-1 text-[11px] font-normal text-primary/80">b.</span>
                 </span>
               )}

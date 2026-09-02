@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserBookPointsStats } from '@/lib/essays/queries';
-import { pointsNumber } from '@/lib/books/points';
+import { resolveEssayPoints } from '@/lib/books/points';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { tagNamesFromJoin } from '@/lib/books/tags';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
@@ -58,6 +58,7 @@ export async function GET() {
           title_cs,
           author,
           book_points,
+          list_status,
           source,
           book_tags(tags(name))
         ),
@@ -87,6 +88,7 @@ export async function GET() {
       title_cs: string;
       author: string;
       book_points: number | null;
+      list_status: string;
       source: string;
       book_tags?: { tags: { name: string } | null }[] | null;
     } | null;
@@ -104,7 +106,7 @@ export async function GET() {
       essayTitle: latestRevisionTitle(revisions),
       category,
       source: book ? 'Kniha' : contentSource ? CONTENT_SOURCE_KIND_LABELS[contentSource.kind] : '',
-      points: pointsNumber(essay.frozen_book_points ?? book?.book_points ?? contentSource?.points),
+      points: resolveEssayPoints({ frozenBookPoints: essay.frozen_book_points, book, contentSource }),
     };
   });
 

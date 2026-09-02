@@ -9,7 +9,7 @@ import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { formatPoints } from '@/lib/books/points';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import { countWords, formatReadingTime } from '@/lib/essays/text-stats';
@@ -178,13 +178,13 @@ export function SocialEssayFeedCard({
             <p className="truncate text-[11px] text-muted-foreground">{essay.book.author}</p>
           </div>
 
-          {essay.book.list_status !== 'archived' && pointsNumber(essay.frozen_book_points ?? essay.book.book_points) > 0 && (
+          {!source.isArchived && source.points > 0 && (
             <Badge
               variant="secondary"
               className="shrink-0 text-xs font-semibold"
-              title={essay.frozen_book_points != null ? 'Body za tuto esej jsou zamčené ze staršího systému.' : undefined}
+              title={source.isFrozen ? 'Body za tuto esej jsou zamčené ze staršího systému.' : undefined}
             >
-              {formatPoints(essay.frozen_book_points ?? essay.book.book_points)} b.
+              {formatPoints(source.points)} b.
             </Badge>
           )}
         </Link>

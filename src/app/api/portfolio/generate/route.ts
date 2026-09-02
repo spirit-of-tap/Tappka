@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { pointsNumber } from '@/lib/books/points';
+import { resolveEssayPoints } from '@/lib/books/points';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { tagNamesFromJoin } from '@/lib/books/tags';
 import { patchEsejeSheetXml } from '@/lib/portfolio/generate-eseje-sheet';
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
         title_cs,
         author,
         book_points,
+        list_status,
         source,
         book_tags(tags(name))
       ),
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
       title_cs: string;
       author: string;
       book_points: number | null;
+      list_status: string;
       book_tags?: { tags: { name: string } | null }[] | null;
     } | null;
     const contentSource = firstEmbed(essay.content_source) as PortfolioContentSourceRow | null;
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
       essayUrl: `${origin}/cteni/eseje/${essay.id}`,
       category,
       source: book ? 'Kniha' : contentSource ? CONTENT_SOURCE_KIND_LABELS[contentSource.kind] : '',
-      points: pointsNumber(essay.frozen_book_points ?? book?.book_points ?? contentSource?.points),
+      points: resolveEssayPoints({ frozenBookPoints: essay.frozen_book_points, book, contentSource }),
     };
   });
 

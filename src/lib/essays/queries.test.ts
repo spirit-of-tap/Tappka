@@ -170,6 +170,29 @@ describe("getAuthorsApprovedBookPoints", () => {
 
     expect(result["author-1"]).toBe(1);
   });
+
+  it("falls back to live book_points when frozen_book_points is null (post-cutover essay)", async () => {
+    const client = fakeSupabase({
+      essays: [
+        {
+          data: [
+            {
+              author_profile_id: "author-1",
+              book_id: "book-1",
+              frozen_book_points: null,
+              published_at: "2026-09-05T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+      ],
+    });
+
+    const result = await getAuthorsApprovedBookPoints(client, ["author-1"]);
+
+    expect(result["author-1"]).toBe(3);
+  });
 });
 
 describe("getTeamBookPointsStats", () => {
@@ -203,6 +226,80 @@ describe("getTeamBookPointsStats", () => {
 
     expect(result).toEqual([
       { profile: { id: "profile-1", name: "Test Student", picture: null }, approved_points: 1, pending_points: 0 },
+    ]);
+  });
+
+  it("falls back to live book_points when frozen_book_points is null (post-cutover essay)", async () => {
+    const client = fakeSupabase({
+      profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
+      essays: [
+        {
+          data: [
+            {
+              author_profile_id: "profile-1",
+              book_id: "book-1",
+              frozen_book_points: null,
+              published_at: "2026-09-05T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+      ],
+    });
+
+    const result = await getTeamBookPointsStats(client, "team-1");
+
+    expect(result).toEqual([
+      { profile: { id: "profile-1", name: "Test Student", picture: null }, approved_points: 3, pending_points: 0 },
+    ]);
+  });
+
+  it("counts an approved source-only essay (no book) toward approved_points", async () => {
+    const client = fakeSupabase({
+      profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
+      essays: [
+        { data: [] }, // book essays (none)
+        {
+          data: [
+            {
+              author_profile_id: "profile-1",
+              content_source_id: "cs-1",
+              content_sources: { points: 2, status: "approved" },
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = await getTeamBookPointsStats(client, "team-1");
+
+    expect(result).toEqual([
+      { profile: { id: "profile-1", name: "Test Student", picture: null }, approved_points: 2, pending_points: 0 },
+    ]);
+  });
+
+  it("counts a pending_review source-only essay toward pending_points, not approved_points", async () => {
+    const client = fakeSupabase({
+      profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
+      essays: [
+        { data: [] }, // book essays (none)
+        {
+          data: [
+            {
+              author_profile_id: "profile-1",
+              content_source_id: "cs-1",
+              content_sources: { points: 2, status: "pending_review" },
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = await getTeamBookPointsStats(client, "team-1");
+
+    expect(result).toEqual([
+      { profile: { id: "profile-1", name: "Test Student", picture: null }, approved_points: 0, pending_points: 1 },
     ]);
   });
 });
