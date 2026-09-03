@@ -79,6 +79,22 @@ test.describe("essay manual save and auto-publish", () => {
 
     const essayId = new URL(page.url()).pathname.split("/").at(-2);
 
+    // Asserted on the row itself, not just on the list: everything that shows
+    // an essay or counts its book points keys off published_at, so the very
+    // first save of a titled essay has to stamp it.
+    const rows = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/essays` +
+        `?id=eq.${essayId}&select=id,published_at`,
+      {
+        headers: {
+          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      },
+    ).then((res) => res.json());
+    expect(rows).toHaveLength(1);
+    expect(rows[0].published_at).not.toBeNull();
+
     await page.goto("/cteni/prehled");
     await expect(page.getByRole("link", { name: new RegExp(VISIBILITY_TITLE) })).toBeVisible();
     // Reading it directly (not via "continue editing") confirms it's a normal,

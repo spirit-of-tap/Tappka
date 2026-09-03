@@ -19,6 +19,7 @@
     "test:integration": "vitest run --project integration",
     "test:e2e": "playwright test",
     "test:watch": "vitest --project unit",
+    "library:qr-labels": "node --experimental-strip-types scripts/generate-library-qr-labels.ts",
     "build": "next build",
     "start": "next start",
     "db:migrate": "run-s db:generate supabase:start db:up db:types db:export",

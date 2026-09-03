@@ -12,6 +12,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ReturnButton } from './return-button';
 import type { BookWithProfiles } from '@/lib/books/types';
+import { formatLibraryLabelCode } from '@/lib/library/label-code';
 
 interface BorrowPanelProps {
   bookId: string;
@@ -20,6 +21,7 @@ interface BorrowPanelProps {
   coverUrl: string | null;
   availableCopies: number;
   totalCopies: number;
+  labelCode?: number | null;
   initialDueAt?: string | null;
   /** Status fields for the badge row next to the title — omit to hide badges. */
   book?: Pick<BookWithProfiles, 'list_status' | 'is_rocket_model' | 'highlight_category'>;
@@ -36,6 +38,7 @@ export function BorrowPanel({
   coverUrl,
   availableCopies,
   totalCopies,
+  labelCode = null,
   initialDueAt = null,
   book,
 }: BorrowPanelProps) {
@@ -46,7 +49,8 @@ export function BorrowPanel({
   const handleBorrow = async () => {
     setBorrowing(true);
     try {
-      const res = await fetch(`/api/library/books/${bookId}/borrow`, { method: 'POST' });
+      const labelQuery = labelCode == null ? '' : `?label=${labelCode}`;
+      const res = await fetch(`/api/library/books/${bookId}/borrow${labelQuery}`, { method: 'POST' });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.error ?? 'Nepodařilo se vypůjčit knihu');
       setDueAt(body.data.due_at);
@@ -132,10 +136,15 @@ export function BorrowPanel({
           </div>
         )}
         <p className="text-muted-foreground">{author}</p>
+        {labelCode != null && (
+          <p className="text-sm font-medium text-primary">Výtisk {formatLibraryLabelCode(labelCode)}</p>
+        )}
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {availableCopies > 0
+        {labelCode != null
+          ? (availableCopies > 0 ? 'Tento výtisk je k dispozici.' : 'Tento výtisk je momentálně půjčený.')
+          : availableCopies > 0
           ? `${availableCopies} z ${totalCopies} kopií je teď k dispozici.`
           : `Všech ${totalCopies} kopií je momentálně půjčeno.`}
       </p>

@@ -9,6 +9,7 @@ import { ProfileAvatar } from '@/components/profile-avatar';
 import { BookStatusBadges } from './book-status-badges';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
+import { structureBookTitle } from '@/lib/books/format-title';
 import { cn } from '@/lib/utils';
 import type { BookWithProfiles } from '@/lib/books/types';
 
@@ -38,6 +39,7 @@ export function FeedBookCard({
 }: FeedBookCardProps) {
   const points = pointsNumber(book.book_points);
   const primaryTag = book.tags[0] ? (BOOK_CATEGORY_LABELS[book.tags[0]] ?? book.tags[0]) : null;
+  const { title: bookTitle, fullTitle } = structureBookTitle(book.title_cs);
 
   return (
     <article
@@ -56,7 +58,7 @@ export function FeedBookCard({
             {book.google_books_cover_url ? (
               <StorageImage
                 storageKey={book.google_books_cover_url}
-                alt={book.title_cs}
+                alt={bookTitle}
                 width={48}
                 height={68}
                 className="size-full object-cover"
@@ -67,9 +69,9 @@ export function FeedBookCard({
           </Link>
 
           <div className="min-w-0 space-y-0.5">
-            <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="font-bold text-sm sm:text-base text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-1">
-                {book.title_cs}
+            <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5 min-w-0">
+              <h3 className="font-bold text-sm sm:text-base text-foreground leading-snug group-hover:text-primary transition-colors truncate min-w-0" title={fullTitle}>
+                {bookTitle}
               </h3>
               <BookStatusBadges book={book} />
             </Link>

@@ -263,10 +263,45 @@ export async function getAvailableCopyForBook(
   return available ?? null;
 }
 
+export async function getLibraryCopyByLabelCode(
+  supabase: SupabaseClient<Database>,
+  labelCode: number,
+): Promise<{ id: string; bookId: string } | null> {
+  const { data, error } = await supabase
+    .from('library_books')
+    .select('id, book_id')
+    .filter('label_code', 'eq', String(labelCode))
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return { id: data.id, bookId: data.book_id };
+}
+
+export async function getAvailableCopyByLabelCode(
+  supabase: SupabaseClient<Database>,
+  bookId: string,
+  labelCode: number,
+): Promise<string | null> {
+  const copy = await getLibraryCopyByLabelCode(supabase, labelCode);
+  if (!copy || copy.bookId !== bookId) return null;
+
+  const { data: activeLoan, error } = await supabase
+    .from('book_loans')
+    .select('id')
+    .eq('library_book_id', copy.id)
+    .is('returned_at', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return activeLoan ? null : copy.id;
+}
+
 export async function findOrCreateLibraryCopy(
   supabase: SupabaseClient<Database>,
   bookId: string,
-  isbn13: string | null,
   profileId: string,
 ): Promise<string> {
   const { data: existing, error: searchError } = await supabase
@@ -283,7 +318,6 @@ export async function findOrCreateLibraryCopy(
     .from('library_books')
     .insert({
       book_id: bookId,
-      isbn_13: isbn13,
       created_by_profile_id: profileId,
       updated_by_profile_id: profileId,
     })

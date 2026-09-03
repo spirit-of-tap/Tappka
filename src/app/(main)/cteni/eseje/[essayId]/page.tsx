@@ -27,7 +27,6 @@ import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
-import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 
 interface PageProps {
   params: Promise<{ essayId: string }>;
@@ -166,12 +165,9 @@ export default async function EssayDetailPage({ params }: PageProps) {
               <p className="text-xs text-muted-foreground truncate">{essay.book.author}</p>
             </div>
             {!source.isArchived && source.points > 0 && (
-              <div className="flex shrink-0 items-center gap-1.5">
-                {source.isFrozen && <LegacyPointsBadge />}
-                <Badge variant="secondary" className="shrink-0">
-                  {formatPoints(source.points)} b.
-                </Badge>
-              </div>
+              <Badge variant="secondary" className="shrink-0">
+                {formatPoints(source.points)} b.
+              </Badge>
             )}
           </div>
         </Link>
