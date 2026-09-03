@@ -5,6 +5,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from './book-status-badges';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
+import { structureBookTitle } from '@/lib/books/format-title';
 import type { BookWithProfiles } from '@/lib/books/types';
 
 interface BookCardProps {
@@ -14,6 +15,7 @@ interface BookCardProps {
 
 export function BookCard({ book, libraryInfo }: BookCardProps) {
   const pointsLabel = formatPointsWithLabel(book.book_points);
+  const { title: bookTitle, fullTitle } = structureBookTitle(book.title_cs);
 
   return (
     <div className="flex gap-3 px-3 py-2.5 rounded-xl border bg-card hover:shadow-sm transition-shadow group">
@@ -21,7 +23,7 @@ export function BookCard({ book, libraryInfo }: BookCardProps) {
         {book.google_books_cover_url ? (
           <StorageImage
             storageKey={book.google_books_cover_url}
-            alt={book.title_cs}
+            alt={bookTitle}
             className="w-full h-full object-cover"
             width={40}
             height={56}
@@ -32,9 +34,9 @@ export function BookCard({ book, libraryInfo }: BookCardProps) {
       </Link>
 
       <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-        <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5">
-          <p className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
-            {book.title_cs}
+        <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5 min-w-0">
+          <p className="font-semibold text-sm leading-snug truncate min-w-0 group-hover:text-primary transition-colors" title={fullTitle}>
+            {bookTitle}
           </p>
           <BookStatusBadges book={book} />
         </Link>

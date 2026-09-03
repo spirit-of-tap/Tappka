@@ -8,6 +8,7 @@ import { PageBack } from '@/components/ui/page-back';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 import { formatPointsWithLabel } from '@/lib/books/points';
+import { structureBookTitle } from '@/lib/books/format-title';
 import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 
 export const metadata = {
@@ -38,31 +39,33 @@ export default async function RocketModelPage() {
         <div className="py-16 text-center text-sm text-muted-foreground">Zatím žádné knihy v Rocket Modelu.</div>
       ) : (
         <div className="divide-y rounded-xl border overflow-hidden bg-card">
-          {books.map((book) => (
-            <div key={book.id} className="group flex gap-3 px-3 py-3">
-              <Link
-                href={`/cteni/knihy/${book.id}`}
-                className="mt-0.5 flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted"
-              >
-                {book.google_books_cover_url ? (
-                  <StorageImage
-                    storageKey={book.google_books_cover_url}
-                    alt={book.title_cs}
-                    width={44}
-                    height={64}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <BookOpen className="size-4 text-muted-foreground/30" />
-                )}
-              </Link>
-              <div className="min-w-0 flex-1 space-y-1 py-0.5">
-                <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5">
-                  <p className="line-clamp-1 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
-                    {book.title_cs}
-                  </p>
-                  <BookStatusBadges book={book} />
+          {books.map((book) => {
+            const { title: bookTitle, fullTitle } = structureBookTitle(book.title_cs);
+            return (
+              <div key={book.id} className="group flex gap-3 px-3 py-3">
+                <Link
+                  href={`/cteni/knihy/${book.id}`}
+                  className="mt-0.5 flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted"
+                >
+                  {book.google_books_cover_url ? (
+                    <StorageImage
+                      storageKey={book.google_books_cover_url}
+                      alt={bookTitle}
+                      width={44}
+                      height={64}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <BookOpen className="size-4 text-muted-foreground/30" />
+                  )}
                 </Link>
+                <div className="min-w-0 flex-1 space-y-1 py-0.5">
+                  <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5 min-w-0">
+                    <p className="truncate min-w-0 text-sm font-medium leading-snug transition-colors group-hover:text-primary" title={fullTitle}>
+                      {bookTitle}
+                    </p>
+                    <BookStatusBadges book={book} />
+                  </Link>
                 {book.description && (
                   <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{book.description}</p>
                 )}
@@ -88,7 +91,8 @@ export default async function RocketModelPage() {
                 </div>
               </div>
             </div>
-          ))}
+          );
+        })}
         </div>
       )}
     </PageShell>

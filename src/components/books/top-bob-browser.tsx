@@ -3,6 +3,7 @@ import { BookOpen, ExternalLink } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from './book-status-badges';
 import { formatPointsWithLabel } from '@/lib/books/points';
+import { structureBookTitle } from '@/lib/books/format-title';
 import type { BookWithProfiles } from '@/lib/books/types';
 import type { HighlightedGroup } from '@/lib/books/highlight-groups';
 
@@ -42,6 +43,8 @@ export function TopBobBrowser({ groups }: TopBobBrowserProps) {
 }
 
 function TopBobBookRow({ book }: { book: BookWithProfiles }) {
+  const { title: bookTitle, fullTitle } = structureBookTitle(book.title_cs);
+
   return (
     <div className="group flex gap-3 px-3 py-3">
       <Link
@@ -51,7 +54,7 @@ function TopBobBookRow({ book }: { book: BookWithProfiles }) {
         {book.google_books_cover_url ? (
           <StorageImage
             storageKey={book.google_books_cover_url}
-            alt={book.title_cs}
+            alt={bookTitle}
             width={44}
             height={64}
             className="h-full w-full object-cover"
@@ -61,9 +64,9 @@ function TopBobBookRow({ book }: { book: BookWithProfiles }) {
         )}
       </Link>
       <div className="min-w-0 flex-1 space-y-1 py-0.5">
-        <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5">
-          <p className="line-clamp-1 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
-            {book.title_cs}
+        <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5 min-w-0">
+          <p className="truncate min-w-0 text-sm font-medium leading-snug transition-colors group-hover:text-primary" title={fullTitle}>
+            {bookTitle}
           </p>
           <BookStatusBadges book={book} />
         </Link>

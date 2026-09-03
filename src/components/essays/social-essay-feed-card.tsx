@@ -15,6 +15,7 @@ import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import { countWords, formatReadingTime } from '@/lib/essays/text-stats';
 import { formatRelativeTime, isRecentEssay } from '@/lib/essays/date-helpers';
 import { cn } from '@/lib/utils';
+import { structureBookTitle } from '@/lib/books/format-title';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 export interface AuthorGamificationStats {
@@ -150,40 +151,45 @@ export function SocialEssayFeedCard({
 
       {/* 2. Source Connection Capsule (book or content source) */}
       {essay.book ? (
-        <Link
-          href={`/cteni/knihy/${essay.book.id}`}
-          className="flex items-center gap-2.5 rounded-xl border bg-muted/40 p-2 transition-colors hover:bg-muted/70"
-        >
-          <div className="flex h-10 w-7 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
-            {essay.book.google_books_cover_url ? (
-              <StorageImage
-                storageKey={essay.book.google_books_cover_url}
-                alt={essay.book.title_cs}
-                width={28}
-                height={40}
-                className="size-full object-cover"
-              />
-            ) : (
-              <BookOpen className="size-3.5 text-muted-foreground/50" />
-            )}
-          </div>
+        (() => {
+          const { title: bookTitle, fullTitle } = structureBookTitle(essay.book.title_cs);
+          return (
+            <Link
+              href={`/cteni/knihy/${essay.book.id}`}
+              className="flex items-center gap-2.5 rounded-xl border bg-muted/40 p-2 transition-colors hover:bg-muted/70"
+            >
+              <div className="flex h-10 w-7 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
+                {essay.book.google_books_cover_url ? (
+                  <StorageImage
+                    storageKey={essay.book.google_books_cover_url}
+                    alt={bookTitle}
+                    width={28}
+                    height={40}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <BookOpen className="size-3.5 text-muted-foreground/50" />
+                )}
+              </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="truncate text-xs font-medium text-foreground">
-                {essay.book.title_cs}
-              </span>
-              <BookStatusBadges book={essay.book} />
-            </div>
-            <p className="truncate text-[11px] text-muted-foreground">{essay.book.author}</p>
-          </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="truncate min-w-0 text-xs font-medium text-foreground" title={fullTitle}>
+                    {bookTitle}
+                  </span>
+                  <BookStatusBadges book={essay.book} />
+                </div>
+                <p className="truncate text-[11px] text-muted-foreground">{essay.book.author}</p>
+              </div>
 
-          {!source.isArchived && source.points > 0 && (
-            <Badge variant="secondary" className="shrink-0 text-xs font-semibold">
-              {formatPoints(source.points)} b.
-            </Badge>
-          )}
-        </Link>
+              {!source.isArchived && source.points > 0 && (
+                <Badge variant="secondary" className="shrink-0 text-xs font-semibold">
+                  {formatPoints(source.points)} b.
+                </Badge>
+              )}
+            </Link>
+          );
+        })()
       ) : essay.content_source ? (
         /* Content sources have no detail page to link to — same capsule, no link. */
         <div className="flex items-center gap-2.5 rounded-xl border bg-muted/40 p-2">

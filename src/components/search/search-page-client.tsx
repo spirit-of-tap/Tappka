@@ -44,6 +44,7 @@ import type { AuthorGamificationStats } from '@/components/essays/social-essay-f
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
 import { pluralizeCz } from '@/lib/utils/pluralize-cz';
+import { structureBookTitle } from '@/lib/books/format-title';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { EssayWithDetails } from '@/lib/essays/types';
@@ -674,33 +675,36 @@ function SearchResultsView({
             Knihy ({books.length})
           </h2>
           <div className="divide-y rounded-xl border overflow-hidden bg-card">
-            {books.map((book) => (
-              <Link
-                key={book.id}
-                href={`/cteni/knihy/${book.id}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
-              >
-                <div className="shrink-0 w-8 h-11 rounded overflow-hidden bg-muted flex items-center justify-center">
-                  {book.google_books_cover_url ? (
-                    <StorageImage storageKey={book.google_books_cover_url} alt={book.title_cs} width={32} height={44} className="w-full h-full object-cover" />
-                  ) : (
-                    <BookOpen className="size-3.5 text-muted-foreground/40" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-medium truncate">{book.title_cs}</p>
-                    <BookStatusBadges book={book} />
+            {books.map((book) => {
+              const { title: bookTitle, fullTitle } = structureBookTitle(book.title_cs);
+              return (
+                <Link
+                  key={book.id}
+                  href={`/cteni/knihy/${book.id}`}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="shrink-0 w-8 h-11 rounded overflow-hidden bg-muted flex items-center justify-center">
+                    {book.google_books_cover_url ? (
+                      <StorageImage storageKey={book.google_books_cover_url} alt={bookTitle} width={32} height={44} className="w-full h-full object-cover" />
+                    ) : (
+                      <BookOpen className="size-3.5 text-muted-foreground/40" />
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{book.author}</p>
-                </div>
-                {book.in_library && (
-                  <Badge variant="default" className="text-[11px] px-2.5 py-1">
-                    V TAPu
-                  </Badge>
-                )}
-              </Link>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-sm font-medium truncate min-w-0" title={fullTitle}>{bookTitle}</p>
+                      <BookStatusBadges book={book} />
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                  </div>
+                  {book.in_library && (
+                    <Badge variant="default" className="text-[11px] px-2.5 py-1 shrink-0">
+                      V TAPu
+                    </Badge>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}
