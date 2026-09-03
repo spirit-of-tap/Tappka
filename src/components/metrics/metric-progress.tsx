@@ -53,28 +53,39 @@ export function MetricProgress({
 
   const studyPercent = studyTarget > 0 ? Math.round((totalAchieved / studyTarget) * 100) : 0
 
+  // Current semester specific chunk progress (for mobile view)
+  const activeSemStart = (activeSemester - 1) * semesterTarget
+  const activeSemCurrent = Math.max(
+    semesterGoal?.current ?? 0,
+    Math.max(0, totalAchieved - activeSemStart),
+  )
+  const isSemPassed = totalAchieved >= activeExpectedMilestone || activeSemCurrent >= semesterTarget
+  const semSurplus = Math.max(cumulativeDelta, activeSemCurrent - semesterTarget)
+  const activeSemRemaining = Math.max(0, semesterTarget - activeSemCurrent)
+  const activeSemFill = Math.min(100, Math.max(0, (activeSemCurrent / semesterTarget) * 100))
+
   return (
     <details className="group rounded-lg border border-border/40 bg-muted/20 p-3 text-xs transition-colors hover:bg-muted/30">
       <summary className="focus-ring cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-        {/* Mobile View (< sm): Clean 3-tier layout */}
+        {/* Mobile View (< sm): Current Semester Chunk */}
         <div className="space-y-1.5 sm:hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-foreground">{activeSemester}. semestr</span>
-              {isCumulativePassed ? (
+              {isSemPassed ? (
                 <span className="inline-flex items-center gap-1 font-semibold text-success-strong">
                   <Check className="size-3.5 stroke-[2.5]" />
-                  Splněno {cumulativeDelta > 0 ? `(+${cumulativeDelta})` : ""}
+                  Splněno {semSurplus > 0 ? `(+${semSurplus})` : ""}
                 </span>
               ) : (
                 <span className="text-[11px] text-muted-foreground">
-                  (zbývá {Math.abs(cumulativeDelta)})
+                  (zbývá {activeSemRemaining})
                 </span>
               )}
             </div>
 
             <span className="font-bold tabular-nums text-foreground">
-              {totalAchieved}/{activeExpectedMilestone}
+              {activeSemCurrent}/{semesterTarget}
             </span>
           </div>
 
@@ -82,18 +93,20 @@ export function MetricProgress({
             <div
               data-slot="metric-bar"
               className={`h-full rounded-full transition-all duration-300 ${
-                isCumulativePassed ? "bg-success" : "bg-foreground/75"
+                isSemPassed ? "bg-success" : "bg-foreground/75"
               }`}
               style={{
-                width: `${Math.min(100, Math.max(0, (totalAchieved / activeExpectedMilestone) * 100))}%`,
+                width: `${activeSemFill}%`,
               }}
             />
           </div>
 
-          <div className="flex items-center justify-between text-[11px] tabular-nums text-muted-foreground/80">
-            <span>Celkem: {totalAchieved}/{studyTarget}</span>
-            <span>({studyPercent}%)</span>
-          </div>
+          {studyGoal && (
+            <div className="flex items-center justify-between text-[11px] tabular-nums text-muted-foreground/80">
+              <span>Celkem: {totalAchieved}/{studyTarget}</span>
+              <span>({studyPercent}%)</span>
+            </div>
+          )}
         </div>
 
         {/* Desktop View (>= sm): Header + 6-Segment Cumulative Milestone Bar */}
@@ -125,14 +138,9 @@ export function MetricProgress({
               </span>
               <span className="text-[11px]">({studyPercent}%)</span>
 
-              {/* Accessible fallback for semester ratio */}
+              {/* Accessible fallback for semester label */}
               {semesterGoal && (
-                <span className="sr-only">
-                  <span>{semesterGoal.label}</span>
-                  <span>
-                    {semesterGoal.current}/{semesterGoal.target}
-                  </span>
-                </span>
+                <span className="sr-only">{semesterGoal.label}</span>
               )}
             </div>
           </div>
@@ -199,17 +207,4 @@ export function MetricProgress({
     </details>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 

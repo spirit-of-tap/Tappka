@@ -62,7 +62,7 @@ export function LibraryImportScanner() {
       const res = await fetch('/api/library/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ book_id: book.id, isbn_13: book.isbn_13 }),
+        body: JSON.stringify({ book_id: book.id }),
       });
       if (!res.ok) {
         const err = await res.json();

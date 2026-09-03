@@ -28,6 +28,7 @@ import { StepSearch } from './step-search';
 import { EMPTY_DRAFT, type AddBookDraft } from './types';
 
 const DRAFT_STORAGE_KEY = 'tappka:add-book-draft';
+const INTERNAL_URL_BASE = 'https://tappka.local';
 
 type Step = 'gate' | 'search' | 'enriching' | 'rejected' | 'review';
 
@@ -64,6 +65,12 @@ interface AddBookFlowProps {
   returnTo: string | null;
   /** Where to go when the submitter discards the in-progress draft. */
   discardHref: string;
+}
+
+function buildReturnUrl(returnTo: string, bookId: string) {
+  const url = new URL(returnTo, INTERNAL_URL_BASE);
+  url.searchParams.set('book', bookId);
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 export function AddBookFlow({ initialQuery, returnTo, discardHref }: AddBookFlowProps) {
@@ -139,7 +146,11 @@ export function AddBookFlow({ initialQuery, returnTo, discardHref }: AddBookFlow
         if (res.status === 409 && json.existingId) {
           toast.info('Tuhle knihu už v BOBovi máme.');
           window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-          router.push(`/cteni/knihy/${json.existingId}`);
+          router.push(
+            returnTo
+              ? buildReturnUrl(returnTo, json.existingId)
+              : `/cteni/knihy/${json.existingId}`,
+          );
           return;
         }
 
@@ -152,7 +163,9 @@ export function AddBookFlow({ initialQuery, returnTo, discardHref }: AddBookFlow
         window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
         toast.success('Kniha odeslána ke schválení.');
         router.push(
-          returnTo ? `${returnTo}?book=${json.data.id}` : `/cteni/knihy/${json.data.id}`,
+          returnTo
+            ? buildReturnUrl(returnTo, json.data.id)
+            : `/cteni/knihy/${json.data.id}`,
         );
       } catch {
         toast.error('Nepodařilo se připojit k serveru.');

@@ -427,13 +427,14 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
 
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {(selectedBook.list_status !== 'archived' || selectedBookPointsFrozen) && (
-                <>
-                  {selectedBookPointsFrozen && <LegacyPointsBadge />}
+                selectedBookPointsFrozen ? (
+                  <LegacyPointsBadge points={selectedBookPoints} className="shrink-0" />
+                ) : (
                   <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                     <span className="font-heading tabular-nums">{formatPoints(selectedBookPoints)}</span>
                     <span className="ml-1 text-[11px] font-normal text-primary/80">b.</span>
                   </span>
-                </>
+                )
               )}
 
               <Button

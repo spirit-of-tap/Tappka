@@ -25,7 +25,7 @@ const makeLoan = (overrides: Partial<BookLoanWithDetails> = {}): BookLoanWithDet
   library_book: {
     id: 'lib-1',
     book_id: 'book-1',
-    isbn_13: '9780132350884',
+    label_code: null,
     created_by_profile_id: 'user-1',
     updated_by_profile_id: 'user-1',
     created_at: '2026-08-01T10:00:00.000Z',
@@ -45,7 +45,6 @@ const makeLoan = (overrides: Partial<BookLoanWithDetails> = {}): BookLoanWithDet
       created_at: '2026-08-01T10:00:00.000Z',
       description: null,
       google_books_cover_url: null,
-      isbn_13: null,
       page_count: 400,
       preview_link: null,
       tags: [],

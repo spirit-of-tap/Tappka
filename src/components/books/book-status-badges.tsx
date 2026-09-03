@@ -116,7 +116,7 @@ export function BookStatusBadges({ book, variant = 'compact', className }: BookS
   if (!hasBadge) return null;
 
   return (
-    <span className={cn('inline-flex items-center gap-1.5', className)}>
+    <span className={cn('inline-flex items-center gap-1.5 shrink-0', className)}>
       <VerifiedBadge status={book.list_status} />
       {book.is_rocket_model && <RocketBadge />}
       {book.highlight_category && <HighlightBadge category={book.highlight_category} variant={variant} />}

@@ -28,7 +28,6 @@ export interface BookCopyStatus {
 export interface LibraryBookResult {
   id: string;
   book_id: string;
-  isbn_13: string | null;
   created_at: string;
   book: BookWithProfiles;
   totalCopies: number;

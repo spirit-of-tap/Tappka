@@ -1249,7 +1249,7 @@ export type Database = {
           created_at: string
           created_by_profile_id: string
           id: string
-          isbn_13: string | null
+          label_code: number | null
           updated_at: string
           updated_by_profile_id: string
         }
@@ -1258,7 +1258,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id: string
           id?: string
-          isbn_13?: string | null
+          label_code?: number | null
           updated_at?: string
           updated_by_profile_id: string
         }
@@ -1267,7 +1267,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id?: string
           id?: string
-          isbn_13?: string | null
+          label_code?: number | null
           updated_at?: string
           updated_by_profile_id?: string
         }

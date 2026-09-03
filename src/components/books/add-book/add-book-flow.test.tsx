@@ -203,6 +203,35 @@ describe('AddBookFlow', () => {
     );
   });
 
+  it('preserves existing return parameters and returns duplicates too', async () => {
+    persist('review', {
+      candidate: null,
+      enriched: ENRICHED,
+      citations: [],
+      manual: false,
+      appealing: false,
+    });
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => ({ existingId: 'dup-1' }),
+    }));
+
+    render(
+      <AddBookFlow
+        initialQuery=""
+        returnTo="/knihovna/stitky?label=7"
+        discardHref="/knihovna/stitky?label=7"
+      />,
+    );
+    await userEvent.click(await screen.findByRole('button', { name: /odeslat/i }));
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith('/knihovna/stitky?label=7&book=dup-1'),
+    );
+  });
+
   describe('discarding the draft', () => {
     const DRAFT = {
       candidate: { ...CANDIDATE, source: 'google_books' },
