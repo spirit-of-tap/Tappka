@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Camera, CheckCircle2, QrCode, RotateCcw, Search, X } from 'lucide-react';
+import { BookOpen, Camera, CheckCircle2, Plus, QrCode, RotateCcw, Search, X } from 'lucide-react';
 import { BarcodeScanner } from 'react-barcode-scanner';
 import { toast } from 'sonner';
 import 'react-barcode-scanner/polyfill';
@@ -16,6 +16,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { formatLibraryLabelCode, parseLibraryLabelCode } from '@/lib/library/label-code';
 
 const SCANNER_DELAY_MS = 400;
+const SEARCH_DEBOUNCE_MS = 350;
+const MIN_SEARCH_LENGTH = 2;
 
 const LABEL_STATUS = {
   idle: 'idle',
@@ -48,9 +50,13 @@ interface AssignedCopy {
 
 interface LibraryLabelAssignmentProps {
   initialLabelCode: number | null;
+  initialBookId?: string | null;
 }
 
-export function LibraryLabelAssignment({ initialLabelCode }: LibraryLabelAssignmentProps) {
+export function LibraryLabelAssignment({
+  initialLabelCode,
+  initialBookId = null,
+}: LibraryLabelAssignmentProps) {
   const [labelCode, setLabelCode] = useState<number | null>(initialLabelCode);
   const [manualLabelCode, setManualLabelCode] = useState(initialLabelCode?.toString() ?? '');
   const [labelStatus, setLabelStatus] = useState<keyof typeof LABEL_STATUS>(
@@ -65,6 +71,7 @@ export function LibraryLabelAssignment({ initialLabelCode }: LibraryLabelAssignm
   const [results, setResults] = useState<BookSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [assigningBookId, setAssigningBookId] = useState<string | null>(null);
+  const returnedBookHandled = useRef(false);
 
   useEffect(() => {
     if (labelCode == null) return;
@@ -128,42 +135,55 @@ export function LibraryLabelAssignment({ initialLabelCode }: LibraryLabelAssignm
     acceptLabelValue(manualLabelCode);
   };
 
-  const handleSearch = useCallback(async (searchQuery?: string) => {
-    const trimmedQuery = (searchQuery ?? query).trim();
-    if (!trimmedQuery) return;
+  useEffect(() => {
+    const trimmedQuery = query.trim();
+    if (labelStatus !== LABEL_STATUS.unassigned || trimmedQuery.length < MIN_SEARCH_LENGTH) return;
 
-    setSearching(true);
-    setResults(null);
-    try {
-      const response = await fetch(`/api/books/search?q=${encodeURIComponent(trimmedQuery)}`);
-      const body: { data?: BookSearchResult[]; error?: string } = await response.json();
-      if (!response.ok) throw new Error(body.error ?? 'Nepodařilo se vyhledat knihy');
-      setResults(body.data ?? []);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nepodařilo se vyhledat knihy');
-    } finally {
-      setSearching(false);
-    }
-  }, [query]);
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+      try {
+        const response = await fetch(
+          `/api/library/catalog-search?q=${encodeURIComponent(trimmedQuery)}`,
+          { signal: controller.signal },
+        );
+        const body: { data?: BookSearchResult[]; error?: string } = await response.json();
+        if (!response.ok) throw new Error(body.error ?? 'Nepodařilo se vyhledat knihy');
+        setResults(body.data ?? []);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          toast.error(error instanceof Error ? error.message : 'Nepodařilo se vyhledat knihy');
+        }
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [labelStatus, query]);
 
   const handleBookCapture = useCallback((barcodes: DetectedBarcode[]) => {
     const value = barcodes[0]?.rawValue;
     if (!value) return;
 
     setQuery(value);
+    setResults(null);
+    setSearching(false);
     setShowBookScanner(false);
-    void handleSearch(value);
-  }, [handleSearch]);
+  }, []);
 
-  const handleAssign = async (book: BookSearchResult) => {
+  const handleAssign = useCallback(async (bookId: string) => {
     if (labelCode == null) return;
 
-    setAssigningBookId(book.id);
+    setAssigningBookId(bookId);
     try {
       const response = await fetch(`/api/library/labels/${labelCode}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ book_id: book.id }),
+        body: JSON.stringify({ book_id: bookId }),
       });
       const body: { data?: AssignedCopy; error?: string } = await response.json();
       if (!response.ok || !body.data) {
@@ -173,13 +193,26 @@ export function LibraryLabelAssignment({ initialLabelCode }: LibraryLabelAssignm
       setAssignedCopy(body.data);
       setJustAssigned(true);
       setLabelStatus(LABEL_STATUS.assigned);
-      toast.success(`${formatLibraryLabelCode(labelCode)} je přiřazený ke knize „${book.title_cs}“`);
+      toast.success(
+        `${formatLibraryLabelCode(labelCode)} je přiřazený ke knize „${body.data.book.title_cs}“`,
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Nepodařilo se přiřadit štítek');
     } finally {
       setAssigningBookId(null);
     }
-  };
+  }, [labelCode]);
+
+  useEffect(() => {
+    if (
+      initialBookId == null
+      || labelStatus !== LABEL_STATUS.unassigned
+      || returnedBookHandled.current
+    ) return;
+
+    returnedBookHandled.current = true;
+    void handleAssign(initialBookId);
+  }, [handleAssign, initialBookId, labelStatus]);
 
   const resetForNextLabel = () => {
     setLabelCode(null);
@@ -314,22 +347,24 @@ export function LibraryLabelAssignment({ initialLabelCode }: LibraryLabelAssignm
               </div>
             )}
 
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleSearch();
-              }}
-              className="flex gap-2"
-            >
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Název, autor:ka nebo ISBN"
-                aria-label="Hledat knihu"
-              />
-              <Button type="submit" disabled={!query.trim() || searching} size="icon" aria-label="Hledat">
-                {searching ? <Spinner className="size-4" /> : <Search className="size-4" />}
-              </Button>
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setResults(null);
+                    setSearching(false);
+                  }}
+                  placeholder="Název, autor:ka nebo ISBN"
+                  aria-label="Hledat knihu"
+                  className="pr-9 pl-9"
+                />
+                {searching && (
+                  <Spinner className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -339,7 +374,11 @@ export function LibraryLabelAssignment({ initialLabelCode }: LibraryLabelAssignm
               >
                 {showBookScanner ? <X className="size-4" /> : <Camera className="size-4" />}
               </Button>
-            </form>
+            </div>
+
+            {query.trim().length > 0 && query.trim().length < MIN_SEARCH_LENGTH && (
+              <p className="text-xs text-muted-foreground">Pro vyhledání zadej alespoň 2 znaky</p>
+            )}
 
             {results?.length === 0 && (
               <Empty>
@@ -348,11 +387,6 @@ export function LibraryLabelAssignment({ initialLabelCode }: LibraryLabelAssignm
                   <EmptyTitle>Kniha není v katalogu</EmptyTitle>
                   <EmptyDescription>Nejdřív ji přidej do BOBa a potom se vrať ke štítku</EmptyDescription>
                 </EmptyHeader>
-                <Button asChild variant="outline">
-                  <Link href={`/cteni/knihy/nova?q=${encodeURIComponent(query)}&from=${encodeURIComponent(`/knihovna/stitky?label=${labelCode}`)}`}>
-                    Přidat knihu
-                  </Link>
-                </Button>
               </Empty>
             )}
 
@@ -384,12 +418,29 @@ export function LibraryLabelAssignment({ initialLabelCode }: LibraryLabelAssignm
                       type="button"
                       size="sm"
                       disabled={assigningBookId != null}
-                      onClick={() => void handleAssign(book)}
+                      onClick={() => void handleAssign(book.id)}
                     >
                       {assigningBookId === book.id ? <Spinner className="size-4" /> : 'Přiřadit'}
                     </Button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {results && (
+              <div className="flex flex-col gap-3 rounded-lg border border-dashed p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium">Kniha tu není?</p>
+                  <p className="text-xs text-muted-foreground">
+                    Přidej ji do BOBa a ke štítku se vrátíš automaticky.
+                  </p>
+                </div>
+                <Button asChild variant="outline" className="gap-2">
+                  <Link href={`/cteni/knihy/nova?q=${encodeURIComponent(query)}&from=knihovna-stitky&label=${labelCode}`}>
+                    <Plus className="size-4" />
+                    Přidat novou knihu
+                  </Link>
+                </Button>
               </div>
             )}
           </CardContent>

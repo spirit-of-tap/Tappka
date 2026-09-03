@@ -7,7 +7,7 @@ import { getSessionProfile } from '@/lib/auth/session';
 import { parseLibraryLabelCode } from '@/lib/library/label-code';
 
 interface LibraryLabelsPageProps {
-  searchParams: Promise<{ label?: string }>;
+  searchParams: Promise<{ label?: string; book?: string }>;
 }
 
 const PAGE_DESCRIPTION = 'Naskenuj štítek a přiřaď ho ke konkrétnímu výtisku';
@@ -24,7 +24,7 @@ export default async function LibraryLabelsPage({ searchParams }: LibraryLabelsP
     redirect('/');
   }
 
-  const { label } = await searchParams;
+  const { label, book } = await searchParams;
   const initialLabelCode = label ? parseLibraryLabelCode(label) : null;
 
   return (
@@ -34,7 +34,7 @@ export default async function LibraryLabelsPage({ searchParams }: LibraryLabelsP
         description={PAGE_DESCRIPTION}
         back={{ href: '/cteni/sprava', label: 'Zpět na správu knihovny' }}
       />
-      <LibraryLabelAssignment initialLabelCode={initialLabelCode} />
+      <LibraryLabelAssignment initialLabelCode={initialLabelCode} initialBookId={book ?? null} />
     </PageShell>
   );
 }
