@@ -83,9 +83,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: sourceError }, { status: 400 });
     }
 
-    // The essay may be empty in every field at creation time — it exists so
-    // autosave has somewhere to write. It becomes visible to others once
-    // autosave gives it a title (see PATCH /api/essays/[id]).
+    // The essay may be empty in every field at creation time — a title-less
+    // essay stays a private draft. There is no explicit publish step: it
+    // becomes visible to everyone the moment it first has a title, whether
+    // that happens here on the first save or later (see PATCH /api/essays/[id]).
     const trimmedTitle = typeof title === 'string' ? title.trim() : '';
     if (trimmedTitle.length > MAX_TITLE_LENGTH) {
       return NextResponse.json({ error: 'Název eseje je příliš dlouhý' }, { status: 400 });
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
         author_profile_id: profile.id,
         book_id: book_id ?? null,
         content_source_id: content_source_id ?? null,
-        published_at: null,
+        published_at: trimmedTitle ? new Date().toISOString() : null,
         created_by_profile_id: profile.id,
         updated_by_profile_id: profile.id,
       })
