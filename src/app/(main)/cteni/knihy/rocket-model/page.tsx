@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, ExternalLink } from 'lucide-react';
+import { BookOpen, ExternalLink, Rocket } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getRocketModelBooks } from '@/lib/books/queries';
 import { StorageImage } from '@/components/storage/storage-image';
@@ -27,6 +27,11 @@ export default async function RocketModelPage() {
         title="Rocket Model"
         description="Klíčové knihy programu — pomáhají Téčkům nastartovat cestu rychleji a bez oklik"
         count={{ value: books.length, label: pluralizeCz(books.length, ['kniha', 'knihy', 'knih']) }}
+        icon={
+          <span className="flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Rocket className="size-5 sm:size-6" />
+          </span>
+        }
       />
 
       {books.length === 0 ? (

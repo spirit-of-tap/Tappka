@@ -19,8 +19,17 @@ import {
   Briefcase,
   Megaphone,
   Boxes,
+  Library,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { PageShell } from '@/components/ui/page-shell';
 import { StorageImage } from '@/components/storage/storage-image';
@@ -34,6 +43,7 @@ import { DiscoveryMixedFeed } from './discovery-mixed-feed';
 import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
+import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { EssayWithDetails } from '@/lib/essays/types';
@@ -74,15 +84,80 @@ interface SearchPageClientProps {
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
 const FINE_POINTER_QUERY = '(pointer: fine)';
 
-const CATEGORY_META: Record<string, { icon: React.ElementType; color: string }> = {
-  'Finance & ekonomika': { icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10' },
-  'Inovace & kreativita': { icon: Lightbulb, color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10' },
-  'Komunikace & prodej': { icon: MessageSquare, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10' },
-  Leadership: { icon: Crown, color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10' },
-  Management: { icon: Briefcase, color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10' },
-  Marketing: { icon: Megaphone, color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10' },
-  Multidisciplinární: { icon: Boxes, color: 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10' },
-  'Osobní rozvoj': { icon: Sparkles, color: 'text-orange-600 dark:text-orange-400 bg-orange-500/10' },
+interface CategoryMeta {
+  icon: React.ElementType;
+  color: string;
+  bannerBg: string;
+  borderColor: string;
+  badgeColor: string;
+  description: string;
+}
+
+const CATEGORY_META: Record<string, CategoryMeta> = {
+  'Finance & ekonomika': {
+    icon: TrendingUp,
+    color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15',
+    bannerBg: 'bg-gradient-to-br from-emerald-500/10 via-card to-card',
+    borderColor: 'border-emerald-500/20 dark:border-emerald-500/30',
+    badgeColor: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    description: 'Investice, finanční řízení, trhy a ekonomické souvislosti',
+  },
+  'Inovace & kreativita': {
+    icon: Lightbulb,
+    color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/15',
+    bannerBg: 'bg-gradient-to-br from-amber-500/10 via-card to-card',
+    borderColor: 'border-amber-500/20 dark:border-amber-500/30',
+    badgeColor: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    description: 'Kreativní myšlení, inovativní přístupy a hledání nových cest',
+  },
+  'Komunikace & prodej': {
+    icon: MessageSquare,
+    color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/15',
+    bannerBg: 'bg-gradient-to-br from-blue-500/10 via-card to-card',
+    borderColor: 'border-blue-500/20 dark:border-blue-500/30',
+    badgeColor: 'bg-blue-500/15 text-blue-700 dark:text-blue-300',
+    description: 'Vyjednávání, přesvědčivá komunikace a prodejní dovednosti',
+  },
+  Leadership: {
+    icon: Crown,
+    color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 dark:bg-purple-500/15',
+    bannerBg: 'bg-gradient-to-br from-purple-500/10 via-card to-card',
+    borderColor: 'border-purple-500/20 dark:border-purple-500/30',
+    badgeColor: 'bg-purple-500/15 text-purple-700 dark:text-purple-300',
+    description: 'Vedení lidí, budování týmů a inspirativní vůdcovství',
+  },
+  Management: {
+    icon: Briefcase,
+    color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 dark:bg-indigo-500/15',
+    bannerBg: 'bg-gradient-to-br from-indigo-500/10 via-card to-card',
+    borderColor: 'border-indigo-500/20 dark:border-indigo-500/30',
+    badgeColor: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300',
+    description: 'Organizace, procesy, strategické řízení a efektivita práce',
+  },
+  Marketing: {
+    icon: Megaphone,
+    color: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 dark:bg-rose-500/15',
+    bannerBg: 'bg-gradient-to-br from-rose-500/10 via-card to-card',
+    borderColor: 'border-rose-500/20 dark:border-rose-500/30',
+    badgeColor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+    description: 'Budování značky, porozumění trhu a zákaznická zkušenost',
+  },
+  Multidisciplinární: {
+    icon: Boxes,
+    color: 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 dark:bg-cyan-500/15',
+    bannerBg: 'bg-gradient-to-br from-cyan-500/10 via-card to-card',
+    borderColor: 'border-cyan-500/20 dark:border-cyan-500/30',
+    badgeColor: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
+    description: 'Široký rozhled, propojování oborů a systémové myšlení',
+  },
+  'Osobní rozvoj': {
+    icon: Sparkles,
+    color: 'text-orange-600 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/15',
+    bannerBg: 'bg-gradient-to-br from-orange-500/10 via-card to-card',
+    borderColor: 'border-orange-500/20 dark:border-orange-500/30',
+    badgeColor: 'bg-orange-500/15 text-orange-700 dark:text-orange-300',
+    description: 'Návyky, mentální odolnost, sebereflexe a osobní růst',
+  },
 };
 
 export function SearchPageClient({
@@ -195,11 +270,13 @@ export function SearchPageClient({
           )
         ) : selectedCategory ? (
           <CategoryBooksView
+            categoryKey={selectedCategory}
             label={BOOK_CATEGORY_LABELS[selectedCategory] ?? selectedCategory}
             books={categoryBooks}
             loading={categoryLoading}
             libraryFilterEnabled={libraryFilterEnabled}
             onToggleLibraryFilter={setLibraryFilterEnabled}
+            onSelectCategory={setSelectedCategory}
             onBack={() => setSelectedCategory(null)}
           />
         ) : (
@@ -407,55 +484,152 @@ function CategoryGridSection({
 // ─── Category view ─────────────────────────────────────────────────────────────
 
 function CategoryBooksView({
+  categoryKey,
   label,
   books,
   loading,
   libraryFilterEnabled,
   onToggleLibraryFilter,
+  onSelectCategory,
   onBack,
 }: {
+  categoryKey: string;
   label: string;
   books: (BookWithProfiles & { essay_count?: number })[];
   loading: boolean;
   libraryFilterEnabled: boolean;
   onToggleLibraryFilter: (enabled: boolean) => void;
+  onSelectCategory: (key: string) => void;
   onBack: () => void;
 }) {
+  const meta = CATEGORY_META[categoryKey];
+  const Icon = meta?.icon ?? BookOpen;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-        <div>
-          <button
-            type="button"
-            onClick={onBack}
-            className="mb-1.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="size-3.5" />
-            Zpět na přehled
-          </button>
-          <h2 className="text-xl font-bold text-foreground">{label}</h2>
-        </div>
+      {/* Top navigation: Back button & Horizontal Category Switcher */}
+      <div className="space-y-2.5">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer px-1 -ml-1 focus-ring rounded-md"
+        >
+          <ArrowLeft className="size-3.5" />
+          Zpět na přehled
+        </button>
 
-        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-          <input
-            type="checkbox"
-            checked={libraryFilterEnabled}
-            onChange={(e) => onToggleLibraryFilter(e.target.checked)}
-            className="rounded border-border accent-primary"
-          />
-          Pouze knihy v TAP Knihovně
-        </label>
+        {/* Quick horizontal category switcher */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+          {CATEGORIES.map(([catKey, catLabel]) => {
+            const catMeta = CATEGORY_META[catKey];
+            const CatIcon = catMeta?.icon ?? BookOpen;
+            const isCurrent = catKey === categoryKey;
+            return (
+              <button
+                key={catKey}
+                type="button"
+                onClick={() => onSelectCategory(catKey)}
+                className={cn(
+                  'shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border',
+                  isCurrent
+                    ? cn(catMeta?.badgeColor ?? 'bg-primary/10 text-primary', 'font-semibold border-current/25 shadow-2xs')
+                    : 'bg-card text-muted-foreground hover:text-foreground hover:bg-muted/60 border-border/70'
+                )}
+              >
+                <CatIcon className="size-3.5" />
+                <span>{catLabel}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+      {/* Visual Category Hero Banner */}
+      <div
+        className={cn(
+          'relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-colors',
+          meta?.bannerBg ?? 'bg-card',
+          meta?.borderColor ?? 'border-border'
+        )}
+      >
+        {/* Subtle decorative watermark icon */}
+        <Icon
+          className="absolute -right-3 -bottom-3 size-28 sm:size-36 text-foreground opacity-[0.03] dark:opacity-[0.05] pointer-events-none -rotate-12 select-none"
+          aria-hidden="true"
+        />
+
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0">
+            <span className={cn('flex size-11 sm:size-13 shrink-0 items-center justify-center rounded-xl shadow-2xs', meta?.color)}>
+              <Icon className="size-5 sm:size-6.5" />
+            </span>
+            <div className="min-w-0 space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="font-heading text-lg sm:text-xl font-bold tracking-tight text-foreground">
+                  {label}
+                </h2>
+                {!loading && (
+                  <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium', meta?.badgeColor)}>
+                    {books.length} {pluralizeCz(books.length, ['kniha', 'knihy', 'knih'])}
+                  </span>
+                )}
+              </div>
+              {meta?.description && (
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  {meta.description}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* TAP Knihovna filter toggle */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={libraryFilterEnabled}
+            onClick={() => onToggleLibraryFilter(!libraryFilterEnabled)}
+            className={cn(
+              'shrink-0 self-start sm:self-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all cursor-pointer select-none',
+              libraryFilterEnabled
+                ? 'bg-primary/10 border-primary/30 text-primary font-semibold shadow-2xs'
+                : 'bg-card/90 hover:bg-card border-border text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Library className="size-3.5" />
+            <span>Pouze v TAP Knihovně</span>
+            {libraryFilterEnabled && <span className="size-1.5 rounded-full bg-primary" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Book list / loading / empty states */}
       {loading ? (
         <div className="flex justify-center py-16">
           <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : books.length === 0 ? (
-        <div className="text-center py-16 space-y-2">
-          <BookOpen className="size-10 mx-auto text-muted-foreground/40" />
-          <p className="text-muted-foreground text-sm">Žádné knihy v kategorii {label}</p>
-        </div>
+        <Empty>
+          <EmptyMedia variant="icon" className={meta?.color}>
+            <Icon className="size-5" />
+          </EmptyMedia>
+          <EmptyHeader>
+            <EmptyTitle>Žádné knihy v kategorii {label}</EmptyTitle>
+            <EmptyDescription>
+              {libraryFilterEnabled
+                ? 'V TAP Knihovně zatím nemáme žádné knihy s tímto štítkem. Zkus vypnout filtr.'
+                : `V kategorii ${label} zatím nejsou žádné knihy.`}
+            </EmptyDescription>
+          </EmptyHeader>
+          {libraryFilterEnabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onToggleLibraryFilter(false)}
+            >
+              Zobrazit všechny knihy v kategorii
+            </Button>
+          )}
+        </Empty>
       ) : (
         <div className="space-y-2">
           {books.map((book) => (

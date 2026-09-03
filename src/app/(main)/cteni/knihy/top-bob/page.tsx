@@ -1,3 +1,4 @@
+import { Medal } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getHighlightedBooks, getHighlightCategories } from '@/lib/books/queries';
 import { groupHighlightedBooks } from '@/lib/books/highlight-groups';
@@ -30,6 +31,11 @@ export default async function TopBobPage() {
         title="TOP BOB"
         description="Zlato celé knihovny — když nevíš, co číst dál, tady nešlápneš vedle"
         count={{ value: totalBooks, label: 'knih' }}
+        icon={
+          <span className="flex size-10 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+            <Medal className="size-5 sm:size-6" />
+          </span>
+        }
       />
 
       <TopBobBrowser groups={groups} />

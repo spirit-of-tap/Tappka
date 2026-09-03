@@ -32,4 +32,10 @@ describe("PageHeader", () => {
       expect(screen.queryByRole("link")).not.toBeInTheDocument()
     })
   })
+
+  it("renders an optional icon alongside the title", () => {
+    render(<PageHeader title="TOP BOB" icon={<span data-testid="header-icon">icon</span>} />)
+    expect(screen.getByTestId("header-icon")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "TOP BOB" })).toBeInTheDocument()
+  })
 })
