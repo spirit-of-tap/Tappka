@@ -13,7 +13,7 @@ interface LibraryLabelsPageProps {
 const PAGE_DESCRIPTION = 'Naskenuj štítek a přiřaď ho ke konkrétnímu výtisku';
 
 export const metadata = {
-  title: 'Přiřazení štítků | Tappka',
+  title: 'Přiřazení štítků',
   description: PAGE_DESCRIPTION,
   robots: { index: false, follow: false },
 };

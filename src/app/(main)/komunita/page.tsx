@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
-  title: 'Komunita | Tappka',
+  title: 'Komunita',
   description: 'Prohlížej si členy:ky komunity a kontaktuj je',
 };
 

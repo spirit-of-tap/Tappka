@@ -8,7 +8,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Zákaznické schůzky | Tappka",
+  title: "Zákaznické schůzky",
   description: "Záznamník schůzek s lidmi z praxe",
 }
 

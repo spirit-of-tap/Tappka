@@ -20,7 +20,7 @@ import { BackButton } from '@/components/essays/back-button';
 import { ProfileAvatar } from '@/components/profile-avatar';
 
 export const metadata = {
-  title: 'Esej | Tappka',
+  title: 'Esej',
 };
 import { formatPoints } from '@/lib/books/points';
 import { BookStatusBadges } from '@/components/books/book-status-badges';

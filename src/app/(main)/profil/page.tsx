@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 
 export const metadata = {
-  title: "Profil | Tappka",
+  title: "Profil",
   description: "Tvůj účet, přístupy a nastavení aplikace",
 };
 

@@ -3,7 +3,7 @@ import { PageShell } from '@/components/ui/page-shell';
 import { PortfolioUploader } from '@/components/portfolio/portfolio-uploader';
 
 export const metadata = {
-  title: 'Portfolio | Tappka',
+  title: 'Portfolio',
   description: 'Nahraj své portfolio (.xlsx) a prohlížej si přehled svých aktivit',
 };
 

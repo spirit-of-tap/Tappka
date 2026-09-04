@@ -10,7 +10,7 @@ interface LibraryLabelPageProps {
 }
 
 export const metadata = {
-  title: 'Knihovna | Tappka',
+  title: 'Knihovna',
   robots: { index: false, follow: false },
 };
 

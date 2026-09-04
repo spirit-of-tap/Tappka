@@ -8,7 +8,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Týmový deník | Tappka",
+  title: "Týmový deník",
   description: "Chronologický záznam týmových akcí mimo pracovní prostředí",
 }
 

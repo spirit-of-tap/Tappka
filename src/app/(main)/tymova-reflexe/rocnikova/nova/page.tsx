@@ -21,7 +21,7 @@ function rocnikovaLabel(monthStr: string): string {
 }
 
 export const metadata = {
-  title: "Nová ročníková reflexe | Tappka",
+  title: "Nová ročníková reflexe",
 }
 
 export default async function NovaRocnikovaReflexePage({

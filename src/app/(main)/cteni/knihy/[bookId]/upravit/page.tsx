@@ -10,7 +10,7 @@ interface PageProps {
 }
 
 export const metadata = {
-  title: 'Upravit knihu | Tappka',
+  title: 'Upravit knihu',
 };
 
 export default async function BookEditPage({ params }: PageProps) {

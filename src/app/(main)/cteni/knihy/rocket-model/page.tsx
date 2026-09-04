@@ -12,7 +12,7 @@ import { structureBookTitle } from '@/lib/books/format-title';
 import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 
 export const metadata = {
-  title: 'Rocket Model | Tappka',
+  title: 'Rocket Model',
   description: 'Klíčové knihy programu — pomáhají Téčkům nastartovat cestu rychleji a bez oklik',
 };
 

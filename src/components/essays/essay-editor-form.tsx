@@ -68,9 +68,12 @@ function SaveStatus({
     prevStatusRef.current = status;
     if (status !== 'saved' || prevStatus === 'saved') return;
 
-    setJustSaved(true);
-    const timer = setTimeout(() => setJustSaved(false), 800);
-    return () => clearTimeout(timer);
+    const showTimer = setTimeout(() => setJustSaved(true), 0);
+    const hideTimer = setTimeout(() => setJustSaved(false), 800);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [status]);
 
   return (

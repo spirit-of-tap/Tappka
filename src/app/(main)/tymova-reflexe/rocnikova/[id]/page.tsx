@@ -7,7 +7,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Ročníková reflexe | Tappka",
+  title: "Ročníková reflexe",
 }
 
 export default async function RocnikovaReflexeDetailPage({

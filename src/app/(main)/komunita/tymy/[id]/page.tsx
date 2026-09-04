@@ -10,7 +10,7 @@ import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
-  title: 'Tým | Tappka',
+  title: 'Tým',
 };
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { TeamCustomerMeetingsChart } from '@/components/teams/team-customer-meetings-chart';

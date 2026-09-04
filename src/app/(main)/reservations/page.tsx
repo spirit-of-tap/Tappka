@@ -9,7 +9,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import type { RoomWithStatus, ReservationWithDetails } from "@/lib/reservations/types";
 
 export const metadata = {
-  title: "Rezervace | Tappka",
+  title: "Rezervace",
   description: "Vyber si místnost a zarezervuj si ji",
 };
 
