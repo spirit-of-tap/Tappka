@@ -76,7 +76,8 @@ export function ConsentBanner() {
 
       <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
         S tvým souhlasem měříme, jak Tappku používáš, abychom rychle opravili,
-        když se něco rozbije. Data držíme v EU, škole je nepředáváme a bez
+        když se něco rozbije, nebo naopak věděli, co používáš nejvíc a zaslouží
+        si naši pozornost. Data držíme v EU, škole je nepředáváme a bez
         souhlasu neměříme nic.{" "}
         <Link
           href="/ochrana-soukromi"
