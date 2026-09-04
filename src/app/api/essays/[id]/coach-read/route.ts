@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { notifyEssayCoachRead } from '@/lib/notifications/essay-notifications';
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       if (error.code === '42501' || error.message?.includes('policy')) {
         return NextResponse.json({ error: 'Nelze označit tuto esej' }, { status: 403 });
       }
-      console.error('POST coach-read error:', error);
+      serverLogger.console.error('POST coach-read error:', error);
       return NextResponse.json({ error: 'Chyba při označení' }, { status: 500 });
     }
 
@@ -44,13 +45,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           essayId: id,
           actorProfileId: profile.id,
           origin: new URL(request.url).origin,
-        }).catch((err) => console.error('notifyEssayCoachRead failed:', err));
+        }).catch((err) => serverLogger.console.error('notifyEssayCoachRead failed:', err));
       });
     }
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/essays/[id]/coach-read error:', error);
+    serverLogger.console.error('POST /api/essays/[id]/coach-read error:', error);
     return NextResponse.json({ error: 'Chyba při označení' }, { status: 500 });
   }
 }
@@ -72,13 +73,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       .eq('coach_profile_id', profile.id);
 
     if (error) {
-      console.error('DELETE coach-read error:', error);
+      serverLogger.console.error('DELETE coach-read error:', error);
       return NextResponse.json({ error: 'Chyba při odznačení' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('DELETE /api/essays/[id]/coach-read error:', error);
+    serverLogger.console.error('DELETE /api/essays/[id]/coach-read error:', error);
     return NextResponse.json({ error: 'Chyba při odznačení' }, { status: 500 });
   }
 }

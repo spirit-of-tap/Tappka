@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { serverLogger } from "@/lib/server-logger";
 
 const MAX_BODY_LENGTH = 4000;
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/feedback error:', error);
+    serverLogger.console.error('POST /api/feedback error:', error);
     return NextResponse.json({ error: 'Nepodařilo se odeslat zpětnou vazbu' }, { status: 500 });
   }
 }

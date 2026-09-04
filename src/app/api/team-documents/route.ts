@@ -4,6 +4,7 @@ import { getCurrentUserProfile } from "@/lib/auth-helpers"
 import { createClient } from "@/lib/supabase/server"
 import type { Insertable } from "@/lib/supabase/tables"
 import { validateCreateDocumentInput } from "@/lib/team-documents/validation"
+import { serverLogger } from "@/lib/server-logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,13 +42,13 @@ export async function POST(request: NextRequest) {
       )
     }
     if (error || !data) {
-      console.error("POST /api/team-documents insert error:", error)
+      serverLogger.console.error("POST /api/team-documents insert error:", error)
       return NextResponse.json({ error: "Dokument se nepodařilo vytvořit" }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, data }, { status: 201 })
   } catch (error) {
-    console.error("POST /api/team-documents error:", error)
+    serverLogger.console.error("POST /api/team-documents error:", error)
     return NextResponse.json({ error: "Dokument se nepodařilo vytvořit" }, { status: 500 })
   }
 }

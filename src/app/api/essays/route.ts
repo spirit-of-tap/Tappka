@@ -9,6 +9,7 @@ import { contentTextFromJson } from '@/lib/essays/content-text';
 import { validateEssaySourceIds } from '@/lib/essays/validate-source';
 import type { EssayListView, EssaySortOrder } from '@/lib/essays/types';
 import type { Database } from '@/lib/supabase/database.types';
+import { serverLogger } from "@/lib/server-logger";
 
 const MAX_TITLE_LENGTH = 500;
 const MAX_CONTENT_TEXT_LENGTH = 100_000;
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
     const essays = await getEssays(supabase, { page, search, sort, tag });
     return NextResponse.json({ data: await annotateWithVoted(supabase, essays, profile?.id) });
   } catch (error) {
-    console.error('GET /api/essays error:', error);
+    serverLogger.console.error('GET /api/essays error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst eseje' }, { status: 500 });
   }
 }
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: { id: essay.id } }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/essays error:', error);
+    serverLogger.console.error('POST /api/essays error:', error);
     return NextResponse.json({ error: 'Nepodařilo se uložit esej' }, { status: 500 });
   }
 }

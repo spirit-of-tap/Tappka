@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUserProfile } from "@/lib/auth-helpers"
+import { serverLogger } from "@/lib/server-logger";
 
 const TOGGLE_KEYS = ["essay_coach_read_email", "essay_comment_email", "essay_vote_email", "book_submitted_email"] as const
 type ToggleKey = (typeof TOGGLE_KEYS)[number]
@@ -54,13 +55,13 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error("PATCH notification-preferences error:", error)
+      serverLogger.console.error("PATCH notification-preferences error:", error)
       return NextResponse.json({ error: "Nepodařilo se uložit" }, { status: 500 })
     }
 
     return NextResponse.json({ data })
   } catch (error) {
-    console.error("PATCH /api/profile/notification-preferences error:", error)
+    serverLogger.console.error("PATCH /api/profile/notification-preferences error:", error)
     return NextResponse.json({ error: "Chyba serveru" }, { status: 500 })
   }
 }

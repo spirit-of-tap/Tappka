@@ -4,6 +4,7 @@ import { getCurrentUserProfile } from "@/lib/auth-helpers"
 import { createClient } from "@/lib/supabase/server"
 import type { Updatable } from "@/lib/supabase/tables"
 import { validateCreateDocumentInput } from "@/lib/team-documents/validation"
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -62,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data })
   } catch (error) {
-    console.error("PATCH /api/team-documents/[id] error:", error)
+    serverLogger.console.error("PATCH /api/team-documents/[id] error:", error)
     return NextResponse.json({ error: "Dokument se nepodařilo přejmenovat" }, { status: 500 })
   }
 }
@@ -111,7 +112,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("DELETE /api/team-documents/[id] error:", error)
+    serverLogger.console.error("DELETE /api/team-documents/[id] error:", error)
     return NextResponse.json({ error: "Dokument se nepodařilo archivovat" }, { status: 500 })
   }
 }

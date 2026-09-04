@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import type { Room } from "@/lib/reservations/types";
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteParams {
   params: Promise<{ code: string }>;
@@ -144,7 +145,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error("GET /api/rooms/[code]/quick-status error:", error);
+    serverLogger.console.error("GET /api/rooms/[code]/quick-status error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }

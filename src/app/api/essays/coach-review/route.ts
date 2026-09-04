@@ -9,6 +9,7 @@ import type {
   CoachReviewPointsFilter,
   CoachReviewReplyFilter,
 } from '@/lib/essays/types';
+import { serverLogger } from "@/lib/server-logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       coachReadsMap: result.coachReadsMap,
     });
   } catch (error) {
-    console.error('GET /api/essays/coach-review error:', error);
+    serverLogger.console.error('GET /api/essays/coach-review error:', error);
     return NextResponse.json(
       { error: 'Nepodařilo se načíst eseje ke kontrole' },
       { status: 500 },

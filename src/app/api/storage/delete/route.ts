@@ -10,6 +10,7 @@ import {
 import { contextToBucket } from "@/lib/storage/buckets";
 import { isExternalUrl } from "@/lib/storage/public-url";
 import type { StorageContext } from "@/lib/storage/types";
+import { serverLogger } from "@/lib/server-logger";
 
 interface DeleteRequest {
   context: StorageContext;
@@ -55,7 +56,7 @@ export async function DELETE(request: NextRequest) {
       try {
         await deleteFile(contextToBucket(context), existingKey);
       } catch (error) {
-        console.error("Error deleting file from storage:", error);
+        serverLogger.console.error("Error deleting file from storage:", error);
       }
     }
 
@@ -69,7 +70,7 @@ export async function DELETE(request: NextRequest) {
       message: "Obrázek byl úspěšně smazán",
     });
   } catch (error) {
-    console.error("DELETE /api/storage/delete error:", error);
+    serverLogger.console.error("DELETE /api/storage/delete error:", error);
     return NextResponse.json(
       { error: "Nepodařilo se smazat obrázek" },
       { status: 500 }

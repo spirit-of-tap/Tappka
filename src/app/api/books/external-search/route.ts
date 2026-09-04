@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { searchExternal, searchExternalByIsbn } from '@/lib/books/external';
+import { serverLogger } from "@/lib/server-logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: results });
   } catch (error) {
-    console.error('GET /api/books/external-search error:', error);
+    serverLogger.console.error('GET /api/books/external-search error:', error);
     return NextResponse.json({ error: 'Externí hledání selhalo' }, { status: 500 });
   }
 }

@@ -18,6 +18,7 @@ import {
   ACTIVITY_WITH_CREATOR_SELECT,
   type TeamActivityWithCreator,
 } from "@/lib/tymovy-denik/types"
+import { serverLogger } from "@/lib/server-logger";
 
 interface TeamActivityRouteContext {
   params: Promise<{ id: string }>
@@ -106,7 +107,7 @@ export async function PATCH(request: Request, routeContext: TeamActivityRouteCon
         .insert(attendeeRows)
 
       if (attendeesError) {
-        console.error("Failed to insert team activity attendees on update:", attendeesError)
+        serverLogger.console.error("Failed to insert team activity attendees on update:", attendeesError)
       }
     }
 

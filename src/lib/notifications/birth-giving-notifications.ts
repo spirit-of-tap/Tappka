@@ -1,6 +1,7 @@
 import type { Tables } from "@/lib/supabase/tables";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "./send-email";
+import { serverLogger } from "@/lib/server-logger";
 
 interface BirthGivingEmailContext {
   eventName: string;
@@ -176,7 +177,7 @@ export async function notifyParticipantsOfAssignment(eventId: string): Promise<n
       );
       sent += 1;
     } catch (err) {
-      console.error(`Failed to send assignment email to ${email}:`, err);
+      serverLogger.console.error(`Failed to send assignment email to ${email}:`, err);
     }
   }
 

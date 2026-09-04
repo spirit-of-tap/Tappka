@@ -14,6 +14,7 @@ import {
   requireBirthGivingApiContext,
   validateBirthGivingRouteIds,
 } from "../../../../_shared";
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ eventId: string }>;
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     try {
       await deleteFile("documents", storagePath);
     } catch (cleanupError) {
-      console.error("Birth Giving assignment cleanup after failed confirm:", cleanupError);
+      serverLogger.console.error("Birth Giving assignment cleanup after failed confirm:", cleanupError);
     }
     return birthGivingMutationErrorResponse(error, context.supabase, eventId);
   }
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     try {
       await deleteFile("documents", previousPath);
     } catch (cleanupError) {
-      console.error("Birth Giving assignment replacement cleanup failed:", cleanupError);
+      serverLogger.console.error("Birth Giving assignment replacement cleanup failed:", cleanupError);
       return NextResponse.json(
         { error: "Předchozí soubor zadání se nepodařilo odstranit" },
         { status: 500 },
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
     await notifyParticipantsOfAssignment(eventId);
   } catch (notifyError) {
-    console.error("Birth Giving assignment notification failed:", notifyError);
+    serverLogger.console.error("Birth Giving assignment notification failed:", notifyError);
   }
 
   return NextResponse.json({ data: { storagePath } });

@@ -2,6 +2,7 @@ import Perplexity from '@perplexity-ai/perplexity_ai';
 
 import { buildSystemPrompt } from './rubric';
 import { ENRICHMENT_JSON_SCHEMA, parseEnrichment, type EnrichedBook } from './schema';
+import { serverLogger } from "@/lib/server-logger";
 
 const DEFAULT_MODEL = 'sonar-pro';
 const SCHEMA_NAME = 'enriched_book';
@@ -43,7 +44,7 @@ function recordFailure(cause: FailureCause): void {
     circuitOpenedAt = Date.now();
     // Both causes trip the same breaker — every failed call is billed — but an
     // outage and a prompt/schema drift need different responses, so say which.
-    console.error(
+    serverLogger.console.error(
       `Perplexity enrichment circuit opened after ${consecutiveFailures} consecutive failures (cause: ${cause}).`,
     );
   }
@@ -119,7 +120,7 @@ export async function enrichBook(probe: EnrichmentProbe): Promise<EnrichmentOutc
     citations = response.citations ?? [];
   } catch (error) {
     recordFailure('api');
-    console.error('Perplexity enrichment failed:', error);
+    serverLogger.console.error('Perplexity enrichment failed:', error);
     return { ok: false, reason: 'unavailable', message: 'Perplexity teď neodpovídá.' };
   }
 

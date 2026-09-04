@@ -14,6 +14,7 @@ import type {
 } from './types';
 import { getPublicStorageUrl } from '@/lib/storage/public-url';
 import type { BucketId } from '@/lib/storage/buckets';
+import { serverLogger } from "@/lib/server-logger";
 
 /**
  * Get all profiles with optional filtering
@@ -68,7 +69,7 @@ export async function getProfiles(
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching profiles:', error);
+    serverLogger.console.error('Error fetching profiles:', error);
     throw error;
   }
 
@@ -93,7 +94,7 @@ export async function getProfileById(
     .single();
 
   if (error) {
-    console.error('Error fetching profile:', error);
+    serverLogger.console.error('Error fetching profile:', error);
     return null;
   }
 
@@ -115,7 +116,7 @@ export async function getTeamsWithCount(
     .order('name', { ascending: true });
 
   if (error) {
-    console.error('Error fetching teams:', error);
+    serverLogger.console.error('Error fetching teams:', error);
     throw error;
   }
 
@@ -139,7 +140,7 @@ export async function getTeams(supabase: SupabaseClient<Database>): Promise<Team
     .order('name', { ascending: true });
 
   if (error) {
-    console.error('Error fetching teams:', error);
+    serverLogger.console.error('Error fetching teams:', error);
     throw error;
   }
 
@@ -164,7 +165,7 @@ export async function getTeamById(
     .single();
 
   if (error) {
-    console.error('Error fetching team:', error);
+    serverLogger.console.error('Error fetching team:', error);
     return null;
   }
 

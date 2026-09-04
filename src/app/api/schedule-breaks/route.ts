@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { TRAINING_SESSION_TITLE_PREFIX } from "@/lib/reservations/types";
+import { serverLogger } from "@/lib/server-logger";
 
 interface CreateBreakInput {
   name: string;
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (breakError) {
-      console.error("Error creating schedule break:", breakError);
+      serverLogger.console.error("Error creating schedule break:", breakError);
       return NextResponse.json({ error: "Nepodařilo se vytvořit výjimku" }, { status: 500 });
     }
 
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
         .select("id");
 
       if (cancelError) {
-        console.error("Error cancelling reservations:", cancelError);
+        serverLogger.console.error("Error cancelling reservations:", cancelError);
       } else {
         cancelledCount = cancelledReservations?.length ?? 0;
       }
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
         : "Vytvořeno",
     });
   } catch (error) {
-    console.error("POST /api/schedule-breaks error:", error);
+    serverLogger.console.error("POST /api/schedule-breaks error:", error);
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }
@@ -132,13 +133,13 @@ export async function GET(_request: NextRequest) {
       .order("start_date");
 
     if (error) {
-      console.error("Error fetching schedule breaks:", error);
+      serverLogger.console.error("Error fetching schedule breaks:", error);
       return NextResponse.json({ error: "Nepodařilo se načíst výjimky" }, { status: 500 });
     }
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error("GET /api/schedule-breaks error:", error);
+    serverLogger.console.error("GET /api/schedule-breaks error:", error);
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }

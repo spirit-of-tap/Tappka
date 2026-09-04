@@ -1,5 +1,7 @@
 import { PostHog } from "posthog-node";
 
+import { POSTHOG_INGESTION_HOST } from "@/lib/posthog-config";
+
 let posthogInstance: PostHog | null = null;
 
 export function getPostHogServer(): PostHog | null {
@@ -8,7 +10,7 @@ export function getPostHogServer(): PostHog | null {
 
   if (!posthogInstance) {
     posthogInstance = new PostHog(apiKey, {
-      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      host: POSTHOG_INGESTION_HOST,
       flushAt: 1,
       flushInterval: 0,
     });

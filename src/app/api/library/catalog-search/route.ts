@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { searchCatalogBooks, type CatalogSearchBook } from '@/lib/books/catalog-search';
 import { createClient } from '@/lib/supabase/server';
+import { serverLogger } from "@/lib/server-logger";
 
 const SEARCH_RESULT_LIMIT = 10;
 const CATALOG_COLUMNS = 'id, title_cs, title_en, author, isbn_13, google_books_cover_url';
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     );
     return NextResponse.json({ data: results });
   } catch (error) {
-    console.error('GET /api/library/catalog-search error:', error);
+    serverLogger.console.error('GET /api/library/catalog-search error:', error);
     return NextResponse.json({ error: 'Hledání selhalo' }, { status: 500 });
   }
 }

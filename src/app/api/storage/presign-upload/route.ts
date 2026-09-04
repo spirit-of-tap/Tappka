@@ -17,6 +17,7 @@ import {
   getFileExtension,
 } from "@/lib/storage/validation";
 import type { StorageContext } from "@/lib/storage/types";
+import { serverLogger } from "@/lib/server-logger";
 
 interface PresignUploadRequest {
   context: StorageContext;
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
       data: presignedData,
     });
   } catch (error) {
-    console.error("POST /api/storage/presign-upload error:", error);
+    serverLogger.console.error("POST /api/storage/presign-upload error:", error);
     return NextResponse.json(
       { error: "Nepodařilo se vygenerovat URL pro nahrávání" },
       { status: 500 }

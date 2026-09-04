@@ -6,6 +6,7 @@ import { getBookById } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
 import { notifyBookDecided } from '@/lib/notifications/book-notifications';
 import type { ClassifyBookInput, SetBookHighlightInput } from '@/lib/books/types';
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -23,7 +24,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ data: book });
   } catch (error) {
-    console.error('GET /api/books/[id] error:', error);
+    serverLogger.console.error('GET /api/books/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst knihu' }, { status: 500 });
   }
 }
@@ -101,7 +102,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
           origin: new URL(request.url).origin,
         });
       } catch (notifyError) {
-        console.error('notifyBookDecided failed:', notifyError);
+        serverLogger.console.error('notifyBookDecided failed:', notifyError);
       }
 
       return NextResponse.json({ data });
@@ -259,7 +260,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ error: 'Neplatná akce' }, { status: 400 });
   } catch (error) {
-    console.error('PATCH /api/books/[id] error:', error);
+    serverLogger.console.error('PATCH /api/books/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se aktualizovat knihu' }, { status: 500 });
   }
 }
@@ -307,7 +308,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error('DELETE /api/books/[id] error:', error);
+    serverLogger.console.error('DELETE /api/books/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se smazat knihu' }, { status: 500 });
   }
 }

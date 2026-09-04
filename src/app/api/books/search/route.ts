@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getBooks } from '@/lib/books/queries';
 import { getBookIdsInLibrary } from '@/lib/library/book-ids';
+import { serverLogger } from "@/lib/server-logger";
 
 const SEARCH_RESULT_LIMIT = 10;
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: enriched });
   } catch (error) {
-    console.error('GET /api/books/search error:', error);
+    serverLogger.console.error('GET /api/books/search error:', error);
     return NextResponse.json({ error: 'Hledání selhalo' }, { status: 500 });
   }
 }

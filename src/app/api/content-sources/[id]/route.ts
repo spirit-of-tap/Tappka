@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getContentSourceById } from '@/lib/content-sources/queries';
 import { CONTENT_SOURCE_POINT_VALUES } from '@/lib/content-sources/points';
 import type { ContentSourceStatus } from '@/lib/content-sources/types';
+import { serverLogger } from "@/lib/server-logger";
 
 const REVIEW_STATUSES: ContentSourceStatus[] = ['approved', 'archived'];
 
@@ -20,7 +21,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ data: source });
   } catch (error) {
-    console.error('GET /api/content-sources/[id] error:', error);
+    serverLogger.console.error('GET /api/content-sources/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst zdroj' }, { status: 500 });
   }
 }
@@ -63,7 +64,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ data: updated });
   } catch (error) {
-    console.error('PATCH /api/content-sources/[id] error:', error);
+    serverLogger.console.error('PATCH /api/content-sources/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se uložit rozhodnutí' }, { status: 500 });
   }
 }

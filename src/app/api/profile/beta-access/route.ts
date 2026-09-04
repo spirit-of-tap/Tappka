@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUserProfile } from "@/lib/auth-helpers"
+import { serverLogger } from "@/lib/server-logger";
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -34,13 +35,13 @@ export async function PATCH(request: NextRequest) {
       .eq("id", profile.id)
 
     if (error) {
-      console.error("Error updating beta_access_granted_at:", error)
+      serverLogger.console.error("Error updating beta_access_granted_at:", error)
       return NextResponse.json({ error: "Nepodařilo se uložit" }, { status: 500 })
     }
 
     return NextResponse.json({ beta_access, beta_access_granted_at })
   } catch (error) {
-    console.error("Beta access update error:", error)
+    serverLogger.console.error("Beta access update error:", error)
     return NextResponse.json({ error: "Chyba serveru" }, { status: 500 })
   }
 }

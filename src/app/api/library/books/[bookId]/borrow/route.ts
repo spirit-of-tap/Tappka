@@ -6,6 +6,7 @@ import { trackServer } from '@/lib/analytics-server';
 import { parseLibraryLabelCode } from '@/lib/library/label-code';
 import { getAvailableCopyByLabelCode, getAvailableCopyForBook } from '@/lib/library/queries';
 import { notifyBookBorrowed } from '@/lib/notifications/library-notifications';
+import { serverLogger } from "@/lib/server-logger";
 
 const LOAN_DURATION_DAYS = 30;
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -64,12 +65,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         borrowerProfileId: profile.id,
         dueAt,
         origin: new URL(request.url).origin,
-      }).catch((err) => console.error('notifyBookBorrowed failed:', err));
+      }).catch((err) => serverLogger.console.error('notifyBookBorrowed failed:', err));
     });
 
     return NextResponse.json({ data: loan }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/library/books/[bookId]/borrow error:', error);
+    serverLogger.console.error('POST /api/library/books/[bookId]/borrow error:', error);
     return NextResponse.json({ error: 'Nepodařilo se vypůjčit knihu' }, { status: 500 });
   }
 }

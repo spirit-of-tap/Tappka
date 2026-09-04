@@ -6,6 +6,7 @@ import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { validateRedirectUrl } from "@/lib/utils";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Tables } from "@/lib/supabase/tables";
+import { serverLogger } from "@/lib/server-logger";
 
 type SupabaseClient =
   | Awaited<ReturnType<typeof createClient>>
@@ -115,7 +116,7 @@ export async function getCurrentUserProfile(
 
   // Return null if query failed or no profile found
   if (queryError) {
-    console.error("Error fetching user profile:", queryError);
+    serverLogger.console.error("Error fetching user profile:", queryError);
     return null;
   }
 

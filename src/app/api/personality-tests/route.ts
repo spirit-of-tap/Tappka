@@ -4,6 +4,7 @@ import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { MAX_DOCUMENT_SIZE } from "@/lib/storage/validation";
 import { PERSONALITY_TEST_TYPES } from "@/lib/personality-tests/types";
 import type { Insertable } from "@/lib/supabase/tables";
+import { serverLogger } from "@/lib/server-logger";
 
 interface CreatePersonalityTestRequest {
   profileId: string;
@@ -75,13 +76,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("POST /api/personality-tests insert error:", error);
+      serverLogger.console.error("POST /api/personality-tests insert error:", error);
       return NextResponse.json({ error: "Nepodařilo se uložit test" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("POST /api/personality-tests error:", error);
+    serverLogger.console.error("POST /api/personality-tests error:", error);
     return NextResponse.json({ error: "Nepodařilo se uložit test" }, { status: 500 });
   }
 }

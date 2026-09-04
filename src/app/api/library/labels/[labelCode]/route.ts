@@ -4,6 +4,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { parseLibraryLabelCode } from '@/lib/library/label-code';
 import { createClient } from '@/lib/supabase/server';
 import type { Insertable, Updatable } from '@/lib/supabase/tables';
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ labelCode: string }>;
@@ -60,7 +61,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       },
     });
   } catch (error) {
-    console.error('GET /api/library/labels/[labelCode] error:', error);
+    serverLogger.console.error('GET /api/library/labels/[labelCode] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst štítek' }, { status: 500 });
   }
 }
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Štítek už je přiřazený' }, { status: 409 });
     }
 
-    console.error('POST /api/library/labels/[labelCode] error:', error);
+    serverLogger.console.error('POST /api/library/labels/[labelCode] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se přiřadit štítek' }, { status: 500 });
   }
 }

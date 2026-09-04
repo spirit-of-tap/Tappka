@@ -4,6 +4,7 @@ import { getCurrentUserProfile } from "@/lib/auth-helpers"
 import { createClient } from "@/lib/supabase/server"
 import type { Insertable } from "@/lib/supabase/tables"
 import { validateVersionInput } from "@/lib/team-documents/validation"
+import { serverLogger } from "@/lib/server-logger";
 
 const MAX_VERSION_INSERT_ATTEMPTS = 2
 
@@ -78,14 +79,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         }, { status: 201 })
       }
       if (error?.code !== "23505" || attempt === MAX_VERSION_INSERT_ATTEMPTS - 1) {
-        console.error("POST /api/team-documents/[id]/versions insert error:", error)
+        serverLogger.console.error("POST /api/team-documents/[id]/versions insert error:", error)
         return NextResponse.json({ error: "Verzi se nepodařilo uložit" }, { status: 500 })
       }
     }
 
     return NextResponse.json({ error: "Verzi se nepodařilo uložit" }, { status: 500 })
   } catch (error) {
-    console.error("POST /api/team-documents/[id]/versions error:", error)
+    serverLogger.console.error("POST /api/team-documents/[id]/versions error:", error)
     return NextResponse.json({ error: "Verzi se nepodařilo uložit" }, { status: 500 })
   }
 }

@@ -8,6 +8,7 @@ import { pragueLocalToUtcISO, trainingSessionTitle } from "@/lib/reservations/ut
 import type { Insertable, Tables } from "@/lib/supabase/tables";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -54,7 +55,7 @@ async function cancelFutureMatchingReservations(params: {
     );
 
   if (error) {
-    console.error("Error cancelling matching reservations:", error);
+    serverLogger.console.error("Error cancelling matching reservations:", error);
     return 0;
   }
 
@@ -153,7 +154,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (updateError) {
-      console.error("Error updating recurring schedule:", updateError);
+      serverLogger.console.error("Error updating recurring schedule:", updateError);
       return NextResponse.json({ error: "Nepodařilo se upravit rozvrh" }, { status: 500 });
     }
 
@@ -212,7 +213,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         .insert(reservationsToCreate);
 
       if (insertError) {
-        console.error("Error creating reservations:", insertError);
+        serverLogger.console.error("Error creating reservations:", insertError);
         // Don't fail the whole request, schedule was updated
       }
     }
@@ -223,7 +224,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       reservations_created: reservationsToCreate.length,
     });
   } catch (error) {
-    console.error("PATCH /api/recurring-schedules/[id] error:", error);
+    serverLogger.console.error("PATCH /api/recurring-schedules/[id] error:", error);
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }
@@ -289,7 +290,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq("id", id);
 
     if (error) {
-      console.error("Error removing recurring schedule:", error);
+      serverLogger.console.error("Error removing recurring schedule:", error);
       return NextResponse.json({ error: "Nepodařilo se smazat rozvrh" }, { status: 500 });
     }
 
@@ -298,7 +299,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       message: "Rozvrh smazán a budoucí rezervace zrušeny",
     });
   } catch (error) {
-    console.error("DELETE /api/recurring-schedules/[id] error:", error);
+    serverLogger.console.error("DELETE /api/recurring-schedules/[id] error:", error);
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import {
 } from "@/lib/reservations/types";
 import { ALLOWED_PAST_MS, isRoomAvailableOnDay } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { serverLogger } from "@/lib/server-logger";
 
 const PRAGUE_TZ = "Europe/Prague";
 
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ data: reservation });
   } catch (error) {
-    console.error("GET /api/reservations/[id] error:", error);
+    serverLogger.console.error("GET /api/reservations/[id] error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }
@@ -265,7 +266,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .maybeSingle();
 
     if (error) {
-      console.error("Error updating reservation:", error);
+      serverLogger.console.error("Error updating reservation:", error);
       return NextResponse.json(
         { error: "Nepodařilo se aktualizovat rezervaci" },
         { status: 500 }
@@ -273,7 +274,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     if (!updated) {
-      console.error("Update blocked by RLS - no rows affected", {
+      serverLogger.console.error("Update blocked by RLS - no rows affected", {
         reservationId: id,
         profileId: profile.id,
       });
@@ -289,7 +290,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       message: "Rezervace aktualizována",
     });
   } catch (error) {
-    console.error("PATCH /api/reservations/[id] error:", error);
+    serverLogger.console.error("PATCH /api/reservations/[id] error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }
@@ -352,7 +353,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq("id", id);
 
     if (error) {
-      console.error("Error cancelling reservation:", error);
+      serverLogger.console.error("Error cancelling reservation:", error);
       return NextResponse.json(
         { error: "Nepodařilo se smazat rezervaci" },
         { status: 500 }
@@ -364,7 +365,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       message: "Rezervace smazána",
     });
   } catch (error) {
-    console.error("DELETE /api/reservations/[id] error:", error);
+    serverLogger.console.error("DELETE /api/reservations/[id] error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }

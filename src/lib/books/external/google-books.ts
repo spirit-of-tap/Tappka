@@ -1,4 +1,5 @@
 import type { ExternalBookCandidate } from '../types';
+import { serverLogger } from "@/lib/server-logger";
 
 interface GoogleBooksVolume {
   id: string;
@@ -60,7 +61,7 @@ export async function searchGoogleBooks(query: string): Promise<ExternalBookCand
   const res = await fetch(`${BASE_URL}?${params}`, { next: { revalidate: 60 } });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    console.error(`Google Books API error ${res.status}:`, body);
+    serverLogger.console.error(`Google Books API error ${res.status}:`, body);
     return [];
   }
 

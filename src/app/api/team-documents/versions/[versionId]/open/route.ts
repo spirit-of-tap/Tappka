@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { createClient } from "@/lib/supabase/server"
 import { getSignedStorageUrl } from "@/lib/storage/service"
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ versionId: string }>
@@ -26,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     const url = await getSignedStorageUrl("documents", data.file_path)
     return NextResponse.redirect(url, 307)
   } catch (error) {
-    console.error("GET /api/team-documents/versions/[versionId]/open error:", error)
+    serverLogger.console.error("GET /api/team-documents/versions/[versionId]/open error:", error)
     return NextResponse.json({ error: "Soubor se nepodařilo otevřít" }, { status: 500 })
   }
 }

@@ -8,6 +8,7 @@ import { setBookTags } from '@/lib/books/tags';
 import { notifyBookSubmitted } from '@/lib/notifications/book-notifications';
 import { downloadAndStoreCover } from '@/lib/storage/service';
 import type { CreateBookInput, BookFilters, BookListStatus } from '@/lib/books/types';
+import { serverLogger } from "@/lib/server-logger";
 
 /** Books by the same author to consider when looking for a duplicate. */
 const DUPLICATE_CANDIDATE_LIMIT = 50;
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
     const books = await getBooks(supabase, filters);
     return NextResponse.json({ data: books });
   } catch (error) {
-    console.error('GET /api/books error:', error);
+    serverLogger.console.error('GET /api/books error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst knihy' }, { status: 500 });
   }
 }
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
         origin: new URL(request.url).origin,
       });
     } catch (notifyError) {
-      console.error('notifyBookSubmitted failed:', notifyError);
+      serverLogger.console.error('notifyBookSubmitted failed:', notifyError);
     }
 
     return NextResponse.json(
@@ -190,7 +191,7 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
-    console.error('POST /api/books error:', error);
+    serverLogger.console.error('POST /api/books error:', error);
     return NextResponse.json({ error: 'Nepodařilo se přidat knihu' }, { status: 500 });
   }
 }

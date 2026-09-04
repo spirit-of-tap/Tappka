@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { getSignedStorageUrl } from "@/lib/storage/service";
+import { serverLogger } from "@/lib/server-logger";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const url = await getSignedStorageUrl("documents", data.file_path);
     return NextResponse.redirect(url, 307);
   } catch (error) {
-    console.error("GET /api/personality-tests/[id]/open error:", error);
+    serverLogger.console.error("GET /api/personality-tests/[id]/open error:", error);
     return NextResponse.json({ error: "Nepodařilo se otevřít soubor" }, { status: 500 });
   }
 }

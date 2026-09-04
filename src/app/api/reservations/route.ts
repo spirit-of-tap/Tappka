@@ -7,6 +7,7 @@ import {
 import { ALLOWED_PAST_MS, isRoomAvailableOnDay } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { trackServer } from "@/lib/analytics-server";
+import { serverLogger } from "@/lib/server-logger";
 
 const PRAGUE_TZ = "Europe/Prague";
 
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Error fetching reservations:", error);
+      serverLogger.console.error("Error fetching reservations:", error);
       return NextResponse.json(
         { error: "Nepodařilo se načíst rezervace" },
         { status: 500 }
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error("GET /api/reservations error:", error);
+    serverLogger.console.error("GET /api/reservations error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error("Error creating reservation:", insertError);
+      serverLogger.console.error("Error creating reservation:", insertError);
 
       // Handle unique constraint violation (overlap)
       if (insertError.code === "23P01") {
@@ -267,7 +268,7 @@ export async function POST(request: NextRequest) {
       message: "Rezervace vytvořena"
     });
   } catch (error) {
-    console.error("POST /api/reservations error:", error);
+    serverLogger.console.error("POST /api/reservations error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }

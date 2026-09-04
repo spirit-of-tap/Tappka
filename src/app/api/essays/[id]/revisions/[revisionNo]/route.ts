@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ id: string; revisionNo: string }>;
@@ -44,7 +45,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error('GET /api/essays/[id]/revisions/[revisionNo] error:', error);
+    serverLogger.console.error('GET /api/essays/[id]/revisions/[revisionNo] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst verzi' }, { status: 500 });
   }
 }

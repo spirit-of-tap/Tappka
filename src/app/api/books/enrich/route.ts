@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { enrichBook, type EnrichmentProbe } from '@/lib/books/enrichment/enrich';
+import { serverLogger } from "@/lib/server-logger";
 
 /**
  * Courtesy guard, not a boundary: per-instance state does not hold across
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: outcome.value, citations: outcome.citations });
   } catch (error) {
-    console.error('POST /api/books/enrich error:', error);
+    serverLogger.console.error('POST /api/books/enrich error:', error);
     return NextResponse.json({ error: 'Nepodařilo se dohledat údaje' }, { status: 500 });
   }
 }
