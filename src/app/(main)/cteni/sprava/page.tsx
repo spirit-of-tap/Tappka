@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
 
 export const metadata = {
-  title: "Správa knihovny | Tappka",
+  title: "Správa knihovny",
   description: "Zařaď knihy do seznamů a spravuj výběr",
 };
 

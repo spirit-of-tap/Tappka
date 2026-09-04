@@ -9,7 +9,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Birth Giving | Tappka",
+  title: "Birth Giving",
   description: "Přehled hackathonů, týmových řešení a odevzdaných výstupů",
 }
 

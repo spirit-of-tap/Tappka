@@ -4,7 +4,7 @@ import { AddBookFlow } from '@/components/books/add-book/add-book-flow';
 import { parseLibraryLabelCode } from '@/lib/library/label-code';
 
 export const metadata = {
-  title: 'Přidat knihu do BOBa | Tappka',
+  title: 'Přidat knihu do BOBa',
 };
 
 interface NovaKnihaPageProps {

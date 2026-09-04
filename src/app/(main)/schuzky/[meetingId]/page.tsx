@@ -14,7 +14,7 @@ interface MeetingDetailPageProps {
 }
 
 export const metadata = {
-  title: "Detail schůzky | Tappka",
+  title: "Detail schůzky",
 }
 
 const CHIP_CLASS: Record<MeetingLoop, string> = {

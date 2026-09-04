@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
-  title: 'Ke kontrole | Tappka',
+  title: 'Ke kontrole',
   description: 'Nové eseje od studujících',
 };
 

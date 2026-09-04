@@ -7,7 +7,7 @@ if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     capture_pageview: false,
     capture_pageleave: true,
     capture_heatmaps: true,
-    enable_recording_console_log: false,
+    enable_recording_console_log: true,
     autocapture: {
       css_selector_ignorelist: [
         "[data-ph-no-capture]",

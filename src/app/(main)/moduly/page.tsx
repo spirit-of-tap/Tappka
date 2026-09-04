@@ -8,7 +8,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import type { BetaCohort } from "@/lib/feature-access";
 
 export const metadata = {
-  title: "Moduly | Tappka",
+  title: "Moduly",
   description: "Všechny části Tappky na jednom místě",
 };
 

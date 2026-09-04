@@ -8,7 +8,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Individuální koučování | Tappka",
+  title: "Individuální koučování",
   description: "Záznamník koučovacích sezení s týmovým:ou koučem:kou",
 }
 

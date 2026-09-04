@@ -21,7 +21,7 @@ import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
-  title: 'Profil | Tappka',
+  title: 'Profil',
 };
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';

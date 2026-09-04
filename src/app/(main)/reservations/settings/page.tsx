@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import type { Room, RecurringSchedule, ScheduleBreak } from "@/lib/reservations/types";
 
 export const metadata = {
-  title: "Nastavení rezervací | Tappka",
+  title: "Nastavení rezervací",
   description: "Spravuj Training Sessions a výjimky v rozvrhu",
 };
 

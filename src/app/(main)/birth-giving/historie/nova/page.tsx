@@ -10,7 +10,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Historická Birth Giving událost | Tappka",
+  title: "Historická Birth Giving událost",
   description: "Zapiš proběhlou událost po krocích — změny se ukládají průběžně",
 }
 

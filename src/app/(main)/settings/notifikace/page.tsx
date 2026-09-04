@@ -7,7 +7,7 @@ import { ConsentSettings } from '@/components/posthog/consent-settings';
 import { PageHeader } from '@/components/ui/page-header';
 
 export const metadata = {
-  title: 'Notifikace | Tappka',
+  title: 'Notifikace',
   description: 'Vyber si, o čem tě budeme informovat e-mailem',
 };
 

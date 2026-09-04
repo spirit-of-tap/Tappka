@@ -8,7 +8,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Týmová reflexe | Tappka",
+  title: "Týmová reflexe",
 }
 
 export default async function ReflexeDetailPage({

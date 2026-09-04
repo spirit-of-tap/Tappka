@@ -13,7 +13,7 @@ import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
 
 export const metadata = {
-  title: 'Detail zdroje | Tappka',
+  title: 'Detail zdroje',
 };
 
 const ALL_ESSAYS_PAGE_SIZE = 500;

@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
-  title: 'Moje čtení | Tappka',
+  title: 'Moje čtení',
   description: 'Tvůj pokrok, eseje a srovnání s týmem',
 };
 

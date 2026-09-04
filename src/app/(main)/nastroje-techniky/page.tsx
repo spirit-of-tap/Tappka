@@ -8,7 +8,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Nástroje a techniky | Tappka",
+  title: "Nástroje a techniky",
   description: "Katalog modelů, technik a nástrojů, které umíš používat pro efektivní práci",
 }
 

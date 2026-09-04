@@ -13,7 +13,7 @@ interface BirthGivingEventPageProps {
 }
 
 export const metadata = {
-  title: "Birth Giving | Tappka",
+  title: "Birth Giving",
   description: "Detail Birth Giving události, týmů a výsledků",
 }
 

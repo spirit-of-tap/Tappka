@@ -11,7 +11,7 @@ interface QuickPageProps {
 export async function generateMetadata({ params }: QuickPageProps) {
   const { code } = await params;
   return {
-    title: `${code.toUpperCase()} | Quick Status | Tappka`,
+    title: `${code.toUpperCase()} | Quick Status`,
   };
 }
 

@@ -18,7 +18,7 @@ interface RoomDetailPageProps {
 export async function generateMetadata({ params }: RoomDetailPageProps) {
   const { code } = await params;
   return {
-    title: `${code.toUpperCase()} | Rezervace | Tappka`,
+    title: `${code.toUpperCase()} | Rezervace`,
   };
 }
 

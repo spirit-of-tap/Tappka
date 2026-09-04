@@ -19,7 +19,7 @@ import { PageShell } from '@/components/ui/page-shell';
 import { BookAdminActions } from './admin-actions';
 
 export const metadata = {
-  title: 'Detail knihy | Tappka',
+  title: 'Detail knihy',
 };
 import { BookDescription } from '@/components/books/book-description';
 import { BookEssaysList } from '@/components/books/book-essays-list';

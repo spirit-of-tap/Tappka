@@ -12,7 +12,7 @@ interface TeamActivityDetailPageProps {
 }
 
 export const metadata = {
-  title: "Detail akce | Tappka",
+  title: "Detail akce",
 }
 
 export default async function TeamActivityDetailPage({ params }: TeamActivityDetailPageProps) {

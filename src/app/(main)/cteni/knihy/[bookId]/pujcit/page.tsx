@@ -16,7 +16,7 @@ import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
-  title: 'Půjčit knihu | Tappka',
+  title: 'Půjčit knihu',
 };
 
 interface PageProps {

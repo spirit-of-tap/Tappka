@@ -11,7 +11,7 @@ import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 
 export const metadata = {
-  title: "Týmové dokumenty | Tappka",
+  title: "Týmové dokumenty",
   description: "Pravidla fungování týmu, Team Contract a finanční směrnice",
 }
 

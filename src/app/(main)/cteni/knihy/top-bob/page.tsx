@@ -8,7 +8,7 @@ import { PageShell } from '@/components/ui/page-shell';
 import { TopBobBrowser } from '@/components/books/top-bob-browser';
 
 export const metadata = {
-  title: 'TOP BOB | Tappka',
+  title: 'TOP BOB',
   description: 'Zlato celé knihovny — knihy, na kterých se shodli kouči:ky i komunita',
 };
 

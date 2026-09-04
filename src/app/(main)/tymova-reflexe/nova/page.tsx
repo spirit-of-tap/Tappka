@@ -25,7 +25,7 @@ function getCurrentMonth(): string {
 }
 
 export const metadata = {
-  title: "Nová reflexe | Tappka",
+  title: "Nová reflexe",
 }
 
 export default async function NovaReflexePage({
