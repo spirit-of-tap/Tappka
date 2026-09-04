@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { RoomsWithFilter } from "@/components/reservations/rooms-with-filter";
 import { ReservationsTabs } from "@/components/reservations/reservations-tabs";
+import { ReservationsViewTracker } from "@/components/reservations/reservations-view-tracker";
 import { getNextAvailableTime } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { PageHeader } from "@/components/ui/page-header";
@@ -86,6 +87,7 @@ export default async function ReservationsPage() {
 
   return (
     <PageShell>
+      <ReservationsViewTracker />
       <PageHeader
         title="Rezervace"
         description="Vyber si místnost a zarezervuj si ji"

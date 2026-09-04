@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import {
   OPERATING_HOURS,
   type CreateReservationInput,
 } from "@/lib/reservations/types";
 import { ALLOWED_PAST_MS, isRoomAvailableOnDay } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { trackServer } from "@/lib/analytics-server";
 
 const PRAGUE_TZ = "Europe/Prague";
 
@@ -252,6 +253,13 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    after(() => {
+      trackServer("feature_interaction", profile.id, {
+        feature: "reservations",
+        action: "created",
+      });
+    });
 
     return NextResponse.json({
       success: true,
