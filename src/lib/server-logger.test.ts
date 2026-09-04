@@ -49,6 +49,36 @@ describe("serverLogger", () => {
     await expect(serverLogger.flush()).resolves.toBeUndefined();
   });
 
+  it("registers delivery with after() so exports survive serverless freeze", async () => {
+    vi.resetModules();
+    const callbacks: Array<() => unknown> = [];
+    vi.doMock("next/server", () => ({
+      after: (callback: () => unknown) => {
+        callbacks.push(callback);
+      },
+    }));
+
+    try {
+      const [{ serverLogger: freshLogger }, { loggerProvider: freshProvider }] =
+        await Promise.all([
+          import("./server-logger"),
+          import("@/lib/posthog-logger-provider"),
+        ]);
+      const flushSpy = vi.spyOn(freshProvider, "forceFlush");
+
+      try {
+        freshLogger.info("after flush test");
+        await vi.waitFor(() => expect(callbacks).toHaveLength(1));
+        await callbacks[0]();
+        expect(flushSpy).toHaveBeenCalled();
+      } finally {
+        flushSpy.mockRestore();
+      }
+    } finally {
+      vi.doUnmock("next/server");
+    }
+  });
+
   it("captures migrated console output and redacts sensitive values", () => {
     const logger = loggerProvider.getLogger("tappka");
     const emitSpy = vi.spyOn(logger, "emit");
