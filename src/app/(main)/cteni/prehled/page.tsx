@@ -4,6 +4,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserBookPointsStats, getTeamBookPointsStats, getEssays } from '@/lib/essays/queries';
 import { getMyLoans } from '@/lib/library/queries';
 import { PrehledContent } from '@/components/essays/prehled-content';
+import { CteniViewTracker } from '@/components/cteni/cteni-view-tracker';
 import { HelpDialog } from '@/components/help-dialog';
 import { InfoCard } from '@/components/essays/info-card';
 import { PageHeader } from '@/components/ui/page-header';
@@ -34,6 +35,7 @@ export default async function PrehledPage() {
 
   return (
     <PageShell size="full">
+      <CteniViewTracker />
       <PageHeader
         title="Moje čtení"
         description="Tvůj pokrok, eseje a srovnání s týmem"

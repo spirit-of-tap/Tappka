@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { trackServer } from '@/lib/analytics-server';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import { contentTextFromJson } from '@/lib/essays/content-text';
 import { validateEssaySourceIds } from '@/lib/essays/validate-source';
@@ -127,6 +128,13 @@ export async function POST(request: NextRequest) {
       });
 
     if (revisionError) throw revisionError;
+
+    after(() => {
+      trackServer('feature_interaction', profile.id, {
+        feature: 'cteni',
+        action: 'essay_created',
+      });
+    });
 
     return NextResponse.json({ data: { id: essay.id } }, { status: 201 });
   } catch (error) {

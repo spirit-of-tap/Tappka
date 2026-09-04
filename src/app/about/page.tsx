@@ -249,6 +249,12 @@ export default async function AboutPage() {
               GitHub
             </a>
             <Link
+              href="/ochrana-soukromi"
+              className="hover:text-foreground transition-colors underline underline-offset-4"
+            >
+              Ochrana soukromí
+            </Link>
+            <Link
               href="/auth/login"
               className="hover:text-foreground transition-colors underline underline-offset-4"
             >

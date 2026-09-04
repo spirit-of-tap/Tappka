@@ -12,7 +12,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    posthog.captureException(error);
+    posthog.captureException(error, {
+      feature: "global",
+      digest: error.digest,
+    });
   }, [error]);
 
   return (

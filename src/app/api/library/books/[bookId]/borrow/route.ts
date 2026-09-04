@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { trackServer } from '@/lib/analytics-server';
 import { parseLibraryLabelCode } from '@/lib/library/label-code';
 import { getAvailableCopyByLabelCode, getAvailableCopyForBook } from '@/lib/library/queries';
 import { notifyBookBorrowed } from '@/lib/notifications/library-notifications';
@@ -54,6 +55,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     if (error) throw error;
 
     after(() => {
+      trackServer('feature_interaction', profile.id, {
+        feature: 'cteni',
+        action: 'book_borrowed',
+      });
       notifyBookBorrowed(supabase, {
         bookId,
         borrowerProfileId: profile.id,
