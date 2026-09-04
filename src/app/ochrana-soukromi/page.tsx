@@ -123,8 +123,8 @@ export default function PrivacyPage() {
               záznam relace, abychom chybu uměli zopakovat a opravit. Proto —
               a pouze se souhlasem v dialogu při první návštěvě — měříme, jak
               se používají rezervace a čtení, a zaznamenáváme chyby.
-              Bez souhlasu se neměří nic
-              a souhlas lze kdykoli odvolat.
+              Bez souhlasu se neměří nic a souhlas lze kdykoli odvolat
+              v Nastavení → Notifikace.
             </p>
             <ul className="list-disc pl-6 space-y-2 text-base text-foreground/80">
               <li>Události měření používání: nejdéle 90 dní.</li>
@@ -151,7 +151,8 @@ export default function PrivacyPage() {
             </h2>
             <p>
               Máte právo na přístup k údajům, jejich opravu a výmaz, omezení
-              zpracování a odvolání souhlasu. Práva uplatníte zprávou přes
+              zpracování a odvolání souhlasu. Souhlas s měřením odvoláte přímo
+              v Nastavení → Notifikace, ostatní práva uplatníte zprávou přes
               Zpětnou vazbu v aplikaci nebo písemně na sídlo spolku. Se
               stížností se lze obrátit na Úřad pro ochranu osobních údajů.
             </p>

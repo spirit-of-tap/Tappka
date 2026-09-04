@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, X } from "lucide-react";
 import posthog from "posthog-js";
 
 import { Button } from "@/components/ui/button";
+import { recordConsentChoice, shouldAskConsent } from "@/lib/consent";
 
 const emptySubscribe = () => () => {};
 
-function getConsentStatus(): string {
+function needsChoice(): boolean {
   try {
-    return posthog.get_explicit_consent_status();
+    return shouldAskConsent(posthog.get_explicit_consent_status());
   } catch {
     // PostHog not initialised — stay hidden
-    return "granted";
+    return false;
   }
 }
 
@@ -23,23 +24,19 @@ export function ConsentBanner() {
   const [dismissed, setDismissed] = useState(false);
 
   if (!mounted || dismissed) return null;
-  if (getConsentStatus() !== "pending") return null;
+  if (!needsChoice()) return null;
 
-  const accept = () => {
+  const choose = (granted: boolean) => {
     try {
-      posthog.opt_in_capturing();
+      if (granted) {
+        posthog.opt_in_capturing();
+      } else {
+        posthog.opt_out_capturing();
+      }
     } catch {
       // ignore
     }
-    setDismissed(true);
-  };
-
-  const decline = () => {
-    try {
-      posthog.opt_out_capturing();
-    } catch {
-      // ignore
-    }
+    recordConsentChoice();
     setDismissed(true);
   };
 
@@ -56,7 +53,7 @@ export function ConsentBanner() {
         >
           <ShieldCheck className="size-5 text-primary" />
         </span>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-medium">Řekněte nám, co v Tappce funguje</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Se souhlasem měříme, jak se používají rezervace a čtení, a
@@ -70,12 +67,32 @@ export function ConsentBanner() {
             </Link>
           </p>
         </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Zavřít bez souhlasu"
+          onClick={() => choose(false)}
+          className="shrink-0"
+        >
+          <X />
+        </Button>
       </div>
-      <div className="mt-3 flex gap-2">
-        <Button type="button" size="sm" variant="outline" onClick={accept}>
+      <div className="mt-3 flex gap-2 pl-12">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => choose(true)}
+        >
           Přijmout
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={decline}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => choose(false)}
+        >
           Odmítnout
         </Button>
       </div>

@@ -35,12 +35,26 @@ describe("ConsentBanner", () => {
 
   it("hides when consent already decided", () => {
     mockedPosthog.get_explicit_consent_status.mockReturnValue("granted");
+    localStorage.setItem("tappka-consent-at", String(Date.now()));
     render(<ConsentBanner />);
     expect(
       screen.queryByRole("dialog", { name: /souhlas s měřením/i }),
     ).not.toBeInTheDocument();
+    localStorage.clear();
   });
 
+  it("treats closing without choice as refusal", async () => {
+    mockedPosthog.get_explicit_consent_status.mockReturnValue("pending");
+    const user = userEvent.setup();
+    render(<ConsentBanner />);
+    await user.click(
+      screen.getByRole("button", { name: /zavřít bez souhlasu/i }),
+    );
+    expect(mockedPosthog.opt_out_capturing).toHaveBeenCalled();
+    expect(
+      screen.queryByRole("dialog", { name: /souhlas s měřením/i }),
+    ).not.toBeInTheDocument();
+  });
   it("links to the privacy page", () => {
     mockedPosthog.get_explicit_consent_status.mockReturnValue("pending");
     render(<ConsentBanner />);

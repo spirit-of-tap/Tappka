@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { NotificationPreferencesForm } from '@/components/settings/notification-preferences-form';
+import { ConsentSettings } from '@/components/posthog/consent-settings';
 import { PageHeader } from '@/components/ui/page-header';
 
 export const metadata = {
@@ -36,6 +37,9 @@ export default async function NotificationSettingsPage() {
         initialVoteEmail={preferences?.essay_vote_email ?? true}
         initialBookSubmittedEmail={preferences?.book_submitted_email ?? false}
       />
+      <div className="rounded-xl border bg-card p-4 sm:p-6">
+        <ConsentSettings />
+      </div>
     </div>
   );
 }
