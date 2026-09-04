@@ -2,7 +2,6 @@ import type { Instrumentation } from "next";
 import { logs } from "@opentelemetry/api-logs";
 
 import { loggerProvider } from "@/lib/posthog-logger-provider";
-import { serverLogger } from "@/lib/server-logger";
 
 export { loggerProvider } from "@/lib/posthog-logger-provider";
 
@@ -60,6 +59,9 @@ export const onRequestError: Instrumentation.onRequestError = async (
       ? tracedSessionId[0]
       : tracedSessionId;
 
+    // Dynamic import: keeps the edge instrumentation bundle free of the
+    // Node-only OTel logger (which must never load in edge/middleware).
+    const { serverLogger } = await import("./lib/server-logger");
     serverLogger.error(`Request error: ${errorMessage}`, {
       "error.name": errorName,
       "error.message": errorMessage,

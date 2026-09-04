@@ -1,4 +1,3 @@
-import { after } from "next/server";
 import { SeverityNumber } from "@opentelemetry/api-logs";
 
 import {
@@ -95,9 +94,15 @@ function withoutUndefined(
 }
 
 function scheduleFlush(): void {
+  // NOTE: intentionally no `after()` from "next/server" here. A static import
+  // of `after` poisons every importer (middleware, edge instrumentation,
+  // client components via auth-helpers) and breaks the Turbopack build, since
+  // `after` is only available in App Router server contexts. The batch
+  // processor handles delivery; callers on critical paths (e.g.
+  // instrumentation onRequestError) await `serverLogger.flush()` explicitly.
   try {
-    after(async () => {
-      await loggerProvider.forceFlush();
+    void loggerProvider.forceFlush().catch(() => {
+      // Delivery failures must never break application behavior.
     });
   } catch {
     // Outside a Next.js request, the batch processor handles delivery.
