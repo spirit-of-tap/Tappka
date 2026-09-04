@@ -122,9 +122,8 @@ export default function PrivacyPage() {
               vidět, co se stalo: kde se klikalo, jaká chyba nastala a případně
               záznam relace, abychom chybu uměli zopakovat a opravit. Proto —
               a pouze se souhlasem v dialogu při první návštěvě — měříme, jak
-              se používají rezervace a čtení, a zaznamenáváme chyby. Samotné
-              měření obsah esejí, zpráv ani dokumentů nesbírá — ten vidí pouze
-              lidé s přístupem podle pravidel výše. Bez souhlasu se neměří nic
+              se používají rezervace a čtení, a zaznamenáváme chyby.
+              Bez souhlasu se neměří nic
               a souhlas lze kdykoli odvolat.
             </p>
             <ul className="list-disc pl-6 space-y-2 text-base text-foreground/80">

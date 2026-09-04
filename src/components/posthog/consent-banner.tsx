@@ -61,8 +61,7 @@ export function ConsentBanner() {
           <p className="mt-1 text-sm text-muted-foreground">
             Se souhlasem měříme, jak se používají rezervace a čtení, a
             zaznamenáváme chyby, abychom je uměli opravit. Nikdy je nepředáváme
-            škole ke kontrole. Data držíme v EU a měření nesbírá obsah esejí
-            ani zpráv. Bez souhlasu neměříme nic.{" "}
+            škole ke kontrole. Data držíme v EU. Bez souhlasu neměříme nic.{" "}
             <Link
               href="/ochrana-soukromi"
               className="underline underline-offset-4 hover:text-foreground"
