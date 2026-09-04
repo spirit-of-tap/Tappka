@@ -48,7 +48,8 @@ function MetaItem({ icon: Icon, children }: { icon: React.ElementType; children:
 export default async function BookDetailPage({ params }: PageProps) {
   const { bookId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
 
   const [book, essays, profile, libraryInfo, copies] = await Promise.all([
     getBookById(supabase, bookId),

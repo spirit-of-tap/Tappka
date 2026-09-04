@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({
   createClient: vi.fn(),
   getCurrentUserProfile: vi.fn(),
-  getUser: vi.fn(),
+  getClaims: vi.fn(),
 }))
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }))
@@ -17,7 +17,7 @@ import {
 } from "@/app/api/tymovy-denik/activities/_shared"
 
 const USER = { id: "user-1" }
-const CLIENT = { auth: { getUser: mocks.getUser } }
+const CLIENT = { auth: { getClaims: mocks.getClaims } }
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -26,7 +26,7 @@ beforeEach(() => {
 
 describe("requireTeamActivityApiContext", () => {
   it("rejects requests without an authenticated user", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: null } })
+    mocks.getClaims.mockResolvedValue({ data: { claims: null } })
 
     const result = await requireTeamActivityApiContext()
 
@@ -36,7 +36,7 @@ describe("requireTeamActivityApiContext", () => {
   })
 
   it("rejects profiles without both beta access and a team", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: USER } })
+    mocks.getClaims.mockResolvedValue({ data: { claims: { sub: "user-1" } } })
     mocks.getCurrentUserProfile.mockResolvedValue({
       id: "profile-1",
       team_id: "team-1",
@@ -50,7 +50,7 @@ describe("requireTeamActivityApiContext", () => {
   })
 
   it("derives team and actor identity from the authenticated profile", async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: USER } })
+    mocks.getClaims.mockResolvedValue({ data: { claims: { sub: "user-1" } } })
     mocks.getCurrentUserProfile.mockResolvedValue({
       id: "profile-1",
       team_id: "team-1",

@@ -69,7 +69,8 @@ export default async function QuickStatusPage({ params }: QuickPageProps) {
   const nowIso = now.toISOString();
   const twoHoursAhead = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
   const profile = user ? await getCurrentUserProfile(supabase, { user }) : null;
   const currentProfileId = profile?.id ?? null;
 

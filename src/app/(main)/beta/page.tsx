@@ -8,7 +8,8 @@ import { createAdminClient } from "@/lib/supabase/admin"
 
 export default async function BetaPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: claimsData } = await supabase.auth.getClaims()
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null
   if (!user) redirect("/auth/login")
 
   const profile = await getCurrentUserProfile(supabase, { user })

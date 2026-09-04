@@ -16,7 +16,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const supabase = await createClient();
 
   // Check if user is logged in
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
 
   if (user) {
     // Logged in -> redirect to quick status page

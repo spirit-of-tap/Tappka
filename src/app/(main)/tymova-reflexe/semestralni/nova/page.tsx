@@ -11,9 +11,8 @@ export default async function SemestralniNovaPage({
   searchParams: Promise<{ semester?: string; month?: string }>
 }) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
   if (!user) redirect("/auth/login")
 
   const profile = await getSessionProfile()

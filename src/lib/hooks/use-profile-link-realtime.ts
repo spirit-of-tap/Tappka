@@ -37,10 +37,8 @@ export function useProfileLinkRealtime() {
     const setupRealtimeSubscription = async () => {
       try {
         // Get current user to determine channel name
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        const { data: claimsData, error: userError } = await supabase.auth.getClaims();
+        const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
 
         if (userError || !user) {
           // User not authenticated, skip subscription

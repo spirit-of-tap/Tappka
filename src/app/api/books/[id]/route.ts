@@ -16,7 +16,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: claimsData } = await supabase.auth.getClaims();
+    const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
     if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
 
     const book = await getBookById(supabase, id);
@@ -33,7 +34,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: claimsData } = await supabase.auth.getClaims();
+    const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
     if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
 
     const profile = await getCurrentUserProfile(supabase, { user });
@@ -269,7 +271,8 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: claimsData } = await supabase.auth.getClaims();
+    const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
     if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
 
     const profile = await getCurrentUserProfile(supabase, { user });

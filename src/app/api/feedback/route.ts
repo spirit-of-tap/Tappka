@@ -10,7 +10,8 @@ const AUTHOR_SELECT = `*, author:profiles!author_profile_id(id, name, picture, r
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: claimsData } = await supabase.auth.getClaims();
+    const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
     if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
 
     const profile = await getCurrentUserProfile(supabase, { user });
