@@ -51,7 +51,7 @@ export function ConsentSettings() {
         </h2>
         <p className="text-sm text-muted-foreground">
           {granted
-            ? "Měření je zapnuté: vidíme, jak se používají rezervace a čtení, a chyby k opravě. Škole se nic nepředává."
+            ? "Měření je zapnuté: vidíme, jak Tappku používáš, a když se něco rozbije, abychom to mohli opravit. Škole se nic nepředává."
             : "Měření je vypnuté: nic se neměří."}{" "}
           <Link
             href="/ochrana-soukromi"

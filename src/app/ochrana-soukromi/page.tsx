@@ -122,7 +122,7 @@ export default function PrivacyPage() {
               vidět, co se stalo: kde se klikalo, jaká chyba nastala a případně
               záznam relace, abychom chybu uměli zopakovat a opravit. Proto —
               a pouze se souhlasem v dialogu při první návštěvě — měříme, jak
-              se používají rezervace a čtení, a zaznamenáváme chyby.
+              se Tappka používá, a zaznamenáváme chyby.
               Bez souhlasu se neměří nic a souhlas lze kdykoli odvolat
               v Nastavení → Notifikace.
             </p>

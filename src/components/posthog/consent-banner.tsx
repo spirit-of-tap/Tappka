@@ -59,7 +59,7 @@ export function ConsentBanner() {
             id="consent-banner-title"
             className="font-heading text-base font-semibold text-foreground tracking-tight"
           >
-            Řekněte nám, co v Tappce funguje
+            Pomoz nám Tappku vylepšovat
           </h2>
         </div>
         <Button
@@ -75,9 +75,9 @@ export function ConsentBanner() {
       </div>
 
       <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-        Se souhlasem měříme, jak se používají rezervace a čtení, a
-        zaznamenáváme chyby, abychom je uměli opravit. Nikdy je nepředáváme
-        škole ke kontrole. Data držíme v EU. Bez souhlasu neměříme nic.{" "}
+        S tvým souhlasem měříme, jak Tappku používáš, a když se ti něco rozbije,
+        pomůže nám to chybu rychle najít a opravit. Data držíme v EU a škole
+        je nepředáváme. Bez souhlasu neměříme nic.{" "}
         <Link
           href="/ochrana-soukromi"
           className="font-medium underline underline-offset-4 text-foreground hover:text-primary transition-colors inline-block"
