@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import type { createClient } from "@/lib/supabase/server";
 import type { createServerClient } from "@supabase/ssr";
 import type { createBrowserClient } from "@supabase/ssr";
 import { DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";

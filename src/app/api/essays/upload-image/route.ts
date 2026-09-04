@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { uploadFile, generateFileKey } from '@/lib/storage/service';
 import { getPublicStorageUrl } from '@/lib/storage/public-url';
+import { serverLogger } from "@/lib/server-logger";
 
 const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     const src = getPublicStorageUrl('images', key);
     return NextResponse.json({ src }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/essays/upload-image error:', error);
+    serverLogger.console.error('POST /api/essays/upload-image error:', error);
     return NextResponse.json({ error: 'Upload selhal' }, { status: 500 });
   }
 }

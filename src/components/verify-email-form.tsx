@@ -29,7 +29,35 @@ import {
 } from "@/components/ui/input-otp";
 import { validateRedirectUrl } from "@/lib/utils";
 import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
-import { hasLinkedProfile } from "@/lib/auth-helpers";
+
+type BrowserSupabaseClient = ReturnType<typeof createClient>;
+
+/**
+ * Client-safe linked-profile check. Lives here instead of auth-helpers so the
+ * client bundle never pulls server-only modules (next/headers, OTel logger).
+ */
+async function hasLinkedProfileClient(
+  supabaseClient: BrowserSupabaseClient,
+): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+  if (!user) return false;
+
+  const { data: profile, error } = await supabaseClient
+    .from("profiles")
+    .select("*, users!inner(auth_user_id)")
+    .eq("users.auth_user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching user profile:", error);
+    return false;
+  }
+
+  return profile !== null;
+}
 
 const STORAGE_KEY = "verify-email-form-state";
 const EMAIL_DOMAIN_OPTIONS = ["@studenti.czu.cz", "@pef.czu.cz", "@rektorat.czu.cz"] as const;
@@ -151,7 +179,7 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     try {
       // Check if user already has a linked profile
       // Once linked, email changes are not allowed to maintain profile connection
-      const hasProfile = await hasLinkedProfile(supabase);
+      const hasProfile = await hasLinkedProfileClient(supabase);
       if (hasProfile) {
         setError("Email už nejde změnit, protože je propojený s tvým profilem. Díky němu tě poznáváme!");
         setIsLoading(false);

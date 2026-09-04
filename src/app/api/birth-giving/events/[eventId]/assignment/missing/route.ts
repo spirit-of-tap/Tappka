@@ -8,6 +8,7 @@ import {
   requireBirthGivingApiContext,
   validateBirthGivingRouteIds,
 } from "../../../../_shared";
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ eventId: string }>;
@@ -39,7 +40,7 @@ export async function POST(_request: Request, { params }: RouteContext) {
     try {
       await deleteFile("documents", previousPath);
     } catch (cleanupError) {
-      console.error("Birth Giving assignment missing cleanup failed:", cleanupError);
+      serverLogger.console.error("Birth Giving assignment missing cleanup failed:", cleanupError);
       return NextResponse.json(
         { error: "Předchozí soubor zadání se nepodařilo odstranit" },
         { status: 500 },

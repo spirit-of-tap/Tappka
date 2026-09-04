@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { serverLogger } from "@/lib/server-logger";
 
 /**
  * GET /api/schedule-breaks/active
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       .order("start_date");
 
     if (error) {
-      console.error("Error fetching schedule breaks:", error);
+      serverLogger.console.error("Error fetching schedule breaks:", error);
       return NextResponse.json(
         { error: "Nepodařilo se načíst výjimky" },
         { status: 500 }
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: breaks });
   } catch (error) {
-    console.error("GET /api/schedule-breaks/active error:", error);
+    serverLogger.console.error("GET /api/schedule-breaks/active error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }

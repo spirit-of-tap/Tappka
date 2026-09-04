@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getLibraryBooks, getBooksWithLibraryInfo } from '@/lib/library/queries';
 import type { LibraryBookResult } from '@/lib/library/types';
+import { serverLogger } from "@/lib/server-logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error('GET /api/library/books error:', error);
+    serverLogger.console.error('GET /api/library/books error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst knihovnu' }, { status: 500 });
   }
 }
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: libraryBook }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/library/books error:', error);
+    serverLogger.console.error('POST /api/library/books error:', error);
     return NextResponse.json({ error: 'Nepodařilo se přidat knihu do knihovny' }, { status: 500 });
   }
 }

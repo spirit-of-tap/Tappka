@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { OPERATING_HOURS, TIME_SLOT_MINUTES } from "@/lib/reservations/types";
 import { inferReservationKind } from "@/lib/reservations/utils";
+import { serverLogger } from "@/lib/server-logger";
 
 /**
  * GET /api/reservations/availability
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
       .order("start_at");
 
     if (resError) {
-      console.error("Error fetching reservations:", resError);
+      serverLogger.console.error("Error fetching reservations:", resError);
       return NextResponse.json(
         { error: "Nepodařilo se načíst rezervace" },
         { status: 500 }
@@ -148,7 +149,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("GET /api/reservations/availability error:", error);
+    serverLogger.console.error("GET /api/reservations/availability error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }

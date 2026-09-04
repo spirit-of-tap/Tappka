@@ -1,9 +1,17 @@
 import posthog from "posthog-js";
 
+import {
+  POSTHOG_DEFAULTS,
+  POSTHOG_PROXY_HOST,
+  POSTHOG_UI_HOST,
+} from "@/lib/posthog-config";
+
 if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: "/ingest",
-    defaults: "2026-01-30",
+    api_host: POSTHOG_PROXY_HOST,
+    ui_host: POSTHOG_UI_HOST,
+    defaults: POSTHOG_DEFAULTS,
+    tracing_headers: [window.location.hostname],
     capture_pageview: false,
     capture_pageleave: true,
     capture_heatmaps: true,

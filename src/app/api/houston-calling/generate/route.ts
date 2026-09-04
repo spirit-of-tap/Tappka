@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import { HOUSTON_CALLING_TITLE } from "@/lib/reservations/types";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { serverLogger } from "@/lib/server-logger";
 
 /**
  * Helper function to find first Wednesday of a month
@@ -76,7 +77,7 @@ async function createHCForMonth(
   });
 
   if (error) {
-    console.error("Error creating Houston Calling:", error);
+    serverLogger.console.error("Error creating Houston Calling:", error);
     return { created: false, date: firstWednesday, reason: "error" };
   }
 
@@ -200,7 +201,7 @@ export async function POST(request: NextRequest) {
           : "Všechny Houston Calling již existují nebo jsou v období volna",
     });
   } catch (error) {
-    console.error("POST /api/houston-calling/generate error:", error);
+    serverLogger.console.error("POST /api/houston-calling/generate error:", error);
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }

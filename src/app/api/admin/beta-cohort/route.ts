@@ -4,6 +4,7 @@ import { z } from "zod"
 import { getCurrentUserProfile } from "@/lib/auth-helpers"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
+import { serverLogger } from "@/lib/server-logger";
 
 const schema = z.object({
   profileId: z.string().uuid(),
@@ -36,7 +37,7 @@ export async function PATCH(request: NextRequest) {
       .maybeSingle()
 
     if (fetchError) {
-      console.error("Admin beta-cohort fetch error:", fetchError)
+      serverLogger.console.error("Admin beta-cohort fetch error:", fetchError)
       return NextResponse.json({ error: "Nepodařilo se načíst profil" }, { status: 500 })
     }
     if (!target || !target.beta_access_granted_at)
@@ -51,13 +52,13 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error("Admin beta-cohort update error:", error)
+      serverLogger.console.error("Admin beta-cohort update error:", error)
       return NextResponse.json({ error: "Nepodařilo se uložit" }, { status: 500 })
     }
 
     return NextResponse.json({ data })
   } catch (error) {
-    console.error("PATCH /api/admin/beta-cohort error:", error)
+    serverLogger.console.error("PATCH /api/admin/beta-cohort error:", error)
     return NextResponse.json({ error: "Chyba serveru" }, { status: 500 })
   }
 }

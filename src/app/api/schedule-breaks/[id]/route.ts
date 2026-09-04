@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -53,7 +54,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq("id", id);
 
     if (error) {
-      console.error("Error deleting schedule break:", error);
+      serverLogger.console.error("Error deleting schedule break:", error);
       return NextResponse.json({ error: "Nepodařilo se smazat výjimku" }, { status: 500 });
     }
 
@@ -62,7 +63,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       message: "Výjimka smazána",
     });
   } catch (error) {
-    console.error("DELETE /api/schedule-breaks/[id] error:", error);
+    serverLogger.console.error("DELETE /api/schedule-breaks/[id] error:", error);
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
 import { getBookLibraryInfo } from '@/lib/library/queries';
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ bookId: string }>;
@@ -18,7 +19,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ data: info });
   } catch (error) {
-    console.error('GET /api/library/books/[bookId] error:', error);
+    serverLogger.console.error('GET /api/library/books/[bookId] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst informace o knize' }, { status: 500 });
   }
 }

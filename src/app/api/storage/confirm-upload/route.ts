@@ -10,6 +10,7 @@ import {
 import { contextToBucket } from "@/lib/storage/buckets";
 import { isExternalUrl } from "@/lib/storage/public-url";
 import type { StorageContext } from "@/lib/storage/types";
+import { serverLogger } from "@/lib/server-logger";
 
 interface ConfirmUploadRequest {
   context: StorageContext;
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       try {
         await deleteFile(contextToBucket(context), oldKey);
       } catch (error) {
-        console.error("Error deleting old picture:", error);
+        serverLogger.console.error("Error deleting old picture:", error);
       }
     }
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       message: "Obrázek byl úspěšně nahrán",
     });
   } catch (error) {
-    console.error("POST /api/storage/confirm-upload error:", error);
+    serverLogger.console.error("POST /api/storage/confirm-upload error:", error);
     return NextResponse.json(
       { error: "Nepodařilo se potvrdit nahrání" },
       { status: 500 }

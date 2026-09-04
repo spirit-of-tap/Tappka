@@ -1,4 +1,13 @@
+import { withPostHogConfig } from "@posthog/nextjs-config";
 import type { NextConfig } from "next";
+
+import { POSTHOG_UI_HOST } from "./src/lib/posthog-config";
+
+const posthogApiKey = process.env.POSTHOG_API_KEY;
+const posthogProjectId = process.env.POSTHOG_PROJECT_ID;
+const posthogSourceMapsEnabled = Boolean(
+  posthogApiKey?.trim() && posthogProjectId?.trim()
+);
 
 const nextConfig: NextConfig = {
   typescript: {
@@ -37,19 +46,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://eu-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://eu.i.posthog.com/:path*",
-      },
-    ];
-  },
   skipTrailingSlashRedirect: true,
 };
 
-export default nextConfig;
+export default withPostHogConfig(nextConfig, {
+  personalApiKey: posthogApiKey ?? "",
+  projectId: posthogProjectId,
+  host: process.env.POSTHOG_HOST ?? POSTHOG_UI_HOST,
+  sourcemaps: {
+    enabled: posthogSourceMapsEnabled,
+    deleteAfterUpload: true,
+  },
+});

@@ -8,6 +8,7 @@ import {
   requireBirthGivingApiContext,
   validateBirthGivingRouteIds,
 } from "../../_shared";
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ fileId: string }>;
@@ -32,7 +33,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     try {
       await deleteFile("documents", storagePath);
     } catch (cleanupError) {
-      console.error("Birth Giving result file removal cleanup failed:", cleanupError);
+      serverLogger.console.error("Birth Giving result file removal cleanup failed:", cleanupError);
       return NextResponse.json(
         { error: "Soubor s výsledkem se nepodařilo odstranit" },
         { status: 500 },

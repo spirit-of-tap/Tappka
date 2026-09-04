@@ -4,6 +4,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBooks } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
 import type { BookEssayItem } from '@/components/books/feed-book-card';
+import { serverLogger } from "@/lib/server-logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
       hasMore,
     });
   } catch (error) {
-    console.error('Failed to load scrollky feed batch:', error);
+    serverLogger.console.error('Failed to load scrollky feed batch:', error);
     return NextResponse.json(
       { error: 'Chyba při načítání feedu' },
       { status: 500 },

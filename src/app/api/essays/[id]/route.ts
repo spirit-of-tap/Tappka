@@ -6,6 +6,7 @@ import { getEssayById } from '@/lib/essays/queries';
 import { contentTextFromJson } from '@/lib/essays/content-text';
 import { shouldCoalesceRevision } from '@/lib/essays/revisions';
 import { validateEssaySourceIds } from '@/lib/essays/validate-source';
+import { serverLogger } from "@/lib/server-logger";
 
 const MAX_TITLE_LENGTH = 500;
 const MAX_CONTENT_TEXT_LENGTH = 100_000;
@@ -26,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ data: essay });
   } catch (error) {
-    console.error('GET /api/essays/[id] error:', error);
+    serverLogger.console.error('GET /api/essays/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst esej' }, { status: 500 });
   }
 }
@@ -189,7 +190,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ data: { revision_no: revisionNo, updated_at: revisionUpdatedAt } });
   } catch (error) {
-    console.error('PATCH /api/essays/[id] error:', error);
+    serverLogger.console.error('PATCH /api/essays/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se aktualizovat esej' }, { status: 500 });
   }
 }
@@ -260,7 +261,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('DELETE /api/essays/[id] error:', error);
+    serverLogger.console.error('DELETE /api/essays/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se smazat esej' }, { status: 500 });
   }
 }

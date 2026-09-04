@@ -12,6 +12,7 @@ import { getBirthGivingEvent } from "@/lib/birth-giving/queries";
 import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access";
+import { serverLogger } from "@/lib/server-logger";
 
 interface BirthGivingApiContext {
   profileId: string;
@@ -119,7 +120,7 @@ export async function birthGivingMutationErrorResponse(
     );
   }
 
-  console.error("Birth Giving mutation failed:", error);
+  serverLogger.console.error("Birth Giving mutation failed:", error);
   return NextResponse.json({ error: "Akci se nepodařilo dokončit" }, { status: 500 });
 }
 

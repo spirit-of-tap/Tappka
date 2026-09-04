@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getHighlightCategories } from '@/lib/books/queries';
 import type { HighlightCategoryInput } from '@/lib/books/types';
+import { serverLogger } from "@/lib/server-logger";
 
 async function requireCoach() {
   const supabase = await createClient();
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest) {
     const categories = await getHighlightCategories(supabase);
     return NextResponse.json({ data: categories });
   } catch (error) {
-    console.error('GET /api/highlight-categories error:', error);
+    serverLogger.console.error('GET /api/highlight-categories error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst kategorie' }, { status: 500 });
   }
 }
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/highlight-categories error:', error);
+    serverLogger.console.error('POST /api/highlight-categories error:', error);
     return NextResponse.json({ error: 'Nepodařilo se vytvořit kategorii' }, { status: 500 });
   }
 }

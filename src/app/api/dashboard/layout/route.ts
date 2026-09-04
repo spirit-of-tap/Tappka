@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { sanitizeWidgetIds } from "@/lib/dashboard/types";
+import { serverLogger } from "@/lib/server-logger";
 
 /**
  * PUT /api/dashboard/layout
@@ -28,7 +29,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (error) {
-      console.error("Error saving dashboard layout:", error);
+      serverLogger.console.error("Error saving dashboard layout:", error);
       return NextResponse.json(
         { error: "Nepodařilo se uložit rozložení" },
         { status: 500 }
@@ -37,7 +38,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ data: { widgets } });
   } catch (error) {
-    console.error("PUT /api/dashboard/layout error:", error);
+    serverLogger.console.error("PUT /api/dashboard/layout error:", error);
     return NextResponse.json(
       { error: "Interní chyba serveru" },
       { status: 500 }

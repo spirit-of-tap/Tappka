@@ -12,6 +12,7 @@ import {
   storeTeamActivityPhoto,
 } from "./_shared"
 import { ACTIVITY_WITH_CREATOR_SELECT } from "@/lib/tymovy-denik/types"
+import { serverLogger } from "@/lib/server-logger";
 
 export async function POST(request: Request) {
   const context = await requireTeamActivityApiContext()
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
         .insert(attendeeRows)
 
       if (attendeesError) {
-        console.error("Failed to insert team activity attendees:", attendeesError)
+        serverLogger.console.error("Failed to insert team activity attendees:", attendeesError)
       }
     }
 

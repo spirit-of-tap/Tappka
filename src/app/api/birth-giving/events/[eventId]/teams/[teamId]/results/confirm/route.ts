@@ -13,6 +13,7 @@ import {
   requireBirthGivingApiContext,
   validateBirthGivingRouteIds,
 } from "../../../../../../_shared";
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ eventId: string; teamId: string }>;
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     try {
       await deleteFile("documents", storagePath);
     } catch (cleanupError) {
-      console.error("Birth Giving result cleanup after failed confirm:", cleanupError);
+      serverLogger.console.error("Birth Giving result cleanup after failed confirm:", cleanupError);
     }
     if (error) return birthGivingMutationErrorResponse(error, context.supabase, eventId);
     return NextResponse.json({ error: "Akci se nepodařilo dokončit" }, { status: 500 });

@@ -8,6 +8,7 @@ import {
   requireBirthGivingApiContext,
   validateBirthGivingRouteIds,
 } from "../../../../../../_shared";
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ eventId: string; teamId: string }>;
@@ -41,7 +42,7 @@ export async function POST(_request: Request, { params }: RouteContext) {
   );
 
   if (cleanupFailures.length > 0) {
-    console.error("Birth Giving result missing cleanup failed:", cleanupFailures);
+    serverLogger.console.error("Birth Giving result missing cleanup failed:", cleanupFailures);
     return NextResponse.json(
       { error: "Nahrané soubory s výsledky se nepodařilo odstranit" },
       { status: 500 },

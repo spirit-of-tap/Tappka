@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserActiveLoanForBook } from '@/lib/library/queries';
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ bookId: string }>;
@@ -36,7 +37,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ data: loan });
   } catch (error) {
-    console.error('POST /api/library/books/[bookId]/return error:', error);
+    serverLogger.console.error('POST /api/library/books/[bookId]/return error:', error);
     return NextResponse.json({ error: 'Nepodařilo se vrátit knihu' }, { status: 500 });
   }
 }

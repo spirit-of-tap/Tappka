@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayRevisions } from '@/lib/essays/queries';
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -30,7 +31,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ data: await getEssayRevisions(supabase, id) });
   } catch (error) {
-    console.error('GET /api/essays/[id]/revisions error:', error);
+    serverLogger.console.error('GET /api/essays/[id]/revisions error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst historii' }, { status: 500 });
   }
 }

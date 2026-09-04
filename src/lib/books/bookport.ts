@@ -1,3 +1,5 @@
+import { serverLogger } from "@/lib/server-logger";
+
 /**
  * Bookport (https://www.bookport.cz) integration — resolves a Tappka book to its
  * Bookport page by searching Bookport by the Czech title, and links to it
@@ -135,12 +137,12 @@ export async function resolveBookportBook({
       next: { revalidate: SEARCH_REVALIDATE_SECONDS },
     });
     if (!res.ok) {
-      console.error(`Bookport search error ${res.status} for "${titleCs}"`);
+      serverLogger.console.error(`Bookport search error ${res.status} for "${titleCs}"`);
       return null;
     }
     json = (await res.json()) as BookportSearchDataResponse;
   } catch (error) {
-    console.error('Bookport search failed', error);
+    serverLogger.console.error('Bookport search failed', error);
     return null;
   }
 

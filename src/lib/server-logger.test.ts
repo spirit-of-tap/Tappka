@@ -48,4 +48,33 @@ describe("serverLogger", () => {
   it("flushes without throwing", async () => {
     await expect(serverLogger.flush()).resolves.toBeUndefined();
   });
+
+  it("captures migrated console output and redacts sensitive values", () => {
+    const logger = loggerProvider.getLogger("tappka");
+    const emitSpy = vi.spyOn(logger, "emit");
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    try {
+      serverLogger.console.error(
+        "Request for person@example.com failed",
+        new Error("Bearer secret-token")
+      );
+
+      expect(consoleSpy).toHaveBeenCalledOnce();
+      expect(emitSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: "Request for [REDACTED] failed Error: Bearer [REDACTED]",
+          severityText: "ERROR",
+          attributes: expect.objectContaining({
+            "console.method": "error",
+            "error.message": "Bearer [REDACTED]",
+            "log.source": "console",
+          }),
+        })
+      );
+    } finally {
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    }
+  });
 });

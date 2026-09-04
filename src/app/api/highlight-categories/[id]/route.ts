@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import type { HighlightCategoryInput } from '@/lib/books/types';
+import { serverLogger } from "@/lib/server-logger";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -53,7 +54,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error('PATCH /api/highlight-categories/[id] error:', error);
+    serverLogger.console.error('PATCH /api/highlight-categories/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se upravit kategorii' }, { status: 500 });
   }
 }
@@ -73,7 +74,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     if (error) throw error;
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error('DELETE /api/highlight-categories/[id] error:', error);
+    serverLogger.console.error('DELETE /api/highlight-categories/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se smazat kategorii' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import type { Database } from '@/lib/supabase/database.types';
+import { serverLogger } from "@/lib/server-logger";
 
 const AUTHOR_SELECT = `*, author:profiles!author_profile_id(id, name, picture, role)`;
 
@@ -45,7 +46,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     if (!data) return NextResponse.json({ error: 'Zpětná vazba nenalezena' }, { status: 404 });
     return NextResponse.json({ data });
   } catch (error) {
-    console.error('PATCH /api/feedback/[id] error:', error);
+    serverLogger.console.error('PATCH /api/feedback/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se upravit zpětnou vazbu' }, { status: 500 });
   }
 }
@@ -64,7 +65,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('DELETE /api/feedback/[id] error:', error);
+    serverLogger.console.error('DELETE /api/feedback/[id] error:', error);
     return NextResponse.json({ error: 'Nepodařilo se smazat zpětnou vazbu' }, { status: 500 });
   }
 }

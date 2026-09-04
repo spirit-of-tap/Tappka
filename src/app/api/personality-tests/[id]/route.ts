@@ -5,6 +5,7 @@ import { deleteFile } from "@/lib/storage/service";
 import { MAX_DOCUMENT_SIZE } from "@/lib/storage/validation";
 import { PERSONALITY_TEST_TYPES } from "@/lib/personality-tests/types";
 import type { Updatable } from "@/lib/supabase/tables";
+import { serverLogger } from "@/lib/server-logger";
 
 interface UpdatePersonalityTestRequest {
   testType?: string;
@@ -96,13 +97,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       try {
         await deleteFile("documents", existing.data.file_path);
       } catch (error) {
-        console.error("Error deleting old personality test file:", error);
+        serverLogger.console.error("Error deleting old personality test file:", error);
       }
     }
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error("PATCH /api/personality-tests/[id] error:", error);
+    serverLogger.console.error("PATCH /api/personality-tests/[id] error:", error);
     return NextResponse.json({ error: "Nepodařilo se uložit změny" }, { status: 500 });
   }
 }
@@ -147,12 +148,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     try {
       await deleteFile("documents", existing.data.file_path);
     } catch (error) {
-      console.error("Error deleting personality test file:", error);
+      serverLogger.console.error("Error deleting personality test file:", error);
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE /api/personality-tests/[id] error:", error);
+    serverLogger.console.error("DELETE /api/personality-tests/[id] error:", error);
     return NextResponse.json({ error: "Nepodařilo se odstranit test" }, { status: 500 });
   }
 }

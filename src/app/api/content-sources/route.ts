@@ -6,6 +6,7 @@ import { getContentSources, getPendingContentSources } from '@/lib/content-sourc
 import { CONTENT_SOURCE_KINDS } from '@/lib/content-sources/types';
 import { CONTENT_SOURCE_POINT_VALUES } from '@/lib/content-sources/points';
 import type { CreateContentSourceInput, ContentSourceStatus } from '@/lib/content-sources/types';
+import { serverLogger } from "@/lib/server-logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json({ data: sources });
   } catch (error) {
-    console.error('GET /api/content-sources error:', error);
+    serverLogger.console.error('GET /api/content-sources error:', error);
     return NextResponse.json({ error: 'Nepodařilo se načíst zdroje' }, { status: 500 });
   }
 }
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: inserted }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/content-sources error:', error);
+    serverLogger.console.error('POST /api/content-sources error:', error);
     return NextResponse.json({ error: 'Nepodařilo se přidat zdroj' }, { status: 500 });
   }
 }

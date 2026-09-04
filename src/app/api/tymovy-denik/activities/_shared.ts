@@ -9,6 +9,7 @@ import { deleteFile, generateFileKey, uploadFile } from "@/lib/storage/service"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { TEAM_ACTIVITY_IMAGE } from "@/lib/tymovy-denik/image"
 import { getWebpDimensions } from "@/lib/tymovy-denik/webp"
+import { serverLogger } from "@/lib/server-logger";
 
 const MAX_ACTIVITY_TYPE_LENGTH = 200
 const MAX_PARTICIPANTS_LENGTH = 1_000
@@ -203,7 +204,7 @@ export async function deleteTeamActivityPhoto(path: string | null, teamId: strin
       return
     } catch (error) {
       if (attempt === STORAGE_DELETE_ATTEMPTS) {
-        console.error("Failed to delete team activity photo after retries:", error)
+        serverLogger.console.error("Failed to delete team activity photo after retries:", error)
       }
     }
   }
@@ -235,7 +236,7 @@ export function isAmbiguousMutation(
 }
 
 export function mutationFailedResponse(error: unknown): NextResponse {
-  console.error("Team activity mutation failed:", error)
+  serverLogger.console.error("Team activity mutation failed:", error)
   return NextResponse.json({ error: "Akci se nepodařilo uložit" }, { status: 500 })
 }
 

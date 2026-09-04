@@ -1,8 +1,25 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicRoute, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
-import { redirectWithCookies } from "@/lib/auth-helpers";
 import { validateRedirectUrl } from "@/lib/utils";
+
+/**
+ * Creates a redirect response with cookies copied from supabaseResponse.
+ * Preserves all cookie options (httpOnly, secure, sameSite, etc.)
+ * Local copy (instead of importing from auth-helpers) so middleware stays
+ * edge-safe and never pulls server-only modules (next/headers, OTel).
+ */
+function redirectWithCookies(
+  url: URL,
+  supabaseResponse: NextResponse,
+): NextResponse {
+  const redirectResponse = NextResponse.redirect(url);
+  const setCookieHeaders = supabaseResponse.headers.getSetCookie();
+  setCookieHeaders.forEach((cookieHeader) => {
+    redirectResponse.headers.append("Set-Cookie", cookieHeader);
+  });
+  return redirectResponse;
+}
 
 export async function updateSession(request: NextRequest) {
   // Expose the requested path to server components (the (main) layout uses it

@@ -6,6 +6,7 @@ import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { HOUSTON_CALLING_TITLE } from "@/lib/reservations/types";
 import { pragueLocalToUtcISO, trainingSessionTitle } from "@/lib/reservations/utils";
 import type { Insertable } from "@/lib/supabase/tables";
+import { serverLogger } from "@/lib/server-logger";
 
 interface CreateScheduleInput {
   room_id: string;
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (scheduleError) {
-      console.error("Error creating recurring schedule:", scheduleError);
+      serverLogger.console.error("Error creating recurring schedule:", scheduleError);
       return NextResponse.json({ error: "Nepodařilo se vytvořit rozvrh" }, { status: 500 });
     }
 
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
         .insert(reservations);
 
       if (reservationsError) {
-        console.error("Error creating reservations:", reservationsError);
+        serverLogger.console.error("Error creating reservations:", reservationsError);
         // Rollback: soft-remove the schedule
         await supabase
           .from("recurring_schedules")
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
       message: `Vytvořeno ${reservations.length} rezervací`,
     });
   } catch (error) {
-    console.error("POST /api/recurring-schedules error:", error);
+    serverLogger.console.error("POST /api/recurring-schedules error:", error);
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }
@@ -235,13 +236,13 @@ export async function GET(_request: NextRequest) {
       .order("day_of_week");
 
     if (error) {
-      console.error("Error fetching recurring schedules:", error);
+      serverLogger.console.error("Error fetching recurring schedules:", error);
       return NextResponse.json({ error: "Nepodařilo se načíst rozvrhy" }, { status: 500 });
     }
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error("GET /api/recurring-schedules error:", error);
+    serverLogger.console.error("GET /api/recurring-schedules error:", error);
     return NextResponse.json({ error: "Interní chyba serveru" }, { status: 500 });
   }
 }
