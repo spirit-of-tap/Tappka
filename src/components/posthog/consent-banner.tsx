@@ -1,24 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import posthog from "posthog-js";
 
 import { Button } from "@/components/ui/button";
 
+const emptySubscribe = () => () => {};
+
+function getConsentStatus(): string {
+  try {
+    return posthog.get_explicit_consent_status();
+  } catch {
+    // PostHog not initialised — stay hidden
+    return "granted";
+  }
+}
+
 export function ConsentBanner() {
-  const [visible, setVisible] = useState(false);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    try {
-      if (posthog.get_explicit_consent_status() === "pending") {
-        setVisible(true);
-      }
-    } catch {
-      // PostHog not initialised — stay hidden
-    }
-  }, []);
-
-  if (!visible) return null;
+  if (!mounted || dismissed) return null;
+  if (getConsentStatus() !== "pending") return null;
 
   const accept = () => {
     try {
@@ -26,7 +29,7 @@ export function ConsentBanner() {
     } catch {
       // ignore
     }
-    setVisible(false);
+    setDismissed(true);
   };
 
   const decline = () => {
@@ -35,7 +38,7 @@ export function ConsentBanner() {
     } catch {
       // ignore
     }
-    setVisible(false);
+    setDismissed(true);
   };
 
   return (
