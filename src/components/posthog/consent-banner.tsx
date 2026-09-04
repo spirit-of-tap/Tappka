@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import posthog from "posthog-js";
 
@@ -44,14 +45,23 @@ export function ConsentBanner() {
   return (
     <div
       role="dialog"
-      aria-label="Souhlas s analytikou"
+      aria-label="Souhlas s měřením používání"
       className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl rounded-xl border bg-card p-4 shadow-lg"
     >
-      <p className="text-sm">
-        Pomozte nám zlepšit Tappku. Měříme anonymizované používání a chyby.
+      <p className="font-medium">Řekněte nám, co v Tappce funguje</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Se souhlasem měříme, jak se používají rezervace a čtení, a
+        zaznamenáváme chyby. Data držíme v EU a nečteme obsah esejí ani zpráv.
+        Bez souhlasu neměříme nic.{" "}
+        <Link
+          href="/ochrana-soukromi"
+          className="underline underline-offset-4 hover:text-foreground"
+        >
+          Jak chráníme soukromí
+        </Link>
       </p>
       <div className="mt-3 flex gap-2">
-        <Button type="button" size="sm" onClick={accept}>
+        <Button type="button" size="sm" variant="outline" onClick={accept}>
           Přijmout
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={decline}>

@@ -37,7 +37,15 @@ describe("ConsentBanner", () => {
     mockedPosthog.get_explicit_consent_status.mockReturnValue("granted");
     render(<ConsentBanner />);
     expect(
-      screen.queryByRole("dialog", { name: /souhlas s analytikou/i }),
+      screen.queryByRole("dialog", { name: /souhlas s měřením/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("links to the privacy page", () => {
+    mockedPosthog.get_explicit_consent_status.mockReturnValue("pending");
+    render(<ConsentBanner />);
+    expect(
+      screen.getByRole("link", { name: /jak chráníme soukromí/i }),
+    ).toHaveAttribute("href", "/ochrana-soukromi");
   });
 });
