@@ -9,6 +9,9 @@ export const onRequestError: Instrumentation.onRequestError = async (
   request,
   _context
 ) => {
+  // Note: PostHog docs recommend `export { onRequestError } from "@posthog/next"`.
+  // We keep this hand-rolled hook to avoid adding a new dependency: it already
+  // forwards the client distinct_id from the PostHog cookie for identity linking.
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { getPostHogServer } = await import("./lib/posthog-server");
     const posthog = getPostHogServer();

@@ -11,7 +11,10 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    posthog.captureException(error);
+    posthog.captureException(error, {
+      feature: "main",
+      digest: error.digest,
+    });
   }, [error]);
 
   return (

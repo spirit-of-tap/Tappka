@@ -19,5 +19,26 @@ if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     mask_all_text: false,
     opt_out_capturing_by_default: true,
     opt_out_capturing_persistence_type: "localStorage",
+    before_send: (event) => {
+      // Group chunk-load failures (deploy version skew) into one issue.
+      if (event?.event === "$exception") {
+        const list = (event.properties?.["$exception_list"] ?? []) as Array<{
+          $exception_type?: string;
+          $exception_message?: string;
+        }>;
+        const first = list[0];
+        const message = first?.$exception_message ?? "";
+        if (
+          first?.$exception_type === "ChunkLoadError" ||
+          /chunk|loading chunk|dynamically imported module/i.test(message)
+        ) {
+          event.properties = {
+            ...event.properties,
+            $exception_fingerprint: "chunk-load-error",
+          };
+        }
+      }
+      return event;
+    },
   });
 }
