@@ -86,6 +86,12 @@ export function ConsentBanner() {
         </Link>
       </p>
 
+      <p className="mt-2 text-xs text-muted-foreground/80 leading-normal">
+        Plníme tím zákon o elektronických komunikacích (§ 89 odst. 3 ZEK) a
+        nařízení GDPR. Souhlas je dobrovolný a kdykoli ho můžeš změnit nebo
+        odvolat v Nastavení.
+      </p>
+
       <div className="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
         <Button
           type="button"
