@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
-import { ShieldCheck, X } from "lucide-react";
+import { Cookie, X } from "lucide-react";
 import posthog from "posthog-js";
 
 import { Button } from "@/components/ui/button";
@@ -43,29 +43,24 @@ export function ConsentBanner() {
   return (
     <div
       role="dialog"
+      aria-labelledby="consent-banner-title"
       aria-label="Souhlas s měřením používání"
-      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl rounded-xl border bg-card p-4 shadow-lg"
+      className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-lg rounded-xl border bg-card p-4 sm:p-5 shadow-lg"
     >
-      <div className="flex items-start gap-3">
-        <span
-          aria-hidden="true"
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted"
-        >
-          <ShieldCheck className="size-5 text-primary" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="font-medium">Řekněte nám, co v Tappce funguje</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Se souhlasem měříme, jak se používají rezervace a čtení, a
-            zaznamenáváme chyby, abychom je uměli opravit. Nikdy je nepředáváme
-            škole ke kontrole. Data držíme v EU. Bez souhlasu neměříme nic.{" "}
-            <Link
-              href="/ochrana-soukromi"
-              className="underline underline-offset-4 hover:text-foreground"
-            >
-              Jak chráníme soukromí
-            </Link>
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+          >
+            <Cookie className="size-5" />
+          </span>
+          <h2
+            id="consent-banner-title"
+            className="font-heading text-base font-semibold text-foreground tracking-tight"
+          >
+            Řekněte nám, co v Tappce funguje
+          </h2>
         </div>
         <Button
           type="button"
@@ -73,27 +68,42 @@ export function ConsentBanner() {
           size="icon-sm"
           aria-label="Zavřít bez souhlasu"
           onClick={() => choose(false)}
-          className="shrink-0"
+          className="text-muted-foreground hover:text-foreground shrink-0 -mr-1 -mt-1"
         >
-          <X />
+          <X className="size-4" />
         </Button>
       </div>
-      <div className="mt-3 flex gap-2 pl-12">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => choose(true)}
+
+      <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+        Se souhlasem měříme, jak se používají rezervace a čtení, a
+        zaznamenáváme chyby, abychom je uměli opravit. Nikdy je nepředáváme
+        škole ke kontrole. Data držíme v EU. Bez souhlasu neměříme nic.{" "}
+        <Link
+          href="/ochrana-soukromi"
+          className="font-medium underline underline-offset-4 text-foreground hover:text-primary transition-colors inline-block"
         >
-          Přijmout
-        </Button>
+          Jak chráníme soukromí →
+        </Link>
+      </p>
+
+      <div className="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
         <Button
           type="button"
           size="sm"
           variant="outline"
+          className="w-full sm:w-auto min-w-24"
           onClick={() => choose(false)}
         >
           Odmítnout
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="w-full sm:w-auto min-w-24"
+          onClick={() => choose(true)}
+        >
+          Přijmout
         </Button>
       </div>
     </div>
