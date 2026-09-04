@@ -18,6 +18,11 @@ No code. Owner: maintainer + Spirit of TAP, z.s. (IČO 23152036, L 80354 u Měst
 
 Controller for GDPR is Spirit of TAP, z.s. (not ČZU). PostHog = processor.
 
+Data model (two strictly separated worlds):
+- **App data ↔ school:** account + content (essays, reservations, loans) replaces school Excel files; PEF ČZU sees this data for study agenda, as it saw the spreadsheets. Access to the app: only active students/employees; čtení + rezervace visible to all app members. School copies/backups are the school's responsibility under its own rules.
+- **Analytics (PostHog EU): never shared with the school.** Not for checking whether/how often anyone opens the app. Clicks/views/errors/session recordings serve only bug reproduction and fixes, only with consent. No essay/message/document content is ever read.
+- **Hosting:** operational DB in Switzerland (EU adequacy decision); analytics in PostHog EU.
+
 - [ ] Decide host: use **EU Cloud** `https://eu.i.posthog.com` + `https://eu-assets.i.posthog.com`. If `NEXT_PUBLIC_POSTHOG_HOST` currently points to `us.*`, migrate project to EU before prod rollout.
 - [ ] Sign PostHog DPA in org settings (PostHog = processor, Spirit of TAP, z.s. = controller). Record date + signer (statutory: Tuuli Co. Družstvo, zastoupena Julie Holá).
 - [ ] Update privacy notice (Czech, gender-neutral per `DESIGN.md`): what is collected (pageview, clicks, errors, replay if enabled), purpose (improve app), retention (e.g. 90d events / 30d replay), how to withdraw (banner + `Nastavení → Soukromí`), contact for erasure.

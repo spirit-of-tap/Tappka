@@ -51,7 +51,8 @@ export function ConsentBanner() {
       <p className="font-medium">Řekněte nám, co v Tappce funguje</p>
       <p className="mt-1 text-sm text-muted-foreground">
         Se souhlasem měříme, jak se používají rezervace a čtení, a
-        zaznamenáváme chyby. Data držíme v EU a nečteme obsah esejí ani zpráv.
+        zaznamenáváme chyby, abychom je uměli opravit. Nikdy je nepředáváme
+        škole ke kontrole. Data držíme v EU a nečteme obsah esejí ani zpráv.
         Bez souhlasu neměříme nic.{" "}
         <Link
           href="/ochrana-soukromi"

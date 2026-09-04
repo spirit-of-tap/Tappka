@@ -8,7 +8,7 @@ import { ArrowRight } from "lucide-react";
 export const metadata: Metadata = {
   title: "Ochrana soukromí",
   description:
-    "Jak Tappka zpracovává osobní údaje: správce, účely, uchovávání, práva a soubory cookies.",
+    "Jak Tappka zpracovává osobní údaje: správce, co se sdílí se školou, k čemu slouží měření používání a jaká máte práva.",
 };
 
 export default function PrivacyPage() {
@@ -54,8 +54,8 @@ export default function PrivacyPage() {
               Ochrana soukromí
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground">
-              Jak Tappka nakládá s osobními údaji a co znamená souhlas
-              s měřením používání.
+              Dvě věci držíme přísně odděleně: data aplikace, která patří
+              studiu, a měření používání, které slouží jen k opravám.
             </p>
           </header>
 
@@ -69,73 +69,69 @@ export default function PrivacyPage() {
               Správcem osobních údajů je spolek{" "}
               <strong>Spirit of TAP, z.s.</strong>, IČO 23152036, se sídlem
               Blatenská 4018, 430 03 Chomutov, zapsaný ve spolkovém rejstříku
-              vedeném Městským soudem v Praze, spisová značka L 80354.
+              vedeném Městským soudem v Praze, spisová značka L 80354. Spolek
+              provozuje Tappku proto, aby pomáhal studujícím s jejich studiem.
             </p>
           </section>
 
           <section className="space-y-4">
             <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Jaké údaje zpracováváme
-            </h2>
-            <ul className="list-disc pl-6 space-y-2 text-base text-foreground/80">
-              <li>
-                <strong>Účet:</strong> jméno, e-mail a zařazení do týmu — bez
-                nich se nelze přihlásit a používat aplikaci.
-              </li>
-              <li>
-                <strong>Obsah, který vytváříte:</strong> rezervace, eseje,
-                výpůjčky a další záznamy podle toho, které části aplikace
-                používáte.
-              </li>
-              <li>
-                <strong>Měření používání (pouze se souhlasem):</strong> jak se
-                používají rezervace a čtení a kdy nastane chyba. Neměříme obsah
-                esejí, zpráv ani dokumentů — pouze to, která část aplikace se
-                otevřela a jaká akce proběhla.
-              </li>
-            </ul>
-          </section>
-
-          <section className="space-y-4">
-            <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Proč a na jakém základě
-            </h2>
-            <ul className="list-disc pl-6 space-y-2 text-base text-foreground/80">
-              <li>
-                <strong>Provoz aplikace</strong> (účet a obsah): plnění účelu
-                spolku — podpora studujících Inovativního podnikání na PEF ČZU.
-              </li>
-              <li>
-                <strong>Měření používání a chyb</strong>: výhradně váš souhlas
-                v dialogu při první návštěvě. Souhlas kdykoli odvoláte
-                odmítnutím v tomto dialogu nebo zprávou přes Zpětnou vazbu
-                v aplikaci. Bez souhlasu se neměří nic.
-              </li>
-            </ul>
-          </section>
-
-          <section className="space-y-4">
-            <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Jak dlouho údaje držíme
-            </h2>
-            <ul className="list-disc pl-6 space-y-2 text-base text-foreground/80">
-              <li>Účet a obsah: po dobu studia a členství ve spolku.</li>
-              <li>Události měření používání: nejdéle 90 dní.</li>
-              <li>Chybové záznamy: nejdéle 30 dní.</li>
-            </ul>
-          </section>
-
-          <section className="space-y-4">
-            <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Komu údaje předáváme
+              Kdo má do aplikace přístup
             </h2>
             <p>
-              Data neběží přes žádné reklamní sítě. Měření používání zajišťuje
-              zpracovatel <strong>PostHog</strong> s uložením v EU. Bezpečnostní
-              a provozní zázemí aplikace běží u poskytovatele hostingu databáze.
-              Se zpracovateli má spolek uzavřené smlouvy o zpracování osobních
+              Přístup mají pouze aktivně studující a zaměstnanci:ky školy.
+              Přístup neschvalujeme nikomu mimo školu. Čtení a rezervace jsou
+              viditelné pro všechny, kdo do aplikace patří — nic z toho není
+              veřejné na internetu.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Data aplikace a škola
+            </h2>
+            <p>
+              Účet (jméno, e-mail, tým) a obsah, který vytváříte — eseje,
+              rezervace, výpůjčky a další studijní záznamy — postupně nahrazují
+              excelové tabulky, které dnes vede škola. Tato data proto škola
+              (PEF ČZU) vidí a používá pro studijní agendu, stejně jako dřív
+              viděla tabulky.
+            </p>
+            <p>
+              Co škola se svými kopiemi a zálohami dělá dál, je mimo naše ruce:
+              za jejich další nakládání odpovídá škola podle vlastních pravidel.
+              Provozní data aplikace běží v databázi hostované ve Švýcarsku —
+              zemi, kterou EU uznává jako poskytující odpovídající ochranu
               údajů.
             </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              Měření používání: jen k opravám, nikdy ke kontrole
+            </h2>
+            <p>
+              <strong>
+                Údaje z měření používání škole nikdy nepředáváme.
+              </strong>{" "}
+              Neslouží k tomu, aby škola zjišťovala, zda a jak často aplikaci
+              otevíráte — na takový dotaz škole data neposkytneme.
+            </p>
+            <p>
+              K čemu tedy slouží? Když nahlásíte, že se něco rozbilo, potřebujeme
+              vidět, co se stalo: kde se klikalo, jaká chyba nastala a případně
+              záznam relace, abychom chybu uměli zopakovat a opravit. Proto —
+              a pouze se souhlasem v dialogu při první návštěvě — měříme, jak
+              se používají rezervace a čtení, a zaznamenáváme chyby. Nečteme
+              obsah esejí, zpráv ani dokumentů. Bez souhlasu se neměří nic
+              a souhlas lze kdykoli odvolat.
+            </p>
+            <ul className="list-disc pl-6 space-y-2 text-base text-foreground/80">
+              <li>Události měření používání: nejdéle 90 dní.</li>
+              <li>Chybové záznamy a záznamy relací: nejdéle 30 dní.</li>
+              <li>Uložení v EU u zpracovatele PostHog, se kterým má spolek
+                smlouvu o zpracování osobních údajů.</li>
+            </ul>
           </section>
 
           <section className="space-y-4">
