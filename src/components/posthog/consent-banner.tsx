@@ -97,7 +97,7 @@ export function ConsentBanner() {
           type="button"
           size="sm"
           variant="outline"
-          className="w-full sm:w-auto min-w-24 dark:border-foreground/25 dark:bg-foreground/10 dark:hover:bg-foreground/20"
+          className="w-full sm:w-auto min-w-24"
           onClick={() => choose(false)}
         >
           Odmítnout
@@ -106,7 +106,7 @@ export function ConsentBanner() {
           type="button"
           size="sm"
           variant="outline"
-          className="w-full sm:w-auto min-w-24 dark:border-foreground/25 dark:bg-foreground/10 dark:hover:bg-foreground/20"
+          className="w-full sm:w-auto min-w-24"
           onClick={() => choose(true)}
         >
           Přijmout
