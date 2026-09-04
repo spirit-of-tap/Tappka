@@ -94,19 +94,26 @@ function withoutUndefined(
 }
 
 function scheduleFlush(): void {
-  // NOTE: intentionally no `after()` from "next/server" here. A static import
-  // of `after` poisons every importer (middleware, edge instrumentation,
-  // client components via auth-helpers) and breaks the Turbopack build, since
-  // `after` is only available in App Router server contexts. The batch
-  // processor handles delivery; callers on critical paths (e.g.
-  // instrumentation onRequestError) await `serverLogger.flush()` explicitly.
-  try {
-    void loggerProvider.forceFlush().catch(() => {
-      // Delivery failures must never break application behavior.
-    });
-  } catch {
-    // Outside a Next.js request, the batch processor handles delivery.
-  }
+  // `after()` keeps the serverless function alive after the response so the
+  // OTLP export can finish. Without it, Vercel freezes the function and the
+  // export is aborted: logs show in Vercel (synchronous console capture) but
+  // never reach PostHog. Dynamic import keeps edge/middleware/client bundles
+  // free of "next/server" (a static import breaks the Turbopack build, since
+  // `after` is only available in App Router server contexts).
+  void (async () => {
+    try {
+      const { after } = await import("next/server");
+      after(() => loggerProvider.forceFlush());
+    } catch {
+      // Outside a Next.js request (or where `after` is unavailable), fall
+      // back to a best-effort flush; the batch processor handles delivery.
+      try {
+        await loggerProvider.forceFlush();
+      } catch {
+        // Delivery failures must never break application behavior.
+      }
+    }
+  })();
 }
 
 function emit(
