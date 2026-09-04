@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
+import { ShieldCheck } from "lucide-react";
 import posthog from "posthog-js";
 
 import { Button } from "@/components/ui/button";
@@ -48,19 +49,29 @@ export function ConsentBanner() {
       aria-label="Souhlas s měřením používání"
       className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl rounded-xl border bg-card p-4 shadow-lg"
     >
-      <p className="font-medium">Řekněte nám, co v Tappce funguje</p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Se souhlasem měříme, jak se používají rezervace a čtení, a
-        zaznamenáváme chyby, abychom je uměli opravit. Nikdy je nepředáváme
-        škole ke kontrole. Data držíme v EU a nečteme obsah esejí ani zpráv.
-        Bez souhlasu neměříme nic.{" "}
-        <Link
-          href="/ochrana-soukromi"
-          className="underline underline-offset-4 hover:text-foreground"
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted"
         >
-          Jak chráníme soukromí
-        </Link>
-      </p>
+          <ShieldCheck className="size-5 text-primary" />
+        </span>
+        <div>
+          <p className="font-medium">Řekněte nám, co v Tappce funguje</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Se souhlasem měříme, jak se používají rezervace a čtení, a
+            zaznamenáváme chyby, abychom je uměli opravit. Nikdy je nepředáváme
+            škole ke kontrole. Data držíme v EU a měření nesbírá obsah esejí
+            ani zpráv. Bez souhlasu neměříme nic.{" "}
+            <Link
+              href="/ochrana-soukromi"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              Jak chráníme soukromí
+            </Link>
+          </p>
+        </div>
+      </div>
       <div className="mt-3 flex gap-2">
         <Button type="button" size="sm" variant="outline" onClick={accept}>
           Přijmout
