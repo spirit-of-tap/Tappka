@@ -1,6 +1,14 @@
 import { withPostHogConfig } from "@posthog/nextjs-config";
 import type { NextConfig } from "next";
 
+import { POSTHOG_UI_HOST } from "./src/lib/posthog-config";
+
+const posthogApiKey = process.env.POSTHOG_API_KEY;
+const posthogProjectId = process.env.POSTHOG_PROJECT_ID;
+const posthogSourceMapsEnabled = Boolean(
+  posthogApiKey?.trim() && posthogProjectId?.trim()
+);
+
 const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
@@ -42,11 +50,11 @@ const nextConfig: NextConfig = {
 };
 
 export default withPostHogConfig(nextConfig, {
-  personalApiKey: process.env.POSTHOG_API_KEY!,
-  projectId: process.env.POSTHOG_PROJECT_ID,
-  host: process.env.POSTHOG_HOST,
+  personalApiKey: posthogApiKey ?? "",
+  projectId: posthogProjectId,
+  host: process.env.POSTHOG_HOST ?? POSTHOG_UI_HOST,
   sourcemaps: {
-    enabled: true,
+    enabled: posthogSourceMapsEnabled,
     deleteAfterUpload: true,
   },
 });
