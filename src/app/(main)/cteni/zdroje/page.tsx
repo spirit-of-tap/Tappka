@@ -11,7 +11,8 @@ import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyMedia } from '@/
 
 export default async function ZdrojePage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
   if (!user) redirect('/auth/login');
 
   const sources = await getContentSources(supabase, { pageSize: 60 });

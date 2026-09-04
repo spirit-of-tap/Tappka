@@ -92,7 +92,8 @@ async function resolveActorProfileId(
   supabase: Awaited<ReturnType<typeof createClient>>,
   adminClient: SupabaseClient<Database>
 ): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
   if (user) {
     const profile = await getCurrentUserProfile(supabase, { user });
     if (profile?.id) return profile.id;
@@ -132,7 +133,8 @@ export async function POST(request: NextRequest) {
     } else {
       // If called by user, just verify they are authenticated
       // HC generation is a system task that benefits everyone
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: claimsData } = await supabase.auth.getClaims();
+      const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
       if (!user) {
         return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
       }

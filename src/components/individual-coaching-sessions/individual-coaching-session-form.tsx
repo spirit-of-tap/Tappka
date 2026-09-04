@@ -58,7 +58,8 @@ export function IndividualCoachingSessionForm({ profileId, coachProfiles, initia
     setLoading(true)
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: claimsData } = await supabase.auth.getClaims()
+      const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null
       if (!user) { throw new Error("Nepřihlášen") }
 
       const isEdit = !!initial?.id

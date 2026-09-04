@@ -79,9 +79,8 @@ interface ParsedTeamActivityRequest {
 
 export async function requireTeamActivityApiContext(): Promise<TeamActivityApiContext | ApiFailure> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
 
   if (!user) {
     return { response: NextResponse.json({ error: "Neautorizováno" }, { status: 401 }) }

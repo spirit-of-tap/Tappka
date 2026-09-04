@@ -10,7 +10,10 @@ const update = vi.fn()
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
-    auth: { getUser: async () => ({ data: { user: { id: "u1" } } }) },
+    auth: {
+      getUser: async () => ({ data: { user: { id: "u1" } } }),
+      getClaims: async () => ({ data: { claims: { sub: "u1" } } }),
+    },
     from: () => ({
       insert: (...args: unknown[]) => {
         insert(...args)

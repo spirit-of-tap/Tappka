@@ -25,7 +25,8 @@ const CHIP_CLASS: Record<MeetingLoop, string> = {
 export default async function MeetingDetailPage({ params }: MeetingDetailPageProps) {
   const { meetingId } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: claimsData } = await supabase.auth.getClaims()
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null
   if (!user) redirect("/auth/login")
 
   const profile = await getSessionProfile()

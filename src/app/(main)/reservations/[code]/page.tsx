@@ -31,7 +31,8 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
   const supabase = await createClient();
 
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
   // Fetch the user's profile to get the profile ID (used for ownership checks)
   const currentUserProfile = user ? await getCurrentUserProfile(supabase, { user }) : null;
 
