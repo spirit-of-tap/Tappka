@@ -5,6 +5,7 @@ import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "@/components/ui/sonner";
 import { PostHogProvider } from "./posthog-provider";
 import { PostHogPageView } from "./posthog-pageview";
+import { ConsentBanner } from "@/components/posthog/consent-banner";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -124,6 +125,7 @@ export default function RootLayout({
             <PostHogPageView />
             {children}
             <Toaster />
+            <ConsentBanner />
           </ThemeProvider>
         </PostHogProvider>
       </body>

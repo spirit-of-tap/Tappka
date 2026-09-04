@@ -46,8 +46,10 @@ export default async function DashboardLayout({
     <SpotlightProvider user={sidebarUser}>
       <PostHogIdentify
         distinctId={profile.id}
+        role={profile.role}
         betaAccess={profile.beta_access_granted_at != null}
         betaCohort={sidebarUser.beta_cohort}
+        teamId={profile.team_id}
       />
       <SidebarProvider>
         <AppSidebar user={sidebarUser} />
