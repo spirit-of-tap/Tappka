@@ -59,7 +59,7 @@ export function ConsentBanner() {
             id="consent-banner-title"
             className="font-heading text-base font-semibold text-foreground tracking-tight"
           >
-            Pomoz nám Tappku vylepšovat
+            Ať víme, když se něco rozbije
           </h2>
         </div>
         <Button
@@ -75,9 +75,9 @@ export function ConsentBanner() {
       </div>
 
       <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-        S tvým souhlasem měříme, jak Tappku používáš, a když se ti něco rozbije,
-        pomůže nám to chybu rychle najít a opravit. Data držíme v EU a škole
-        je nepředáváme. Bez souhlasu neměříme nic.{" "}
+        S tvým souhlasem měříme, jak Tappku používáš, abychom rychle opravili,
+        když se něco rozbije. Data držíme v EU, škole je nepředáváme a bez
+        souhlasu neměříme nic.{" "}
         <Link
           href="/ochrana-soukromi"
           className="font-medium underline underline-offset-4 text-foreground hover:text-primary transition-colors inline-block"
@@ -86,10 +86,9 @@ export function ConsentBanner() {
         </Link>
       </p>
 
-      <p className="mt-2 text-xs text-muted-foreground/80 leading-normal">
-        Plníme tím zákon o elektronických komunikacích (§ 89 odst. 3 ZEK) a
-        nařízení GDPR. Souhlas je dobrovolný a kdykoli ho můžeš změnit nebo
-        odvolat v Nastavení.
+      <p className="mt-3.5 pt-2.5 border-t border-border/50 text-[11px] leading-normal text-muted-foreground/70">
+        Zákon o el. komunikacích (§ 89 odst. 3 ZEK) a nařízení GDPR. Volba je
+        dobrovolná a kdykoli ji změníš v Nastavení.
       </p>
 
       <div className="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
