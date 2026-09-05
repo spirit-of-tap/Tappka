@@ -35,7 +35,9 @@
     "db:export": "node scripts/package-json-helpers/export-db-sql.mjs",
     "cleanup:e2e": "node scripts/cleanup-e2e-data.mjs",
     "wiki": "node scripts/generate-docs-html-shims.mjs && vitepress dev docs --open",
-    "wiki:doctor": "node scripts/check-docs-links.mjs"
+    "wiki:doctor": "node scripts/check-docs-links.mjs",
+    "docs:build": "node scripts/generate-docs-html-shims.mjs && vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -142,6 +144,7 @@
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.4",
     "jsdom": "^29.1.1",
+    "mermaid": "^11.17.2",
     "npm-run-all2": "^9.0.3",
     "pg": "^8.21.0",
     "postcss": "^8.5.26",

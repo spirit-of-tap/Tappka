@@ -121,8 +121,8 @@ git commit -m "feat: add semantic status tokens and shared focus-ring utility"
 
 **Interfaces:**
 - Produces: `pluralizeCz(count: number, forms: [one: string, few: string, many: string]): string`.
-- Produces: `<PageHeader title={string} description?={string} count?={{ value: number; label: string }} action?={ReactNode} />`.
-- Produces: `<PageShell size?={"full" | "narrow" | "medium" | "wide"} className?={string}>{children}</PageShell>` (default `size="full"`).
+- Produces: `\<PageHeader title={string} description?={string} count?={\{ value: number; label: string }} action?={ReactNode} />`.
+- Produces: `\<PageShell size?={"full" | "narrow" | "medium" | "wide"} className?={string}>{children}\</PageShell>` (default `size="full"`).
 - Consumes (PageShell only): `cn` from `@/lib/utils`.
 
 - [ ] **Step 1: Write the failing test for `pluralizeCz`**
@@ -1044,7 +1044,7 @@ git commit -m "fix: schuzky header/focus-ring/a11y/copy/status findings from des
 
 - [ ] **Step 1: Replace the header with `PageHeader`**
 
-Same pattern as Task 8 Step 1: replace `koucovani/page.tsx`'s hand-rolled `h1` + oversized count block with `<PageHeader title="Koučování" description={...} count={{ value: sessions.length, label: pluralizeCz(sessions.length, ["sezení", "sezení", "sezení"]) }} />` (the Czech word "sezení" doesn't inflect across 1/2-4/5+, so all three forms are identical — still route it through `pluralizeCz` for consistency/DRY with the rest of the app rather than a one-off literal).
+Same pattern as Task 8 Step 1: replace `koucovani/page.tsx`'s hand-rolled `h1` + oversized count block with `\<PageHeader title="Koučování" description={...} count={\{ value: sessions.length, label: pluralizeCz(sessions.length, ["sezení", "sezení", "sezení"]) }} />` (the Czech word "sezení" doesn't inflect across 1/2-4/5+, so all three forms are identical — still route it through `pluralizeCz` for consistency/DRY with the rest of the app rather than a one-off literal).
 
 - [ ] **Step 2: Fix icon-only button accessibility and touch targets**
 
@@ -1129,7 +1129,7 @@ In `team-reflection-calendar.tsx` (around line 147), change the base-breakpoint 
 
 - [ ] **Step 5: Replace the header with `PageHeader`**
 
-In `src/app/(main)/tymova-reflexe/page.tsx` (around lines 33-39), replace the hand-rolled `h1` + oversized reflection-count block with `<PageHeader title="Týmová reflexe" description={...} count={{ value: reflections.length + semesterReflections.length, label: "reflexí" }} />` (adjust the exact description string to whatever the current `<p>` under the h1 says).
+In `src/app/(main)/tymova-reflexe/page.tsx` (around lines 33-39), replace the hand-rolled `h1` + oversized reflection-count block with `\<PageHeader title="Týmová reflexe" description={...} count={\{ value: reflections.length + semesterReflections.length, label: "reflexí" }} />` (adjust the exact description string to whatever the current `<p>` under the h1 says).
 
 - [ ] **Step 6: Add the three missing `loading.tsx` files**
 
@@ -1219,7 +1219,7 @@ In `komunita-content.tsx` (around lines 100-101), add a "Vymazat hledání" `But
 
 - [ ] **Step 5: Fix the duplicated thumbnail sizing**
 
-In `profil/[id]/page.tsx` (lines 184 and 233), remove the inline `style={{ height: '60px' }}` and keep the existing `h-15` Tailwind class (Tailwind v4's dynamic spacing scale already resolves `h-15` to `3.75rem` = 60px, so this is a no-op visually and just removes the redundant declaration).
+In `profil/[id]/page.tsx` (lines 184 and 233), remove the inline `style={\{ height: '60px' }}` and keep the existing `h-15` Tailwind class (Tailwind v4's dynamic spacing scale already resolves `h-15` to `3.75rem` = 60px, so this is a no-op visually and just removes the redundant declaration).
 
 - [ ] **Step 6: Apply `PageShell` across the section**
 

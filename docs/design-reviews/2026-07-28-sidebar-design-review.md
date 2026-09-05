@@ -227,7 +227,7 @@ window.
 | medium | Clickable Links/cards throughout the section don't share the app's focus-visible ring treatment | `src/components/komunita/user-card.tsx:25` |
 | medium | The profile page opts out of the section's shared page shell (`container mx-auto py-6 space-y-6`) with no shared "detail page" abstraction | `src/app/(main)/komunita/profil/[id]/page.tsx:68` |
 | medium | Empty/no-results states are descriptive dead ends with no actionable CTA, even though a working "clear search" affordance already exists one line away | `src/components/komunita/komunita-content.tsx:100` |
-| low | Competing/duplicated sizing definitions (`h-15` class + inline `style={{height:'60px'}}`) on the same essay-thumbnail node | `src/app/(main)/komunita/profil/[id]/page.tsx:184` |
+| low | Competing/duplicated sizing definitions (`h-15` class + inline `style={\{height:'60px'}}`) on the same essay-thumbnail node | `src/app/(main)/komunita/profil/[id]/page.tsx:184` |
 
 ### Čtení (`/prehled`, `/hledat`, `/eseje/*`, `/knihovna/*`, `/settings/kniha-knih`) — beta
 

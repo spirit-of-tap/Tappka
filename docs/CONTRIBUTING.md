@@ -1,99 +1,71 @@
-# Contributing to Tappka
+# Jak přispívat do projektu Tappka
 
-# Environment Variables
+Tento dokument shrnuje zásadní postupy pro vývojář:ky, kteří chtějí přispívat do kódu platformy Tappka.
 
-Make sure that the project can run without setting up any environment variables, this is so that we can get new T's to start vibecoding without them giving up. If there are any environment variables that are required, either add them to the `.env.example` file if they are not sensitive or Create a guide here for how to set them up and add it to the script in `scripts/package-json-helpers/required-dev-env.js`. The script will check for the environment variables and if they are not set, it will prompt the user to set them up.
+---
 
-## Google OAuth
+## 1. Proměnné prostředí a hladký start
 
-For local development, you will need to get google client secret. You can either ask Tom for the `GOOGLE_CLIENT_SECRET` or create your own oauth app and set your own `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` on new google cloud console project here: https://console.cloud.google.com/auth/clients/create
+Projekt je navržen tak, aby jej bylo možné spustit lokálně bez zdlouhavého ručního nastavování proměnných. Cílem je umožnit novým členům:kám týmu začít okamžitě vyvíjet (vibecoding) bez zbytečných překážek.
 
-1. You will create a new google cloud console project
-2. You will create a new web oauth app
+- Pokud vznikne potřeba nové proměnné prostředí a není citlivá, přidej ji do `.env.example`.
+- Skripty v `scripts/package-json-helpers/` při startu automaticky kontrolují přítomnost potřebných proměnných a v případě potřeby tě vyzvou k jejich doplnění.
 
-### Authorized Javascript Origins
-```
-http://localhost:3000
-```
+### Google OAuth pro lokální vývoj
 
-### Authorized Redirect URIs
-```
-http://127.0.0.1:54321/auth/v1/callback
-```
+Pro lokální přihlašování přes Google je vyžadován Google OAuth Client Secret:
+1. Můžeš požádat správce projektu o sdílený vývojový klíč.
+2. Nebo si vytvoř vlastní testovací OAuth aplikaci v [Google Cloud Console](https://console.cloud.google.com/auth/clients/create):
+   - **Authorized JavaScript Origins:** `http://localhost:3000`
+   - **Authorized Redirect URIs:** `http://127.0.0.1:54321/auth/v1/callback`
 
-# Database migrations
+---
 
-Here's how to proceed if you want to change anything about the database. I recommend reading [Data layer](/data-layer) to understand how the data layer works before you start.
+## 2. Databázové migrace
 
-## Database schema or RLS policies
-1. Edit the schema in `db/schema/`
-2. Run `pnpm db:migrate` to generate a new migration. IF it asks you whether something is a rename but you changed the type you need to say no. Otherwise answer how it is.
+Před úpravami databáze si prostuduj podrobný návod v [`docs/data-layer.md`](https://github.com/spirit-of-tap/Tappka/blob/production/docs/data-layer.md) a [`docs/runbooks/database-migrations.md`](https://github.com/spirit-of-tap/Tappka/blob/production/docs/runbooks/database-migrations.md).
+
+### Změna schématu nebo RLS politik:
+1. Uprav definici v `db/schema/`.
+2. Spusť generování a aplikaci migrace:
+   ```bash
+   pnpm db:migrate
+   ```
+   *(Pokud se Drizzle zeptá, zda se jedná o přejmenování, odpověz podle skutečnosti. Pokud došlo ke změně typu, zvol ne).*
+3. Pokud potřebuješ čistý stav bez ohledu na stávající lokální data:
+   ```bash
+   pnpm db:force-migrate
+   ```
+
+### PostgreSQL funkce a triggery:
+1. Vygeneruj prázdnou migraci:
+   ```bash
+   pnpm db:generate:custom
+   ```
+2. Vepiš do nového SQL souboru definici funkce nebo triggeru.
+3. Aplikuj migraci do lokální databáze:
+   ```bash
+   pnpm db:up
+   ```
+
+---
+
+## 3. Spouštění testů
+
+Před odesláním kódu vždy spusť testovací sadu:
 ```bash
-pnpm db:migrate
-```
-```bash
-pnpm db:force-migrate # If you don't care about the contents of your local database.
-```
-## Functions & triggers
-To change the functions or triggers, you need to:
-
-1. Generate a new custom migration
-```bash
-pnpm db:generate:custom
-```
-2. Edit this new migration to add the function or trigger.
-3. Apply the migration
-```bash
-pnpm db:up # Apply the migration
-```
-```bash
-pnpm db:reset # Wipe your local database and run all migrations from the start
+pnpm test          # Rychlé unit a komponentní testy
+pnpm test:watch    # Režim automatického spouštění při úpravě kódu
+pnpm test:integration  # Testy databázových migrací a RLS v Dockeru
+pnpm test:e2e      # End-to-end toky v Playwrightu
 ```
 
-# Tests
-To run the tests, you need to:
-```bash
-pnpm test
-```
-```bash
-pnpm test:watch # Watch for changes and run the tests automatically
-```
+---
 
-# Supabase
+## 4. Vývojová prostředí a nasazení
 
-Supabase database is developed locally and synced automatically whenever pushed to preview or production branch
-Supabase Auth needs to be configured both on the project itself and in the local development environment.
-
-In case there is a conflict on the preview branch, somebody will reset the database. Therefore **do not store anything important in the preview database**. For important testing data put them into supabase/seed.sql
-
-## Recreating the Supabase preview branch
-
-If the persistent Supabase `preview` branch is deleted and recreated, it gets a **new project ref**. Update both of the following before auth/SMTP config will work again:
-
-1. **Set `[remotes.preview] project_id` in [`supabase/config.toml`](/supabase/config.toml)** to the new branch project ref.
-   - Find the ref in the [Supabase branches dashboard](https://supabase.com/dashboard/project/jmxckxeiletcyhysheib/branches) (parent project), or via:
-     ```bash
-     pnpm supabase branches list --project-ref jmxckxeiletcyhysheib --output json
-     ```
-   - Example shape in `config.toml`:
-     ```toml
-     [remotes.preview]
-     project_id = "<new-preview-project-ref>"
-     ```
-   - Open the new branch project: `https://supabase.com/dashboard/project/<new-preview-project-ref>`
-
-2. **Set the Google OAuth authorized redirect URI** to the new Supabase Auth callback:
-   - Callback URL format: `https://<new-preview-project-ref>.supabase.co/auth/v1/callback`
-   - Edit the shared client in [Google Auth clients](https://console.cloud.google.com/auth/clients) 
-   - Replace the old preview callback entry under **Authorized redirect URIs** with the new one.
-
-
-# Recommended Tools
-
-It is very nice to setup mcp with cursor for supabase. Look at [Supabase locally](http://localhost:54323) and go to the top for connection button. It will give you the option.
-There are cursor rules made for this nextjs project.
-
-# Publishing the project to the public
-
-You can simply **push to the preview branch** and it will be deployed to the preview environment. - [preview.tiimi.cz](https://preview.tiimi.cz)
-For production you will need to make a **pull request to the production branch** and it will be deployed to the production environment. You can approve it yourself, it's just for protection so that you don't accidentally deploy something to production.
+- **Lokální prostředí:** `http://localhost:3000` (Supabase Studio běží na `http://localhost:54323`).
+- **Náhled (Preview):** Push do větve `preview` automaticky nasadí aplikaci na [preview.tiimi.cz](https://preview.tiimi.cz).
+  > [!WARNING]
+  > V náhledové databázi neukládej trvalá data — může být kdykoliv resetována. Důležitá testovací data vkládej do `supabase/seed.sql`.
+- **Produkce:** Změny do produkce se nasazují otevřením Pull Requestu z větve `preview` do větve `production`. Po schválení a začlenění proběhne automatický deploy na [tiimi.cz](https://tiimi.cz).

@@ -98,5 +98,4 @@ scripts/push_descriptions_to_prod.py
 # VitePress
 docs/.vitepress/cache
 docs/.vitepress/dist
-.vitepress
 

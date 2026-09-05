@@ -1,13 +1,12 @@
-# Runbook: Migration-history drift (malformed version `20260419`)
+# Příručka: Řešení driftu migrační historie (verze 20260419)
 
-**Status:** Local fixed 2026-07-08. The malformed `20260419` was a **local-only** problem —
-**production never had it**, so production needs NO `20260419` repair. A *separate*
-production divergence does need attention before deploying `esejbanka` — see
-"Production reality (verified 2026-07-08)" below.
+**Stav:** Vyřešeno lokálně k 2026-07-08. Chybný formát verze `20260419` byl **pouze lokální problém** — **v produkci se tato chyba nikdy nevyskytla**, takže produkční databáze žádnou opravu verze `20260419` nevyžaduje.
 
-## Symptom
+---
 
-`supabase migration up` or `supabase db push` fails with:
+## 1. Příznak chyby
+
+Příkaz `supabase migration up` nebo `supabase db push` selže s chybovou hláškou:
 
 ```
 Remote migration versions not found in local migrations directory.
@@ -15,139 +14,77 @@ Make sure your local git repo is up-to-date. If the error persists, try repairin
 supabase migration repair --status reverted 20260419
 ```
 
-This blocks **all** new migrations from being applied through the CLI — not just the one you were trying to add.
+Tato chyba **zablokuje aplikaci všech nových migrací** přes Supabase CLI — nejen té, kterou se právě snažíš přidat.
 
-## Root cause
+---
 
-Every migration is versioned with a **14-digit** timestamp (`YYYYMMDDHHMMSS`, e.g. `20260612193007`) **except one**:
+## 2. Hlavní příčina
 
-| | Version | File |
-|---|---|---|
-| Malformed | `20260419` (8 digits) | `20260419_essays_title_trgm_idx.sql` |
-| Correct | `20260419000000` (14 digits) | `20260419000000_essays_title_trgm_idx.sql` |
+Každá migrace má mít v názvu **14místné časové razítko** (`YYYYMMDDHHMMSS`, např. `20260612193007`) **s výjimkou jediné**:
 
-The Supabase CLI only recognizes 14-digit versions. It sees version `20260419` recorded in the database's `supabase_migrations.schema_migrations` table but **cannot match it to any file it recognizes**, so it treats it as a remote-only migration and refuses to proceed.
+| Stav | Verze v DB | Název souboru |
+| :--- | :--- | :--- |
+| **Chybný formát** | `20260419` (8 číslic) | `20260419_essays_title_trgm_idx.sql` |
+| **Správný formát** | `20260419000000` (14 číslic) | `20260419000000_essays_title_trgm_idx.sql` |
 
-This is a form of **out-of-band drift**: the row was written to `schema_migrations` with a non-standard version (likely applied by hand or via a tool other than the CLI), and the filename matched that non-standard version.
+Supabase CLI rozpoznává výhradně 14místné verze. Když v tabulce `supabase_migrations.schema_migrations` narazí na osmimístnou verzi `20260419`, nedokáže ji spárovat s žádným souborem, vyhodnotí ji jako „vzdálenou migraci chybějící na disku“ a odmítne pokračovat.
 
-## The fix (forward-only, no reset, no data touched)
+Jde o formu **out-of-band driftu**: záznam byl do tabulky zapsán nestandardně (např. ručním spuštěním nebo nástrojem mimo CLI).
 
-Normalize the version to 14 digits in lockstep across **three** places:
+---
 
-1. **The migration file name** — rename so its version prefix is 14 digits.
-2. **The local** `schema_migrations` **table** (dev DB on port 54322).
-3. **The production** `schema_migrations` **table** (linked project).
+## 3. Postup opravy (Forward-only, bez resetu databáze)
 
-The file content is unchanged; only the version string moves from `20260419` to `20260419000000`. Nothing in the actual schema changes — this is pure migration-bookkeeping.
+Normalizace verze na 14 číslic probíhá synchronně na třech místech:
 
-### Fix locally (already done 2026-07-08)
+1. **Přejmenování souboru migrace** v repozitáři na 14místný tvar.
+2. **Aktualizace záznamu v lokální tabulce** `schema_migrations` (port 54322).
+3. **Případná oprava v produkční tabulce** (pokud by se tam chybná verze objevila).
+
+Samotný obsah souboru se nemění, schéma zůstává netknuté — jde čistě o evidenci migrací.
+
+### Lokální oprava:
 
 ```bash
-# 1. Rename the file (committed to git)
+# 1. Přejmenování souboru v Gitu
 git mv supabase/migrations/20260419_essays_title_trgm_idx.sql \
        supabase/migrations/20260419000000_essays_title_trgm_idx.sql
 
-# 2. Correct the local history table (local DB only, port 54322)
+# 2. Oprava lokální tabulky historie v Docker kontejneru
 docker exec supabase_db_Tappka psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
   -c "update supabase_migrations.schema_migrations set version='20260419000000' where version='20260419';"
 
-# 3. Verify the CLI is unblocked
-supabase migration up   # should now apply pending migrations cleanly
+# 3. Ověření, že je CLI odblokované
+pnpm supabase migration up
 ```
 
-### If a `20260419` (8-digit) version ever appears in a remote history
-
-Production's history (verified 2026-07-08 via dashboard) does **not** contain `20260419`,
-so no repair is needed there. Only if `supabase migration list` against some environment
-shows a bare 8-digit `20260419` do you repair it:
+### Kdyby se verze s 8 číslicemi objevila na vzdáleném projektu:
 
 ```bash
 supabase link --project-ref <PROJECT_ID>
 supabase migration repair --status reverted 20260419
 supabase migration repair --status applied 20260419000000
-supabase migration list   # local and remote columns should line up
+supabase migration list   # Sloupce local a remote musí lícovat
 ```
 
-The CI workflow `.github/workflows/deploy-supabase.yml` needs **no change** — it already
-uses `supabase db push` and documents `migration repair` as the drift remedy. Never add
-auto-repair to CI (it would rewrite history unconditionally every run).
+---
 
-## Deploying `esejbanka` to production — the out-of-order `--include-all` requirement
+## 4. Prevence budoucího driftu
 
-Background (verified 2026-07-08): production's history ends
-`… 20260303000000_update_profile_role_enum… → 20260621202500_add_rektorat_domain_to_auth_triggers`.
-The books/essays/reading-hub feature (15 migrations from `20260419000000` through
-`20260708203841`) has **never been deployed to prod** — deploying `esejbanka` is that
-feature's first prod wave.
+1. **Vždy vytvářej migrace přes CLI nebo Drizzle:**
+   - Standardní migrace schématu: `pnpm db:migrate` (volá `drizzle-kit generate`).
+   - Vlastní SQL: `pnpm db:generate:custom`.
+   - Obě cesty automaticky generují správné 14místné razítko.
+2. **Nikdy ručně needituj tabulku `supabase_migrations.schema_migrations`**, s výjimkou zdokumentovaných oprav.
+3. **Nikdy nepoužívej externí MCP nástroje typu `apply_migration`**, které zapisují historii mimo Supabase CLI.
+4. Pokud příkaz `supabase migration list` někdy ukáže verzi, která nemá přesně 14 znaků, oprav ji před nasazením výše uvedeným postupem.
 
-**Resolved:** `origin/production` was merged into `esejbanka` (2026-07-08), which brought
-`20260621202500_add_rektorat_domain_to_auth_triggers.sql` into the branch. The branch
-history is now a superset of prod's — so there is NO remote-only migration to trip
-`db push`. (Earlier drafts of this runbook said to copy the hotfix from the dashboard;
-the merge did it instead.)
+---
 
-**The real remaining gotcha — out-of-order timestamps:** most feature migrations
-(`20260419…`–`20260612…`) are timestamped *earlier* than production's already-applied
-`20260621202500`. So `supabase db push` will report:
+## 5. Drizzle deník a správa RLS politik
 
-```
-Found local migration files to be inserted before the last migration on remote database.
-Rerun the command with --include-all flag to apply these migrations
-```
+1. **`pnpm db:generate:custom` neaktualizuje automaticky `supabase/migrations/meta/`:**
+   Po vytvoření vlastní prázdné migrace a vepsání SQL spusť jednou `pnpm db:generate` (ohlásí *"No schema changes"*), aby se synchronizoval soubor `_journal.json`. Změny v `db/meta/` commitni společně s migrací.
 
-This is a **one-time** requirement for this deploy (once the backlog is applied, future
-migrations are newer and this won't recur). Two ways to handle it:
-
-- **Recommended — one-time manual push, outside CI:**
-  ```bash
-  supabase link --project-ref <PRODUCTION_PROJECT_ID>
-  supabase migration list          # confirm local ⊇ remote
-  supabase db push --include-all    # applies the earlier-timestamped backlog
-  ```
-  Do the same against the preview project first if you want a dry run.
-
-- **Or temporarily** add `--include-all` to the `db push` step in
-  `.github/workflows/deploy-supabase.yml`, deploy, then revert it. (The default workflow
-  runs plain `supabase db push`, which will **fail** on this deploy without the flag.)
-
-Verify on preview before production. The rektorat auth-trigger change and the feature
-migrations touch different subsystems, so out-of-order apply is safe — but confirm on
-preview first. Re-check `supabase migration list` against the live project at deploy time.
-
-> Correction history: this section previously (a) claimed prod needed a `20260419` repair
-> (false — that was local-only) and (b) claimed the rektorat file must be copied from the
-> dashboard (superseded — the `origin/production` merge brought it). The accurate remaining
-> action is the one-time `--include-all` push above.
-
-> **Verification note:** the `20260419000000_essays_title_trgm_idx.sql` migration itself
-> is NOT re-run by this — it is already recorded as applied on prod (under the old version)
-> and remains recorded (under the new version) after the repair. The repair only relabels it.
-
-## Prevention
-
-- **Always create migrations via the CLI / drizzle-kit** (`pnpm db:generate` or
-  `pnpm db:generate:custom`), never by hand-naming files. Both emit 14-digit versions.
-- **Never write to `supabase_migrations.schema_migrations` directly** on any environment
-  except as a deliberate, documented repair like this one.
-- **Never apply migrations via the MCP `apply_migration` tool** — it records history
-  out-of-band from the CLI and is the original source of this class of drift.
-- If `supabase migration list` ever shows a version whose length is not 14 digits,
-  fix it immediately with the repair procedure above before it blocks a deploy.
-
-## Related: Drizzle journal & where RLS policies actually live
-
-Two facts about this repo that are easy to get wrong:
-
-1. **`pnpm db:generate:custom` does not always update `supabase/migrations/meta/`.**
-   After creating a custom migration, run `pnpm exec drizzle-kit generate` once
-   (it will report "No schema changes") so the `_journal.json` and snapshot files
-   pick up the new migration. Commit those meta changes alongside the migration.
-   If the journal falls behind the migration files, a later `drizzle-kit generate`
-   will do it for you — but keep them in sync deliberately.
-
-2. **RLS policy bodies belong in the Drizzle schema.** Keep full `using` /
-   `withCheck` on every `pgPolicy(...)` so `db:generate` can order `DROP POLICY`
-   before `DROP COLUMN` when a policy depends on that column. Expression-less
-   snapshot policies are a known cause of apply failures. After any hand-authored
-   policy SQL migration, update the matching `pgPolicy(...)` strings so the next
-   generate is empty.
+2. **Těla RLS politik patří do Drizzle schématu:**
+   U každého `pgPolicy(...)` udržuj plné výrazy `using` a `withCheck`. Jen tak dokáže `db:generate` správně seřadit `DROP POLICY` před `DROP COLUMN`, pokud politika na daném sloupci závisí.
