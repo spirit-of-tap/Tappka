@@ -47,6 +47,7 @@ jobs:
       - name: Build documentation
         env:
           GITHUB_PAGES: 'true'
+          VITEPRESS_BASE: '/'
         run: pnpm docs:build
 
       - name: Upload artifact
