@@ -1,11 +1,7 @@
 ---
-title: "individual-sheet-17-vzz-ucetni-vykaz"
+title: "Výkaz zisku a ztráty (VZZ) — Tappka Portfolio Analysis"
 layout: false
 htmlShim: true
 ---
 
-<iframe
-  src="/wiki/individual-sheet-17-vzz-ucetni-vykaz.html"
-  title="individual-sheet-17-vzz-ucetni-vykaz"
-  style="position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fcfff7"
-></iframe>
+<HtmlShim src="/wiki-static/wiki/individual-sheet-17-vzz-ucetni-vykaz.html" title="Výkaz zisku a ztráty (VZZ) — Tappka Portfolio Analysis" />

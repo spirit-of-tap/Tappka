@@ -1,11 +1,7 @@
 ---
-title: "team-sheet-08-learning-contract"
+title: "Learning Contract (osobní vzdělávací plán) — Tappka Portfolio Analysis"
 layout: false
 htmlShim: true
 ---
 
-<iframe
-  src="/wiki/team-sheet-08-learning-contract.html"
-  title="team-sheet-08-learning-contract"
-  style="position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fcfff7"
-></iframe>
+<HtmlShim src="/wiki-static/wiki/team-sheet-08-learning-contract.html" title="Learning Contract (osobní vzdělávací plán) — Tappka Portfolio Analysis" />

@@ -1,0 +1,367 @@
+% !TeX program = pdflatex
+% Zálohování a obnova dat — Tappka
+% Sazba: latexmk -pdf zalohovani-tappka.tex
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[czech]{babel}
+\usepackage[sfdefault]{roboto}
+\usepackage[scaled=0.96]{montserrat}
+\renewcommand{\familydefault}{Roboto-TLF}
+\newcommand{\headfont}{\fontfamily{Montserrat-TLF}\selectfont}
+
+\usepackage[margin=2.2cm,headheight=14pt,footskip=1.1cm]{geometry}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{microtype}
+\usepackage[unicode,hidelinks]{hyperref}
+\usepackage{xurl}  % dovolí zalomit dlouhé URL
+
+% --- Barvy dle DESIGN.md -------------------------------------------------
+\definecolor{tapred}{HTML}{B31B1B}      % primary
+\definecolor{tapbrown}{HTML}{2C1A1D}    % foreground / secondary
+\definecolor{tapwhite}{HTML}{FCFFF7}    % background
+\definecolor{tapmuted}{HTML}{F2F4EE}    % muted
+\definecolor{tapaccent}{HTML}{F5EFE3}   % accent
+\definecolor{tapline}{HTML}{DFDCD4}     % border
+\definecolor{tapgrey}{HTML}{6B6165}     % muted foreground
+\definecolor{tapwarn}{HTML}{8A5200}     % warning-strong
+\definecolor{tapwarnbg}{HTML}{FBF3E8}
+\definecolor{tapok}{HTML}{1F6B34}       % success-strong
+
+\color{tapbrown}
+\pagecolor{tapwhite}
+
+% --- Hlavička a patička --------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\color{tapgrey}Tappka \textbar{} Zálohování a obnova dat}
+\fancyhead[R]{\footnotesize\color{tapgrey}verze 2.0 \textbar{} 1.\,9.\,2026}
+\fancyfoot[C]{\footnotesize\color{tapgrey}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\color{tapline}\hrule height 0.4pt}
+
+% --- Nadpisy -------------------------------------------------------------
+\titleformat{\section}
+  {\headfont\bfseries\large\color{tapred}}{\thesection.}{0.55em}{}
+\titlespacing*{\section}{0pt}{12pt}{5pt}
+\titleformat{\subsection}
+  {\headfont\bfseries\normalsize\color{tapbrown}}{\thesubsection}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{2pt}
+
+% --- Boxy ----------------------------------------------------------------
+\newtcolorbox{pozor}{
+  colback=tapwarnbg, colframe=tapwarn, boxrule=0pt, leftrule=3pt,
+  arc=3pt, left=11pt, right=11pt, top=7pt, bottom=7pt}
+\newtcolorbox{klid}{
+  colback=tapmuted, colframe=tapok, boxrule=0pt, leftrule=3pt,
+  arc=3pt, left=11pt, right=11pt, top=7pt, bottom=7pt}
+\newcommand{\boxhead}[2]{{\headfont\bfseries\color{#1}#2}\par\smallskip}
+
+% --- Značka Tappka -------------------------------------------------------
+% Vektorová obdoba public/icon.svg: zaoblený čtverec s písmenem T.
+% Kresleno přímo, aby značka byla ostrá v tisku a měla přesné barvy z DESIGN.md.
+\newlength{\logosize}
+\setlength{\logosize}{21mm}
+\newcommand{\tappkalogo}{%
+  \begin{tikzpicture}[x=\logosize, y=\logosize]
+    \fill[tapred, rounded corners=0.25\logosize] (0,0) rectangle (1,1);
+    \node[anchor=base, inner sep=0pt, text=tapwhite] at (0.5,0.297)
+      {\headfont\bfseries\fontsize{0.547\logosize}{0pt}\selectfont T};
+  \end{tikzpicture}}
+
+% --- Štítek stavu --------------------------------------------------------
+\newcommand{\stitek}[3]{%
+  \tcbox[on line, colback=#1, colframe=#1, boxrule=0pt, arc=2pt,
+         left=6pt, right=6pt, top=2.5pt, bottom=2.5pt, nobeforeafter]%
+  {\footnotesize\headfont\bfseries\color{#2}#3}}
+
+% --- Tabulky -------------------------------------------------------------
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash\headfont\bfseries\small}p{#1}}
+\renewcommand{\arraystretch}{1.22}
+\setlength{\heavyrulewidth}{0.9pt}
+\setlength{\lightrulewidth}{0.35pt}
+\setlength{\emergencystretch}{3em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\tabcolsep}{5pt}
+\newcommand{\hd}[1]{\headfont\bfseries\small\color{tapbrown}#1}
+\setlist{itemsep=2pt, topsep=3pt, parsep=0pt}
+
+% LaTeX standardně zvýhodňuje zlom stránky před \section (\@secpenalty).
+% V kombinaci s \raggedbottom to trhá stránku i tam, kde je ještě místo;
+% zlomy tady řídíme ručně přes \clearpage.
+\makeatletter
+\def\@secpenalty{0}
+\makeatother
+\widowpenalty=10000
+\clubpenalty=10000
+
+% Přehledová tabulka parametrů, stejná struktura pro všechny tři způsoby.
+% Musí být makro s argumentem — tabularx čte tělo jako argument, takže
+% ho nelze rozdělit mezi \begin a \end vlastního prostředí.
+\newcommand{\parametry}[1]{%
+  \begin{tabularx}{\textwidth}{@{}L{3.5cm}X@{}}\toprule #1 \bottomrule\end{tabularx}}
+
+% =========================================================================
+\begin{document}
+
+% =========================================================================
+% STRANA 1 — HLAVNÍ
+% =========================================================================
+\thispagestyle{empty}
+
+\vspace*{34mm}
+
+\tappkalogo
+
+\vspace{13mm}
+
+{\headfont\bfseries\fontsize{27}{31}\selectfont\color{tapbrown}Zálohování a~obnova dat\par}
+
+\vspace{7mm}
+
+{\headfont\large\color{tapred}Tappka\par}
+\vspace{1mm}
+{\color{tapgrey}\normalsize Studentský portál Tiimiakatemia Praha\par}
+
+\vspace{9mm}
+\noindent{\color{tapred}\rule{34mm}{2.5pt}}
+
+\vspace{7mm}
+{\color{tapgrey}Dokument předkládá tři způsoby zálohování dat aplikace Tappka\\
+a~shrnuje požadavky na součinnost IT oddělení PEF.\par}
+
+\vfill
+
+\begin{tabularx}{\textwidth}{@{}L{3.5cm}X@{}}
+\toprule
+Verze a~datum & 2.0 \textbar{}~1.\,9.\,2026 \\
+Určeno & IT oddělení PEF, vedení školy \\
+Zpracoval & Vývojový tým Tappka \\
+Stav & Návrh k~projednání \\
+\bottomrule
+\end{tabularx}
+
+\vspace{8mm}
+
+
+% =========================================================================
+% STRANA 2 — ZPŮSOB I
+% =========================================================================
+\clearpage
+\section{Způsob I --- automatická záloha u~poskytovatele}
+
+\stitek{tapmuted}{tapok}{V PROVOZU}\hspace{6pt}%
+\stitek{tapmuted}{tapgrey}{BEZ NÁKLADŮ NAVÍC}\hspace{6pt}%
+\stitek{tapmuted}{tapgrey}{BEZ SOUČINNOSTI ŠKOLY}
+
+\parametry{%
+Rozsah & Databáze PostgreSQL (texty esejí, hodnocení, rezervace, docházka) \\
+Frekvence & Jednou denně, automaticky \\
+Doba uchování & 7 dní \\
+Umístění & Supabase, region Curych --- tedy tatáž infrastruktura jako produkční data \\
+Obnovu provádí & Vývojový tým Tappka, samoobslužně \\
+Doba obnovy & Desítky minut, podle objemu dat \\
+Dostupnost při obnově & Aplikace je po dobu obnovy nedostupná \\
+}
+
+\subsection{Co tento způsob řeší}
+
+\begin{itemize}
+  \item Omylem smazaný nebo přepsaný záznam, pokud je zjištěn do sedmi dní.
+  \item Chybu při aktualizaci aplikace, která poškodí strukturu databáze.
+  \item Technické selhání na straně databázového serveru.
+\end{itemize}
+
+\begin{pozor}
+\boxhead{tapwarn}{Omezení}
+\begin{enumerate}[leftmargin=1.3em, itemsep=4pt]
+  \item \textbf{Nahrané soubory nejsou zálohovány.} Fotografie a~dokumenty leží v~odděleném
+        úložišti, na které se záloha nevztahuje; databáze o~nich obsahuje jen odkazy, nikoli
+        obsah. Smazaný soubor je nenávratně ztracen. Omezení platí u~poskytovatele obecně.
+  \item \textbf{Sedmidenní lhůta je krátká.} Nedostatek zjištěný po prázdninách, po zkouškovém
+        období nebo po delší nepřítomnosti vyučující:ho již nelze napravit.
+  \item \textbf{Zálohy leží u~téhož poskytovatele jako originál} --- neposkytují proto ochranu
+        proti jeho výpadku, ukončení služby ani ztrátě přístupu k~účtu.
+  \item \textbf{Poskytovatel v~tomto tarifu neposkytuje smluvní garanci dostupnosti.} V~případě
+        výpadku neexistuje vymahatelná lhůta obnovení služby.
+\end{enumerate}
+\end{pozor}
+
+Způsob I pokrývá běžné provozní chyby, jako jediné opatření je však nedostatečný: nechrání
+nahrané soubory a~nezajišťuje nezávislost na dodavateli. Obojí řeší způsob II.
+
+\subsection{Proč aplikace neběží na serveru školy}
+
+Platformu lze provozovat i~ve vlastní režii, na infrastruktuře školy; tuto variantu jsme
+zvažovali. Podle dokumentace poskytovatele\footnote{\url{https://supabase.com/docs/guides/self-hosting}, ověřeno k~1.\,9.\,2026.} však ve vlastní režii přechází na provozovatele
+\emph{údržba serveru, bezpečnostní aktualizace, správa databáze, dostupnost, monitoring
+a~zálohy}.
+
+\begin{itemize}
+  \item \textbf{Vlastní instalace neobsahuje žádné zálohy} --- celý způsob I by bylo nutné
+        vytvořit a~udržovat vlastními silami. Vlastní provoz by tedy riziko ztráty dat spíše
+        zvýšil než snížil.
+  \item \textbf{Provozní odpovědnost by nesla škola}, včetně výpadků mimo pracovní dobu;
+        vývojový tým Tappky nemá kapacitu držet nepřetržitou pohotovost.
+  \item \textbf{Náklady jsou nízké} --- přibližně 600 Kč měsíčně, tedy zlomek času, který by
+        správa vlastní instalace vyžadovala.
+  \item \textbf{Rozhodnutí je vratné} --- data jsou ve standardním PostgreSQL a~způsob II drží
+        jejich kopii u~školy; přechod na vlastní provoz zůstává otevřený.
+\end{itemize}
+
+% =========================================================================
+% STRANA 3 — ZPŮSOB II
+% =========================================================================
+\clearpage
+\enlargethispage{\baselineskip}
+\section{Způsob II --- nezávislá kopie na serveru školy}
+\label{sec:zpusob2}
+
+\stitek{tapaccent}{tapred}{NÁVRH --- PŘEDMĚT JEDNÁNÍ}\hspace{6pt}%
+\stitek{tapmuted}{tapgrey}{VYŽADUJE SOUČINNOST IT PEF}
+
+\parametry{%
+Rozsah & \textbf{Databáze i~nahrané soubory} --- úplná kopie dat \\
+Frekvence & Jednou týdně, automaticky \\
+Doba uchování & 8 týdenních, 12 měsíčních a~3 roční body obnovy \\
+Umístění & \textbf{Server školy v~České republice} \\
+Provoz & Kontejnerizovaná služba (Docker), spouštěná plánovačem \\
+Zabezpečení & Kontrolní součty pro ověření neporušenosti archivů \\
+Ověřování & Čtvrtletní zkušební obnova s~písemným protokolem \\
+}
+
+\subsection{Princip}
+
+Služba na serveru školy si jednou týdně sama stáhne úplnou kopii dat --- databázi i~nahrané
+soubory. Po prvotním nastavení pracuje samostatně a~upozorní pouze při selhání.
+
+\subsection{Co tento způsob řeší}
+
+\begin{itemize}
+  \item \textbf{Ztrátu nahraných souborů} --- jediné opatření, které fotografie a~dokumenty
+        chrání.
+  \item \textbf{Nedostatek zjištěný po delší době} --- historie sahá až tři roky zpět.
+  \item \textbf{Výpadek či ukončení služby poskytovatele} --- data zůstávají v~držení školy.
+\end{itemize}
+
+\begin{klid}
+\boxhead{tapok}{Obnovení provozu z~této zálohy}
+Záloha je \textbf{úplná a~plnohodnotná} --- obsahuje veškerá data v~otevřeném formátu a~lze ji
+načíst do libovolné databáze PostgreSQL, na serveru školy i~u~jiného poskytovatele.
+
+\textbf{Zprovoznění však vyžaduje technickou znalost}: nainstalovat databázový server, zálohu
+naimportovat a~nastavit přístupová práva. Nejde o~úkon pro netechnickou osobu. Jde však
+o~\textbf{nejrozšířenější otevřený databázový systém}, takže potřebná odbornost je běžně
+dostupná a~nejsme závislí na konkrétním dodavateli.
+
+Uvedení celé aplikace do provozu jinde je odhadováno na jednotky dní; převažující část této
+doby není technická, nýbrž organizační.
+\end{klid}
+
+\subsection{Požadovaná kapacita}
+
+\textbf{Současné využití je přibližně 1~\% dostupné kapacity.} Kalkulace níže proto nepopisuje
+dnešní potřebu, nýbrž \emph{strop} --- stav, kdy by aplikace vyčerpala veškerou kapacitu,
+kterou má u~poskytovatele k~dispozici.
+
+\begin{tabularx}{\textwidth}{@{}Xrr@{}}
+\toprule
+\multicolumn{1}{@{}l}{\hd{Položka}} & \hd{Dnes} & \hd{Při plné kapacitě} \\
+\midrule
+Kopie nahraných souborů včetně verzí & jednotky GB & 160 GB \\
+Body obnovy databáze (23 celkem) & jednotky GB & 115 GB \\
+Pracovní prostor pro ověření obnovy & 10 GB & 150 GB \\
+\midrule
+Součet & \textasciitilde{}\,15 GB & 425 GB \\
+Rezerva na růst dat a~prodloužení historie & --- & 425 GB \\
+\midrule
+\textbf{Navrhovaná alokace} & & \textbf{1 TB} \\
+\bottomrule
+\end{tabularx}
+
+Alokace 1~TB je dimenzována na mnoho let dopředu. \textbf{Vyhovuje nám však i~start s~menším
+objemem} (např. 100~GB s~možností navýšení) --- zálohování začne fungovat okamžitě.
+
+% =========================================================================
+% STRANA 4 — ZPŮSOB III
+% =========================================================================
+\clearpage
+\section{Způsob III --- lidsky čitelný export dat}
+
+\stitek{tapmuted}{tapwarn}{KONCEPT}\hspace{6pt}%
+\stitek{tapmuted}{tapgrey}{BEZ SOUČINNOSTI ŠKOLY}\hspace{6pt}%
+\stitek{tapmuted}{tapgrey}{VÝVOJOVÁ KAPACITA}
+
+\parametry{%
+Rozsah & Eseje, reflexe, profily dovedností, záznamy o~trénincích a~další studijní záznamy, včetně příloh \\
+Frekvence & Na konci semestru a~kdykoli na vyžádání \\
+Doba uchování & Neomezená; archiv je běžný soubor \\
+Umístění & Dle volby školy --- školní disk, školní cloud, přenosné médium \\
+Formát & Archiv ZIP se složkami; dokumenty ve formátu PDF, přehled v~CSV \\
+Předpoklady obnovy & Žádné --- postačuje běžný počítač \\
+Stav & Koncept; není součástí požadavků na školu \\
+}
+
+\subsection{Princip}
+
+Způsoby I a~II chrání data v~technické podobě a~oba předpokládají, že bude k~dispozici osoba
+schopná obnovit databázi. Způsob III řeší situaci, kdy tento předpoklad neplatí.
+
+Naprostá většina záznamů v~Tappce je text nebo strukturovaný přehled; obojí lze uložit jako
+samostatný dokument. Navrhujeme doplnit do aplikace funkci, která vytvoří archiv v~této
+struktuře:
+
+\begin{tcolorbox}[colback=tapmuted, colframe=tapline, boxrule=0.6pt, arc=3pt,
+                  left=11pt, right=11pt, top=8pt, bottom=8pt]
+\ttfamily\small
+tappka-2026-podzim/\\
+\hspace*{1.4em}Nováková Jana/\\
+\hspace*{2.8em}Eseje/2026-10-12 Reflexe projektu.pdf\\
+\hspace*{2.8em}Eseje/2026-11-03 Kniha -- Lean Startup.pdf\\
+\hspace*{2.8em}Profil dovedností.pdf\\
+\hspace*{2.8em}Tréninky a~aktivity.pdf\\
+\hspace*{1.4em}Svoboda Petr/\\
+\hspace*{2.8em}\dots\\
+\hspace*{1.4em}PREHLED.csv
+\end{tcolorbox}
+
+Rozsah exportu není pevně dán --- nové typy záznamů se do archivu doplní stejným způsobem.
+
+\subsection{Co tento způsob řeší}
+
+\begin{itemize}
+  \item \textbf{Zachování studijních záznamů v~čitelné podobě} nezávisle na existenci
+        aplikace i~databáze.
+  \item \textbf{Přístup k~materiálům během výpadku} --- vyučující může číst i~hodnotit offline.
+  \item \textbf{Žádost studující:ho o~kopii vlastních údajů} podle nařízení GDPR.
+  \item \textbf{Doložení stavu dokumentace} za uzavřený akademický rok.
+\end{itemize}
+
+\begin{klid}
+\boxhead{tapok}{Obnovení provozu z~tohoto exportu}
+Archiv lze rozbalit na kterémkoli počítači a~otevřít běžnou čtečkou dokumentů; přehled
+v~tabulkovém procesoru. \textbf{Není zapotřebí databáze, instalace ani technická součinnost.}
+
+Jde o~nejrychleji dostupné provizorium: materiály jsou k~dispozici řádově do jedné hodiny
+a~lze je číst, tisknout, hodnotit i~zasílat elektronickou poštou.
+\end{klid}
+
+\subsection{Stav}
+
+Způsob III je konceptem, nikoli hotovou funkcí. Nevyžaduje žádné rozhodnutí ani součinnost ze
+strany školy a~je uveden proto, aby byl model ochrany dat popsán úplně. Jeho realizace závisí
+na vývojové kapacitě týmu.
+
+\end{document}

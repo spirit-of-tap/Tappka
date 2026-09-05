@@ -1,0 +1,1021 @@
+% !TeX program = pdflatex
+% Architektura zálohování a ochrany dat aplikace Tappka
+% Sazba:  latexmk -pdf zalohovani-tappka.tex
+%   nebo: pdflatex zalohovani-tappka.tex  (dvakrát kvůli obsahu a odkazům)
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[czech]{babel}
+\usepackage{lmodern}
+\usepackage{amssymb}
+\usepackage[margin=2.4cm,headheight=14pt]{geometry}
+
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{pifont}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage[unicode,hidelinks]{hyperref}
+
+% --- Barvy ---------------------------------------------------------------
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{warnbg}{HTML}{FDF3F3}
+\definecolor{warnln}{HTML}{C0392B}
+\definecolor{infobg}{HTML}{F1F6FB}
+\definecolor{codebg}{HTML}{F7F7F7}
+\definecolor{muted}{HTML}{5A6672}
+
+% --- Značky --------------------------------------------------------------
+\newcommand{\ano}{\textcolor{accent}{\ding{51}}}
+\newcommand{\nepokr}{\textcolor{warnln}{\ding{55}}}
+\newcommand{\castecne}{\textcolor{muted}{\ding{108}}}
+
+% --- Hlavička a patička --------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{muted}{Architektura zálohování aplikace Tappka}}
+\fancyhead[R]{\small\textcolor{muted}{verze 1.0}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% --- Nadpisy -------------------------------------------------------------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+
+% --- Boxy ----------------------------------------------------------------
+\newtcolorbox{upozorneni}[1][]{
+  colback=warnbg, colframe=warnln, boxrule=0.9pt, arc=2pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries, title={#1}}
+
+\newtcolorbox{informace}[1][]{
+  colback=infobg, colframe=accent, boxrule=0.9pt, arc=2pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries, title={#1}}
+
+% --- Výpisy kódu ---------------------------------------------------------
+\lstdefinestyle{konfig}{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  frame=single, rulecolor=\color{muted!40},
+  breaklines=true, breakatwhitespace=true,
+  showstringspaces=false,
+  keywordstyle=\color{accent}\bfseries,
+  commentstyle=\color{muted}\itshape,
+  numbers=none, xleftmargin=6pt, xrightmargin=2pt,
+  aboveskip=10pt, belowskip=10pt,
+  columns=fullflexible
+}
+\lstset{style=konfig}
+
+\setlist{itemsep=2pt, topsep=4pt}
+\renewcommand{\arraystretch}{1.25}
+\setlength{\emergencystretch}{3em}
+
+% =========================================================================
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2.5cm}
+
+{\Huge\bfseries\color{accent} Architektura zálohování\\[0.35em] a ochrany dat aplikace Tappka\par}
+
+\vspace{1.2cm}
+{\Large Návrh třívrstvého modelu ochrany dat\par}
+\vspace{0.4cm}
+{\large\color{muted} Podklad pro jednání o alokaci serverových kapacit\par}
+
+\vspace{3cm}
+
+\begin{tabular}{@{}ll@{}}
+\textbf{Verze dokumentu} & 1.0 \\
+\textbf{Datum} & 31.\,8.\,2026 \\
+\textbf{Zpracoval:a} & Vývojový tým Tappka \\
+\textbf{Určeno} & Vedení školy, IT oddělení, oddělení PEVKA \\
+\textbf{Stav} & Návrh k projednání \\
+\end{tabular}
+
+\vfill
+{\small\color{muted} Všechna technická tvrzení o platformě Supabase v tomto dokumentu jsou doložena\\ odkazy na oficiální dokumentaci v kapitole \ref{sec:zdroje} (Zdroje).\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% =========================================================================
+\section{Shrnutí pro vedení}
+
+Tappka je webová aplikace, ve které vzniká a je uložena podstatná část studijních a reflektivních
+záznamů studujících. Ztráta těchto dat by nebyla obnovitelná z jiného zdroje --- neexistuje
+papírová ani jiná paralelní evidence.
+
+Aplikace dnes běží na platformě \textbf{Supabase} v tarifu \textbf{Pro}. Tento tarif zahrnuje
+automatické denní zálohy databáze s~retencí sedmi dní. To je solidní základ, ale jako celková
+ochrana dat \textbf{nestačí}, a to ze tří konkrétních důvodů:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Zálohy Supabase nezahrnují nahrané soubory.} Zálohuje se pouze databáze.
+        Fotografie, profilové obrázky a nahrané dokumenty leží v odděleném úložišti, které
+        automatické zálohy \emph{nepokrývají vůbec}. Smazaný soubor je nenávratně ztracen
+        i~v~tarifu Pro (viz kap.~\ref{sec:storage-nezalohy}).
+  \item \textbf{Sedm dní je krátká lhůta.} Problém zjištěný po prázdninách, po zkouškovém období
+        nebo po delší nepřítomnosti vyučující:ho už není z čeho obnovit.
+  \item \textbf{Všechny kopie leží u jednoho dodavatele.} Zálohy Supabase jsou uloženy v~téže
+        infrastruktuře jako produkční data. Nechrání proti výpadku, ukončení služby ani ztrátě
+        přístupu k~účtu.
+\end{enumerate}
+
+\begin{informace}[Co navrhujeme]
+Doplnit stávající ochranu o~\textbf{dvě nezávislé vrstvy}, které společně tvoří třívrstvý model:
+
+\smallskip
+\begin{tabularx}{\textwidth}{@{}p{2.6cm}X@{}}
+\textbf{Vrstva 1} & Platformní ochrana Supabase Pro --- denní zálohy databáze, retence 7~dní.
+                    Již funguje, beze změny nákladů. \\
+\textbf{Vrstva 2} & \emph{Nezávislá záloha na serveru školy.} Kontejnerizovaná služba, která
+                    jednou týdně stáhne kompletní kopii databáze \emph{i~všech nahraných souborů}
+                    a~uloží ji šifrovaně na školní úložiště. \textbf{Toto je hlavní předmět
+                    tohoto dokumentu.} \\
+\textbf{Vrstva 3} & Lidsky čitelné exporty --- vize do budoucna. Data v~podobě, kterou lze
+                    otevřít a~přečíst i~bez Tappky a~bez technických znalostí. \\
+\end{tabularx}
+\end{informace}
+
+\subsection*{O co konkrétně žádáme školu}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{4.6cm}X@{}}
+\toprule
+\textbf{Položka} & \textbf{Specifikace} \\
+\midrule
+Výpočetní kapacita & Virtuální server, Linux (Debian 12 nebo Ubuntu 24.04 LTS), 2~vCPU, 4~GB~RAM \\
+Diskový prostor & \textbf{1~TB} dedikovaného prostoru (odůvodnění kalkulací v~kap.~\ref{sec:kapacita}) \\
+Software & Docker Engine s~pluginem Docker Compose \\
+Síť & Odchozí HTTPS (TCP 443) a~TCP 5432 na infrastrukturu Supabase \\
+Provozní součinnost & Předání zálohy na vyžádání v~dohodnutých lhůtách (kap.~\ref{sec:vyzadani}) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+Řešení je navrženo tak, aby po jednorázovém uvedení do provozu \textbf{nevyžadovalo průběžnou
+správu} --- běží automaticky a~upozorní pouze v~případě selhání.
+
+\newpage
+
+% =========================================================================
+\section{Kontext a rozsah}
+
+\subsection{Jaká data Tappka spravuje}
+
+Z pohledu zálohování je podstatné, že data Tappky nejsou homogenní. Dělí se do kategorií, které se
+liší mírou nenahraditelnosti:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{4.0cm}X>{\raggedright\arraybackslash}p{3.1cm}@{}}
+\toprule
+\textbf{Kategorie} & \textbf{Příklad obsahu} & \textbf{Nahraditelnost} \\
+\midrule
+Autorský obsah studujících & Eseje, reflexe, sebehodnocení, roční týmové reflexe & Nenahraditelné \\
+Hodnocení a~zpětná vazba & Komentáře kouči:ek, výsledky, bodové zisky & Nenahraditelné \\
+Procesní záznamy & Rezervace, docházka na aktivity, výpůjčky knih & Obtížně rekonstruovatelné \\
+Nahrané soubory & Profilové fotografie, dokumenty, obrázky v~esejích & Nenahraditelné \\
+Konfigurace a~číselníky & Týmy, role, tagy, kategorie, nastavení & Rekonstruovatelné \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Většina objemu dat připadá na poslední dvě kategorie, ale \emph{většina hodnoty} na první tři.
+Zálohovací strategie proto musí pokrýt obojí --- nestačí zálohovat jen to, co zabírá místo.
+
+\subsection{Dva nezávislé systémy uložení}
+\label{sec:dva-systemy}
+
+Klíčový fakt, na kterém stojí celý zbytek dokumentu: \textbf{Tappka ukládá data do dvou technicky
+oddělených systémů.}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{3.5cm}p{4.2cm}X@{}}
+\toprule
+\textbf{Systém} & \textbf{Co obsahuje} & \textbf{Technologie} \\
+\midrule
+\textbf{Databáze} & Texty, hodnocení, vztahy, metadata & PostgreSQL \\
+\textbf{Úložiště souborů} & Binární soubory --- fotografie, dokumenty, obrázky & Objektové úložiště kompatibilní s~S3, spravované samostatnou službou \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Aplikace používá tři oddělené kontejnery (\emph{buckety}) v~úložišti souborů:
+
+\begin{itemize}
+  \item \texttt{avatars} --- profilové obrázky osob a~týmů (veřejně čitelné)
+  \item \texttt{images} --- obálky knih a~obrázky vložené do esejí (veřejně čitelné)
+  \item \texttt{documents} --- nahrané dokumenty (neveřejné, přístupné jen přes dočasné
+        podepsané odkazy)
+\end{itemize}
+
+V databázi jsou o~těchto souborech uloženy pouze \emph{odkazy a~metadata} --- název, velikost,
+kdo soubor nahrál. Samotný obsah souboru v~databázi není. Tento rozdíl je příčinou nejzávažnější
+mezery v~současné ochraně, popsané v~kapitole~\ref{sec:storage-nezalohy}.
+
+\subsection{Kde jsou data fyzicky uložena}
+\label{sec:lokalita}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{4.4cm}X@{}}
+\toprule
+\textbf{Parametr} & \textbf{Hodnota} \\
+\midrule
+Region & Central Europe (Zurich) \\
+Označení regionu & \texttt{eu-central-2} \\
+Stát & Švýcarská konfederace \\
+Poskytovatel infrastruktury & Amazon Web Services (Supabase provozuje na AWS) \\
+Výpočetní instance & \texttt{t4g.micro} (tarif Micro: 2~jádra ARM, 1~GB~RAM, limit 60 souběžných připojení) \\
+Zálohy & Uloženy v~téže infrastruktuře a~témže regionu jako produkční databáze \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsubsection*{Právní kontext přenosu dat mimo EU}
+
+Švýcarsko není členem Evropské unie ani EHP. Přenos osobních údajů do Švýcarska je nicméně
+z~pohledu GDPR postaven na roveň přenosu uvnitř EU: Evropská komise dne \textbf{15.~1.~2024}
+potvrdila, že Švýcarsko nadále zajišťuje odpovídající úroveň ochrany osobních údajů. Osobní údaje
+lze tedy z~EU do Švýcarska předávat \textbf{bez nutnosti dalších záruk} (standardních smluvních
+doložek apod.) --- viz zdroj~\cite{adekvatnost}.
+
+Volba curyšského regionu je z~hlediska ochrany dat příznivá: data neopouštějí evropský prostor
+a~zůstávají geograficky blízko uživatel:ek.
+
+\begin{informace}[Dopad na návrh vrstvy 2]
+Skutečnost, že produkční data i~jejich zálohy leží v~jednom regionu u~jednoho poskytovatele, je
+hlavní argument pro vrstvu 2. Záloha uložená vedle originálu nechrání proti výpadku
+poskytovatele, ztrátě přístupu k~účtu ani ukončení služby. Umístění kopie \textbf{na serveru
+školy v~České republice} vytváří skutečnou geografickou i~organizační nezávislost.
+\end{informace}
+
+\newpage
+
+% =========================================================================
+\section{Analýza rizik}
+\label{sec:rizika}
+
+Zálohování není samoúčelné --- chrání proti konkrétním scénářům. Následující tabulka je zároveň
+odůvodněním, proč jedna vrstva nestačí.
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}Xccc@{}}
+\toprule
+\textbf{Scénář} & \textbf{Vrstva 1} & \textbf{Vrstva 2} & \textbf{Vrstva 3} \\
+ & {\footnotesize Supabase} & {\footnotesize školní server} & {\footnotesize exporty} \\
+\midrule
+Omylem smazaný záznam, zjištěno do 7 dní & \ano & \ano & \castecne \\
+Omylem smazaný nebo přepsaný \textbf{soubor} & \nepokr & \ano & \ano \\
+Chyba v~migraci, poškození struktury databáze & \ano & \ano & \nepokr \\
+Problém zjištěný \textbf{po více než 7 dnech} & \nepokr & \ano & \ano \\
+Kompromitace účtu, hromadné smazání dat & \castecne & \ano & \ano \\
+Delší výpadek platformy Supabase & \nepokr & \ano & \ano \\
+Ukončení služby Supabase nebo sporu s~dodavatelem & \nepokr & \ano & \ano \\
+Ukončení provozu aplikace Tappka & \nepokr & \castecne & \ano \\
+Potřeba dat pro osobu bez technických znalostí & \nepokr & \nepokr & \ano \\
+Selhání či ztráta školního serveru & \ano & \nepokr & \castecne \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+\noindent\small
+\ano{}~pokrývá \quad \castecne{}~pokrývá částečně \quad \nepokr{}~nepokrývá
+\normalsize
+
+\medskip
+Poslední řádek je záměrný: vrstvy se navzájem jistí. Neexistuje jediná událost, která by při
+zavedení všech tří vrstev vedla ke ztrátě dat.
+
+\subsection{Odborný rámec: pravidlo 3--2--1}
+
+Navržená architektura odpovídá pravidlu \textbf{3--2--1}, které jako základní standard ochrany dat
+doporučují americká agentura CISA i~institut NIST~\cite{pravidlo321}:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{3.8cm}X@{}}
+\toprule
+\textbf{Požadavek} & \textbf{Naplnění v~návrhu} \\
+\midrule
+\textbf{3} kopie dat & Produkční data (Supabase) $+$ zálohy Supabase $+$ kopie na školním serveru \\
+\textbf{2} různá média & Spravovaná cloudová infrastruktura AWS $+$ diskové pole školy \\
+\textbf{1} kopie mimo lokalitu & Školní server v~ČR, jiný poskytovatel, jiná organizace, jiný stát \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Moderní rozšíření pravidla, \textbf{3--2--1--1--0}, přidává jednu neměnitelnou (immutable) kopii
+a~\emph{nulu chyb}, tedy pravidelně \textbf{ověřovanou} obnovu. Oba tyto prvky jsou v~návrhu
+obsaženy --- viz kapitoly \ref{sec:zabezpeceni} a~\ref{sec:overovani}.
+
+\newpage
+
+% =========================================================================
+\section{Vrstva 1 --- ochrana na platformě Supabase Pro}
+\label{sec:vrstva1}
+
+Tato vrstva je již v~provozu a~nevyžaduje žádnou akci ze strany školy. Je zde popsána proto, aby
+bylo zřejmé, \emph{co přesně pokrývá a~co nikoli}.
+
+\subsection{Automatické denní zálohy}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{4.4cm}X@{}}
+\toprule
+\textbf{Parametr} & \textbf{Hodnota} \\
+\midrule
+Frekvence & Jednou denně, automaticky \\
+Retence & \textbf{7 dní} (posledních sedm denních záloh) \\
+Typ zálohy & Fyzická záloha (snímek diskového svazku PostgreSQL) \\
+Rozsah & Databáze PostgreSQL \\
+Obnova & Samoobslužně z~administračního rozhraní (\emph{Database~$\rightarrow$~Backups}) nebo přes API \\
+Nejhorší možná ztráta dat (RPO) & Až 24 hodin \\
+Doba obnovy (RTO) & Řádově desítky minut až hodiny podle velikosti databáze \\
+Dostupnost aplikace při obnově & \textbf{Nedostupná} --- projekt je po dobu obnovy odstaven \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Zdroj: oficiální dokumentace Supabase~\cite{zalohysupabase} a~ceník~\cite{cenik}.
+
+\subsection{Co zálohy Supabase nepokrývají}
+\label{sec:storage-nezalohy}
+
+\begin{upozorneni}[Zásadní omezení: nahrané soubory nejsou zálohovány]
+Dokumentace Supabase uvádí doslova, že zálohy databáze \emph{nezahrnují objekty uložené přes
+Storage API} --- databáze o~nich obsahuje pouze metadata~\cite{zalohysupabase}.
+
+\smallskip
+Prakticky to znamená: pokud dojde ke smazání nebo poškození souboru v~kontejnerech
+\texttt{avatars}, \texttt{images} nebo \texttt{documents}, \textbf{neexistuje žádná záloha, ze
+které by šel obnovit.} Denní zálohy obnoví pouze databázový záznam odkazující na soubor, který už
+neexistuje --- výsledkem je nefunkční odkaz.
+
+\smallskip
+Toto omezení není vadou konkrétního tarifu. Vyplývá z~toho, že zálohy jsou fyzické snímky
+diskového svazku databáze, zatímco soubory leží v~samostatném objektovém úložišti mimo tento
+svazek. Omezení tedy platí ve všech tarifech.
+\end{upozorneni}
+
+Kromě souborů se zálohy netýkají:
+\begin{itemize}
+  \item hesel vlastních databázových rolí (nejsou v~denních zálohách obsažena),
+  \item trvale smazaných objektů (\emph{deleted objects cannot be recovered}),
+  \item replikačních slotů a~odběrů, které je nutné po obnově ručně obnovit.
+\end{itemize}
+
+\subsection{Bezpečnostní opatření platformy}
+
+Tarif Pro poskytuje následující bezpečnostní prvky, které Tappka využívá nebo může využít:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{4.6cm}Xc@{}}
+\toprule
+\textbf{Opatření} & \textbf{Popis} & \textbf{Stav} \\
+\midrule
+Zabezpečení na úrovni řádků (RLS) & Přístupová pravidla vynucovaná přímo databází, nikoli aplikací. Uživatel:ka nemůže obejít pravidla ani přímým dotazem na API. & \ano zavedeno \\
+Vynucení TLS (\emph{SSL Enforcement}) & Odmítnutí nešifrovaných databázových spojení & doporučeno \\
+Síťová omezení & Omezení přístupu k~databázi na povolené rozsahy IP adres & doporučeno \\
+Vícefaktorové ověření & Ochrana účtů se správcovským přístupem k~projektu & \ano zavedeno \\
+Omezení četnosti požadavků & Ochrana přihlašování proti automatizovaným útokům & \ano výchozí \\
+Retence provozních záznamů & \textbf{7 dní} historie logů & součást tarifu \\
+Šifrování přenosu & TLS mezi aplikací, databází i~úložištěm souborů & \ano výchozí \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Zdroj: produkční kontrolní seznam Supabase~\cite{prodchecklist} a~ceník~\cite{cenik}.
+
+\subsection{Co tarif Pro neobsahuje}
+
+Pro úplnost a~korektnost podkladu je nutné uvést i~to, co v~tarifu Pro chybí:
+
+\begin{itemize}
+  \item \textbf{Přístup k~auditní zprávě SOC 2.} Společnost Supabase je jako organizace držitelem
+        certifikace SOC~2 Type~2 a~je každoročně auditována~\cite{soc2}. Samotnou auditní zprávu
+        si však mohou stáhnout pouze zákazníci v~tarifech Team a~Enterprise. V~tarifu Pro tedy
+        \emph{platforma je certifikovaná, ale doklad o~tom není k~dispozici.}
+  \item \textbf{Certifikace ISO~27001 a~smlouva o~zpracování dle HIPAA} --- nabízeny až ve vyšších
+        tarifech.
+  \item \textbf{Smluvní garance dostupnosti (SLA).} Tarif Pro zahrnuje e-mailovou podporu, nikoli
+        závazek dostupnosti služby~\cite{cenik}.
+  \item \textbf{Jednotné přihlášení (SSO) pro správu organizace.}
+\end{itemize}
+
+\begin{informace}[Praktický dopad]
+Absence SLA znamená, že v~případě výpadku Supabase \textbf{neexistuje smluvně vymahatelná lhůta
+obnovení služby}. Škola je odkázána na dobrou vůli dodavatele. Vrstva 2 tuto závislost odstraňuje:
+i~při delším výpadku zůstávají data v~držení školy a~lze je použít.
+\end{informace}
+
+\subsection{Model sdílené odpovědnosti}
+
+Supabase publikuje explicitní model sdílené odpovědnosti~\cite{sdilenaodpovednost}. Zjednodušeně:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{5.2cm}X@{}}
+\toprule
+\textbf{Odpovědnost Supabase} & \textbf{Odpovědnost provozovatele aplikace} \\
+\midrule
+Provoz a~zálohování databáze, údržba operačního systému, správa a~monitoring infrastruktury &
+Návrh datového modelu, nastavení přístupových práv a~RLS, správa tajemství, \textbf{vlastní
+zálohovací strategie nad rámec platformy} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Dokumentace to shrnuje větou, kterou je vhodné citovat: \emph{,,Supabase klade kolem vaší databáze
+jen velmi málo zábran. To vám dává velkou kontrolu, ale zároveň to znamená, že věci můžete
+rozbít.``}~\cite{sdilenaodpovednost} Odpovědnost za data tedy zůstává na straně provozovatele ---
+a~tím je v~konečném důsledku škola.
+
+\newpage
+
+% =========================================================================
+\section{Vrstva 2 --- nezávislá záloha na serveru školy}
+\label{sec:vrstva2}
+
+Toto je jádro návrhu a~hlavní důvod vzniku tohoto dokumentu.
+
+\subsection{Cíl}
+
+Vytvořit a~automaticky udržovat \textbf{úplnou, samostatně použitelnou kopii} všech dat Tappky
+--- databáze \emph{i} nahraných souborů --- na infrastruktuře, kterou vlastní a~kontroluje škola,
+nezávisle na dodavateli.
+
+\subsection{Architektura}
+
+Řešení je navrženo jako jediná kontejnerizovaná služba spouštěná plánovačem \texttt{cron}.
+Kontejnerizace (Docker) je zvolena záměrně, ze tří důvodů:
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Nulové nároky na prostředí serveru.} Kontejner nese vlastní verze všech nástrojů.
+        Škola neinstaluje PostgreSQL, Python ani nic dalšího --- pouze Docker.
+  \item \textbf{Shoda verzí.} Nástroj \texttt{pg\_dump} musí odpovídat verzi serveru PostgreSQL.
+        Kontejner tuto shodu zaručuje a~izoluje ji od aktualizací školního systému.
+  \item \textbf{Reprodukovatelnost a~přenositelnost.} Stejný kontejner lze spustit na jiném
+        stroji a~ověřit obnovu, aniž by se cokoli měnilo v~konfiguraci.
+\end{enumerate}
+
+\subsubsection*{Průběh jednoho zálohovacího cyklu}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{0.6cm}p{4.0cm}X@{}}
+\toprule
+\textbf{\#} & \textbf{Krok} & \textbf{Popis} \\
+\midrule
+1 & Spuštění & \texttt{cron} v~kontejneru spustí zálohovací skript (neděle 02:00) \\
+2 & Výpis databáze & Tři samostatné soubory: role, struktura, data \\
+3 & Kontrola & Ověření, že žádný z~výpisů není prázdný; při chybě cyklus končí a~upozorní \\
+4 & Synchronizace souborů & Přírůstkové stažení všech tří kontejnerů úložiště \\
+5 & Zabalení a~šifrování & Komprese a~zašifrování archivu veřejným klíčem \\
+6 & Kontrolní součet & Výpočet SHA-256 pro pozdější ověření neporušenosti \\
+7 & Údržba retence & Odstranění bodů obnovy nad rámec retenčního plánu \\
+8 & Signalizace & Potvrzení úspěchu monitoringu; při selhání e-mailové upozornění \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Co přesně se zálohuje}
+
+\subsubsection*{Databáze}
+
+Výpis se pořizuje oficiálním nástrojem Supabase CLI, doporučeným postupem rozděleným do tří
+souborů~\cite{ciautomat}. Toto rozdělení umožňuje obnovit strukturu bez dat, data bez struktury
+nebo obojí --- podle povahy havárie.
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{2.6cm}p{4.6cm}X@{}}
+\toprule
+\textbf{Soubor} & \textbf{Obsah} & \textbf{K čemu slouží} \\
+\midrule
+\texttt{roles.sql} & Databázové role a~oprávnění & Obnova přístupových práv \\
+\texttt{schema.sql} & Struktura tabulek, indexy, pravidla RLS, pohledy, funkce & Postavení prázdné, ale funkční kopie \\
+\texttt{data.sql} & Vlastní obsah tabulek & Naplnění daty \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsubsection*{Nahrané soubory}
+
+Úložiště souborů zpřístupňuje rozhraní kompatibilní s~S3~\cite{s3kompatibilita}, což umožňuje
+použít standardní nástroj \texttt{rclone}. Synchronizace je \textbf{přírůstková} --- porovnává se
+kontrolní součet a~přenášejí se pouze nové a~změněné soubory. Druhý a~každý další běh je proto
+řádově rychlejší a~nezatěžuje datový přenos.
+
+\begin{upozorneni}[Toto je jediná ochrana nahraných souborů, která existuje]
+Vzhledem k~omezení popsanému v~kapitole~\ref{sec:storage-nezalohy} je tato část vrstvy 2
+\textbf{jedinou} zálohou fotografií a~dokumentů v~celém systému. Pokud by se škola rozhodla
+vrstvu 2 nezavést, zůstanou nahrané soubory zcela bez zálohy.
+\end{upozorneni}
+
+\subsection{Frekvence a~retenční plán}
+
+Zálohovací cyklus běží \textbf{jednou týdně} pro databázi i~soubory zároveň. Retence sleduje
+model \emph{děd -- otec -- syn}, který drží hustou historii pro nedávné události a~řídkou pro
+vzdálené:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{3.4cm}p{2.8cm}Xc@{}}
+\toprule
+\textbf{Úroveň} & \textbf{Perioda} & \textbf{Pokrývá} & \textbf{Počet} \\
+\midrule
+Týdenní & každý týden & poslední dva měsíce & 8 \\
+Měsíční & poslední v~měsíci & poslední rok & 12 \\
+Roční & poslední v~roce & dlouhodobá archivace & 3 \\
+\midrule
+\multicolumn{3}{@{}l}{\textbf{Celkem bodů obnovy}} & \textbf{23} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+Tento plán znamená, že problém lze odhalit a~napravit i~po měsících. Roční body obnovy zároveň
+umožňují doložit stav dat na konci každého akademického roku.
+
+\begin{informace}[Poznámka k~RPO vrstvy 2]
+Týdenní frekvence znamená, že vrstva 2 může ztratit až sedm dní práce. To je vědomý kompromis:
+vrstva 2 \textbf{není} první linií obrany --- tou je vrstva 1 s~denní frekvencí. Vrstva 2 řeší
+scénáře, které vrstva 1 nepokrývá vůbec (soubory, delší horizont, nezávislost na dodavateli),
+a~pro ty je týdenní perioda dostatečná. Pokud by se v~budoucnu ukázala jako nedostatečná, lze
+frekvenci zvýšit změnou jediného řádku konfigurace, bez zásahu do architektury.
+\end{informace}
+
+\subsection{Kalkulace potřebné kapacity}
+\label{sec:kapacita}
+
+Tarif Pro zahrnuje 100~GB prostoru pro soubory a~8~GB diskového prostoru databáze
+(s~možností navýšení)~\cite{cenik}. Kalkulace níže počítá s~\textbf{plným vyčerpáním} zahrnutých
+kapacit, tedy s~cílovým, nikoli současným stavem --- aby alokace nebyla za rok znovu předmětem
+jednání.
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}Xrrr@{}}
+\toprule
+\textbf{Položka} & \textbf{Jednotka} & \textbf{Počet} & \textbf{Celkem} \\
+\midrule
+Aktuální zrcadlo souborů & 100 GB & 1 & 100 GB \\
+Verzované změny souborů (5\,\%/měsíc, 12 měsíců) & 5 GB & 12 & 60 GB \\
+Týdenní výpisy databáze (komprimované) & 5 GB & 8 & 40 GB \\
+Měsíční výpisy databáze & 5 GB & 12 & 60 GB \\
+Roční výpisy databáze & 5 GB & 3 & 15 GB \\
+Pracovní prostor pro rozbalení a~ověření obnovy & --- & --- & 150 GB \\
+\midrule
+\textbf{Součet} & & & \textbf{425 GB} \\
+Rezerva na růst dat a~prodloužení retence (přibližně 2$\times$) & & & 425 GB \\
+\midrule
+\textbf{Navrhovaná alokace} & & & \textbf{1 TB} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+Rezerva není nadsazená: zaručuje, že zálohovací systém nepřestane fungovat kvůli zaplnění disku
+--- což je nejčastější tichá příčina selhání zálohování. Pracovní prostor je nutný proto, že
+ověření obnovy vyžaduje archiv skutečně rozbalit a~načíst do dočasné databáze.
+
+\subsection{Zabezpečení záloh}
+\label{sec:zabezpeceni}
+
+Záloha obsahuje kompletní osobní údaje a~autorské práce studujících. Její zabezpečení musí být
+proto přinejmenším na úrovni produkčního systému.
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{4.4cm}X@{}}
+\toprule
+\textbf{Opatření} & \textbf{Provedení} \\
+\midrule
+Šifrování v~klidu & Každý archiv je zašifrován asymetricky. Server zná pouze \emph{veřejný} klíč, kterým šifruje. Bez soukromého klíče je obsah nečitelný i~pro správu školního serveru. \\
+Úschova klíče & Soukromý klíč drží \textbf{dvě nezávislé strany}: technické vedení Tappky a~pověřená osoba školy. Ani jedna strana nemůže data zpřístupnit ani znepřístupnit sama. \\
+Kontrolní součty & Ke každému archivu je uložen otisk SHA-256, který umožňuje kdykoli ověřit, že soubor nebyl poškozen ani pozměněn. \\
+Neměnitelnost & Adresář s~archivy je nastaven jen pro zápis; zálohovací proces nemá právo mazat, mazání provádí oddělený proces správy retence. \\
+Přístupová práva & Archivy jsou čitelné pouze pro určený systémový účet. \\
+Tajemství & Přístupové údaje k~Supabase jsou uloženy v~souboru mimo obraz kontejneru, s~právy pro čtení jen vlastníkem. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{informace}[Proč dvojí úschova klíče]
+Rozdělení klíče mezi školu a~vývojový tým řeší dvě protichůdná rizika najednou. Správa školního
+serveru \textbf{nemá} důvod číst eseje a~reflexe studujících --- šifrování jí v~tom brání. Zároveň
+škola \textbf{nesmí} být závislá na existenci vývojového týmu --- proto drží vlastní kopii klíče
+a~data si dokáže zpřístupnit i~v~případě, že by spolupráce s~týmem skončila.
+\end{informace}
+
+\subsection{Monitoring a~ověřování obnovitelnosti}
+\label{sec:overovani}
+
+Nejběžnější způsob, jak zálohovací systém selže, není havárie --- je to \emph{tiché} přerušení
+běhu, které si nikdo měsíce nevšimne. Návrh proto obsahuje aktivní kontrolu:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{3.6cm}p{2.6cm}X@{}}
+\toprule
+\textbf{Kontrola} & \textbf{Perioda} & \textbf{Popis} \\
+\midrule
+Signál o~dokončení & každý běh & Po úspěšném cyklu je odeslán potvrzovací signál. \textbf{Chybějící} signál vyvolá upozornění --- hlídá se tedy i~případ, kdy se úloha vůbec nespustí. \\
+Kontrola velikosti & každý běh & Výpisy nesmí být prázdné ani výrazně menší než minule. \\
+Ověření otisku & měsíčně & Přepočet SHA-256 náhodně zvoleného archivu. \\
+\textbf{Zkušební obnova} & čtvrtletně & Archiv se rozbalí a~načte do dočasné databáze; ověří se počty záznamů a~funkčnost. Výsledek se zaznamená do protokolu. \\
+Úplné nácvikové obnovení & ročně & Postavení plně funkční kopie Tappky ze zálohy, včetně souborů. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+Čtvrtletní zkušební obnova je to, co odlišuje skutečnou zálohu od souboru, o~kterém se
+\emph{předpokládá}, že je zálohou. Odborná doporučení uvádějí, že samotná existence archivu není
+důkazem obnovitelnosti --- ověřením je až úspěšné načtení dat a~kontrola jejich
+konzistence~\cite{pravidlo321}.
+
+\subsection{Proces vyžádání dat}
+\label{sec:vyzadani}
+
+Záloha má hodnotu jen tehdy, je-li dostupná ve chvíli, kdy je potřeba. Navrhujeme proto předem
+dohodnout následující lhůty. Bez nich hrozí, že v~krizové situaci bude nutné teprve hledat, kdo
+má oprávnění a~koho kontaktovat.
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{4.2cm}p{3.4cm}X@{}}
+\toprule
+\textbf{Typ žádosti} & \textbf{Lhůta} & \textbf{Popis} \\
+\midrule
+\textbf{Havarijní obnova} & \textbf{do 24 hodin} & Výpadek nebo ztráta dat na straně Supabase. Předání nejnovějšího bodu obnovy má absolutní prioritu; mimo pracovní dobu dle předem sjednaného kontaktu. \\
+Předání jednoho bodu obnovy & do 2 pracovních dnů & Běžná situace --- obnova omylem smazaných dat či souborů. \\
+Předání celé sady archivů & do 5 pracovních dnů & Migrace, audit, ukončení nebo změna provozu. \\
+Ověření existence záloh & do 2 pracovních dnů & Doložení, že zálohovací proces běží (protokol posledních běhů). \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsubsection*{Postup}
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item Vývojový tým Tappky zašle písemnou žádost pověřenému kontaktu oddělení PEVKA s~uvedením
+        požadovaného bodu obnovy a~důvodu.
+  \item Oddělení PEVKA ověří oprávněnost žádosti a~zpřístupní zašifrované archivy dohodnutým
+        zabezpečeným kanálem (přenos v~rámci školní sítě nebo předání fyzického média).
+  \item Příjemce ověří kontrolní součet SHA-256 a~teprve poté archiv dešifruje soukromým klíčem.
+  \item O~předání se pořídí stručný záznam --- kdo, kdy, co a~z~jakého důvodu. Záznam slouží jako
+        doklad o~zacházení s~osobními údaji.
+\end{enumerate}
+
+\begin{informace}[Alternativa k~procesu vyžádání]
+Pokud by lhůty byly z~provozních důvodů problematické, lze zvolit variantu, kdy má vývojový tým
+\textbf{přímý přístup pro čtení} k~adresáři se zálohami (například přes SFTP s~omezenými právy).
+Archivy jsou šifrované, takže tento přístup sám o~sobě nezvyšuje riziko úniku dat --- pouze
+zkracuje reakční dobu na minuty. Volba mezi oběma variantami je na uvážení školy.
+\end{informace}
+
+\subsection{Souhrn požadavků na školu}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{0.7cm}p{3.6cm}X@{}}
+\toprule
+& \textbf{Oblast} & \textbf{Požadavek} \\
+\midrule
+$\square$ & Server & Virtuální nebo fyzický stroj, Linux (doporučeno Debian 12 nebo Ubuntu 24.04 LTS) \\
+$\square$ & Výkon & 2 vCPU, 4 GB RAM --- úloha je I/O náročná, nikoli výpočetně \\
+$\square$ & Úložiště & \textbf{1 TB} dedikovaného prostoru; ideálně na jiném fyzickém poli než produkční systémy školy \\
+$\square$ & Software & Docker Engine (verze 24 a~vyšší) s~pluginem Docker Compose \\
+$\square$ & Síť --- odchozí & TCP 443 (HTTPS) na \texttt{*.supabase.co} a~\texttt{*.supabase.com} \\
+$\square$ & Síť --- odchozí & TCP 5432 na databázový server Supabase (výpis databáze) \\
+$\square$ & Síť --- příchozí & Žádný požadavek; služba nevystavuje žádný port \\
+$\square$ & Notifikace & E-mailový relay nebo webhook pro upozornění na selhání \\
+$\square$ & Přístup & Účet pro prvotní instalaci a~čtvrtletní ověření obnovy \\
+$\square$ & Kontakt & Pověřená osoba oddělení PEVKA pro proces dle kap.~\ref{sec:vyzadani} \\
+$\square$ & Úschova klíče & Určení osoby, která bude držet školní kopii soukromého klíče \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+Zátěž serveru je nízká a~soustředěná do jednoho okna v~týdnu. Mimo běh zálohy je spotřeba
+prostředků prakticky nulová --- stroj lze proto sdílet s~jinými nenáročnými službami.
+
+\newpage
+
+% =========================================================================
+\section{Vrstva 3 --- lidsky čitelné exporty (koncept)}
+\label{sec:vrstva3}
+
+Vrstvy 1 a~2 chrání data v~\emph{technické} podobě. Obě předpokládají, že v~okamžiku potřeby
+bude k~dispozici někdo, kdo umí obnovit databázi a~spustit aplikaci. Vrstva 3 řeší otázku, která
+tímto předpokladem není pokryta:
+
+\begin{center}
+\emph{Co když je potřeba se v~datech vyznat bez Tappky a~bez technických znalostí?}
+\end{center}
+
+\subsection{Myšlenka}
+
+Umožnit přímo v~rozhraní Tappky vyexportovat data do \textbf{běžných, čitelných formátů} ---
+typicky jako archiv ZIP obsahující dokumenty, tabulky a~nahrané soubory, uspořádané do
+srozumitelné adresářové struktury. Takový archiv by šlo otevřít na jakémkoli počítači, prohlédnout
+v~běžném prohlížeči souborů a~přečíst bez jakéhokoli speciálního nástroje.
+
+Export by dával smysl pořizovat \textbf{na konci každého semestru} a~archivovat spolu se zálohami
+vrstvy 2. Zahrnoval by texty i~přiložené soubory --- na rozdíl od databázového výpisu, který je
+sice úplný, ale bez aplikace prakticky nečitelný.
+
+\subsection{Jaké situace by řešil}
+
+\begin{itemize}
+  \item Provoz Tappky by z~jakéhokoli důvodu skončil a~škola potřebuje záznamy zachovat
+        v~použitelné podobě.
+  \item Vyučující potřebuje nahlédnout do materiálů v~době výpadku aplikace.
+  \item Studující žádá o~kopii vlastních dat (právo na přenositelnost údajů dle GDPR).
+  \item Škola potřebuje doložit stav dokumentace za uzavřený akademický rok nezávisle na
+        běžícím systému.
+\end{itemize}
+
+\begin{informace}[Stav]
+Vrstva 3 je v~tuto chvíli \textbf{koncept}, nikoli hotová funkce. Není součástí požadavků na
+školu a~nevyžaduje žádné rozhodnutí --- je zde uvedena proto, aby byl model ochrany dat popsán
+celý a~aby bylo zřejmé, jakým směrem se má do budoucna rozvíjet. Konkrétní podoba exportu bude
+předmětem samostatného návrhu.
+\end{informace}
+
+\newpage
+
+% =========================================================================
+\section{Souhrnné srovnání vrstev}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{2.7cm}XXX@{}}
+\toprule
+ & \textbf{Vrstva 1} & \textbf{Vrstva 2} & \textbf{Vrstva 3} \\
+ & {\footnotesize Supabase Pro} & {\footnotesize školní server} & {\footnotesize čitelné exporty} \\
+\midrule
+Vlastník & Supabase & \textbf{Škola} & Škola \\
+Umístění & Zurich, \texttt{eu-central-2} & Česká republika & Dle volby školy \\
+Frekvence & denně & týdně & semestrálně \\
+Retence & 7 dní & 23 bodů obnovy (až 3 roky) & neomezená \\
+Databáze & \ano & \ano & částečně \\
+\textbf{Nahrané soubory} & \textbf{\nepokr} & \textbf{\ano} & \ano \\
+RPO & do 24 h & do 7 dní & do 1 semestru \\
+RTO & desítky minut až hodiny & 1--2 pracovní dny & okamžitě \\
+Čitelné bez aplikace & \nepokr & \nepokr & \ano \\
+Nezávislé na dodavateli & \nepokr & \ano & \ano \\
+Náklady & součást tarifu & serverová kapacita & vývojová kapacita \\
+Stav & \ano v~provozu & \textbf{předmět tohoto návrhu} & koncept \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+\noindent
+\textbf{RPO} (\emph{Recovery Point Objective}) --- maximální množství práce, o~které lze v~nejhorším
+případě přijít, vyjádřené v~čase.\\
+\textbf{RTO} (\emph{Recovery Time Objective}) --- doba od rozhodnutí o~obnově do okamžiku, kdy jsou
+data opět k~dispozici.
+
+% =========================================================================
+\section{Doporučený postup}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}p{0.7cm}p{4.6cm}Xp{2.4cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Krok} & \textbf{Popis} & \textbf{Odpovídá} \\
+\midrule
+1 & Projednání a~schválení & Odsouhlasení alokace serveru a~1 TB prostoru & Vedení školy \\
+2 & Přidělení serveru & Zřízení stroje, instalace Dockeru, otevření odchozích portů & IT oddělení \\
+3 & Generování klíčů & Vytvoření šifrovacího páru, předání soukromého klíče oběma stranám & Tappka $+$ škola \\
+4 & Nasazení & Nahrání konfigurace, první ruční spuštění, ověření výsledku & Tappka $+$ IT \\
+5 & Ověření obnovy & První zkušební obnova a~sepsání protokolu & Tappka \\
+6 & Předání & Předání provozní dokumentace a~kontaktů & Tappka \\
+7 & Dohoda o~lhůtách & Písemné potvrzení lhůt dle kap.~\ref{sec:vyzadani} & Škola $+$ PEVKA \\
+8 & Rutinní provoz & Čtvrtletní ověření obnovy, roční nácvik & Tappka \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\medskip
+Kroky 2 až 6 představují řádově jeden až dva dny práce. Následný provoz je automatický.
+
+\newpage
+
+% =========================================================================
+\appendix
+\section{Příloha: Konfigurace služby}
+
+Následující výpisy jsou ilustrativní --- ukazují rozsah a~povahu konfigurace, aby si IT oddělení
+mohlo udělat představu o~nárocích. Finální podoba vznikne při nasazení.
+
+\subsection{Definice služby (\texttt{docker-compose.yml})}
+
+\begin{lstlisting}[language=bash]
+services:
+  tappka-backup:
+    image: ghcr.io/tappka/backup:1
+    container_name: tappka-backup
+    restart: unless-stopped
+    env_file: /etc/tappka/backup.env
+    environment:
+      # Every Sunday at 02:00 UTC
+      BACKUP_CRON: "0 2 * * 0"
+      BUCKETS: "avatars images documents"
+    volumes:
+      - /srv/tappka-backup:/backup
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+\end{lstlisting}
+
+\subsection{Tajemství (\texttt{/etc/tappka/backup.env}, práva 0600)}
+
+\begin{lstlisting}[language=bash]
+# PostgreSQL connection string (Supabase project)
+SUPABASE_DB_URL=postgresql://...
+
+# S3-compatible endpoint for Storage buckets
+RCLONE_CONFIG_SUPABASE_TYPE=s3
+RCLONE_CONFIG_SUPABASE_PROVIDER=Other
+RCLONE_CONFIG_SUPABASE_ENDPOINT=https://<project>.supabase.co/storage/v1/s3
+RCLONE_CONFIG_SUPABASE_ACCESS_KEY_ID=...
+RCLONE_CONFIG_SUPABASE_SECRET_ACCESS_KEY=...
+
+# Public key used to encrypt archives (private key is NOT stored here)
+AGE_RECIPIENT=age1...
+
+# Monitoring: a missing ping raises an alert
+HEALTHCHECK_URL=https://...
+\end{lstlisting}
+
+\subsection{Zálohovací skript (zkráceně)}
+
+\begin{lstlisting}[language=bash]
+#!/bin/sh
+set -eu
+
+STAMP=$(date -u +%Y-%m-%dT%H%M%SZ)
+WORK="/backup/work/${STAMP}"
+OUT="/backup/archive"
+mkdir -p "$WORK" "$OUT"
+
+# --- 1. Database: roles, schema, data (three separate files) -------------
+supabase db dump --db-url "$SUPABASE_DB_URL" -f "$WORK/roles.sql"  --role-only
+supabase db dump --db-url "$SUPABASE_DB_URL" -f "$WORK/schema.sql"
+supabase db dump --db-url "$SUPABASE_DB_URL" -f "$WORK/data.sql" \
+    --data-only --use-copy
+
+# --- 2. Sanity check: refuse to keep an empty or truncated dump ----------
+for f in roles schema data; do
+  test -s "$WORK/$f.sql" || { echo "FATAL: $f.sql is empty"; exit 1; }
+done
+
+# --- 3. Storage buckets: incremental sync, changes kept as versions ------
+for BUCKET in $BUCKETS; do
+  rclone sync "supabase:${BUCKET}" "/backup/storage/${BUCKET}" \
+    --backup-dir "/backup/storage-versions/${STAMP}/${BUCKET}" \
+    --checksum --transfers 8 --retries 5
+done
+
+# --- 4. Pack, encrypt, checksum -----------------------------------------
+tar -czf - -C "$WORK" . \
+  | age -r "$AGE_RECIPIENT" -o "$OUT/tappka-db-${STAMP}.tar.gz.age"
+sha256sum "$OUT/tappka-db-${STAMP}.tar.gz.age" \
+  > "$OUT/tappka-db-${STAMP}.sha256"
+rm -rf "$WORK"
+
+# --- 5. Retention + heartbeat -------------------------------------------
+/usr/local/bin/prune-gfs.sh "$OUT"
+curl -fsS "$HEALTHCHECK_URL"
+\end{lstlisting}
+
+\section{Příloha: Manuál spuštění}
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Příprava serveru.} Instalace Docker Engine s~pluginem Compose. Vytvoření adresáře
+        \texttt{/srv/tappka-backup} na svazku s~1 TB volného prostoru.
+  \item \textbf{Šifrovací klíč.} Vygenerování páru klíčů. Veřejný klíč se vloží do konfigurace na
+        serveru; soukromý klíč se \emph{na server neukládá} a~předá se zabezpečeným kanálem
+        oběma stranám, které jej drží (viz kap.~\ref{sec:zabezpeceni}).
+  \item \textbf{Přístupové údaje.} Vytvoření souboru \texttt{/etc/tappka/backup.env} s~právy 0600
+        a~vlastníkem \texttt{root}.
+  \item \textbf{Ověření sítě.} Test dostupnosti databázového serveru a~koncového bodu úložiště
+        ze serveru školy.
+  \item \textbf{První ruční běh.}
+        \begin{lstlisting}[language=bash]
+docker compose run --rm tappka-backup /usr/local/bin/backup.sh
+        \end{lstlisting}
+  \item \textbf{Kontrola výsledku.} Ověření, že v~\texttt{/backup/archive} vznikl archiv nenulové
+        velikosti a~odpovídající soubor s~kontrolním součtem.
+  \item \textbf{Trvalé spuštění.}
+        \begin{lstlisting}[language=bash]
+docker compose up -d
+        \end{lstlisting}
+  \item \textbf{Ověření monitoringu.} Záměrné vynechání jednoho běhu a~kontrola, že dorazí
+        upozornění.
+  \item \textbf{Zkušební obnova.} Provedení postupu z~přílohy~\ref{sec:obnova} a~sepsání protokolu.
+\end{enumerate}
+
+\section{Příloha: Postup obnovy}
+\label{sec:obnova}
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Volba bodu obnovy.} Určení, ke kterému datu se obnovuje.
+  \item \textbf{Ověření neporušenosti.} Přepočet SHA-256 a~porovnání s~uloženým otiskem.
+        \emph{Neshoda znamená, že archiv nelze použít --- pokračuje se předchozím bodem obnovy.}
+  \item \textbf{Dešifrování} soukromým klíčem a~rozbalení archivu.
+  \item \textbf{Obnova databáze} v~pořadí \texttt{roles.sql} $\rightarrow$ \texttt{schema.sql}
+        $\rightarrow$ \texttt{data.sql}.
+  \item \textbf{Obnova souborů} nahráním zrcadla kontejnerů \texttt{avatars}, \texttt{images}
+        a~\texttt{documents} zpět do úložiště.
+  \item \textbf{Kontrola konzistence.} Porovnání počtu záznamů, namátková kontrola, že odkazy na
+        soubory vedou na existující objekty.
+  \item \textbf{Ruční kroky po obnově.} Obnovení hesel vlastních databázových rolí a~případných
+        replikačních odběrů --- ty nejsou součástí výpisu.
+  \item \textbf{Funkční ověření.} Přihlášení do aplikace, otevření eseje s~přílohou, zobrazení
+        profilové fotografie.
+  \item \textbf{Protokol.} Zaznamenání data, použitého bodu obnovy, doby trvání a~zjištěných
+        odchylek.
+\end{enumerate}
+
+\newpage
+
+% =========================================================================
+\section{Zdroje}
+\label{sec:zdroje}
+
+Všechny odkazy ověřeny k~31.\,8.\,2026.
+
+\begin{thebibliography}{9}
+\small
+
+\bibitem{zalohysupabase}
+\textsc{Supabase.} \emph{Database Backups}. Oficiální dokumentace.\\
+\url{https://supabase.com/docs/guides/platform/backups}\\
+{\color{muted}Doloženo: retence 7 dní denních záloh v~tarifu Pro; fyzické zálohy; zálohy
+nezahrnují objekty uložené přes Storage API; nedostupnost projektu po dobu obnovy.}
+
+\bibitem{cenik}
+\textsc{Supabase.} \emph{Pricing}.\\
+\url{https://supabase.com/pricing}\\
+{\color{muted}Doloženo: obsah tarifu Pro --- 8 GB diskového prostoru databáze, 100 GB prostoru
+pro soubory, 7denní retence logů, denní zálohy po 7 dní, absence SLA, SOC 2, ISO 27001 a~SSO.}
+
+\bibitem{sdilenaodpovednost}
+\textsc{Supabase.} \emph{Shared Responsibility Model}.\\
+\url{https://supabase.com/docs/guides/deployment/shared-responsibility-model}\\
+{\color{muted}Doloženo: rozdělení odpovědnosti mezi Supabase a~provozovatele aplikace; citovaná
+věta o~minimu zábran kolem databáze.}
+
+\bibitem{soc2}
+\textsc{Supabase.} \emph{SOC 2 Compliance and Supabase}.\\
+\url{https://supabase.com/docs/guides/security/soc-2-compliance}\\
+{\color{muted}Doloženo: Supabase je SOC 2 Type 2 compliant a~je každoročně auditována; auditní
+zpráva je dostupná pouze v~tarifech Team a~Enterprise.}
+
+\bibitem{prodchecklist}
+\textsc{Supabase.} \emph{Production Checklist}.\\
+\url{https://supabase.com/docs/guides/platform/going-into-prod}\\
+{\color{muted}Doloženo: dostupnost vynucení TLS, síťových omezení, RLS, vícefaktorového ověření
+a~omezení četnosti požadavků.}
+
+\bibitem{ciautomat}
+\textsc{Supabase.} \emph{Automated backups using GitHub Actions}.\\
+\url{https://supabase.com/docs/guides/deployment/ci/backups}\\
+{\color{muted}Doloženo: doporučený postup výpisu do tří souborů (\texttt{roles.sql},
+\texttt{schema.sql}, \texttt{data.sql}) včetně přepínačů \texttt{--role-only},
+\texttt{--data-only} a~\texttt{--use-copy}.}
+
+\bibitem{s3kompatibilita}
+\textsc{Supabase.} \emph{S3 Compatibility}.\\
+\url{https://supabase.com/docs/guides/storage/s3/compatibility}\\
+{\color{muted}Doloženo: úložiště souborů zpřístupňuje rozhraní kompatibilní s~S3 na koncovém bodu
+\texttt{/storage/v1/s3}, použitelné standardními nástroji.}
+
+\bibitem{adekvatnost}
+\textsc{Federální úřad pro ochranu údajů a~transparentnost (EDÖB, Švýcarsko).}
+\emph{EU adequacy decision regarding Switzerland}, 15.\,1.\,2024.\\
+\url{https://www.edoeb.admin.ch/en/15012024-eu-adequacy-decision-regarding-switzerland}\\
+{\color{muted}Doloženo: Evropská komise potvrdila dne 15.\,1.\,2024 odpovídající úroveň ochrany
+osobních údajů ve Švýcarsku; přenos z~EU/EHP je možný bez dodatečných záruk.}
+
+\bibitem{pravidlo321}
+\textsc{Přehled odborných doporučení k~pravidlu 3--2--1} (Veeam, Commvault, Object First).\\
+\url{https://www.veeam.com/blog/321-backup-rule.html}\\
+{\color{muted}Doloženo: pravidlo 3--2--1 jako základní standard doporučovaný CISA a~NIST;
+rozšíření 3--2--1--1--0 o~neměnitelnou kopii a~ověřované obnovy; nutnost testovat obnovu na
+úrovni aplikace, nikoli pouze existenci archivu.}
+
+\end{thebibliography}
+
+\end{document}

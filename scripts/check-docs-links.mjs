@@ -14,6 +14,7 @@ import { join, relative, sep } from "node:path";
 
 const DOCS_ROOT = join(process.cwd(), "docs");
 const PUBLIC_DIR = join(DOCS_ROOT, "public");
+const HEALTH_PROBE_PATH = "/wiki-static/portfolio-sheets.html";
 
 const EXTERNAL = /^(https?:|mailto:|tel:|data:|javascript:)/i;
 const SKIP_PATH = /^\/(@|__|node_modules)/;
@@ -62,6 +63,10 @@ function markdownRoutes() {
         continue;
       }
 
+      if (rel.endsWith("/index.md")) {
+        routes.add(`/${rel.slice(0, -"/index.md".length)}`);
+      }
+
       routes.add(`/${rel.replace(/\.md$/, "")}`);
     }
   };
@@ -72,13 +77,17 @@ function markdownRoutes() {
 }
 
 /**
- * Lists static public files as URL pathnames (with and without .html).
+ * Lists static public files as their exact URL pathnames.
  */
 function publicRoutes() {
   const routes = new Set();
 
   const walk = (dir) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith(".")) {
+        continue;
+      }
+
       const full = join(dir, entry.name);
 
       if (entry.isDirectory()) {
@@ -88,10 +97,6 @@ function publicRoutes() {
 
       const rel = relative(PUBLIC_DIR, full).split(sep).join("/");
       routes.add(`/${rel}`);
-
-      if (rel.endsWith(".html")) {
-        routes.add(`/${rel.slice(0, -".html".length)}`);
-      }
     }
   };
 
@@ -146,7 +151,8 @@ function resolveHref(fromPath, href) {
 function stripCodeFences(content) {
   return content
     .replace(/```[\s\S]*?```/g, "")
-    .replace(/~~~[\s\S]*?~~~/g, "");
+    .replace(/~~~[\s\S]*?~~~/g, "")
+    .replace(/`[^`\n]*`/g, "");
 }
 
 /**
@@ -200,7 +206,7 @@ async function fetchPage(base, pathname) {
  */
 async function isHealthyDocsServer(base) {
   try {
-    const probe = await fetchPage(base, "/portfolio-sheets.html");
+    const probe = await fetchPage(base, HEALTH_PROBE_PATH);
 
     if (probe.status !== 200 || probe.isBinary) {
       return false;

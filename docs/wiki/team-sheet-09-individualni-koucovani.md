@@ -1,11 +1,7 @@
 ---
-title: "team-sheet-09-individualni-koucovani"
+title: "Individuální koučování (1v1) — Tappka Portfolio Analysis"
 layout: false
 htmlShim: true
 ---
 
-<iframe
-  src="/wiki/team-sheet-09-individualni-koucovani.html"
-  title="team-sheet-09-individualni-koucovani"
-  style="position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fcfff7"
-></iframe>
+<HtmlShim src="/wiki-static/wiki/team-sheet-09-individualni-koucovani.html" title="Individuální koučování (1v1) — Tappka Portfolio Analysis" />

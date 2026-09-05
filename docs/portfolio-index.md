@@ -1,11 +1,7 @@
 ---
-htmlShim: true
-title: Portfolio index
+title: "TAP Portfolio — Přehled sheetů | Tappka"
 layout: false
+htmlShim: true
 ---
 
-<iframe
-  src="/portfolio-index.html"
-  title="Portfolio index"
-  style="position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fcfff7"
-></iframe>
+<HtmlShim src="/wiki-static/portfolio-index.html" title="TAP Portfolio — Přehled sheetů | Tappka" />

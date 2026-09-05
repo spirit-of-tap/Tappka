@@ -1,0 +1,207 @@
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../../../src/app/fonts/poppins-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../../src/app/fonts/roboto-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../../../src/app/fonts/roboto-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../../../src/app/fonts/roboto-700.woff2") format("woff2");
+}
+
+/* Keep these semantic values aligned with src/app/globals.css. */
+:root {
+  --docs-background: oklch(0.995 0.014 121.7);
+  --docs-foreground: oklch(0.245 0.03 8.6);
+  --docs-card: oklch(0.995 0.014 121.7);
+  --docs-popover: oklch(1 0 0);
+  --docs-primary: oklch(0.484 0.184 27.7);
+  --docs-primary-foreground: oklch(1 0 0);
+  --docs-secondary: oklch(0.303 0.041 8.9);
+  --docs-secondary-foreground: oklch(0.995 0.014 121.7);
+  --docs-muted: oklch(0.967 0.007 121.6);
+  --docs-muted-foreground: oklch(0.393 0.057 9.2);
+  --docs-accent: oklch(0.946 0.015 76.6);
+  --docs-accent-foreground: oklch(0.245 0.03 8.6);
+  --docs-destructive: oklch(0.581 0.223 27.9);
+  --docs-success: oklch(0.6 0.14 145);
+  --docs-success-strong: oklch(0.489 0.14 145);
+  --docs-warning: oklch(0.758 0.152 69.3);
+  --docs-warning-strong: oklch(0.51 0.152 69.3);
+  --docs-info: oklch(0.635 0.089 195.1);
+  --docs-info-strong: oklch(0.483 0.089 195.1);
+  --docs-border: oklch(0.877 0.013 5.8);
+  --docs-ring: oklch(0.484 0.184 27.7);
+  --docs-radius-md: 0.375rem;
+  --docs-radius-lg: 0.5rem;
+
+  --vp-c-bg: var(--docs-background);
+  --vp-c-bg-alt: var(--docs-muted);
+  --vp-c-bg-elv: var(--docs-popover);
+  --vp-c-bg-soft: var(--docs-muted);
+  --vp-c-border: var(--docs-border);
+  --vp-c-divider: var(--docs-border);
+  --vp-c-gutter: var(--docs-border);
+  --vp-c-text-1: var(--docs-foreground);
+  --vp-c-text-2: var(--docs-muted-foreground);
+  --vp-c-text-3: var(--docs-muted-foreground);
+  --vp-c-default-1: var(--docs-border);
+  --vp-c-default-2: var(--docs-accent);
+  --vp-c-default-3: var(--docs-muted);
+  --vp-c-default-soft: color-mix(in oklch, var(--docs-muted) 82%, transparent);
+  --vp-c-brand-1: var(--docs-primary);
+  --vp-c-brand-2: color-mix(in oklch, var(--docs-primary) 88%, var(--docs-foreground));
+  --vp-c-brand-3: var(--docs-primary);
+  --vp-c-brand-soft: color-mix(in oklch, var(--docs-primary) 10%, transparent);
+  --vp-c-tip-1: var(--docs-info-strong);
+  --vp-c-tip-2: var(--docs-info-strong);
+  --vp-c-tip-3: var(--docs-info);
+  --vp-c-tip-soft: color-mix(in oklch, var(--docs-info) 10%, transparent);
+  --vp-c-success-1: var(--docs-success-strong);
+  --vp-c-success-2: var(--docs-success-strong);
+  --vp-c-success-3: var(--docs-success);
+  --vp-c-success-soft: color-mix(in oklch, var(--docs-success) 10%, transparent);
+  --vp-c-warning-1: var(--docs-warning-strong);
+  --vp-c-warning-2: var(--docs-warning-strong);
+  --vp-c-warning-3: var(--docs-warning);
+  --vp-c-warning-soft: color-mix(in oklch, var(--docs-warning) 10%, transparent);
+  --vp-c-danger-1: var(--docs-destructive);
+  --vp-c-danger-2: var(--docs-destructive);
+  --vp-c-danger-3: var(--docs-destructive);
+  --vp-c-danger-soft: color-mix(in oklch, var(--docs-destructive) 10%, transparent);
+  --vp-font-family-base: "Roboto", system-ui, sans-serif;
+  --vp-button-brand-text: var(--docs-primary-foreground);
+  --vp-button-brand-bg: var(--docs-primary);
+  --vp-button-brand-hover-text: var(--docs-primary-foreground);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-2);
+  --vp-button-brand-active-text: var(--docs-primary-foreground);
+  --vp-button-brand-active-bg: color-mix(in oklch, var(--docs-primary) 80%, var(--docs-foreground));
+  --vp-button-alt-text: var(--docs-secondary-foreground);
+  --vp-button-alt-bg: var(--docs-secondary);
+  --vp-button-alt-hover-text: var(--docs-accent-foreground);
+  --vp-button-alt-hover-bg: var(--docs-accent);
+  --vp-button-alt-active-text: var(--docs-accent-foreground);
+  --vp-button-alt-active-bg: color-mix(in oklch, var(--docs-accent) 88%, var(--docs-foreground));
+  --vp-home-hero-name-color: var(--docs-primary);
+}
+
+.dark {
+  --docs-background: oklch(0.184 0.018 8);
+  --docs-foreground: oklch(0.995 0.014 121.7);
+  --docs-card: oklch(0.225 0.026 8.4);
+  --docs-popover: oklch(0.205 0.022 8.2);
+  --docs-primary: oklch(0.66 0.21 27.5);
+  --docs-primary-foreground: oklch(1 0 0);
+  --docs-secondary: oklch(0.284 0.037 8.8);
+  --docs-secondary-foreground: oklch(0.995 0.014 121.7);
+  --docs-muted: oklch(0.255 0.032 8.7);
+  --docs-muted-foreground: oklch(0.749 0.027 6.4);
+  --docs-accent: oklch(0.325 0.034 8.1);
+  --docs-accent-foreground: oklch(0.995 0.014 121.7);
+  --docs-destructive: oklch(0.602 0.21 26.3);
+  --docs-success: oklch(0.72 0.15 145);
+  --docs-success-strong: oklch(0.72 0.15 145);
+  --docs-warning: oklch(0.792 0.137 72.4);
+  --docs-warning-strong: oklch(0.792 0.137 72.4);
+  --docs-info: oklch(0.761 0.103 195.2);
+  --docs-info-strong: oklch(0.761 0.103 195.2);
+  --docs-border: oklch(0.303 0.041 8.9);
+  --docs-ring: oklch(0.66 0.21 27.5);
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body,
+button,
+input {
+  font-family: var(--vp-font-family-base);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.VPHero .name,
+.VPHero .text,
+.VPNavBarTitle .title {
+  font-family: "Poppins", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.VPDoc h1 {
+  font-size: 1.875rem;
+  letter-spacing: -0.025em;
+}
+
+.VPButton.medium,
+.VPButton.big {
+  border-radius: var(--docs-radius-md);
+  min-height: 44px;
+}
+
+.VPFeature {
+  border-color: var(--docs-border) !important;
+  border-radius: var(--docs-radius-lg) !important;
+  background-color: var(--docs-card) !important;
+}
+
+.VPFeature.link:hover {
+  border-color: var(--docs-primary) !important;
+  background-color: var(--docs-accent) !important;
+}
+
+.VPFeature .title {
+  font-family: "Poppins", system-ui, sans-serif;
+  font-weight: 700;
+}
+
+:where(a, button, input, summary):focus-visible {
+  outline: 2px solid var(--docs-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .VPDoc h1 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

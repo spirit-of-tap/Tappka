@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     ".vitepress/cache/**",
     "docs/.vitepress/cache/**",
+    "docs/.vitepress/dist/**",
   ]),
   {
     rules: {

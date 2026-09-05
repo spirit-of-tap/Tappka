@@ -1,11 +1,7 @@
 ---
-htmlShim: true
-title: Feature database
+title: "Databáze funkcí — Tappka Portfolio Digitalizace"
 layout: false
+htmlShim: true
 ---
 
-<iframe
-  src="/wiki/features.html"
-  title="Feature database"
-  style="position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fcfff7"
-></iframe>
+<HtmlShim src="/wiki-static/wiki/features.html" title="Databáze funkcí — Tappka Portfolio Digitalizace" />

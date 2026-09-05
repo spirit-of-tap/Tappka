@@ -1,176 +1,201 @@
-# Data Layer — Architecture & Working Guide
+# Datová vrstva — Architektura a pracovní postupy
 
-How the database, types, and queries fit together in Tappka, and how to work with
-them day to day. Read this before touching schema, migrations, or query code.
+Tento dokument popisuje, jak v Tappce spolupracují databáze, TypeScript typy a dotazování, a jak s nimi efektivně pracovat v každodenním vývoji. Přečti si jej dříve, než začneš upravovat schéma, psát migrace nebo psát dotazovací kód.
 
-## TL;DR
+---
 
-- The database is **Supabase Postgres**. Access control is **Row-Level Security (RLS)**.
-- The schema (tables, columns, indexes, RLS policies) is defined as code in
-  **Drizzle** (`db/schema/*.ts`) — the source of truth.
-- **drizzle-kit** turns schema edits into SQL migration files; the **Supabase CLI**
-  applies them.
-- The app queries the DB **only through `supabase-js`**, and every query is
-  **type-checked** against generated types (`src/lib/supabase/database.types.ts`).
-- **Drizzle never runs in the app.** There is no runtime ORM. Do not add one.
+## 1. Shrnutí v kostce (TL;DR)
 
-## The three parts
+- **Databáze:** Supabase PostgreSQL 16. Řízení přístupových práv je vynuceno na úrovni řádků pomocí **Row Level Security (RLS)**.
+- **Zdroj pravdy pro schéma:** Schéma (tabulky, sloupce, indexy, RLS politiky) je deklarativně definováno v kódu pomocí **Drizzle ORM** (`db/schema/*.ts`).
+- **Generování a aplikace migrací:** Nástroj `drizzle-kit` převádí změny schématu do SQL migrací; **Supabase CLI** je aplikuje do databáze.
+- **Dotazování:** Aplikace komunikuje s databází **výhradně přes `@supabase/supabase-js`**. Každý dotaz je typově kontrolován proti automaticky generovaným typům (`src/lib/supabase/database.types.ts`).
+- **Žádný runtime Drizzle:** Drizzle se v běžící aplikaci nikdy nespouští. V aplikaci není žádné runtime ORM a nesmí být přidáváno.
 
-This is a deliberate split. There is no single "ORM" — three tools each own one job:
+---
 
-| Concern | Tool | Where | Runs |
-|---|---|---|---|
-| Schema definition (tables, columns, indexes, RLS policies) | **Drizzle** | `db/schema/*.ts` | dev-time only |
-| Functions & triggers (Drizzle can't model these) | raw SQL reference in migrations | `supabase/migrations/*.sql` | dev-time only |
-| Migration generation | **drizzle-kit** | `pnpm db:generate` | dev-time only |
-| Migration application | **Supabase CLI** | `pnpm db:up` | deploy-time |
-| Runtime queries | **supabase-js** | `src/lib/**`, `src/app/**` | runtime |
-| TypeScript types | **generated** | `src/lib/supabase/database.types.ts` | dev-time |
+## 2. Diagram toku datové architektury
 
-## How queries work
+```mermaid
+flowchart TD
+  subgraph DevTime ["1. Návrh schématu (Čas vývoje)"]
+    Schema["Definice schématu v TypeScriptu\n(db/schema/*.ts)"] -->|pnpm db:generate| MigFile["SQL migrační soubor\n(supabase/migrations/*.sql)"]
+  end
 
-All three client factories are typed with the generated `Database` type:
+  subgraph MigrationEngine ["2. Aplikace a typování"]
+    MigFile -->|pnpm db:up / supabase| LocalDB[("Lokální PostgreSQL 16\n(Docker container)")]
+    LocalDB -->|pnpm db:types| GenTypes["Generované TypeScript typy\n(src/lib/supabase/database.types.ts)"]
+  end
 
-- `src/lib/supabase/server.ts` — `createClient()` for Server Components / route handlers
-- `src/lib/supabase/client.ts` — `createClient()` for Client Components
-- `src/lib/supabase/admin.ts` — `createAdminClient()` **service-role, bypasses RLS**;
-  server-only, for system operations. Never expose to the browser.
-
-Because the clients carry `<Database>`, every query is typed:
-
-```ts
-const { data } = await supabase.from("essays").select("*");
-// data[0].vote_count -> number ; data[0].nope -> compile error
+  subgraph RuntimeApp ["3. Běh aplikace (Runtime Next.js)"]
+    GenTypes --> TypedClient["Typed SupabaseClient<Database>\n(server.ts / client.ts)"]
+    TypedClient -->|supabase-js dotazy| LiveDB[("PostgreSQL s aktivním RLS")]
+    LiveDB -->|Ověření identity auth.uid| Security["RLS vynucená bezpečnost"]
+  end
 ```
 
-Query-helper functions take a typed client:
+---
 
-```ts
-import type { Database } from "@/lib/supabase/database.types";
+## 3. Třídílný model rozdělení odpovědnosti
 
-async function getEssays(supabase: SupabaseClient<Database>) { ... }
+V Tappce neexistuje jedno monolitické ORM. Místo toho tři specializované nástroje plní jasně vymezené úkoly:
+
+| Oblast | Nástroj | Umístění | Kdy se spouští |
+| :--- | :--- | :--- | :--- |
+| **Definice schématu** (tabulky, sloupce, indexy, RLS) | **Drizzle ORM** | `db/schema/*.ts` | Pouze při vývoji |
+| **Funkce a triggery** (Drizzle je neumí modelovat) | Čisté SQL | `supabase/migrations/*.sql` | Pouze při vývoji |
+| **Generování migrací** | **drizzle-kit** | `pnpm db:generate` | Pouze při vývoji |
+| **Aplikace migrací** | **Supabase CLI** | `pnpm db:up` / `db:migrate` | Při vývoji a nasazení |
+| **Runtime dotazování** | **supabase-js** | `src/lib/**`, `src/app/**` | Za běhu aplikace |
+| **TypeScript typy** | **Generované z DB** | `src/lib/supabase/database.types.ts` | Při změně schématu |
+
+---
+
+## 4. Schéma klíčových entit (ERD)
+
+```mermaid
+erDiagram
+  PROFILES ||--o{ RESERVATIONS : "vytváří"
+  ROOMS ||--o{ RESERVATIONS : "obsahuje"
+  TEAMS ||--o{ PROFILES : "sdružuje"
+  PROFILES ||--o{ ESSAYS : "píše"
+  BOOKS ||--o{ ESSAYS : "recenzuje"
+  PROFILES ||--o{ READING_GOALS : "sleduje"
+  TEAMS ||--o{ CUSTOMER_MEETINGS : "eviduje"
+
+  PROFILES {
+    uuid id PK
+    text email
+    text full_name
+    enum role
+    uuid team_id FK
+  }
+  ROOMS {
+    uuid id PK
+    text name
+    text code
+    int capacity
+  }
+  RESERVATIONS {
+    uuid id PK
+    uuid room_id FK
+    uuid user_id FK
+    timestamptz start_time
+    timestamptz end_time
+  }
+  BOOKS {
+    uuid id PK
+    text title
+    text author
+    int point_value
+  }
+  ESSAYS {
+    uuid id PK
+    uuid book_id FK
+    uuid author_id FK
+    text status
+    int word_count
+  }
 ```
 
-### Types: never hand-write row shapes
+---
 
-Row, Insert, and Update shapes come from the generated types via helpers in
-`src/lib/supabase/tables.ts`:
+## 5. Jak funguje dotazování v kódu
 
-```ts
-import type { Tables, Insertable, Updatable } from "@/lib/supabase/tables";
+Všichni tři klienti pro vytváření Supabase instance jsou typováni generovaným typem `Database`:
 
-type Essay      = Tables<"essays">;       // the Row shape
-type NewEssay   = Insertable<"essays">;   // for .insert()
-type EssayPatch = Updatable<"essays">;    // for .update()
+- `src/lib/supabase/server.ts` — `createClient()` pro React Server Components a Route Handlery.
+- `src/lib/supabase/client.ts` — `createClient()` pro klientské komponenty (`"use client"`).
+- `src/lib/supabase/admin.ts` — `createAdminClient()` se **service-role klíčem, který obchází RLS**. Používá se výhradně na serveru pro systémové úlohy (např. odesílání transakčních e-mailů nebo administrativní synchronizace). Nikdy se nesmí dostat do prohlížeče.
+
+Díky typovému parametru `<Database>` je každý dotaz plně typově kontrolován:
+
+```typescript
+const { data, error } = await supabase.from('essays').select('*');
+// data[0].word_count -> number
+// data[0].neexistujici_sloupec -> chyba při kompilaci TypeScriptu!
 ```
 
-Enums come from the generated types too:
+Pomocné funkce pro dotazování vždy přebírají typovaného klienta:
 
-```ts
-type BookStatus = Database["public"]["Enums"]["book_status"];
+```typescript
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/database.types';
+
+export async function getEssays(supabase: SupabaseClient<Database>) {
+  return await supabase.from('essays').select('*');
+}
 ```
 
-`src/lib/*/types.ts` holds **composites** built on top of these (e.g. `EssayWithDetails`
-= a row plus joined `author`/`book`). Base row types and enum unions are **derived,
-never hand-declared** — otherwise they drift from the DB. (This is why derived DB
-types use `type`, not `interface`.)
+### Typy: Nikdy nepiš tvary řádků ručně
 
-Casts (`as X`) are allowed only at genuine reshape boundaries (e.g. collapsing a
-`count()` embed into a scalar). Never `as any` on a query result.
+Tvary řádků (`Row`), vkládaných dat (`Insert`) a aktualizací (`Update`) se odvozují z generovaných typů pomocí pomocníků v `src/lib/supabase/tables.ts`:
 
-## Everyday workflows
+```typescript
+import type { Tables, Insertable, Updatable } from '@/lib/supabase/tables';
 
-### Change a table / column / index / enum / RLS policy
+export type Essay = Tables<'essays'>;            // Databázový řádek
+export type NewEssay = Insertable<'essays'>;     // Data pro .insert()
+export type EssayPatch = Updatable<'essays'>;    // Data pro .update()
+```
 
-1. Edit `db/schema/*.ts`.
-2. `pnpm db:generate` — writes a timestamped SQL file to `supabase/migrations/`.
-3. **Review the generated SQL** for unintended `DROP`s.
-4. `pnpm db:types` — regenerate `src/lib/supabase/database.types.ts` from the local DB.
-5. `pnpm supabase migration up` — apply locally.
-6. Commit the schema edit, the migration, **and** the regenerated types together.
-7. Deploy: `supabase db push` against production.
+Enumy se získávají přímo z databázového typu:
 
-> **The one habit that keeps everything honest:** run `pnpm db:types` after every
-> schema change and commit the result. That is what connects schema → types → app code.
+```typescript
+import type { Database } from '@/lib/supabase/database.types';
 
-### Change a function or trigger
+export type BookStatus = Database['public']['Enums']['book_status'];
+```
 
-Drizzle can't model these — use a hand-authored custom migration:
+> [!NOTE]
+> Z tohoto důvodu odvozené databázové typy v souladu s `AGENTS.md` používají klíčové slovo `type`, nikoliv `interface`.
 
-1. Optionally dump the live definitions for reference with
-   `pnpm db:export` (writes gitignored `db/sql/schema.sql` for
-   tables/enums/views/indexes/constraints/RLS, plus `db/sql/functions.sql` and
-   `db/sql/triggers.sql` — generated only, never commit).
-2. `pnpm db:generate:custom` — creates an empty timestamped migration.
-3. Paste the full `CREATE OR REPLACE FUNCTION ...` (or trigger SQL) into it.
-4. `pnpm db:generate` once (reports "No schema changes") so the Drizzle journal
-   records the custom migration; commit the `meta/` changes too.
-5. `pnpm supabase migration up`, verify, commit.
+---
 
-### Change an RLS policy
+## 6. Každodenní pracovní postupy
 
-**Always keep full `using` / `withCheck` expressions in `db/schema/*.ts` `pgPolicy(...)`
-calls**, matching the live policy bodies. Expression-less policies in the Drizzle
-snapshot are what caused `DROP COLUMN` to fail when a live policy still referenced the
-column (`reservation_type` / `Users can create own reservations`).
+### A. Změna tabulky, sloupce, indexu, enumu nebo RLS politiky
 
-Workflow:
+1. Uprav TypeScript kód v `db/schema/*.ts`.
+2. Spusť `pnpm db:migrate` — vygeneruje SQL soubor do `supabase/migrations/`, aplikuje jej do lokální databáze a přegeneruje typy.
+3. **Zkontroluj vygenerovaný SQL soubor** v `supabase/migrations/`, zda neobsahuje nechtěné `DROP COLUMN` či `DROP TABLE`.
+4. Commitni úpravu schématu, novou migraci i aktualizované typy společně v jednom commitu.
 
-1. Edit the `pgPolicy(...)` in `db/schema/*.ts` (name, roles, command, and expressions).
-2. `pnpm db:generate` — review the SQL. It should `DROP POLICY` / `CREATE POLICY` (or
-   `ALTER POLICY`) **before** any `DROP COLUMN` those policies depend on.
-3. `pnpm supabase migration up`, then `pnpm db:types`.
+> [!TIP]
+> **Zásadní pravidlo čistého schématu:** Po každé změně struktury vždy ověř, že `pnpm db:types` proběhlo a soubor `database.types.ts` je commitnut. Právě ten propojuje schéma s aplikačním kódem.
 
-For a one-off body-only tweak when you prefer hand-authored SQL, you can still use
-`pnpm db:generate:custom` with `DROP POLICY` + `CREATE POLICY` from live `pg_policies`,
-then update the matching `pgPolicy(...)` strings so the next `db:generate` is empty.
-See `supabase/migrations/20260708203841_optimize_rls_auth_initplan.sql` for that pattern.
+### B. Změna PostgreSQL funkce nebo triggeru
 
-## Hard rules
+Drizzle tyto prvky neumí deklarativně generovat — postupuj přes vlastní migraci:
 
-- **Apply migrations with the Supabase CLI only** (`supabase migration up` locally,
-  `supabase db push` to prod). **Never** use the MCP `apply_migration` tool — it records
-  history out-of-band from the CLI and is the root cause of migration-history drift.
-  See `docs/runbooks/migration-history-drift.md`.
-- **Never** edit or rename an already-applied migration file (except a documented repair).
-- **Never** run schema commands against production casually; deploys apply migrations.
-- **Never** wipe or reset the local database without explicit per-run confirmation.
-- **Never** add a runtime Drizzle client. It connects as a privileged role and
-  **bypasses RLS** unless every query is wrapped in an RLS transaction — a security
-  footgun. Data access stays on `supabase-js`. (Rationale: see the "full ORM" note below.)
-- New functions: `SECURITY INVOKER` + `SET search_path = ''` + fully-qualified names.
-- New RLS policies: separate policy per command; use `(select auth.uid())`, never bare
-  `auth.uid()` (per-row re-evaluation is a performance bug).
+1. Vygeneruj prázdnou migraci:
+   ```bash
+   pnpm db:generate:custom
+   ```
+2. Do nového souboru v `supabase/migrations/` vlož celý SQL příkaz (`CREATE OR REPLACE FUNCTION ...`, `CREATE TRIGGER ...`).
+3. Spusť `pnpm db:up` pro aplikaci migrace.
+4. Spusť jednou `pnpm db:generate` (ohlásí *"No schema changes"*), aby Drizzle meta-journal zaznamenal existenci migrace, a commitni změny v `db/meta/`.
 
-## Verifying database changes
+### C. Změna RLS politiky
 
-There is no unit-test suite for the DB. Verify changes with:
+V deklaracích `pgPolicy(...)` v `db/schema/*.ts` **vždy udržuj kompletní výrazy `using` a `withCheck`** shodné se skutečnými těly politik v databázi. Chybějící výrazy v Drizzle snapshotu v minulosti způsobovaly selhání `DROP COLUMN`, pokud na sloupci visela aktivní politika.
 
-- `pnpm exec tsc --noEmit` — types must be clean (0 errors).
-- `pnpm build` — must compile.
-- Supabase advisors (MCP `get_advisors`, types `security` and `performance`) after DDL —
-  confirm no new findings; ignore INFO-level `unused_index` / `unindexed_foreign_keys`
-  on local (no traffic → unreliable; judge those against production).
-- For behavior changes (functions, policies): compare output/allow-deny before and after.
+---
 
-## Why not a "full ORM"?
+## 7. Závazná bezpečnostní pravidla
 
-It's possible to run Drizzle at runtime with RLS (via a per-request transaction that
-sets `request.jwt.claims` and `set local role authenticated` from the user's token). We
-deliberately **don't**, because:
+1. **Migrace aplikuj výhradně přes Supabase CLI** (`pnpm db:migrate` nebo `pnpm db:up`). Nikdy neaplikuj migrace nestandardními nástroji mimo CLI, které by nezapsaly záznam do tabulky `schema_migrations`.
+2. **Nikdy neupravuj ani nepřejmenovávej již aplikovanou migraci**, která byla začleněna do sdílené historie.
+3. **Nikdy nepřidávej runtime Drizzle klienta.** Drizzle se připojuje jako privilegovaný uživatel a obchází RLS, což představuje vážné bezpečnostní riziko.
+4. **Nové PostgreSQL funkce:** Vždy uváděj `SECURITY INVOKER` + `SET search_path = ''` a plně kvalifikované názvy tabulek (`public.table_name`).
+5. **Nové RLS politiky:** Definuj samostatnou politiku pro každý příkaz (`SELECT`, `INSERT`, `UPDATE`, `DELETE`). V podmínkách používej optimalizovaný zápis `(select auth.uid())`, nikoliv holé `auth.uid()`, které by se neefektivně vyhodnocovalo pro každý řádek zvlášť.
 
-- Typed queries — the main ORM benefit — are already provided by typed `supabase-js`.
-- A raw `db.select()` that forgets the RLS wrapper silently bypasses RLS: a security
-  footgun `supabase-js` cannot hit.
-- Auth, Storage, and Realtime require `supabase-js` regardless, so a runtime ORM adds a
-  second data-access model rather than replacing one.
-- Direct DB connections complicate serverless/edge deployment.
+---
 
-If a specific query is genuinely painful in PostgREST, use a scoped Drizzle `db.rls(...)`
-client for that one query — do not migrate the whole app.
+## 8. Ověření databázových změn
 
-## Related docs
+Před odesláním PR ověř:
 
-- `docs/runbooks/migration-history-drift.md` — fixing/ preventing migration-history drift.
-- `docs/db-deferred-advisor-findings.md` — advisor findings intentionally deferred.
-- `docs/superpowers/specs/2026-07-08-orm-tech-debt-design.md` — design behind this setup.
+- `pnpm typecheck` — typy musí projít s 0 chybami.
+- `pnpm test` — jednotkové a komponentní testy musí projít.
+- `pnpm test:integration` — integrační testy v izolovaném kontejneru prověří správnost RLS a integritu migrací.

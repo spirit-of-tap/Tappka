@@ -2,34 +2,34 @@
 layout: home
 
 hero:
-  name: Tappka Docs
-  text: Internal documentation
-  tagline: Guides, runbooks, plans, and portfolio wiki for the Tappka codebase.
+  name: Tappka Dokumentace
+  text: Znalostní báze platformy Tappka
+  tagline: Uživatelské návody pro studující a kouče:ky i technická architektura pro vývojář:ky.
   actions:
     - theme: brand
-      text: Data layer
-      link: /data-layer
+      text: Uživatelská příručka
+      link: /user-guide/
     - theme: alt
-      text: Testing runbook
-      link: /runbooks/testing
-    - theme: alt
-      text: Portfolio wiki
-      link: /portfolio-sheets
+      text: Technická dokumentace
+      link: /architecture/overview
 
 features:
-  - title: Data layer
-    details: Drizzle schema, Supabase migrations, RLS, and typed supabase-js queries.
+  - title: Rezervace prostor kampusu
+    details: Okamžitý check-in u dveří přes NFC štítek a QR kód i plánování týmových setkání a schůzek v kalendáři.
+    link: /user-guide/rezervace-mistnosti
+  - title: Čtení a Kniha knih (Bob)
+    details: Kurátorský katalog knih, ověřené tituly, rozpoznávání odznaků, psaní reflexních esejů a evidence bodů.
+    link: /user-guide/cteni-a-knihovna
+  - title: Vývojářské prostředí a runbooky
+    details: Návody pro nastavení lokálního stacku, Drizzle migrace a standardy týmového vývoje.
+    link: /runbooks/development-setup
+  - title: Architektura a technologie
+    details: Next.js 16 App Router, React 19 Server Components, Supabase PostgreSQL a zabezpečení přes RLS politiky.
+    link: /architecture/overview
+  - title: Datová vrstva a Drizzle ORM
+    details: Deklarativní schéma v TypeScriptu, řízené migrace bez driftu a typová kontrola při kompilaci.
     link: /data-layer
-  - title: Testing
-    details: Unit, component, integration, and E2E layers — when to use each.
+  - title: Testování a stabilita
+    details: Čtyři vrstvy testování — Vitest pro jednotkovou logiku, Testcontainers pro PostgreSQL a Playwright pro E2E.
     link: /runbooks/testing
-  - title: Portfolio wiki
-    details: Static HTML sheet specs and portfolio reference pages.
-    link: /wiki
-  - title: Rezervace
-    details: Room booking context, UX notes, analytics, and door posters.
-    link: /Rezervace/kontext_ondy_rezervace
-  - title: Plans & specs
-    details: Design specs and implementation plans under plans/ and superpowers/.
-    link: /plans/2026-07-01-navigation-architecture
 ---

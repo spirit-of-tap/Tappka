@@ -1,11 +1,7 @@
 ---
-title: "individual-sheet-16-rozvaha-pasiva"
+title: "Rozvaha — Pasiva — Tappka Portfolio Analysis"
 layout: false
 htmlShim: true
 ---
 
-<iframe
-  src="/wiki/individual-sheet-16-rozvaha-pasiva.html"
-  title="individual-sheet-16-rozvaha-pasiva"
-  style="position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fcfff7"
-></iframe>
+<HtmlShim src="/wiki-static/wiki/individual-sheet-16-rozvaha-pasiva.html" title="Rozvaha — Pasiva — Tappka Portfolio Analysis" />

@@ -1,11 +1,7 @@
 ---
-title: "individual-sheet-07-semestralni-reflexe"
+title: "Semestrální reflexe — Tappka Portfolio Analysis"
 layout: false
 htmlShim: true
 ---
 
-<iframe
-  src="/wiki/individual-sheet-07-semestralni-reflexe.html"
-  title="individual-sheet-07-semestralni-reflexe"
-  style="position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #fcfff7"
-></iframe>
+<HtmlShim src="/wiki-static/wiki/individual-sheet-07-semestralni-reflexe.html" title="Semestrální reflexe — Tappka Portfolio Analysis" />
