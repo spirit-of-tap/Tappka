@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
 
-import { getAuthorsApprovedBookPoints, getTeamBookPointsStats, getUserBookPointsStats } from "./queries";
+import { getAuthorsApprovedBookPoints, getTeamBookPointsStats, getUserBookPointsStats, matchesResolvedPointsBucket } from "./queries";
 
 interface RecordedCall {
   method: string;
@@ -271,6 +271,24 @@ describe("getAuthorsApprovedBookPoints", () => {
     const result = await getAuthorsApprovedBookPoints(client, ["author-1"]);
 
     expect(result["author-1"]).toBe(2);
+  });
+});
+
+describe("matchesResolvedPointsBucket", () => {
+  it("matches exact 1/2/3 buckets and nothing else", () => {
+    expect(matchesResolvedPointsBucket(2, "2")).toBe(true);
+    expect(matchesResolvedPointsBucket(1, "2")).toBe(false);
+    expect(matchesResolvedPointsBucket(3, "2")).toBe(false);
+    expect(matchesResolvedPointsBucket(0, "2")).toBe(false);
+    expect(matchesResolvedPointsBucket(0.33, "2")).toBe(false);
+  });
+
+  it("buckets 0, fractional and other non-1/2/3 values under '0'", () => {
+    expect(matchesResolvedPointsBucket(0, "0")).toBe(true);
+    expect(matchesResolvedPointsBucket(0.33, "0")).toBe(true);
+    expect(matchesResolvedPointsBucket(1, "0")).toBe(false);
+    expect(matchesResolvedPointsBucket(2, "0")).toBe(false);
+    expect(matchesResolvedPointsBucket(3, "0")).toBe(false);
   });
 });
 
