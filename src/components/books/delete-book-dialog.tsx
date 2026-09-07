@@ -28,11 +28,23 @@ interface DeleteBookDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Called with the id of the book that was deleted so the list can be refreshed. */
   onDeleted: (bookId: string) => void;
+  /**
+   * When 'duplicate', defaults to rerouting search immediately to merge
+   * essays into the original book and remove the duplicate.
+   */
+  mode?: 'delete' | 'duplicate';
 }
 
-export function DeleteBookDialog({ book, open, onOpenChange, onDeleted }: DeleteBookDialogProps) {
+export function DeleteBookDialog({
+  book,
+  open,
+  onOpenChange,
+  onDeleted,
+  mode = 'delete',
+}: DeleteBookDialogProps) {
+  const isDuplicateMode = mode === 'duplicate';
   const [essayCount, setEssayCount] = useState<number | null>(null);
-  const [rerouting, setRerouting] = useState(false);
+  const [rerouting, setRerouting] = useState(isDuplicateMode);
   const { query, results, searching, search, reset: resetSearch } = useBookSearch({ excludeIds: [book.id] });
   const [selected, setSelected] = useState<BookWithProfiles | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -41,7 +53,7 @@ export function DeleteBookDialog({ book, open, onOpenChange, onDeleted }: Delete
   useEffect(() => {
     if (!open) return;
     setEssayCount(null);
-    setRerouting(false);
+    setRerouting(isDuplicateMode);
     resetSearch();
     setSelected(null);
     setDeleting(false);
@@ -53,7 +65,7 @@ export function DeleteBookDialog({ book, open, onOpenChange, onDeleted }: Delete
       .catch(() => setEssayCount(0));
     // resetSearch is a fresh closure each render but only clears local state — safe to omit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, book.id]);
+  }, [open, book.id, isDuplicateMode]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -74,7 +86,9 @@ export function DeleteBookDialog({ book, open, onOpenChange, onDeleted }: Delete
       }
       toast.success(
         selected
-          ? `Eseje přesměrovány na „${selected.title_cs}" a kniha smazána.`
+          ? (essayCount && essayCount > 0
+              ? `Eseje přesměrovány na „${selected.title_cs}“ a duplikát smazán.`
+              : `Kniha smazána jako duplikát „${selected.title_cs}“.`)
           : 'Kniha smazána.',
       );
       onDeleted(book.id);
@@ -85,14 +99,25 @@ export function DeleteBookDialog({ book, open, onOpenChange, onDeleted }: Delete
     }
   };
 
+  const isConfirmDisabled = deleting || (isDuplicateMode && !selected);
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Smazat knihu?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {isDuplicateMode ? 'Označit knihu jako duplikát' : 'Smazat knihu?'}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Tato akce trvale smaže <strong>{book.title_cs}</strong> ({book.author}) z knihovny.
-            Tuto akci nelze vrátit zpět.
+            {isDuplicateMode ? (
+              <>
+                Kniha <strong>{book.title_cs}</strong> ({book.author}) bude smazána a její případné eseje budou převedeny na vybraný originál.
+              </>
+            ) : (
+              <>
+                Tato akce trvale smaže <strong>{book.title_cs}</strong> ({book.author}) z knihovny. Tuto akci nelze vrátit zpět.
+              </>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -100,48 +125,90 @@ export function DeleteBookDialog({ book, open, onOpenChange, onDeleted }: Delete
           <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
             <Spinner className="size-4" /> Kontroluji navázané eseje…
           </div>
-        ) : essayCount > 0 ? (
-          <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
-            <p className="text-sm text-destructive">
-              K této knize je navázáno <strong>{essayCount}</strong>{' '}
-              {essayCount === 1 ? 'esej, která ztratí zdroj' : essayCount < 5 ? 'eseje, které ztratí zdroj' : 'esejí, které ztratí zdroj'}.
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setRerouting((v) => !v)}
-                className="gap-2"
-              >
-                <ArrowRightLeft className="size-3.5" />
-                {rerouting ? 'Zrušit přesměrování' : 'Najít originální knihu a přesměrovat eseje'}
-              </Button>
-            </div>
+        ) : (
+          <div className="space-y-3">
+            {essayCount > 0 ? (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
+                <p className="text-sm text-destructive font-medium">
+                  K této knize je navázáno <strong>{essayCount}</strong>{' '}
+                  {essayCount === 1
+                    ? 'esej, která ztratí zdroj'
+                    : essayCount < 5
+                    ? 'eseje, které ztratí zdroj'
+                    : 'esejí, které ztratí zdroj'}.
+                </p>
+                {!isDuplicateMode && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRerouting((v) => !v)}
+                    className="gap-2"
+                  >
+                    <ArrowRightLeft className="size-3.5" />
+                    {rerouting ? 'Zrušit přesměrování' : 'Najít originální knihu a přesměrovat eseje'}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2 px-1 text-sm text-muted-foreground">
+                <p>K této knize nejsou navázány žádné eseje.</p>
+                {!isDuplicateMode && !rerouting && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRerouting(true)}
+                    className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowRightLeft className="size-3.5" />
+                    Označit jako duplikát
+                  </Button>
+                )}
+              </div>
+            )}
+
             {rerouting && (
-              <div className="space-y-2 pt-1">
-                <Label htmlFor="reroute-search">Přesměrovat eseje na:</Label>
+              <div className="space-y-2 rounded-md border p-3 bg-muted/20">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="reroute-search" className="text-xs font-semibold">
+                    Vyberte originální knihu:
+                  </Label>
+                  {!isDuplicateMode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRerouting(false);
+                        setSelected(null);
+                      }}
+                      className="text-xs text-muted-foreground hover:underline"
+                    >
+                      Zrušit výběr originálu
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
                   <Input
                     id="reroute-search"
                     value={query}
                     onChange={(e) => void search(e.target.value)}
-                    placeholder="Hledat originální knihu…"
+                    placeholder="Hledat originální knihu podle názvu nebo autora…"
                     className="pl-8"
+                    autoFocus={isDuplicateMode}
                   />
                 </div>
                 {searching && <Spinner className="size-4" />}
                 {results.length > 0 && (
-                  <ul className="max-h-48 divide-y overflow-y-auto rounded-md border">
+                  <ul className="max-h-48 divide-y overflow-y-auto rounded-md border bg-background">
                     {results.map((r) => (
                       <li key={r.id}>
                         <button
                           type="button"
                           onClick={() => setSelected(r)}
                           className={cn(
-                            'flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-muted',
-                            selected?.id === r.id && 'bg-muted',
+                            'flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-muted transition-colors',
+                            selected?.id === r.id && 'bg-primary/10 hover:bg-primary/15',
                           )}
                         >
                           <span className="font-medium">{r.title_cs}</span>
@@ -158,17 +225,13 @@ export function DeleteBookDialog({ book, open, onOpenChange, onDeleted }: Delete
                   <p className="text-xs text-muted-foreground">Žádné knihy nenalezeny.</p>
                 )}
                 {selected && (
-                  <p className="text-xs text-muted-foreground">
-                    Eseje budou přesměrovány na <strong>{selected.title_cs}</strong> a tato kniha smazána.
-                  </p>
+                  <div className="rounded-md border border-primary/30 bg-primary/5 p-2.5 text-xs">
+                    Eseje budou přesměrovány na <strong>{selected.title_cs}</strong> ({selected.author}) a tento duplikát bude smazán.
+                  </div>
                 )}
               </div>
             )}
           </div>
-        ) : (
-          <p className="px-1 text-sm text-muted-foreground">
-            K této knize nejsou navázány žádné eseje.
-          </p>
         )}
 
         {error && <p className="px-1 text-sm text-destructive">{error}</p>}
@@ -180,11 +243,21 @@ export function DeleteBookDialog({ book, open, onOpenChange, onDeleted }: Delete
               e.preventDefault();
               void handleDelete();
             }}
-            disabled={deleting}
+            disabled={isConfirmDisabled}
             className="bg-destructive hover:bg-destructive/90"
           >
-            {deleting ? <Spinner className="size-4 mr-2" /> : <Trash2 className="size-4 mr-2" />}
-            Smazat
+            {deleting ? (
+              <Spinner className="size-4 mr-2" />
+            ) : selected ? (
+              <ArrowRightLeft className="size-4 mr-2" />
+            ) : (
+              <Trash2 className="size-4 mr-2" />
+            )}
+            {selected
+              ? 'Sloučit a smazat duplikát'
+              : isDuplicateMode
+              ? 'Vyberte originální knihu'
+              : 'Smazat'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

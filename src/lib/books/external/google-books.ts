@@ -81,3 +81,65 @@ export async function fetchGoogleBookByIsbn(isbn: string): Promise<ExternalBookC
   const first = json.items?.[0];
   return first ? normalizeVolume(first) : null;
 }
+
+export async function fetchGoogleBookById(volumeId: string): Promise<ExternalBookCandidate | null> {
+  const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
+  const params = new URLSearchParams();
+  if (apiKey) params.set('key', apiKey);
+  const qs = params.toString() ? `?${params.toString()}` : '';
+
+  const res = await fetch(`${BASE_URL}/${encodeURIComponent(volumeId)}${qs}`, { next: { revalidate: 300 } });
+  if (!res.ok) return null;
+
+  const json = (await res.json()) as GoogleBooksVolume;
+  return normalizeVolume(json);
+}
+
+export interface RefetchGoogleBookParams {
+  externalId?: string | null;
+  isbn?: string | null;
+  title: string;
+  author: string;
+}
+
+export async function refetchGoogleBookData(
+  params: RefetchGoogleBookParams,
+): Promise<ExternalBookCandidate | null> {
+  // 1. Try by volume ID if provided
+  if (params.externalId?.trim()) {
+    const byId = await fetchGoogleBookById(params.externalId.trim());
+    if (byId && (byId.cover_url ?? byId.preview_link)) {
+      return byId;
+    }
+  }
+
+  // 2. Try by ISBN if provided
+  const isbn = params.isbn?.replace(/[^0-9X]/gi, '');
+  if (isbn) {
+    const byIsbn = await fetchGoogleBookByIsbn(isbn);
+    if (byIsbn && (byIsbn.cover_url ?? byIsbn.preview_link)) {
+      return byIsbn;
+    }
+  }
+
+  // 3. Try targeted title + author search
+  const cleanTitle = params.title.trim();
+  const cleanAuthor = params.author.trim();
+  if (cleanTitle) {
+    const targetedQuery = cleanAuthor
+      ? `intitle:${cleanTitle} inauthor:${cleanAuthor}`
+      : `intitle:${cleanTitle}`;
+    const targeted = await searchGoogleBooks(targetedQuery);
+    const bestTargeted = targeted.find((c) => c.cover_url ?? c.preview_link) ?? targeted[0];
+    if (bestTargeted) return bestTargeted;
+
+    // 4. Fallback to broad query
+    const broadQuery = cleanAuthor ? `${cleanTitle} ${cleanAuthor}` : cleanTitle;
+    const broad = await searchGoogleBooks(broadQuery);
+    const bestBroad = broad.find((c) => c.cover_url ?? c.preview_link) ?? broad[0];
+    if (bestBroad) return bestBroad;
+  }
+
+  return null;
+}
+

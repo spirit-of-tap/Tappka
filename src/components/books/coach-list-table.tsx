@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import {
+  ArrowRightLeft,
   ArrowUpRight,
   ArrowDownRight,
   Ellipsis,
@@ -78,6 +79,7 @@ export function CoachListTable({
   const [pointsBook, setPointsBook] = useState<BookWithProfiles | null>(null);
   const [editBook, setEditBook] = useState<BookWithProfiles | null>(null);
   const [deleteBook, setDeleteBook] = useState<BookWithProfiles | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'delete' | 'duplicate'>('delete');
 
   const [query, setQuery] = usePersistedState(`tappka:coach-list:${kind}:query`, '', { storage: 'sessionStorage' });
   const [pointFilter, setPointFilter] = usePersistedState<string>(`tappka:coach-list:${kind}:point`, 'any');
@@ -249,7 +251,20 @@ export function CoachListTable({
                             Upravit knihu
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setDeleteBook(book)}
+                            onClick={() => {
+                              setDeleteMode('duplicate');
+                              setDeleteBook(book);
+                            }}
+                            className="gap-2"
+                          >
+                            <ArrowRightLeft className="size-4" />
+                            Označit jako duplikát…
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setDeleteMode('delete');
+                              setDeleteBook(book);
+                            }}
                             className="gap-2 text-destructive focus:text-destructive"
                           >
                             <Trash2 className="size-4" />
@@ -280,6 +295,7 @@ export function CoachListTable({
           open={!!editBook}
           onOpenChange={(open) => { if (!open) setEditBook(null); }}
           onSaved={onEdited}
+          onDeleted={onDeleted}
         />
       )}
       {deleteBook && (
@@ -287,6 +303,7 @@ export function CoachListTable({
           book={deleteBook}
           open={!!deleteBook}
           onOpenChange={(open) => { if (!open) setDeleteBook(null); }}
+          mode={deleteMode}
           onDeleted={onDeleted}
         />
       )}

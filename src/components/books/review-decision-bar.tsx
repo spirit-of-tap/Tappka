@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MoreHorizontal, Pencil, RefreshCw, ThumbsDown, ThumbsUp, Trash2, Undo2 } from 'lucide-react';
+import { ArrowRightLeft, MoreHorizontal, Pencil, RefreshCw, ThumbsDown, ThumbsUp, Trash2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -63,6 +63,7 @@ export function ReviewDecisionBar({
   const [isEditing, setIsEditing] = useState(!hasFullSuggestion);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<'delete' | 'duplicate'>('delete');
 
   const isBusy = busyAction !== null;
   const isRejection = points === 0;
@@ -228,7 +229,24 @@ export function ReviewDecisionBar({
               Dohledat údaje
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+            <DropdownMenuItem
+              onSelect={() => {
+                setDeleteMode('duplicate');
+                setDeleteOpen(true);
+              }}
+              className="gap-2"
+            >
+              <ArrowRightLeft className="size-4" />
+              Označit jako duplikát…
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => {
+                setDeleteMode('delete');
+                setDeleteOpen(true);
+              }}
+              className="gap-2"
+            >
               <Trash2 className="size-4" />
               Smazat knihu
             </DropdownMenuItem>
@@ -240,6 +258,7 @@ export function ReviewDecisionBar({
         book={book}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
+        mode={deleteMode}
         onDeleted={onDeleted}
       />
     </div>

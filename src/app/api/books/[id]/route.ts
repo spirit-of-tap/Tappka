@@ -47,8 +47,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const body: { action: 'classify' | 'highlight' | 'unhighlight' | 'edit' | 'points' | 'replace-record' } & Partial<ClassifyBookInput> & SetBookHighlightInput & {
-      title?: string; author?: string; description?: string; tags?: string[]; is_rocket_model?: boolean;
-      cover_url?: string | null; isbn_13?: string | null; external_id?: string | null; source?: string;
+      title?: string; title_en?: string | null; author?: string; description?: string; tags?: string[]; is_rocket_model?: boolean;
+      cover_url?: string | null; preview_link?: string | null; isbn_13?: string | null; external_id?: string | null; source?: string;
     } = await request.json();
 
     const now = new Date().toISOString();
@@ -162,11 +162,31 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         updated_by_profile_id: profile.id,
       };
       if (body.title?.trim()) updates.title_cs = body.title.trim();
+      if (body.title_en !== undefined) updates.title_en = body.title_en?.trim() || null;
       if (body.author?.trim()) updates.author = body.author.trim();
       if (body.description !== undefined) updates.description = body.description?.trim() || null;
       if (body.is_rocket_model !== undefined) updates.is_rocket_model = body.is_rocket_model;
+      if (body.cover_url !== undefined) {
+        updates.google_books_cover_url = body.cover_url?.trim()
+          ? body.cover_url.trim().replace(/^http:\/\//, 'https://')
+          : null;
+      }
+      if (body.preview_link !== undefined) {
+        updates.preview_link = body.preview_link?.trim()
+          ? body.preview_link.trim().replace(/^http:\/\//, 'https://')
+          : null;
+      }
+      if (body.isbn_13 !== undefined) updates.isbn_13 = body.isbn_13?.trim() || null;
 
-      const hasFieldUpdates = body.title?.trim() || body.author?.trim() || body.description !== undefined || body.is_rocket_model !== undefined;
+      const hasFieldUpdates =
+        body.title?.trim() ||
+        body.title_en !== undefined ||
+        body.author?.trim() ||
+        body.description !== undefined ||
+        body.is_rocket_model !== undefined ||
+        body.cover_url !== undefined ||
+        body.preview_link !== undefined ||
+        body.isbn_13 !== undefined;
       const hasTagUpdates = body.tags !== undefined;
 
       if (!hasFieldUpdates && !hasTagUpdates) {
@@ -200,6 +220,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       }
 
       const coverUrl = body.cover_url?.trim() ? body.cover_url.trim().replace(/^http:\/\//, 'https://') : null;
+      const previewLink = body.preview_link?.trim()
+        ? body.preview_link.trim().replace(/^http:\/\//, 'https://')
+        : null;
       const isbn = body.isbn_13?.trim() || null;
       const externalId = body.external_id.trim();
 
@@ -225,6 +248,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         .from('books')
         .update({
           google_books_cover_url: coverUrl,
+          preview_link: previewLink,
           isbn_13: isbn,
           external_id: externalId,
           source,

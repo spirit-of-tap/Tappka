@@ -2,11 +2,18 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Trash2 } from 'lucide-react';
+import { ArrowRightLeft, Ellipsis, Pencil, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ReviewWorkbench } from './review-workbench';
 import { CoachListTable, type ListKind } from './coach-list-table';
 import { CategoryManager } from './category-manager';
+import { BookEditDialog } from './book-edit-dialog';
 import { DeleteBookDialog } from './delete-book-dialog';
 import { BookRowHeader } from './book-row-header';
 import { RocketModelManager } from './rocket-model-manager';
@@ -44,6 +51,8 @@ export function CoachDashboard({
   const [categories, setCategories] = useState(initialCategories);
   const [rocketModel, setRocketModel] = useState(initialRocketModel);
   const [archiveDelete, setArchiveDelete] = useState<BookWithProfiles | null>(null);
+  const [archiveDeleteMode, setArchiveDeleteMode] = useState<'delete' | 'duplicate'>('delete');
+  const [archiveEdit, setArchiveEdit] = useState<BookWithProfiles | null>(null);
 
   const classify = async (
     book: BookWithProfiles,
@@ -365,6 +374,7 @@ export function CoachDashboard({
           onDelete={handleDeleteCategory}
           onSetHighlight={handleSetHighlight}
           onRemoveHighlight={handleRemoveHighlight}
+          onEdited={handleEdited}
           onDeleted={handleDeleted}
         />
       </TabsContent>
@@ -385,24 +395,59 @@ export function CoachDashboard({
                     )}
                   </BookRowHeader>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => setArchiveDelete(book)}
-                  title="Smazat knihu"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="icon" variant="ghost" className="size-8">
+                      <Ellipsis className="size-4" />
+                      <span className="sr-only">Akce</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setArchiveEdit(book)} className="gap-2">
+                      <Pencil className="size-4" />
+                      Upravit knihu
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setArchiveDeleteMode('duplicate');
+                        setArchiveDelete(book);
+                      }}
+                      className="gap-2"
+                    >
+                      <ArrowRightLeft className="size-4" />
+                      Označit jako duplikát…
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setArchiveDeleteMode('delete');
+                        setArchiveDelete(book);
+                      }}
+                      className="gap-2 text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="size-4" />
+                      Smazat
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ))}
           </div>
+        )}
+        {archiveEdit && (
+          <BookEditDialog
+            book={archiveEdit}
+            open={!!archiveEdit}
+            onOpenChange={(open) => { if (!open) setArchiveEdit(null); }}
+            onSaved={handleEdited}
+            onDeleted={handleDeleted}
+          />
         )}
         {archiveDelete && (
           <DeleteBookDialog
             book={archiveDelete}
             open={!!archiveDelete}
             onOpenChange={(open) => { if (!open) setArchiveDelete(null); }}
+            mode={archiveDeleteMode}
             onDeleted={handleDeleted}
           />
         )}

@@ -53,15 +53,14 @@ describe('ReplaceRecordFlow', () => {
 
     const patchCall = vi.mocked(fetch).mock.calls.find(([url]) =>
       String(url).includes('/api/books/b1'));
-    expect(patchCall?.[1]).toMatchObject({
-      method: 'PATCH',
-      body: JSON.stringify({
-        action: 'replace-record',
-        cover_url: 'https://books.google.com/new.jpg',
-        isbn_13: '9788027504376',
-        external_id: 'v2',
-        source: 'google_books',
-      }),
+    expect(patchCall?.[1]?.method).toBe('PATCH');
+    expect(JSON.parse(patchCall?.[1]?.body as string)).toEqual({
+      action: 'replace-record',
+      cover_url: 'https://books.google.com/new.jpg',
+      preview_link: null,
+      isbn_13: '9788027504376',
+      external_id: 'v2',
+      source: 'google_books',
     });
   });
 

@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ExternalLink, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { ArrowRightLeft, ExternalLink, MoreVertical, Pencil, Trash2 } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -14,54 +13,35 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
+import { BookEditDialog } from "@/components/books/book-edit-dialog";
+import { DeleteBookDialog } from "@/components/books/delete-book-dialog";
+import type { BookWithProfiles } from "@/lib/books/types";
 
 interface BookAdminActionsProps {
-  bookId: string;
-  bookTitle: string;
+  book: BookWithProfiles;
   goodreadsUrl: string;
   isCoachOrAdmin: boolean;
   createdByName?: string | null;
 }
 
 export function BookAdminActions({
-  bookId,
-  bookTitle,
+  book,
   goodreadsUrl,
   isCoachOrAdmin,
   createdByName,
 }: BookAdminActionsProps) {
   const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'delete' | 'duplicate'>('delete');
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/books/${bookId}`, { method: "DELETE" });
-      if (res.ok) {
-        router.push("/cteni/hledat");
-      } else {
-        const json = await res.json().catch(() => ({}));
-        setError(json.error ?? `Chyba ${res.status}`);
-      }
-    } catch {
-      setError("Nepodařilo se připojit k serveru");
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleDeleted = () => {
+    router.push("/cteni/hledat");
+    router.refresh();
+  };
+
+  const handleSaved = () => {
+    router.refresh();
   };
 
   return (
@@ -73,10 +53,10 @@ export function BookAdminActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {isCoachOrAdmin && createdByName && (
+          {isCoachOrAdmin && (createdByName ?? book.created_by?.name) && (
             <>
               <DropdownMenuLabel className="font-normal text-muted-foreground">
-                Přidal:a {createdByName}
+                Přidal:a {createdByName ?? book.created_by?.name}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
             </>
@@ -90,15 +70,30 @@ export function BookAdminActions({
           {isCoachOrAdmin && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href={`/cteni/knihy/${bookId}/upravit`} className="flex items-center gap-2">
-                  <Pencil className="size-4" />
-                  Upravit
-                </Link>
+              <DropdownMenuItem
+                onSelect={() => setEditOpen(true)}
+                className="gap-2"
+              >
+                <Pencil className="size-4" />
+                Upravit knihu
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setDeleteMode('duplicate');
+                  setDeleteOpen(true);
+                }}
+                className="gap-2"
+              >
+                <ArrowRightLeft className="size-4" />
+                Označit jako duplikát…
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
-                onSelect={() => setDeleteOpen(true)}
+                onSelect={() => {
+                  setDeleteMode('delete');
+                  setDeleteOpen(true);
+                }}
+                className="gap-2"
               >
                 <Trash2 className="size-4" />
                 Smazat knihu
@@ -107,28 +102,27 @@ export function BookAdminActions({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Smazat knihu?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tato akce trvale smaže <strong>{bookTitle}</strong> z knihovny. Tuto akci nelze vrátit zpět.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {error && <p className="text-sm text-destructive px-1">{error}</p>}
-          <AlertDialogFooter>
-            <AlertDialogCancel>Zrušit</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => { e.preventDefault(); handleDelete(); }}
-              disabled={isDeleting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {isDeleting ? <Spinner className="size-4 mr-2" /> : null}
-              Smazat
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+      {editOpen && (
+        <BookEditDialog
+          book={book}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onSaved={handleSaved}
+          onDeleted={handleDeleted}
+        />
+      )}
+
+      {deleteOpen && (
+        <DeleteBookDialog
+          book={book}
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          mode={deleteMode}
+          onDeleted={handleDeleted}
+        />
+      )}
     </>
   );
 }
+

@@ -29,6 +29,7 @@ interface CategoryManagerProps {
   onDelete: (id: string) => Promise<boolean>;
   onSetHighlight: (book: BookWithProfiles, categoryId: string) => Promise<boolean>;
   onRemoveHighlight: (bookId: string) => Promise<boolean>;
+  onEdited?: (book: BookWithProfiles) => void;
   onDeleted: (bookId: string) => void;
 }
 
@@ -40,6 +41,7 @@ export function CategoryManager({
   onDelete,
   onSetHighlight,
   onRemoveHighlight,
+  onEdited,
   onDeleted,
 }: CategoryManagerProps) {
   const [creating, setCreating] = useState(false);
@@ -168,6 +170,7 @@ export function CategoryManager({
                           categories={categories}
                           onSetHighlight={onSetHighlight}
                           onRemoveHighlight={onRemoveHighlight}
+                          onEdited={onEdited}
                           onDeleted={onDeleted}
                         />
                       </div>
