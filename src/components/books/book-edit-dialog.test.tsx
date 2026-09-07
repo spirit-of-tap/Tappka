@@ -34,7 +34,7 @@ describe('BookEditDialog', () => {
       />
     );
 
-    const titleInput = screen.getByLabelText(/název/i);
+    const titleInput = screen.getByLabelText(/český název/i);
     await userEvent.clear(titleInput);
     await userEvent.type(titleInput, 'X');
     expect(titleInput).toHaveValue('X');
@@ -43,6 +43,25 @@ describe('BookEditDialog', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /zpět na úpravy/i }));
 
-    expect(screen.getByLabelText(/název/i)).toHaveValue('X');
+    expect(screen.getByLabelText(/český název/i)).toHaveValue('X');
+  });
+
+  it('renders duplicate button when onDeleted is passed and opens duplicate dialog', async () => {
+    const onDeleted = vi.fn();
+    render(
+      <BookEditDialog
+        book={book()}
+        open
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+        onDeleted={onDeleted}
+      />
+    );
+
+    const dupBtn = screen.getByRole('button', { name: /označit jako duplikát/i });
+    expect(dupBtn).toBeInTheDocument();
+    await userEvent.click(dupBtn);
+
+    expect(screen.getByRole('heading', { name: /označit knihu jako duplikát/i })).toBeInTheDocument();
   });
 });

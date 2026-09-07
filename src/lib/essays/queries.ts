@@ -5,7 +5,7 @@ import type { Database, Json } from '@/lib/supabase/database.types';
 
 import { contentTextFromJson } from './content-text';
 import { countWords } from './text-stats';
-import { pointsNumber } from '@/lib/books/points';
+import { pointsNumber, resolveEssayPoints } from '@/lib/books/points';
 import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
 import { getCurrentSemesterRange } from '@/lib/metrics/periods';
 import type { HighlightCategory } from '@/lib/books/types';
@@ -164,6 +164,67 @@ async function findEssayIdsByTitleSearch(
   if (error) throw error;
 
   return [...new Set((data ?? []).map((row: { essay_id: string }) => row.essay_id))];
+}
+
+/**
+ * Whether resolved essay points fall into a coach-review points bucket.
+ * Bucket '0' ("Bez bodů / Téma") is the complement of 1/2/3, so fractional
+ * legacy scores (e.g. 0.33) land in '0' instead of matching nothing.
+ */
+export function matchesResolvedPointsBucket(
+  resolvedPoints: number,
+  bucket: '1' | '2' | '3' | '0',
+): boolean {
+  if (bucket === '0') {
+    return resolvedPoints !== 1 && resolvedPoints !== 2 && resolvedPoints !== 3;
+  }
+  return resolvedPoints === Number(bucket);
+}
+
+interface PointsCandidateRow {
+  id: string;
+  frozen_book_points: string | null;
+  book: { book_points: number | string | null; list_status: string } | null;
+  source: { points: number | string | null } | null;
+}
+
+/**
+ * Finds candidate essay IDs whose *resolved* points match the bucket,
+ * mirroring resolveEssayPoints() and the coach_review_filtered_ids SQL.
+ * Scoped to the student pool and chunked to keep PostgREST URLs small.
+ */
+async function findEssayIdsByResolvedPoints(
+  supabase: SupabaseClient<Database>,
+  studentIds: string[],
+  bucket: '1' | '2' | '3' | '0',
+): Promise<string[]> {
+  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+    const out: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  };
+
+  const matching: string[] = [];
+  for (const chunk of chunkArray(studentIds, 80)) {
+    const { data, error } = await supabase
+      .from('essays')
+      .select(
+        'id, frozen_book_points, book:books!book_id(book_points, list_status), source:content_sources!content_source_id(points)',
+      )
+      .in('author_profile_id', chunk)
+      .not('published_at', 'is', null)
+      .is('removed_at', null);
+    if (error) throw error;
+    for (const row of ((data ?? []) as unknown as PointsCandidateRow[])) {
+      const resolved = resolveEssayPoints({
+        frozenBookPoints: row.frozen_book_points,
+        book: row.book,
+        contentSource: row.source,
+      });
+      if (matchesResolvedPointsBucket(resolved, bucket)) matching.push(row.id);
+    }
+  }
+  return [...new Set(matching)];
 }
 
 /** Active student profile ids, optionally filtered by team, excluding the given profile. */
@@ -481,7 +542,7 @@ export async function getCoachReviewEssays(
       const { data, error } = await (supabase.rpc as any)('coach_review_filtered_ids', rpcArgs);
       if (error) {
         // RPC exists but failed (auth / validation) - fallback to JS filtering
-        // console.warn is intentionally not noisy in production; use debug fallback
+        console.warn('[coach-review] RPC failed, using JS fallback:', error);
         return null;
       }
       if (!data) return null;
@@ -594,7 +655,8 @@ export async function getCoachReviewEssays(
         commentsMap,
         coachReadsMap,
       };
-    } catch {
+    } catch (err) {
+      console.warn('[coach-review] RPC failed, using JS fallback:', err);
       return null;
     }
   };
@@ -656,38 +718,27 @@ async function getCoachReviewEssaysFallback(
     }
   }
 
-  let pointsBookIds: string[] | null = null;
-  let nonZeroBookIds: string[] | null = null;
+  // Points filtering by *resolved* essay points (same semantics as
+  // resolveEssayPoints() and the coach_review_filtered_ids SQL): content
+  // source first, then frozen value, then live book (archived = 0).
+  let pointsIncludeEssayIds: string[] | null = null;
   if (filters.points && filters.points !== 'all') {
-    if (filters.points === '0') {
-      const { data: nonZeroBooks, error: ptsError } = await supabase
-        .from('books')
-        .select('id')
-        .gt('book_points', 0)
-        .in('list_status', ['shortlist', 'longlist']);
-      if (ptsError) throw ptsError;
-      nonZeroBookIds = (nonZeroBooks ?? []).map((b) => b.id);
-    } else {
-      const ptsNum = Number(filters.points);
-      const { data: ptsBooks, error: ptsError } = await supabase
-        .from('books')
-        .select('id')
-        .eq('book_points', ptsNum)
-        .in('list_status', ['shortlist', 'longlist']);
-      if (ptsError) throw ptsError;
-      pointsBookIds = (ptsBooks ?? []).map((b) => b.id);
-      if (pointsBookIds.length === 0) {
-        return {
-          essays: [],
-          totalCount: 0,
-          unreadCount: 0,
-          readCount: 0,
-          hasMore: false,
-          authorPointsMap: {},
-          commentsMap: {},
-          coachReadsMap: {},
-        };
-      }
+    pointsIncludeEssayIds = await findEssayIdsByResolvedPoints(
+      supabase,
+      studentIds,
+      filters.points,
+    );
+    if (pointsIncludeEssayIds.length === 0) {
+      return {
+        essays: [],
+        totalCount: 0,
+        unreadCount: 0,
+        readCount: 0,
+        hasMore: false,
+        authorPointsMap: {},
+        commentsMap: {},
+        coachReadsMap: {},
+      };
     }
   }
 
@@ -948,13 +999,13 @@ async function getCoachReviewEssaysFallback(
       }
     }
 
-    if (pointsBookIds) {
-      q = q.in('book_id', pointsBookIds);
-    } else if (nonZeroBookIds && nonZeroBookIds.length > 0) {
-      if (nonZeroBookIds.length > 80) {
-        q = q.or(`book_id.is.null,book_id.not.in.(${nonZeroBookIds.slice(0,80).join(',')})`);
+    if (pointsIncludeEssayIds) {
+      // If the match set is huge, chunking is not feasible for PostgREST -
+      // fallback to first chunk (the RPC path handles large cases exactly).
+      if (pointsIncludeEssayIds.length > 80) {
+        q = q.in('id', pointsIncludeEssayIds.slice(0, 80));
       } else {
-        q = q.or(`book_id.is.null,book_id.not.in.(${nonZeroBookIds.join(',')})`);
+        q = q.in('id', pointsIncludeEssayIds);
       }
     }
 

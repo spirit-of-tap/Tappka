@@ -49,7 +49,7 @@ create table personality_tests (
   updated_at timestamptz default now() not null,
   created_by_profile_id uuid references profiles(id) not null,
   updated_by_profile_id uuid references profiles(id) not null,
-  constraint personality_tests_other_type_required 
+  constraint personality_tests_other_type_required
     check (test_type <> 'other' or (test_type_other is not null and length(trim(test_type_other)) > 0))
 );
 ```

@@ -76,8 +76,7 @@ export default async function BookDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between gap-2">
         <PageBack href="/cteni/hledat" label="Zpět do hledání" />
         <BookAdminActions
-          bookId={book.id}
-          bookTitle={book.title_cs}
+          book={book}
           goodreadsUrl={goodreadsUrl}
           isCoachOrAdmin={isCoachOrAdmin}
           createdByName={book.created_by?.name}

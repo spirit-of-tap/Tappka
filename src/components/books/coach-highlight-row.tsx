@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Ellipsis, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowRightLeft, Ellipsis, Pencil, Sparkles, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
+import { BookEditDialog } from './book-edit-dialog';
 import { DeleteBookDialog } from './delete-book-dialog';
 import { BookRowHeader } from './book-row-header';
 import type { BookWithProfiles, HighlightCategory } from '@/lib/books/types';
@@ -21,12 +22,22 @@ interface CoachHighlightRowProps {
   categories: HighlightCategory[];
   onSetHighlight: (book: BookWithProfiles, categoryId: string) => Promise<boolean>;
   onRemoveHighlight: (bookId: string) => Promise<boolean>;
+  onEdited?: (book: BookWithProfiles) => void;
   onDeleted: (bookId: string) => void;
 }
 
-export function CoachHighlightRow({ book, categories, onSetHighlight, onRemoveHighlight, onDeleted }: CoachHighlightRowProps) {
+export function CoachHighlightRow({
+  book,
+  categories,
+  onSetHighlight,
+  onRemoveHighlight,
+  onEdited,
+  onDeleted,
+}: CoachHighlightRowProps) {
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<'delete' | 'duplicate'>('delete');
 
   const run = async (action: string, fn: () => Promise<boolean>) => {
     setBusyAction(action);
@@ -73,6 +84,14 @@ export function CoachHighlightRow({ book, categories, onSetHighlight, onRemoveHi
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              onClick={() => setEditOpen(true)}
+              disabled={busyAction !== null}
+              className="gap-2"
+            >
+              <Pencil className="size-4" />
+              Upravit knihu
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => run('unhighlight', () => onRemoveHighlight(book.id))}
               disabled={busyAction !== null}
               className="gap-2"
@@ -81,7 +100,21 @@ export function CoachHighlightRow({ book, categories, onSetHighlight, onRemoveHi
               Odebrat z výběru
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => setDeleteOpen(true)}
+              onClick={() => {
+                setDeleteMode('duplicate');
+                setDeleteOpen(true);
+              }}
+              disabled={busyAction !== null}
+              className="gap-2"
+            >
+              <ArrowRightLeft className="size-4" />
+              Označit jako duplikát…
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setDeleteMode('delete');
+                setDeleteOpen(true);
+              }}
               disabled={busyAction !== null}
               className="gap-2 text-destructive focus:text-destructive"
             >
@@ -92,10 +125,24 @@ export function CoachHighlightRow({ book, categories, onSetHighlight, onRemoveHi
         </DropdownMenu>
       </div>
 
+      {editOpen && (
+        <BookEditDialog
+          book={book}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onSaved={(updated) => {
+            onEdited?.(updated);
+            setEditOpen(false);
+          }}
+          onDeleted={onDeleted}
+        />
+      )}
+
       <DeleteBookDialog
         book={book}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
+        mode={deleteMode}
         onDeleted={onDeleted}
       />
     </div>

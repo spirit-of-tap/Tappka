@@ -43,7 +43,7 @@ import './local-styles.css';
 
 ## 3. React a Next.js konvence
 
-- **Server Components jako standard:** Všechny komponenty jsou ve výchozím stavu Server Components. 
+- **Server Components jako standard:** Všechny komponenty jsou ve výchozím stavu Server Components.
 - Direktiva `"use client"` se přidává **výhradně na začátek souborů**, které:
   - Využívají klientské React hooky (`useState`, `useEffect`, `useCallback`).
   - Přistupují k API prohlížeče (kamera pro skenování čárových kódů, `window`, `localStorage`).

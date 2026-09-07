@@ -1,6 +1,6 @@
 # Zpětná vazba a Rocket Model
 
-Kvalitní a otevřená zpětná vazba je základem psychologického bezpečí a vysokého výkonu v týmech Tiimiakatemia. 
+Kvalitní a otevřená zpětná vazba je základem psychologického bezpečí a vysokého výkonu v týmech Tiimiakatemia.
 
 Tento modul pokrývá dvě oblasti:
 1. **Metodické hodnocení týmu dle rámce Rocket Model** (hodnocení dynamiky týmu v 8 dimenzích).

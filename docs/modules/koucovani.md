@@ -46,7 +46,7 @@ create table individual_coaching_sessions (
   created_by_profile_id uuid references profiles(id) not null,
   updated_by_profile_id uuid references profiles(id) not null,
   -- Zajišťuje, že je zadán buď interní profil kouče, nebo jméno externisty:
-  constraint individual_coaching_sessions_coach_xor 
+  constraint individual_coaching_sessions_coach_xor
     check ((coach_profile_id is not null) <> (external_coach_name is not null))
 );
 ```

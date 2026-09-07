@@ -33,3 +33,27 @@ export interface LibraryBookResult {
   totalCopies: number;
   availableCopies: number;
 }
+
+export interface PhysicalLibraryCopy {
+  id: string;
+  label_code: number | null;
+  created_at: string;
+  loan: {
+    id: string;
+    borrowed_at: string;
+    due_at: string;
+    is_overdue: boolean;
+    borrower: {
+      id: string;
+      name: string | null;
+      picture: string | null;
+    } | null;
+  } | null;
+}
+
+export interface PhysicalLibraryBookItem {
+  book: BookWithProfiles;
+  totalCopies: number;
+  availableCopies: number;
+  copies: PhysicalLibraryCopy[];
+}

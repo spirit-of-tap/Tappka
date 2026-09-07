@@ -80,6 +80,7 @@ export function ReplaceRecordFlow({ book, onBack, onReplaced }: ReplaceRecordFlo
         body: JSON.stringify({
           action: 'replace-record',
           cover_url: candidate.cover_url,
+          preview_link: candidate.preview_link,
           isbn_13: candidate.isbn_13,
           external_id: candidate.external_id,
           source: candidate.source,
@@ -105,7 +106,7 @@ export function ReplaceRecordFlow({ book, onBack, onReplaced }: ReplaceRecordFlo
         <div>
           <h3 className="text-lg font-semibold">Potvrdit náhradu</h3>
           <p className="text-sm text-muted-foreground">
-            Obálka, ISBN a identifikátor záznamu (zdroj) budou v databázi přepsány.
+            Obálka, odkaz na náhled, ISBN a identifikátor záznamu (zdroj) budou v databázi přepsány.
             Název a autor zůstanou beze změny.
           </p>
         </div>

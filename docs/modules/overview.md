@@ -1,6 +1,6 @@
 # Přehled modulů Tappka
 
-Tappka je modulární platforma navržená na míru potřebám vysokoškolského programu Tiimiakatemia. 
+Tappka je modulární platforma navržená na míru potřebám vysokoškolského programu Tiimiakatemia.
 
 Jednotlivé moduly pokrývají celý životní cyklus týmového podnikání studentů: od zrození týmu (Birth Giving), přes každodenní provoz v kampusu a čtení literatury, až po finanční řízení, klientské schůzky a závěrečné kompetenční portfolio.
 

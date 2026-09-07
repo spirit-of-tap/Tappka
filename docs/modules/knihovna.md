@@ -1,6 +1,6 @@
 # Fyzická knihovna a správa výpůjček
 
-Kromě digitální evidence literatury disponuje Tiimiakatemia Prague vlastní fyzickou knihovnou přímo v prostorách kampusu. 
+Kromě digitální evidence literatury disponuje Tiimiakatemia Prague vlastní fyzickou knihovnou přímo v prostorách kampusu.
 
 Modul **Knihovna** propojuje reálné papírové svazky s digitálním systémem pomocí QR štítků a čárových kódů, což umožňuje samoobslužné půjčování a vracení knih během několika sekund.
 

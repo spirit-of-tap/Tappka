@@ -1,49 +1,77 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
-import { ReviewWorkbench } from './review-workbench';
-import { CoachListTable, type ListKind } from './coach-list-table';
+import { CoachReviewQueue } from './coach-review-queue';
+import { CoachCatalogView } from './coach-catalog-view';
 import { CategoryManager } from './category-manager';
-import { DeleteBookDialog } from './delete-book-dialog';
-import { BookRowHeader } from './book-row-header';
-import { RocketModelManager } from './rocket-model-manager';
-import { LibraryImportScanner } from '@/components/library/library-import-scanner';
-import { Button } from '@/components/ui/button';
+import { CoachLibraryTools } from './coach-library-tools';
 import { suggestedBookPoints, type ReviewPoints } from '@/lib/books/points';
 import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 import type { BookListStatus, BookWithProfiles, HighlightCategory } from '@/lib/books/types';
+import type { ContentSourceStatus, ContentSourceWithProfiles } from '@/lib/content-sources/types';
+import type { PhysicalLibraryBookItem } from '@/lib/library/types';
 
 interface CoachDashboardProps {
   initialProcessing: BookWithProfiles[];
+  initialPendingSources: ContentSourceWithProfiles[];
   initialShortlisted: BookWithProfiles[];
   initialLonglisted: BookWithProfiles[];
-  initialHighlighted: BookWithProfiles[];
   initialArchived: BookWithProfiles[];
   initialCategories: HighlightCategory[];
-  initialRocketModel: BookWithProfiles[];
+  initialHighlighted: BookWithProfiles[];
+  initialContentSources: ContentSourceWithProfiles[];
+  initialLibraryInventory?: PhysicalLibraryBookItem[];
+  initialTab?: string;
+  initialSub?: string;
+}
+
+function normalizeTab(tab: string): 'processing' | 'catalog' | 'categories' | 'library' {
+  if (tab === 'shortlist' || tab === 'longlist' || tab === 'archived' || tab === 'rocket-model' || tab === 'catalog') {
+    return 'catalog';
+  }
+  if (tab === 'highlighted' || tab === 'categories') {
+    return 'categories';
+  }
+  if (tab === 'import' || tab === 'library') {
+    return 'library';
+  }
+  return 'processing';
 }
 
 export function CoachDashboard({
   initialProcessing,
+  initialPendingSources,
   initialShortlisted,
   initialLonglisted,
-  initialHighlighted,
   initialArchived,
   initialCategories,
-  initialRocketModel,
+  initialHighlighted,
+  initialContentSources,
+  initialLibraryInventory,
+  initialTab,
+  initialSub,
 }: CoachDashboardProps) {
-  const [activeTab, setActiveTab] = usePersistedState<string>('tappka:coach-dashboard:tab', 'processing');
+  const [rawTab, setRawTab] = usePersistedState<string>(
+    'tappka:coach-dashboard:tab',
+    initialTab ? normalizeTab(initialTab) : 'processing',
+  );
+  const activeTab = normalizeTab(rawTab);
+
   const [processing, setProcessing] = useState(initialProcessing);
+  const [pendingSources, setPendingSources] = useState(initialPendingSources);
   const [shortlisted, setShortlisted] = useState(initialShortlisted);
   const [longlisted, setLonglisted] = useState(initialLonglisted);
-  const [highlighted, setHighlighted] = useState(initialHighlighted);
   const [archived, setArchived] = useState(initialArchived);
+  const [highlighted, setHighlighted] = useState(initialHighlighted);
   const [categories, setCategories] = useState(initialCategories);
-  const [rocketModel, setRocketModel] = useState(initialRocketModel);
-  const [archiveDelete, setArchiveDelete] = useState<BookWithProfiles | null>(null);
+  const [contentSources, setContentSources] = useState(initialContentSources);
+
+  const catalogBooks = useMemo(
+    () => [...shortlisted, ...longlisted, ...archived],
+    [shortlisted, longlisted, archived],
+  );
 
   const classify = async (
     book: BookWithProfiles,
@@ -88,11 +116,7 @@ export function CoachDashboard({
     return true;
   };
 
-  /**
-   * On review the score carries the verdict: 0 archives the book, 1–3 approve it
-   * into the longlist. The classify route enforces the same pairing server-side.
-   */
-  const handleDecide = (
+  const handleDecideBook = (
     book: BookWithProfiles,
     points: ReviewPoints,
     reason: string,
@@ -109,87 +133,115 @@ export function CoachDashboard({
     });
   };
 
-  const handleMove = (book: BookWithProfiles, targetStatus: ListKind): Promise<boolean> => {
+  const handleMoveBook = (book: BookWithProfiles, targetStatus: 'shortlist' | 'longlist'): Promise<boolean> => {
     const points = suggestedBookPoints(book.book_points);
     return classify(book, targetStatus, points, book.list_status_reason ?? '').then((ok) => {
-      if (ok) toast.success(targetStatus === 'shortlist' ? 'Přesunuto do shortlistu.' : 'Přesunuto zpět do longlistu.');
+      if (ok) {
+        toast.success(targetStatus === 'shortlist' ? 'Přesunuto do shortlistu.' : 'Přesunuto zpět do longlistu.');
+      }
       return ok;
     });
+  };
+
+  const handleRestoreBook = (book: BookWithProfiles): Promise<boolean> => {
+    const points = suggestedBookPoints(book.book_points);
+    return classify(book, 'longlist', points, book.list_status_reason ?? '').then((ok) => {
+      if (ok) toast.success('Kniha obnovena z archivu do longlistu.');
+      return ok;
+    });
+  };
+
+  const handleToggleRocketModel = async (book: BookWithProfiles): Promise<boolean> => {
+    const nextState = !book.is_rocket_model;
+    const res = await fetch(`/api/books/${book.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'edit', is_rocket_model: nextState }),
+    });
+    if (!res.ok) {
+      toast.error('Nepodařilo se upravit zařazení do Rocket modelu.');
+      return false;
+    }
+
+    const patch = { is_rocket_model: nextState };
+    setShortlisted((prev) => refreshBook(prev, book.id, patch));
+    setLonglisted((prev) => refreshBook(prev, book.id, patch));
+    setArchived((prev) => refreshBook(prev, book.id, patch));
+    setHighlighted((prev) => refreshBook(prev, book.id, patch));
+    setProcessing((prev) => refreshBook(prev, book.id, patch));
+
+    toast.success(nextState ? 'Kniha zařazena do Rocket modelu.' : 'Kniha odebrána z Rocket modelu.');
+    return true;
   };
 
   const refreshBook = (prev: BookWithProfiles[], bookId: string, patch: Partial<BookWithProfiles>) =>
     prev.map((b) => (b.id === bookId ? { ...b, ...patch } : b));
 
   const handlePointsSaved = (book: BookWithProfiles) => {
-    setShortlisted((prev) => refreshBook(prev, book.id, { book_points: book.book_points }));
-    setLonglisted((prev) => refreshBook(prev, book.id, { book_points: book.book_points }));
+    const patch = { book_points: book.book_points };
+    setShortlisted((prev) => refreshBook(prev, book.id, patch));
+    setLonglisted((prev) => refreshBook(prev, book.id, patch));
+    setArchived((prev) => refreshBook(prev, book.id, patch));
+    setHighlighted((prev) => refreshBook(prev, book.id, patch));
   };
 
-  const handleEdited = (book: BookWithProfiles) => {
+  const handleBookEdited = (book: BookWithProfiles) => {
     setShortlisted((prev) => refreshBook(prev, book.id, book));
     setLonglisted((prev) => refreshBook(prev, book.id, book));
     setProcessing((prev) => refreshBook(prev, book.id, book));
     setArchived((prev) => refreshBook(prev, book.id, book));
     setHighlighted((prev) => refreshBook(prev, book.id, book));
-    setRocketModel((prev) => {
-      if (!book.is_rocket_model) return prev.filter((b) => b.id !== book.id);
-      const exists = prev.some((b) => b.id === book.id);
-      return exists ? refreshBook(prev, book.id, book) : [book, ...prev];
-    });
   };
 
-  const handleDeleted = (bookId: string) => {
+  const handleBookDeleted = (bookId: string) => {
     setProcessing((prev) => prev.filter((b) => b.id !== bookId));
     setShortlisted((prev) => prev.filter((b) => b.id !== bookId));
     setLonglisted((prev) => prev.filter((b) => b.id !== bookId));
     setHighlighted((prev) => prev.filter((b) => b.id !== bookId));
     setArchived((prev) => prev.filter((b) => b.id !== bookId));
-    setRocketModel((prev) => prev.filter((b) => b.id !== bookId));
   };
 
-  const handleAddRocketModel = async (book: BookWithProfiles): Promise<boolean> => {
-    const res = await fetch(`/api/books/${book.id}`, {
+  const handleDecideSource = (
+    source: ContentSourceWithProfiles,
+    status: 'approved' | 'archived',
+    points: number | null,
+  ) => {
+    setPendingSources((prev) => prev.filter((s) => s.id !== source.id));
+    const updated: ContentSourceWithProfiles = {
+      ...source,
+      status,
+      points: points ?? source.points,
+    };
+    setContentSources((prev) => [updated, ...prev.filter((s) => s.id !== source.id)]);
+  };
+
+  const handleUpdateSourceStatus = async (
+    source: ContentSourceWithProfiles,
+    status: ContentSourceStatus,
+  ): Promise<boolean> => {
+    const res = await fetch(`/api/content-sources/${source.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'edit', is_rocket_model: true }),
+      body: JSON.stringify({ status, points: source.points }),
     });
     if (!res.ok) {
-      toast.error('Nepodařilo se zařadit knihu do Rocket modelu.');
+      toast.error('Nepodařilo se aktualizovat stav zdroje.');
       return false;
     }
-
-    const updated = { ...book, is_rocket_model: true };
-    setRocketModel((prev) => [updated, ...prev]);
-    const patch = { is_rocket_model: true };
-    setProcessing((prev) => refreshBook(prev, book.id, patch));
-    setShortlisted((prev) => refreshBook(prev, book.id, patch));
-    setLonglisted((prev) => refreshBook(prev, book.id, patch));
-    setArchived((prev) => refreshBook(prev, book.id, patch));
-    setHighlighted((prev) => refreshBook(prev, book.id, patch));
-    toast.success('Kniha zařazena do Rocket modelu.');
+    setContentSources((prev) =>
+      prev.map((s) => (s.id === source.id ? { ...s, status } : s)),
+    );
+    toast.success(status === 'approved' ? 'Zdroj schválen.' : 'Zdroj archivován.');
     return true;
   };
 
-  const handleRemoveRocketModel = async (bookId: string): Promise<boolean> => {
-    const res = await fetch(`/api/books/${bookId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'edit', is_rocket_model: false }),
-    });
-    if (!res.ok) {
-      toast.error('Nepodařilo se odebrat knihu z Rocket modelu.');
-      return false;
-    }
-
-    setRocketModel((prev) => prev.filter((b) => b.id !== bookId));
-    const patch = { is_rocket_model: false };
-    setProcessing((prev) => refreshBook(prev, bookId, patch));
-    setShortlisted((prev) => refreshBook(prev, bookId, patch));
-    setLonglisted((prev) => refreshBook(prev, bookId, patch));
-    setArchived((prev) => refreshBook(prev, bookId, patch));
-    setHighlighted((prev) => refreshBook(prev, bookId, patch));
-    toast.success('Kniha odebrána z Rocket modelu.');
-    return true;
+  const handleUpdateSourcePoints = (
+    source: ContentSourceWithProfiles,
+    newPoints: number | null,
+  ) => {
+    setContentSources((prev) =>
+      prev.map((s) => (s.id === source.id ? { ...s, points: newPoints } : s)),
+    );
   };
 
   const handleSetHighlight = async (book: BookWithProfiles, categoryId: string): Promise<boolean> => {
@@ -297,66 +349,75 @@ export function CoachDashboard({
     return true;
   };
 
-  /**
-   * `attention` is deliberately spent on one tab only — the review queue is the
-   * single count that means someone is waiting on a coach. Make every count red
-   * and none of them reads as urgent.
-   */
+  const totalPending = processing.length + pendingSources.length;
+  const totalCatalog = catalogBooks.length + contentSources.length;
+
   const tabs = [
-    { value: 'processing', label: 'Ke zpracování', count: processing.length, tone: 'attention' as const },
-    { value: 'shortlist', label: 'Shortlist', count: shortlisted.length },
-    { value: 'longlist', label: 'Longlist', count: longlisted.length },
-    { value: 'highlighted', label: 'Výběr', count: highlighted.length },
-    { value: 'archived', label: 'Zamítnuté', count: archived.length },
-    { value: 'rocket-model', label: 'Rocket model', count: rocketModel.length },
-    { value: 'import', label: 'Import', count: 0 },
+    {
+      value: 'processing',
+      label: 'Ke schválení',
+      count: totalPending,
+      tone: 'attention' as const,
+    },
+    {
+      value: 'catalog',
+      label: 'Katalog',
+      count: totalCatalog,
+    },
+    {
+      value: 'categories',
+      label: 'Výběr & kategorie',
+      count: highlighted.length,
+    },
+    {
+      value: 'library',
+      label: 'Fyzická knihovna',
+    },
   ];
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
+    <Tabs value={activeTab} onValueChange={setRawTab}>
       <TabsList variant="line">
         {tabs.map(({ value, label, count, tone }) => (
           <TabsTrigger key={value} value={value}>
             {label}
-            <TabsTriggerCount count={count} tone={tone} />
+            {count !== undefined && <TabsTriggerCount count={count} tone={tone} />}
           </TabsTrigger>
         ))}
       </TabsList>
 
+      {/* 1. KE SCHVÁLENÍ */}
       <TabsContent value="processing" className="mt-4">
-        <ReviewWorkbench
+        <CoachReviewQueue
           books={processing}
-          onDecide={handleDecide}
-          onEdited={handleEdited}
-          onDeleted={handleDeleted}
+          sources={pendingSources}
+          initialSub={initialSub === 'sources' ? 'sources' : 'books'}
+          onDecideBook={handleDecideBook}
+          onEditedBook={handleBookEdited}
+          onDeletedBook={handleBookDeleted}
+          onDecideSource={handleDecideSource}
         />
       </TabsContent>
 
-      <TabsContent value="shortlist" className="mt-4">
-        <CoachListTable
-          kind="shortlist"
-          books={shortlisted}
+      {/* 2. KATALOG */}
+      <TabsContent value="catalog" className="mt-4">
+        <CoachCatalogView
+          books={catalogBooks}
+          sources={contentSources}
           categories={categories}
-          onMove={handleMove}
+          onMoveBook={handleMoveBook}
+          onRestoreBook={handleRestoreBook}
+          onToggleRocketModel={handleToggleRocketModel}
           onPointsSaved={handlePointsSaved}
-          onEdited={handleEdited}
-          onDeleted={handleDeleted}
+          onBookEdited={handleBookEdited}
+          onBookDeleted={handleBookDeleted}
+          onUpdateSourceStatus={handleUpdateSourceStatus}
+          onUpdateSourcePoints={handleUpdateSourcePoints}
         />
       </TabsContent>
 
-      <TabsContent value="longlist" className="mt-4">
-        <CoachListTable
-          kind="longlist"
-          books={longlisted}
-          categories={categories}
-          onMove={handleMove}
-          onPointsSaved={handlePointsSaved}
-          onEdited={handleEdited}
-          onDeleted={handleDeleted}
-        />
-      </TabsContent>
-
-      <TabsContent value="highlighted" className="mt-4">
+      {/* 3. VÝBĚR & KATEGORIE */}
+      <TabsContent value="categories" className="mt-4">
         <CategoryManager
           categories={categories}
           highlighted={highlighted}
@@ -365,59 +426,14 @@ export function CoachDashboard({
           onDelete={handleDeleteCategory}
           onSetHighlight={handleSetHighlight}
           onRemoveHighlight={handleRemoveHighlight}
-          onDeleted={handleDeleted}
+          onEdited={handleBookEdited}
+          onDeleted={handleBookDeleted}
         />
       </TabsContent>
 
-      <TabsContent value="archived" className="mt-4">
-        {archived.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-muted-foreground">Žádné zamítnuté knihy</p>
-          </div>
-        ) : (
-          <div className="divide-y rounded-md border">
-            {archived.map((book) => (
-              <div key={book.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <BookRowHeader book={book} coverSize="md" titleClassName="block">
-                    {book.list_status_reason && (
-                      <p className="text-xs text-muted-foreground mt-1">Důvod: {book.list_status_reason}</p>
-                    )}
-                  </BookRowHeader>
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => setArchiveDelete(book)}
-                  title="Smazat knihu"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-        {archiveDelete && (
-          <DeleteBookDialog
-            book={archiveDelete}
-            open={!!archiveDelete}
-            onOpenChange={(open) => { if (!open) setArchiveDelete(null); }}
-            onDeleted={handleDeleted}
-          />
-        )}
-      </TabsContent>
-
-      <TabsContent value="rocket-model" className="mt-4">
-        <RocketModelManager
-          books={rocketModel}
-          onAdd={handleAddRocketModel}
-          onRemove={handleRemoveRocketModel}
-        />
-      </TabsContent>
-
-      <TabsContent value="import" className="mt-4">
-        <LibraryImportScanner />
+      {/* 4. FYZICKÁ KNIHOVNA */}
+      <TabsContent value="library" className="mt-4">
+        <CoachLibraryTools initialInventory={initialLibraryInventory ?? []} />
       </TabsContent>
     </Tabs>
   );

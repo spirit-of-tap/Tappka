@@ -6,7 +6,7 @@ Tento dokument detailně popisuje fungování interního dokumentačního portá
 
 ## 1. Jak funguje `pnpm wiki` pod kapotou
 
-Dokumentační portál je postaven na moderním statickém generátoru **[VitePress](https://vitepress.dev/)**. 
+Dokumentační portál je postaven na moderním statickém generátoru **[VitePress](https://vitepress.dev/)**.
 
 V [`package.json`](https://github.com/spirit-of-tap/Tappka/blob/production/package.json) jsou definovány dva klíčové skripty:
 ```json
