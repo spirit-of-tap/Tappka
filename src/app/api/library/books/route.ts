@@ -85,3 +85,49 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Nepodařilo se přidat knihu do knihovny' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: claimsData } = await supabase.auth.getClaims();
+    const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
+    if (!user) return NextResponse.json({ error: 'Neautorizováno' }, { status: 401 });
+
+    const profile = await getCurrentUserProfile(supabase, { user });
+    if (!profile || (profile.role !== 'coach' && profile.role !== 'admin')) {
+      return NextResponse.json({ error: 'Nemáš oprávnění' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const copyId = searchParams.get('copy_id');
+    if (!copyId) {
+      return NextResponse.json({ error: 'ID výtisku je povinné' }, { status: 400 });
+    }
+
+    // Check if copy has active or historical loans
+    const { data: loans, error: loansError } = await supabase
+      .from('book_loans')
+      .select('id')
+      .eq('library_book_id', copyId)
+      .limit(1);
+
+    if (loansError) throw loansError;
+    if (loans && loans.length > 0) {
+      return NextResponse.json(
+        { error: 'Výtisk nelze smazat, protože má zaznamenanou historii výpůjček.' },
+        { status: 409 },
+      );
+    }
+
+    const { error } = await supabase
+      .from('library_books')
+      .delete()
+      .eq('id', copyId);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    serverLogger.console.error('DELETE /api/library/books error:', error);
+    return NextResponse.json({ error: 'Nepodařilo se smazat výtisk' }, { status: 500 });
+  }
+}

@@ -1,7 +1,15 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
-import type { BookCopyStatus, BookLibraryInfo, BookLoanWithDetails, LibraryBookWithBook } from './types';
+import type {
+  BookCopyStatus,
+  BookLibraryInfo,
+  BookLoanWithDetails,
+  LibraryBookWithBook,
+  PhysicalLibraryBookItem,
+  PhysicalLibraryCopy,
+} from './types';
 import { BOOK_JOIN_FIELDS, mapBookRow, type BookQueryRow } from '@/lib/books/row-mapper';
+import type { BookWithProfiles } from '@/lib/books/types';
 
 const BOOK_SELECT = `
   *,
@@ -326,4 +334,89 @@ export async function findOrCreateLibraryCopy(
 
   if (insertError) throw insertError;
   return inserted.id;
+}
+
+export async function getPhysicalLibraryInventory(
+  supabase: SupabaseClient<Database>,
+): Promise<PhysicalLibraryBookItem[]> {
+  const { data: rawCopies, error: copiesError } = await supabase
+    .from('library_books')
+    .select(`
+      id,
+      book_id,
+      label_code,
+      created_at,
+      book:books!inner(
+        *,
+        ${BOOK_JOIN_FIELDS}
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (copiesError) throw copiesError;
+  if (!rawCopies || rawCopies.length === 0) return [];
+
+  const copyIds = rawCopies.map((c) => c.id);
+
+  const { data: activeLoans, error: loansError } = await supabase
+    .from('book_loans')
+    .select(`
+      id,
+      library_book_id,
+      borrowed_at,
+      due_at,
+      borrower:profiles!borrower_id(id, name, picture)
+    `)
+    .in('library_book_id', copyIds)
+    .is('returned_at', null);
+
+  if (loansError) throw loansError;
+
+  const now = new Date();
+  const loanByCopyId = new Map(
+    (activeLoans ?? []).map((l) => [
+      l.library_book_id,
+      {
+        id: l.id,
+        borrowed_at: l.borrowed_at,
+        due_at: l.due_at,
+        is_overdue: new Date(l.due_at) < now,
+        borrower: l.borrower as unknown as { id: string; name: string | null; picture: string | null },
+      },
+    ]),
+  );
+
+  const bookMap = new Map<string, { book: BookWithProfiles; copies: PhysicalLibraryCopy[] }>();
+
+  for (const rawCopy of rawCopies) {
+    const bookId = rawCopy.book_id;
+    const loan = loanByCopyId.get(rawCopy.id) ?? null;
+
+    const copy: PhysicalLibraryCopy = {
+      id: rawCopy.id,
+      label_code: rawCopy.label_code,
+      created_at: rawCopy.created_at,
+      loan,
+    };
+
+    if (!bookMap.has(bookId)) {
+      const mappedBook = mapBookRow(rawCopy.book as unknown as BookQueryRow);
+      bookMap.set(bookId, { book: mappedBook, copies: [copy] });
+    } else {
+      bookMap.get(bookId)!.copies.push(copy);
+    }
+  }
+
+  const result: PhysicalLibraryBookItem[] = Array.from(bookMap.values()).map(({ book, copies }) => {
+    const totalCopies = copies.length;
+    const availableCopies = copies.filter((c) => c.loan == null).length;
+    return {
+      book,
+      totalCopies,
+      availableCopies,
+      copies,
+    };
+  });
+
+  return result.sort((a, b) => a.book.title_cs.localeCompare(b.book.title_cs, 'cs'));
 }

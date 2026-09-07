@@ -6,6 +6,14 @@ export type ContentSourceStatus = Database['public']['Enums']['content_source_st
 
 export type ContentSource = Tables<'content_sources'>;
 
+export interface ContentSourceWithProfiles extends ContentSource {
+  created_by?: {
+    id: string;
+    name: string | null;
+    picture: string | null;
+  } | null;
+}
+
 export interface CreateContentSourceInput {
   kind: ContentSourceKind;
   title: string;
