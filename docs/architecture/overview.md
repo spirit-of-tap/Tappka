@@ -78,7 +78,7 @@ graph TD
 ## 3. Klíčové architektonické principy
 
 ### Server Components jako výchozí stav
-V souladu s pravidly v [`AGENTS.md`](/runbooks/agents-and-code-style) je každá stránka a komponenta ve výchozím stavu **React Server Component**. 
+V souladu s pravidly v [`AGENTS.md`](/runbooks/agents-and-code-style) je každá stránka a komponenta ve výchozím stavu **React Server Component**.
 - Kód běží přímo na serveru bez odesílání JavaScriptu do klienta.
 - Dotazy do databáze probíhají přes `@/lib/supabase/server` s request-scoped cache přes `React.cache()` (např. profil přihlášeného uživatele v [`src/lib/auth/session.ts`](https://github.com/spirit-of-tap/Tappka/blob/production/src/lib/auth/session.ts)).
 - Direktiva `"use client"` se používá pouze pro prvky vyžadující interaktivitu (formuláře, modální dialogy, přístup k foťáku pro skenování, časovače nebo real-time odběry).

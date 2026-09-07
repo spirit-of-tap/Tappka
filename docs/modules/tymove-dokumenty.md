@@ -1,6 +1,6 @@
 # Týmové dokumenty a Finance
 
-Každá studentská společnost v Tiimiakatemia funguje jako reálná firma s právní subjektivitou (typicky s.r.o. nebo z.s.). 
+Každá studentská společnost v Tiimiakatemia funguje jako reálná firma s právní subjektivitou (typicky s.r.o. nebo z.s.).
 
 Modul **Týmové dokumenty** slouží jako centrální archív klíčových zakládajících dohod, interních směrnic a finančních výkazů, které jsou vyžadovány jak metodikou Tiimiakatemia, tak platnou českou legislativou.
 

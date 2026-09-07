@@ -79,8 +79,8 @@ create table birth_giving_teams (
 );
 
 -- Pouze jeden vítěz na akci
-create unique index birth_giving_teams_event_winner_idx 
-  on birth_giving_teams (event_id) 
+create unique index birth_giving_teams_event_winner_idx
+  on birth_giving_teams (event_id)
   where (is_winner and cancelled_at is null);
 ```
 
