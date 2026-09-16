@@ -1693,6 +1693,266 @@ export type Database = {
           },
         ]
       }
+      rocket_categories: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          order_index: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          order_index?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          order_index?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rocket_individual_history: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          is_checked: boolean
+          item_id: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          is_checked: boolean
+          item_id: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          is_checked?: boolean
+          item_id?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rocket_individual_history_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rocket_individual_history_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "rocket_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rocket_individual_history_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rocket_individual_states: {
+        Row: {
+          created_at: string
+          is_checked: boolean
+          item_id: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          is_checked?: boolean
+          item_id: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          is_checked?: boolean
+          item_id?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rocket_individual_states_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "rocket_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rocket_individual_states_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rocket_items: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          order_index: number
+          text_cs: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          order_index?: number
+          text_cs: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          order_index?: number
+          text_cs?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rocket_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "rocket_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rocket_team_checks: {
+        Row: {
+          checked_by_profile_id: string | null
+          created_at: string
+          is_checked: boolean
+          item_id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          checked_by_profile_id?: string | null
+          created_at?: string
+          is_checked?: boolean
+          item_id: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          checked_by_profile_id?: string | null
+          created_at?: string
+          is_checked?: boolean
+          item_id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rocket_team_checks_checked_by_profile_id_fkey"
+            columns: ["checked_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rocket_team_checks_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "rocket_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rocket_team_checks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rocket_team_history: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          id: string
+          is_checked: boolean
+          item_id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          id?: string
+          is_checked: boolean
+          item_id: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          id?: string
+          is_checked?: boolean
+          item_id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rocket_team_history_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rocket_team_history_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "rocket_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rocket_team_history_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           available_days: number[] | null

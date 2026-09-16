@@ -7,6 +7,7 @@ export const BETA_FEATURES = {
   toolsTechniques: ["B"],
   personalityTests: ["B"],
   birthGiving: ["B"],
+  rocketModel: ["B"],
   portfolio: ["B"],
   dashboardMetrics: ["B"],
 } as const

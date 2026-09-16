@@ -342,6 +342,13 @@ export async function grantBetaAccess(profileId: string): Promise<void> {
   });
 }
 
+/** Sets the beta cohort, needed for pages gated to a specific cohort. */
+export async function setBetaCohort(profileId: string, cohort: "A" | "B"): Promise<void> {
+  await restFetch(`/profiles?id=eq.${profileId}`, "PATCH", {
+    beta_cohort: cohort,
+  });
+}
+
 /** Seeds a team reflection row directly, bypassing the UI. */
 export async function seedTeamReflection(
   teamId: string,

@@ -34,6 +34,7 @@ describe("navigation config", () => {
       "/koucovani",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/rocket-model",
       "/tymove-dokumenty",
       "/nastroje-techniky",
       "/osobnostni-testy",
@@ -67,6 +68,7 @@ describe("navigation config", () => {
       "/koucovani": "coaching",
       "/tymova-reflexe": "teamReflection",
       "/tymovy-denik": "teamDiary",
+      "/rocket-model": "rocketModel",
       "/tymove-dokumenty": "teamDocuments",
       "/nastroje-techniky": "toolsTechniques",
       "/osobnostni-testy": "personalityTests",
@@ -90,6 +92,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/rocket-model",
       "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
@@ -105,6 +108,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/rocket-model",
       "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
@@ -129,7 +133,7 @@ describe("getHubModules", () => {
   });
 
   it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
-    expect(MODULE_HUB_ORDER).toHaveLength(10);
+    expect(MODULE_HUB_ORDER).toHaveLength(11);
     expect(MODULE_HUB_ORDER).not.toContain("/");
     expect(MODULE_HUB_ORDER).not.toContain("/komunita");
   });
@@ -159,6 +163,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/rocket-model",
       "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
