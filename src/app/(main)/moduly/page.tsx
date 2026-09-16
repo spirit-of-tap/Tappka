@@ -20,6 +20,7 @@ export default async function ModulyPage() {
     role: profile.role,
     beta_access_granted_at: profile.beta_access_granted_at,
     beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+    teamId: profile.team_id ?? null,
     teamName: profile.team?.name ?? null,
   };
 

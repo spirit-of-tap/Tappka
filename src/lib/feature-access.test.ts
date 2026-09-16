@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { canAccessFeature, BETA_FEATURES } from "./feature-access"
+import { canAccessFeature, BETA_FEATURES, ROCKET_MODEL_ALLOWED_TEAM_ID } from "./feature-access"
 
 const nonBeta = { role: "student", beta_access_granted_at: null, beta_cohort: "A" as const }
 const a = { role: "student", beta_access_granted_at: "2026-01-01T00:00:00Z", beta_cohort: "A" as const }
@@ -36,11 +36,19 @@ describe("canAccessFeature", () => {
     expect(canAccessFeature(tuuliB, "rocketModel")).toBe(true)
     expect(canAccessFeature(tuuliA, "rocketModel")).toBe(true)
   })
-  it("rocketModel is denied for team Tuuli without beta enrollment", () => {
-    expect(canAccessFeature({ ...nonBeta, teamName: "Tuuli" }, "rocketModel")).toBe(false)
+  it("rocketModel is allowed for Tuuli members by team id without beta enrollment", () => {
+    expect(
+      canAccessFeature({ ...nonBeta, teamId: ROCKET_MODEL_ALLOWED_TEAM_ID }, "rocketModel"),
+    ).toBe(true)
+    expect(
+      canAccessFeature({ ...nonBeta, teamName: "Tuuli" }, "rocketModel"),
+    ).toBe(true)
   })
   it("rocketModel is denied for other teams even with beta enrollment", () => {
     expect(canAccessFeature({ ...b, teamName: "Viento" }, "rocketModel")).toBe(false)
+    expect(
+      canAccessFeature({ ...b, teamId: "00000000-0000-4000-8000-000000000000" }, "rocketModel"),
+    ).toBe(false)
   })
   it("rocketModel is allowed for admin without a team", () => {
     expect(canAccessFeature(adminNoBeta, "rocketModel")).toBe(true)

@@ -40,6 +40,7 @@ export default async function DashboardLayout({
     beta_access: profile.beta_access_granted_at != null,
     beta_access_granted_at: profile.beta_access_granted_at,
     beta_cohort: ((profile as unknown as { beta_cohort: "A" | "B" }).beta_cohort ?? "A") as "A" | "B",
+    teamId: profile.team_id ?? null,
     teamName: profile.team?.name ?? null,
   };
 

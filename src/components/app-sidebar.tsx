@@ -47,6 +47,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     beta_access?: boolean
     beta_access_granted_at?: string | null
     beta_cohort?: BetaCohort
+    teamId?: string | null
     teamName?: string | null
   }
 }
@@ -60,6 +61,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
         beta_access_granted_at:
           user.beta_access_granted_at ?? (user.beta_access ? "1970-01-01T00:00:00Z" : null) ?? null,
         beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
+        teamId: user.teamId ?? null,
         teamName: user.teamName ?? null,
       }
     : null
