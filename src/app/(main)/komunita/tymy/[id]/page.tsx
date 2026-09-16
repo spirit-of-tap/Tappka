@@ -1,11 +1,13 @@
 import { notFound } from 'next/navigation';
 import { ChartColumn, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getTeamById, getTeamPictureUrl, getProfilePictureUrl } from '@/lib/komunita/queries';
+import { getFormerTeamMembers, getTeamById, getTeamPictureUrl, getProfilePictureUrl } from '@/lib/komunita/queries';
+import { getSessionProfile } from '@/lib/auth/session';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserCard } from '@/components/komunita/user-card';
+import { TeamMemberAdminActions } from '@/components/komunita/team-member-admin-actions';
 import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
 
@@ -30,16 +32,20 @@ export default async function TeamPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [team, bookStats, meetingStats, coachingStats] = await Promise.all([
+  const [team, bookStats, meetingStats, coachingStats, formerMembers, sessionProfile] = await Promise.all([
     getTeamById(supabase, id),
     getTeamBookPointsStats(supabase, id).catch(() => []),
     getTeamCustomerMeetingsStats(id).catch(() => []),
     getTeamCoachingSessionStats(id).catch(() => []),
+    getFormerTeamMembers(supabase, id).catch(() => []),
+    getSessionProfile().catch(() => null),
   ]);
 
   if (!team) {
     notFound();
   }
+
+  const isAdmin = sessionProfile?.role === 'admin';
 
   const teamPictureUrl = getTeamPictureUrl(supabase, team);
 
@@ -97,12 +103,20 @@ export default async function TeamPage({ params }: PageProps) {
             {coaches.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <UserCard
-                  key={profile.id}
-                  profile={{ ...profile, team }}
-                  pictureUrl={pictureUrl}
-                  from={backHref}
-                />
+                <div key={profile.id} className="space-y-1">
+                  <UserCard
+                    profile={{ ...profile, team }}
+                    pictureUrl={pictureUrl}
+                    from={backHref}
+                  />
+                  {isAdmin && profile.id !== sessionProfile?.id && (
+                    <TeamMemberAdminActions
+                      profileId={profile.id}
+                      profileName={profile.name}
+                      mode="remove"
+                    />
+                  )}
+                </div>
               );
             })}
           </div>
@@ -117,12 +131,20 @@ export default async function TeamPage({ params }: PageProps) {
             {mentors.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <UserCard
-                  key={profile.id}
-                  profile={{ ...profile, team }}
-                  pictureUrl={pictureUrl}
-                  from={backHref}
-                />
+                <div key={profile.id} className="space-y-1">
+                  <UserCard
+                    profile={{ ...profile, team }}
+                    pictureUrl={pictureUrl}
+                    from={backHref}
+                  />
+                  {isAdmin && profile.id !== sessionProfile?.id && (
+                    <TeamMemberAdminActions
+                      profileId={profile.id}
+                      profileName={profile.name}
+                      mode="remove"
+                    />
+                  )}
+                </div>
               );
             })}
           </div>
@@ -137,12 +159,51 @@ export default async function TeamPage({ params }: PageProps) {
             {students.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <UserCard
-                  key={profile.id}
-                  profile={{ ...profile, team }}
-                  pictureUrl={pictureUrl}
-                  from={backHref}
-                />
+                <div key={profile.id} className="space-y-1">
+                  <UserCard
+                    profile={{ ...profile, team }}
+                    pictureUrl={pictureUrl}
+                    from={backHref}
+                  />
+                  {isAdmin && profile.id !== sessionProfile?.id && (
+                    <TeamMemberAdminActions
+                      profileId={profile.id}
+                      profileName={profile.name}
+                      mode="remove"
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Former members — kept findable for history, excluded from active counts */}
+      {formerMembers.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Bývalí členové:ky</h2>
+          <p className="text-sm text-muted-foreground">
+            Už nejsou členy:ky týmu a neblokují týmová potvrzení (např. v Rocket Modelu).
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {formerMembers.map((profile) => {
+              const pictureUrl = getProfilePictureUrl(supabase, profile);
+              return (
+                <div key={profile.id} className="space-y-1 opacity-80">
+                  <UserCard
+                    profile={{ ...profile, team: null }}
+                    pictureUrl={pictureUrl}
+                    from={backHref}
+                  />
+                  {isAdmin && (
+                    <TeamMemberAdminActions
+                      profileId={profile.id}
+                      profileName={profile.name}
+                      mode="restore"
+                    />
+                  )}
+                </div>
               );
             })}
           </div>
