@@ -35,6 +35,7 @@ export default async function RocketModelPage() {
         beta_access_granted_at: profile.beta_access_granted_at,
         beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ??
           "A") as BetaCohort,
+        teamName: profile.team?.name ?? null,
       },
       "rocketModel",
     )

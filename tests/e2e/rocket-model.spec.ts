@@ -22,7 +22,8 @@ test.describe("rocket model - single user", () => {
   let cookieValue: string;
 
   test.beforeAll(async () => {
-    const teamId = await createTestTeam();
+    // Rocket Model is gated to team Tuuli (plus admins) — the E2E team takes that name.
+    const teamId = await createTestTeam(undefined, "Tuuli");
     const user = await getSetupSessionCookie(teamId);
     await grantBetaAccess(user.profileId);
     await setBetaCohort(user.profileId, "B");
@@ -75,6 +76,28 @@ test.describe("rocket model - single user", () => {
     await firstItemGroup.getByRole("button", { name: /Kdo a kdy/ }).click();
     await expect(firstItemGroup.getByText("E2E Test User")).toBeVisible();
     await expect(firstItemGroup.getByText(/Splněno \d{1,2}\. \d{1,2}\. \d{4}/)).toBeVisible();
+  });
+});
+
+test.describe("rocket model - team gating", () => {
+  let cookieValue: string;
+
+  test.beforeAll(async () => {
+    const teamId = await createTestTeam();
+    const user = await getSetupSessionCookie(teamId);
+    await grantBetaAccess(user.profileId);
+    await setBetaCohort(user.profileId, "B");
+    cookieValue = user.cookie;
+  });
+
+  test.beforeEach(async ({ context }) => {
+    await setAuthCookie(context, cookieValue);
+  });
+
+  test("shows coming-soon for cohort B outside team Tuuli", async ({ page }) => {
+    await page.goto("/rocket-model");
+    await expect(page.getByText("V kuchyni se něco chystá")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Rocket Model" })).not.toBeVisible();
   });
 });
 

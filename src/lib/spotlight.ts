@@ -43,6 +43,7 @@ export interface SpotlightUser {
   beta_access?: boolean;
   beta_access_granted_at?: string | null;
   beta_cohort?: BetaCohort;
+  teamName?: string | null;
 }
 
 export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
@@ -581,6 +582,7 @@ export function getSpotlightItems({
         beta_access_granted_at:
           user.beta_access_granted_at ?? (user.beta_access ? "1970-01-01T00:00:00Z" : null) ?? null,
         beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
+        teamName: user.teamName ?? null,
       }
     : null;
 

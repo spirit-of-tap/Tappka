@@ -7,6 +7,7 @@ const nonBeta: AccessProfile = { role: "student", beta_access_granted_at: null, 
 const cohortA: AccessProfile = { role: "student", beta_access_granted_at: "2026-01-01T00:00:00Z", beta_cohort: "A" };
 const cohortB: AccessProfile = { role: "student", beta_access_granted_at: "2026-01-01T00:00:00Z", beta_cohort: "B" };
 const admin: AccessProfile = { role: "admin", beta_access_granted_at: null, beta_cohort: "A" };
+const cohortBTuuli: AccessProfile = { ...cohortB, teamName: "Tuuli" };
 
 describe("navigation config", () => {
   it("contains every module with url, icon and Czech description", () => {
@@ -84,7 +85,7 @@ describe("navigation config", () => {
 });
 
 describe("getHubModules", () => {
-  it("returns hub cards in visit-frequency order for B cohort", () => {
+  it("returns hub cards in visit-frequency order for B cohort (rocket-model is Tuuli-only)", () => {
     expect(getHubModules(cohortB).map((m) => m.url)).toEqual([
       "/cteni/prehled",
       "/reservations",
@@ -92,12 +93,18 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
-      "/rocket-model",
       "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
       "/osobnostni-testy",
     ]);
+  });
+
+  it("includes rocket-model for team Tuuli", () => {
+    const urls = getHubModules(cohortBTuuli).map((m) => m.url);
+    expect(urls).toContain("/rocket-model");
+    expect(urls.indexOf("/rocket-model")).toBeGreaterThan(urls.indexOf("/tymovy-denik"));
+    expect(urls.indexOf("/rocket-model")).toBeLessThan(urls.indexOf("/tymove-dokumenty"));
   });
 
   it("returns all hub cards for admin regardless of enrollment", () => {
@@ -130,6 +137,12 @@ describe("getHubModules", () => {
     expect(getHubModules(cohortA).some((m) => m.url === "/schuzky")).toBe(false);
     expect(getHubModules(cohortB).some((m) => m.url === "/schuzky")).toBe(true);
     expect(getHubModules(cohortA).some((m) => m.url === "/cteni/prehled")).toBe(true);
+  });
+
+  it("gates rocket-model by team Tuuli, not cohort", () => {
+    expect(getHubModules(cohortB).some((m) => m.url === "/rocket-model")).toBe(false);
+    expect(getHubModules(cohortBTuuli).some((m) => m.url === "/rocket-model")).toBe(true);
+    expect(getHubModules(admin).some((m) => m.url === "/rocket-model")).toBe(true);
   });
 
   it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
