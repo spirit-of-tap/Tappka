@@ -103,18 +103,20 @@ export default async function TeamPage({ params }: PageProps) {
             {coaches.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <div key={profile.id} className="space-y-1">
+                <div key={profile.id} className="relative">
                   <UserCard
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
-                    <TeamMemberAdminActions
-                      profileId={profile.id}
-                      profileName={profile.name}
-                      mode="remove"
-                    />
+                    <div className="absolute top-2 right-2">
+                      <TeamMemberAdminActions
+                        profileId={profile.id}
+                        profileName={profile.name}
+                        mode="remove"
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -131,18 +133,20 @@ export default async function TeamPage({ params }: PageProps) {
             {mentors.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <div key={profile.id} className="space-y-1">
+                <div key={profile.id} className="relative">
                   <UserCard
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
-                    <TeamMemberAdminActions
-                      profileId={profile.id}
-                      profileName={profile.name}
-                      mode="remove"
-                    />
+                    <div className="absolute top-2 right-2">
+                      <TeamMemberAdminActions
+                        profileId={profile.id}
+                        profileName={profile.name}
+                        mode="remove"
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -159,18 +163,20 @@ export default async function TeamPage({ params }: PageProps) {
             {students.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <div key={profile.id} className="space-y-1">
+                <div key={profile.id} className="relative">
                   <UserCard
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
-                    <TeamMemberAdminActions
-                      profileId={profile.id}
-                      profileName={profile.name}
-                      mode="remove"
-                    />
+                    <div className="absolute top-2 right-2">
+                      <TeamMemberAdminActions
+                        profileId={profile.id}
+                        profileName={profile.name}
+                        mode="remove"
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -190,18 +196,20 @@ export default async function TeamPage({ params }: PageProps) {
             {formerMembers.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <div key={profile.id} className="space-y-1 opacity-80">
+                <div key={profile.id} className="relative opacity-80">
                   <UserCard
                     profile={{ ...profile, team: null }}
                     pictureUrl={pictureUrl}
                     from={backHref}
                   />
                   {isAdmin && (
-                    <TeamMemberAdminActions
-                      profileId={profile.id}
-                      profileName={profile.name}
-                      mode="restore"
-                    />
+                    <div className="absolute top-2 right-2">
+                      <TeamMemberAdminActions
+                        profileId={profile.id}
+                        profileName={profile.name}
+                        mode="restore"
+                      />
+                    </div>
                   )}
                 </div>
               );

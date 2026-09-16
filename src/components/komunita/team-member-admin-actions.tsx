@@ -2,9 +2,16 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { MoreHorizontal, UserMinus, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,14 +32,14 @@ interface TeamMemberAdminActionsProps {
 
 const COPY = {
   remove: {
-    button: "Odebrat z týmu",
+    menuItem: "Odebrat z týmu",
     title: "Odebrat z týmu?",
     confirm: "Odebrat z týmu",
     success: "Člen:ka odebrán:a z týmu",
     failure: "Nepodařilo se odebrat z týmu",
   },
   restore: {
-    button: "Vrátit do týmu",
+    menuItem: "Vrátit do týmu",
     title: "Vrátit do týmu?",
     confirm: "Vrátit do týmu",
     success: "Člen:ka vrácen:a do týmu",
@@ -46,9 +53,10 @@ export function TeamMemberAdminActions({
   mode,
 }: TeamMemberAdminActionsProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const copy = COPY[mode]
+  const Icon = mode === "remove" ? UserMinus : UserPlus
 
   const handleConfirm = async () => {
     setSaving(true)
@@ -66,7 +74,7 @@ export function TeamMemberAdminActions({
         throw new Error(data?.error ?? copy.failure)
       }
       toast.success(copy.success)
-      setOpen(false)
+      setConfirmOpen(false)
       router.refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : copy.failure)
@@ -76,53 +84,64 @@ export function TeamMemberAdminActions({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <Button
-        variant={mode === "remove" ? "ghost" : "outline"}
-        size="sm"
-        className={
-          mode === "remove"
-            ? "h-7 text-xs text-destructive hover:text-destructive"
-            : "h-7 text-xs"
-        }
-        onClick={() => setOpen(true)}
-        aria-label={`${copy.button}: ${profileName ?? "profil"}`}
-      >
-        {copy.button}
-      </Button>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{copy.title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {mode === "remove" ? (
-              <>
-                Opravdu chceš odebrat <strong>{profileName ?? "tuto osobu"}</strong> z
-                týmu? Profil zůstane v portálu a dohledatelný:á v historii, ale přestane
-                se počítat mezi aktivní členy:ky (např. v Rocket Modelu).
-              </>
-            ) : (
-              <>
-                Opravdu chceš vrátit <strong>{profileName ?? "tuto osobu"}</strong> zpět
-                do původního týmu?
-              </>
-            )}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={saving}>Zrušit</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault()
-              void handleConfirm()
-            }}
-            disabled={saving}
-            className={mode === "remove" ? "bg-destructive hover:bg-destructive/90" : undefined}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="size-6 text-muted-foreground/60 hover:text-foreground"
+            aria-label={`Možnosti pro ${profileName ?? "profil"}`}
           >
-            {saving && <Spinner className="mr-2 size-4" />}
-            {copy.confirm}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            <MoreHorizontal className="size-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            variant={mode === "remove" ? "destructive" : "default"}
+            onSelect={() => setConfirmOpen(true)}
+          >
+            <Icon />
+            {copy.menuItem}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{copy.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {mode === "remove" ? (
+                <>
+                  Opravdu chceš odebrat <strong>{profileName ?? "tuto osobu"}</strong> z
+                  týmu? Profil zůstane v portálu a dohledatelný:á v historii, ale přestane
+                  se počítat mezi aktivní členy:ky (např. v Rocket Modelu).
+                </>
+              ) : (
+                <>
+                  Opravdu chceš vrátit <strong>{profileName ?? "tuto osobu"}</strong> zpět
+                  do původního týmu?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                void handleConfirm()
+              }}
+              disabled={saving}
+              className={mode === "remove" ? "bg-destructive hover:bg-destructive/90" : undefined}
+            >
+              {saving && <Spinner className="mr-2 size-4" />}
+              {copy.confirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

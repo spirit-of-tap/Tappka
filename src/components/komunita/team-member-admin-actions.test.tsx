@@ -16,6 +16,12 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
+async function openMenu(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(screen.getByRole("button", { name: `Možnosti pro ${name}` }))
+  const menu = await screen.findByRole("menu")
+  return menu
+}
+
 describe("TeamMemberAdminActions", () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -31,7 +37,9 @@ describe("TeamMemberAdminActions", () => {
       <TeamMemberAdminActions profileId="p-1" profileName="Jan Novák" mode="remove" />,
     )
 
-    await user.click(screen.getByRole("button", { name: /Odebrat z týmu/ }))
+    const menu = await openMenu(user, "Jan Novák")
+    await user.click(within(menu).getByRole("menuitem", { name: /Odebrat z týmu/ }))
+
     const dialog = await screen.findByRole("alertdialog")
     expect(within(dialog).getByText("Odebrat z týmu?")).toBeInTheDocument()
 
@@ -61,7 +69,9 @@ describe("TeamMemberAdminActions", () => {
       <TeamMemberAdminActions profileId="p-1" profileName="Jan Novák" mode="remove" />,
     )
 
-    await user.click(screen.getByRole("button", { name: /Odebrat z týmu/ }))
+    const menu = await openMenu(user, "Jan Novák")
+    await user.click(within(menu).getByRole("menuitem", { name: /Odebrat z týmu/ }))
+
     const dialog = await screen.findByRole("alertdialog")
     await user.click(within(dialog).getByRole("button", { name: /^Odebrat z týmu$/ }))
 
@@ -79,7 +89,9 @@ describe("TeamMemberAdminActions", () => {
       <TeamMemberAdminActions profileId="p-1" profileName="Jan Novák" mode="restore" />,
     )
 
-    await user.click(screen.getByRole("button", { name: /Vrátit do týmu/ }))
+    const menu = await openMenu(user, "Jan Novák")
+    await user.click(within(menu).getByRole("menuitem", { name: /Vrátit do týmu/ }))
+
     const dialog = await screen.findByRole("alertdialog")
     expect(within(dialog).getByText("Vrátit do týmu?")).toBeInTheDocument()
 
