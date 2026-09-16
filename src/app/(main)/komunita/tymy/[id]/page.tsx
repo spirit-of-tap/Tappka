@@ -103,18 +103,20 @@ export default async function TeamPage({ params }: PageProps) {
             {coaches.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <div key={profile.id} className="space-y-1">
+                <div key={profile.id} className="relative">
                   <UserCard
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
-                    <TeamMemberAdminActions
-                      profileId={profile.id}
-                      profileName={profile.name}
-                      mode="remove"
-                    />
+                    <div className="absolute top-2 right-2">
+                      <TeamMemberAdminActions
+                        profileId={profile.id}
+                        profileName={profile.name}
+                        mode="remove"
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -131,18 +133,20 @@ export default async function TeamPage({ params }: PageProps) {
             {mentors.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <div key={profile.id} className="space-y-1">
+                <div key={profile.id} className="relative">
                   <UserCard
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
-                    <TeamMemberAdminActions
-                      profileId={profile.id}
-                      profileName={profile.name}
-                      mode="remove"
-                    />
+                    <div className="absolute top-2 right-2">
+                      <TeamMemberAdminActions
+                        profileId={profile.id}
+                        profileName={profile.name}
+                        mode="remove"
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -159,18 +163,20 @@ export default async function TeamPage({ params }: PageProps) {
             {students.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <div key={profile.id} className="space-y-1">
+                <div key={profile.id} className="relative">
                   <UserCard
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
-                    <TeamMemberAdminActions
-                      profileId={profile.id}
-                      profileName={profile.name}
-                      mode="remove"
-                    />
+                    <div className="absolute top-2 right-2">
+                      <TeamMemberAdminActions
+                        profileId={profile.id}
+                        profileName={profile.name}
+                        mode="remove"
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -183,25 +189,24 @@ export default async function TeamPage({ params }: PageProps) {
       {formerMembers.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Bývalí členové:ky</h2>
-          <p className="text-sm text-muted-foreground">
-            Už nejsou členy:ky týmu a neblokují týmová potvrzení (např. v Rocket Modelu).
-          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {formerMembers.map((profile) => {
               const pictureUrl = getProfilePictureUrl(supabase, profile);
               return (
-                <div key={profile.id} className="space-y-1 opacity-80">
+                <div key={profile.id} className="relative opacity-80">
                   <UserCard
                     profile={{ ...profile, team: null }}
                     pictureUrl={pictureUrl}
                     from={backHref}
                   />
                   {isAdmin && (
-                    <TeamMemberAdminActions
-                      profileId={profile.id}
-                      profileName={profile.name}
-                      mode="restore"
-                    />
+                    <div className="absolute top-2 right-2">
+                      <TeamMemberAdminActions
+                        profileId={profile.id}
+                        profileName={profile.name}
+                        mode="restore"
+                      />
+                    </div>
                   )}
                 </div>
               );
