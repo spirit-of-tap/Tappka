@@ -233,12 +233,12 @@ const _trackedUsers = new Set<string>();
 const _trackedProfiles = new Set<string>();
 
 /** Creates a brand new, isolated team — for tests that must not touch real team data. */
-export async function createTestTeam(onboardingYear?: number): Promise<string> {
+export async function createTestTeam(onboardingYear?: number, name?: string): Promise<string> {
   const newTeams = (await restFetch(
     "/teams",
     "POST",
     {
-      name: `E2E Team ${randomUUID().slice(0, 8)}`,
+      name: name ?? `E2E Team ${randomUUID().slice(0, 8)}`,
       ...(onboardingYear !== undefined && { onboardingYear }),
     },
   )) as { id: string }[];
@@ -339,6 +339,13 @@ export async function cleanupTestData(): Promise<void> {
 export async function grantBetaAccess(profileId: string): Promise<void> {
   await restFetch(`/profiles?id=eq.${profileId}`, "PATCH", {
     beta_access_granted_at: new Date().toISOString(),
+  });
+}
+
+/** Sets the beta cohort, needed for pages gated to a specific cohort. */
+export async function setBetaCohort(profileId: string, cohort: "A" | "B"): Promise<void> {
+  await restFetch(`/profiles?id=eq.${profileId}`, "PATCH", {
+    beta_cohort: cohort,
   });
 }
 

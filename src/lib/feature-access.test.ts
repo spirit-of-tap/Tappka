@@ -16,8 +16,9 @@ describe("canAccessFeature", () => {
     expect(canAccessFeature(a, "customerMeetings")).toBe(false)
     expect(canAccessFeature(a, "birthGiving")).toBe(false)
   })
-  it("B gets all beta features", () => {
+  it("B gets all beta features except team-gated rocketModel", () => {
     for (const f of Object.keys(BETA_FEATURES) as (keyof typeof BETA_FEATURES)[]) {
+      if (f === "rocketModel") continue
       expect(canAccessFeature(b, f)).toBe(true)
     }
   })
@@ -25,5 +26,23 @@ describe("canAccessFeature", () => {
     for (const f of Object.keys(BETA_FEATURES) as (keyof typeof BETA_FEATURES)[]) {
       expect(canAccessFeature(adminNoBeta, f)).toBe(true)
     }
+  })
+  it("rocketModel is denied for cohort B outside team Tuuli", () => {
+    expect(canAccessFeature(b, "rocketModel")).toBe(false)
+  })
+  it("rocketModel is allowed for team Tuuli with beta enrollment (any cohort)", () => {
+    const tuuliB = { ...b, teamName: "Tuuli" }
+    const tuuliA = { ...a, teamName: "Tuuli" }
+    expect(canAccessFeature(tuuliB, "rocketModel")).toBe(true)
+    expect(canAccessFeature(tuuliA, "rocketModel")).toBe(true)
+  })
+  it("rocketModel is denied for team Tuuli without beta enrollment", () => {
+    expect(canAccessFeature({ ...nonBeta, teamName: "Tuuli" }, "rocketModel")).toBe(false)
+  })
+  it("rocketModel is denied for other teams even with beta enrollment", () => {
+    expect(canAccessFeature({ ...b, teamName: "Viento" }, "rocketModel")).toBe(false)
+  })
+  it("rocketModel is allowed for admin without a team", () => {
+    expect(canAccessFeature(adminNoBeta, "rocketModel")).toBe(true)
   })
 })
