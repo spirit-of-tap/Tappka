@@ -103,7 +103,7 @@ export async function getCurrentUserProfile(
   // users.auth_user_id is required because profiles RLS has a permissive
   // policy that allows viewing all profiles.
   const selectQuery = includeTeam
-    ? `*, team:teams(*), users!inner(auth_user_id)`
+    ? `*, team:teams!profiles_team_id_fkey(*), users!inner(auth_user_id)`
     : `*, users!inner(auth_user_id)`;
 
   const { data: profile, error: queryError } = await supabaseClient

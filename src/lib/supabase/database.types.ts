@@ -1439,6 +1439,7 @@ export type Database = {
           created_at: string
           created_by_profile_id: string | null
           date_of_birth: string | null
+          former_team_id: string | null
           id: string
           name: string | null
           personal_email: string | null
@@ -1446,6 +1447,8 @@ export type Database = {
           picture: string | null
           role: Database["public"]["Enums"]["profile_role"]
           team_id: string | null
+          team_left_at: string | null
+          team_removed_by_profile_id: string | null
           updated_at: string
           updated_by_profile_id: string | null
           user_id: string | null
@@ -1459,6 +1462,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id?: string | null
           date_of_birth?: string | null
+          former_team_id?: string | null
           id?: string
           name?: string | null
           personal_email?: string | null
@@ -1466,6 +1470,8 @@ export type Database = {
           picture?: string | null
           role?: Database["public"]["Enums"]["profile_role"]
           team_id?: string | null
+          team_left_at?: string | null
+          team_removed_by_profile_id?: string | null
           updated_at?: string
           updated_by_profile_id?: string | null
           user_id?: string | null
@@ -1479,6 +1485,7 @@ export type Database = {
           created_at?: string
           created_by_profile_id?: string | null
           date_of_birth?: string | null
+          former_team_id?: string | null
           id?: string
           name?: string | null
           personal_email?: string | null
@@ -1486,6 +1493,8 @@ export type Database = {
           picture?: string | null
           role?: Database["public"]["Enums"]["profile_role"]
           team_id?: string | null
+          team_left_at?: string | null
+          team_removed_by_profile_id?: string | null
           updated_at?: string
           updated_by_profile_id?: string | null
           user_id?: string | null
@@ -1507,10 +1516,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profiles_former_team_id_fkey"
+            columns: ["former_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_team_removed_by_profile_id_fkey"
+            columns: ["team_removed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {

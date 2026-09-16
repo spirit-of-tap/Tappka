@@ -42,6 +42,9 @@ export const profiles = pgTable("profiles", {
 	workEmail: text("work_email").notNull(),
 	role: profileRole().default('student').notNull(),
 	teamId: uuid("team_id"),
+	formerTeamId: uuid("former_team_id"),
+	teamLeftAt: timestamp("team_left_at", { withTimezone: true, mode: 'string' }),
+	teamRemovedByProfileId: uuid("team_removed_by_profile_id"),
 	phoneNumber: text("phone_number"),
 	personalEmail: text("personal_email"),
 	dateOfBirth: date("date_of_birth"),
@@ -55,6 +58,7 @@ export const profiles = pgTable("profiles", {
 	updatedByProfileId: uuid("updated_by_profile_id"),
 }, (table) => [
 	index("profiles_team_id_idx").using("btree", table.teamId.asc().nullsLast().op("uuid_ops")),
+	index("profiles_former_team_id_idx").using("btree", table.formerTeamId.asc().nullsLast().op("uuid_ops")),
 	index("profiles_team_id_user_id_idx").using("btree", table.teamId.asc().nullsLast().op("uuid_ops"), table.userId.asc().nullsLast().op("uuid_ops")),
 	index("profiles_user_id_idx").using("btree", table.userId.asc().nullsLast().op("uuid_ops")),
 	index("profiles_work_email_idx").using("btree", table.workEmail.asc().nullsLast().op("text_ops")),
@@ -67,6 +71,16 @@ export const profiles = pgTable("profiles", {
 			columns: [table.teamId],
 			foreignColumns: [teams.id],
 			name: "profiles_team_id_fkey"
+		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.formerTeamId],
+			foreignColumns: [teams.id],
+			name: "profiles_former_team_id_fkey"
+		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.teamRemovedByProfileId],
+			foreignColumns: [table.id],
+			name: "profiles_team_removed_by_profile_id_fkey"
 		}).onDelete("set null"),
 	foreignKey({
 			columns: [table.accessRemovedByProfileId],

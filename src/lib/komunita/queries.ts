@@ -27,7 +27,7 @@ export async function getProfiles(
     .from('profiles')
     .select(`
       *,
-      team:teams(*)
+      team:teams!profiles_team_id_fkey(*)
     `)
     .is('access_removed_at', null)
     .order('name', { ascending: true });
@@ -87,7 +87,7 @@ export async function getProfileById(
     .from('profiles')
     .select(`
       *,
-      team:teams(*)
+      team:teams!profiles_team_id_fkey(*)
     `)
     .eq('id', profileId)
     .is('access_removed_at', null)
@@ -111,7 +111,7 @@ export async function getTeamsWithCount(
     .from('teams')
     .select(`
       *,
-      profiles!team_id(count)
+      profiles!profiles_team_id_fkey(count)
     `)
     .order('name', { ascending: true });
 
@@ -158,7 +158,7 @@ export async function getTeamById(
     .from('teams')
     .select(`
       *,
-      profiles(*)
+      profiles!profiles_team_id_fkey(*)
     `)
     .eq('id', teamId)
     .is('profiles.access_removed_at', null)
@@ -182,6 +182,33 @@ export async function getTeamById(
     ...data,
     profiles: sortedProfiles,
   } as TeamWithMembers;
+}
+
+/**
+ * Former team members: profiles whose current team_id is cleared but whose
+ * former_team_id points at the given team. They stay visible in the app
+ * (access_removed_at IS NULL) for historic reasons, but no active-member
+ * query (`.eq("team_id", teamId)`) picks them up — so e.g. the Rocket Model
+ * unanimity check never waits for them.
+ */
+export async function getFormerTeamMembers(
+  supabase: SupabaseClient<Database>,
+  teamId: string,
+): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('former_team_id', teamId)
+    .is('team_id', null)
+    .is('access_removed_at', null)
+    .order('team_left_at', { ascending: false });
+
+  if (error) {
+    serverLogger.console.error('Error fetching former team members:', error);
+    throw error;
+  }
+
+  return (data ?? []) as Profile[];
 }
 
 export function getStorageUrl(
