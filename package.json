@@ -175,6 +175,9 @@
       "nanoid@^3.0.0": "^3.3.18",
       "esbuild@<=0.24.2": "^0.25.12",
       "@babel/core@<7.29.6": "^7.29.6"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "@posthog/cli"
+    ]
   }
 }
