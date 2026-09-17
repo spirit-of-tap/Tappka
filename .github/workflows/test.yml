@@ -11,6 +11,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch PR base history
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags origin "${{ github.event.pull_request.base.ref }}"
+
       - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4

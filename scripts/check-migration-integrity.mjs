@@ -43,16 +43,80 @@ function migrationVersion(fileName) {
 }
 
 /**
+ * Flattens an execFileSync error so stderr is visible in message checks and logs.
+ *
+ * @param {unknown} error
+ * @returns {string}
+ */
+function gitErrorText(error) {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const stderr =
+    "stderr" in error && error.stderr != null ? String(error.stderr).trim() : "";
+
+  if (stderr && !error.message.includes(stderr)) {
+    return `${error.message}\n${stderr}`;
+  }
+
+  return error.message;
+}
+
+/**
  * @param {string} command
  * @param {string[]} args
  * @returns {string}
  */
 function run(command, args) {
-  return execFileSync(command, args, {
-    cwd: ROOT,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  }).trim();
+  try {
+    return execFileSync(command, args, {
+      cwd: ROOT,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  } catch (error) {
+    if (error instanceof Error) {
+      error.message = gitErrorText(error);
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Resolves a commit locally, fetching full history from origin if needed.
+ * A depth-1 fetch is avoided because it creates a commit with no merge base.
+ *
+ * @param {string} sha
+ * @returns {boolean}
+ */
+function ensureCommitAvailable(sha) {
+  try {
+    run("git", ["cat-file", "-t", sha]);
+    return true;
+  } catch {
+    try {
+      // Full fetch — `--depth 1` leaves a dangling commit with no merge base.
+      run("git", ["fetch", "--no-tags", "origin", sha]);
+      run("git", ["cat-file", "-t", sha]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/**
+ * @param {string} base
+ * @returns {string | null} Merge-base SHA, or null when the histories are unrelated.
+ */
+function findMergeBase(base) {
+  try {
+    return run("git", ["merge-base", base, "HEAD"]);
+  } catch {
+    return null;
+  }
 }
 
 function readJournal() {
@@ -154,31 +218,44 @@ function assertExistingMigrationsImmutable() {
     return;
   }
 
-  try {
-    run("git", ["cat-file", "-t", base]);
-  } catch {
+  if (!ensureCommitAvailable(base)) {
+    console.log(`Skipping immutability check (base commit ${base} not available)`);
+    return;
+  }
+
+  let mergeBase = findMergeBase(base);
+
+  if (!mergeBase) {
     try {
-      run("git", ["fetch", "--depth", "1", "origin", base]);
+      run("git", ["fetch", "--no-tags", "--unshallow", "origin"]);
     } catch {
-      console.log(`Skipping immutability check (base commit ${base} not available)`);
-      return;
+      try {
+        run("git", ["fetch", "--no-tags", "origin", base]);
+      } catch {
+        // Best-effort; skip below if a merge base still cannot be computed.
+      }
     }
+
+    mergeBase = findMergeBase(base);
+  }
+
+  if (!mergeBase) {
+    console.log(`Skipping immutability check (no merge base between ${base} and HEAD)`);
+    return;
   }
 
   let diff;
   try {
-    diff = run("git", ["diff", "--name-status", `${base}...HEAD`, "--", "supabase/migrations"]);
+    diff = run("git", [
+      "diff",
+      "--name-status",
+      mergeBase,
+      "HEAD",
+      "--",
+      "supabase/migrations",
+    ]);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes("no merge base")) {
-      fail(`git diff against ${base} failed: ${message}`);
-    }
-    console.log(`No merge base for ${base}...HEAD, falling back to two-dot diff`);
-    try {
-      diff = run("git", ["diff", "--name-status", base, "HEAD", "--", "supabase/migrations"]);
-    } catch (error2) {
-      fail(`git diff against ${base} failed: ${error2 instanceof Error ? error2.message : error2}`);
-    }
+    fail(`git diff against ${base} failed: ${gitErrorText(error)}`);
   }
 
   if (!diff) {
