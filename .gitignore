@@ -10,6 +10,8 @@
 !.yarn/releases
 !.yarn/versions
 .tmp
+.vitepress/cache
+.vitepress/dist
 
 # Generated local DB dumps — do not commit
 db/sql
