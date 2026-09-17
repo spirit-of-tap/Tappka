@@ -88,7 +88,3 @@ on PRs and pushes to `preview`/`production`.
 ## GitHub
 
 - Use `gh` (GitHub CLI) for all GitHub operations if available.
-
-## Environment
-
-- Never commit `.env.local` or secrets
