@@ -2,7 +2,7 @@
 name: Tappka
 description: Student portal of Tiimiakatemia Prague (TAP). shadcn/ui (new-york) + Tailwind v4 + next-themes. Tokens here mirror src/app/globals.css (light values; dark theme lives there too).
 colors:
-  primary: "#b31b1b"
+  primary: "#ae1717"
   primary-foreground: "#ffffff"
   background: "#fcfff7"
   foreground: "#2c1a1d"
@@ -100,7 +100,7 @@ use tokens — a hardcoded color in a component is a defect.
 
 ## Colors
 
-Brand core: TAP red `#b31b1b` (primary, links, focus), TAP brown `#2c1a1d`
+Brand core: TAP red `#ae1717` (primary, links, focus), TAP brown `#2c1a1d`
 (foreground, secondary surface), TAP white `#fcfff7` (background). Status
 semantics: `success` green, `warning` amber (hue = chart-2), `info` teal
 (hue = chart-3), `destructive` red.
