@@ -4,3 +4,8 @@
 reviews:
   path_filters:
     - "!.specstory/**"
+  auto_review:
+    enabled: true
+    drafts: true
+    base_branches:
+      - ".*"
