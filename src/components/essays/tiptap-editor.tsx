@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { PENDING_IMAGE_ATTR, stripPendingImages } from '@/lib/essays/pending-images';
+import { EMPTY_DOC, normalizeContentJson } from '@/lib/essays/content-text';
 import { prepareEssayImage, uploadEssayImage, validateEssayImage } from '@/lib/essays/image-upload';
 
 const MultiHighlight = Highlight.extend({
@@ -44,13 +45,6 @@ const MultiHighlight = Highlight.extend({
     };
   },
 });
-
-/**
- * A doc with no content renders zero nodes, so there is no paragraph for the
- * placeholder to attach to until the first click. Start with one empty
- * paragraph instead, the way ProseMirror's own empty document looks.
- */
-const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] } as const;
 
 /**
  * Carries the in-flight marker into the DOM as `data-uploading`, which the
@@ -189,7 +183,7 @@ export function TiptapEditor({
       Typography,
       UploadableImage.configure({ inline: false, allowBase64: false }),
     ],
-    content: initialContent ?? EMPTY_DOC,
+    content: normalizeContentJson(initialContent ?? EMPTY_DOC),
     onUpdate: ({ editor }) => {
       // Stripped, not raw: a blob: URL saved to the database is a dead image.
       onChangeRef.current?.(stripPendingImages(editor.getJSON()), editor.getText());
@@ -198,7 +192,7 @@ export function TiptapEditor({
 
   useEffect(() => {
     if (editor && initialContent && editor.isEmpty) {
-      editor.commands.setContent(initialContent);
+      editor.commands.setContent(normalizeContentJson(initialContent));
     }
   }, [editor, initialContent]);
 

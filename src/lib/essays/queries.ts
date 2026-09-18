@@ -3,7 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database, Json } from '@/lib/supabase/database.types';
 
-import { contentTextFromJson } from './content-text';
+import { contentTextFromJson, normalizeContentJson } from './content-text';
 import { countWords } from './text-stats';
 import { pointsNumber, resolveEssayPoints } from '@/lib/books/points';
 import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
@@ -108,7 +108,9 @@ function mapEssayRows(rows: EssayRawRow[]): EssayWithDetails[] {
     } = row;
 
     const revision = pickLatestRevision(essay_revisions);
-    const content_json = (revision?.content_json ?? {}) as object;
+    // Heals legacy `{}` rows (title-only saves) at read time so renderers
+    // never receive an invalid doc, even before the data fixup runs.
+    const content_json = normalizeContentJson((revision?.content_json ?? {}) as object);
     const revisionTime = revision?.updated_at || revision?.created_at;
     const effectiveUpdatedAt =
       revisionTime && new Date(revisionTime) > new Date(rest.updated_at)
@@ -448,14 +450,17 @@ export async function getEssayFullRevisions(
 
   if (error) throw error;
 
-  return (data ?? []).map((row) => ({
-    revision_no: row.revision_no,
-    title: row.title,
-    content_json: (row.content_json ?? {}) as object,
-    content_text: contentTextFromJson((row.content_json ?? {}) as object),
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-  }));
+  return (data ?? []).map((row) => {
+    const content_json = normalizeContentJson((row.content_json ?? {}) as object);
+    return {
+      revision_no: row.revision_no,
+      title: row.title,
+      content_json,
+      content_text: contentTextFromJson(content_json),
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    };
+  });
 }
 
 export async function getEssayAuthorInfo(

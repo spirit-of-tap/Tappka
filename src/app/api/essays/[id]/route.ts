@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById } from '@/lib/essays/queries';
-import { contentTextFromJson } from '@/lib/essays/content-text';
+import { contentTextFromJson, normalizeContentJson } from '@/lib/essays/content-text';
 import { shouldCoalesceRevision } from '@/lib/essays/revisions';
 import { validateEssaySourceIds } from '@/lib/essays/validate-source';
+import type { Json } from '@/lib/supabase/database.types';
 import { serverLogger } from "@/lib/server-logger";
 
 const MAX_TITLE_LENGTH = 500;
@@ -94,9 +95,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       const nextTitle = body.title !== undefined
         ? String(body.title).trim()
         : (latest?.title ?? '');
-      const nextContent = body.content_json !== undefined
-        ? body.content_json
-        : (latest?.content_json ?? {});
+      const nextContent = normalizeContentJson(
+        body.content_json !== undefined
+          ? body.content_json
+          : (latest?.content_json ?? {}),
+      );
 
       // An essay is allowed to be untitled before it's ever been visible; once
       // it has a title (and so has been auto-published), the title can't be
@@ -127,7 +130,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
           .from('essay_revisions')
           .update({
             title: nextTitle,
-            content_json: nextContent,
+            content_json: nextContent as Json,
             updated_at: now,
             updated_by_profile_id: profile.id,
           })
@@ -150,7 +153,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
             essay_id: id,
             revision_no: nextNo,
             title: nextTitle,
-            content_json: nextContent,
+            content_json: nextContent as Json,
             created_by_profile_id: profile.id,
             updated_by_profile_id: profile.id,
           });
