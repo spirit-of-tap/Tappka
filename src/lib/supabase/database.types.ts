@@ -2947,10 +2947,27 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_coach_or_admin: { Args: never; Returns: boolean }
+      reassign_content_source_essays: {
+        Args: {
+          p_source_content_source_id: string
+          p_target_book_id: string
+          p_target_content_source_id: string
+          p_updated_by_profile_id: string
+        }
+        Returns: number
+      }
       reassign_essays_to_book: {
         Args: {
           p_source_book_id: string
           p_target_book_id: string
+          p_updated_by_profile_id: string
+        }
+        Returns: number
+      }
+      reassign_essays_to_content_source: {
+        Args: {
+          p_source_book_id: string
+          p_target_content_source_id: string
           p_updated_by_profile_id: string
         }
         Returns: number

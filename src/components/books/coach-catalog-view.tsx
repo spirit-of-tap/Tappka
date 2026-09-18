@@ -48,6 +48,7 @@ import { DeleteBookDialog } from './delete-book-dialog';
 import { PointsDialog } from './points-dialog';
 import { HighlightBadge, ListStatusBadge, RocketBadge } from './book-status-badges';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
+import { DeleteContentSourceDialog } from '@/components/content-sources/delete-content-source-dialog';
 import { SourcePointsDialog } from '@/components/content-sources/source-points-dialog';
 import { formatPoints } from '@/lib/books/points';
 import { CONTENT_SOURCE_KIND_LABELS, CONTENT_SOURCE_STATUS_LABELS } from '@/lib/content-sources/types';
@@ -69,6 +70,7 @@ interface CoachCatalogViewProps {
   onPointsSaved: (book: BookWithProfiles) => void;
   onBookEdited: (book: BookWithProfiles) => void;
   onBookDeleted: (bookId: string) => void;
+  onSourceDeleted: (sourceId: string) => void;
   onUpdateSourceStatus: (source: ContentSourceWithProfiles, status: ContentSourceStatus) => Promise<boolean>;
   onUpdateSourcePoints: (source: ContentSourceWithProfiles, points: number | null) => void;
 }
@@ -93,6 +95,7 @@ export function CoachCatalogView({
   onPointsSaved,
   onBookEdited,
   onBookDeleted,
+  onSourceDeleted,
   onUpdateSourceStatus,
   onUpdateSourcePoints,
 }: CoachCatalogViewProps) {
@@ -121,6 +124,8 @@ export function CoachCatalogView({
 
   const [busySourceId, setBusySourceId] = useState<string | null>(null);
   const [pointsSource, setPointsSource] = useState<ContentSourceWithProfiles | null>(null);
+  const [deleteSource, setDeleteSource] = useState<ContentSourceWithProfiles | null>(null);
+  const [deleteSourceMode, setDeleteSourceMode] = useState<'delete' | 'duplicate'>('delete');
 
   // Progressive rendering: mount only the first chunk, auto-append on scroll.
   const [visibleBookCount, setVisibleBookCount] = useState(CATALOG_PAGE_SIZE);
@@ -868,6 +873,36 @@ export function CoachCatalogView({
                             >
                               <Scale className="size-4" />
                             </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost" className="size-8">
+                                  <Ellipsis className="size-4" />
+                                  <span className="sr-only">Akce</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setDeleteSourceMode('duplicate');
+                                    setDeleteSource(source);
+                                  }}
+                                  className="gap-2"
+                                >
+                                  <ArrowRightLeft className="size-4" />
+                                  Označit jako duplikát…
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setDeleteSourceMode('delete');
+                                    setDeleteSource(source);
+                                  }}
+                                  className="gap-2 text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="size-4" />
+                                  Smazat
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -931,6 +966,17 @@ export function CoachCatalogView({
           onSaved={(updatedSource, newPoints) => {
             onUpdateSourcePoints(updatedSource, newPoints);
           }}
+        />
+      )}
+      {deleteSource && (
+        <DeleteContentSourceDialog
+          source={deleteSource}
+          open={!!deleteSource}
+          onOpenChange={(open) => {
+            if (!open) setDeleteSource(null);
+          }}
+          mode={deleteSourceMode}
+          onDeleted={onSourceDeleted}
         />
       )}
     </div>

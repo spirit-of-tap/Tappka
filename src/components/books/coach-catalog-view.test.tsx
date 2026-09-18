@@ -99,6 +99,7 @@ describe('CoachCatalogView', () => {
         onPointsSaved={vi.fn()}
         onBookEdited={vi.fn()}
         onBookDeleted={vi.fn()}
+        onSourceDeleted={vi.fn()}
         onUpdateSourceStatus={vi.fn().mockResolvedValue(true)}
         onUpdateSourcePoints={vi.fn()}
       />,
@@ -123,6 +124,7 @@ describe('CoachCatalogView', () => {
         onPointsSaved={vi.fn()}
         onBookEdited={vi.fn()}
         onBookDeleted={vi.fn()}
+        onSourceDeleted={vi.fn()}
         onUpdateSourceStatus={vi.fn().mockResolvedValue(true)}
         onUpdateSourcePoints={vi.fn()}
       />,
@@ -146,6 +148,7 @@ describe('CoachCatalogView', () => {
         onPointsSaved={vi.fn()}
         onBookEdited={vi.fn()}
         onBookDeleted={vi.fn()}
+        onSourceDeleted={vi.fn()}
         onUpdateSourceStatus={vi.fn().mockResolvedValue(true)}
         onUpdateSourcePoints={vi.fn()}
       />,
@@ -169,6 +172,7 @@ describe('CoachCatalogView', () => {
         onPointsSaved={vi.fn()}
         onBookEdited={vi.fn()}
         onBookDeleted={vi.fn()}
+        onSourceDeleted={vi.fn()}
         onUpdateSourceStatus={vi.fn().mockResolvedValue(true)}
         onUpdateSourcePoints={vi.fn()}
       />,
@@ -205,6 +209,7 @@ describe('CoachCatalogView', () => {
         onPointsSaved={vi.fn()}
         onBookEdited={vi.fn()}
         onBookDeleted={vi.fn()}
+        onSourceDeleted={vi.fn()}
         onUpdateSourceStatus={vi.fn().mockResolvedValue(true)}
         onUpdateSourcePoints={vi.fn()}
       />,

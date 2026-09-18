@@ -17,18 +17,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/responsive-alert-dialog';
-import { ListStatusBadge } from './book-status-badges';
+import { ListStatusBadge } from '@/components/books/book-status-badges';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { cn } from '@/lib/utils';
 import type { BookWithProfiles } from '@/lib/books/types';
 import type { ContentSourceWithProfiles } from '@/lib/content-sources/types';
 
-interface DeleteBookDialogProps {
-  book: BookWithProfiles;
+interface DeleteContentSourceDialogProps {
+  source: ContentSourceWithProfiles;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called with the id of the book that was deleted so the list can be refreshed. */
-  onDeleted: (bookId: string) => void;
+  /** Called with the id of the source that was deleted so the list can be refreshed. */
+  onDeleted: (sourceId: string) => void;
   /**
    * When 'duplicate', defaults to rerouting search immediately to merge
    * essays into the original record and remove the duplicate.
@@ -40,13 +40,13 @@ type RerouteTarget =
   | { kind: 'book'; book: BookWithProfiles }
   | { kind: 'source'; source: ContentSourceWithProfiles };
 
-export function DeleteBookDialog({
-  book,
+export function DeleteContentSourceDialog({
+  source,
   open,
   onOpenChange,
   onDeleted,
   mode = 'delete',
-}: DeleteBookDialogProps) {
+}: DeleteContentSourceDialogProps) {
   const isDuplicateMode = mode === 'duplicate';
   const [essayCount, setEssayCount] = useState<number | null>(null);
   const [rerouting, setRerouting] = useState(isDuplicateMode);
@@ -69,11 +69,11 @@ export function DeleteBookDialog({
     setDeleting(false);
     setError(null);
 
-    fetch(`/api/books/${book.id}/essays-count`)
+    fetch(`/api/content-sources/${source.id}/essays-count`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => setEssayCount(json?.data?.count ?? 0))
       .catch(() => setEssayCount(0));
-  }, [open, book.id, isDuplicateMode]);
+  }, [open, source.id, isDuplicateMode]);
 
   const search = async (q: string) => {
     setQuery(q);
@@ -86,8 +86,10 @@ export function DeleteBookDialog({
     try {
       const res = await fetch(`/api/essays/source-search?q=${encodeURIComponent(q.trim())}`);
       const json = await res.json();
-      setBookResults((json.data?.books ?? []).filter((b: BookWithProfiles) => b.id !== book.id));
-      setSourceResults(json.data?.sources ?? []);
+      setBookResults(json.data?.books ?? []);
+      setSourceResults((json.data?.sources ?? []).filter(
+        (s: ContentSourceWithProfiles) => s.id !== source.id,
+      ));
     } catch {
       setBookResults([]);
       setSourceResults([]);
@@ -100,7 +102,7 @@ export function DeleteBookDialog({
     setDeleting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/books/${book.id}`, {
+      const res = await fetch(`/api/content-sources/${source.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
@@ -113,7 +115,7 @@ export function DeleteBookDialog({
       });
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
-        setError(json.error ?? 'Nepodařilo se smazat knihu');
+        setError(json.error ?? 'Nepodařilo se smazat zdroj');
         setDeleting(false);
         return;
       }
@@ -126,10 +128,10 @@ export function DeleteBookDialog({
         targetTitle
           ? (essayCount && essayCount > 0
               ? `Eseje přesměrovány na „${targetTitle}“ a duplikát smazán.`
-              : `Kniha smazána jako duplikát „${targetTitle}“.`)
-          : 'Kniha smazána.',
+              : `Zdroj smazán jako duplikát „${targetTitle}“.`)
+          : 'Zdroj smazán.',
       );
-      onDeleted(book.id);
+      onDeleted(source.id);
       onOpenChange(false);
     } catch {
       setError('Nepodařilo se připojit k serveru');
@@ -145,16 +147,18 @@ export function DeleteBookDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {isDuplicateMode ? 'Označit knihu jako duplikát' : 'Smazat knihu?'}
+            {isDuplicateMode ? 'Označit zdroj jako duplikát' : 'Smazat zdroj?'}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isDuplicateMode ? (
               <>
-                Kniha <strong>{book.title_cs}</strong> ({book.author}) bude smazána a její případné eseje budou převedeny na vybraný originál — knihu, nebo jiný zdroj.
+                Zdroj <strong>{source.title}</strong>
+                {source.creator ? ` (${source.creator})` : ''} bude smazán a jeho případné eseje budou převedeny na vybraný originál — knihu, nebo jiný zdroj.
               </>
             ) : (
               <>
-                Tato akce trvale smaže <strong>{book.title_cs}</strong> ({book.author}) z knihovny. Tuto akci nelze vrátit zpět.
+                Tato akce trvale smaže <strong>{source.title}</strong>
+                {source.creator ? ` (${source.creator})` : ''} z knihovny. Tuto akci nelze vrátit zpět.
               </>
             )}
           </AlertDialogDescription>
@@ -169,7 +173,7 @@ export function DeleteBookDialog({
             {essayCount > 0 ? (
               <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 space-y-2">
                 <p className="text-sm text-destructive font-medium">
-                  K této knize je navázáno <strong>{essayCount}</strong>{' '}
+                  K tomuto zdroji je navázáno <strong>{essayCount}</strong>{' '}
                   {essayCount === 1
                     ? 'esej, která ztratí zdroj'
                     : essayCount < 5
@@ -191,7 +195,7 @@ export function DeleteBookDialog({
               </div>
             ) : (
               <div className="flex items-center justify-between gap-2 px-1 text-sm text-muted-foreground">
-                <p>K této knize nejsou navázány žádné eseje.</p>
+                <p>K tomuto zdroji nejsou navázány žádné eseje.</p>
                 {!isDuplicateMode && !rerouting && (
                   <Button
                     type="button"
