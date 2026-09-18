@@ -5,7 +5,7 @@
 
 /*
  * TAP Brand Colors
- * Primary Red: #b31b1b
+ * Primary Red: #ae1717
  * White: #fcfff7
  * Brown: #2c1a1d
  *
@@ -69,7 +69,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   /* TAP Brand Colors (direct access) */
-  --color-tap-red: oklch(0.493 0.186 27.5); /* #b31b1b */
+  --color-tap-red: oklch(0.491 0.185 27.6); /* #b21a1a */
   --color-tap-white: oklch(0.996 0.011 123.5); /* #fcfff7 */
   --color-tap-brown: oklch(0.243 0.029 8.5); /* #2c1a1d */
 
@@ -93,7 +93,7 @@
   --popover: oklch(1 0 0); /* Pure White */
   --popover-foreground: oklch(0.245 0.03 8.6); /* TAP Brown */
 
-  --primary: oklch(0.484 0.184 27.7); /* TAP Red #b31b1b */
+  --primary: oklch(0.481 0.184 27.8); /* TAP Red #ae1717 */
   --primary-foreground: oklch(1 0 0); /* White */
 
   --secondary: oklch(0.303 0.041 8.9); /* Lighter TAP Brown */
@@ -127,7 +127,7 @@
 
   --border: oklch(0.877 0.013 5.8); /* Light warm border */
   --input: oklch(0.918 0.008 5.7); /* Light input background */
-  --ring: oklch(0.484 0.184 27.7); /* TAP Red for focus rings */
+  --ring: oklch(0.481 0.184 27.8); /* TAP Red for focus rings */
 
   /* Chart Colors - distinct hues for categorical data */
   --chart-1: oklch(0.537 0.206 27.8); /* TAP Red */
@@ -147,12 +147,12 @@
   /* Sidebar */
   --sidebar: oklch(0.985 0.01 121.7);
   --sidebar-foreground: oklch(0.245 0.03 8.6);
-  --sidebar-primary: oklch(0.484 0.184 27.7);
+  --sidebar-primary: oklch(0.481 0.184 27.8);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.946 0.015 76.6);
   --sidebar-accent-foreground: oklch(0.245 0.03 8.6);
   --sidebar-border: oklch(0.877 0.013 5.8);
-  --sidebar-ring: oklch(0.484 0.184 27.7);
+  --sidebar-ring: oklch(0.481 0.184 27.8);
 }
 
 /* TAP Brand Colors - Dark Theme */
@@ -166,7 +166,7 @@
   --popover: oklch(0.205 0.022 8.2); /* Dark popover */
   --popover-foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --primary: oklch(0.66 0.21 27.5); /* TAP Red (accessible contrast for dark mode) */
+  --primary: oklch(0.657 0.21 27.5); /* TAP Red (accessible contrast for dark mode) */
   --primary-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.284 0.037 8.8); /* Medium dark TAP Brown */
@@ -195,10 +195,10 @@
 
   --border: oklch(0.303 0.041 8.9); /* Dark border */
   --input: oklch(0.265 0.034 8.7); /* Dark input */
-  --ring: oklch(0.66 0.21 27.5); /* TAP Red for focus rings */
+  --ring: oklch(0.657 0.21 27.5); /* TAP Red for focus rings */
 
   /* Chart Colors - distinct hues for categorical data */
-  --chart-1: oklch(0.66 0.21 27.5); /* TAP Red */
+  --chart-1: oklch(0.657 0.21 27.5); /* TAP Red */
   --chart-2: oklch(0.792 0.137 72.4); /* Amber */
   /* Dark mode already clears WCAG AA (~9.6:1) as plain --chart-2. */
   --chart-2-strong: oklch(0.792 0.137 72.4);
@@ -211,12 +211,12 @@
   /* Sidebar */
   --sidebar: oklch(0.205 0.022 8.2);
   --sidebar-foreground: oklch(0.995 0.014 121.7);
-  --sidebar-primary: oklch(0.66 0.21 27.5);
+  --sidebar-primary: oklch(0.657 0.21 27.5);
   --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.325 0.034 8.1);
   --sidebar-accent-foreground: oklch(0.995 0.014 121.7);
   --sidebar-border: oklch(0.303 0.041 8.9);
-  --sidebar-ring: oklch(0.66 0.21 27.5);
+  --sidebar-ring: oklch(0.657 0.21 27.5);
 }
 
 @layer base {

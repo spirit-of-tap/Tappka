@@ -36,7 +36,7 @@
   --docs-foreground: oklch(0.245 0.03 8.6);
   --docs-card: oklch(0.995 0.014 121.7);
   --docs-popover: oklch(1 0 0);
-  --docs-primary: oklch(0.484 0.184 27.7);
+  --docs-primary: oklch(0.481 0.184 27.8);
   --docs-primary-foreground: oklch(1 0 0);
   --docs-secondary: oklch(0.303 0.041 8.9);
   --docs-secondary-foreground: oklch(0.995 0.014 121.7);
@@ -52,7 +52,7 @@
   --docs-info: oklch(0.635 0.089 195.1);
   --docs-info-strong: oklch(0.483 0.089 195.1);
   --docs-border: oklch(0.877 0.013 5.8);
-  --docs-ring: oklch(0.484 0.184 27.7);
+  --docs-ring: oklch(0.481 0.184 27.8);
   --docs-radius-md: 0.375rem;
   --docs-radius-lg: 0.5rem;
 
@@ -111,7 +111,7 @@
   --docs-foreground: oklch(0.995 0.014 121.7);
   --docs-card: oklch(0.225 0.026 8.4);
   --docs-popover: oklch(0.205 0.022 8.2);
-  --docs-primary: oklch(0.66 0.21 27.5);
+  --docs-primary: oklch(0.657 0.21 27.5);
   --docs-primary-foreground: oklch(1 0 0);
   --docs-secondary: oklch(0.284 0.037 8.8);
   --docs-secondary-foreground: oklch(0.995 0.014 121.7);
@@ -127,7 +127,7 @@
   --docs-info: oklch(0.761 0.103 195.2);
   --docs-info-strong: oklch(0.761 0.103 195.2);
   --docs-border: oklch(0.303 0.041 8.9);
-  --docs-ring: oklch(0.66 0.21 27.5);
+  --docs-ring: oklch(0.657 0.21 27.5);
 }
 
 html {
