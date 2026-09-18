@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DiscoveryMixedFeed, type EssayWithVoted } from './discovery-mixed-feed';
 import type { BookWithProfiles } from '@/lib/books/types';
 
@@ -131,5 +131,69 @@ describe('DiscoveryMixedFeed', () => {
     expect(screen.getByText('Kniha 1')).toBeInTheDocument();
     expect(screen.queryByText('Neověřená kniha')).not.toBeInTheDocument();
     expect(screen.queryByText('Kniha na wishlistu')).not.toBeInTheDocument();
+  });
+
+  it('shows essays passed via essaysByBookId instead of the "Zatím bez eseje" fallback', () => {
+    render(
+      <DiscoveryMixedFeed
+        books={[mockBook1]}
+        recentEssays={[]}
+        popularEssays={[]}
+        essaysByBookId={{
+          'b-1': [
+            {
+              id: 'essay-x',
+              title: 'Esej z detailu knihy',
+              author: { id: 'p1', name: 'Petr Novák', picture: null, team_id: 't1' },
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText(/Esej z detailu knihy/)).toBeInTheDocument();
+    expect(screen.queryByText(/Zatím bez eseje/)).not.toBeInTheDocument();
+  });
+
+  describe('daily seed rotation', () => {
+    const dayBooks: BookWithProfiles[] = Array.from({ length: 10 }, (_, index) => ({
+      ...mockBook1,
+      id: `b-day-${index}`,
+      title_cs: `Denní kniha ${index}`,
+      author: `Autor ${index}`,
+    }));
+
+    function renderBookOrder(): string[] {
+      render(<DiscoveryMixedFeed books={dayBooks} recentEssays={[]} popularEssays={[]} />);
+      const order = screen.getAllByText(/Denní kniha \d+/).map((el) => el.textContent ?? '');
+      cleanup();
+      return order;
+    }
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('keeps the same book order for renders within the same day', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 18, 9));
+      const morningOrder = renderBookOrder();
+
+      vi.setSystemTime(new Date(2026, 8, 18, 21));
+      const eveningOrder = renderBookOrder();
+
+      expect(eveningOrder).toEqual(morningOrder);
+    });
+
+    it('rotates the book order on the next day', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 8, 18, 12));
+      const todayOrder = renderBookOrder();
+
+      vi.setSystemTime(new Date(2026, 8, 19, 12));
+      const tomorrowOrder = renderBookOrder();
+
+      expect(tomorrowOrder).not.toEqual(todayOrder);
+    });
   });
 });
