@@ -6,6 +6,7 @@ import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Typography from '@tiptap/extension-typography';
 import { cn } from '@/lib/utils';
+import { normalizeContentJson } from '@/lib/essays/content-text';
 import Image from '@tiptap/extension-image';
 
 const MultiHighlight = Highlight.extend({
@@ -26,7 +27,9 @@ interface TiptapRendererProps {
 }
 
 export function TiptapRenderer({ content, className }: TiptapRendererProps) {
-  const html = generateHTML(content, [
+  // Last line of defense for legacy rows (e.g. `{}` from title-only saves):
+  // normalize so generateHTML never throws on an invalid doc.
+  const html = generateHTML(normalizeContentJson(content), [
     StarterKit.configure({
       link: false,
       underline: false,

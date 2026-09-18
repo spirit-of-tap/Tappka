@@ -33,6 +33,7 @@ import { useUnsavedChangesGuard } from '@/lib/essays/use-unsaved-changes-guard';
 import { formatPoints, resolveEssayPoints } from '@/lib/books/points';
 import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
+import { EMPTY_DOC, normalizeContentJson } from '@/lib/essays/content-text';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { cn } from '@/lib/utils';
 import type { Book, HighlightCategory } from '@/lib/books/types';
@@ -113,7 +114,7 @@ function SaveStatus({
 export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   const [title, setTitle] = useState(initialEssay?.title ?? '');
   const [content, setContent] = useState<{ json: object; text: string }>({
-    json: initialEssay?.content_json ?? {},
+    json: normalizeContentJson(initialEssay?.content_json ?? EMPTY_DOC),
     text: initialEssay?.content_text ?? '',
   });
   const [selectedBook, setSelectedBook] = useState<BookSearchResult | null>(initialEssay?.book as BookSearchResult | null ?? null);
@@ -142,7 +143,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
 
   const persist = useCallback(async () => {
     const { title: t, content: c, bookId, contentSourceId, essayId: id } = latestRef.current;
-    const payload = { title: t, content_json: c.json, content_text: c.text, book_id: bookId, content_source_id: contentSourceId };
+    const payload = { title: t, content_json: normalizeContentJson(c.json), content_text: c.text, book_id: bookId, content_source_id: contentSourceId };
 
     if (!id) {
       if (creatingRef.current) return;

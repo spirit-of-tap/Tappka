@@ -5,10 +5,10 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { trackServer } from '@/lib/analytics-server';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
-import { contentTextFromJson } from '@/lib/essays/content-text';
+import { contentTextFromJson, normalizeContentJson } from '@/lib/essays/content-text';
 import { validateEssaySourceIds } from '@/lib/essays/validate-source';
 import type { EssayListView, EssaySortOrder } from '@/lib/essays/types';
-import type { Database } from '@/lib/supabase/database.types';
+import type { Database, Json } from '@/lib/supabase/database.types';
 import { serverLogger } from "@/lib/server-logger";
 
 const MAX_TITLE_LENGTH = 500;
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Název eseje je příliš dlouhý' }, { status: 400 });
     }
 
-    const nextContent = content_json ?? {};
+    const nextContent = normalizeContentJson(content_json ?? {});
     const plainText = typeof content_text === 'string'
       ? content_text
       : contentTextFromJson(nextContent);
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         essay_id: essay.id,
         revision_no: 1,
         title: trimmedTitle,
-        content_json: nextContent,
+        content_json: nextContent as Json,
         created_by_profile_id: profile.id,
         updated_by_profile_id: profile.id,
       });

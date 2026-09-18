@@ -113,6 +113,22 @@ describe('EssayEditorForm — essay creation', () => {
       expect(creates).toHaveLength(1);
     });
   });
+
+  it('sends a renderable doc (not {}) when only the title was saved', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm />);
+    await user.type(screen.getByLabelText('Název eseje'), '100M Offers');
+    await user.click(saveButton());
+
+    await waitFor(() => {
+      const creates = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays');
+      expect(creates).toHaveLength(1);
+    });
+    const payload = JSON.parse((fetchSpy.mock.calls.find(([url]) => url === '/api/essays')?.[1] as RequestInit).body as string);
+    expect(payload.content_json).toEqual({ type: 'doc', content: [{ type: 'paragraph' }] });
+  });
 });
 
 describe('EssayEditorForm — save button', () => {
