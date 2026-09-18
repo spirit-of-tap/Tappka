@@ -5,7 +5,7 @@ import { BookOpen, Loader2 } from 'lucide-react';
 import { FeedBookCard, type BookEssayItem } from '@/components/books/feed-book-card';
 import { SocialEssayFeedCard, type AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { AlsoWroteCard } from '@/components/books/also-wrote-card';
-import { usePersistedState } from '@/lib/hooks/use-persisted-state';
+import { getDailySeed } from '@/lib/feed/daily-seed';
 import type { BookWithProfiles } from '@/lib/books/types';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
@@ -59,9 +59,8 @@ export function DiscoveryMixedFeed({
   teamNamesById = {},
   authorStatsById = {},
 }: DiscoveryMixedFeedProps) {
-  const [feedSeed] = usePersistedState<number>('tappka:scrollky:seed', 42, {
-    storage: 'sessionStorage',
-  });
+  // Daily seed: stable within a day, rotates at local midnight.
+  const [feedSeed] = useState(() => getDailySeed());
 
   // Infinite scroll state
   const [extraBooks, setExtraBooks] = useState<BookWithProfiles[]>([]);

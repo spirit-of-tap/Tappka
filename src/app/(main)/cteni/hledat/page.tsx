@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
+import { getFallbackBookEssays, mergeBookEssayMaps } from '@/lib/essays/book-essay-lists';
 import { getBooks, getRocketModelBooks, getHighlightedBooks, getHighlightCategories } from '@/lib/books/queries';
 import { getBookIdsInLibrary } from '@/lib/library/book-ids';
 import { getContentSources } from '@/lib/content-sources/queries';
@@ -130,6 +131,17 @@ export default async function HledatPage() {
     }
   }
 
+  // Cards only see pool essays (recent/popular/team) — books missed by all
+  // pools would wrongly render "Zatím bez eseje", so backfill their latest essays.
+  const booksMissingEssays = books.filter(
+    (book) => (essaysByBookId[book.id] ?? []).length === 0 && (book.essay_count ?? 0) > 0,
+  );
+  const fallbackEssaysByBookId = await getFallbackBookEssays(
+    supabase,
+    booksMissingEssays.map((book) => book.id),
+  );
+  const mergedEssaysByBookId = mergeBookEssayMaps(essaysByBookId, fallbackEssaysByBookId);
+
   const popularWithVoted = popularEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
   const recentWithVoted = recentEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
   const teamWithVoted = teamEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
@@ -140,7 +152,7 @@ export default async function HledatPage() {
     <SearchPageClient
       books={books}
       libraryBookIds={Array.from(libraryBookIdsSet)}
-      essaysByBookId={essaysByBookId}
+      essaysByBookId={mergedEssaysByBookId}
       popularEssays={popularWithVoted}
       recentEssays={recentWithVoted}
       teamEssays={teamWithVoted}

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBooks } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
+import { getFallbackBookEssays, mergeBookEssayMaps } from '@/lib/essays/book-essay-lists';
 import type { BookEssayItem } from '@/components/books/feed-book-card';
 import { serverLogger } from "@/lib/server-logger";
 
@@ -74,12 +75,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Same backfill as the initial page: books missed by the recent-essays
+    // page would wrongly render "Zatím bez eseje".
+    const booksMissingEssays = books.filter(
+      (book) => (essaysByBookId[book.id] ?? []).length === 0 && (book.essay_count ?? 0) > 0,
+    );
+    const fallbackEssaysByBookId = await getFallbackBookEssays(
+      supabase,
+      booksMissingEssays.map((book) => book.id),
+    );
+    const mergedEssaysByBookId = mergeBookEssayMaps(essaysByBookId, fallbackEssaysByBookId);
+
     const hasMore = books.length >= pageSize || essays.length >= pageSize;
 
     return NextResponse.json({
       books,
       essays: annotatedEssays,
-      essaysByBookId,
+      essaysByBookId: mergedEssaysByBookId,
       hasMore,
     });
   } catch (error) {
