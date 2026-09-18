@@ -94,8 +94,8 @@ describe('DeleteBookDialog', () => {
         if (url.includes('/essays-count')) {
           return { ok: true, json: async () => ({ data: { count: 3 } }) };
         }
-        if (url.includes('/api/books?')) {
-          return { ok: true, json: async () => ({ data: [originalBook] }) };
+        if (url.includes('/api/essays/source-search')) {
+          return { ok: true, json: async () => ({ data: { books: [originalBook], sources: [] } }) };
         }
         if (opts?.method === 'DELETE') {
           return { ok: true, json: async () => ({ success: true }) };
@@ -116,12 +116,12 @@ describe('DeleteBookDialog', () => {
 
     expect(screen.getByText(/označit knihu jako duplikát/i)).toBeInTheDocument();
 
-    // Confirm button should say 'Vyberte originální knihu' and be disabled
-    const disabledConfirm = screen.getByRole('button', { name: /vyberte originální knihu/i });
+    // Confirm button should say 'Vyberte originál' and be disabled
+    const disabledConfirm = screen.getByRole('button', { name: /vyberte originál/i });
     expect(disabledConfirm).toBeDisabled();
 
     // Wait for essays-count check to complete and search input to appear
-    const searchInput = await screen.findByPlaceholderText(/hledat originální knihu podle názvu nebo autora/i);
+    const searchInput = await screen.findByPlaceholderText(/hledat knihu, podcast, konferenci/i);
     await userEvent.type(searchInput, 'Petr');
 
     // Candidate appears
@@ -143,5 +143,61 @@ describe('DeleteBookDialog', () => {
     const deleteCall = calls.find(([url, opts]) => String(url) === '/api/books/b1' && opts?.method === 'DELETE');
     expect(deleteCall).toBeDefined();
     expect(JSON.parse(deleteCall?.[1]?.body as string)).toEqual({ reroute_to_book_id: 'orig-1' });
+  });
+
+  it('reroutes essays to a content source when a source is selected', async () => {
+    const onDeleted = vi.fn();
+    const onOpenChange = vi.fn();
+
+    const podcast = {
+      id: 'src-1',
+      kind: 'podcast',
+      title: 'Skutečný podcast',
+      creator: 'Moderátor:ka',
+    };
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(async (url: string, opts?: RequestInit) => {
+        if (url.includes('/essays-count')) {
+          return { ok: true, json: async () => ({ data: { count: 2 } }) };
+        }
+        if (url.includes('/api/essays/source-search')) {
+          return { ok: true, json: async () => ({ data: { books: [], sources: [podcast] } }) };
+        }
+        if (opts?.method === 'DELETE') {
+          return { ok: true, json: async () => ({ success: true }) };
+        }
+        return { ok: false };
+      }),
+    );
+
+    render(
+      <DeleteBookDialog
+        book={makeBook()}
+        open={true}
+        onOpenChange={onOpenChange}
+        onDeleted={onDeleted}
+        mode="duplicate"
+      />,
+    );
+
+    const searchInput = await screen.findByPlaceholderText(/hledat knihu, podcast, konferenci/i);
+    await userEvent.type(searchInput, 'podcast');
+
+    const candidateItem = await screen.findByText('Skutečný podcast');
+    await userEvent.click(candidateItem);
+
+    const mergeButton = screen.getByRole('button', { name: /sloučit a smazat duplikát/i });
+    await userEvent.click(mergeButton);
+
+    await waitFor(() => {
+      expect(onDeleted).toHaveBeenCalledWith('b1');
+    });
+
+    const calls = vi.mocked(fetch).mock.calls;
+    const deleteCall = calls.find(([url, opts]) => String(url) === '/api/books/b1' && opts?.method === 'DELETE');
+    expect(deleteCall).toBeDefined();
+    expect(JSON.parse(deleteCall?.[1]?.body as string)).toEqual({ reroute_to_content_source_id: 'src-1' });
   });
 });

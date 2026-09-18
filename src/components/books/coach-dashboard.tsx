@@ -201,6 +201,11 @@ export function CoachDashboard({
     setArchived((prev) => prev.filter((b) => b.id !== bookId));
   };
 
+  const handleSourceDeleted = (sourceId: string) => {
+    setPendingSources((prev) => prev.filter((s) => s.id !== sourceId));
+    setContentSources((prev) => prev.filter((s) => s.id !== sourceId));
+  };
+
   const handleDecideSource = (
     source: ContentSourceWithProfiles,
     status: 'approved' | 'archived',
@@ -411,6 +416,7 @@ export function CoachDashboard({
           onPointsSaved={handlePointsSaved}
           onBookEdited={handleBookEdited}
           onBookDeleted={handleBookDeleted}
+          onSourceDeleted={handleSourceDeleted}
           onUpdateSourceStatus={handleUpdateSourceStatus}
           onUpdateSourcePoints={handleUpdateSourcePoints}
         />

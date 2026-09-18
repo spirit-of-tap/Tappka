@@ -307,7 +307,12 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Nemáš oprávnění' }, { status: 403 });
     }
 
-    const body: { reroute_to_book_id?: string } = await request.json().catch(() => ({}));
+    const body: { reroute_to_book_id?: string; reroute_to_content_source_id?: string } =
+      await request.json().catch(() => ({}));
+
+    if (body.reroute_to_book_id && body.reroute_to_content_source_id) {
+      return NextResponse.json({ error: 'Vyber jen jeden cíl přesměrování' }, { status: 400 });
+    }
 
     if (body.reroute_to_book_id) {
       if (body.reroute_to_book_id === id) {
@@ -325,6 +330,23 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       const { error: rerouteError } = await supabase.rpc('reassign_essays_to_book', {
         p_source_book_id: id,
         p_target_book_id: body.reroute_to_book_id,
+        p_updated_by_profile_id: profile.id,
+      });
+      if (rerouteError) throw rerouteError;
+    }
+
+    if (body.reroute_to_content_source_id) {
+      const { data: target, error: targetError } = await supabase
+        .from('content_sources')
+        .select('id')
+        .eq('id', body.reroute_to_content_source_id)
+        .maybeSingle();
+      if (targetError) throw targetError;
+      if (!target) return NextResponse.json({ error: 'Cílový zdroj nenalezen' }, { status: 404 });
+
+      const { error: rerouteError } = await supabase.rpc('reassign_essays_to_content_source', {
+        p_source_book_id: id,
+        p_target_content_source_id: body.reroute_to_content_source_id,
         p_updated_by_profile_id: profile.id,
       });
       if (rerouteError) throw rerouteError;
