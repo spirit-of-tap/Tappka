@@ -104,7 +104,15 @@ export default async function AboutPage() {
                 alt="TAP Logo"
                 width={80}
                 height={80}
-                className="object-contain shrink-0"
+                className="object-contain shrink-0 dark:hidden"
+                priority
+              />
+              <Image
+                src="/tap_logo_dark.png"
+                alt="TAP Logo"
+                width={80}
+                height={80}
+                className="hidden object-contain shrink-0 dark:block"
                 priority
               />
               <div>
