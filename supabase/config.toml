@@ -110,7 +110,7 @@ file_size_limit = "50MiB"
 [storage.buckets.images]
 public = true
 file_size_limit = "10MiB"
-allowed_mime_types = ["image/png", "image/jpeg", "image/webp"]
+allowed_mime_types = ["image/png", "image/jpeg", "image/webp", "image/gif"]
 
 # Profile and team pictures.
 [storage.buckets.avatars]
