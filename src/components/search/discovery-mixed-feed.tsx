@@ -27,6 +27,8 @@ export interface DiscoveryMixedFeedProps {
   authorStatsById?: Record<string, AuthorGamificationStats>;
   userTeamName?: string | null;
   userTeamId?: string | null;
+  /** Viewer id — only the author sees their frozen (locked) points; others see live book points. */
+  currentProfileId?: string | null;
 }
 
 // Deterministic pseudo-random number generator (Mulberry32)
@@ -58,6 +60,7 @@ export function DiscoveryMixedFeed({
   essaysByBookId: initialEssaysByBookId = {},
   teamNamesById = {},
   authorStatsById = {},
+  currentProfileId,
 }: DiscoveryMixedFeedProps) {
   // Daily seed: stable within a day, rotates at local midnight.
   const [feedSeed] = useState(() => getDailySeed());
@@ -284,6 +287,7 @@ export function DiscoveryMixedFeed({
                 teamName={item.data.author?.team_id ? teamNamesById[item.data.author.team_id] : null}
                 authorStats={item.data.author?.id ? authorStatsById[item.data.author.id] : null}
                 spotlightLabel={item.spotlightLabel}
+                currentProfileId={currentProfileId}
               />
             );
           })}

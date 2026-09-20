@@ -8,17 +8,22 @@ import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration, CONTENT_SOURCE_KIND_ICONS } from '@/components/content-sources/content-source-illustration';
 import { formatPoints } from '@/lib/books/points';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import type { EssayWithDetails } from '@/lib/essays/types';
 
 interface EssayCardProps {
   essay: EssayWithDetails;
   showVoteButton?: boolean;
   initialVoted?: boolean;
+  /** Viewer id — only the author sees their frozen (locked) points; others see live book points. */
+  currentProfileId?: string | null;
 }
 
-export function EssayCard({ essay, showVoteButton = false, initialVoted = false }: EssayCardProps) {
+export function EssayCard({ essay, showVoteButton = false, initialVoted = false, currentProfileId }: EssayCardProps) {
   const snippet = (essay.content_text ?? '').slice(0, 160).trimEnd();
-  const source = getEssaySourceDisplay(essay);
+  const viewerCanSeeFrozen =
+    currentProfileId == null ? true : essay.author_profile_id === currentProfileId;
+  const source = getEssaySourceDisplay(essay, { viewerCanSeeFrozen });
   const authorInitial = essay.author?.name?.[0]?.toUpperCase() ?? '?';
   // The icon sits next to the source's own title, so it has to describe the
   // source — a podcast row showing a book glyph reads as a mislabelled essay.
@@ -76,9 +81,15 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false 
                 <span className="truncate">{source.title}</span>
                 {essay.book && <BookStatusBadges book={essay.book} />}
                 {!source.isArchived && source.points > 0 && (
-                  <span className="shrink-0 ml-auto font-medium text-foreground">
-                    {formatPoints(source.points)} b.
-                  </span>
+                  source.isFrozen ? (
+                    <span className="shrink-0 ml-auto">
+                      <LegacyPointsBadge points={source.points} />
+                    </span>
+                  ) : (
+                    <span className="shrink-0 ml-auto font-medium text-foreground">
+                      {formatPoints(source.points)} b.
+                    </span>
+                  )
                 )}
                 {source.isArchived && (
                   <span className="shrink-0 ml-auto text-destructive">0 b.</span>

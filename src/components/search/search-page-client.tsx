@@ -80,6 +80,8 @@ interface SearchPageClientProps {
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
   contentSources?: ContentSource[];
+  /** Viewer id — only the author sees their frozen (locked) points; others see live book points. */
+  currentProfileId?: string | null;
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
@@ -176,6 +178,7 @@ export function SearchPageClient({
   rocketModelBooks,
   highlightedByCategory,
   contentSources = [],
+  currentProfileId = null,
 }: SearchPageClientProps) {
   const [query, setQuery] = usePersistedState('tappka:search:query', '', { storage: 'sessionStorage' });
   const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[]; sources: ContentSource[] } | null>(null);
@@ -265,7 +268,7 @@ export function SearchPageClient({
       <div className="space-y-10">
         {hasQuery ? (
           results ? (
-            <SearchResultsView essays={results.essays} books={results.books} sources={results.sources} query={query} />
+            <SearchResultsView essays={results.essays} books={results.books} sources={results.sources} query={query} currentProfileId={currentProfileId} />
           ) : (
             <p className="text-center text-muted-foreground text-sm py-12">Hledám…</p>
           )
@@ -297,6 +300,7 @@ export function SearchPageClient({
             highlightedByCategory={highlightedByCategory}
             contentSources={contentSources}
             onSelectCategory={setSelectedCategory}
+            currentProfileId={currentProfileId}
           />
         )}
       </div>
@@ -322,6 +326,7 @@ function DiscoveryView({
   highlightedByCategory,
   contentSources,
   onSelectCategory,
+  currentProfileId,
 }: {
   books: BookWithProfiles[];
   libraryBookIds: string[];
@@ -338,6 +343,7 @@ function DiscoveryView({
   highlightedByCategory: HighlightedGroup[];
   contentSources: ContentSource[];
   onSelectCategory: (key: string) => void;
+  currentProfileId?: string | null;
 }) {
   return (
     <div className="space-y-8">
@@ -384,6 +390,7 @@ function DiscoveryView({
         authorStatsById={authorStatsById}
         userTeamName={userTeamName}
         userTeamId={userTeamId}
+        currentProfileId={currentProfileId}
       />
     </div>
   );
@@ -649,11 +656,13 @@ function SearchResultsView({
   books,
   sources,
   query,
+  currentProfileId,
 }: {
   essays: EssayWithVoted[];
   books: BookResult[];
   sources: ContentSource[];
   query: string;
+  currentProfileId?: string | null;
 }) {
   if (essays.length === 0 && books.length === 0 && sources.length === 0) {
     return (
@@ -731,7 +740,9 @@ function SearchResultsView({
           </h2>
           <div className="divide-y rounded-xl border overflow-hidden bg-card">
             {essays.map((essay) => {
-              const sourceTitle = getEssaySourceDisplay(essay).title;
+              const viewerCanSeeFrozen =
+                currentProfileId == null ? true : essay.author_profile_id === currentProfileId;
+              const sourceTitle = getEssaySourceDisplay(essay, { viewerCanSeeFrozen }).title;
               return (
               <Link
                 key={essay.id}

@@ -113,4 +113,23 @@ describe('SocialEssayFeedCard', () => {
 
     expect(screen.queryByText('The Lean Startup')).not.toBeInTheDocument();
   });
+
+  it('shows the live book points to visitors and the locked badge to the author', () => {
+    const frozenEssay = {
+      ...mockEssay,
+      frozen_book_points: '3.00',
+      book: mockEssay.book ? { ...mockEssay.book, book_points: 1 } : null,
+    };
+
+    const { unmount } = render(
+      <SocialEssayFeedCard essay={frozenEssay} currentProfileId="someone-else" />,
+    );
+    expect(screen.getByText('1 b.')).toBeInTheDocument();
+    expect(screen.queryByText('staré')).not.toBeInTheDocument();
+    unmount();
+
+    render(<SocialEssayFeedCard essay={frozenEssay} currentProfileId="p1" />);
+    expect(screen.getByText('staré')).toBeInTheDocument();
+    expect(screen.getByText('3 b.')).toBeInTheDocument();
+  });
 });

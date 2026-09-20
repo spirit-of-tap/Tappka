@@ -24,6 +24,7 @@ export const metadata = {
 };
 import { formatPoints } from '@/lib/books/points';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
@@ -75,7 +76,10 @@ export default async function EssayDetailPage({ params }: PageProps) {
     canReview = reviewable.data === true;
   }
   const alreadyRead = profile ? coachReads.some((r) => r.coach_profile_id === profile.id) : false;
-  const source = getEssaySourceDisplay(essay);
+  // Frozen credit is author-private (and visible in coach review). Visitors
+  // see the book's live points so the badge matches the book detail.
+  const viewerCanSeeFrozen = isAuthor || isCoachOrAdmin;
+  const source = getEssaySourceDisplay(essay, { viewerCanSeeFrozen });
 
   return (
     <PageShell size="narrow">
@@ -166,9 +170,13 @@ export default async function EssayDetailPage({ params }: PageProps) {
               <p className="text-xs text-muted-foreground truncate">{essay.book.author}</p>
             </div>
             {!source.isArchived && source.points > 0 && (
-              <Badge variant="secondary" className="shrink-0">
-                {formatPoints(source.points)} b.
-              </Badge>
+              source.isFrozen ? (
+                <LegacyPointsBadge points={source.points} className="shrink-0" />
+              ) : (
+                <Badge variant="secondary" className="shrink-0">
+                  {formatPoints(source.points)} b.
+                </Badge>
+              )
             )}
           </div>
         </Link>
