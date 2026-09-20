@@ -520,7 +520,7 @@ export async function getEssayCoachViewers(
   if (error) throw error;
 
   return ((data ?? []) as EssayViewWithProfile[]).filter(
-    (v) => v.viewer?.role === 'coach' || v.viewer?.role === 'admin',
+    (v) => v.viewer?.role === 'coach',
   );
 }
 
@@ -755,7 +755,7 @@ async function getCoachReviewEssaysFallback(
     const { data: coachProfiles, error: coachErr } = await supabase
       .from('profiles')
       .select('id')
-      .in('role', ['coach', 'admin']);
+      .eq('role', 'coach');
     if (coachErr) throw coachErr;
     const coachProfileIds = (coachProfiles ?? []).map((p: { id: string }) => p.id);
 
@@ -1317,7 +1317,7 @@ export async function getCommentsForEssays(
 }
 
 /**
- * Fetches all coach/admin comments for a set of essay IDs, grouped by essay_id.
+ * Fetches all coach comments for a set of essay IDs, grouped by essay_id.
  */
 export async function getCoachCommentsForEssays(
   supabase: SupabaseClient<Database>,
@@ -1326,9 +1326,7 @@ export async function getCoachCommentsForEssays(
   const all = await getCommentsForEssays(supabase, essayIds);
   const result: Record<string, EssayCommentWithAuthor[]> = {};
   for (const [essayId, comments] of Object.entries(all)) {
-    const coachOnly = comments.filter(
-      (c) => c.author?.role === 'coach' || c.author?.role === 'admin',
-    );
+    const coachOnly = comments.filter((c) => c.author?.role === 'coach');
     if (coachOnly.length > 0) {
       result[essayId] = coachOnly;
     }

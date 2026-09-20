@@ -280,7 +280,8 @@ export function EssayCommentThread({
     const isReplyTarget = replyTarget?.id === comment.id;
     const isEdited = !isRemoved && comment.updated_at !== comment.created_at;
     const role = comment.author?.role;
-    const isCoach = role === 'coach' || role === 'admin';
+    // Admins are developers/students, not coaches — only `coach` gets coach styling.
+    const isCoach = role === 'coach';
 
     const meta = [
       role && role !== 'student' ? ROLE_LABELS[role] : null,
@@ -422,9 +423,7 @@ export function EssayCommentThread({
     );
   };
 
-  const hasCoachThread = threads.some(
-    (t) => t.comment.author?.role === 'coach' || t.comment.author?.role === 'admin',
-  );
+  const hasCoachThread = threads.some((t) => t.comment.author?.role === 'coach');
 
   return (
     <div className="space-y-4">

@@ -20,10 +20,55 @@ export interface EssaySourceDisplay {
  * every renderer (card, editor header, delete dialog) reads one shape —
  * including resolving `frozen_book_points` vs the live `book_points`
  * (see `resolveEssayPoints`), so no consumer needs to duplicate that logic.
+ *
+ * Frozen values are author-private credit: pass
+ * `{ viewerCanSeeFrozen: false }` on public surfaces (essay detail for
+ * non-authors, discovery feed, other profiles) so visitors see the book's
+ * live points instead of someone else's locked value. Authors (and coaches
+ * in review) keep the default `true` and see the lock.
  */
+export interface EssaySourceDisplayOptions {
+  viewerCanSeeFrozen?: boolean;
+}
+
 export function getEssaySourceDisplay(
   essay: Pick<EssayWithDetails, 'book' | 'content_source' | 'frozen_book_points'>,
+  options?: EssaySourceDisplayOptions,
 ): EssaySourceDisplay {
+  const viewerCanSeeFrozen = options?.viewerCanSeeFrozen ?? true;
+
+  // Public view: a frozen value belongs to the author, not the visitor.
+  // Show the book's live score so the essay badge matches the book detail.
+  // A frozen essay with no linked book has no live value — report 'none'
+  // so visitors see no points rather than a misleading 0.
+  if (!viewerCanSeeFrozen && essay.frozen_book_points != null) {
+    if (essay.book) {
+      return {
+        kind: 'book',
+        title: essay.book.title_cs,
+        author: essay.book.author,
+        points: resolveEssayPoints({ book: essay.book }),
+        isArchived: essay.book.list_status === 'archived',
+        isFrozen: false,
+        illustrationKind: null,
+      };
+    }
+
+    if (essay.content_source) {
+      return {
+        kind: 'content_source',
+        title: essay.content_source.title,
+        author: essay.content_source.creator,
+        points: resolveEssayPoints({ contentSource: essay.content_source }),
+        isArchived: essay.content_source.status === 'archived',
+        isFrozen: false,
+        illustrationKind: essay.content_source.kind,
+      };
+    }
+
+    return { kind: 'none', title: null, author: null, points: 0, isArchived: false, isFrozen: false, illustrationKind: null };
+  }
+
   if (essay.book) {
     return {
       kind: 'book',

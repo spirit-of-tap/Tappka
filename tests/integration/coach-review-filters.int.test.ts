@@ -11,7 +11,7 @@ interface Seed {
 
 async function seedProfile(
   client: PoolClient,
-  opts: { name: string; email: string; role: "student" | "coach" },
+  opts: { name: string; email: string; role: "student" | "coach" | "admin" },
 ): Promise<Seed> {
   const auth = await insertAuthUser(client, { email: opts.email });
   const { rows: userRows } = await client.query(
@@ -95,6 +95,32 @@ async function callReview(
     [coachProfileId, points],
   );
   return rows[0].result as ReviewResult;
+}
+
+async function callReviewReply(
+  client: PoolClient,
+  coachProfileId: string,
+  reply: string,
+): Promise<ReviewResult> {
+  const { rows } = await client.query(
+    `select public.coach_review_filtered_ids($1, null, 'unread', 'all', 'all', $2, 1, 50) as result`,
+    [coachProfileId, reply],
+  );
+  return rows[0].result as ReviewResult;
+}
+
+async function insertComment(
+  client: PoolClient,
+  opts: { essayId: string; profileId: string; body: string },
+): Promise<string> {
+  const { rows } = await client.query(
+    `insert into public.essay_comments
+      (essay_id, author_profile_id, body, created_by_profile_id, updated_by_profile_id)
+     values ($1, $2, $3, $2, $2)
+     returning id`,
+    [opts.essayId, opts.profileId, opts.body],
+  );
+  return rows[0].id as string;
 }
 
 describe("coach_review_filtered_ids points filter", () => {
@@ -195,6 +221,52 @@ describe("coach_review_filtered_ids points filter", () => {
       expect(result.essay_ids).toContain(eNone);
       expect(result.essay_ids).not.toContain(eLive);
       expect(result.unread_count).toBe(3);
+    });
+  });
+});
+
+describe("coach_review_filtered_ids reply filter ignores admin comments", () => {
+  it("treats an essay with only an admin comment as having no coach comment", async () => {
+    await withRollback(async (client) => {
+      const coach = await seedProfile(client, {
+        name: "Coach",
+        email: "reply-coach@pef.czu.cz",
+        role: "coach",
+      });
+      const student = await seedProfile(client, {
+        name: "Student",
+        email: "reply-student@studenti.czu.cz",
+        role: "student",
+      });
+      const admin = await seedProfile(client, {
+        name: "Admin",
+        email: "reply-admin@pef.czu.cz",
+        role: "admin",
+      });
+
+      const eAdminOnly = await seedEssay(client, student.profileId, {});
+      await insertComment(client, {
+        essayId: eAdminOnly,
+        profileId: admin.profileId,
+        body: "Fakt fajn",
+      });
+
+      const eCoach = await seedEssay(client, student.profileId, {});
+      await insertComment(client, {
+        essayId: eCoach,
+        profileId: coach.profileId,
+        body: "Skvělá reflexe",
+      });
+
+      await asClaims(client, { sub: coach.authId });
+
+      const noCoach = await callReviewReply(client, coach.profileId, "no-coach-comment");
+      expect(noCoach.essay_ids).toContain(eAdminOnly);
+      expect(noCoach.essay_ids).not.toContain(eCoach);
+
+      const withoutReply = await callReviewReply(client, coach.profileId, "without-reply");
+      expect(withoutReply.essay_ids).toContain(eCoach);
+      expect(withoutReply.essay_ids).not.toContain(eAdminOnly);
     });
   });
 });

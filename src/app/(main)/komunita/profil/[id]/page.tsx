@@ -19,6 +19,7 @@ import { BirthGivingProfileHistory } from '@/components/birth-giving/profile-his
 import { Badge } from '@/components/ui/badge';
 import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 
 export const metadata = {
   title: 'Profil',
@@ -66,12 +67,15 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   }
 
   const totalVotes = essays.reduce((s, e) => s + (e.vote_count ?? 0), 0);
+  const isOwnProfile = currentUserProfile?.id === profile.id;
+  // Frozen credit is author-private: on someone else's profile show live
+  // book points (and hide legacy-only essays with the topic ones).
+  const viewerCanSeeFrozen = isOwnProfile;
   // "Nad rámec četby" means no source at all; a content-source essay earns
   // points and belongs in the sourced bucket alongside book essays.
-  const bookEssays = essays.filter((e) => getEssaySourceDisplay(e).kind !== 'none');
-  const topicEssays = essays.filter((e) => getEssaySourceDisplay(e).kind === 'none');
+  const bookEssays = essays.filter((e) => getEssaySourceDisplay(e, { viewerCanSeeFrozen }).kind !== 'none');
+  const topicEssays = essays.filter((e) => getEssaySourceDisplay(e, { viewerCanSeeFrozen }).kind === 'none');
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
-  const isOwnProfile = currentUserProfile?.id === profile.id;
   const teamColor = profile.team?.color ?? null;
   const activeTab = tab === 'eseje' || tab === 'birth-giving' ? tab : 'prehled';
 
@@ -218,7 +222,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                     return 0;
                   }).map((essay) => {
                     const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
-                    const source = getEssaySourceDisplay(essay);
+                    const source = getEssaySourceDisplay(essay, { viewerCanSeeFrozen });
                     return (
                       <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
                         <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5">
@@ -241,9 +245,15 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                             {source.title}
                             {essay.book && <BookStatusBadges book={essay.book} />}
                             {source.points > 0 && (
-                              <span className="ml-1 font-medium text-foreground">
-                                · {formatPointsWithLabel(source.points)}
-                              </span>
+                              source.isFrozen ? (
+                                <span className="ml-1">
+                                  <LegacyPointsBadge points={source.points} />
+                                </span>
+                              ) : (
+                                <span className="ml-1 font-medium text-foreground">
+                                  · {formatPointsWithLabel(source.points)}
+                                </span>
+                              )
                             )}
                           </p>
                           {excerpt && excerpt.length > 20 && (

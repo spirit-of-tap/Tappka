@@ -102,4 +102,51 @@ describe('getEssaySourceDisplay', () => {
     expect(display.isArchived).toBe(true);
     expect(display.isFrozen).toBe(false);
   });
+
+  it('hides the frozen value from visitors — shows live book points instead', () => {
+    const display = getEssaySourceDisplay(
+      {
+        book: {
+          id: 'b1', title_cs: 'Sprint', author: 'Jake Knapp', book_points: 1,
+          list_status: 'shortlist', is_rocket_model: false, google_books_cover_url: null,
+          highlight_category: null,
+        },
+        content_source: null,
+        frozen_book_points: '3.00',
+      },
+      { viewerCanSeeFrozen: false },
+    );
+    expect(display.points).toBe(1);
+    expect(display.isFrozen).toBe(false);
+    expect(display.isArchived).toBe(false);
+    expect(display.kind).toBe('book');
+  });
+
+  it('hides a legacy-only frozen value from visitors as "none" rather than a misleading 0', () => {
+    const display = getEssaySourceDisplay(
+      { book: null, content_source: null, frozen_book_points: '2.00' },
+      { viewerCanSeeFrozen: false },
+    );
+    expect(display.kind).toBe('none');
+    expect(display.points).toBe(0);
+    expect(display.isFrozen).toBe(false);
+  });
+
+  it('applies live archival rules to visitors even when a frozen value exists', () => {
+    const display = getEssaySourceDisplay(
+      {
+        book: {
+          id: 'b1', title_cs: 'Sprint', author: 'Jake Knapp', book_points: 0,
+          list_status: 'archived', is_rocket_model: false, google_books_cover_url: null,
+          highlight_category: null,
+        },
+        content_source: null,
+        frozen_book_points: '2.00',
+      },
+      { viewerCanSeeFrozen: false },
+    );
+    expect(display.points).toBe(0);
+    expect(display.isArchived).toBe(true);
+    expect(display.isFrozen).toBe(false);
+  });
 });

@@ -545,9 +545,7 @@ export function getEssayCommentThreads(
   comments: EssayCommentWithAuthor[],
   authorProfileId: string,
 ) {
-  const coachComments = comments.filter(
-    (c) => c.author?.role === 'coach' || c.author?.role === 'admin',
-  );
+  const coachComments = comments.filter((c) => c.author?.role === 'coach');
 
   if (coachComments.length === 0) {
     return {

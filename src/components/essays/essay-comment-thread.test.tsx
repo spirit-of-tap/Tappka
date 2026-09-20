@@ -429,4 +429,36 @@ describe("EssayCommentThread threading", () => {
     await user.click(authorReplyBtn);
     expect(screen.getByPlaceholderText("Odpovědět na Petr Kouč...")).toBeInTheDocument();
   });
+
+  it("renders admin comments as regular comments, not coach feedback", () => {
+    const adminComment: EssayCommentWithAuthor = {
+      id: "c-admin",
+      essay_id: "essay-1",
+      author_profile_id: "admin-1",
+      parent_id: null,
+      body: "Fakt fajn",
+      removed_at: null,
+      created_at: "2026-08-01T10:00:00.000Z",
+      updated_at: "2026-08-01T10:00:00.000Z",
+      author: { id: "admin-1", name: "Ondřej Kulhavý", picture: null, role: "admin" },
+    };
+
+    const { unmount } = renderThread([adminComment], false);
+
+    expect(
+      screen.queryByRole("button", { name: "Odpovědět na komentář kouče:ky" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Odpovědět" })).toBeInTheDocument();
+
+    unmount();
+
+    renderThread([adminComment], true);
+
+    expect(
+      screen.queryByRole("button", { name: "Odpovědět na komentář kouče:ky" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Pro reakci na zpětnou vazbu kouče:ky využij tlačítko/i),
+    ).not.toBeInTheDocument();
+  });
 });

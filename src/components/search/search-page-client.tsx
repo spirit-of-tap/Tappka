@@ -40,6 +40,7 @@ import { BookNotFoundCard } from '@/components/books/book-not-found-card';
 import { type BookEssayItem } from '@/components/books/feed-book-card';
 import { ContentSourceCard } from '@/components/content-sources/content-source-card';
 import { DiscoveryMixedFeed } from './discovery-mixed-feed';
+import { CopyBooksMenu } from './copy-books-menu';
 import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
@@ -80,6 +81,8 @@ interface SearchPageClientProps {
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
   contentSources?: ContentSource[];
+  /** Viewer id — only the author sees their frozen (locked) points; others see live book points. */
+  currentProfileId?: string | null;
 }
 
 const CATEGORIES = Object.entries(BOOK_CATEGORY_LABELS);
@@ -176,6 +179,7 @@ export function SearchPageClient({
   rocketModelBooks,
   highlightedByCategory,
   contentSources = [],
+  currentProfileId = null,
 }: SearchPageClientProps) {
   const [query, setQuery] = usePersistedState('tappka:search:query', '', { storage: 'sessionStorage' });
   const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[]; sources: ContentSource[] } | null>(null);
@@ -227,6 +231,7 @@ export function SearchPageClient({
     setCategoryLoading(true);
     const params = new URLSearchParams({
       tag: selectedCategory,
+      status: 'shortlist',
       sort: 'popular',
       page_size: '40',
     });
@@ -265,7 +270,7 @@ export function SearchPageClient({
       <div className="space-y-10">
         {hasQuery ? (
           results ? (
-            <SearchResultsView essays={results.essays} books={results.books} sources={results.sources} query={query} />
+            <SearchResultsView essays={results.essays} books={results.books} sources={results.sources} query={query} currentProfileId={currentProfileId} />
           ) : (
             <p className="text-center text-muted-foreground text-sm py-12">Hledám…</p>
           )
@@ -297,6 +302,7 @@ export function SearchPageClient({
             highlightedByCategory={highlightedByCategory}
             contentSources={contentSources}
             onSelectCategory={setSelectedCategory}
+            currentProfileId={currentProfileId}
           />
         )}
       </div>
@@ -322,6 +328,7 @@ function DiscoveryView({
   highlightedByCategory,
   contentSources,
   onSelectCategory,
+  currentProfileId,
 }: {
   books: BookWithProfiles[];
   libraryBookIds: string[];
@@ -338,6 +345,7 @@ function DiscoveryView({
   highlightedByCategory: HighlightedGroup[];
   contentSources: ContentSource[];
   onSelectCategory: (key: string) => void;
+  currentProfileId?: string | null;
 }) {
   return (
     <div className="space-y-8">
@@ -384,6 +392,7 @@ function DiscoveryView({
         authorStatsById={authorStatsById}
         userTeamName={userTeamName}
         userTeamId={userTeamId}
+        currentProfileId={currentProfileId}
       />
     </div>
   );
@@ -446,7 +455,10 @@ function CategoryGridSection({
 }) {
   return (
     <section className="space-y-3 pt-2">
-      <h2 className="text-sm sm:text-base font-semibold text-foreground">Knihy podle kategorií</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm sm:text-base font-semibold text-foreground">Knihy podle kategorií</h2>
+        <CopyBooksMenu />
+      </div>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
         {CATEGORIES.map(([key, label]) => {
@@ -649,11 +661,13 @@ function SearchResultsView({
   books,
   sources,
   query,
+  currentProfileId,
 }: {
   essays: EssayWithVoted[];
   books: BookResult[];
   sources: ContentSource[];
   query: string;
+  currentProfileId?: string | null;
 }) {
   if (essays.length === 0 && books.length === 0 && sources.length === 0) {
     return (
@@ -731,7 +745,9 @@ function SearchResultsView({
           </h2>
           <div className="divide-y rounded-xl border overflow-hidden bg-card">
             {essays.map((essay) => {
-              const sourceTitle = getEssaySourceDisplay(essay).title;
+              const viewerCanSeeFrozen =
+                currentProfileId == null ? true : essay.author_profile_id === currentProfileId;
+              const sourceTitle = getEssaySourceDisplay(essay, { viewerCanSeeFrozen }).title;
               return (
               <Link
                 key={essay.id}

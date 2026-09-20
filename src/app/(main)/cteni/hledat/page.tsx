@@ -164,6 +164,7 @@ export default async function HledatPage() {
       rocketModelBooks={rocketModelBooks}
       highlightedByCategory={highlightedByCategory}
       contentSources={contentSources}
+      currentProfileId={profile?.id ?? null}
     />
   );
 }

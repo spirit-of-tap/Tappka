@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { formatPoints } from '@/lib/books/points';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
+import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { countWords, formatReadingTime } from '@/lib/essays/text-stats';
 import { formatRelativeTime, isRecentEssay } from '@/lib/essays/date-helpers';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,8 @@ export interface SocialEssayFeedCardProps {
   authorStats?: AuthorGamificationStats | null;
   spotlightLabel?: string | null;
   className?: string;
+  /** Viewer id — only the author sees their frozen (locked) points; others see live book points. */
+  currentProfileId?: string | null;
 }
 
 export function getEssayGamificationBadge(
@@ -85,13 +88,16 @@ export function SocialEssayFeedCard({
   authorStats,
   spotlightLabel,
   className,
+  currentProfileId,
 }: SocialEssayFeedCardProps) {
   const words = countWords(essay.content_text ?? '');
   const readingTime = formatReadingTime(words);
   const relativeTime = formatRelativeTime(essay.created_at);
   const badge = getEssayGamificationBadge(essay, authorStats);
   const snippet = extractEssaySnippet(essay);
-  const source = getEssaySourceDisplay(essay);
+  const viewerCanSeeFrozen =
+    currentProfileId == null ? true : essay.author_profile_id === currentProfileId;
+  const source = getEssaySourceDisplay(essay, { viewerCanSeeFrozen });
 
   const isSpotlight = Boolean(spotlightLabel);
 
@@ -183,9 +189,13 @@ export function SocialEssayFeedCard({
               </div>
 
               {!source.isArchived && source.points > 0 && (
-                <Badge variant="secondary" className="shrink-0 text-xs font-semibold">
-                  {formatPoints(source.points)} b.
-                </Badge>
+                source.isFrozen ? (
+                  <LegacyPointsBadge points={source.points} className="shrink-0" />
+                ) : (
+                  <Badge variant="secondary" className="shrink-0 text-xs font-semibold">
+                    {formatPoints(source.points)} b.
+                  </Badge>
+                )
               )}
             </Link>
           );

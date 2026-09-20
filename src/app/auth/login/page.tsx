@@ -74,7 +74,15 @@ export default async function Home({ searchParams }: LoginPageProps) {
                 alt="TAP Logo"
                 width={120}
                 height={120}
-                className="object-contain"
+                className="object-contain dark:hidden"
+                priority
+              />
+              <Image
+                src="/tap_logo_dark.png"
+                alt="TAP Logo"
+                width={120}
+                height={120}
+                className="hidden object-contain dark:block"
                 priority
               />
             </div>

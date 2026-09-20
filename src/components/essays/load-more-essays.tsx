@@ -15,9 +15,11 @@ interface LoadMoreEssaysProps {
   sort?: 'recent' | 'month' | 'best';
   tag?: string;
   showVoteButton?: boolean;
+  /** Viewer id — only the author sees their frozen (locked) points; others see live book points. */
+  currentProfileId?: string | null;
 }
 
-export function LoadMoreEssays({ initialPage, view, teamId, q, sort, tag, showVoteButton = false }: LoadMoreEssaysProps) {
+export function LoadMoreEssays({ initialPage, view, teamId, q, sort, tag, showVoteButton = false, currentProfileId }: LoadMoreEssaysProps) {
   const [essays, setEssays] = useState<EssayWithVoted[]>([]);
   const [page, setPage] = useState(initialPage + 1);
   const [hasMore, setHasMore] = useState(true);
@@ -77,6 +79,7 @@ export function LoadMoreEssays({ initialPage, view, teamId, q, sort, tag, showVo
           essay={essay}
           showVoteButton={showVoteButton}
           initialVoted={essay.user_has_voted ?? false}
+          currentProfileId={currentProfileId}
         />
       ))}
       <div ref={sentinelRef} className="col-span-full flex justify-center py-4">
