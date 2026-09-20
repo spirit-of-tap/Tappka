@@ -22,10 +22,8 @@ export function EssayViewerWithDiff({
 }: EssayViewerWithDiffProps) {
   const [showDiff, setShowDiff] = useState(false);
 
-  // Find coach comments
-  const coachComments = comments.filter(
-    (c) => c.author?.role === 'coach' || c.author?.role === 'admin',
-  );
+  // Find coach comments (admins are not coaches)
+  const coachComments = comments.filter((c) => c.author?.role === 'coach');
 
   const hasCoachComment = coachComments.length > 0;
 

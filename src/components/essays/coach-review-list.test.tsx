@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { CoachReviewList } from './coach-review-list';
+import { CoachReviewList, getEssayCommentThreads } from './coach-review-list';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
 vi.mock('./coach-read-button', () => ({
@@ -357,5 +357,24 @@ describe('CoachReviewList', () => {
     );
 
     expect(screen.getByText('Nad rámec četby')).toBeInTheDocument();
+  });
+
+  it('does not treat admin comments as coach comments', () => {
+    const adminComment = {
+      id: 'comment-admin',
+      essay_id: 'essay-1',
+      author_profile_id: 'admin-1',
+      parent_id: null,
+      body: 'Fakt fajn',
+      removed_at: null,
+      created_at: '2026-08-23T11:00:00Z',
+      updated_at: '2026-08-23T11:00:00Z',
+      author: { id: 'admin-1', name: 'Admin Student', picture: null, role: 'admin' as const },
+    };
+
+    const result = getEssayCommentThreads([adminComment], 'user-1');
+
+    expect(result.hasCoachComment).toBe(false);
+    expect(result.coachComments).toHaveLength(0);
   });
 });

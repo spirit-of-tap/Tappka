@@ -109,4 +109,27 @@ describe('EssayViewerWithDiff', () => {
     expect(screen.getByText(/Nová/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Zobrazit aktuální text/i })).toBeInTheDocument();
   });
+
+  it('does not show coach banner for admin comments', () => {
+    const adminComment: EssayCommentWithAuthor = {
+      ...coachComment,
+      id: 'comment-admin',
+      author_profile_id: 'admin-1',
+      body: 'Fakt fajn',
+      author: { id: 'admin-1', name: 'Admin Student', picture: null, role: 'admin' },
+    };
+
+    render(
+      <EssayViewerWithDiff
+        essay={essay}
+        comments={[adminComment]}
+        revisions={revisions}
+        currentProfileId="admin-1"
+      />,
+    );
+
+    expect(
+      screen.queryByText(/Esej byla upravena po komentáři kouče:ky/),
+    ).not.toBeInTheDocument();
+  });
 });
