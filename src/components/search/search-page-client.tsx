@@ -231,6 +231,7 @@ export function SearchPageClient({
     setCategoryLoading(true);
     const params = new URLSearchParams({
       tag: selectedCategory,
+      status: 'shortlist',
       sort: 'popular',
       page_size: '40',
     });
