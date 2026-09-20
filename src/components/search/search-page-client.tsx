@@ -40,6 +40,7 @@ import { BookNotFoundCard } from '@/components/books/book-not-found-card';
 import { type BookEssayItem } from '@/components/books/feed-book-card';
 import { ContentSourceCard } from '@/components/content-sources/content-source-card';
 import { DiscoveryMixedFeed } from './discovery-mixed-feed';
+import { CopyBooksMenu } from './copy-books-menu';
 import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { cn } from '@/lib/utils';
@@ -453,7 +454,10 @@ function CategoryGridSection({
 }) {
   return (
     <section className="space-y-3 pt-2">
-      <h2 className="text-sm sm:text-base font-semibold text-foreground">Knihy podle kategorií</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm sm:text-base font-semibold text-foreground">Knihy podle kategorií</h2>
+        <CopyBooksMenu />
+      </div>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
         {CATEGORIES.map(([key, label]) => {
