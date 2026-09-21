@@ -47,6 +47,37 @@ const PICK_IMAGE = `(async () => {
 })()`;
 
 test.describe("essay image upload", () => {
+  test("uploads an image pasted from the clipboard (Ctrl+V)", async ({ page, context }) => {
+    await setAuthCookie(context, cookieValue);
+    await page.goto("/cteni/eseje/nova");
+    await page.locator(".ProseMirror").waitFor();
+    await page.locator(".ProseMirror").click();
+
+    await page.evaluate(`(async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 600;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#1d4ed8';
+      ctx.fillRect(0, 0, 800, 600);
+      const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+      const file = new File([blob], 'pasted.png', { type: 'image/png' });
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      document.querySelector('.ProseMirror').dispatchEvent(
+        new ClipboardEvent('paste', { clipboardData: transfer, bubbles: true, cancelable: true }),
+      );
+    })()`);
+
+    // Same pipeline as the picker: dimmed placeholder first, stored copy after.
+    await expect(page.locator(".ProseMirror img[data-uploading]")).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(".ProseMirror img[data-uploading]")).toHaveCount(0, { timeout: 25_000 });
+    await expect(page.locator(".ProseMirror img").first()).toHaveAttribute(
+      "src",
+      /^https?:\/\/.+\.webp$/,
+    );
+  });
+
   test("shows the image while it uploads and stores an optimized copy", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
 

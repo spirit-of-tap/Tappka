@@ -102,7 +102,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
         </div>
       </div>
 
-      <PageShell size="wide">
+      <PageShell size="wide" className="min-w-0 overflow-x-clip">
         {/* ── Profile header ── */}
         {/* Avatar row — overlaps banner */}
         <div className="-mt-10 mb-4 flex items-end gap-4 sm:gap-5">
@@ -115,28 +115,28 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
             size="2xl"
           />
           {/* Name + badges float next to avatar, aligned to bottom */}
-          <div className="min-w-0 pb-1 space-y-1.5">
-            <h1 className="font-heading text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{profile.name}</h1>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className={cn('text-xs', ROLE_COLORS[profile.role])}>
+          <div className="min-w-0 flex-1 pb-1 space-y-1.5">
+            <h1 className="font-heading text-2xl font-bold leading-tight tracking-tight sm:text-3xl break-words">{profile.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <Badge variant="outline" className={cn('text-xs shrink-0', ROLE_COLORS[profile.role])}>
                 {ROLE_LABELS[profile.role]}
               </Badge>
               {profile.team && (
                 <Link
                   href={`/komunita/tymy/${profile.team.id}`}
-                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border rounded-full px-2.5 py-0.5"
+                  className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border rounded-full px-2.5 py-0.5"
                 >
                   {teamPictureUrl
-                    ? <ProfilePicture src={teamPictureUrl} alt={profile.team.name} size={14} className="size-3.5 rounded-full object-cover" />
-                    : <Users className="size-3" />}
-                  {profile.team.name}
+                    ? <ProfilePicture src={teamPictureUrl} alt={profile.team.name} size={14} className="size-3.5 shrink-0 rounded-full object-cover" />
+                    : <Users className="size-3 shrink-0" />}
+                  <span className="truncate">{profile.team.name}</span>
                 </Link>
               )}
             </div>
           </div>
         </div>
 
-        <Tabs defaultValue={activeTab} className="mt-4">
+        <Tabs defaultValue={activeTab} className="mt-4 min-w-0">
           <TabsList>
             <TabsTrigger value="prehled">
               <UserRound />
@@ -203,8 +203,8 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           </TabsContent>
 
           {/* Essays */}
-          <TabsContent value="eseje" className="mt-4">
-            <div className="space-y-4">
+          <TabsContent value="eseje" className="mt-4 min-w-0">
+            <div className="space-y-4 min-w-0">
           <h2 className="font-semibold text-base">
             Eseje
             {essays.length > 0 && <span className="ml-2 font-normal text-muted-foreground text-sm">{essays.length}</span>}
@@ -215,7 +215,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           ) : (
             <>
               {bookEssays.length > 0 && (
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-3">
                   {[...bookEssays].sort((a, b) => {
                     if (a.pinned_at && !b.pinned_at) return -1;
                     if (!a.pinned_at && b.pinned_at) return 1;
@@ -224,7 +224,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                     const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
                     const source = getEssaySourceDisplay(essay, { viewerCanSeeFrozen });
                     return (
-                      <div key={essay.id} className="flex gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow">
+                      <div key={essay.id} className="flex min-w-0 gap-3 rounded-xl border bg-card px-3.5 py-3 group hover:shadow-sm transition-shadow overflow-hidden">
                         <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center mt-0.5">
                           {essay.book?.google_books_cover_url ? (
                             <StorageImage storageKey={essay.book.google_books_cover_url} alt={essay.book.title_cs} width={44} height={60} className="w-full h-full object-cover" />
@@ -237,27 +237,29 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                         <div className="flex-1 min-w-0 space-y-1">
                           <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
                             {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
-                            <span className="font-semibold text-sm leading-snug truncate group-hover:text-primary transition-colors">
+                            <span className="min-w-0 flex-1 font-semibold text-sm leading-snug truncate group-hover:text-primary transition-colors">
                               {essay.title}
                             </span>
                           </Link>
-                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
-                            {source.title}
-                            {essay.book && <BookStatusBadges book={essay.book} />}
-                            {source.points > 0 && (
-                              source.isFrozen ? (
-                                <span className="ml-1">
-                                  <LegacyPointsBadge points={source.points} />
-                                </span>
-                              ) : (
-                                <span className="ml-1 font-medium text-foreground">
-                                  · {formatPointsWithLabel(source.points)}
-                                </span>
-                              )
-                            )}
+                          <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                            <span className="min-w-0 flex-1 truncate">{source.title}</span>
+                            <span className="flex shrink-0 items-center gap-1.5">
+                              {essay.book && <BookStatusBadges book={essay.book} />}
+                              {source.points > 0 && (
+                                source.isFrozen ? (
+                                  <span className="ml-1 whitespace-nowrap">
+                                    <LegacyPointsBadge points={source.points} />
+                                  </span>
+                                ) : (
+                                  <span className="ml-1 font-medium text-foreground whitespace-nowrap">
+                                    · {formatPointsWithLabel(source.points)}
+                                  </span>
+                                )
+                              )}
+                            </span>
                           </p>
                           {excerpt && excerpt.length > 20 && (
-                            <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{excerpt}…</p>
+                            <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed break-words">{excerpt}…</p>
                           )}
                           <EssayVoteButton essayId={essay.id} initialVoteCount={essay.vote_count} initialVoted={votedIds.has(essay.id)} size="sm" />
                         </div>
@@ -268,17 +270,17 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               )}
 
               {topicEssays.length > 0 && (
-                <section className="space-y-3">
+                <section className="space-y-3 min-w-0">
                   <div className="flex items-center gap-2 pt-2">
-                    <Sparkles className="size-4 text-warning-strong" />
-                    <h3 className="font-semibold text-sm text-warning-strong">
+                    <Sparkles className="size-4 shrink-0 text-warning-strong" />
+                    <h3 className="font-semibold text-sm text-warning-strong truncate">
                       Nad rámec četby
                     </h3>
                   </div>
-                  <p className="text-xs text-muted-foreground/60 leading-relaxed -mt-1">
+                  <p className="text-xs text-muted-foreground/60 leading-relaxed -mt-1 break-words">
                     Myšlenky, postřehy a záznamy, které nevznikly z přečtené knihy, ale z vlastní potřeby sdílet — bez nároku na body.
                   </p>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-3">
                     {[...topicEssays].sort((a, b) => {
                       if (a.pinned_at && !b.pinned_at) return -1;
                       if (!a.pinned_at && b.pinned_at) return 1;
@@ -286,23 +288,23 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                     }).map((essay) => {
                       const excerpt = essay.content_text?.trim().replace(/\s+/g, ' ').slice(0, 120);
                       return (
-                        <div key={essay.id} className="flex gap-3 rounded-xl border border-warning/20 bg-warning/10 px-3.5 py-3 group hover:shadow-sm transition-shadow">
+                        <div key={essay.id} className="flex min-w-0 gap-3 rounded-xl border border-warning/20 bg-warning/10 px-3.5 py-3 group hover:shadow-sm transition-shadow overflow-hidden">
                           <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring shrink-0 w-11 h-15 rounded-md overflow-hidden bg-warning/10 flex items-center justify-center mt-0.5">
                             <Sparkles className="size-4 text-warning/40" />
                           </Link>
                           <div className="flex-1 min-w-0 space-y-1">
                             <Link href={`/cteni/eseje/${essay.id}`} className="focus-ring flex min-w-0 items-center gap-1.5 rounded-sm">
                               {essay.pinned_at && <Pin className="size-3 shrink-0 text-primary fill-primary" />}
-                              <span className="font-semibold text-sm leading-snug truncate group-hover:text-warning-strong transition-colors">
+                              <span className="min-w-0 flex-1 font-semibold text-sm leading-snug truncate group-hover:text-warning-strong transition-colors">
                                 {essay.title}
                               </span>
                             </Link>
-                            <p className="text-xs text-warning-strong flex items-center gap-1">
-                              <Sparkles className="size-3" />
-                              Nad rámec četby
+                            <p className="text-xs text-warning-strong flex items-center gap-1 min-w-0">
+                              <Sparkles className="size-3 shrink-0" />
+                              <span className="truncate">Nad rámec četby</span>
                             </p>
                             {excerpt && excerpt.length > 20 && (
-                              <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed">{excerpt}…</p>
+                              <p className="text-xs text-muted-foreground/60 line-clamp-2 leading-relaxed break-words">{excerpt}…</p>
                             )}
                             <EssayVoteButton essayId={essay.id} initialVoteCount={essay.vote_count} initialVoted={votedIds.has(essay.id)} size="sm" />
                           </div>

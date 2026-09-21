@@ -23,10 +23,12 @@ function mockSearchEndpoints({
   essays = [],
   books = [],
   sources = [],
+  people = [],
 }: {
   essays?: unknown[];
   books?: unknown[];
   sources?: unknown[];
+  people?: unknown[];
 } = {}) {
   fetchSpy.mockImplementation((input) => {
     const url = typeof input === 'string' ? input : (input as Request).url;
@@ -34,6 +36,7 @@ function mockSearchEndpoints({
     if (url.startsWith('/api/books/search')) return Promise.resolve(jsonResponse({ data: books }));
     if (url.startsWith('/api/books?')) return Promise.resolve(jsonResponse({ data: books }));
     if (url.startsWith('/api/content-sources')) return Promise.resolve(jsonResponse({ data: sources }));
+    if (url.startsWith('/api/profiles/search')) return Promise.resolve(jsonResponse({ data: people }));
     throw new Error(`unexpected fetch: ${url}`);
   });
 }
@@ -56,7 +59,7 @@ describe('SearchPageClient — search results', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<SearchPageClient {...requiredProps} />);
-    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, témata…'), 'Founders');
+    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, lidi, témata…'), 'Founders');
     await vi.advanceTimersByTimeAsync(400);
 
     await waitFor(() => {
@@ -71,7 +74,7 @@ describe('SearchPageClient — search results', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<SearchPageClient {...requiredProps} />);
-    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, témata…'), 'nic takového');
+    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, lidi, témata…'), 'nic takového');
     await vi.advanceTimersByTimeAsync(400);
 
     expect(await screen.findByText('Žádné výsledky')).toBeInTheDocument();
@@ -87,11 +90,43 @@ describe('SearchPageClient — search results', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<SearchPageClient {...requiredProps} />);
-    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, témata…'), 'Atomic');
+    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, lidi, témata…'), 'Atomic');
     await vi.advanceTimersByTimeAsync(400);
 
     expect(await screen.findByText('Atomic Habits')).toBeInTheDocument();
     expect(screen.queryByText(/Ostatní zdroje/)).not.toBeInTheDocument();
+  });
+
+  it('fetches and shows people with a link to their essays', async () => {
+    mockSearchEndpoints({
+      people: [{ id: 'p1', name: 'Aneta Kmetíková', picture: null, role: 'student', team: { id: 't1', name: 'Tuuli' }, essay_count: 23 }],
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<SearchPageClient {...requiredProps} />);
+    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, lidi, témata…'), 'Aneta');
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(await screen.findByText('Lidé (1)')).toBeInTheDocument();
+    expect(screen.getByText('Aneta Kmetíková')).toBeInTheDocument();
+    expect(screen.getByText('Tuuli · 23 esejí')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /Aneta Kmetíková/ });
+    expect(link.getAttribute('href')).toContain('/komunita/profil/p1');
+    expect(link.getAttribute('href')).toContain('tab=eseje');
+  });
+
+  it('shows "Žádné výsledky" only when people are empty too', async () => {
+    mockSearchEndpoints({
+      people: [{ id: 'p1', name: 'Aneta Kmetíková', picture: null, role: 'student', team: null, essay_count: 0 }],
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<SearchPageClient {...requiredProps} />);
+    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, lidi, témata…'), 'Aneta');
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(await screen.findByText('Lidé (1)')).toBeInTheDocument();
+    expect(screen.queryByText('Žádné výsledky')).not.toBeInTheDocument();
   });
 });
 
