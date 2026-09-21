@@ -20,6 +20,7 @@ import {
   Megaphone,
   Boxes,
   Library,
+  Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,14 @@ type BookResult = {
   highlight_category: HighlightCategory | null;
 };
 type CategoryBook = { id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number; list_status: BookListStatus; is_rocket_model: boolean; highlight_category: HighlightCategory | null };
+type PersonResult = {
+  id: string;
+  name: string | null;
+  picture: string | null;
+  role: string;
+  team: { id: string; name: string } | null;
+  essay_count: number;
+};
 
 interface SearchPageClientProps {
   books?: BookWithProfiles[];
@@ -182,7 +191,7 @@ export function SearchPageClient({
   currentProfileId = null,
 }: SearchPageClientProps) {
   const [query, setQuery] = usePersistedState('tappka:search:query', '', { storage: 'sessionStorage' });
-  const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[]; sources: ContentSource[] } | null>(null);
+  const [results, setResults] = useState<{ essays: EssayWithVoted[]; books: BookResult[]; sources: ContentSource[]; people: PersonResult[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = usePersistedState<string | null>('tappka:search:category', null, { storage: 'sessionStorage' });
   const [categoryBooks, setCategoryBooks] = useState<(BookWithProfiles & { essay_count?: number })[]>([]);
@@ -209,14 +218,15 @@ export function SearchPageClient({
       setLoading(true);
       try {
         const q = encodeURIComponent(query.trim());
-        const [eRes, bRes, sRes] = await Promise.all([
+        const [eRes, bRes, sRes, pRes] = await Promise.all([
           fetch(`/api/essays?q=${q}`),
           fetch(`/api/books/search?q=${q}`),
           fetch(`/api/content-sources?q=${q}`),
+          fetch(`/api/profiles/search?q=${q}`),
         ]);
-        const [{ data: essays }, { data: books }, { data: sources }] = await Promise.all([eRes.json(), bRes.json(), sRes.json()]);
+        const [{ data: essays }, { data: books }, { data: sources }, { data: people }] = await Promise.all([eRes.json(), bRes.json(), sRes.json(), pRes.json()]);
         if (requestId === searchIdRef.current) {
-          setResults({ essays: essays ?? [], books: books ?? [], sources: sources ?? [] });
+          setResults({ essays: essays ?? [], books: books ?? [], sources: sources ?? [], people: people ?? [] });
         }
       } finally {
         if (requestId === searchIdRef.current) setLoading(false);
@@ -258,7 +268,7 @@ export function SearchPageClient({
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Hledat eseje, knihy, témata…"
+          placeholder="Hledat eseje, knihy, lidi, témata…"
           className="h-12 pl-12 text-base rounded-xl shadow-sm"
         />
         {loading && (
@@ -270,7 +280,7 @@ export function SearchPageClient({
       <div className="space-y-10">
         {hasQuery ? (
           results ? (
-            <SearchResultsView essays={results.essays} books={results.books} sources={results.sources} query={query} currentProfileId={currentProfileId} />
+            <SearchResultsView essays={results.essays} books={results.books} sources={results.sources} people={results.people} query={query} currentProfileId={currentProfileId} />
           ) : (
             <p className="text-center text-muted-foreground text-sm py-12">Hledám…</p>
           )
@@ -660,16 +670,18 @@ function SearchResultsView({
   essays,
   books,
   sources,
+  people,
   query,
   currentProfileId,
 }: {
   essays: EssayWithVoted[];
   books: BookResult[];
   sources: ContentSource[];
+  people: PersonResult[];
   query: string;
   currentProfileId?: string | null;
 }) {
-  if (essays.length === 0 && books.length === 0 && sources.length === 0) {
+  if (essays.length === 0 && books.length === 0 && sources.length === 0 && people.length === 0) {
     return (
       <div className="space-y-4">
         <div className="space-y-2 py-12 text-center">
@@ -683,6 +695,38 @@ function SearchResultsView({
 
   return (
     <div className="space-y-8">
+      {people.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Lidé ({people.length})
+          </h2>
+          <div className="divide-y rounded-xl border overflow-hidden bg-card">
+            {people.map((person) => (
+              <Link
+                key={person.id}
+                href={`/komunita/profil/${person.id}?from=${encodeURIComponent('/cteni/hledat')}&tab=eseje`}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group min-w-0"
+              >
+                <div className="shrink-0 overflow-hidden">
+                  <ProfileAvatar picture={person.picture} name={person.name} size={36} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{person.name ?? 'Bez jména'}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {[person.team?.name, `${person.essay_count} ${pluralizeCz(person.essay_count, ['esej', 'eseje', 'esejí'])}`].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <span className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground">
+                  <Users className="size-3.5" />
+                  <span className="hidden sm:inline">Eseje</span>
+                  <ChevronRight className="size-3.5" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {books.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
