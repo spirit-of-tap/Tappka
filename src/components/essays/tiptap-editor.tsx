@@ -33,6 +33,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { PENDING_IMAGE_ATTR, stripPendingImages } from '@/lib/essays/pending-images';
 import { EMPTY_DOC, normalizeContentJson } from '@/lib/essays/content-text';
 import { prepareEssayImage, uploadEssayImage, validateEssayImage } from '@/lib/essays/image-upload';
+import { extractImageFiles } from '@/lib/essays/pasted-images';
 
 const MultiHighlight = Highlight.extend({
   addAttributes() {
@@ -155,6 +156,10 @@ export function TiptapEditor({
   const pickerRef = useRef<HTMLDivElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  // useEditor is created once, but handleImageUpload is redefined every
+  // render — the paste/drop handlers below go through this ref so they always
+  // call the current version.
+  const handleImageUploadRef = useRef<(file: File) => void>(() => {});
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [hasCoarsePointer, setHasCoarsePointer] = useState(false);
   const bubbleMenuRef = useRef<HTMLDivElement>(null);
@@ -183,6 +188,25 @@ export function TiptapEditor({
       Typography,
       UploadableImage.configure({ inline: false, allowBase64: false }),
     ],
+    // A pasted or dropped image (screenshot via Ctrl+V, a file from the
+    // desktop) carries image files in the payload — send each through the
+    // same upload pipeline as the toolbar picker. Anything else (text, HTML)
+    // falls through to the default handling by returning false.
+    editorProps: {
+      handlePaste: (_view, event) => {
+        const images = extractImageFiles(event.clipboardData?.files);
+        if (images.length === 0) return false;
+        images.forEach((file) => handleImageUploadRef.current(file));
+        return true;
+      },
+      handleDrop: (_view, event) => {
+        const images = extractImageFiles(event.dataTransfer?.files);
+        if (images.length === 0) return false;
+        event.preventDefault();
+        images.forEach((file) => handleImageUploadRef.current(file));
+        return true;
+      },
+    },
     content: normalizeContentJson(initialContent ?? EMPTY_DOC),
     onUpdate: ({ editor }) => {
       // Stripped, not raw: a blob: URL saved to the database is a dead image.
@@ -322,6 +346,7 @@ export function TiptapEditor({
       setUploadPercent(null);
     }
   };
+  handleImageUploadRef.current = handleImageUpload;
 
   return (
     <div className={cn('flex flex-col', className)}>
