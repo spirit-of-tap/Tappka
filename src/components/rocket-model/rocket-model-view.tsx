@@ -61,7 +61,7 @@ export interface RocketModelViewProps {
 
 type RocketTab = "mine" | "team"
 type TeamFilter = "all" | "ready" | "confirmed" | "reconfirm" | "in_progress"
-type MineFilter = "all" | "incomplete"
+type MineFilter = "all" | "incomplete" | "by_team"
 
 function formatMissingMembers(missing: TeamMemberProfile[]): string {
   if (missing.length === 0) return ""
@@ -87,6 +87,7 @@ export function RocketModelView({
   const [activeTab, setActiveTab] = usePersistedState<RocketTab>("tappka:rocket-model:tab", "mine")
   const [teamFilter, setTeamFilter] = useState<TeamFilter>("all")
   const [mineFilter, setMineFilter] = useState<MineFilter>("all")
+  const [byTeamIncompleteOnly, setByTeamIncompleteOnly] = useState(false)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [isRadarOpen, setIsRadarOpen] = useState(false)
 
@@ -151,6 +152,48 @@ export function RocketModelView({
     [categories, collapsedCategories],
   )
 
+  const rankedItems = useMemo(() => {
+    const list: {
+      item: RocketCategoryWithItems["items"][number]
+      category: RocketCategoryWithItems
+      checkersCount: number
+      isOwnChecked: boolean
+    }[] = []
+
+    for (const category of categories) {
+      for (const item of category.items) {
+        const checkersCount = checkedByItem.get(item.id)?.size ?? 0
+        const isOwnChecked = ownCheckedIds.has(item.id)
+        list.push({
+          item,
+          category,
+          checkersCount,
+          isOwnChecked,
+        })
+      }
+    }
+
+    return list.sort((a, b) => {
+      if (b.checkersCount !== a.checkersCount) {
+        return b.checkersCount - a.checkersCount
+      }
+      if (a.isOwnChecked !== b.isOwnChecked) {
+        return a.isOwnChecked ? 1 : -1
+      }
+      if (a.category.order_index !== b.category.order_index) {
+        return a.category.order_index - b.category.order_index
+      }
+      return a.item.order_index - b.item.order_index
+    })
+  }, [categories, checkedByItem, ownCheckedIds])
+
+  const itemsToDisplayInByTeam = useMemo(() => {
+    if (byTeamIncompleteOnly) {
+      return rankedItems.filter((entry) => !entry.isOwnChecked)
+    }
+    return rankedItems
+  }, [rankedItems, byTeamIncompleteOnly])
+
   const handleToggleCategory = useCallback((categoryId: string) => {
     setCollapsedCategories((prev) => {
       const next = new Set(prev)
@@ -173,6 +216,7 @@ export function RocketModelView({
   }, [categories])
 
   const handleJumpToCategory = useCallback((categoryId: string) => {
+    setMineFilter((prev) => (prev === "by_team" ? "all" : prev))
     setCollapsedCategories((prev) => {
       if (!prev.has(categoryId)) return prev
       const next = new Set(prev)
@@ -282,7 +326,7 @@ export function RocketModelView({
         </Card>
 
         {/* Action / Filter bar for Personal View */}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-1.5">
             <Button
               variant={mineFilter === "all" ? "secondary" : "ghost"}
@@ -300,125 +344,277 @@ export function RocketModelView({
             >
               K doplnění ({totalItems - totalOwnChecked})
             </Button>
+            <Button
+              variant={mineFilter === "by_team" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setMineFilter("by_team")}
+              className="h-8 text-xs"
+            >
+              Podle vyplnění ({totalItems})
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleToggleAllCollapsed}
-            className="h-8 text-xs text-muted-foreground"
-          >
-            {allCollapsed ? "Rozbalit vše" : "Sbalit vše"}
-          </Button>
+          {mineFilter === "by_team" ? (
+            <Button
+              variant={byTeamIncompleteOnly ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setByTeamIncompleteOnly((prev) => !prev)}
+              className="h-8 text-xs text-muted-foreground self-start sm:self-auto"
+            >
+              {byTeamIncompleteOnly
+                ? "Zobrazit vše"
+                : `Pouze k doplnění (${totalItems - totalOwnChecked})`}
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleAllCollapsed}
+              className="h-8 text-xs text-muted-foreground self-start sm:self-auto"
+            >
+              {allCollapsed ? "Rozbalit vše" : "Sbalit vše"}
+            </Button>
+          )}
         </div>
 
-        {/* Categories in DB order (order_index) — no hardcoded dimensions */}
-        {categories.map((category) => {
-          const checked = category.items.filter((item) =>
-            ownCheckedIds.has(item.id),
-          ).length
-          const isCategoryComplete =
-            checked === category.items.length && category.items.length > 0
-          const isCollapsed = collapsedCategories.has(category.id)
-
-          const itemsToRender = category.items.filter((item) => {
-            if (mineFilter === "incomplete") {
-              return !ownCheckedIds.has(item.id)
-            }
-            return true
-          })
-
-          return (
-            <section
-              id={`category-${category.id}`}
-              key={category.id}
-              className="scroll-mt-24"
-            >
-              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <div className="flex min-w-0 items-start sm:items-center gap-1.5">
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => handleToggleCategory(category.id)}
-                    aria-label={
-                      isCollapsed
-                        ? `Rozbalit ${category.title}`
-                        : `Sbalit ${category.title}`
-                    }
-                    className="mt-0.5 sm:mt-0 size-6 shrink-0 text-muted-foreground hover:text-foreground"
-                  >
-                    <ChevronDown
-                      className={cn(
-                        "size-3.5 transition-transform duration-200",
-                        isCollapsed && "-rotate-90",
-                      )}
-                    />
-                  </Button>
-                  <h2
-                    onClick={() => handleToggleCategory(category.id)}
-                    className="font-heading text-base font-bold sm:text-lg cursor-pointer select-none leading-snug sm:leading-normal"
-                  >
-                    {category.title}
-                  </h2>
-                </div>
-                <div className="flex shrink-0 items-center gap-2.5 sm:gap-3 pl-[30px] sm:pl-0">
-                  {isCategoryComplete && (
-                    <Badge
-                      variant="secondary"
-                      className="border-none bg-success/15 text-xs text-success-strong"
-                    >
-                      <Check className="mr-1 size-3" />
-                      Splněno
-                    </Badge>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Progress
-                      value={coveragePercent(checked, category.items.length)}
-                      className="h-1.5 w-20 sm:w-24"
-                      indicatorClassName={isCategoryComplete ? "bg-success" : undefined}
-                    />
-                    <p className="shrink-0 text-xs sm:text-sm tabular-nums text-muted-foreground">
-                      {checked} z {category.items.length}
-                    </p>
-                  </div>
-                </div>
+        {mineFilter === "by_team" ? (
+          <Card className="divide-y divide-border/60 p-2 sm:p-4">
+            {itemsToDisplayInByTeam.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                Všechny položky máš splněné! Skvělá práce.
               </div>
+            ) : (
+              itemsToDisplayInByTeam.map((entry) => {
+                const isUnanimous =
+                  teamMembers.length > 0 &&
+                  entry.checkersCount === teamMembers.length
 
-              {!isCollapsed && (
-                <div className="mt-2.5 space-y-1 pl-1 sm:pl-7">
-                  {itemsToRender.length === 0 ? (
-                    <div className="flex items-center gap-2 py-2 text-xs text-success-strong">
-                      <Check className="size-4 shrink-0" />
-                      Všechny položky v této kategorii máš splněné.
-                    </div>
-                  ) : (
-                    itemsToRender.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-start gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
-                      >
-                        <Checkbox
-                          id={`mine-${item.id}`}
-                          checked={ownCheckedIds.has(item.id)}
-                          onCheckedChange={(next) =>
-                            onToggleIndividual(item.id, next === true)
-                          }
-                          className="mt-0.5"
-                          aria-label={item.text_cs}
-                        />
+                return (
+                  <div
+                    key={entry.item.id}
+                    role="group"
+                    aria-label={entry.item.text_cs}
+                    className={cn(
+                      "flex items-start gap-3 rounded-md px-2.5 py-2.5 transition-colors hover:bg-muted/40",
+                      isUnanimous && "bg-success/[0.04]",
+                    )}
+                  >
+                    <Checkbox
+                      id={`mine-${entry.item.id}`}
+                      checked={entry.isOwnChecked}
+                      onCheckedChange={(next) =>
+                        onToggleIndividual(entry.item.id, next === true)
+                      }
+                      className="mt-0.5"
+                      aria-label={entry.item.text_cs}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                         <Label
-                          htmlFor={`mine-${item.id}`}
+                          htmlFor={`mine-${entry.item.id}`}
                           className="cursor-pointer text-sm leading-relaxed font-normal"
                         >
-                          {item.text_cs}
+                          {entry.item.text_cs}
                         </Label>
+                        <div className="flex items-center gap-1.5 shrink-0 self-start">
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "border-none font-medium",
+                              isUnanimous
+                                ? "bg-success/15 text-success-strong"
+                                : entry.checkersCount > 0
+                                  ? "bg-primary/15 text-primary"
+                                  : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            <Users className="size-3 mr-1" />
+                            {entry.checkersCount}/{teamMembers.length}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="text-xs font-mono font-medium"
+                          >
+                            {entry.category.code}
+                          </Badge>
+                        </div>
                       </div>
-                    ))
-                  )}
+
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span>{entry.category.title}</span>
+                        {isUnanimous && (
+                          <span className="flex items-center gap-1 text-success-strong font-medium">
+                            <Check className="size-3 stroke-[2.5]" />
+                            Celý tým splnil
+                          </span>
+                        )}
+                        {!entry.isOwnChecked && entry.checkersCount > 0 && (
+                          <span className="font-medium text-primary">
+                            {entry.checkersCount === teamMembers.length - 1
+                              ? "Chybí jen tvé hodnocení k týmové shodě!"
+                              : "Čeká na tvé hodnocení"}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Avatar chips row */}
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {teamMembers.map((member) => {
+                          const memberState = stateByItemMember.get(
+                            `${entry.item.id}:${member.id}`,
+                          )
+                          const isChecked = memberState?.is_checked ?? false
+                          return (
+                            <Tooltip key={member.id}>
+                              <TooltipTrigger asChild>
+                                <span
+                                  className={cn(
+                                    "relative inline-flex rounded-full transition-all cursor-default select-none",
+                                    isChecked
+                                      ? "ring-1 ring-success/80 opacity-100"
+                                      : "opacity-30 grayscale hover:opacity-60",
+                                  )}
+                                  tabIndex={0}
+                                  aria-label={`${member.name ?? "Člen:ka týmu"}: ${isChecked ? "Splněno" : "Nesplněno"}`}
+                                >
+                                  <ProfileAvatar
+                                    picture={member.picture}
+                                    name={member.name}
+                                    size={18}
+                                  />
+                                  {isChecked && (
+                                    <span className="absolute -bottom-0.5 -right-0.5 flex size-2 items-center justify-center rounded-full bg-success text-success-foreground ring-1 ring-background">
+                                      <Check className="size-1 stroke-[3]" />
+                                    </span>
+                                  )}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">
+                                  {member.name ?? "Neznámý:á"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {isChecked ? "Splněno" : "Zatím neoznačil:a"}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </Card>
+        ) : (
+          categories.map((category) => {
+            const checked = category.items.filter((item) =>
+              ownCheckedIds.has(item.id),
+            ).length
+            const isCategoryComplete =
+              checked === category.items.length && category.items.length > 0
+            const isCollapsed = collapsedCategories.has(category.id)
+
+            const itemsToRender = category.items.filter((item) => {
+              if (mineFilter === "incomplete") {
+                return !ownCheckedIds.has(item.id)
+              }
+              return true
+            })
+
+            return (
+              <section
+                id={`category-${category.id}`}
+                key={category.id}
+                className="scroll-mt-24"
+              >
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  <div className="flex min-w-0 items-start sm:items-center gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => handleToggleCategory(category.id)}
+                      aria-label={
+                        isCollapsed
+                          ? `Rozbalit ${category.title}`
+                          : `Sbalit ${category.title}`
+                      }
+                      className="mt-0.5 sm:mt-0 size-6 shrink-0 text-muted-foreground hover:text-foreground"
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "size-3.5 transition-transform duration-200",
+                          isCollapsed && "-rotate-90",
+                        )}
+                      />
+                    </Button>
+                    <h2
+                      onClick={() => handleToggleCategory(category.id)}
+                      className="font-heading text-base font-bold sm:text-lg cursor-pointer select-none leading-snug sm:leading-normal"
+                    >
+                      {category.title}
+                    </h2>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2.5 sm:gap-3 pl-[30px] sm:pl-0">
+                    {isCategoryComplete && (
+                      <Badge
+                        variant="secondary"
+                        className="border-none bg-success/15 text-xs text-success-strong"
+                      >
+                        <Check className="mr-1 size-3" />
+                        Splněno
+                      </Badge>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Progress
+                        value={coveragePercent(checked, category.items.length)}
+                        className="h-1.5 w-20 sm:w-24"
+                        indicatorClassName={isCategoryComplete ? "bg-success" : undefined}
+                      />
+                      <p className="shrink-0 text-xs sm:text-sm tabular-nums text-muted-foreground">
+                        {checked} z {category.items.length}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </section>
-          )
-        })}
+
+                {!isCollapsed && (
+                  <div className="mt-2.5 space-y-1 pl-1 sm:pl-7">
+                    {itemsToRender.length === 0 ? (
+                      <div className="flex items-center gap-2 py-2 text-xs text-success-strong">
+                        <Check className="size-4 shrink-0" />
+                        Všechny položky v této kategorii máš splněné.
+                      </div>
+                    ) : (
+                      itemsToRender.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-start gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
+                        >
+                          <Checkbox
+                            id={`mine-${item.id}`}
+                            checked={ownCheckedIds.has(item.id)}
+                            onCheckedChange={(next) =>
+                              onToggleIndividual(item.id, next === true)
+                            }
+                            className="mt-0.5"
+                            aria-label={item.text_cs}
+                          />
+                          <Label
+                            htmlFor={`mine-${item.id}`}
+                            className="cursor-pointer text-sm leading-relaxed font-normal"
+                          >
+                            {item.text_cs}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </section>
+            )
+          })
+        )}
 
         {history.length > 0 && (
           <Collapsible>

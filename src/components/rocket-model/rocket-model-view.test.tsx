@@ -236,6 +236,67 @@ describe("RocketModelView — Moje hodnocení", () => {
     await user.click(screen.getByRole("heading", { name: /Y1 - The process/ }));
     expect(screen.queryByText("Každý člen týmu si vede Learning Diary.")).not.toBeInTheDocument();
   });
+
+  it("orders items by team completion when 'Podle vyplnění' is selected", async () => {
+    const user = userEvent.setup();
+    // item-2 has 2 checkers (unanimous), item-1 has 0 checkers
+    const { onToggleIndividual } = renderView({
+      states: [makeState("item-2", ME), makeState("item-2", OTHER)],
+    });
+
+    await user.click(screen.getByRole("tab", { name: /Moje hodnocení/ }));
+    await user.click(screen.getByRole("button", { name: /Podle vyplnění/ }));
+
+    // Both items should be visible
+    const item1 = screen.getByRole("group", {
+      name: "Každý člen týmu si vede Learning Diary.",
+    });
+    const item2 = screen.getByRole("group", {
+      name: "Každý člen týmu má svůj Reading Plan.",
+    });
+
+    expect(within(item2).getByText("2/2")).toBeVisible();
+    expect(within(item1).getByText("0/2")).toBeVisible();
+
+    // Verify item-2 (2 checkers) appears before item-1 (0 checkers)
+    const allGroups = screen.getAllByRole("group");
+    const index2 = allGroups.indexOf(item2);
+    const index1 = allGroups.indexOf(item1);
+    expect(index2).toBeLessThan(index1);
+
+    // Can toggle item from the ranked list
+    const uncheckedBox = within(item1).getByRole("checkbox");
+    expect(uncheckedBox).not.toBeChecked();
+    await user.click(uncheckedBox);
+    expect(onToggleIndividual).toHaveBeenCalledWith("item-1", true);
+  });
+
+  it("allows filtering to only incomplete items within 'Podle vyplnění'", async () => {
+    const user = userEvent.setup();
+    // item-2 is completed by ME, item-1 is not
+    renderView({
+      states: [makeState("item-2", ME), makeState("item-1", OTHER)],
+    });
+
+    await user.click(screen.getByRole("tab", { name: /Moje hodnocení/ }));
+    await user.click(screen.getByRole("button", { name: /Podle vyplnění/ }));
+
+    expect(screen.getByText("Každý člen týmu si vede Learning Diary.")).toBeVisible();
+    expect(screen.getByText("Každý člen týmu má svůj Reading Plan.")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /Pouze k doplnění/ }));
+
+    // Item-2 (already checked by ME) should be hidden
+    expect(
+      screen.queryByText("Každý člen týmu má svůj Reading Plan."),
+    ).not.toBeInTheDocument();
+    // Item-1 (not checked by ME) should remain visible
+    expect(screen.getByText("Každý člen týmu si vede Learning Diary.")).toBeVisible();
+
+    // Toggle back to all
+    await user.click(screen.getByRole("button", { name: /Zobrazit vše/ }));
+    expect(screen.getByText("Každý člen týmu má svůj Reading Plan.")).toBeVisible();
+  });
 });
 
 describe("RocketModelView — Týmový přehled", () => {
