@@ -16,6 +16,7 @@ function createMockProfile(
     phone_number: null,
     date_of_birth: null,
     picture: null,
+    bio_json: null,
     role: 'student',
     team_id: 'team-1',
     former_team_id: null,

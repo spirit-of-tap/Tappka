@@ -16,6 +16,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { BirthGivingProfileHistory } from '@/components/birth-giving/profile-history';
+import { BioSection } from '@/components/profile/bio-section';
 import { Badge } from '@/components/ui/badge';
 import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
@@ -156,6 +157,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
           {/* Stats + contact */}
           <TabsContent value="prehled">
+            <BioSection bioJson={(profile.bio_json ?? null) as object | null} isOwnProfile={isOwnProfile} />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-4">
               {/* Stats */}
               <div className="flex items-center gap-6">

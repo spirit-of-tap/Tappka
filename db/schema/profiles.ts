@@ -1,6 +1,6 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
 // Please look at CONTRIBUTING.md for more information on how to change the schema.
-import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, index, unique, check, date, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, index, unique, check, date, pgEnum, jsonb } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { authUsers } from "drizzle-orm/supabase"
 import { teams } from "./teams"
@@ -38,6 +38,7 @@ export const profiles = pgTable("profiles", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	name: text(),
 	picture: text(),
+	bioJson: jsonb("bio_json"),
 	userId: uuid("user_id"),
 	workEmail: text("work_email").notNull(),
 	role: profileRole().default('student').notNull(),
