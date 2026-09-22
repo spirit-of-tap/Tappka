@@ -283,28 +283,35 @@ export function RocketPresentationDialog({
         </div>
 
         {/* Main Slide Body */}
-        <div className="flex-1 flex flex-col justify-between overflow-y-auto px-4 sm:px-8 md:px-12 py-6 sm:py-8">
+        <div className="flex-1 flex flex-col justify-between overflow-y-auto px-4 sm:px-8 md:px-10 py-3 sm:py-5">
           <div className="flex flex-col items-center text-center my-auto">
             {/* Category Breadcrumb */}
-            <p className="text-xs sm:text-sm uppercase tracking-wider font-semibold text-primary mb-2 sm:mb-3">
+            <p className="text-xs uppercase tracking-wider font-semibold text-primary mb-1.5 sm:mb-2">
               {currentSlide.category.title}
             </p>
 
-            {/* Giant Item Text */}
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-heading font-bold text-center leading-tight tracking-tight text-foreground max-w-4xl mx-auto">
+            {/* Slide Item Text — dynamically scaled so longer statements don't push people off screen */}
+            <h1
+              className={cn(
+                "font-heading font-bold text-center leading-snug tracking-tight text-foreground max-w-3xl mx-auto",
+                currentSlide.item.text_cs.length > 100
+                  ? "text-lg sm:text-xl md:text-2xl"
+                  : "text-xl sm:text-2xl md:text-3xl",
+              )}
+            >
               {currentSlide.item.text_cs}
             </h1>
 
             {/* Status and Action Row */}
-            <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3">
-              <div className="flex items-center gap-2 rounded-full border border-border/70 bg-card px-3.5 py-1.5 shadow-2xs">
+            <div className="mt-3 sm:mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5">
+              <div className="flex items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-1 shadow-2xs">
                 <span className="text-xs sm:text-sm font-semibold tabular-nums">
                   {checkersCount} z {teamMembers.length}
                 </span>
                 <span className="text-xs text-muted-foreground">má splněno</span>
                 <Progress
                   value={progressPercent}
-                  className="h-1.5 w-16 sm:w-24 ml-1"
+                  className="h-1.5 w-16 sm:w-20 ml-1"
                   indicatorClassName={isUnanimous ? "bg-success" : undefined}
                 />
               </div>
@@ -312,15 +319,15 @@ export function RocketPresentationDialog({
               {isUnanimous ? (
                 <Badge
                   variant="secondary"
-                  className="border-none bg-success/20 text-success-strong px-3 py-1.5 text-xs sm:text-sm font-semibold gap-1.5 shadow-2xs"
+                  className="border-none bg-success/20 text-success-strong px-2.5 py-1 text-xs font-semibold gap-1.5 shadow-2xs"
                 >
-                  <Check className="size-4 stroke-[2.5]" />
+                  <Check className="size-3.5 stroke-[2.5]" />
                   Celý tým splnil
                 </Badge>
               ) : (
                 <Badge
                   variant="secondary"
-                  className="border-none bg-muted px-3 py-1.5 text-xs sm:text-sm font-medium text-muted-foreground"
+                  className="border-none bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground"
                 >
                   Čeká na tým
                 </Badge>
@@ -332,39 +339,47 @@ export function RocketPresentationDialog({
                 size="sm"
                 onClick={() => onToggleIndividual(currentSlide.item.id, !isOwnChecked)}
                 className={cn(
-                  "gap-1.5 font-medium transition-all shadow-2xs",
+                  "h-8 gap-1.5 text-xs font-medium transition-all shadow-2xs",
                   isOwnChecked && "bg-success/20 text-success-strong hover:bg-success/30 border-success/30",
                 )}
               >
                 {isOwnChecked ? (
                   <>
-                    <Check className="size-4 stroke-[2.5]" />
+                    <Check className="size-3.5 stroke-[2.5]" />
                     Máš splněno
                   </>
                 ) : (
                   <>
-                    <Plus className="size-4" />
+                    <Plus className="size-3.5" />
                     Označit za splněné
                   </>
                 )}
               </Button>
             </div>
 
-            {/* People Grid */}
-            <div className="mt-8 sm:mt-10 w-full max-w-4xl mx-auto">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-left sm:text-center mb-3">
+            {/* People Grid — compact cards up to 8 columns so full team fits without vertical scroll */}
+            <div className="mt-4 sm:mt-5 w-full max-w-5xl mx-auto">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center mb-2">
                 Zapojení týmu
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                 {teamMembers.map((member) => {
                   const memberState = stateByMemberId.get(member.id)
                   const isChecked = memberState?.is_checked ?? false
+                  const dateStr = memberState?.updated_at
+                    ? formatRocketDateTime(new Date(memberState.updated_at))
+                    : null
 
                   return (
                     <div
                       key={member.id}
+                      title={
+                        isChecked && dateStr
+                          ? `${member.name ?? "Člen:ka týmu"}: Splněno (${dateStr})`
+                          : `${member.name ?? "Člen:ka týmu"}: Zatím ne`
+                      }
                       className={cn(
-                        "flex flex-col items-center text-center p-3 rounded-xl border transition-all duration-150",
+                        "flex flex-col items-center text-center p-2 rounded-lg border transition-all duration-150",
                         isChecked
                           ? "border-success/40 bg-success/[0.06] text-foreground ring-1 ring-success/20 shadow-2xs"
                           : "border-border/60 bg-muted/15 opacity-60 text-muted-foreground",
@@ -374,21 +389,21 @@ export function RocketPresentationDialog({
                         <ProfileAvatar
                           picture={member.picture}
                           name={member.name}
-                          size={44}
+                          size={32}
                         />
                         {isChecked && (
-                          <span className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-success text-success-foreground ring-2 ring-background">
-                            <Check className="size-2.5 stroke-[3]" />
+                          <span className="absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-success text-success-foreground ring-1.5 ring-background">
+                            <Check className="size-2 stroke-[3]" />
                           </span>
                         )}
                       </div>
-                      <p className="mt-2 text-xs sm:text-sm font-semibold truncate max-w-full">
+                      <p className="mt-1.5 text-xs font-medium truncate max-w-full">
                         {member.name ?? "Neznámý:á"}
                       </p>
                       <Badge
                         variant="secondary"
                         className={cn(
-                          "mt-1 text-[11px] font-medium border-none py-0.5 px-2",
+                          "mt-1 text-[10px] font-semibold border-none py-0 px-1.5 leading-tight",
                           isChecked
                             ? "bg-success/20 text-success-strong"
                             : "bg-muted text-muted-foreground",
@@ -396,9 +411,9 @@ export function RocketPresentationDialog({
                       >
                         {isChecked ? "Splněno" : "Zatím ne"}
                       </Badge>
-                      {isChecked && memberState && (
-                        <span className="mt-1 text-[10px] text-muted-foreground tabular-nums">
-                          {formatRocketDateTime(new Date(memberState.updated_at))}
+                      {isChecked && dateStr && (
+                        <span className="mt-0.5 text-[9px] text-muted-foreground tabular-nums truncate max-w-full hidden md:block">
+                          {dateStr}
                         </span>
                       )}
                     </div>
