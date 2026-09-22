@@ -15,7 +15,7 @@ describe("profiles beta_cohort trigger", () => {
 
       await expect(
         client.query("update public.profiles set beta_cohort = 'B' where id = $1", [profileId]),
-      ).rejects.toThrow(/Only picture and beta_access_granted_at/);
+      ).rejects.toThrow(/Only picture.*beta_access_granted_at/);
     });
   });
 

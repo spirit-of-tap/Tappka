@@ -1436,6 +1436,7 @@ export type Database = {
           access_removed_by_profile_id: string | null
           beta_access_granted_at: string | null
           beta_cohort: Database["public"]["Enums"]["beta_cohort"]
+          bio_json: Json | null
           created_at: string
           created_by_profile_id: string | null
           date_of_birth: string | null
@@ -1459,6 +1460,7 @@ export type Database = {
           access_removed_by_profile_id?: string | null
           beta_access_granted_at?: string | null
           beta_cohort?: Database["public"]["Enums"]["beta_cohort"]
+          bio_json?: Json | null
           created_at?: string
           created_by_profile_id?: string | null
           date_of_birth?: string | null
@@ -1482,6 +1484,7 @@ export type Database = {
           access_removed_by_profile_id?: string | null
           beta_access_granted_at?: string | null
           beta_cohort?: Database["public"]["Enums"]["beta_cohort"]
+          bio_json?: Json | null
           created_at?: string
           created_by_profile_id?: string | null
           date_of_birth?: string | null
