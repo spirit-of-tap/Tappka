@@ -31,10 +31,7 @@ const ALLOWED_LINK_SCHEMES: ReadonlySet<string> = new Set(['http', 'https', 'mai
 
 const SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
 
-function linkHrefIsAllowed(href: unknown): boolean {
-  if (typeof href !== 'string') {
-    return false;
-  }
+export function isAllowedLinkHref(href: string): boolean {
   const trimmed = href.trimStart();
   const match = SCHEME_PATTERN.exec(trimmed);
   if (match === null) {
@@ -42,6 +39,13 @@ function linkHrefIsAllowed(href: unknown): boolean {
   }
   const scheme = match[0].slice(0, -1).toLowerCase();
   return ALLOWED_LINK_SCHEMES.has(scheme);
+}
+
+function linkHrefIsAllowed(href: unknown): boolean {
+  if (typeof href !== 'string') {
+    return false;
+  }
+  return isAllowedLinkHref(href);
 }
 
 function collectLinkHrefs(node: unknown, hrefs: unknown[]): void {

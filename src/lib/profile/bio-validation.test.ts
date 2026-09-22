@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAX_BIO_TEXT_LENGTH, validateBioContent } from './bio-validation';
+import { MAX_BIO_TEXT_LENGTH, isAllowedLinkHref, validateBioContent } from './bio-validation';
 
 function doc(content: unknown[]): object {
   return { type: 'doc', content };
@@ -133,5 +133,29 @@ describe('validateBioContent', () => {
       },
     ]);
     expect(validateBioContent(json)).toEqual({ ok: true, value: json });
+  });
+});
+
+describe('isAllowedLinkHref', () => {
+  it.each([
+    ['javascript:', 'javascript:alert(1)'],
+    ['uppercase scheme', 'JaVaScRiPt:alert(1)'],
+    ['leading whitespace', '   javascript:alert(1)'],
+    ['data:', 'data:text/html,<h1>hi</h1>'],
+    ['vbscript:', 'vbscript:msgbox(1)'],
+  ])('returns false for %s', (_label, href) => {
+    expect(isAllowedLinkHref(href)).toBe(false);
+  });
+
+  it.each([
+    ['https', 'https://example.com'],
+    ['http', 'http://example.com'],
+    ['mailto', 'mailto:nekdo@example.com'],
+    ['tel', 'tel:+420123456789'],
+    ['root-relative', '/profil'],
+    ['fragment', '#kotva'],
+    ['plain path', 'profil/muj'],
+  ])('returns true for %s', (_label, href) => {
+    expect(isAllowedLinkHref(href)).toBe(true);
   });
 });
