@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   RocketCategoryWithItems,
@@ -115,9 +115,13 @@ function renderView(overrides?: {
   states?: RocketIndividualState[];
   teamChecks?: RocketTeamCheck[];
   history?: RocketHistoryEntry[];
+  activePresentationItemId?: string | null;
+  presenterName?: string | null;
+  onBroadcastPresentationItem?: (itemId: string | null) => Promise<void> | void;
 }) {
   const onToggleIndividual = vi.fn(async (_itemId: string, _checked: boolean) => {});
   const onToggleTeam = vi.fn(async (_itemId: string, _checked: boolean) => {});
+  const onBroadcastPresentationItem = overrides?.onBroadcastPresentationItem ?? vi.fn();
   const result = render(
     <RocketModelView
       categories={makeCategories()}
@@ -128,10 +132,17 @@ function renderView(overrides?: {
       profileId={ME}
       onToggleIndividual={onToggleIndividual}
       onToggleTeam={onToggleTeam}
+      activePresentationItemId={overrides?.activePresentationItemId}
+      presenterName={overrides?.presenterName}
+      onBroadcastPresentationItem={onBroadcastPresentationItem}
     />,
   );
-  return { ...result, onToggleIndividual, onToggleTeam };
+  return { ...result, onToggleIndividual, onToggleTeam, onBroadcastPresentationItem };
 }
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 describe("RocketModelView — Moje hodnocení", () => {
   it("renders without the snowflake visualization", () => {
@@ -235,6 +246,67 @@ describe("RocketModelView — Moje hodnocení", () => {
     // Clicking the title itself also collapses
     await user.click(screen.getByRole("heading", { name: /Y1 - The process/ }));
     expect(screen.queryByText("Každý člen týmu si vede Learning Diary.")).not.toBeInTheDocument();
+  });
+
+  it("orders items by team completion when 'Podle vyplnění' is selected", async () => {
+    const user = userEvent.setup();
+    // item-2 has 2 checkers (unanimous), item-1 has 0 checkers
+    const { onToggleIndividual } = renderView({
+      states: [makeState("item-2", ME), makeState("item-2", OTHER)],
+    });
+
+    await user.click(screen.getByRole("tab", { name: /Moje hodnocení/ }));
+    await user.click(screen.getByRole("button", { name: /Podle vyplnění/ }));
+
+    // Both items should be visible
+    const item1 = screen.getByRole("group", {
+      name: "Každý člen týmu si vede Learning Diary.",
+    });
+    const item2 = screen.getByRole("group", {
+      name: "Každý člen týmu má svůj Reading Plan.",
+    });
+
+    expect(within(item2).getByText("2/2")).toBeVisible();
+    expect(within(item1).getByText("0/2")).toBeVisible();
+
+    // Verify item-2 (2 checkers) appears before item-1 (0 checkers)
+    const allGroups = screen.getAllByRole("group");
+    const index2 = allGroups.indexOf(item2);
+    const index1 = allGroups.indexOf(item1);
+    expect(index2).toBeLessThan(index1);
+
+    // Can toggle item from the ranked list
+    const uncheckedBox = within(item1).getByRole("checkbox");
+    expect(uncheckedBox).not.toBeChecked();
+    await user.click(uncheckedBox);
+    expect(onToggleIndividual).toHaveBeenCalledWith("item-1", true);
+  });
+
+  it("allows filtering to only incomplete items within 'Podle vyplnění'", async () => {
+    const user = userEvent.setup();
+    // item-2 is completed by ME, item-1 is not
+    renderView({
+      states: [makeState("item-2", ME), makeState("item-1", OTHER)],
+    });
+
+    await user.click(screen.getByRole("tab", { name: /Moje hodnocení/ }));
+    await user.click(screen.getByRole("button", { name: /Podle vyplnění/ }));
+
+    expect(screen.getByText("Každý člen týmu si vede Learning Diary.")).toBeVisible();
+    expect(screen.getByText("Každý člen týmu má svůj Reading Plan.")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /Pouze k doplnění/ }));
+
+    // Item-2 (already checked by ME) should be hidden
+    expect(
+      screen.queryByText("Každý člen týmu má svůj Reading Plan."),
+    ).not.toBeInTheDocument();
+    // Item-1 (not checked by ME) should remain visible
+    expect(screen.getByText("Každý člen týmu si vede Learning Diary.")).toBeVisible();
+
+    // Toggle back to all
+    await user.click(screen.getByRole("button", { name: /Zobrazit vše/ }));
+    expect(screen.getByText("Každý člen týmu má svůj Reading Plan.")).toBeVisible();
   });
 });
 
@@ -464,3 +536,58 @@ describe("RocketModelView — Týmový přehled", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
+
+describe("RocketModelView — Režim prezentace", () => {
+  it("opens presentation dialog when clicking Prezentace button", async () => {
+    const user = userEvent.setup();
+    renderView();
+
+    const presentationBtn = screen.getByRole("button", { name: /^Prezentace$/ });
+    await user.click(presentationBtn);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: /Každý člen týmu si vede Learning Diary\./i })).toBeInTheDocument();
+  });
+
+  it("displays live banner and highlights item when activePresentationItemId is set", () => {
+    renderView({
+      activePresentationItemId: "item-1",
+      presenterName: "Kolega",
+    });
+
+    // Live banner
+    expect(screen.getByText("Právě probíhá prezentace")).toBeInTheDocument();
+    expect(screen.getByText("(prezentuje: Kolega)")).toBeInTheDocument();
+
+    // "Prezentuje se" badge on item-1
+    expect(screen.getByText("Prezentuje se")).toBeInTheDocument();
+  });
+
+  it("highlights presented item in 'Podle vyplnění' view", async () => {
+    const user = userEvent.setup();
+    renderView({
+      activePresentationItemId: "item-1",
+    });
+
+    // Switch to 'Podle vyplnění'
+    const byTeamFilterBtn = screen.getByRole("button", { name: /Podle vyplnění/i });
+    await user.click(byTeamFilterBtn);
+
+    // "Prezentuje se" badge should be visible
+    expect(screen.getByText("Prezentuje se")).toBeInTheDocument();
+  });
+
+  it("highlights presented item in 'Týmový přehled' view", async () => {
+    const user = userEvent.setup();
+    renderView({
+      activePresentationItemId: "item-1",
+    });
+
+    // Switch to 'Týmový přehled'
+    await user.click(screen.getByRole("tab", { name: /Týmový přehled/ }));
+
+    // "Prezentuje se" badge should be visible in team view
+    expect(screen.getByText("Prezentuje se")).toBeInTheDocument();
+  });
+});
+
