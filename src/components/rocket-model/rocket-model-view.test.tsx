@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   RocketCategoryWithItems,
@@ -115,9 +115,13 @@ function renderView(overrides?: {
   states?: RocketIndividualState[];
   teamChecks?: RocketTeamCheck[];
   history?: RocketHistoryEntry[];
+  activePresentationItemId?: string | null;
+  presenterName?: string | null;
+  onBroadcastPresentationItem?: (itemId: string | null) => Promise<void> | void;
 }) {
   const onToggleIndividual = vi.fn(async (_itemId: string, _checked: boolean) => {});
   const onToggleTeam = vi.fn(async (_itemId: string, _checked: boolean) => {});
+  const onBroadcastPresentationItem = overrides?.onBroadcastPresentationItem ?? vi.fn();
   const result = render(
     <RocketModelView
       categories={makeCategories()}
@@ -128,10 +132,17 @@ function renderView(overrides?: {
       profileId={ME}
       onToggleIndividual={onToggleIndividual}
       onToggleTeam={onToggleTeam}
+      activePresentationItemId={overrides?.activePresentationItemId}
+      presenterName={overrides?.presenterName}
+      onBroadcastPresentationItem={onBroadcastPresentationItem}
     />,
   );
-  return { ...result, onToggleIndividual, onToggleTeam };
+  return { ...result, onToggleIndividual, onToggleTeam, onBroadcastPresentationItem };
 }
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 describe("RocketModelView — Moje hodnocení", () => {
   it("renders without the snowflake visualization", () => {
@@ -525,3 +536,58 @@ describe("RocketModelView — Týmový přehled", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
+
+describe("RocketModelView — Režim prezentace", () => {
+  it("opens presentation dialog when clicking Prezentace button", async () => {
+    const user = userEvent.setup();
+    renderView();
+
+    const presentationBtn = screen.getByRole("button", { name: /^Prezentace$/ });
+    await user.click(presentationBtn);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: /Každý člen týmu si vede Learning Diary\./i })).toBeInTheDocument();
+  });
+
+  it("displays live banner and highlights item when activePresentationItemId is set", () => {
+    renderView({
+      activePresentationItemId: "item-1",
+      presenterName: "Kolega",
+    });
+
+    // Live banner
+    expect(screen.getByText("Právě probíhá prezentace")).toBeInTheDocument();
+    expect(screen.getByText("(prezentuje: Kolega)")).toBeInTheDocument();
+
+    // "Prezentuje se" badge on item-1
+    expect(screen.getByText("Prezentuje se")).toBeInTheDocument();
+  });
+
+  it("highlights presented item in 'Podle vyplnění' view", async () => {
+    const user = userEvent.setup();
+    renderView({
+      activePresentationItemId: "item-1",
+    });
+
+    // Switch to 'Podle vyplnění'
+    const byTeamFilterBtn = screen.getByRole("button", { name: /Podle vyplnění/i });
+    await user.click(byTeamFilterBtn);
+
+    // "Prezentuje se" badge should be visible
+    expect(screen.getByText("Prezentuje se")).toBeInTheDocument();
+  });
+
+  it("highlights presented item in 'Týmový přehled' view", async () => {
+    const user = userEvent.setup();
+    renderView({
+      activePresentationItemId: "item-1",
+    });
+
+    // Switch to 'Týmový přehled'
+    await user.click(screen.getByRole("tab", { name: /Týmový přehled/ }));
+
+    // "Prezentuje se" badge should be visible in team view
+    expect(screen.getByText("Prezentuje se")).toBeInTheDocument();
+  });
+});
+

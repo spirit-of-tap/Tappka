@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import confetti from "canvas-confetti"
-import { Check, ChevronDown, History, Lock, Radar as RadarIcon, User, Users } from "lucide-react"
+import { Check, ChevronDown, History, Lock, Presentation, Radar as RadarIcon, Radio, User, Users } from "lucide-react"
 
 import { ProfileAvatar } from "@/components/profile-avatar"
 import { Badge } from "@/components/ui/badge"
@@ -46,6 +46,7 @@ import type {
 } from "@/lib/rocket-model/types"
 import type { TeamMemberProfile } from "@/lib/tymovy-denik/types"
 import { cn } from "@/lib/utils"
+import { RocketPresentationDialog } from "./rocket-presentation-dialog"
 import { RocketRadarDialog } from "./rocket-radar-dialog"
 
 export interface RocketModelViewProps {
@@ -57,6 +58,9 @@ export interface RocketModelViewProps {
   profileId: string
   onToggleIndividual: (itemId: string, checked: boolean) => Promise<void>
   onToggleTeam: (itemId: string, checked: boolean) => Promise<void>
+  activePresentationItemId?: string | null
+  presenterName?: string | null
+  onBroadcastPresentationItem?: (itemId: string | null) => Promise<void> | void
 }
 
 type RocketTab = "mine" | "team"
@@ -83,6 +87,9 @@ export function RocketModelView({
   profileId,
   onToggleIndividual,
   onToggleTeam,
+  activePresentationItemId,
+  presenterName,
+  onBroadcastPresentationItem,
 }: RocketModelViewProps) {
   const [activeTab, setActiveTab] = usePersistedState<RocketTab>("tappka:rocket-model:tab", "mine")
   const [teamFilter, setTeamFilter] = useState<TeamFilter>("all")
@@ -90,6 +97,33 @@ export function RocketModelView({
   const [byTeamIncompleteOnly, setByTeamIncompleteOnly] = useState(false)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [isRadarOpen, setIsRadarOpen] = useState(false)
+  const [isPresentationOpen, setIsPresentationOpen] = useState(false)
+  const [presentationStartItemId, setPresentationStartItemId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!activePresentationItemId) return
+
+    const timer = setTimeout(() => {
+      const parentCategory = categories.find((cat) =>
+        cat.items.some((item) => item.id === activePresentationItemId),
+      )
+      if (parentCategory) {
+        setCollapsedCategories((prev) => {
+          if (!prev.has(parentCategory.id)) return prev
+          const next = new Set(prev)
+          next.delete(parentCategory.id)
+          return next
+        })
+      }
+
+      const el =
+        document.getElementById(`mine-item-${activePresentationItemId}`) ??
+        document.getElementById(`team-item-${activePresentationItemId}`)
+      el?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }, 80)
+
+    return () => clearTimeout(timer)
+  }, [activePresentationItemId, categories])
 
   const checkedByItem = useMemo(() => {
     const map = new Map<string, Set<string>>()
@@ -261,16 +295,78 @@ export function RocketModelView({
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as RocketTab)}>
-      <TabsList>
-        <TabsTrigger value="mine">
-          <User />
-          Moje hodnocení
-        </TabsTrigger>
-        <TabsTrigger value="team">
-          <Users />
-          Týmový přehled
-        </TabsTrigger>
-      </TabsList>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <TabsList>
+          <TabsTrigger value="mine">
+            <User />
+            Moje hodnocení
+          </TabsTrigger>
+          <TabsTrigger value="team">
+            <Users />
+            Týmový přehled
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPresentationStartItemId(activePresentationItemId ?? null)
+              setIsPresentationOpen(true)
+            }}
+            className="h-8 gap-1.5 text-xs font-medium"
+          >
+            <Presentation className="size-3.5" />
+            {activePresentationItemId ? "Připojit k prezentaci" : "Prezentace"}
+          </Button>
+        </div>
+      </div>
+
+      {activePresentationItemId && !isPresentationOpen && (
+        <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2.5 text-primary text-sm shadow-2xs animate-in fade-in-50 duration-200">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex size-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full size-2.5 bg-primary" />
+            </span>
+            <div className="text-foreground text-xs sm:text-sm">
+              <span className="font-semibold text-primary">Právě probíhá prezentace</span>
+              {presenterName ? (
+                <span className="text-muted-foreground ml-1.5">
+                  (prezentuje: {presenterName})
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => {
+                const el =
+                  document.getElementById(`mine-item-${activePresentationItemId}`) ??
+                  document.getElementById(`team-item-${activePresentationItemId}`)
+                el?.scrollIntoView({ behavior: "smooth", block: "center" })
+              }}
+              className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/15"
+            >
+              Přejít na položku
+            </Button>
+            <Button
+              variant="default"
+              size="xs"
+              onClick={() => {
+                setPresentationStartItemId(activePresentationItemId)
+                setIsPresentationOpen(true)
+              }}
+              className="h-7 text-xs"
+            >
+              Připojit se
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Category Jump Navigation Bar — soft, borderless pill buttons */}
       <div className="no-scrollbar mt-3 -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-1">
@@ -387,15 +483,19 @@ export function RocketModelView({
                 const isUnanimous =
                   teamMembers.length > 0 &&
                   entry.checkersCount === teamMembers.length
+                const isPresented = activePresentationItemId === entry.item.id
 
                 return (
                   <div
                     key={entry.item.id}
+                    id={`mine-item-${entry.item.id}`}
                     role="group"
                     aria-label={entry.item.text_cs}
                     className={cn(
-                      "flex items-start gap-3 rounded-md px-2.5 py-2.5 transition-colors hover:bg-muted/40",
+                      "flex items-start gap-3 rounded-md px-2.5 py-2.5 transition-all duration-200 hover:bg-muted/40",
                       isUnanimous && "bg-success/[0.04]",
+                      isPresented &&
+                        "ring-2 ring-primary bg-primary/[0.08] dark:bg-primary/[0.14] shadow-2xs rounded-lg",
                     )}
                   >
                     <Checkbox
@@ -411,11 +511,23 @@ export function RocketModelView({
                       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                         <Label
                           htmlFor={`mine-${entry.item.id}`}
-                          className="cursor-pointer text-sm leading-relaxed font-normal"
+                          className={cn(
+                            "cursor-pointer text-sm leading-relaxed font-normal",
+                            isPresented && "font-medium text-foreground",
+                          )}
                         >
                           {entry.item.text_cs}
                         </Label>
                         <div className="flex items-center gap-1.5 shrink-0 self-start">
+                          {isPresented && (
+                            <Badge
+                              variant="default"
+                              className="bg-primary text-primary-foreground text-[11px] font-semibold gap-1 shrink-0 animate-pulse px-2 py-0.5"
+                            >
+                              <Radio className="size-2.5 animate-ping" />
+                              Prezentuje se
+                            </Badge>
+                          )}
                           <Badge
                             variant="secondary"
                             className={cn(
@@ -586,28 +698,50 @@ export function RocketModelView({
                         Všechny položky v této kategorii máš splněné.
                       </div>
                     ) : (
-                      itemsToRender.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-start gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
-                        >
-                          <Checkbox
-                            id={`mine-${item.id}`}
-                            checked={ownCheckedIds.has(item.id)}
-                            onCheckedChange={(next) =>
-                              onToggleIndividual(item.id, next === true)
-                            }
-                            className="mt-0.5"
-                            aria-label={item.text_cs}
-                          />
-                          <Label
-                            htmlFor={`mine-${item.id}`}
-                            className="cursor-pointer text-sm leading-relaxed font-normal"
+                      itemsToRender.map((item) => {
+                        const isPresented = activePresentationItemId === item.id
+                        return (
+                          <div
+                            key={item.id}
+                            id={`mine-item-${item.id}`}
+                            className={cn(
+                              "flex items-start gap-3 rounded-md px-2 py-1.5 transition-all duration-200 hover:bg-muted/40",
+                              isPresented &&
+                                "ring-2 ring-primary bg-primary/[0.08] dark:bg-primary/[0.14] shadow-2xs rounded-lg py-2",
+                            )}
                           >
-                            {item.text_cs}
-                          </Label>
-                        </div>
-                      ))
+                            <Checkbox
+                              id={`mine-${item.id}`}
+                              checked={ownCheckedIds.has(item.id)}
+                              onCheckedChange={(next) =>
+                                onToggleIndividual(item.id, next === true)
+                              }
+                              className="mt-0.5"
+                              aria-label={item.text_cs}
+                            />
+                            <div className="flex-1 flex items-start justify-between gap-2">
+                              <Label
+                                htmlFor={`mine-${item.id}`}
+                                className={cn(
+                                  "cursor-pointer text-sm leading-relaxed font-normal",
+                                  isPresented && "font-medium text-foreground",
+                                )}
+                              >
+                                {item.text_cs}
+                              </Label>
+                              {isPresented && (
+                                <Badge
+                                  variant="default"
+                                  className="bg-primary text-primary-foreground text-[11px] font-semibold gap-1 shrink-0 animate-pulse px-2 py-0.5"
+                                >
+                                  <Radio className="size-2.5 animate-ping" />
+                                  Prezentuje se
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })
                     )}
                   </div>
                 )}
@@ -688,6 +822,18 @@ export function RocketModelView({
               <Badge variant="secondary" className="border-none">
                 {teamStats.teamCheckedCount} potvrzeno
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPresentationStartItemId(activePresentationItemId ?? null)
+                  setIsPresentationOpen(true)
+                }}
+                className="h-8 gap-1.5 text-xs font-medium"
+              >
+                <Presentation className="size-3.5" />
+                Prezentace
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -905,17 +1051,21 @@ export function RocketModelView({
                             const reconfirm = needsReconfirmation(isTeamChecked, unanimous)
                             const isReadyToConfirm = unanimous && !isTeamChecked
                             const missing = getMissingMembers(teamMembers, checkers)
+                            const isPresented = activePresentationItemId === item.id
 
                             return (
                               <div
                                 key={item.id}
+                                id={`team-item-${item.id}`}
                                 role="group"
                                 aria-label={item.text_cs}
                                 className={cn(
-                                  "flex items-start gap-3 rounded-md px-2.5 py-2 transition-colors",
+                                  "flex items-start gap-3 rounded-md px-2.5 py-2 transition-all duration-200",
                                   isReadyToConfirm && "bg-primary/[0.05]",
                                   reconfirm && "bg-warning/[0.05]",
                                   !isReadyToConfirm && !reconfirm && "hover:bg-muted/40",
+                                  isPresented &&
+                                    "ring-2 ring-primary bg-primary/[0.08] dark:bg-primary/[0.14] shadow-2xs rounded-lg",
                                 )}
                               >
                                 <Checkbox
@@ -932,18 +1082,32 @@ export function RocketModelView({
                                   <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                                     <Label
                                       htmlFor={`team-${item.id}`}
-                                      className="cursor-pointer text-sm leading-relaxed font-normal"
+                                      className={cn(
+                                        "cursor-pointer text-sm leading-relaxed font-normal",
+                                        isPresented && "font-medium text-foreground",
+                                      )}
                                     >
                                       {item.text_cs}
                                     </Label>
-                                    {isReadyToConfirm && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="self-start shrink-0 border-none bg-primary/15 text-xs font-semibold text-primary"
-                                      >
-                                        Připraveno k potvrzení
-                                      </Badge>
-                                    )}
+                                    <div className="flex items-center gap-1.5 shrink-0 self-start">
+                                      {isPresented && (
+                                        <Badge
+                                          variant="default"
+                                          className="self-start shrink-0 bg-primary text-primary-foreground text-[11px] font-semibold gap-1 animate-pulse px-2 py-0.5"
+                                        >
+                                          <Radio className="size-2.5 animate-ping" />
+                                          Prezentuje se
+                                        </Badge>
+                                      )}
+                                      {isReadyToConfirm && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="self-start shrink-0 border-none bg-primary/15 text-xs font-semibold text-primary"
+                                        >
+                                          Připraveno k potvrzení
+                                        </Badge>
+                                      )}
+                                    </div>
                                   </div>
 
                                   <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -1140,6 +1304,25 @@ export function RocketModelView({
         states={states}
         teamChecks={teamChecks}
         onSelectCategory={handleJumpToCategory}
+      />
+
+      <RocketPresentationDialog
+        open={isPresentationOpen}
+        onOpenChange={(open) => {
+          setIsPresentationOpen(open)
+          if (!open) {
+            onBroadcastPresentationItem?.(null)
+          }
+        }}
+        categories={categories}
+        teamMembers={teamMembers}
+        states={states}
+        teamChecks={teamChecks}
+        profileId={profileId}
+        initialItemId={presentationStartItemId}
+        activePresentationItemId={activePresentationItemId}
+        onActiveItemChange={onBroadcastPresentationItem}
+        onToggleIndividual={onToggleIndividual}
       />
     </Tabs>
   )

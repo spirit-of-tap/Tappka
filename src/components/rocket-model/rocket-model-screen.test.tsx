@@ -8,9 +8,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { setIndividualCheck, setTeamCheck } from "@/lib/rocket-model/queries"
 import {
   ROCKET_INDIVIDUAL_UPDATED_EVENT,
+  ROCKET_PRESENTATION_UPDATED_EVENT,
   ROCKET_TEAM_UPDATED_EVENT,
   type RocketCategoryWithItems,
   type RocketIndividualState,
+  type RocketPresentationBroadcast,
   type RocketTeamBroadcast,
 } from "@/lib/rocket-model/types"
 import type { TeamMemberProfile } from "@/lib/tymovy-denik/types"
@@ -435,5 +437,74 @@ describe("RocketModelScreen — automatic team check and confetti", () => {
     })
     expect(teamCheck).not.toBeChecked()
   })
+
+  it("broadcasts presentation_updated when user starts presentation", async () => {
+    const user = userEvent.setup()
+    mockChannel.send.mockClear()
+
+    render(
+      <RocketModelScreen
+        initialCategories={makeCategories()}
+        teamMembers={members}
+        initialStates={[]}
+        initialTeamChecks={[]}
+        history={[]}
+        profileId={ME}
+        teamId="team-1"
+      />,
+    )
+
+    // Click "Prezentace" button
+    const presentationBtn = screen.getByRole("button", { name: /^Prezentace$/ })
+    await user.click(presentationBtn)
+
+    // The presentation dialog opens and broadcasts the first item
+    expect(mockChannel.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "broadcast",
+        event: ROCKET_PRESENTATION_UPDATED_EVENT,
+        payload: expect.objectContaining({
+          item_id: "item-1",
+          presenter_profile_id: ME,
+          presenter_name: "Já",
+        }),
+      }),
+    )
+  })
+
+  it("receives presentation_updated broadcast and shows live banner and highlights item", async () => {
+    render(
+      <RocketModelScreen
+        initialCategories={makeCategories()}
+        teamMembers={members}
+        initialStates={[]}
+        initialTeamChecks={[]}
+        history={[]}
+        profileId={ME}
+        teamId="team-1"
+      />,
+    )
+
+    const onPresentationUpdate = broadcastListeners.get(ROCKET_PRESENTATION_UPDATED_EVENT)
+    expect(onPresentationUpdate).toBeDefined()
+
+    act(() => {
+      onPresentationUpdate!({
+        payload: {
+          item_id: "item-1",
+          presenter_profile_id: OTHER,
+          presenter_name: "Kolega",
+        } satisfies RocketPresentationBroadcast,
+      })
+    })
+
+    // Banner should be visible
+    expect(screen.getByText("Právě probíhá prezentace")).toBeInTheDocument()
+    expect(screen.getByText("(prezentuje: Kolega)")).toBeInTheDocument()
+
+    // "Prezentuje se" badge should be shown on the item
+    expect(screen.getByText("Prezentuje se")).toBeInTheDocument()
+  })
 })
+
 

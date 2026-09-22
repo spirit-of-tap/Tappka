@@ -22,6 +22,7 @@ export interface RocketHistoryEntry {
 
 export const ROCKET_INDIVIDUAL_UPDATED_EVENT = "individual_updated"
 export const ROCKET_TEAM_UPDATED_EVENT = "team_updated"
+export const ROCKET_PRESENTATION_UPDATED_EVENT = "presentation_updated"
 
 export interface RocketIndividualBroadcast {
   item_id: string
@@ -34,6 +35,12 @@ export interface RocketTeamBroadcast {
   item_id: string
   is_checked: boolean
   checked_by_profile_id: string | null
+}
+
+export interface RocketPresentationBroadcast {
+  item_id: string | null
+  presenter_profile_id: string
+  presenter_name?: string | null
 }
 
 export function rocketTopic(teamId: string): string {
