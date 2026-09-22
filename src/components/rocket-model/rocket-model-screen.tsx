@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { RealtimeChannel } from "@supabase/supabase-js"
+import confetti from "canvas-confetti"
 import { toast } from "sonner"
 
 import { createClient } from "@/lib/supabase/client"
@@ -68,13 +69,13 @@ export function RocketModelScreen({
 
   const handleToggleIndividual = useCallback(
     async (itemId: string, checked: boolean) => {
-      const snapshot = states
+      const snapshotStates = states
+      const now = new Date().toISOString()
       setStates((prev) => {
         const rest = prev.filter(
           (state) => !(state.item_id === itemId && state.profile_id === profileId),
         )
         if (!checked) return rest
-        const now = new Date().toISOString()
         return [
           ...rest,
           {
@@ -90,7 +91,7 @@ export function RocketModelScreen({
       try {
         await setIndividualCheck(supabase.current, { itemId, profileId, isChecked: checked })
       } catch {
-        setStates(snapshot)
+        setStates(snapshotStates)
         toast.error("Nepodařilo se uložit hodnocení")
         return
       }
@@ -100,8 +101,88 @@ export function RocketModelScreen({
         profile_id: profileId,
         is_checked: checked,
       } satisfies RocketIndividualBroadcast)
+
+      if (checked) {
+        const memberIdSet = new Set(teamMembers.map((m) => m.id))
+        const memberCount = teamMembers.length
+
+        const checkersBefore = new Set<string>()
+        for (const state of snapshotStates) {
+          if (
+            state.item_id === itemId &&
+            state.is_checked &&
+            memberIdSet.has(state.profile_id)
+          ) {
+            checkersBefore.add(state.profile_id)
+          }
+        }
+        const wasUnanimousBefore = memberCount > 0 && checkersBefore.size === memberCount
+
+        const checkersAfter = new Set(checkersBefore)
+        if (memberIdSet.has(profileId)) {
+          checkersAfter.add(profileId)
+        }
+        const isUnanimousNow = memberCount > 0 && checkersAfter.size === memberCount
+
+        if (!wasUnanimousBefore && isUnanimousNow) {
+          const snapshotTeamChecks = teamChecks
+          const teamNow = new Date().toISOString()
+          setTeamChecks((prev) => [
+            ...prev.filter(
+              (check) => !(check.team_id === teamId && check.item_id === itemId),
+            ),
+            {
+              team_id: teamId,
+              item_id: itemId,
+              is_checked: true,
+              checked_by_profile_id: profileId,
+              created_at: teamNow,
+              updated_at: teamNow,
+            },
+          ])
+
+          try {
+            await setTeamCheck(supabase.current, {
+              teamId,
+              itemId,
+              isChecked: true,
+              profileId,
+            })
+          } catch (err) {
+            console.error("Failed to auto-confirm team check:", err)
+            setTeamChecks(snapshotTeamChecks)
+            toast.error("Nepodařilo se uložit týmové hodnocení")
+            return
+          }
+
+          await sendRocketBroadcast(channelRef.current, ROCKET_TEAM_UPDATED_EVENT, {
+            team_id: teamId,
+            item_id: itemId,
+            is_checked: true,
+            checked_by_profile_id: profileId,
+          } satisfies RocketTeamBroadcast)
+
+          try {
+            void confetti({
+              particleCount: 60,
+              spread: 70,
+              origin: { y: 0.6 },
+              disableForReducedMotion: true,
+            })
+          } catch {
+            // Ignored if canvas-confetti is unsupported
+          }
+
+          const itemText = initialCategories
+            .flatMap((category) => category.items)
+            .find((item) => item.id === itemId)?.text_cs
+          toast.success("Tým dosáhl shody", {
+            description: itemText ?? "Položka byla automaticky potvrzena.",
+          })
+        }
+      }
     },
-    [states, profileId],
+    [states, teamChecks, teamMembers, teamId, profileId, initialCategories],
   )
 
   const handleToggleTeam = useCallback(
@@ -196,6 +277,16 @@ export function RocketModelScreen({
           toast.success("Tým dosáhl shody", {
             description: itemText ?? "Položka byla potvrzena týmem.",
           })
+          try {
+            void confetti({
+              particleCount: 60,
+              spread: 70,
+              origin: { y: 0.6 },
+              disableForReducedMotion: true,
+            })
+          } catch {
+            // Ignored if canvas-confetti is unsupported
+          }
         }
       })
 
