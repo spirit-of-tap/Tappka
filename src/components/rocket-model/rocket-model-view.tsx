@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react"
 import confetti from "canvas-confetti"
-import { Check, ChevronDown, History, Lock, User, Users } from "lucide-react"
+import { Check, ChevronDown, History, Lock, Radar as RadarIcon, User, Users } from "lucide-react"
 
 import { ProfileAvatar } from "@/components/profile-avatar"
 import { Badge } from "@/components/ui/badge"
@@ -46,6 +46,7 @@ import type {
 } from "@/lib/rocket-model/types"
 import type { TeamMemberProfile } from "@/lib/tymovy-denik/types"
 import { cn } from "@/lib/utils"
+import { RocketRadarDialog } from "./rocket-radar-dialog"
 
 export interface RocketModelViewProps {
   categories: RocketCategoryWithItems[]
@@ -87,6 +88,7 @@ export function RocketModelView({
   const [teamFilter, setTeamFilter] = useState<TeamFilter>("all")
   const [mineFilter, setMineFilter] = useState<MineFilter>("all")
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
+  const [isRadarOpen, setIsRadarOpen] = useState(false)
 
   const checkedByItem = useMemo(() => {
     const map = new Map<string, Set<string>>()
@@ -490,6 +492,15 @@ export function RocketModelView({
               <Badge variant="secondary" className="border-none">
                 {teamStats.teamCheckedCount} potvrzeno
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsRadarOpen(true)}
+                className="h-8 gap-1.5 text-xs font-medium"
+              >
+                <RadarIcon className="size-3.5" />
+                Radarový graf
+              </Button>
             </div>
           </div>
           <Progress
@@ -924,6 +935,16 @@ export function RocketModelView({
           )
         })}
       </TabsContent>
+
+      <RocketRadarDialog
+        open={isRadarOpen}
+        onOpenChange={setIsRadarOpen}
+        categories={categories}
+        teamMembers={teamMembers}
+        states={states}
+        teamChecks={teamChecks}
+        onSelectCategory={handleJumpToCategory}
+      />
     </Tabs>
   )
 }

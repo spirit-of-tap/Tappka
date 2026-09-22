@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -14,6 +15,38 @@ import { RocketModelView } from "./rocket-model-view";
 vi.mock("canvas-confetti", () => ({
   default: vi.fn(),
 }));
+
+vi.mock("recharts", async () => {
+  const actual = await vi.importActual<typeof import("recharts")>("recharts");
+  return {
+    ...actual,
+    ResponsiveContainer: ({
+      children,
+    }: {
+      children:
+        | React.ReactNode
+        | ((props: { width: number; height: number }) => React.ReactNode);
+    }) => {
+      const content =
+        typeof children === "function"
+          ? children({ width: 500, height: 500 })
+          : children;
+      return (
+        <div style={{ width: 500, height: 500 }}>
+          {React.isValidElement(content)
+            ? React.cloneElement(
+                content as React.ReactElement<{
+                  width?: number;
+                  height?: number;
+                }>,
+                { width: 500, height: 500 },
+              )
+            : content}
+        </div>
+      );
+    },
+  };
+});
 
 const ME = "profile-me";
 const OTHER = "profile-other";
@@ -353,5 +386,81 @@ describe("RocketModelView — Týmový přehled", () => {
     await user.click(screen.getByRole("tab", { name: /Moje hodnocení/ }));
     await user.click(screen.getByRole("button", { name: /Historie změn/ }));
     expect(screen.getByText("Splněno")).toBeVisible();
+  });
+
+  it("opens radar chart dialog from team overview and displays section stats", async () => {
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(screen.getByRole("tab", { name: /Týmový přehled/ }));
+    const teamSection = screen.getByRole("tabpanel", { name: /Týmový přehled/ });
+
+    const radarButton = within(teamSection).getByRole("button", {
+      name: /Radarový graf/,
+    });
+    expect(radarButton).toBeVisible();
+
+    await user.click(radarButton);
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeVisible();
+    expect(within(dialog).getByText("Radarový graf sekcí")).toBeVisible();
+    expect(within(dialog).getByText("Živá synchronizace")).toBeVisible();
+    expect(within(dialog).getAllByText("Y1")[0]).toBeVisible();
+    expect(within(dialog).getByText(/Potvrzeno:/)).toBeVisible();
+    expect(within(dialog).getByText(/Průměr:/)).toBeVisible();
+  });
+
+  it("updates radar chart visualization in real time when props change while dialog is open", async () => {
+    const user = userEvent.setup();
+    const initial = renderView({
+      states: [makeState("item-1", ME)],
+      teamChecks: [],
+    });
+
+    await user.click(screen.getByRole("tab", { name: /Týmový přehled/ }));
+    const teamSection = screen.getByRole("tabpanel", { name: /Týmový přehled/ });
+    await user.click(within(teamSection).getByRole("button", { name: /Radarový graf/ }));
+
+    const dialog = screen.getByRole("dialog");
+    // Initially 0% confirmed
+    expect(within(dialog).getAllByText(/0 %/)[0]).toBeVisible();
+    expect(within(dialog).getByText(/\(0\/2\)/)).toBeVisible();
+
+    // Teammate confirms item-1 in real time -> props to RocketModelView update
+    initial.rerender(
+      <RocketModelView
+        categories={makeCategories()}
+        teamMembers={members}
+        states={[makeState("item-1", ME), makeState("item-1", OTHER)]}
+        teamChecks={[makeTeamCheck("item-1")]}
+        history={[]}
+        profileId={ME}
+        onToggleIndividual={initial.onToggleIndividual}
+        onToggleTeam={initial.onToggleTeam}
+      />,
+    );
+
+    // Dialog remains open and reflects the realtime update
+    expect(within(dialog).getAllByText(/50 %/)[0]).toBeVisible();
+    expect(within(dialog).getByText(/\(1\/2\)/)).toBeVisible();
+  });
+
+  it("navigates to section and closes dialog when section in breakdown is clicked", async () => {
+    const user = userEvent.setup();
+    renderView();
+
+    await user.click(screen.getByRole("tab", { name: /Týmový přehled/ }));
+    const teamSection = screen.getByRole("tabpanel", { name: /Týmový přehled/ });
+    await user.click(within(teamSection).getByRole("button", { name: /Radarový graf/ }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeVisible();
+
+    const categoryButton = within(dialog).getByRole("button", { name: /Y1/ });
+    await user.click(categoryButton);
+
+    // Dialog closes
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

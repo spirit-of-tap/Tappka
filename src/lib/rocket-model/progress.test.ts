@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  calculateRocketRadarData,
   calculateTeamProgressStats,
   canCheckAsTeam,
   coveragePercent,
@@ -100,5 +101,119 @@ describe("getMissingMembers", () => {
   });
 });
 
+describe("calculateRocketRadarData", () => {
+  it("calculates radar metrics per category sorted by order_index", () => {
+    const categories = [
+      {
+        id: "cat-2",
+        code: "J1",
+        title: "J1 - Process",
+        order_index: 1,
+        is_active: true,
+        created_at: "",
+        updated_at: "",
+        items: [
+          {
+            id: "j-1",
+            category_id: "cat-2",
+            order_index: 0,
+            text_cs: "Item J1",
+            is_active: true,
+            created_at: "",
+            updated_at: "",
+          },
+        ],
+      },
+      {
+        id: "cat-1",
+        code: "Y1",
+        title: "Y1 - Process",
+        order_index: 0,
+        is_active: true,
+        created_at: "",
+        updated_at: "",
+        items: [
+          {
+            id: "y-1",
+            category_id: "cat-1",
+            order_index: 0,
+            text_cs: "Item Y1",
+            is_active: true,
+            created_at: "",
+            updated_at: "",
+          },
+          {
+            id: "y-2",
+            category_id: "cat-1",
+            order_index: 1,
+            text_cs: "Item Y2",
+            is_active: true,
+            created_at: "",
+            updated_at: "",
+          },
+        ],
+      },
+    ];
 
+    const teamMembers = [
+      { id: "m1", name: "Member 1", picture: null, role: "student" },
+      { id: "m2", name: "Member 2", picture: null, role: "student" },
+    ];
 
+    // Y1: y-1 is checked by m1 and m2 (unanimous) and confirmed by team.
+    //     y-2 is checked only by m1 (not unanimous) and NOT confirmed.
+    // J1: j-1 is checked by no one.
+    const states = [
+      { item_id: "y-1", profile_id: "m1", is_checked: true, created_at: "", updated_at: "" },
+      { item_id: "y-1", profile_id: "m2", is_checked: true, created_at: "", updated_at: "" },
+      { item_id: "y-2", profile_id: "m1", is_checked: true, created_at: "", updated_at: "" },
+    ];
+
+    const teamChecks = [
+      { team_id: "t1", item_id: "y-1", is_checked: true, checked_by_profile_id: "m1", created_at: "", updated_at: "" },
+    ];
+
+    const radar = calculateRocketRadarData(categories, teamMembers, states, teamChecks);
+
+    expect(radar).toHaveLength(2);
+    // Verified sorting by order_index: Y1 first, then J1
+    expect(radar[0].code).toBe("Y1");
+    expect(radar[0].totalItems).toBe(2);
+    expect(radar[0].teamCheckedCount).toBe(1);
+    expect(radar[0].teamCheckedPercent).toBe(50); // 1 of 2
+    expect(radar[0].unanimousCount).toBe(1);
+    expect(radar[0].unanimousPercent).toBe(50); // 1 of 2
+    expect(radar[0].totalMemberChecks).toBe(3); // 2 on y-1, 1 on y-2
+    expect(radar[0].memberAveragePercent).toBe(75); // 3 of (2 items * 2 members = 4) -> 75%
+
+    expect(radar[1].code).toBe("J1");
+    expect(radar[1].totalItems).toBe(1);
+    expect(radar[1].teamCheckedCount).toBe(0);
+    expect(radar[1].teamCheckedPercent).toBe(0);
+    expect(radar[1].unanimousCount).toBe(0);
+    expect(radar[1].unanimousPercent).toBe(0);
+    expect(radar[1].totalMemberChecks).toBe(0);
+    expect(radar[1].memberAveragePercent).toBe(0);
+  });
+
+  it("handles empty categories or members safely without NaN", () => {
+    const radar = calculateRocketRadarData([], [], [], []);
+    expect(radar).toEqual([]);
+
+    const emptyItemsCat = [
+      {
+        id: "cat-empty",
+        code: "EMP",
+        title: "Empty Category",
+        order_index: 0,
+        is_active: true,
+        created_at: "",
+        updated_at: "",
+        items: [],
+      },
+    ];
+    const emptyResult = calculateRocketRadarData(emptyItemsCat, [], [], []);
+    expect(emptyResult[0].teamCheckedPercent).toBe(0);
+    expect(emptyResult[0].memberAveragePercent).toBe(0);
+  });
+});

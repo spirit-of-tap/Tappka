@@ -1,3 +1,8 @@
+import type {
+  RocketCategoryWithItems,
+  RocketIndividualState,
+  RocketTeamCheck,
+} from "@/lib/rocket-model/types";
 import type { TeamMemberProfile } from "@/lib/tymovy-denik/types";
 
 export interface TeamProgressStats {
@@ -7,6 +12,20 @@ export interface TeamProgressStats {
   readyToConfirmCount: number;
   reconfirmationCount: number;
   inProgressCount: number;
+}
+
+export interface RocketSectionRadarPoint {
+  categoryId: string;
+  code: string;
+  title: string;
+  orderIndex: number;
+  totalItems: number;
+  teamCheckedCount: number;
+  teamCheckedPercent: number;
+  unanimousCount: number;
+  unanimousPercent: number;
+  memberAveragePercent: number;
+  totalMemberChecks: number;
 }
 
 export function coveragePercent(checkedCount: number, totalCount: number): number {
@@ -74,5 +93,69 @@ export function getMissingMembers(
   return allMembers.filter((member) => !checkedMemberIds.has(member.id));
 }
 
+export function calculateRocketRadarData(
+  categories: RocketCategoryWithItems[],
+  teamMembers: TeamMemberProfile[],
+  states: RocketIndividualState[],
+  teamChecks: RocketTeamCheck[],
+): RocketSectionRadarPoint[] {
+  const teamChecksByItem = new Map(
+    teamChecks.map((check) => [check.item_id, check]),
+  );
 
+  const memberIdSet = new Set(teamMembers.map((m) => m.id));
+  const checkedByItem = new Map<string, Set<string>>();
+  for (const state of states) {
+    if (!state.is_checked) continue;
+    if (memberIdSet.size > 0 && !memberIdSet.has(state.profile_id)) continue;
+    const memberSet = checkedByItem.get(state.item_id) ?? new Set<string>();
+    memberSet.add(state.profile_id);
+    checkedByItem.set(state.item_id, memberSet);
+  }
 
+  const memberCount = teamMembers.length;
+  const sortedCategories = [...categories].sort(
+    (a, b) => a.order_index - b.order_index,
+  );
+
+  return sortedCategories.map((category) => {
+    const totalItems = category.items.length;
+    let teamCheckedCount = 0;
+    let unanimousCount = 0;
+    let totalMemberChecks = 0;
+
+    for (const item of category.items) {
+      if (teamChecksByItem.get(item.id)?.is_checked) {
+        teamCheckedCount += 1;
+      }
+
+      const checkers = checkedByItem.get(item.id);
+      const checkersCount = checkers?.size ?? 0;
+      totalMemberChecks += checkersCount;
+
+      if (isUnanimous(checkersCount, memberCount)) {
+        unanimousCount += 1;
+      }
+    }
+
+    const maxPossibleChecks = totalItems * memberCount;
+    const memberAveragePercent =
+      maxPossibleChecks > 0
+        ? coveragePercent(totalMemberChecks, maxPossibleChecks)
+        : 0;
+
+    return {
+      categoryId: category.id,
+      code: category.code,
+      title: category.title,
+      orderIndex: category.order_index,
+      totalItems,
+      teamCheckedCount,
+      teamCheckedPercent: coveragePercent(teamCheckedCount, totalItems),
+      unanimousCount,
+      unanimousPercent: coveragePercent(unanimousCount, totalItems),
+      memberAveragePercent,
+      totalMemberChecks,
+    };
+  });
+}
