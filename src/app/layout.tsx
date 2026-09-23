@@ -70,7 +70,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#b31b1b",
+  themeColor: "#ae1717",
 };
 
 // TAP Brand Typography (self-hosted via next/font/local so builds never depend
@@ -114,7 +114,7 @@ export default function RootLayout({
       <body
         className={`${roboto.variable} ${poppins.variable} ${pacifico.variable} font-body antialiased`}
       >
-        <NextTopLoader color="#b31b1b" showSpinner={false} height={3} />
+        <NextTopLoader color="#ae1717" showSpinner={false} height={3} />
         <PostHogProvider>
           <ThemeProvider
             attribute="class"
