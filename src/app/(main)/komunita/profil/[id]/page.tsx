@@ -137,6 +137,8 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           </div>
         </div>
 
+        <BioSection bioJson={(profile.bio_json ?? null) as object | null} isOwnProfile={isOwnProfile} />
+
         <Tabs defaultValue={activeTab} className="mt-4 min-w-0">
           <TabsList>
             <TabsTrigger value="prehled">
@@ -157,7 +159,6 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
           {/* Stats + contact */}
           <TabsContent value="prehled">
-            <BioSection bioJson={(profile.bio_json ?? null) as object | null} isOwnProfile={isOwnProfile} />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-4">
               {/* Stats */}
               <div className="flex items-center gap-6">
