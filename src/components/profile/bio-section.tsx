@@ -6,7 +6,6 @@ import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -80,31 +79,45 @@ export function BioSection({ bioJson, isOwnProfile }: BioSectionProps) {
     }
   };
 
-  const editButton = (
-    <Button variant="outline" size="sm" onClick={() => handleOpenChange(true)}>
-      <Pencil className="size-4" />
-      Upravit bio
-    </Button>
-  );
-
   return (
     <>
       {hasBio ? (
-        <Card>
-          <CardContent className="flex flex-col gap-4 pt-6">
-            <TiptapRenderer content={bioJson} />
-            {isOwnProfile && <div className="flex justify-end">{editButton}</div>}
-          </CardContent>
-        </Card>
+        <div className="my-2 max-w-3xl">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <TiptapRenderer
+                content={bioJson}
+                className="text-sm leading-relaxed text-foreground/90 [&>p]:my-1.5 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0"
+              />
+            </div>
+            {isOwnProfile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleOpenChange(true)}
+                className="h-7 shrink-0 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Pencil className="size-3.5 mr-1" />
+                Upravit bio
+              </Button>
+            )}
+          </div>
+        </div>
       ) : (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-start gap-3 pt-6">
-            <p className="text-sm text-muted-foreground">
-              Představte se ostatním…
-            </p>
-            {editButton}
-          </CardContent>
-        </Card>
+        <div className="my-2 flex items-center gap-2">
+          <p className="text-xs text-muted-foreground/80 italic">
+            Představte se ostatním…
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleOpenChange(true)}
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="size-3.5 mr-1" />
+            Upravit bio
+          </Button>
+        </div>
       )}
 
       {isOwnProfile && (

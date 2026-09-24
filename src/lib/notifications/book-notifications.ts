@@ -10,25 +10,22 @@ export interface CoachRecipient {
   id: string;
   work_email: string | null;
   team_id: string | null;
-  beta_access_granted_at: string | null;
   book_submitted_email: boolean;
 }
 
 interface Reachable {
   work_email: string | null;
-  beta_access_granted_at: string | null;
   book_submitted_email: boolean;
 }
 
 /**
  * Book-submission emails are opt-in: coaches must enable the
  * `book_submitted_email` notification preference (default off). They also
- * need a work email and beta access, like every other email notification.
+ * need a work email, like every other email notification.
  */
 function isReachable(profile: Reachable | null): boolean {
   return (
     Boolean(profile?.work_email) &&
-    Boolean(profile?.beta_access_granted_at) &&
     profile?.book_submitted_email === true
   );
 }
@@ -51,7 +48,7 @@ export interface NotifyBookSubmittedParams {
   origin: string;
 }
 
-type CoachRow = Pick<CoachRecipient, 'id' | 'work_email' | 'team_id' | 'beta_access_granted_at'>;
+type CoachRow = Pick<CoachRecipient, 'id' | 'work_email' | 'team_id'>;
 
 /**
  * Direct reads of other profiles' notification_preferences rows are blocked by
@@ -91,7 +88,7 @@ export async function notifyBookSubmitted(
       .maybeSingle(),
     supabase
       .from('profiles')
-      .select('id, work_email, team_id, beta_access_granted_at')
+      .select('id, work_email, team_id')
       .eq('role', 'coach'),
   ]);
 
@@ -136,11 +133,11 @@ export async function notifyBookDecided(
 
   const { data: submitter } = await supabase
     .from('profiles')
-    .select('work_email, beta_access_granted_at')
+    .select('work_email')
     .eq('id', book.created_by_profile_id)
     .maybeSingle();
 
-  if (!submitter?.work_email || !submitter.beta_access_granted_at) return;
+  if (!submitter?.work_email) return;
 
   const approved = (POINTS_ELIGIBLE_LIST_STATUSES as readonly string[]).includes(book.list_status);
 

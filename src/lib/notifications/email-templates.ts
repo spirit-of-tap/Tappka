@@ -82,13 +82,13 @@ function ctaButton(href: string, label: string): string {
 
 export function coachReadEmail(ctx: EssayEmailContext): EmailContent {
   return {
-    subject: `${ctx.actorName} si p\u0159e\u010detl/a tvou esej \u201e${ctx.essayTitle}\u201c`,
+    subject: `${ctx.actorName} si p\u0159e\u010detl:a tvou esej \u201e${ctx.essayTitle}\u201c`,
     html: brandWrapper(`
       <h2 style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:600;color:#2c1a1d;line-height:1.3;">
         Esej byla p\u0159e\u010dtena
       </h2>
       <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
-        <strong>${ctx.actorName}</strong> si p\u0159e\u010detl/a tvou esej <strong>\u201e${ctx.essayTitle}\u201c</strong>.
+        <strong>${ctx.actorName}</strong> si p\u0159e\u010detl:a tvou esej <strong>\u201e${ctx.essayTitle}\u201c</strong>.
       </p>
       <div style="margin:32px 0;">
         ${ctaButton(ctx.essayUrl, 'Zobrazit esej')}
@@ -105,13 +105,13 @@ export function commentEmail(ctx: EssayEmailContext): EmailContent {
     : '';
 
   return {
-    subject: `${ctx.actorName} okomentoval/a tvou esej \u201e${ctx.essayTitle}\u201c`,
+    subject: `${ctx.actorName} okomentoval:a tvou esej \u201e${ctx.essayTitle}\u201c`,
     html: brandWrapper(`
       <h2 style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:600;color:#2c1a1d;line-height:1.3;">
         Nov\u00fd koment\u00e1\u0159
       </h2>
       <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
-        <strong>${ctx.actorName}</strong> okomentoval/a tvou esej <strong>\u201e${ctx.essayTitle}\u201c</strong>:
+        <strong>${ctx.actorName}</strong> okomentoval:a tvou esej <strong>\u201e${ctx.essayTitle}\u201c</strong>:
       </p>
       ${commentQuote}
       <div style="margin:32px 0;">
@@ -129,13 +129,13 @@ export function replyEmail(ctx: EssayEmailContext): EmailContent {
     : '';
 
   return {
-    subject: `${ctx.actorName} odpov\u011bd\u011bl/a na tv\u016fj koment\u00e1\u0159 u eseje \u201e${ctx.essayTitle}\u201c`,
+    subject: `${ctx.actorName} odpov\u011bd\u011bl:a na tv\u016fj koment\u00e1\u0159 u eseje \u201e${ctx.essayTitle}\u201c`,
     html: brandWrapper(`
       <h2 style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:600;color:#2c1a1d;line-height:1.3;">
         Nov\u00e1 odpov\u011b\u010f na koment\u00e1\u0159
       </h2>
       <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
-        <strong>${ctx.actorName}</strong> odpov\u011bd\u011bl/a na tv\u016fj koment\u00e1\u0159 u eseje <strong>\u201e${ctx.essayTitle}\u201c</strong>:
+        <strong>${ctx.actorName}</strong> odpov\u011bd\u011bl:a na tv\u016fj koment\u00e1\u0159 u eseje <strong>\u201e${ctx.essayTitle}\u201c</strong>:
       </p>
       ${commentQuote}
       <div style="margin:32px 0;">
@@ -147,13 +147,13 @@ export function replyEmail(ctx: EssayEmailContext): EmailContent {
 
 export function voteEmail(ctx: EssayEmailContext): EmailContent {
   return {
-    subject: `${ctx.actorName} dal/a like tv\u00e9 eseji \u201e${ctx.essayTitle}\u201c`,
+    subject: `${ctx.actorName} dal:a like tv\u00e9 eseji \u201e${ctx.essayTitle}\u201c`,
     html: brandWrapper(`
       <h2 style="margin:0 0 16px;font-family:'Poppins',Arial,sans-serif;font-size:24px;font-weight:600;color:#2c1a1d;line-height:1.3;">
         Nov\u00fd like
       </h2>
       <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;">
-        <strong>${ctx.actorName}</strong> dal/a like tv\u00e9 eseji <strong>\u201e${ctx.essayTitle}\u201c</strong>.
+        <strong>${ctx.actorName}</strong> dal:a like tv\u00e9 eseji <strong>\u201e${ctx.essayTitle}\u201c</strong>.
       </p>
       <div style="margin:32px 0;">
         ${ctaButton(ctx.essayUrl, 'Zobrazit esej')}
@@ -164,7 +164,7 @@ export function voteEmail(ctx: EssayEmailContext): EmailContent {
 
 export function bookLoanEmail(ctx: BookLoanEmailContext): EmailContent {
   return {
-    subject: `Vypůjčil/a sis „${ctx.bookTitle}“`,
+    subject: `Vypůjčil:a sis „${ctx.bookTitle}“`,
     html: brandWrapper(`
       <div style="text-align:center;margin:0 0 24px;">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background-color:#f9f5f0;font-size:32px;line-height:1;">📚</span>
@@ -173,7 +173,7 @@ export function bookLoanEmail(ctx: BookLoanEmailContext): EmailContent {
         Kniha vypůjčena
       </h2>
       <p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#2c1a1d;opacity:0.8;text-align:center;">
-        Vypůjčil/a sis <strong>„${ctx.bookTitle}“</strong> z TAP Knihovny.
+        Vypůjčil:a sis <strong>„${ctx.bookTitle}“</strong> z TAP Knihovny.
       </p>
       <div style="margin:28px 0;padding:20px 24px;background-color:#f9f5f0;border-radius:8px;text-align:center;">
         <p style="margin:0 0 4px;font-size:12px;font-weight:500;color:#2c1a1d;opacity:0.6;text-transform:uppercase;letter-spacing:0.5px;">

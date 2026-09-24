@@ -2612,37 +2612,52 @@ export type Database = {
           color: string | null
           created_at: string
           created_by_profile_id: string | null
+          group_picture: string | null
+          ico: string | null
           id: string
+          instagram_url: string | null
+          linkedin_url: string | null
           name: string
           onboardingYear: number | null
           picture: string | null
           removed_at: string | null
           updated_at: string
           updated_by_profile_id: string | null
+          website_url: string | null
         }
         Insert: {
           color?: string | null
           created_at?: string
           created_by_profile_id?: string | null
+          group_picture?: string | null
+          ico?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           name: string
           onboardingYear?: number | null
           picture?: string | null
           removed_at?: string | null
           updated_at?: string
           updated_by_profile_id?: string | null
+          website_url?: string | null
         }
         Update: {
           color?: string | null
           created_at?: string
           created_by_profile_id?: string | null
+          group_picture?: string | null
+          ico?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
           name?: string
           onboardingYear?: number | null
           picture?: string | null
           removed_at?: string | null
           updated_at?: string
           updated_by_profile_id?: string | null
+          website_url?: string | null
         }
         Relationships: []
       }

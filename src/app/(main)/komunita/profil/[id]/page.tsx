@@ -119,23 +119,50 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           <div className="min-w-0 flex-1 pb-1 space-y-1.5">
             <h1 className="font-heading text-2xl font-bold leading-tight tracking-tight sm:text-3xl break-words">{profile.name}</h1>
             <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <Badge variant="outline" className={cn('text-xs shrink-0', ROLE_COLORS[profile.role])}>
+              <Badge
+                variant="outline"
+                className={cn('h-7 sm:h-8 px-2.5 sm:px-3 text-xs font-medium shrink-0 inline-flex items-center', ROLE_COLORS[profile.role])}
+              >
                 {ROLE_LABELS[profile.role]}
               </Badge>
               {profile.team && (
                 <Link
                   href={`/komunita/tymy/${profile.team.id}`}
-                  className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border rounded-full px-2.5 py-0.5"
+                  className="group inline-flex min-w-0 max-w-full items-center gap-2 h-7 sm:h-8 pl-2 sm:pl-2.5 pr-3 text-xs font-medium text-foreground hover:bg-muted/80 hover:border-border transition-all border border-border/80 rounded-full bg-card/60 shadow-2xs"
                 >
-                  {teamPictureUrl
-                    ? <ProfilePicture src={teamPictureUrl} alt={profile.team.name} size={14} className="size-3.5 shrink-0 rounded-full object-cover" />
-                    : <Users className="size-3 shrink-0" />}
+                  {teamPictureUrl ? (
+                    <ProfilePicture
+                      src={teamPictureUrl}
+                      alt={profile.team.name}
+                      size={48}
+                      className="h-5 sm:h-5.5 w-auto max-w-[56px] sm:max-w-[64px] object-contain shrink-0"
+                      fallback={
+                        profile.team.color ? (
+                          <span
+                            className="size-2.5 rounded-full shrink-0 ring-1 ring-inset ring-black/10"
+                            style={{ backgroundColor: profile.team.color }}
+                          />
+                        ) : (
+                          <Users className="size-3.5 shrink-0 text-muted-foreground" />
+                        )
+                      }
+                    />
+                  ) : profile.team.color ? (
+                    <span
+                      className="size-2.5 rounded-full shrink-0 ring-1 ring-inset ring-black/10"
+                      style={{ backgroundColor: profile.team.color }}
+                    />
+                  ) : (
+                    <Users className="size-3.5 shrink-0 text-muted-foreground" />
+                  )}
                   <span className="truncate">{profile.team.name}</span>
                 </Link>
               )}
             </div>
           </div>
         </div>
+
+        <BioSection bioJson={(profile.bio_json ?? null) as object | null} isOwnProfile={isOwnProfile} />
 
         <Tabs defaultValue={activeTab} className="mt-4 min-w-0">
           <TabsList>
@@ -157,7 +184,6 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
           {/* Stats + contact */}
           <TabsContent value="prehled">
-            <BioSection bioJson={(profile.bio_json ?? null) as object | null} isOwnProfile={isOwnProfile} />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-4">
               {/* Stats */}
               <div className="flex items-center gap-6">

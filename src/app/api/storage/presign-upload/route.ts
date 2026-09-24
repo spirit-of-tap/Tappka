@@ -101,19 +101,11 @@ export async function POST(request: NextRequest) {
         );
       }
     } else if (context === "team") {
-      // Team pictures can only be managed by an admin of that team.
-      // Membership lives on profiles.team_id (there is no team_members table).
-      if (profile.team_id !== entityId) {
+      const isTeamMember = profile.team_id === entityId;
+      const isAdmin = profile.role === "admin";
+      if (!isTeamMember && !isAdmin) {
         return NextResponse.json(
-          { error: "Nejsi členem:kou tohoto týmu" },
-          { status: 403 }
-        );
-      }
-
-      // Only admins can change team picture
-      if (profile.role !== "admin") {
-        return NextResponse.json(
-          { error: "Pouze administrátoři mohou měnit obrázek týmu" },
+          { error: "Nejsi členem:kou tohoto týmu ani administrátorem:kou" },
           { status: 403 }
         );
       }

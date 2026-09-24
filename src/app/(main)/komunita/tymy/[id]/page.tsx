@@ -1,26 +1,40 @@
 import { notFound } from 'next/navigation';
-import { ChartColumn, Users } from 'lucide-react';
+import { Building2, ChartColumn, ExternalLink, Globe, Instagram, Linkedin, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getFormerTeamMembers, getTeamById, getTeamPictureUrl, getProfilePictureUrl } from '@/lib/komunita/queries';
+import {
+  getFormerTeamMembers,
+  getTeamById,
+  getTeamPictureUrl,
+  getTeamGroupPictureUrl,
+  getProfilePictureUrl,
+} from '@/lib/komunita/queries';
 import { getSessionProfile } from '@/lib/auth/session';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserCard } from '@/components/komunita/user-card';
 import { TeamMemberAdminActions } from '@/components/komunita/team-member-admin-actions';
 import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
-
-export const metadata = {
-  title: 'Tým',
-};
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { TeamCustomerMeetingsChart } from '@/components/teams/team-customer-meetings-chart';
 import { TeamCoachingSessionsChart } from '@/components/teams/team-coaching-sessions-chart';
+import { TeamEditDialog } from '@/components/teams/team-edit-dialog';
 import { YEAR_LABELS, ROLE_LABELS } from '@/lib/komunita/types';
 import { getTeamBookPointsStats } from '@/lib/essays/queries';
 import { getTeamCustomerMeetingsStats } from '@/lib/customer-meetings/queries';
 import { getTeamCoachingSessionStats } from '@/lib/individual-coaching-sessions/queries';
+import {
+  cleanIco,
+  displayDomain,
+  displayInstagram,
+  formatInstagramUrl,
+  formatUrl,
+  getPublicRegistryUrl,
+} from '@/lib/teams/links';
+
+export const metadata = {
+  title: 'Tým',
+};
 
 interface PageProps {
   params: Promise<{
@@ -46,8 +60,12 @@ export default async function TeamPage({ params }: PageProps) {
   }
 
   const isAdmin = sessionProfile?.role === 'admin';
+  const isTeamMember = sessionProfile?.team_id === team.id;
+  const canEdit = isTeamMember || isAdmin;
 
   const teamPictureUrl = getTeamPictureUrl(supabase, team);
+  const teamGroupPictureUrl = getTeamGroupPictureUrl(supabase, team);
+  const teamColor = team.color ?? null;
 
   // Group profiles by role
   const coaches = team.profiles.filter((p) => p.role === 'coach');
@@ -57,42 +75,142 @@ export default async function TeamPage({ params }: PageProps) {
   const backHref = `/komunita/tymy/${team.id}`;
 
   return (
-    <PageShell>
-      <PageBack href="/komunita" label="Zpět na komunitu" />
+    <PageShell size="wide" className="min-w-0">
+      <PageBack href="/komunita" label="Zpět na komunitu" className="mb-3" />
 
-      {/* Team Header */}
-      <div className="flex items-center gap-4">
-        <Avatar size="lg" className="size-20">
-          <AvatarImage src={teamPictureUrl || undefined} alt={team.name} />
-          <AvatarFallback className="text-2xl">
-            <Users className="size-8" />
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 space-y-2">
-          <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">{team.name}</h1>
-          <div className="flex items-center gap-2 flex-wrap">
-            {team.onboardingYear && (
-              <Badge variant="outline">{YEAR_LABELS[team.onboardingYear]}</Badge>
+      {/* ── Cinematic Team Hero with Group Photo Background ── */}
+      <div className="relative min-h-[360px] sm:min-h-[420px] md:min-h-[460px] w-full rounded-3xl overflow-hidden shadow-lg border border-border/40 flex flex-col justify-between p-5 sm:p-8 mb-6">
+        {/* Background Image / Color */}
+        {teamGroupPictureUrl ? (
+          <img
+            src={teamGroupPictureUrl}
+            alt={`Tým ${team.name}`}
+            className="absolute inset-0 w-full h-full object-cover object-[center_35%]"
+          />
+        ) : (
+          <div
+            className="absolute inset-0 bg-muted"
+            style={
+              teamColor
+                ? { background: `linear-gradient(135deg, ${teamColor}99 0%, ${teamColor}40 60%, #1a1215 100%)` }
+                : undefined
+            }
+          />
+        )}
+
+        {/* Cinematic dark vignette overlay (always crisp dark, never milky) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/25 pointer-events-none" />
+
+        {/* Top actions inside hero */}
+        <div className="relative z-10 flex items-center justify-end gap-2">
+          {canEdit && <TeamEditDialog team={team} triggerVariant="frosted" />}
+        </div>
+
+        {/* Bottom Profile Identity Row */}
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-end gap-5 sm:gap-6 pt-16">
+          {/* Team Logo — floating card */}
+          <div className="h-20 w-26 sm:h-24 sm:w-32 rounded-2xl bg-white/95 dark:bg-card/95 backdrop-blur-md border border-white/20 shadow-xl p-2.5 flex items-center justify-center shrink-0 overflow-hidden">
+            {teamPictureUrl ? (
+              <img
+                src={teamPictureUrl}
+                alt={`Logo ${team.name}`}
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-muted-foreground">
+                <Users className="size-8 stroke-[1.5]" />
+                <span className="text-[10px] uppercase font-semibold tracking-wider mt-1">Logo</span>
+              </div>
             )}
-            <span className="text-sm text-muted-foreground">
-              {team.profiles.length} {team.profiles.length === 1 ? 'člen:ka' : team.profiles.length < 5 ? 'členové:ky' : 'členů:ek'}
-            </span>
+          </div>
+
+          {/* Name, Badges, Links */}
+          <div className="space-y-2 min-w-0 flex-1">
+            <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white drop-shadow-md break-words">
+              {team.name}
+            </h1>
+
+            {/* Badges row: year, member count, IČO */}
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              {team.onboardingYear && (
+                <span className="inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/25 text-white shadow-xs">
+                  {YEAR_LABELS[team.onboardingYear]}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/25 text-white shadow-xs">
+                <Users className="size-3 text-white/80" />
+                {team.profiles.length} {team.profiles.length === 1 ? 'člen:ka' : team.profiles.length < 5 ? 'členové:ky' : 'členů:ek'}
+              </span>
+
+              {team.ico && (
+                <a
+                  href={getPublicRegistryUrl(team.ico) ?? '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/25 text-white hover:bg-white/30 transition-colors shadow-xs group"
+                  title="Otevřít výpis ve Veřejném rejstříku (Ministerstvo spravedlnosti)"
+                >
+                  <Building2 className="size-3 text-white/80 group-hover:text-white transition-colors" />
+                  <span>IČO {cleanIco(team.ico)}</span>
+                  <ExternalLink className="size-2.5 text-white/70 group-hover:text-white transition-colors" />
+                </a>
+              )}
+            </div>
+
+            {/* Social & Web links row */}
+            {(team.website_url || team.instagram_url || team.linkedin_url) && (
+              <div className="flex items-center gap-2.5 flex-wrap pt-0.5">
+                {team.website_url && (
+                  <a
+                    href={formatUrl(team.website_url) ?? '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-white/90 hover:text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/15 hover:bg-black/60 transition-colors"
+                  >
+                    <Globe className="size-3.5 text-white/80" />
+                    <span>{displayDomain(team.website_url)}</span>
+                  </a>
+                )}
+                {team.instagram_url && (
+                  <a
+                    href={formatInstagramUrl(team.instagram_url) ?? '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-white/90 hover:text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/15 hover:bg-black/60 transition-colors"
+                  >
+                    <Instagram className="size-3.5 text-white/80" />
+                    <span>{displayInstagram(team.instagram_url)}</span>
+                  </a>
+                )}
+                {team.linkedin_url && (
+                  <a
+                    href={formatUrl(team.linkedin_url) ?? '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-white/90 hover:text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/15 hover:bg-black/60 transition-colors"
+                  >
+                    <Linkedin className="size-3.5 text-white/80" />
+                    <span>LinkedIn</span>
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="clenove">
-        <TabsList>
-          <TabsTrigger value="clenove">
-            <Users />
-            Členové
-          </TabsTrigger>
-          <TabsTrigger value="statistiky">
-            <ChartColumn />
-            Statistiky
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="clenove" className="min-w-0">
+          <TabsList>
+            <TabsTrigger value="clenove">
+              <Users />
+              Členové
+            </TabsTrigger>
+            <TabsTrigger value="statistiky">
+              <ChartColumn />
+              Statistiky
+            </TabsTrigger>
+          </TabsList>
 
         <TabsContent value="clenove" className="mt-4 space-y-6">
       {/* Coaches */}
@@ -108,6 +226,7 @@ export default async function TeamPage({ params }: PageProps) {
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
+                    showTeam={false}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
                     <div className="absolute top-2 right-2">
@@ -138,6 +257,7 @@ export default async function TeamPage({ params }: PageProps) {
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
+                    showTeam={false}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
                     <div className="absolute top-2 right-2">
@@ -168,6 +288,7 @@ export default async function TeamPage({ params }: PageProps) {
                     profile={{ ...profile, team }}
                     pictureUrl={pictureUrl}
                     from={backHref}
+                    showTeam={false}
                   />
                   {isAdmin && profile.id !== sessionProfile?.id && (
                     <div className="absolute top-2 right-2">
@@ -198,6 +319,7 @@ export default async function TeamPage({ params }: PageProps) {
                     profile={{ ...profile, team: null }}
                     pictureUrl={pictureUrl}
                     from={backHref}
+                    showTeam={false}
                   />
                   {isAdmin && (
                     <div className="absolute top-2 right-2">

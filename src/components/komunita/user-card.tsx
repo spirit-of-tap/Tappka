@@ -14,9 +14,10 @@ interface UserCardProps {
   profile: ProfileWithTeam;
   pictureUrl: string | null;
   from?: string;
+  showTeam?: boolean;
 }
 
-export function UserCard({ profile, pictureUrl, from }: UserCardProps) {
+export function UserCard({ profile, pictureUrl, from, showTeam = true }: UserCardProps) {
   const href = from
     ? `/komunita/profil/${profile.id}?from=${encodeURIComponent(from)}`
     : `/komunita/profil/${profile.id}`;
@@ -71,7 +72,7 @@ export function UserCard({ profile, pictureUrl, from }: UserCardProps) {
               >
                 {ROLE_LABELS[profile.role]}
               </Badge>
-              {profile.team && (
+              {showTeam && profile.team && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
                   <Users className="size-3 shrink-0" />
                   <span className="truncate">{profile.team.name}</span>
