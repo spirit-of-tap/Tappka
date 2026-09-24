@@ -28,11 +28,10 @@ export function authorizeAction(
   }
 
   if (context === "team") {
-    if (profile.team_id !== entityId) {
-      return "Nejsi členem:kou tohoto týmu";
-    }
-    if (profile.role !== "admin") {
-      return "Pouze administrátoři mohou provést tuto akci";
+    const isMember = profile.team_id === entityId;
+    const isAdmin = profile.role === "admin";
+    if (!isMember && !isAdmin) {
+      return "Nejsi členem:kou tohoto týmu ani administrátorem:kou";
     }
     return null;
   }

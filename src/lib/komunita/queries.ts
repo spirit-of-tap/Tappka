@@ -242,3 +242,14 @@ export function getTeamPictureUrl(
   }
   return null;
 }
+
+export function getTeamGroupPictureUrl(
+  supabase: SupabaseClient<Database>,
+  team: Team,
+): string | null {
+  if (team.group_picture) {
+    return getStorageUrl(supabase, 'avatars', team.group_picture);
+  }
+  return null;
+}
+
