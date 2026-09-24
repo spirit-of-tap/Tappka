@@ -127,7 +127,7 @@ describe('notifyEssayCommented', () => {
     });
   });
 
-  it('skips when the author has no beta access', async () => {
+  it('sends even when the author has no beta access', async () => {
     mockedGetProfileById.mockImplementation(async (_supabase, id) =>
       (id === AUTHOR.id ? { ...AUTHOR, beta_access_granted_at: null } : ACTOR) as never,
     );
@@ -138,7 +138,9 @@ describe('notifyEssayCommented', () => {
       origin: 'https://tappka.app',
     });
 
-    expect(mockedSendEmail).not.toHaveBeenCalled();
+    expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: AUTHOR.work_email }),
+    );
   });
 });
 
@@ -194,7 +196,7 @@ describe('notifyEssayVoted', () => {
     });
   });
 
-  it('skips when the author has no beta access', async () => {
+  it('sends even when the author has no beta access', async () => {
     mockedGetProfileById.mockImplementation(async (_supabase, id) =>
       (id === AUTHOR.id ? { ...AUTHOR, beta_access_granted_at: null } : ACTOR) as never,
     );
@@ -205,7 +207,9 @@ describe('notifyEssayVoted', () => {
       origin: 'https://tappka.app',
     });
 
-    expect(mockedSendEmail).not.toHaveBeenCalled();
+    expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: AUTHOR.work_email }),
+    );
   });
 });
 
@@ -261,7 +265,7 @@ describe('notifyEssayCoachRead', () => {
     });
   });
 
-  it('skips when the author has no beta access', async () => {
+  it('sends even when the author has no beta access', async () => {
     mockedGetProfileById.mockImplementation(async (_supabase, id) =>
       (id === AUTHOR.id ? { ...AUTHOR, beta_access_granted_at: null } : ACTOR) as never,
     );
@@ -272,7 +276,9 @@ describe('notifyEssayCoachRead', () => {
       origin: 'https://tappka.app',
     });
 
-    expect(mockedSendEmail).not.toHaveBeenCalled();
+    expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: AUTHOR.work_email }),
+    );
   });
 });
 
@@ -316,13 +322,15 @@ describe('notifyEssayReplied', () => {
     });
   });
 
-  it('skips when the comment author has no beta access', async () => {
+  it('sends even when the comment author has no beta access', async () => {
     mockedGetProfileById.mockImplementation(async (_supabase, id) =>
       (id === AUTHOR.id ? { ...AUTHOR, beta_access_granted_at: null } : ACTOR) as never,
     );
 
     await notifyEssayReplied(supabaseStub(null).client, replyParams);
 
-    expect(mockedSendEmail).not.toHaveBeenCalled();
+    expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: AUTHOR.work_email }),
+    );
   });
 });
