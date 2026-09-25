@@ -233,15 +233,13 @@ async function findEssayIdsByResolvedPoints(
 /** Active student profile ids, optionally filtered by team, excluding the given profile. */
 async function getReviewStudentIds(
   supabase: SupabaseClient<Database>,
-  excludeProfileId: string,
   teamId?: string | null,
 ): Promise<string[]> {
   let query = supabase
     .from('profiles')
     .select('id')
-    .eq('role', 'student')
-    .is('access_removed_at', null)
-    .neq('id', excludeProfileId);
+    .in('role', ['student', 'admin'])
+    .is('access_removed_at', null);
 
   if (teamId && teamId !== 'all') {
     query = query.eq('team_id', teamId);
@@ -731,7 +729,7 @@ async function getCoachReviewEssaysFallback(
   coachProfileId: string,
   filters: CoachReviewFilters = {},
 ): Promise<CoachReviewResult> {
-  const studentIds = await getReviewStudentIds(supabase, coachProfileId, filters.teamId);
+  const studentIds = await getReviewStudentIds(supabase, filters.teamId);
   if (studentIds.length === 0) {
     return {
       essays: [],
@@ -1208,7 +1206,7 @@ export async function getCoachUnreadCount(
   } catch {
     // fallback below
   }
-  const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
+  const studentIds = await getReviewStudentIds(supabase, teamId);
   if (studentIds.length === 0) return 0;
 
   const { data: reads, error: readsError } = await supabase
@@ -1264,7 +1262,7 @@ export async function getCoachReadCount(
   } catch {
     // fallback
   }
-  const studentIds = await getReviewStudentIds(supabase, coachProfileId, teamId);
+  const studentIds = await getReviewStudentIds(supabase, teamId);
   if (studentIds.length === 0) return 0;
 
   const { data: reads, error: readsError } = await supabase

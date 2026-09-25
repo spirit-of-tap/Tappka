@@ -20,7 +20,7 @@ async function seedTeam(client: PoolClient, name: string): Promise<string> {
 
 async function seedProfile(
   client: PoolClient,
-  opts: { name: string; email: string; role: "student" | "coach"; teamId: string },
+  opts: { name: string; email: string; role: "student" | "coach" | "admin"; teamId: string },
 ): Promise<Seed> {
   const auth = await insertAuthUser(client, { email: opts.email });
   const { rows: userRows } = await client.query(
@@ -143,6 +143,23 @@ describe("essay_coach_reads is team-wide", () => {
       );
 
       expect(rowCount).toBe(1);
+    });
+  });
+});
+
+describe("coach review inbox includes admin-authored essays", () => {
+  it("coaches and the admin author both see the admin's essay", async () => {
+    await withRollback(async (client) => {
+      const teamId = await seedTeam(client, "Team A");
+      const coach = await seedProfile(client, { name: "C", email: "adm-c@pef.czu.cz", role: "coach", teamId });
+      const admin = await seedProfile(client, { name: "Adm", email: "adm-a@pef.czu.cz", role: "admin", teamId });
+      const essayId = await seedEssay(client, admin.profileId);
+
+      await asClaims(client, { sub: coach.authId });
+      expect((await callReview(client, coach.profileId, "unread")).essay_ids).toEqual([essayId]);
+
+      await asClaims(client, { sub: admin.authId });
+      expect((await callReview(client, admin.profileId, "unread")).essay_ids).toEqual([essayId]);
     });
   });
 });
