@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/database.types';
 import { POINTS_ELIGIBLE_LIST_STATUSES } from '@/lib/books/types';
 
+import { logNotificationSkipped } from './log-skip';
 import { sendEmail } from './send-email';
 import { bookDecisionEmail, bookSubmittedEmail } from './email-templates';
 
@@ -75,7 +76,11 @@ export async function notifyBookSubmitted(
   supabase: SupabaseClient<Database>,
   params: NotifyBookSubmittedParams,
 ): Promise<void> {
-  const [{ data: book }, { data: submitter }, { data: coaches }] = await Promise.all([
+  const [
+    { data: book, error: bookError },
+    { data: submitter, error: submitterError },
+    { data: coaches, error: coachesError },
+  ] = await Promise.all([
     supabase
       .from('books')
       .select('title_cs, author, book_points, list_status_reason')
@@ -92,13 +97,27 @@ export async function notifyBookSubmitted(
       .eq('role', 'coach'),
   ]);
 
-  if (!book || !submitter) return;
+  // A failed read must surface as an error, not masquerade as "nobody to notify".
+  const readError = bookError ?? submitterError ?? coachesError;
+  if (readError) throw readError;
+
+  if (!book || !submitter) {
+    logNotificationSkipped('notifyBookSubmitted', 'book or submitter not found', {
+      bookId: params.bookId,
+      submitterProfileId: params.submitterProfileId,
+    });
+    return;
+  }
 
   const recipients = selectCoachRecipients(
     await coachesWithPreferences(supabase, coaches ?? []),
     submitter.team_id,
   );
-  if (recipients.length === 0) return;
+  if (recipients.length === 0) {
+    // Coach emails are opt-in, so this is the normal case for most teams.
+    logNotificationSkipped('notifyBookSubmitted', 'no coach opted in', { bookId: params.bookId }, 'info');
+    return;
+  }
 
   const { subject, html } = bookSubmittedEmail({
     bookTitle: book.title_cs,
@@ -109,9 +128,25 @@ export async function notifyBookSubmitted(
     reviewUrl: `${params.origin}/cteni/sprava`,
   });
 
-  await Promise.all(
-    recipients.map((coach) => sendEmail({ to: coach.work_email as string, subject, html })),
-  );
+  // One at a time: parallel sends to a large coach list trip Resend's per-second
+  // rate limit, and Promise.all would abandon everyone after the first failure.
+  const failures: unknown[] = [];
+  for (const coach of recipients) {
+    try {
+      await sendEmail({ to: coach.work_email as string, subject, html });
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+
+  if (failures.length > 0) {
+    // The server logger records only the top-level message, so inline the reasons.
+    const reasons = [...new Set(failures.map((e) => (e instanceof Error ? e.message : String(e))))];
+    throw new AggregateError(
+      failures,
+      `Book submission email failed for ${failures.length} of ${recipients.length} coaches (book ${params.bookId}): ${reasons.join('; ')}`,
+    );
+  }
 }
 
 export interface NotifyBookDecidedParams {
@@ -123,21 +158,34 @@ export async function notifyBookDecided(
   supabase: SupabaseClient<Database>,
   params: NotifyBookDecidedParams,
 ): Promise<void> {
-  const { data: book } = await supabase
+  const { data: book, error: bookError } = await supabase
     .from('books')
     .select('title_cs, book_points, list_status, list_status_reason, created_by_profile_id')
     .eq('id', params.bookId)
     .maybeSingle();
 
-  if (!book) return;
+  if (bookError) throw bookError;
 
-  const { data: submitter } = await supabase
+  if (!book) {
+    logNotificationSkipped('notifyBookDecided', 'book not found', { bookId: params.bookId });
+    return;
+  }
+
+  const { data: submitter, error: submitterError } = await supabase
     .from('profiles')
     .select('work_email')
     .eq('id', book.created_by_profile_id)
     .maybeSingle();
 
-  if (!submitter?.work_email) return;
+  if (submitterError) throw submitterError;
+
+  if (!submitter?.work_email) {
+    logNotificationSkipped('notifyBookDecided', 'submitter profile unavailable', {
+      bookId: params.bookId,
+      submitterProfileId: book.created_by_profile_id,
+    });
+    return;
+  }
 
   const approved = (POINTS_ELIGIBLE_LIST_STATUSES as readonly string[]).includes(book.list_status);
 

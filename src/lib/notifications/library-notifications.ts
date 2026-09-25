@@ -4,6 +4,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import { getBookById } from '@/lib/books/queries';
 import { getProfileById } from '@/lib/komunita/queries';
 
+import { logNotificationSkipped } from './log-skip';
 import { sendEmail } from './send-email';
 import { bookLoanEmail } from './email-templates';
 
@@ -23,7 +24,13 @@ export async function notifyBookBorrowed(
     getProfileById(supabase, params.borrowerProfileId),
   ]);
 
-  if (!book || !borrower?.work_email) return;
+  if (!book || !borrower?.work_email) {
+    logNotificationSkipped('notifyBookBorrowed', 'book or borrower profile unavailable', {
+      bookId: params.bookId,
+      borrowerProfileId: params.borrowerProfileId,
+    });
+    return;
+  }
 
   const dueDate = new Date(params.dueAt).toLocaleDateString('cs-CZ', {
     day: 'numeric',

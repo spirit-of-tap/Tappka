@@ -4,6 +4,7 @@ import {
   assignmentStoragePrefix,
   birthGivingConfirmedFileSchema,
 } from "@/lib/birth-giving/files";
+import { runNotificationsAfterResponse } from "@/lib/notifications/after-response";
 import { notifyParticipantsOfAssignment } from "@/lib/notifications/birth-giving-notifications";
 import { deleteFile, inspectStorageObject } from "@/lib/storage/service";
 import {
@@ -93,12 +94,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   // The assignment is committed and may now be available-due; notify current
   // members so a replacement made after the event started reaches them
   // immediately. The helper itself checks published/due/present and returns 0
-  // when nothing is due. A notification failure must not fail the confirm.
-  try {
-    await notifyParticipantsOfAssignment(eventId);
-  } catch (notifyError) {
-    serverLogger.console.error("Birth Giving assignment notification failed:", notifyError);
-  }
+  // when nothing is due. Runs after the response so a failed or retrying send
+  // can neither fail nor delay the confirm.
+  runNotificationsAfterResponse([
+    {
+      label: "Birth Giving assignment notification",
+      run: async () => {
+        await notifyParticipantsOfAssignment(eventId);
+      },
+    },
+  ]);
 
   return NextResponse.json({ data: { storagePath } });
 }

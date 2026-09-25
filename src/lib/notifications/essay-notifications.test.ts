@@ -10,6 +10,10 @@ vi.mock('@/lib/komunita/queries', () => ({
 vi.mock('./send-email', () => ({
   sendEmail: vi.fn(),
 }));
+const { warnMock, infoMock } = vi.hoisted(() => ({ warnMock: vi.fn(), infoMock: vi.fn() }));
+vi.mock('@/lib/server-logger', () => ({
+  serverLogger: { console: { warn: warnMock, info: infoMock, error: vi.fn() } },
+}));
 
 import { getEssayAuthorInfo } from '@/lib/essays/queries';
 import { getProfileById } from '@/lib/komunita/queries';
@@ -331,6 +335,69 @@ describe('notifyEssayReplied', () => {
 
     expect(mockedSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({ to: AUTHOR.work_email }),
+    );
+  });
+});
+
+describe('skip logging', () => {
+  const PARAMS = { essayId: ESSAY.id, actorProfileId: ACTOR.id, origin: 'https://tappka.app' };
+
+  it('warns when the essay cannot be loaded', async () => {
+    mockedGetEssayAuthorInfo.mockResolvedValue(null);
+
+    await notifyEssayCommented(supabaseStub(null).client, PARAMS);
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+    expect(warnMock).toHaveBeenCalledWith(
+      expect.stringContaining('notifyEssayCommented skipped: essay not found'),
+      expect.objectContaining({ essayId: ESSAY.id }),
+    );
+  });
+
+  it('warns when the recipient profile cannot be loaded', async () => {
+    mockedGetProfileById.mockImplementation(async (_supabase, id) =>
+      (id === AUTHOR.id ? null : ACTOR) as never,
+    );
+
+    await notifyEssayVoted(supabaseStub(null).client, PARAMS);
+
+    expect(mockedSendEmail).not.toHaveBeenCalled();
+    expect(warnMock).toHaveBeenCalledWith(
+      expect.stringContaining('notifyEssayVoted skipped: recipient or actor profile unavailable'),
+      expect.objectContaining({ recipientProfileId: AUTHOR.id, actorProfileId: ACTOR.id }),
+    );
+  });
+
+  it('logs info when the recipient opted out', async () => {
+    await notifyEssayCoachRead(supabaseStub({ essay_coach_read_email: false }).client, PARAMS);
+
+    expect(infoMock).toHaveBeenCalledWith(
+      expect.stringContaining('notifyEssayCoachRead skipped: recipient opted out'),
+      expect.objectContaining({ recipientProfileId: AUTHOR.id }),
+    );
+    expect(warnMock).not.toHaveBeenCalled();
+  });
+
+  it('does not log when the actor acts on their own essay', async () => {
+    mockedGetEssayAuthorInfo.mockResolvedValue({ ...ESSAY, authorProfileId: ACTOR.id });
+
+    await notifyEssayCommented(supabaseStub(null).client, PARAMS);
+
+    expect(warnMock).not.toHaveBeenCalled();
+    expect(infoMock).not.toHaveBeenCalled();
+  });
+
+  it('warns when the replied-to comment is gone', async () => {
+    await notifyEssayReplied(supabaseStub(null, null).client, {
+      essayId: ESSAY.id,
+      parentId: 'comment-1',
+      actorProfileId: ACTOR.id,
+      origin: 'https://tappka.app',
+    });
+
+    expect(warnMock).toHaveBeenCalledWith(
+      expect.stringContaining('notifyEssayReplied skipped: parent comment not found'),
+      expect.objectContaining({ parentId: 'comment-1' }),
     );
   });
 });

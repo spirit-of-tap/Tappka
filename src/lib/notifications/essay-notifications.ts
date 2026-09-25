@@ -4,6 +4,7 @@ import type { Database } from '@/lib/supabase/database.types';
 import { getEssayAuthorInfo } from '@/lib/essays/queries';
 import { getProfileById } from '@/lib/komunita/queries';
 
+import { logNotificationSkipped } from './log-skip';
 import { sendEmail } from './send-email';
 import { coachReadEmail, commentEmail, replyEmail, voteEmail, type EmailContent, type EssayEmailContext } from './email-templates';
 
@@ -18,12 +19,16 @@ type PreferenceColumn = 'essay_coach_read_email' | 'essay_comment_email' | 'essa
 
 async function dispatchEssayNotification(
   supabase: SupabaseClient<Database>,
+  notification: string,
   params: NotifyParams,
   preferenceColumn: PreferenceColumn,
   buildEmail: (ctx: EssayEmailContext) => EmailContent,
 ): Promise<void> {
   const essay = await getEssayAuthorInfo(supabase, params.essayId);
-  if (!essay) return;
+  if (!essay) {
+    logNotificationSkipped(notification, 'essay not found', { essayId: params.essayId });
+    return;
+  }
   if (essay.authorProfileId === params.actorProfileId) return;
 
   const [author, actor, { data: preferencesRows, error: preferencesError }] = await Promise.all([
@@ -32,11 +37,26 @@ async function dispatchEssayNotification(
     supabase.rpc('get_notification_preferences', { p_profile_id: essay.authorProfileId }),
   ]);
 
-  if (!author?.work_email || !actor) return;
+  if (!author?.work_email || !actor) {
+    logNotificationSkipped(notification, 'recipient or actor profile unavailable', {
+      essayId: essay.id,
+      recipientProfileId: essay.authorProfileId,
+      actorProfileId: params.actorProfileId,
+    });
+    return;
+  }
   if (preferencesError) throw preferencesError;
 
   const preferences = preferencesRows?.[0];
-  if (preferences && preferences[preferenceColumn] === false) return;
+  if (preferences && preferences[preferenceColumn] === false) {
+    logNotificationSkipped(
+      notification,
+      'recipient opted out',
+      { essayId: essay.id, recipientProfileId: essay.authorProfileId },
+      'info',
+    );
+    return;
+  }
 
   const { subject, html } = buildEmail({
     essayTitle: essay.title,
@@ -52,14 +72,14 @@ export async function notifyEssayCoachRead(
   supabase: SupabaseClient<Database>,
   params: NotifyParams,
 ): Promise<void> {
-  await dispatchEssayNotification(supabase, params, 'essay_coach_read_email', coachReadEmail);
+  await dispatchEssayNotification(supabase, 'notifyEssayCoachRead', params, 'essay_coach_read_email', coachReadEmail);
 }
 
 export async function notifyEssayCommented(
   supabase: SupabaseClient<Database>,
   params: NotifyParams,
 ): Promise<void> {
-  await dispatchEssayNotification(supabase, params, 'essay_comment_email', commentEmail);
+  await dispatchEssayNotification(supabase, 'notifyEssayCommented', params, 'essay_comment_email', commentEmail);
 }
 
 export interface NotifyReplyParams {
@@ -77,15 +97,22 @@ export async function notifyEssayReplied(
   const { essayId, parentId, actorProfileId, origin, replyBody } = params;
 
   const essay = await getEssayAuthorInfo(supabase, essayId);
-  if (!essay) return;
+  if (!essay) {
+    logNotificationSkipped('notifyEssayReplied', 'essay not found', { essayId });
+    return;
+  }
 
-  const { data: parentComment } = await supabase
+  const { data: parentComment, error: parentError } = await supabase
     .from('essay_comments')
     .select('author_profile_id')
     .eq('id', parentId)
     .is('removed_at', null)
     .maybeSingle();
-  if (!parentComment) return;
+  if (parentError) throw parentError;
+  if (!parentComment) {
+    logNotificationSkipped('notifyEssayReplied', 'parent comment not found', { essayId, parentId });
+    return;
+  }
   if (parentComment.author_profile_id === actorProfileId) return;
 
   const commentAuthorProfileId = parentComment.author_profile_id as string;
@@ -96,11 +123,26 @@ export async function notifyEssayReplied(
     supabase.rpc('get_notification_preferences', { p_profile_id: commentAuthorProfileId }),
   ]);
 
-  if (!commentAuthor?.work_email || !actor) return;
+  if (!commentAuthor?.work_email || !actor) {
+    logNotificationSkipped('notifyEssayReplied', 'recipient or actor profile unavailable', {
+      essayId,
+      recipientProfileId: commentAuthorProfileId,
+      actorProfileId,
+    });
+    return;
+  }
   if (preferencesError) throw preferencesError;
 
   const preferences = preferencesRows?.[0];
-  if (preferences && preferences.essay_comment_email === false) return;
+  if (preferences && preferences.essay_comment_email === false) {
+    logNotificationSkipped(
+      'notifyEssayReplied',
+      'recipient opted out',
+      { essayId, recipientProfileId: commentAuthorProfileId },
+      'info',
+    );
+    return;
+  }
 
   const { subject, html } = replyEmail({
     essayTitle: essay.title,
@@ -116,5 +158,5 @@ export async function notifyEssayVoted(
   supabase: SupabaseClient<Database>,
   params: NotifyParams,
 ): Promise<void> {
-  await dispatchEssayNotification(supabase, params, 'essay_vote_email', voteEmail);
+  await dispatchEssayNotification(supabase, 'notifyEssayVoted', params, 'essay_vote_email', voteEmail);
 }

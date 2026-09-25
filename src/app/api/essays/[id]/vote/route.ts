@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { runNotificationsAfterResponse } from '@/lib/notifications/after-response';
 import { notifyEssayVoted } from '@/lib/notifications/essay-notifications';
 import { serverLogger } from "@/lib/server-logger";
 
@@ -39,13 +40,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Chyba při hlasování' }, { status: 500 });
     }
 
-    after(() => {
-      notifyEssayVoted(supabase, {
-        essayId: id,
-        actorProfileId: profile.id,
-        origin: new URL(request.url).origin,
-      }).catch((err) => serverLogger.console.error('notifyEssayVoted failed:', err));
-    });
+    runNotificationsAfterResponse([
+      {
+        label: 'notifyEssayVoted',
+        run: () => notifyEssayVoted(supabase, {
+          essayId: id,
+          actorProfileId: profile.id,
+          origin: new URL(request.url).origin,
+        }),
+      },
+    ]);
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {

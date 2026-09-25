@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { trackServer } from '@/lib/analytics-server';
 import { parseLibraryLabelCode } from '@/lib/library/label-code';
 import { getAvailableCopyByLabelCode, getAvailableCopyForBook } from '@/lib/library/queries';
+import { runNotificationsAfterResponse } from '@/lib/notifications/after-response';
 import { notifyBookBorrowed } from '@/lib/notifications/library-notifications';
 import { serverLogger } from "@/lib/server-logger";
 
@@ -61,13 +62,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         feature: 'cteni',
         action: 'book_borrowed',
       });
-      notifyBookBorrowed(supabase, {
-        bookId,
-        borrowerProfileId: profile.id,
-        dueAt,
-        origin: new URL(request.url).origin,
-      }).catch((err) => serverLogger.console.error('notifyBookBorrowed failed:', err));
     });
+    runNotificationsAfterResponse([
+      {
+        label: 'notifyBookBorrowed',
+        run: () => notifyBookBorrowed(supabase, {
+          bookId,
+          borrowerProfileId: profile.id,
+          dueAt,
+          origin: new URL(request.url).origin,
+        }),
+      },
+    ]);
 
     return NextResponse.json({ data: loan }, { status: 201 });
   } catch (error) {

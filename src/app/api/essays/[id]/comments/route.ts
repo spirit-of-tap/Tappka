@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayComments } from '@/lib/essays/queries';
+import { runNotificationsAfterResponse, type NotificationTask } from '@/lib/notifications/after-response';
 import { notifyEssayCommented, notifyEssayReplied } from '@/lib/notifications/essay-notifications';
 import { serverLogger } from "@/lib/server-logger";
 
@@ -75,24 +76,27 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     if (error) throw error;
 
-    after(() => {
-      notifyEssayCommented(supabase, {
-        essayId: id,
-        actorProfileId: profile.id,
-        origin: new URL(request.url).origin,
-        commentBody: body.trim(),
-      }).catch((err) => serverLogger.console.error('notifyEssayCommented failed:', err));
-
-      if (typeof parent_id === 'string' && parent_id.trim()) {
-        notifyEssayReplied(supabase, {
+    const origin = new URL(request.url).origin;
+    const commentBody = body.trim();
+    const notifications: NotificationTask[] = [
+      {
+        label: 'notifyEssayCommented',
+        run: () => notifyEssayCommented(supabase, { essayId: id, actorProfileId: profile.id, origin, commentBody }),
+      },
+    ];
+    if (typeof parent_id === 'string' && parent_id.trim()) {
+      notifications.push({
+        label: 'notifyEssayReplied',
+        run: () => notifyEssayReplied(supabase, {
           essayId: id,
           parentId: parent_id,
           actorProfileId: profile.id,
-          origin: new URL(request.url).origin,
-          replyBody: body.trim(),
-        }).catch((err) => serverLogger.console.error('notifyEssayReplied failed:', err));
-      }
-    });
+          origin,
+          replyBody: commentBody,
+        }),
+      });
+    }
+    runNotificationsAfterResponse(notifications);
 
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
