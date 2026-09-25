@@ -22,6 +22,13 @@ describe("canAccessFeature", () => {
       expect(canAccessFeature(b, f)).toBe(true)
     }
   })
+  it("timeTracking (Čas) is gated to cohort B", () => {
+    expect(BETA_FEATURES.timeTracking).toEqual(["B"])
+    expect(canAccessFeature(nonBeta, "timeTracking")).toBe(false)
+    expect(canAccessFeature(a, "timeTracking")).toBe(false)
+    expect(canAccessFeature(b, "timeTracking")).toBe(true)
+    expect(canAccessFeature(adminNoBeta, "timeTracking")).toBe(true)
+  })
   it("admin bypasses regardless of beta status", () => {
     for (const f of Object.keys(BETA_FEATURES) as (keyof typeof BETA_FEATURES)[]) {
       expect(canAccessFeature(adminNoBeta, f)).toBe(true)

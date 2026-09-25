@@ -869,6 +869,27 @@
       "when": 1790182988258,
       "tag": "20260923170308_naive_richard_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 124,
+      "version": "7",
+      "when": 1790341608017,
+      "tag": "20260925130648_time_tracking",
+      "breakpoints": true
+    },
+    {
+      "idx": 125,
+      "version": "7",
+      "when": 1790341614638,
+      "tag": "20260925130654_time_entries_no_overlap",
+      "breakpoints": true
+    },
+    {
+      "idx": 126,
+      "version": "7",
+      "when": 1790341620851,
+      "tag": "20260925130700_sync_training_session_time_entry",
+      "breakpoints": true
     }
   ]
 }

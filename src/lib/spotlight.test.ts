@@ -33,6 +33,13 @@ describe("spotlight", () => {
       expect(scoreSpotlightSearch(cteni, "napsat novou eseje")).toBeGreaterThan(100);
     });
 
+    it("matches 'casomira' and 'zapsat čas' to Čas", () => {
+      const cas = items.find((i) => i.id === "page-cas")!;
+      expect(cas.url).toBe("/cas");
+      expect(scoreSpotlightSearch(cas, "casomira")).toBeGreaterThan(100);
+      expect(scoreSpotlightSearch(cas, "zapsat čas")).toBeGreaterThan(100);
+    });
+
     it("matches 'chci kde napsat eseje' to Čtení a knihovna with high score", () => {
       expect(scoreSpotlightSearch(cteni, "chci kde napsat eseje")).toBeGreaterThan(100);
     });
@@ -97,6 +104,7 @@ describe("spotlight", () => {
       expect(cohortAItems.some((i) => i.id === "page-birth-giving")).toBe(false);
       expect(cohortAItems.some((i) => i.id === "page-schuzky")).toBe(false);
       expect(cohortAItems.some((i) => i.id === "page-portfolio")).toBe(false);
+      expect(cohortAItems.some((i) => i.id === "page-cas")).toBe(false);
     });
 
     it("shows all feature items for cohort B", () => {
@@ -109,6 +117,7 @@ describe("spotlight", () => {
       expect(cohortBItems.some((i) => i.id === "page-koucovani")).toBe(true);
       expect(cohortBItems.some((i) => i.id === "page-birth-giving")).toBe(true);
       expect(cohortBItems.some((i) => i.id === "page-portfolio")).toBe(true);
+      expect(cohortBItems.some((i) => i.id === "page-cas")).toBe(true);
     });
 
     it("includes beta items via legacy beta_access boolean (maps to B)", () => {

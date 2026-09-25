@@ -112,7 +112,8 @@ function buildSqlDump(rows) {
  * @returns {string}
  */
 function filterSchemaDump(dump) {
-  const lines = dump.split("\n");
+  // pg_dump emits CRLF on Windows; strip the trailing `\r` so header regexes match.
+  const lines = dump.split(/\r?\n/);
   /** @type {string[]} */
   const keptSections = [];
   /** @type {string[]} */

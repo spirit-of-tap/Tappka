@@ -12,6 +12,7 @@ const main = () => {
   const envFromLocal = readEnvLocal();
 
   const child = spawn('pnpm', ['supabase', 'start', ...process.argv.slice(2)], {
+    shell: process.platform === 'win32',
     stdio: 'inherit',
     env: {
       ...process.env,

@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
 import { SpotlightTrigger } from "@/components/spotlight"
+import { useOptionalTimer } from "@/components/time-tracking/timer-provider"
+import { TimerWidget } from "@/components/time-tracking/timer-widget"
 import {
   Sidebar,
   SidebarContent,
@@ -54,6 +56,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const pathname = usePathname()
+  const { state } = useSidebar()
+  const showTimer = useOptionalTimer()?.canAccess ?? false
   const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const accessProfile = user
     ? {
@@ -90,6 +94,11 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
             <span className="text-xs text-muted-foreground">Tiimiakatemia Prague</span>
           </div>
         </div>
+        {showTimer && (
+          <div className="px-2">
+            <TimerWidget collapsed={state === "collapsed"} />
+          </div>
+        )}
         <div className="px-2">
           <SpotlightTrigger />
         </div>

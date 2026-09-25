@@ -1,4 +1,5 @@
 import { Check } from "lucide-react"
+import { formatMetricValue, type MetricPeriod, type MetricUnit } from "@/lib/metrics/config"
 import { getSemesterInfo } from "@/lib/timeline/semester-utils"
 
 export interface MetricGoal {
@@ -15,6 +16,13 @@ export interface MetricProgressProps {
   onboardingYear?: number | null
   /** Optional date override for time traveling. Defaults to new Date(). */
   now?: Date
+  /**
+   * Metric period. `"week"` renders a single-goal bar for the first goal
+   * (e.g. Čas týdně) instead of the cumulative semester milestones.
+   */
+  period?: MetricPeriod
+  /** Unit used to format amounts in the single-goal bar. Defaults to plain counts. */
+  unit?: MetricUnit
 }
 
 /**
@@ -22,7 +30,67 @@ export interface MetricProgressProps {
  * Focuses on what matters to the student:
  * "Where am I relative to the cumulative benchmark of my current semester (e.g. 41/40 b → +1 b surplus)?"
  */
-export function MetricProgress({
+export function MetricProgress(props: MetricProgressProps) {
+  if (props.period === "week") {
+    const goal = props.goals[0]
+    if (!goal) return null
+    return <SingleGoalProgress goal={goal} unit={props.unit} />
+  }
+  return <CumulativeSemesterProgress {...props} />
+}
+
+/**
+ * Single-goal progress for short periods (a week): "tento týden · 12,5 h / 40 h".
+ */
+function SingleGoalProgress({ goal, unit }: { goal: MetricGoal; unit?: MetricUnit }) {
+  const { current, target, label } = goal
+  const isPassed = target > 0 && current >= target
+  const fill = target > 0 ? Math.min(100, Math.max(0, (current / target) * 100)) : 0
+  const remaining = Math.max(0, target - current)
+  const surplus = current - target
+
+  return (
+    <div className="space-y-1.5 rounded-lg border border-border/40 bg-muted/20 p-3 text-xs">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <span className="font-semibold text-foreground">{label}</span>
+          {isPassed ? (
+            <span className="inline-flex items-center gap-1 font-semibold text-success-strong">
+              <Check className="size-3.5 stroke-[2.5]" />
+              Splněno {surplus > 0 ? `(+${formatMetricValue(surplus, unit)})` : ""}
+            </span>
+          ) : (
+            <span className="text-[11px] tabular-nums text-muted-foreground">
+              (zbývá {formatMetricValue(remaining, unit)})
+            </span>
+          )}
+        </div>
+        <span className="font-bold tabular-nums text-foreground">
+          {formatMetricValue(current, unit)} / {formatMetricValue(target, unit)}
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={target}
+        aria-valuenow={current}
+        aria-valuetext={`${formatMetricValue(current, unit)} z ${formatMetricValue(target, unit)}`}
+        className="h-2 overflow-hidden rounded-full bg-muted/80"
+      >
+        <div
+          data-slot="metric-bar"
+          className={`h-full rounded-full transition-all duration-300 ${
+            isPassed ? "bg-success" : "bg-foreground/75"
+          }`}
+          style={{ width: `${fill}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function CumulativeSemesterProgress({
   goals,
   currentSemester: explicitSemester,
   onboardingYear = 2025,
