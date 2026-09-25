@@ -58,10 +58,6 @@ export interface EssayView {
   last_viewed_at: string;
 }
 
-export interface EssayViewWithProfile extends EssayView {
-  viewer: Pick<Profile, 'id' | 'name' | 'role'> | null;
-}
-
 export interface EssayEngagementProfile {
   id: string;
   name: string | null;
