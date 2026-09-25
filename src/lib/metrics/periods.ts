@@ -1,3 +1,5 @@
+import { getWeekRange } from "@/lib/time-tracking/week"
+
 /**
  * Czech academic year splits roughly into a winter semester (September–January)
  * and a summer semester (February–August, which absorbs the summer break).
@@ -19,4 +21,20 @@ export function getCurrentSemesterRange(now: Date): { start: Date; end: Date } {
   }
   // February–August: summer semester.
   return { start: new Date(year, 1, 1), end: new Date(year, 8, 1) }
+}
+
+/**
+ * Current calendar week: Monday 00:00 Europe/Prague wall-clock time up to next
+ * Monday 00:00 (exclusive end), matching the Czech week.
+ *
+ * Delegates to `time-tracking/week.getWeekRange` so the "current week" agrees
+ * everywhere in the app regardless of the server's runtime time zone — computing
+ * this independently in the server's local time zone (as this used to do via
+ * `date-fns`'s `startOfWeek`) silently disagreed with the time-tracking module's
+ * Prague-based week whenever the two time zones differ (e.g. UTC in CI/production
+ * vs. Europe/Prague on a dev machine).
+ */
+export function getCurrentWeekRange(now: Date): { start: Date; end: Date } {
+  const { from, to } = getWeekRange(now)
+  return { start: from, end: to }
 }

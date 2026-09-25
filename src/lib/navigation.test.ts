@@ -35,6 +35,7 @@ describe("navigation config", () => {
       "/koucovani",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/cas",
       "/rocket-model",
       "/tymove-dokumenty",
       "/nastroje-techniky",
@@ -69,6 +70,7 @@ describe("navigation config", () => {
       "/koucovani": "coaching",
       "/tymova-reflexe": "teamReflection",
       "/tymovy-denik": "teamDiary",
+      "/cas": "timeTracking",
       "/rocket-model": "rocketModel",
       "/tymove-dokumenty": "teamDocuments",
       "/nastroje-techniky": "toolsTechniques",
@@ -93,6 +95,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/cas",
       "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
@@ -115,6 +118,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/cas",
       "/rocket-model",
       "/tymove-dokumenty",
       "/koucovani",
@@ -139,6 +143,14 @@ describe("getHubModules", () => {
     expect(getHubModules(cohortA).some((m) => m.url === "/cteni/prehled")).toBe(true);
   });
 
+  it("places Čas right after Týmový deník and gates it by timeTracking", () => {
+    const urls = getHubModules(cohortB).map((m) => m.url);
+    expect(urls.indexOf("/cas")).toBe(urls.indexOf("/tymovy-denik") + 1);
+    expect(getHubModules(cohortA).some((m) => m.url === "/cas")).toBe(false);
+    expect(getHubModules(nonBeta).some((m) => m.url === "/cas")).toBe(false);
+    expect(getHubModules(admin).some((m) => m.url === "/cas")).toBe(true);
+  });
+
   it("gates rocket-model by team Tuuli, not cohort", () => {
     expect(getHubModules(cohortB).some((m) => m.url === "/rocket-model")).toBe(false);
     expect(getHubModules(cohortBTuuli).some((m) => m.url === "/rocket-model")).toBe(true);
@@ -146,7 +158,7 @@ describe("getHubModules", () => {
   });
 
   it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
-    expect(MODULE_HUB_ORDER).toHaveLength(11);
+    expect(MODULE_HUB_ORDER).toHaveLength(12);
     expect(MODULE_HUB_ORDER).not.toContain("/");
     expect(MODULE_HUB_ORDER).not.toContain("/komunita");
   });
@@ -176,6 +188,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/cas",
       "/rocket-model",
       "/tymove-dokumenty",
       "/koucovani",

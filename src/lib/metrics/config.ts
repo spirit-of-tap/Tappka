@@ -2,7 +2,10 @@
  * Single source of truth for study-goal metrics ("Nastavené metriky").
  * Pages read their goal from here — never hardcode targets in a page.
  */
-export type MetricPeriod = "semester" | "year" | "study"
+export type MetricPeriod = "week" | "semester" | "year" | "study"
+
+/** "percent" (Houston Calling, Training Session), plain counts, or hours (Čas). */
+export type MetricUnit = "percent" | "count" | "hours"
 
 export interface MetricDefinition {
   label: string
@@ -16,8 +19,8 @@ export interface MetricDefinition {
   totalForStudy?: number
   /** Individual-minimum column from the metrics sheet. */
   individualMinimum?: number
-  /** "percent" metrics (Houston Calling, Training Session) vs plain counts. */
-  unit?: "percent" | "count"
+  /** Absent means a plain count. */
+  unit?: MetricUnit
 }
 
 export const METRICS = {
@@ -90,10 +93,44 @@ export const METRICS = {
     totalForStudy: 0.5,
     individualMinimum: 0,
   },
+  // Čas: ~40 h per week across Training / Reading / Practise (one metric,
+  // per-direction breakdown is informative only).
+  "time-weekly": {
+    label: "Čas týdně",
+    period: "week",
+    target: 40,
+    unit: "hours",
+  },
 } as const satisfies Record<string, MetricDefinition>
 
 export type MetricId = keyof typeof METRICS
 
 export function getMetric(id: MetricId): MetricDefinition {
   return METRICS[id]
+}
+
+/** Czech period phrase for a metric goal row, e.g. "tento týden". */
+export const METRIC_PERIOD_LABELS: Record<MetricPeriod, string> = {
+  week: "tento týden",
+  semester: "tento semestr",
+  year: "tento rok",
+  study: "za studium",
+}
+
+const HOURS_FORMAT = new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 1 })
+const COUNT_FORMAT = new Intl.NumberFormat("cs-CZ")
+
+/**
+ * Formats a metric amount in its unit with Czech number formatting:
+ * hours → "12,5 h", percent → "80 %", count → "6".
+ */
+export function formatMetricValue(value: number, unit: MetricUnit = "count"): string {
+  switch (unit) {
+    case "hours":
+      return `${HOURS_FORMAT.format(value)}\u00a0h`
+    case "percent":
+      return `${COUNT_FORMAT.format(value)}\u00a0%`
+    case "count":
+      return COUNT_FORMAT.format(value)
+  }
 }

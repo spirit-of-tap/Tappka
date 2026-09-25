@@ -1,11 +1,17 @@
 "use client"
 
+import { Fragment } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { House, LayoutGrid, User, Users } from "lucide-react"
 
 import { NAV_MODULES } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
+import { MobileTimerTab } from "@/components/time-tracking/mobile-timer-tab"
+import { useOptionalTimer } from "@/components/time-tracking/timer-provider"
+
+// The timer control sits between these two halves when time tracking is on.
+const TIMER_SLOT_INDEX = 2
 
 const TABS = [
   { title: "Domů", url: "/", icon: House },
@@ -30,6 +36,7 @@ const MODULE_SECTIONS = [
 
 export function MobileBottomNav() {
   const pathname = usePathname()
+  const showTimer = useOptionalTimer()?.canAccess ?? false
 
   const isActive = (url: string) => {
     if (url === "/") return pathname === "/"
@@ -46,9 +53,9 @@ export function MobileBottomNav() {
   return (
     <nav aria-label="Hlavní navigace" className="fixed inset-x-0 bottom-0 z-50 md:hidden">
       <div className="flex h-16 items-stretch border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
-        {TABS.map((tab) => {
+        {TABS.map((tab, index) => {
           const active = isActive(tab.url)
-          return (
+          const link = (
             <Link
               key={tab.url}
               href={tab.url}
@@ -62,6 +69,15 @@ export function MobileBottomNav() {
               <span className="text-[11px] font-medium">{tab.title}</span>
             </Link>
           )
+          if (showTimer && index === TIMER_SLOT_INDEX) {
+            return (
+              <Fragment key={tab.url}>
+                <MobileTimerTab />
+                {link}
+              </Fragment>
+            )
+          }
+          return link
         })}
       </div>
     </nav>

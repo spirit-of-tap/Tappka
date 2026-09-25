@@ -72,6 +72,8 @@ function run(command, args) {
   try {
     return execFileSync(command, args, {
       cwd: ROOT,
+      // pnpm is pnpm.cmd on Windows; execFileSync only resolves it through a shell.
+      shell: process.platform === "win32",
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
     }).trim();

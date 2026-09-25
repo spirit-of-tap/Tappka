@@ -84,4 +84,34 @@ describe("MetricProgress", () => {
     expect(screen.getByText("2/20")).toBeInTheDocument()
     expect(screen.getByText("(zbývá 18)")).toBeInTheDocument()
   })
+
+  it("renders a weekly hours goal as a single bar with Czech decimals", () => {
+    const { container } = render(
+      <MetricProgress
+        period="week"
+        unit="hours"
+        goals={[{ current: 12.5, target: 40, label: "tento týden" }]}
+      />,
+    )
+    // Amounts use a non-breaking space; getByText normalises it to a plain space.
+    expect(screen.getByText("tento týden")).toBeInTheDocument()
+    expect(screen.getByText("12,5 h / 40 h")).toBeInTheDocument()
+    expect(screen.getByText("(zbývá 27,5 h)")).toBeInTheDocument()
+    expect(screen.queryByText(/semestr/)).not.toBeInTheDocument()
+    const bars = container.querySelectorAll('[data-slot="metric-bar"]')
+    expect(bars).toHaveLength(1)
+    expect(bars[0]).toHaveStyle({ width: "31.25%" })
+  })
+
+  it("marks a weekly goal as done with the surplus in hours", () => {
+    render(
+      <MetricProgress
+        period="week"
+        unit="hours"
+        goals={[{ current: 42, target: 40, label: "tento týden" }]}
+      />,
+    )
+    expect(screen.getByText("42 h / 40 h")).toBeInTheDocument()
+    expect(screen.getByText(/Splněno \(\+2 h\)/)).toBeInTheDocument()
+  })
 })
