@@ -21,6 +21,20 @@ describe('usePersistedState', () => {
     expect(result.current[0]).toBe('stored-val');
   });
 
+  it('keeps defaultValue when hydrate is false, but still persists writes', () => {
+    window.localStorage.setItem('test-key', JSON.stringify('stored-val'));
+    const { result } = renderHook(() =>
+      usePersistedState('test-key', 'from-url', { hydrate: false }),
+    );
+    expect(result.current[0]).toBe('from-url');
+    expect(result.current[2]).toBe(true);
+
+    act(() => {
+      result.current[1]('picked');
+    });
+    expect(window.localStorage.getItem('test-key')).toBe(JSON.stringify('picked'));
+  });
+
   it('updates state and localStorage on setState', () => {
     const { result } = renderHook(() => usePersistedState('test-key', 'initial'));
 

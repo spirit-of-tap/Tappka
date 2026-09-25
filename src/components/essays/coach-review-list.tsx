@@ -11,17 +11,30 @@ import {
   Inbox,
   MessageCircle,
   RotateCcw,
+  Search,
   Sparkles,
+  X,
 } from 'lucide-react';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  Empty,
+  EmptyContent,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -34,108 +47,139 @@ import { usePersistedState } from '@/lib/hooks/use-persisted-state';
 
 import { formatPoints, pointsLabel } from '@/lib/books/points';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
+import {
+  ALL_TEAMS,
+  COACH_REVIEW_DEFAULT_PAGE_SIZE,
+  COACH_REVIEW_PARAM,
+  COACH_REVIEW_SEARCH_MAX_LENGTH,
+  parseCoachReviewParams,
+} from '@/lib/essays/coach-review-params';
+import type { CoachReviewParams } from '@/lib/essays/coach-review-params';
 import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import type {
   CoachReviewEssay,
   CoachReviewPointsFilter,
   CoachReviewReplyFilter,
   CoachReviewRocketFilter,
+  CoachReviewTab,
   EssayCoachReadWithProfile,
   EssayCommentWithAuthor,
 } from '@/lib/essays/types';
 
+const SEARCH_DEBOUNCE_MS = 300;
+const LOAD_MORE_ROOT_MARGIN = '300px';
+
+const STORAGE_KEY = {
+  tab: 'tappka:coach-review:tab',
+  team: 'tappka:coach-review:team',
+  rocket: 'tappka:coach-review:rocket',
+  points: 'tappka:coach-review:points',
+  reply: 'tappka:coach-review:reply',
+} as const;
+
 interface CoachReviewListProps {
-  initialUnread?: CoachReviewEssay[];
-  initialRead?: CoachReviewEssay[];
+  /** Essays of the initially active tab, already filtered server-side. */
+  initialEssays?: CoachReviewEssay[];
   initialUnreadCount?: number;
   initialReadCount?: number;
   initialHasMore?: boolean;
   teams?: { id: string; name: string }[];
   defaultTeamId?: string;
-  authorPointsMap?: Record<string, number>;
   commentsMap?: Record<string, EssayCommentWithAuthor[]>;
-  coachCommentsMap?: Record<string, EssayCommentWithAuthor[]>;
   coachReadsMap?: Record<string, EssayCoachReadWithProfile[]>;
   currentCoachId?: string;
   currentCoachName?: string;
-  initialTab?: 'unread' | 'read';
-  initialTeamId?: string | null;
-  initialRocket?: CoachReviewRocketFilter;
-  initialPoints?: CoachReviewPointsFilter;
-  initialReply?: CoachReviewReplyFilter;
+  /** Filters the server rendered with (from the URL). */
+  initialParams?: CoachReviewParams;
+}
+
+interface ReviewFilters {
+  tab: CoachReviewTab;
+  team: string;
+  rocket: CoachReviewRocketFilter;
+  points: CoachReviewPointsFilter;
+  reply: CoachReviewReplyFilter;
+  search: string;
+}
+
+function filtersKey(f: ReviewFilters): string {
+  return [f.tab, f.team, f.rocket, f.points, f.reply, f.search].join('|');
 }
 
 export function CoachReviewList({
-  initialUnread = [],
-  initialRead = [],
+  initialEssays = [],
   initialUnreadCount,
   initialReadCount,
   initialHasMore = false,
   teams = [],
-  defaultTeamId = 'all',
-  authorPointsMap: _initialAuthorPointsMap = {},
+  defaultTeamId = ALL_TEAMS,
   commentsMap: initialCommentsMap = {},
-  coachCommentsMap = {},
   coachReadsMap: initialCoachReadsMap = {},
   currentCoachId,
   currentCoachName = 'Kouč:ka',
-  initialTab,
-  initialTeamId,
-  initialRocket,
-  initialPoints,
-  initialReply,
+  initialParams,
 }: CoachReviewListProps) {
-  const [activeTab, setActiveTab, isTabHydrated] = usePersistedState<'unread' | 'read'>(
-    'tappka:coach-review:tab',
-    initialTab ?? 'unread',
+  const init = useMemo(
+    () => initialParams ?? parseCoachReviewParams(() => undefined, defaultTeamId),
+    // Only the first render's params matter; later URL changes come from this component.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  // Filters in the URL (shared link, back navigation) win over remembered ones.
+  const restoreSaved = { hydrate: !init.hasExplicitFilters };
+
+  const [activeTab, setActiveTab, isTabHydrated] = usePersistedState<CoachReviewTab>(
+    STORAGE_KEY.tab,
+    init.tab,
+    restoreSaved,
   );
   const [teamFilter, setTeamFilter, isTeamHydrated] = usePersistedState<string>(
-    'tappka:coach-review:team',
-    initialTeamId !== undefined ? (initialTeamId ?? 'all') : defaultTeamId,
+    STORAGE_KEY.team,
+    init.team,
+    restoreSaved,
   );
   const [rocketFilter, setRocketFilter, isRocketHydrated] = usePersistedState<CoachReviewRocketFilter>(
-    'tappka:coach-review:rocket',
-    initialRocket ?? 'all',
+    STORAGE_KEY.rocket,
+    init.rocket,
+    restoreSaved,
   );
   const [pointsFilter, setPointsFilter, isPointsHydrated] = usePersistedState<CoachReviewPointsFilter>(
-    'tappka:coach-review:points',
-    initialPoints ?? 'all',
+    STORAGE_KEY.points,
+    init.points,
+    restoreSaved,
   );
   const [replyFilter, setReplyFilter, isReplyHydrated] = usePersistedState<CoachReviewReplyFilter>(
-    'tappka:coach-review:reply',
-    initialReply ?? 'all',
+    STORAGE_KEY.reply,
+    init.reply,
+    restoreSaved,
   );
   const isHydrated = isTabHydrated && isTeamHydrated && isRocketHydrated && isPointsHydrated && isReplyHydrated;
 
-  const initialFilterEssay = useCallback(
-    (essay: CoachReviewEssay) => {
-      if (defaultTeamId !== 'all') {
-        if (essay.author?.team_id !== defaultTeamId) return false;
-      }
-      return true;
-    },
-    [defaultTeamId],
+  // Search is not remembered across visits: a stale query silently hides essays.
+  const [searchInput, setSearchInput] = useState(init.search);
+  const [search, setSearch] = useState(init.search);
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (trimmed === search) return;
+    const timer = setTimeout(() => setSearch(trimmed), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchInput, search]);
+
+  const filters: ReviewFilters = useMemo(
+    () => ({
+      tab: activeTab,
+      team: teamFilter,
+      rocket: rocketFilter,
+      points: pointsFilter,
+      reply: replyFilter,
+      search,
+    }),
+    [activeTab, teamFilter, rocketFilter, pointsFilter, replyFilter, search],
   );
 
-  const [essays, setEssays] = useState<CoachReviewEssay[]>(() => {
-    const list = activeTab === 'unread' ? initialUnread : initialRead;
-    return defaultTeamId === 'all' ? list : list.filter(initialFilterEssay);
-  });
-
-  const [unreadCount, setUnreadCount] = useState<number>(() => {
-    if (initialUnreadCount !== undefined) return initialUnreadCount;
-    return defaultTeamId === 'all'
-      ? initialUnread.length
-      : initialUnread.filter(initialFilterEssay).length;
-  });
-
-  const [readCount, setReadCount] = useState<number>(() => {
-    if (initialReadCount !== undefined) return initialReadCount;
-    return defaultTeamId === 'all'
-      ? initialRead.length
-      : initialRead.filter(initialFilterEssay).length;
-  });
-
+  const [essays, setEssays] = useState<CoachReviewEssay[]>(initialEssays);
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount ?? 0);
+  const [readCount, setReadCount] = useState(initialReadCount ?? 0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
@@ -147,151 +191,122 @@ export function CoachReviewList({
     useState<Record<string, EssayCoachReadWithProfile[]>>(initialCoachReadsMap);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const isInitialMount = useRef(true);
-  // Keep URL in sync with filters for shareability and SSR consistency.
-  // URL is the source of truth over localStorage; localStorage provides persistence
-  // when navigating without URL params.
-  const initialFiltersRef = useRef({
-    tab: initialTab ?? 'unread',
-    teamId: initialTeamId !== undefined ? (initialTeamId ?? 'all') : defaultTeamId,
-    rocket: initialRocket ?? 'all',
-    points: initialPoints ?? 'all',
-    reply: initialReply ?? 'all',
-  });
+  // Key of the filters the current `essays` belong to. Responses for any other
+  // key (a filter changed mid-request) are dropped instead of being appended.
+  const loadedKeyRef = useRef(filtersKey({ ...init }));
+  const requestedKeyRef = useRef(loadedKeyRef.current);
 
-  // Keep URL updated whenever filters change post-hydration (shareable links)
+  // Keep the URL shareable and in sync with the filters.
   useEffect(() => {
     if (!isHydrated) return;
-    if (typeof window === 'undefined') return;
-    // Debounce URL sync to avoid push on every intermediate render
     const next = new URLSearchParams();
-    if (activeTab !== 'unread') next.set('tab', activeTab);
-    // Always reflect teamFilter when it differs from default or when explicitly 'all'
-    if (teamFilter !== defaultTeamId || (teamFilter === 'all' && initialFiltersRef.current.teamId !== 'all')) {
-      next.set('team_id', teamFilter);
-    }
-    if (rocketFilter !== 'all') next.set('rocket', rocketFilter);
-    if (pointsFilter !== 'all') next.set('points', pointsFilter);
-    if (replyFilter !== 'all') next.set('reply', replyFilter);
+    if (filters.tab !== 'unread') next.set(COACH_REVIEW_PARAM.tab, filters.tab);
+    if (filters.team !== defaultTeamId) next.set(COACH_REVIEW_PARAM.team, filters.team);
+    if (filters.rocket !== 'all') next.set(COACH_REVIEW_PARAM.rocket, filters.rocket);
+    if (filters.points !== 'all') next.set(COACH_REVIEW_PARAM.points, filters.points);
+    if (filters.reply !== 'all') next.set(COACH_REVIEW_PARAM.reply, filters.reply);
+    if (filters.search) next.set(COACH_REVIEW_PARAM.search, filters.search);
     const qs = next.toString();
     const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-    const current = `${window.location.pathname}${window.location.search}`;
-    if (newUrl !== current) {
+    if (newUrl !== `${window.location.pathname}${window.location.search}`) {
       window.history.replaceState(null, '', newUrl);
     }
-  }, [activeTab, teamFilter, rocketFilter, pointsFilter, replyFilter, isHydrated, defaultTeamId]);
-
-  const effectiveCommentsMap = useMemo(() => {
-    const merged: Record<string, EssayCommentWithAuthor[]> = { ...commentsMap };
-    for (const [essayId, coachComments] of Object.entries(coachCommentsMap)) {
-      const existing = merged[essayId] ?? [];
-      const existingIds = new Set(existing.map((c) => c.id));
-      const newCoach = coachComments.filter((c) => !existingIds.has(c.id));
-      merged[essayId] = [...existing, ...newCoach];
-    }
-    return merged;
-  }, [commentsMap, coachCommentsMap]);
+  }, [filters, isHydrated, defaultTeamId]);
 
   const hasActiveFilters =
     teamFilter !== defaultTeamId ||
     rocketFilter !== 'all' ||
     pointsFilter !== 'all' ||
-    replyFilter !== 'all';
+    replyFilter !== 'all' ||
+    search !== '';
 
   const resetFilters = () => {
     setTeamFilter(defaultTeamId);
     setRocketFilter('all');
     setPointsFilter('all');
     setReplyFilter('all');
+    setSearchInput('');
+    setSearch('');
   };
 
-  const buildUrl = useCallback(
-    (tab: string, pageNum: number) => {
-      const params = new URLSearchParams({
-        tab,
-        page: String(pageNum),
-        page_size: '50',
-      });
-      if (teamFilter) params.set('team_id', teamFilter);
-      if (rocketFilter !== 'all') params.set('rocket', rocketFilter);
-      if (pointsFilter !== 'all') params.set('points', pointsFilter);
-      if (replyFilter !== 'all') params.set('reply', replyFilter);
-      return `/api/essays/coach-review?${params.toString()}`;
-    },
-    [teamFilter, rocketFilter, pointsFilter, replyFilter],
-  );
+  const buildUrl = useCallback((f: ReviewFilters, pageNum: number) => {
+    const params = new URLSearchParams({
+      [COACH_REVIEW_PARAM.tab]: f.tab,
+      [COACH_REVIEW_PARAM.team]: f.team,
+      [COACH_REVIEW_PARAM.page]: String(pageNum),
+      [COACH_REVIEW_PARAM.pageSize]: String(COACH_REVIEW_DEFAULT_PAGE_SIZE),
+    });
+    if (f.rocket !== 'all') params.set(COACH_REVIEW_PARAM.rocket, f.rocket);
+    if (f.points !== 'all') params.set(COACH_REVIEW_PARAM.points, f.points);
+    if (f.reply !== 'all') params.set(COACH_REVIEW_PARAM.reply, f.reply);
+    if (f.search) params.set(COACH_REVIEW_PARAM.search, f.search);
+    return `/api/essays/coach-review?${params.toString()}`;
+  }, []);
 
+  const mergeMaps = (json: {
+    commentsMap?: Record<string, EssayCommentWithAuthor[]>;
+    coachReadsMap?: Record<string, EssayCoachReadWithProfile[]>;
+  }) => {
+    if (json.commentsMap) setCommentsMap((prev) => ({ ...prev, ...json.commentsMap }));
+    if (json.coachReadsMap) setReadsMap((prev) => ({ ...prev, ...json.coachReadsMap }));
+  };
+
+  // Refetch page 1 whenever the filters differ from what is loaded.
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      // If current filters still match the SSR-initial filters, no need to refetch
-      // (prevents duplicate fetch when URL drove SSR). Otherwise localStorage diverged -> refetch.
-      const init = initialFiltersRef.current;
-      const isSameAsInitial =
-        activeTab === init.tab &&
-        teamFilter === init.teamId &&
-        rocketFilter === init.rocket &&
-        pointsFilter === init.points &&
-        replyFilter === init.reply;
-      if (isSameAsInitial) return;
-    }
+    if (!isHydrated) return;
+    const key = filtersKey(filters);
+    if (key === requestedKeyRef.current) return;
+    requestedKeyRef.current = key;
 
-    let isCancelled = false;
     async function fetchFiltered() {
       setLoading(true);
       try {
-        const res = await fetch(buildUrl(activeTab, 1));
+        const res = await fetch(buildUrl(filters, 1));
         if (!res.ok) throw new Error('Fetch failed');
         const json = await res.json();
-        if (isCancelled) return;
+        if (requestedKeyRef.current !== key) return;
+        loadedKeyRef.current = key;
         setEssays(json.data ?? []);
         setUnreadCount(json.unreadCount ?? 0);
         setReadCount(json.readCount ?? 0);
         setHasMore(json.hasMore ?? false);
         setPage(1);
-        if (json.commentsMap) setCommentsMap((prev) => ({ ...prev, ...json.commentsMap }));
-        if (json.coachReadsMap) setReadsMap((prev) => ({ ...prev, ...json.coachReadsMap }));
+        mergeMaps(json);
       } catch (err) {
         console.error('Failed to fetch filtered essays:', err);
       } finally {
-        if (!isCancelled) setLoading(false);
+        if (requestedKeyRef.current === key) setLoading(false);
       }
     }
 
     fetchFiltered();
-    return () => {
-      isCancelled = true;
-    };
-  }, [activeTab, teamFilter, rocketFilter, pointsFilter, replyFilter, defaultTeamId, buildUrl]);
+  }, [filters, isHydrated, buildUrl]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore) return;
+    const key = loadedKeyRef.current;
+    if (key !== requestedKeyRef.current) return;
     setLoadingMore(true);
     try {
       const nextPage = page + 1;
-      const res = await fetch(buildUrl(activeTab, nextPage));
+      const res = await fetch(buildUrl(filters, nextPage));
       if (!res.ok) throw new Error('Fetch failed');
       const json = await res.json();
+      if (loadedKeyRef.current !== key || requestedKeyRef.current !== key) return;
       const newItems = (json.data ?? []) as CoachReviewEssay[];
-      if (newItems.length === 0) {
-        setHasMore(false);
-      } else {
-        setEssays((prev) => {
-          const existingIds = new Set(prev.map((e) => e.id));
-          const toAdd = newItems.filter((e) => !existingIds.has(e.id));
-          return [...prev, ...toAdd];
-        });
-        setPage(nextPage);
-        setHasMore(json.hasMore ?? false);
-        if (json.commentsMap) setCommentsMap((prev) => ({ ...prev, ...json.commentsMap }));
-        if (json.coachReadsMap) setReadsMap((prev) => ({ ...prev, ...json.coachReadsMap }));
-      }
+      setEssays((prev) => {
+        const existingIds = new Set(prev.map((e) => e.id));
+        return [...prev, ...newItems.filter((e) => !existingIds.has(e.id))];
+      });
+      setPage(nextPage);
+      setHasMore(newItems.length > 0 && (json.hasMore ?? false));
+      mergeMaps(json);
     } catch (err) {
       console.error('Failed to load more essays:', err);
     } finally {
       setLoadingMore(false);
     }
-  }, [activeTab, buildUrl, hasMore, loading, loadingMore, page]);
+  }, [buildUrl, filters, hasMore, loading, loadingMore, page]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -302,7 +317,7 @@ export function CoachReviewList({
           loadMore();
         }
       },
-      { rootMargin: '300px' },
+      { rootMargin: LOAD_MORE_ROOT_MARGIN },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -340,94 +355,172 @@ export function CoachReviewList({
     setReadsMap((prev) => ({ ...prev, [essay.id]: [] }));
   };
 
+  const emptyLabel = (tab: CoachReviewTab) => {
+    if (search) return `Nic neodpovídá hledání „${search}“`;
+    if (hasActiveFilters) {
+      return tab === 'unread'
+        ? 'Žádné nepřečtené eseje neodpovídají zvoleným filtrům'
+        : 'Žádné přečtené eseje neodpovídají zvoleným filtrům';
+    }
+    return tab === 'unread' ? 'Žádné nové eseje ke kontrole' : 'Zatím tu nejsou žádné přečtené eseje';
+  };
+
+  const renderList = (tab: CoachReviewTab) => {
+    if (loading && essays.length === 0) {
+      return (
+        <div className="flex justify-center py-12">
+          <Spinner className="size-6 text-muted-foreground" />
+        </div>
+      );
+    }
+    if (essays.length === 0) {
+      return (
+        <EmptyState label={emptyLabel(tab)} onReset={hasActiveFilters ? resetFilters : undefined} />
+      );
+    }
+    return (
+      <div
+        aria-busy={loading}
+        className={loading ? 'space-y-3 opacity-60 transition-opacity' : 'space-y-3 transition-opacity'}
+      >
+        {essays.map((essay) => (
+          <ReviewRow
+            key={essay.id}
+            essay={essay}
+            read={tab === 'read'}
+            comments={commentsMap[essay.id] ?? []}
+            coachReads={readsMap[essay.id] ?? []}
+            onToggled={() => (tab === 'read' ? markUnread(essay) : markRead(essay))}
+          />
+        ))}
+        <div ref={sentinelRef} className="flex justify-center py-4">
+          {loadingMore && <Spinner className="size-5" />}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters Bar */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        {teams.length > 0 && (
-          <div className="w-[150px] sm:w-[170px]">
-            <Select value={teamFilter} onValueChange={setTeamFilter}>
-              <SelectTrigger size="sm" className="w-full">
-                <SelectValue placeholder="Tým" />
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            maxLength={COACH_REVIEW_SEARCH_MAX_LENGTH}
+            placeholder="Hledat studující, esej, knihu nebo autora…"
+            aria-label="Hledat eseje"
+            className="pl-9 pr-9"
+          />
+          {searchInput && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setSearchInput('');
+                setSearch('');
+              }}
+              aria-label="Vymazat hledání"
+              className="absolute top-1/2 right-1 size-7 -translate-y-1/2 text-muted-foreground"
+            >
+              <X className="size-4" />
+            </Button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {teams.length > 0 && (
+            <div className="w-[150px] sm:w-[170px]">
+              <Select value={teamFilter} onValueChange={setTeamFilter}>
+                <SelectTrigger size="sm" className="w-full" aria-label="Tým">
+                  <SelectValue placeholder="Tým" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_TEAMS}>Všechny týmy</SelectItem>
+                  {teams.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="w-[140px] sm:w-[160px]">
+            <Select
+              value={rocketFilter}
+              onValueChange={(v) => setRocketFilter(v as CoachReviewRocketFilter)}
+            >
+              <SelectTrigger size="sm" className="w-full" aria-label="Rocket model">
+                <SelectValue placeholder="Rocket model" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Všechny týmy</SelectItem>
-                {teams.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">Všechny knihy</SelectItem>
+                <SelectItem value="rocket">Pouze Rocket model</SelectItem>
+                <SelectItem value="non-rocket">Mimo Rocket model</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        )}
 
-        <div className="w-[140px] sm:w-[160px]">
-          <Select
-            value={rocketFilter}
-            onValueChange={(v) => setRocketFilter(v as CoachReviewRocketFilter)}
-          >
-            <SelectTrigger size="sm" className="w-full">
-              <SelectValue placeholder="Rocket model" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny knihy</SelectItem>
-              <SelectItem value="rocket">Pouze Rocket model</SelectItem>
-              <SelectItem value="non-rocket">Mimo Rocket model</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="w-[130px] sm:w-[150px]">
+            <Select
+              value={pointsFilter}
+              onValueChange={(v) => setPointsFilter(v as CoachReviewPointsFilter)}
+            >
+              <SelectTrigger size="sm" className="w-full" aria-label="Body">
+                <SelectValue placeholder="Body" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Všechny body</SelectItem>
+                <SelectItem value="1">1 bod</SelectItem>
+                <SelectItem value="2">2 body</SelectItem>
+                <SelectItem value="3">3 body</SelectItem>
+                <SelectItem value="0">Ostatní (0 nebo zlomky)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-[170px] sm:w-[195px]">
+            <Select
+              value={replyFilter}
+              onValueChange={(v) => setReplyFilter(v as CoachReviewReplyFilter)}
+            >
+              <SelectTrigger size="sm" className="w-full" aria-label="Komentáře">
+                <SelectValue placeholder="Komentáře" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Všechny komentáře</SelectItem>
+                <SelectItem value="no-coach-comment">Bez komentáře kouče</SelectItem>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>Po komentáři kouče</SelectLabel>
+                  <SelectItem value="with-reply">Téčko odpovědělo</SelectItem>
+                  <SelectItem value="without-reply">Bez odpovědi Téčka</SelectItem>
+                  <SelectItem value="edited-after-comment">Upraveno po komentáři</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+              className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="size-3" />
+              Resetovat filtry
+            </Button>
+          )}
         </div>
-
-        <div className="w-[130px] sm:w-[150px]">
-          <Select
-            value={pointsFilter}
-            onValueChange={(v) => setPointsFilter(v as CoachReviewPointsFilter)}
-          >
-            <SelectTrigger size="sm" className="w-full">
-              <SelectValue placeholder="Knižní body" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny body</SelectItem>
-              <SelectItem value="1">1 bod</SelectItem>
-              <SelectItem value="2">2 body</SelectItem>
-              <SelectItem value="3">3 body</SelectItem>
-              <SelectItem value="0">Bez bodů / Téma</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="w-[160px] sm:w-[185px]">
-          <Select
-            value={replyFilter}
-            onValueChange={(v) => setReplyFilter(v as CoachReviewReplyFilter)}
-          >
-            <SelectTrigger size="sm" className="w-full">
-              <SelectValue placeholder="Reakce Téčka" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Všechny reakce</SelectItem>
-              <SelectItem value="with-reply">Téčko odpovědělo</SelectItem>
-              <SelectItem value="without-reply">Bez odpovědi Téčka</SelectItem>
-              <SelectItem value="edited-after-comment">Upraveno po komentáři</SelectItem>
-              <SelectItem value="no-coach-comment">Bez komentáře kouče</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={resetFilters}
-            className="h-8 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className="size-3" />
-            Resetovat filtry
-          </Button>
-        )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'unread' | 'read')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as CoachReviewTab)}>
         <TabsList>
           <TabsTrigger value="unread">
             <Inbox />
@@ -442,69 +535,10 @@ export function CoachReviewList({
         </TabsList>
 
         <TabsContent value="unread" className="mt-4">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <Spinner className="size-6 text-muted-foreground" />
-            </div>
-          ) : essays.length === 0 ? (
-            <EmptyState
-              label={
-                hasActiveFilters
-                  ? 'Žádné nepřečtené eseje neodpovídají zvoleným filtrům'
-                  : 'Žádné nové eseje ke kontrole'
-              }
-              onReset={hasActiveFilters ? resetFilters : undefined}
-            />
-          ) : (
-            <div className="space-y-3">
-              {essays.map((essay) => (
-                <ReviewRow
-                  key={essay.id}
-                  essay={essay}
-                  read={false}
-                  comments={effectiveCommentsMap[essay.id] ?? []}
-                  coachReads={readsMap[essay.id] ?? []}
-                  onToggled={() => markRead(essay)}
-                />
-              ))}
-              <div ref={sentinelRef} className="flex justify-center py-4">
-                {loadingMore && <Spinner className="size-5" />}
-              </div>
-            </div>
-          )}
+          {renderList('unread')}
         </TabsContent>
-
         <TabsContent value="read" className="mt-4">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <Spinner className="size-6 text-muted-foreground" />
-            </div>
-          ) : essays.length === 0 ? (
-            <EmptyState
-              label={
-                hasActiveFilters
-                  ? 'Žádné přečtené eseje neodpovídají zvoleným filtrům'
-                  : 'Zatím tu nejsou žádné přečtené eseje'
-              }
-              onReset={hasActiveFilters ? resetFilters : undefined}
-            />
-          ) : (
-            <div className="space-y-3">
-              {essays.map((essay) => (
-                <ReviewRow
-                  key={essay.id}
-                  essay={essay}
-                  read
-                  comments={effectiveCommentsMap[essay.id] ?? []}
-                  coachReads={readsMap[essay.id] ?? []}
-                  onToggled={() => markUnread(essay)}
-                />
-              ))}
-              <div ref={sentinelRef} className="flex justify-center py-4">
-                {loadingMore && <Spinner className="size-5" />}
-              </div>
-            </div>
-          )}
+          {renderList('read')}
         </TabsContent>
       </Tabs>
     </div>
@@ -513,15 +547,21 @@ export function CoachReviewList({
 
 function EmptyState({ label, onReset }: { label: string; onReset?: () => void }) {
   return (
-    <div className="space-y-2 py-12 text-center">
-      <Inbox className="mx-auto size-10 text-muted-foreground/50" />
-      <p className="text-sm text-muted-foreground">{label}</p>
+    <Empty>
+      <EmptyMedia variant="icon">
+        <Inbox className="size-6" />
+      </EmptyMedia>
+      <EmptyHeader>
+        <EmptyTitle>{label}</EmptyTitle>
+      </EmptyHeader>
       {onReset && (
-        <Button variant="outline" size="sm" onClick={onReset} className="mt-2 text-xs">
-          Zrušit filtry
-        </Button>
+        <EmptyContent>
+          <Button variant="outline" size="sm" onClick={onReset}>
+            Zrušit filtry
+          </Button>
+        </EmptyContent>
       )}
-    </div>
+    </Empty>
   );
 }
 

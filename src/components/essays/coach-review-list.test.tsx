@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CoachReviewList, getEssayCommentThreads } from './coach-review-list';
+import { parseCoachReviewParams } from '@/lib/essays/coach-review-params';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
 vi.mock('./coach-read-button', () => ({
@@ -61,11 +62,9 @@ describe('CoachReviewList', () => {
     const essay = mockEssay();
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         teams={teams}
         defaultTeamId="all"
-        authorPointsMap={{ 'user-1': 24 }}
       />,
     );
 
@@ -76,43 +75,53 @@ describe('CoachReviewList', () => {
     expect(screen.queryByText('Tento text shrnuje klíčové myšlenky z knihy...')).not.toBeInTheDocument();
   });
 
-  it('filters essays by team correctly', () => {
-    const essay1 = mockEssay({ id: 'e1', title: 'Esej Alpha', author: { id: 'u1', name: 'Student 1', picture: null, role: 'student', team_id: 'team-1' } });
-    const essay2 = mockEssay({ id: 'e2', title: 'Esej Beta', author: { id: 'u2', name: 'Student 2', picture: null, role: 'student', team_id: 'team-2' } });
+  it('debounces the search box and queries the API with q', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [], unreadCount: 0, readCount: 0, hasMore: false }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      render(<CoachReviewList initialEssays={[mockEssay()]} teams={teams} defaultTeamId="all" />);
 
-    const { unmount } = render(
-      <CoachReviewList
-        initialUnread={[essay1, essay2]}
-        initialRead={[]}
-        teams={teams}
-        defaultTeamId="team-1"
-      />,
-    );
+      fireEvent.change(screen.getByLabelText('Hledat eseje'), { target: { value: 'Vrbas' } });
+      expect(fetchMock).not.toHaveBeenCalled();
 
-    expect(screen.getByText('Esej Alpha')).toBeInTheDocument();
-    expect(screen.queryByText('Esej Beta')).not.toBeInTheDocument();
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      expect(String(fetchMock.mock.calls[0][0])).toContain('q=Vrbas');
+      expect(await screen.findByText('Nic neodpovídá hledání „Vrbas“')).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 
-    unmount();
+  it('lets filters from the URL win over remembered ones without refetching', () => {
+    window.localStorage.setItem('tappka:coach-review:points', JSON.stringify('3'));
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      render(
+        <CoachReviewList
+          initialEssays={[mockEssay()]}
+          teams={teams}
+          defaultTeamId="all"
+          initialParams={parseCoachReviewParams((key) => ({ points: '2' } as Record<string, string>)[key], 'all')}
+        />,
+      );
 
-    render(
-      <CoachReviewList
-        initialUnread={[essay1, essay2]}
-        initialRead={[]}
-        teams={teams}
-        defaultTeamId="all"
-      />,
-    );
-
-    expect(screen.getByText('Esej Alpha')).toBeInTheDocument();
-    expect(screen.getByText('Esej Beta')).toBeInTheDocument();
+      expect(screen.getByLabelText('Body')).toHaveTextContent('2 body');
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+      window.localStorage.clear();
+    }
   });
 
   it('moves essay to read tab when toggled', () => {
     const essay = mockEssay();
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         teams={teams}
         defaultTeamId="all"
       />,
@@ -163,8 +172,7 @@ describe('CoachReviewList', () => {
 
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         teams={teams}
         defaultTeamId="all"
         commentsMap={{ 'essay-1': [coachComment, studentReply] }}
@@ -201,8 +209,7 @@ describe('CoachReviewList', () => {
 
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         teams={teams}
         defaultTeamId="all"
         commentsMap={{ 'essay-1': [coachComment] }}
@@ -251,8 +258,7 @@ describe('CoachReviewList', () => {
 
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         teams={teams}
         defaultTeamId="all"
         commentsMap={{ 'essay-1': [coachComment, standaloneAuthorComment] }}
@@ -285,8 +291,7 @@ describe('CoachReviewList', () => {
 
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         teams={teams}
         defaultTeamId="all"
         commentsMap={{ 'essay-1': [coachComment] }}
@@ -300,8 +305,7 @@ describe('CoachReviewList', () => {
     const essay = mockEssay();
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         initialUnreadCount={4000}
         initialReadCount={125}
         teams={teams}
@@ -332,8 +336,7 @@ describe('CoachReviewList', () => {
 
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         teams={teams}
         defaultTeamId="all"
       />,
@@ -349,8 +352,7 @@ describe('CoachReviewList', () => {
 
     render(
       <CoachReviewList
-        initialUnread={[essay]}
-        initialRead={[]}
+        initialEssays={[essay]}
         teams={teams}
         defaultTeamId="all"
       />,

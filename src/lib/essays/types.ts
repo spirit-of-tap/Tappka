@@ -100,15 +100,21 @@ export interface CoachReviewEssay extends EssayWithDetails {
   read_at: string | null;
 }
 
-export type CoachReviewTab = 'unread' | 'read';
-export type CoachReviewRocketFilter = 'all' | 'rocket' | 'non-rocket';
-export type CoachReviewPointsFilter = 'all' | '1' | '2' | '3' | '0';
-export type CoachReviewReplyFilter =
-  | 'all'
-  | 'with-reply'
-  | 'without-reply'
-  | 'edited-after-comment'
-  | 'no-coach-comment';
+export const COACH_REVIEW_TABS = ['unread', 'read'] as const;
+export const COACH_REVIEW_ROCKET_FILTERS = ['all', 'rocket', 'non-rocket'] as const;
+export const COACH_REVIEW_POINTS_FILTERS = ['all', '1', '2', '3', '0'] as const;
+export const COACH_REVIEW_REPLY_FILTERS = [
+  'all',
+  'with-reply',
+  'without-reply',
+  'edited-after-comment',
+  'no-coach-comment',
+] as const;
+
+export type CoachReviewTab = (typeof COACH_REVIEW_TABS)[number];
+export type CoachReviewRocketFilter = (typeof COACH_REVIEW_ROCKET_FILTERS)[number];
+export type CoachReviewPointsFilter = (typeof COACH_REVIEW_POINTS_FILTERS)[number];
+export type CoachReviewReplyFilter = (typeof COACH_REVIEW_REPLY_FILTERS)[number];
 
 export interface CoachReviewFilters {
   tab?: CoachReviewTab;
@@ -116,6 +122,8 @@ export interface CoachReviewFilters {
   rocket?: CoachReviewRocketFilter;
   points?: CoachReviewPointsFilter;
   reply?: CoachReviewReplyFilter;
+  /** Case-insensitive substring of student name, essay title, book title (cs/en) / author or source title / creator. */
+  search?: string;
   page?: number;
   pageSize?: number;
 }
@@ -126,7 +134,6 @@ export interface CoachReviewResult {
   unreadCount: number;
   readCount: number;
   hasMore: boolean;
-  authorPointsMap: Record<string, number>;
   commentsMap: Record<string, EssayCommentWithAuthor[]>;
   coachReadsMap: Record<string, EssayCoachReadWithProfile[]>;
 }
