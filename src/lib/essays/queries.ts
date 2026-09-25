@@ -19,6 +19,8 @@ import type {
   CoachReviewResult,
   EssayFilters,
   EssayRevisionSummary,
+  EssayViewerItem,
+  EssayVoterItem,
 } from './types';
 
 const PAGE_SIZE_DEFAULT = 20;
@@ -522,6 +524,77 @@ export async function getEssayCoachViewers(
   return ((data ?? []) as EssayViewWithProfile[]).filter(
     (v) => v.viewer?.role === 'coach',
   );
+}
+
+export async function getEssayViewers(
+  supabase: SupabaseClient<Database>,
+  essayId: string,
+): Promise<EssayViewerItem[]> {
+  const { data, error } = await supabase
+    .from('essay_views')
+    .select(`
+      viewer_profile_id,
+      first_viewed_at,
+      last_viewed_at,
+      viewer:profiles!viewer_profile_id(
+        id,
+        name,
+        picture,
+        role,
+        team:teams!profiles_team_id_fkey(id, name)
+      )
+    `)
+    .eq('essay_id', essayId)
+    .order('last_viewed_at', { ascending: false });
+
+  if (error) throw error;
+
+  return ((data ?? []) as unknown as EssayViewerItem[]).map((item) => ({
+    ...item,
+    viewer: item.viewer
+      ? {
+          ...item.viewer,
+          team: Array.isArray(item.viewer.team)
+            ? (item.viewer.team[0] ?? null)
+            : item.viewer.team ?? null,
+        }
+      : null,
+  }));
+}
+
+export async function getEssayVoters(
+  supabase: SupabaseClient<Database>,
+  essayId: string,
+): Promise<EssayVoterItem[]> {
+  const { data, error } = await supabase
+    .from('essay_votes')
+    .select(`
+      voter_profile_id,
+      created_at,
+      voter:profiles!voter_profile_id(
+        id,
+        name,
+        picture,
+        role,
+        team:teams!profiles_team_id_fkey(id, name)
+      )
+    `)
+    .eq('essay_id', essayId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return ((data ?? []) as unknown as EssayVoterItem[]).map((item) => ({
+    ...item,
+    voter: item.voter
+      ? {
+          ...item.voter,
+          team: Array.isArray(item.voter.team)
+            ? (item.voter.team[0] ?? null)
+            : item.voter.team ?? null,
+        }
+      : null,
+  }));
 }
 
 export async function getCoachReviewEssays(
