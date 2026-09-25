@@ -62,6 +62,33 @@ export interface EssayViewWithProfile extends EssayView {
   viewer: Pick<Profile, 'id' | 'name' | 'role'> | null;
 }
 
+export interface EssayEngagementProfile {
+  id: string;
+  name: string | null;
+  picture: string | null;
+  role: 'student' | 'mentor' | 'coach' | 'admin';
+  team: { id: string; name: string } | null;
+}
+
+export interface EssayViewerItem {
+  viewer_profile_id: string;
+  first_viewed_at: string;
+  last_viewed_at: string;
+  viewer: EssayEngagementProfile | null;
+}
+
+export interface EssayVoterItem {
+  voter_profile_id: string;
+  created_at: string;
+  voter: EssayEngagementProfile | null;
+}
+
+export interface EssayActivityData {
+  isAuthor: boolean;
+  views: EssayViewerItem[];
+  votes: EssayVoterItem[];
+}
+
 export interface EssayCoachRead {
   essay_id: string;
   coach_profile_id: string;

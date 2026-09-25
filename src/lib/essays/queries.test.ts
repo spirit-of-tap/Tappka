@@ -3,7 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/database.types";
 
-import { getAuthorsApprovedBookPoints, getTeamBookPointsStats, getUserBookPointsStats, matchesResolvedPointsBucket } from "./queries";
+import {
+  getAuthorsApprovedBookPoints,
+  getEssayViewers,
+  getEssayVoters,
+  getTeamBookPointsStats,
+  getUserBookPointsStats,
+  matchesResolvedPointsBucket,
+} from "./queries";
 
 interface RecordedCall {
   method: string;
@@ -44,6 +51,11 @@ class FakeChain {
 
   is(column: string, value: unknown): this {
     this.calls.push({ method: "is", args: [column, value] });
+    return this;
+  }
+
+  order(column: string, options?: unknown): this {
+    this.calls.push({ method: "order", args: [column, options] });
     return this;
   }
 
@@ -419,3 +431,100 @@ describe("getTeamBookPointsStats", () => {
     ]);
   });
 });
+
+describe("getEssayViewers", () => {
+  it("fetches essay viewers and normalizes team object", async () => {
+    const mockViewers = [
+      {
+        viewer_profile_id: "viewer-1",
+        first_viewed_at: "2026-09-20T10:00:00Z",
+        last_viewed_at: "2026-09-24T12:00:00Z",
+        viewer: {
+          id: "viewer-1",
+          name: "Viewer One",
+          picture: null,
+          role: "student",
+          team: [{ id: "team-1", name: "Alpha Team" }],
+        },
+      },
+    ];
+
+    const client = fakeSupabase({
+      essay_views: [{ data: mockViewers }],
+    });
+
+    const result = await getEssayViewers(client, "essay-123");
+
+    expect(result).toEqual([
+      {
+        viewer_profile_id: "viewer-1",
+        first_viewed_at: "2026-09-20T10:00:00Z",
+        last_viewed_at: "2026-09-24T12:00:00Z",
+        viewer: {
+          id: "viewer-1",
+          name: "Viewer One",
+          picture: null,
+          role: "student",
+          team: { id: "team-1", name: "Alpha Team" },
+        },
+      },
+    ]);
+  });
+
+  it("handles empty viewers list", async () => {
+    const client = fakeSupabase({
+      essay_views: [{ data: [] }],
+    });
+
+    const result = await getEssayViewers(client, "essay-123");
+    expect(result).toEqual([]);
+  });
+});
+
+describe("getEssayVoters", () => {
+  it("fetches essay voters and normalizes team object", async () => {
+    const mockVoters = [
+      {
+        voter_profile_id: "voter-1",
+        created_at: "2026-09-23T15:00:00Z",
+        voter: {
+          id: "voter-1",
+          name: "Voter One",
+          picture: null,
+          role: "coach",
+          team: { id: "team-2", name: "Beta Team" },
+        },
+      },
+    ];
+
+    const client = fakeSupabase({
+      essay_votes: [{ data: mockVoters }],
+    });
+
+    const result = await getEssayVoters(client, "essay-123");
+
+    expect(result).toEqual([
+      {
+        voter_profile_id: "voter-1",
+        created_at: "2026-09-23T15:00:00Z",
+        voter: {
+          id: "voter-1",
+          name: "Voter One",
+          picture: null,
+          role: "coach",
+          team: { id: "team-2", name: "Beta Team" },
+        },
+      },
+    ]);
+  });
+
+  it("handles empty voters list", async () => {
+    const client = fakeSupabase({
+      essay_votes: [{ data: [] }],
+    });
+
+    const result = await getEssayVoters(client, "essay-123");
+    expect(result).toEqual([]);
+  });
+});
+

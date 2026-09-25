@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { BookOpen, Eye, Pencil } from 'lucide-react';
+import { BookOpen, Pencil } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssayById, getEssayComments, getEssayCoachViewers, getEssayCoachReads, getEssayFullRevisions } from '@/lib/essays/queries';
@@ -13,6 +13,7 @@ import { ViewTracker } from '@/components/essays/view-tracker';
 import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { EssayPinButton } from '@/components/essays/essay-pin-button';
+import { EssayEngagementTrigger } from '@/components/essays/essay-engagement-trigger';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/ui/page-shell';
@@ -126,21 +127,12 @@ export default async function EssayDetailPage({ params }: PageProps) {
           <span className="text-muted-foreground/50">&middot;</span>
           <span>{new Date(essay.created_at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           <span className="text-muted-foreground/50">&middot;</span>
-          <span className="flex items-center gap-1">
-            <Eye className="size-3.5" />
-            {essay.view_count}
-          </span>
-          {isAuthor && (
-            <>
-              <span className="text-muted-foreground/50">&middot;</span>
-              <EssayVoteButton
-                essayId={essayId}
-                initialVoteCount={essay.vote_count}
-                initialVoted={hasVoted}
-                readOnly
-              />
-            </>
-          )}
+          <EssayEngagementTrigger
+            essayId={essayId}
+            viewCount={essay.view_count}
+            voteCount={essay.vote_count}
+            isAuthor={isAuthor}
+          />
         </div>
       </div>
 
