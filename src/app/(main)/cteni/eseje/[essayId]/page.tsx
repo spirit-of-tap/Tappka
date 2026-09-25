@@ -3,10 +3,9 @@ import { notFound, redirect } from 'next/navigation';
 import { BookOpen, Pencil } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getEssayById, getEssayComments, getEssayCoachViewers, getEssayCoachReads, getEssayFullRevisions } from '@/lib/essays/queries';
+import { getEssayById, getEssayComments, getEssayCoachReads, getEssayFullRevisions } from '@/lib/essays/queries';
 import { EssayViewerWithDiff } from '@/components/essays/essay-viewer-with-diff';
 import { EssayCommentThread } from '@/components/essays/essay-comment-thread';
-import { SeenByCoachBanner } from '@/components/essays/seen-by-coach-banner';
 import { ReadByCoachBanner } from '@/components/essays/read-by-coach-banner';
 import { CoachReadButton } from '@/components/essays/coach-read-button';
 import { ViewTracker } from '@/components/essays/view-tracker';
@@ -62,8 +61,6 @@ export default async function EssayDetailPage({ params }: PageProps) {
   const hasVoted = !!voteResult.data;
   const isCoachOrAdmin = profile?.role === 'coach' || profile?.role === 'admin';
 
-  const coachViewers = isAuthor ? await getEssayCoachViewers(supabase, essayId) : [];
-
   let coachReads: Awaited<ReturnType<typeof getEssayCoachReads>> = [];
   let canReview = false;
   if (isAuthor) {
@@ -76,7 +73,8 @@ export default async function EssayDetailPage({ params }: PageProps) {
     coachReads = reads;
     canReview = reviewable.data === true;
   }
-  const alreadyRead = profile ? coachReads.some((r) => r.coach_profile_id === profile.id) : false;
+  // Read status is team-wide: one coach's read marks it read for everyone.
+  const alreadyRead = coachReads.length > 0;
   // Frozen credit is author-private (and visible in coach review). Visitors
   // see the book's live points so the badge matches the book detail.
   const viewerCanSeeFrozen = isAuthor || isCoachOrAdmin;
@@ -103,10 +101,9 @@ export default async function EssayDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {isAuthor && (coachReads.length > 0 || coachViewers.length > 0) && (
-        <div className="mb-6 space-y-2">
-          {coachReads.length > 0 && <ReadByCoachBanner reads={coachReads} />}
-          {coachViewers.length > 0 && <SeenByCoachBanner coachViewers={coachViewers} />}
+      {isAuthor && coachReads.length > 0 && (
+        <div className="mb-6">
+          <ReadByCoachBanner reads={coachReads} />
         </div>
       )}
 

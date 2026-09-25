@@ -337,15 +337,7 @@ export function CoachReviewList({
     }
     setReadCount((c) => Math.max(0, c - 1));
     setUnreadCount((c) => c + 1);
-    if (currentCoachId) {
-      setReadsMap((prev) => {
-        const existing = prev[essay.id] ?? [];
-        return {
-          ...prev,
-          [essay.id]: existing.filter((r) => r.coach_profile_id !== currentCoachId),
-        };
-      });
-    }
+    setReadsMap((prev) => ({ ...prev, [essay.id]: [] }));
   };
 
   return (
@@ -492,7 +484,7 @@ export function CoachReviewList({
               label={
                 hasActiveFilters
                   ? 'Žádné přečtené eseje neodpovídají zvoleným filtrům'
-                  : 'Zatím nemáš nic označené jako přečtené'
+                  : 'Zatím tu nejsou žádné přečtené eseje'
               }
               onReset={hasActiveFilters ? resetFilters : undefined}
             />
@@ -727,7 +719,7 @@ function ReviewRow({
         </div>
 
         {/* Combined Footer: Coach comments & read status */}
-        {(hasCoachComment || (read && coachReads.length > 0)) && (
+        {(hasCoachComment || coachReads.length > 0) && (
           <div className="space-y-3 border-t border-border/40 pt-3">
             {/* Header with comments count, edited status & read by */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm text-muted-foreground">
@@ -746,7 +738,7 @@ function ReviewRow({
                 )}
               </div>
 
-              {read && coachReads.length > 0 && (
+              {coachReads.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1 text-xs">
                   <CheckCheck className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Přečteno:</span>

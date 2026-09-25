@@ -1,0 +1,1 @@
+CREATE POLICY "Reviewing coaches see all reads of reviewable essays" ON "essay_coach_reads" AS PERMISSIVE FOR SELECT TO "authenticated" USING (coach_can_review_essay(essay_id));

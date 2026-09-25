@@ -213,11 +213,14 @@ export const essayCoachReads = pgTable("essay_coach_reads", {
 			name: "essay_coach_reads_updated_by_profile_id_fkey"
 		}).onDelete("restrict"),
 	primaryKey({ columns: [table.essayId, table.coachProfileId], name: "essay_coach_reads_pkey"}),
-	pgPolicy("Coaches remove own reads", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`(coach_profile_id = current_profile_id())` }),
+	// Read status is team-wide: any reviewing coach can mark an essay unread again for everyone.
+	pgPolicy("Coaches remove own reads", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`((coach_profile_id = current_profile_id()) OR coach_can_review_essay(essay_id))` }),
 	pgPolicy("Coaches mark own reads within their team", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`((coach_profile_id = current_profile_id()) AND coach_can_review_essay(essay_id))` }),
 	pgPolicy("Coach sees own reads; author sees reads of own essays", { as: "permissive", for: "select", to: ["authenticated"], using: sql`((coach_profile_id = current_profile_id()) OR (EXISTS ( SELECT 1
    FROM essays e
   WHERE ((e.id = essay_coach_reads.essay_id) AND (e.author_profile_id = current_profile_id())))))` }),
+	// Fellow coaches (same team) and admins see who else already read the essay.
+	pgPolicy("Reviewing coaches see all reads of reviewable essays", { as: "permissive", for: "select", to: ["authenticated"], using: sql`coach_can_review_essay(essay_id)` }),
 ]).enableRLS();
 
 export const essayViews = pgTable("essay_views", {

@@ -1,0 +1,1 @@
+ALTER POLICY "Coaches remove own reads" ON "essay_coach_reads" TO authenticated USING (((coach_profile_id = current_profile_id()) OR coach_can_review_essay(essay_id)));

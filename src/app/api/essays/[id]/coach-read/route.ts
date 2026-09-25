@@ -71,8 +71,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     const { error } = await supabase
       .from('essay_coach_reads')
       .delete()
-      .eq('essay_id', id)
-      .eq('coach_profile_id', profile.id);
+      // Read status is team-wide, so unmarking clears every coach's read.
+      .eq('essay_id', id);
 
     if (error) {
       serverLogger.console.error('DELETE coach-read error:', error);

@@ -12,7 +12,6 @@ import type { HighlightCategory } from '@/lib/books/types';
 import type {
   EssayWithDetails,
   EssayCommentWithAuthor,
-  EssayViewWithProfile,
   EssayCoachReadWithProfile,
   CoachReviewEssay,
   CoachReviewFilters,
@@ -507,25 +506,6 @@ export async function getEssayComments(
   return data as EssayCommentWithAuthor[];
 }
 
-export async function getEssayCoachViewers(
-  supabase: SupabaseClient<Database>,
-  essayId: string,
-): Promise<EssayViewWithProfile[]> {
-  const { data, error } = await supabase
-    .from('essay_views')
-    .select(`
-      *,
-      viewer:profiles!viewer_profile_id(id, name, role)
-    `)
-    .eq('essay_id', essayId);
-
-  if (error) throw error;
-
-  return ((data ?? []) as EssayViewWithProfile[]).filter(
-    (v) => v.viewer?.role === 'coach',
-  );
-}
-
 export async function getEssayViewers(
   supabase: SupabaseClient<Database>,
   essayId: string,
@@ -702,8 +682,8 @@ export async function getCoachReviewEssays(
       const { data: readsForPage, error: pageReadsError } = await supabase
         .from('essay_coach_reads')
         .select('essay_id, read_at')
-        .eq('coach_profile_id', coachProfileId)
-        .in('essay_id', essayIds);
+        .in('essay_id', essayIds)
+        .order('read_at', { ascending: true });
       if (pageReadsError) throw pageReadsError;
       const pageReadMap = new Map<string, string>(
         ((readsForPage ?? []) as { essay_id: string; read_at: string }[]).map((r) => [r.essay_id, r.read_at]),
@@ -767,8 +747,7 @@ async function getCoachReviewEssaysFallback(
 
   const { data: reads, error: readsError } = await supabase
     .from('essay_coach_reads')
-    .select('essay_id, read_at')
-    .eq('coach_profile_id', coachProfileId);
+    .select('essay_id, read_at');
   if (readsError) throw readsError;
   const readRows = (reads ?? []) as { essay_id: string; read_at: string }[];
   const readMap = new Map(readRows.map((r) => [r.essay_id, r.read_at]));
@@ -1234,8 +1213,7 @@ export async function getCoachUnreadCount(
 
   const { data: reads, error: readsError } = await supabase
     .from('essay_coach_reads')
-    .select('essay_id')
-    .eq('coach_profile_id', coachProfileId);
+    .select('essay_id');
   if (readsError) throw readsError;
   const readIds = (reads ?? []).map((r: { essay_id: string }) => r.essay_id);
 
@@ -1291,8 +1269,7 @@ export async function getCoachReadCount(
 
   const { data: reads, error: readsError } = await supabase
     .from('essay_coach_reads')
-    .select('essay_id')
-    .eq('coach_profile_id', coachProfileId);
+    .select('essay_id');
   if (readsError) throw readsError;
   const readIds = (reads ?? []).map((r: { essay_id: string }) => r.essay_id);
   if (readIds.length === 0) return 0;
