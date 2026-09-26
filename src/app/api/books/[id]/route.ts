@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBookById } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
+import { runNotificationsAfterResponse } from '@/lib/notifications/after-response';
 import { notifyBookDecided } from '@/lib/notifications/book-notifications';
 import type { ClassifyBookInput, SetBookHighlightInput } from '@/lib/books/types';
 import { serverLogger } from "@/lib/server-logger";
@@ -97,15 +98,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       if (error) throw error;
       if (!data) return NextResponse.json({ error: 'Kniha nenalezena' }, { status: 404 });
 
-      // A failed email must never fail the decision.
-      try {
-        await notifyBookDecided(supabase, {
-          bookId: id,
-          origin: new URL(request.url).origin,
-        });
-      } catch (notifyError) {
-        serverLogger.console.error('notifyBookDecided failed:', notifyError);
-      }
+      // After the response: a failed or slow (retrying) email must never fail or delay the decision.
+      runNotificationsAfterResponse([
+        {
+          label: 'notifyBookDecided',
+          run: () => notifyBookDecided(supabase, {
+            bookId: id,
+            origin: new URL(request.url).origin,
+          }),
+        },
+      ]);
 
       return NextResponse.json({ data });
     }

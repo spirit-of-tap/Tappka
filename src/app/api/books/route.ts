@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { findDuplicate, type MatchableBook } from '@/lib/books/dedupe';
 import { getBooks } from '@/lib/books/queries';
 import { setBookTags } from '@/lib/books/tags';
+import { runNotificationsAfterResponse } from '@/lib/notifications/after-response';
 import { notifyBookSubmitted } from '@/lib/notifications/book-notifications';
 import { downloadAndStoreCover } from '@/lib/storage/service';
 import type { CreateBookInput, BookFilters, BookListStatus } from '@/lib/books/types';
@@ -177,16 +178,17 @@ export async function POST(request: NextRequest) {
       await setBookTags(supabase, inserted.id, cleanTags, profile.id);
     }
 
-    // A failed email must never fail the submission.
-    try {
-      await notifyBookSubmitted(supabase, {
-        bookId: inserted.id,
-        submitterProfileId: profile.id,
-        origin: new URL(request.url).origin,
-      });
-    } catch (notifyError) {
-      serverLogger.console.error('notifyBookSubmitted failed:', notifyError);
-    }
+    // After the response: a failed or slow (retrying) email must never fail or delay the submission.
+    runNotificationsAfterResponse([
+      {
+        label: 'notifyBookSubmitted',
+        run: () => notifyBookSubmitted(supabase, {
+          bookId: inserted.id,
+          submitterProfileId: profile.id,
+          origin: new URL(request.url).origin,
+        }),
+      },
+    ]);
 
     return NextResponse.json(
       { data: { ...inserted, google_books_cover_url: coverUrl, tags: cleanTags } },

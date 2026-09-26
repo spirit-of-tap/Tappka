@@ -20,7 +20,7 @@ async function seedTeam(client: PoolClient, name: string): Promise<string> {
 
 async function seedProfile(
   client: PoolClient,
-  opts: { name: string; email: string; role: "student" | "coach"; teamId: string },
+  opts: { name: string; email: string; role: "student" | "coach" | "admin"; teamId: string },
 ): Promise<Seed> {
   const auth = await insertAuthUser(client, { email: opts.email });
   const { rows: userRows } = await client.query(
@@ -143,6 +143,61 @@ describe("essay_coach_reads is team-wide", () => {
       );
 
       expect(rowCount).toBe(1);
+    });
+  });
+});
+
+describe("coach review inbox includes admin-authored essays", () => {
+  it("coaches and the admin author both see the admin's essay", async () => {
+    await withRollback(async (client) => {
+      const teamId = await seedTeam(client, "Team A");
+      const coach = await seedProfile(client, { name: "C", email: "adm-c@pef.czu.cz", role: "coach", teamId });
+      const admin = await seedProfile(client, { name: "Adm", email: "adm-a@pef.czu.cz", role: "admin", teamId });
+      const essayId = await seedEssay(client, admin.profileId);
+
+      await asClaims(client, { sub: coach.authId });
+      expect((await callReview(client, coach.profileId, "unread")).essay_ids).toEqual([essayId]);
+
+      await asClaims(client, { sub: admin.authId });
+      expect((await callReview(client, admin.profileId, "unread")).essay_ids).toEqual([essayId]);
+    });
+  });
+});
+
+describe("coach review search", () => {
+  it("matches student name, Czech/English book title, author and treats wildcards literally", async () => {
+    await withRollback(async (client) => {
+      const teamId = await seedTeam(client, "Team A");
+      const coach = await seedProfile(client, { name: "C", email: "srch-c@pef.czu.cz", role: "coach", teamId });
+      const anna = await seedProfile(client, { name: "Anna Nováková", email: "srch-a@studenti.czu.cz", role: "student", teamId });
+      const petr = await seedProfile(client, { name: "Petr Dvořák", email: "srch-p@studenti.czu.cz", role: "student", teamId });
+      const { rows: books } = await client.query(
+        `insert into public.books (title_cs, title_en, author, created_by_profile_id, updated_by_profile_id, list_status, book_points)
+         values ('Štíhlý startup', 'The Lean Startup', 'Eric Ries', $1, $1, 'longlist', 2) returning id`,
+        [coach.profileId],
+      );
+      const annaEssay = await seedEssay(client, anna.profileId);
+      const { rows: petrRows } = await client.query(
+        `insert into public.essays (author_profile_id, book_id, created_by_profile_id, updated_by_profile_id, published_at)
+         values ($1, $2, $1, $1, now()) returning id`,
+        [petr.profileId, books[0].id],
+      );
+
+      await asClaims(client, { sub: coach.authId });
+      const search = async (q: string) => {
+        const { rows } = await client.query(
+          `select public.coach_review_filtered_ids($1, null, 'unread', 'all', 'all', 'all', 1, 50, $2) as r`,
+          [coach.profileId, q],
+        );
+        return (rows[0].r as ReviewResult).essay_ids;
+      };
+
+      expect(await search("nováK")).toEqual([annaEssay]);
+      expect(await search("štíhlý")).toEqual([petrRows[0].id]);
+      expect(await search("lean")).toEqual([petrRows[0].id]);
+      expect(await search("ries")).toEqual([petrRows[0].id]);
+      expect(await search("%")).toEqual([]);
+      expect((await search("  ")).sort()).toEqual([annaEssay, petrRows[0].id].sort());
     });
   });
 });

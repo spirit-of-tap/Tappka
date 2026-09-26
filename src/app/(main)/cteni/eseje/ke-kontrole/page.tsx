@@ -2,6 +2,12 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getCoachReviewEssays } from '@/lib/essays/queries';
+import {
+  ALL_TEAMS,
+  COACH_REVIEW_DEFAULT_PAGE_SIZE,
+  parseCoachReviewParams,
+  teamIdForQuery,
+} from '@/lib/essays/coach-review-params';
 import { CoachReviewList } from '@/components/essays/coach-review-list';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageShell } from '@/components/ui/page-shell';
@@ -27,25 +33,11 @@ export default async function CoachReviewPage({
   }
 
   const rawParams = await searchParams;
-  const getParam = (key: string): string | undefined => {
+  const defaultTeamId = profile.team_id ?? ALL_TEAMS;
+  const params = parseCoachReviewParams((key) => {
     const v = rawParams[key];
-    if (Array.isArray(v)) return v[0];
-    return v;
-  };
-  const tabParam = getParam('tab');
-  const teamParam = getParam('team_id');
-  const rocketParam = getParam('rocket');
-  const pointsParam = getParam('points');
-  const replyParam = getParam('reply');
-
-  const defaultTeamId = profile.team_id ?? 'all';
-  // Validate and normalize search params - fall back to defaults if invalid
-  const activeTab = tabParam === 'read' ? 'read' : 'unread';
-  // If teamParam is explicitly provided (including 'all'), use it; otherwise use default
-  const effectiveTeamId = teamParam !== undefined ? (teamParam === 'all' ? null : teamParam) : defaultTeamId === 'all' ? null : defaultTeamId;
-  const rocket = (['all', 'rocket', 'non-rocket'].includes(rocketParam ?? '') ? rocketParam : 'all') as 'all' | 'rocket' | 'non-rocket';
-  const points = (['all', '1', '2', '3', '0'].includes(pointsParam ?? '') ? pointsParam : 'all') as 'all' | '1' | '2' | '3' | '0';
-  const reply = (['all', 'with-reply', 'without-reply', 'edited-after-comment', 'no-coach-comment'].includes(replyParam ?? '') ? replyParam : 'all') as 'all' | 'with-reply' | 'without-reply' | 'edited-after-comment' | 'no-coach-comment';
+    return Array.isArray(v) ? v[0] : v;
+  }, defaultTeamId);
 
   const [teamsResult, initialResult] = await Promise.all([
     supabase
@@ -54,13 +46,14 @@ export default async function CoachReviewPage({
       .is('removed_at', null)
       .order('name', { ascending: true }),
     getCoachReviewEssays(supabase, profile.id, {
-      tab: activeTab as 'unread' | 'read',
-      teamId: effectiveTeamId,
-      rocket,
-      points,
-      reply,
+      tab: params.tab,
+      teamId: teamIdForQuery(params.team),
+      rocket: params.rocket,
+      points: params.points,
+      reply: params.reply,
+      search: params.search,
       page: 1,
-      pageSize: 50,
+      pageSize: COACH_REVIEW_DEFAULT_PAGE_SIZE,
     }),
   ]);
 
@@ -74,23 +67,17 @@ export default async function CoachReviewPage({
       />
 
       <CoachReviewList
-        initialUnread={activeTab === 'unread' ? initialResult.essays : []}
-        initialRead={activeTab === 'read' ? initialResult.essays : []}
+        initialEssays={initialResult.essays}
         initialUnreadCount={initialResult.unreadCount}
         initialReadCount={initialResult.readCount}
         initialHasMore={initialResult.hasMore}
         teams={teams}
         defaultTeamId={defaultTeamId}
-        authorPointsMap={initialResult.authorPointsMap}
         commentsMap={initialResult.commentsMap}
         coachReadsMap={initialResult.coachReadsMap}
         currentCoachId={profile.id}
         currentCoachName={profile.name ?? 'Kouč:ka'}
-        initialTab={activeTab as 'unread' | 'read'}
-        initialTeamId={effectiveTeamId}
-        initialRocket={rocket}
-        initialPoints={points}
-        initialReply={reply}
+        initialParams={params}
       />
     </PageShell>
   );

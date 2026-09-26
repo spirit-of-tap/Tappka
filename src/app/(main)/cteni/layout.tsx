@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getCoachUnreadCount } from '@/lib/essays/queries';
+import { serverLogger } from '@/lib/server-logger';
 import { CteniTabBar } from '@/components/cteni/cteni-tab-bar';
 
 export default async function CteniLayout({ children }: { children: ReactNode }) {
@@ -17,7 +18,13 @@ export default async function CteniLayout({ children }: { children: ReactNode })
   const isCoachOrAdmin = profile.role === 'coach' || profile.role === 'admin';
   let reviewCount = 0;
   if (isCoachOrAdmin) {
-    reviewCount = await getCoachUnreadCount(supabase, profile.id, profile.team_id ?? undefined);
+    // A failing badge count must not take down the whole reading section.
+    reviewCount = await getCoachUnreadCount(supabase, profile.id, profile.team_id ?? undefined).catch(
+      (err) => {
+        serverLogger.console.error('getCoachUnreadCount failed:', err);
+        return 0;
+      },
+    );
   }
 
   return (

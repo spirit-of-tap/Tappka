@@ -80,61 +80,97 @@ describe('selectCoachRecipients', () => {
   });
 });
 
-describe('notifyBookSubmitted', () => {
-  it('sends email to eligible coaches without requiring beta access', async () => {
-    const supabase = {
-      from: vi.fn((table: string) => {
-        if (table === 'books') {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                maybeSingle: vi.fn(async () => ({
-                  data: {
-                    title_cs: 'Kniha 1',
-                    author: 'Autor',
-                    book_points: 3,
-                    list_status_reason: 'Důvod',
-                  },
-                })),
+function bookSubmittedSupabaseStub(coaches: CoachRecipient[]) {
+  return {
+    from: vi.fn((table: string) => {
+      if (table === 'books') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn(async () => ({
+                data: {
+                  title_cs: 'Kniha 1',
+                  author: 'Autor',
+                  book_points: 3,
+                  list_status_reason: 'Důvod',
+                },
               })),
             })),
-          };
-        }
-        if (table === 'profiles') {
-          return {
-            select: vi.fn((fields: string) => {
-              if (fields.includes('name')) {
-                return {
-                  eq: vi.fn(() => ({
-                    maybeSingle: vi.fn(async () => ({
-                      data: { name: 'Student', team_id: TEAM },
-                    })),
-                  })),
-                };
-              }
+          })),
+        };
+      }
+      if (table === 'profiles') {
+        return {
+          select: vi.fn((fields: string) => {
+            if (fields.includes('name')) {
               return {
-                eq: vi.fn(async () => ({
-                  data: [coachWithoutBeta],
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({
+                    data: { name: 'Student', team_id: TEAM },
+                  })),
                 })),
               };
-            }),
-          };
-        }
-        return {};
-      }),
-      rpc: vi.fn(async () => ({
-        data: [{ book_submitted_email: true }],
-        error: null,
-      })),
-    };
+            }
+            return {
+              eq: vi.fn(async () => ({
+                data: coaches,
+              })),
+            };
+          }),
+        };
+      }
+      return {};
+    }),
+    rpc: vi.fn(async () => ({
+      data: [{ book_submitted_email: true }],
+      error: null,
+    })),
+  };
+}
 
-    await notifyBookSubmitted(supabase as never, {
-      bookId: 'b1',
-      submitterProfileId: 's1',
-      origin: 'https://tappka.cz',
-    });
+const SUBMIT_PARAMS = {
+  bookId: 'b1',
+  submitterProfileId: 's1',
+  origin: 'https://tappka.cz',
+};
+
+describe('notifyBookSubmitted', () => {
+  it('sends email to eligible coaches without requiring beta access', async () => {
+    await notifyBookSubmitted(bookSubmittedSupabaseStub([coachWithoutBeta]) as never, SUBMIT_PARAMS);
 
     expect(mockedSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'coach3@studenti.czu.cz' }),
+    );
+  });
+
+  it('sends to coaches one at a time so a large team does not trip the Resend rate limit', async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    mockedSendEmail.mockImplementation(async () => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      inFlight--;
+      return { id: 'ok' };
+    });
+
+    await notifyBookSubmitted(bookSubmittedSupabaseStub([teamCoach, coachWithoutBeta]) as never, SUBMIT_PARAMS);
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(2);
+    expect(maxInFlight).toBe(1);
+  });
+
+  it('still emails the remaining coaches when one send fails, then reports the failure', async () => {
+    mockedSendEmail
+      .mockRejectedValueOnce(new Error('Resend send failed: boom'))
+      .mockResolvedValueOnce({ id: 'ok' });
+
+    await expect(
+      notifyBookSubmitted(bookSubmittedSupabaseStub([teamCoach, coachWithoutBeta]) as never, SUBMIT_PARAMS),
+    ).rejects.toThrow('1 of 2');
+
+    expect(mockedSendEmail).toHaveBeenCalledTimes(2);
+    expect(mockedSendEmail).toHaveBeenLastCalledWith(
       expect.objectContaining({ to: 'coach3@studenti.czu.cz' }),
     );
   });

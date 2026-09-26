@@ -3,12 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getCoachReviewEssays } from '@/lib/essays/queries';
-import type {
-  CoachReviewTab,
-  CoachReviewRocketFilter,
-  CoachReviewPointsFilter,
-  CoachReviewReplyFilter,
-} from '@/lib/essays/types';
+import { ALL_TEAMS, parseCoachReviewParams, teamIdForQuery } from '@/lib/essays/coach-review-params';
 import { serverLogger } from "@/lib/server-logger";
 
 export async function GET(request: NextRequest) {
@@ -24,24 +19,17 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const tab = (searchParams.get('tab') ?? 'unread') as CoachReviewTab;
-    const teamId = searchParams.get('team_id') ?? undefined;
-    const rocket = (searchParams.get('rocket') ?? 'all') as CoachReviewRocketFilter;
-    const points = (searchParams.get('points') ?? 'all') as CoachReviewPointsFilter;
-    const reply = (searchParams.get('reply') ?? 'all') as CoachReviewReplyFilter;
-    const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
-    const pageSize = searchParams.get('page_size')
-      ? Number(searchParams.get('page_size'))
-      : 50;
+    const params = parseCoachReviewParams((key) => searchParams.get(key), ALL_TEAMS);
 
     const result = await getCoachReviewEssays(supabase, profile.id, {
-      tab,
-      teamId: teamId === 'all' ? null : teamId,
-      rocket,
-      points,
-      reply,
-      page,
-      pageSize,
+      tab: params.tab,
+      teamId: teamIdForQuery(params.team),
+      rocket: params.rocket,
+      points: params.points,
+      reply: params.reply,
+      search: params.search,
+      page: params.page,
+      pageSize: params.pageSize,
     });
 
     return NextResponse.json({
@@ -50,7 +38,6 @@ export async function GET(request: NextRequest) {
       unreadCount: result.unreadCount,
       readCount: result.readCount,
       hasMore: result.hasMore,
-      authorPointsMap: result.authorPointsMap,
       commentsMap: result.commentsMap,
       coachReadsMap: result.coachReadsMap,
     });

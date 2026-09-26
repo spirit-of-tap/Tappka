@@ -31,6 +31,14 @@ vi.mock("@/lib/notifications/birth-giving-notifications", () => ({
   notifyParticipantsOfAssignment: mocks.notifyParticipantsOfAssignment,
 }));
 
+// `after()` needs a Next.js request scope, which a direct handler call lacks;
+// run the scheduled notification tasks inline instead.
+vi.mock("@/lib/notifications/after-response", () => ({
+  runNotificationsAfterResponse: (tasks: Array<{ run: () => Promise<void> }>) => {
+    for (const task of tasks) void task.run();
+  },
+}));
+
 import { POST as confirmAssignment } from "@/app/api/birth-giving/events/[eventId]/assignment/confirm/route";
 import { POST as markAssignmentMissing } from "@/app/api/birth-giving/events/[eventId]/assignment/missing/route";
 import { GET as downloadAssignment } from "@/app/api/birth-giving/events/[eventId]/assignment/download/route";

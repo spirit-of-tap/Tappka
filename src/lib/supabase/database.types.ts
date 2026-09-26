@@ -2921,6 +2921,7 @@ export type Database = {
           p_points: string
           p_reply: string
           p_rocket: string
+          p_search?: string
           p_tab: string
           p_team_id: string
         }

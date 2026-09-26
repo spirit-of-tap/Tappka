@@ -4,6 +4,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface UsePersistedStateOptions {
   storage?: 'localStorage' | 'sessionStorage';
+  /**
+   * When false, the stored value is not read on mount (e.g. an explicit URL
+   * param should win over a remembered preference). Writes still persist.
+   */
+  hydrate?: boolean;
 }
 
 /**
@@ -19,6 +24,7 @@ export function usePersistedState<T>(
   options?: UsePersistedStateOptions,
 ): [T, (value: T | ((prev: T) => T)) => void, boolean] {
   const storageType = options?.storage ?? 'localStorage';
+  const shouldHydrate = options?.hydrate ?? true;
   const [state, setState] = useState<T>(defaultValue);
   const [isHydrated, setIsHydrated] = useState(false);
   const keyRef = useRef(key);
@@ -27,7 +33,7 @@ export function usePersistedState<T>(
   // Hydrate from storage on mount
   useEffect(() => {
     try {
-      if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined' || !shouldHydrate) return;
       const storage = storageType === 'sessionStorage' ? window.sessionStorage : window.localStorage;
       const raw = storage.getItem(key);
       if (raw !== null) {
@@ -39,6 +45,8 @@ export function usePersistedState<T>(
     } finally {
       setIsHydrated(true);
     }
+    // Only on mount / key change: flipping `hydrate` later must not overwrite state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, storageType]);
 
   const setPersistedState = useCallback(

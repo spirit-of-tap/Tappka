@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse, after } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { runNotificationsAfterResponse } from '@/lib/notifications/after-response';
 import { notifyEssayCoachRead } from '@/lib/notifications/essay-notifications';
 import { serverLogger } from "@/lib/server-logger";
 
@@ -41,13 +42,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     if (data && data.length > 0) {
-      after(() => {
-        notifyEssayCoachRead(supabase, {
-          essayId: id,
-          actorProfileId: profile.id,
-          origin: new URL(request.url).origin,
-        }).catch((err) => serverLogger.console.error('notifyEssayCoachRead failed:', err));
-      });
+      runNotificationsAfterResponse([
+        {
+          label: 'notifyEssayCoachRead',
+          run: () => notifyEssayCoachRead(supabase, {
+            essayId: id,
+            actorProfileId: profile.id,
+            origin: new URL(request.url).origin,
+          }),
+        },
+      ]);
     }
 
     return NextResponse.json({ success: true }, { status: 201 });
