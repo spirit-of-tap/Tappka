@@ -1,7 +1,7 @@
 import { MapPin, Users } from "lucide-react"
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
-import { Suspense } from "react"
+import { cache, Suspense } from "react"
 
 import { AttendancePanel } from "@/components/training-sessions/attendance-panel"
 import { FeedRefresher } from "@/components/training-sessions/feed-refresher"
@@ -20,11 +20,11 @@ import { TS_ROUTES } from "@/lib/training-sessions/constants"
 import { formatDayHeading, formatTimeRange } from "@/lib/training-sessions/format"
 import { getReflection, getSessionDetail, listAttendance, listSessions } from "@/lib/training-sessions/queries"
 import { getSessionStatus } from "@/lib/training-sessions/status"
-import { toTiming } from "@/lib/training-sessions/types"
+import { toTiming, type TrainingSessionDetail } from "@/lib/training-sessions/types"
 import { listTeamMembers } from "@/lib/tymovy-denik/queries"
 import type { TeamMemberProfile } from "@/lib/tymovy-denik/types"
 
-export const metadata: Metadata = {
+const FALLBACK_METADATA: Metadata = {
   title: "Detail TS",
   description: "Téma, příprava, docházka a týmová reflexe tréninkové session",
 }
@@ -36,13 +36,32 @@ interface PageProps {
   params: Promise<{ id: string }>
 }
 
+// Shared by generateMetadata and the page so the session is fetched once per request.
+const loadSession = cache(async (id: string): Promise<TrainingSessionDetail | null> => {
+  const supabase = await createClient()
+  return getSessionDetail(supabase, id)
+})
+
+function buildHeaderDescription(session: TrainingSessionDetail): string {
+  return [session.team?.name, formatDayHeading(session.starts_at), formatTimeRange(session.starts_at, session.ends_at)]
+    .filter(Boolean)
+    .join(" · ")
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params
+  const session = await loadSession(id).catch(() => null)
+  if (!session) return FALLBACK_METADATA
+  return { title: session.topic, description: buildHeaderDescription(session) }
+}
+
 export default async function TsDetailPage({ params }: PageProps) {
   const profile = await getSessionProfile()
   if (!profile) redirect("/auth/login")
   const { id } = await params
-  const supabase = await createClient()
-  const session = await getSessionDetail(supabase, id)
+  const session = await loadSession(id)
   if (!session) notFound()
+  const supabase = await createClient()
 
   const now = new Date()
   const status = getSessionStatus(toTiming(session), now)
@@ -126,7 +145,7 @@ export default async function TsDetailPage({ params }: PageProps) {
     panels.reflexe = (
       <ReflectionPanel
         sessionId={session.id}
-        started={status !== "upcoming"}
+        started={new Date(session.starts_at).getTime() <= now.getTime()}
         contentJson={(reflection?.content_json as object | null) ?? null}
         lastEditor={reflection?.updated_by?.name ?? null}
         updatedAt={reflection?.updated_at ?? null}
@@ -134,19 +153,11 @@ export default async function TsDetailPage({ params }: PageProps) {
     )
   }
 
-  const headerDescription = [
-    session.team?.name,
-    formatDayHeading(session.starts_at),
-    formatTimeRange(session.starts_at, session.ends_at),
-  ]
-    .filter(Boolean)
-    .join(" · ")
-
   return (
     <PageShell size="medium">
       <PageHeader
         title={session.topic}
-        description={headerDescription}
+        description={buildHeaderDescription(session)}
         back={{ href: TS_ROUTES.discover, label: "Objevovat" }}
         action={isOwnTeam ? <SessionActionsMenu sessionId={session.id} cancelled={status === "cancelled"} /> : undefined}
       />

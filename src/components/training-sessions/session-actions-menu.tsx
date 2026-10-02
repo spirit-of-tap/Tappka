@@ -109,7 +109,12 @@ export function SessionActionsMenu({ sessionId, cancelled }: SessionActionsMenuP
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Zpět</AlertDialogCancel>
-              <AlertDialogAction onClick={() => void run(confirm)}>{CONFIRM_COPY[confirm].action}</AlertDialogAction>
+              <AlertDialogAction
+                variant={confirm === "delete" ? "destructive" : "default"}
+                onClick={() => void run(confirm)}
+              >
+                {CONFIRM_COPY[confirm].action}
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         )}
