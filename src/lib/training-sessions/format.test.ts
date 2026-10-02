@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { formatDayHeading, formatTimeRange, groupByPragueDay, pragueDateKey } from "./format"
+import { formatDayHeading, formatTimeRange, groupByPragueDay, pragueDateKey, toTimeInputValue } from "./format"
 
 describe("Prague formatting", () => {
   it("keys by Prague date, not UTC date", () => {
@@ -12,6 +12,10 @@ describe("Prague formatting", () => {
   it("formats a time range in CEST and CET", () => {
     expect(formatTimeRange("2026-10-06T06:00:00Z", "2026-10-06T10:00:00Z")).toBe("8:00–12:00")
     expect(formatTimeRange("2026-10-27T07:00:00Z", "2026-10-27T11:00:00Z")).toBe("8:00–12:00")
+  })
+  it("formats a zero-padded value for time inputs", () => {
+    expect(toTimeInputValue("2026-10-06T06:00:00Z")).toBe("08:00")
+    expect(toTimeInputValue("2026-10-06T11:30:00Z")).toBe("13:30")
   })
   it("groups items by Prague day in input order", () => {
     const items = [

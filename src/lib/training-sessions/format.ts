@@ -23,6 +23,10 @@ export function formatTime(iso: string): string {
   return TIME_FORMAT.format(new Date(iso))
 }
 
+export function toTimeInputValue(iso: string): string {
+  return formatTime(iso).padStart(5, "0")
+}
+
 export function formatTimeRange(startIso: string, endIso: string): string {
   return `${formatTime(startIso)}–${formatTime(endIso)}`
 }
