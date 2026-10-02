@@ -1,8 +1,9 @@
-import { MapPin, Users } from "lucide-react"
+import { CircleAlert, Clock, Lock, MapPin, Users } from "lucide-react"
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { cache, Suspense } from "react"
 
+import { ProfileAvatar } from "@/components/profile-avatar"
 import { AttendancePanel } from "@/components/training-sessions/attendance-panel"
 import { FeedRefresher } from "@/components/training-sessions/feed-refresher"
 import { GuestJoinButton } from "@/components/training-sessions/guest-join-button"
@@ -68,10 +69,6 @@ export default async function TsDetailPage({ params }: PageProps) {
   const isOwnTeam = profile.team_id !== null && profile.team_id === session.team_id
   const joined = session.guests.some((g) => g.profile_id === profile.id)
   const location = session.room?.code ?? session.location_note
-  const facilitatorNames = session.facilitators
-    .map((f) => f.profile?.name)
-    .filter((name): name is string => Boolean(name))
-    .join(", ")
   const canShowGuestControls =
     !isOwnTeam &&
     status === "upcoming" &&
@@ -94,22 +91,60 @@ export default async function TsDetailPage({ params }: PageProps) {
   const isFacilitator = session.facilitators.some((f) => f.profile?.id === profile.id)
 
   const overview = (
-    <section aria-label="O TS" className="space-y-3 text-sm">
-      {session.description && <p className="whitespace-pre-line">{session.description}</p>}
-      <p className="inline-flex items-center gap-1.5 text-muted-foreground">
-        <Users className="size-4" aria-hidden />
-        Místa pro jiné týmy: {session.guests.length}/{session.guest_capacity}
-      </p>
-      {session.guests.length > 0 && (
-        <ul className="flex flex-wrap gap-2">
-          {session.guests.map((g) => (
-            <li key={g.profile_id}>
-              <Badge variant="secondary">{g.profile?.name ?? UNNAMED_PERSON}</Badge>
-            </li>
-          ))}
-        </ul>
+    <section aria-label="O TS" className="space-y-5">
+      {session.description && (
+        <p className="text-base leading-relaxed text-foreground/90 whitespace-pre-line">
+          {session.description}
+        </p>
       )}
-      {canShowGuestControls && <GuestJoinButton sessionId={session.id} joined={joined} conflictText={conflictText} />}
+
+      {conflictText && (
+        <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning-strong">
+          <CircleAlert className="size-4 shrink-0" aria-hidden />
+          <span>{conflictText}</span>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-y border-border/50 py-4">
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2">
+            {session.guest_capacity > 0 ? (
+              <>
+                <Users className="size-4 text-muted-foreground" aria-hidden />
+                <span className="text-sm font-medium text-foreground">
+                  Místa pro hostující: {session.guests.length}/{session.guest_capacity}
+                </span>
+              </>
+            ) : (
+              <>
+                <Lock className="size-4 text-muted-foreground" aria-hidden />
+                <span className="text-sm text-muted-foreground">Pouze pro členy týmu</span>
+              </>
+            )}
+          </div>
+
+          {session.guests.length > 0 ? (
+            <ul className="flex flex-wrap items-center gap-2">
+              {session.guests.map((g) => (
+                <li
+                  key={g.profile_id}
+                  className="inline-flex items-center gap-2 rounded-full bg-muted/50 py-1 pl-1 pr-3 text-xs font-medium text-foreground"
+                >
+                  <ProfileAvatar picture={g.profile?.picture} name={g.profile?.name} size={24} />
+                  <span>{g.profile?.name ?? UNNAMED_PERSON}</span>
+                </li>
+              ))}
+            </ul>
+          ) : session.guest_capacity > 0 ? (
+            <p className="text-xs text-muted-foreground">Zatím žádní hostující.</p>
+          ) : null}
+        </div>
+        {canShowGuestControls && (
+          <div className="shrink-0 self-start sm:self-center">
+            <GuestJoinButton sessionId={session.id} joined={joined} conflictText={conflictText} />
+          </div>
+        )}
+      </div>
     </section>
   )
 
@@ -159,24 +194,69 @@ export default async function TsDetailPage({ params }: PageProps) {
       <PageHeader
         title={session.topic}
         description={buildHeaderDescription(session)}
-        back={{ href: TS_ROUTES.discover, label: "Objevovat" }}
+        back={{ href: isOwnTeam ? TS_ROUTES.overview : TS_ROUTES.discover, label: isOwnTeam ? "Přehled" : "Objevovat" }}
         action={isOwnTeam ? <SessionActionsMenu sessionId={session.id} cancelled={status === "cancelled"} /> : undefined}
       />
       <FeedRefresher />
-      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        {status === "cancelled" && <Badge variant="destructive">Zrušeno</Badge>}
-        {location && (
-          <span className="inline-flex items-center gap-1">
-            <MapPin className="size-3.5" aria-hidden />
-            {location}
+
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+            <Clock className="size-4 text-muted-foreground" aria-hidden />
+            {formatTimeRange(session.starts_at, session.ends_at)}
           </span>
+          {session.team && (
+            <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+              <span
+                aria-hidden
+                className="size-2 rounded-full bg-primary shrink-0"
+                style={session.team.color ? { backgroundColor: session.team.color } : undefined}
+              />
+              {session.team.name}
+            </span>
+          )}
+          {location && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="size-4 shrink-0" aria-hidden />
+              {location}
+            </span>
+          )}
+          {status === "ongoing" && (
+            <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 gap-1.5 font-medium">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Právě probíhá
+            </Badge>
+          )}
+          {isOwnTeam && <Badge variant="secondary">Můj tým</Badge>}
+          {joined && <Badge variant="secondary">Přihlášeno</Badge>}
+          {status === "cancelled" && <Badge variant="destructive">Zrušeno</Badge>}
+        </div>
+
+        {session.facilitators.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Facilitace
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {session.facilitators.map((f, idx) => (
+                <div
+                  key={f.profile?.id ?? idx}
+                  className="inline-flex items-center gap-2 rounded-full bg-muted/50 py-1 pl-1 pr-3 text-xs font-medium text-foreground"
+                >
+                  <ProfileAvatar picture={f.profile?.picture} name={f.profile?.name} size={24} />
+                  <span>{f.profile?.name ?? UNNAMED_PERSON}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-        {facilitatorNames && <span>Facilitace: {facilitatorNames}</span>}
+
+        {overview}
+
+        <Suspense>
+          <SessionDetailTabs panels={panels} />
+        </Suspense>
       </div>
-      {overview}
-      <Suspense>
-        <SessionDetailTabs panels={panels} />
-      </Suspense>
     </PageShell>
   )
 }

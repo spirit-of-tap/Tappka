@@ -1,10 +1,14 @@
 "use client"
 
+import { Calendar, Check, Info, Users } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { ProfileAvatar } from "@/components/profile-avatar"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -106,78 +110,175 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-6">
       {mode.kind === "create" && <SlotChips slots={slots} rooms={rooms} onPick={pickSlot} />}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="ts-topic">Téma</Label>
-        <Input id="ts-topic" required maxLength={TS_LIMITS.topicMax} value={values.topic} onChange={(e) => set("topic", e.target.value)} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Info className="size-4 text-primary" aria-hidden />
+            <span>Základní informace</span>
+          </CardTitle>
+          <CardDescription>Pojmenuj setkání a stručně popiš jeho záměr pro tým i hostující.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="ts-topic">Téma</Label>
+            <Input
+              id="ts-topic"
+              required
+              maxLength={TS_LIMITS.topicMax}
+              placeholder="např. Zpětná vazba na projekty, AI nástroje…"
+              value={values.topic}
+              onChange={(e) => set("topic", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ts-description">Krátký popis</Label>
+            <Textarea
+              id="ts-description"
+              maxLength={TS_LIMITS.descriptionMax}
+              placeholder="Co se bude na TS probírat a čeho chcete dosáhnout?"
+              value={values.description}
+              onChange={(e) => set("description", e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Calendar className="size-4 text-primary" aria-hidden />
+            <span>Termín a místo</span>
+          </CardTitle>
+          <CardDescription>Kdy a kde se setkání uskuteční.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="ts-date">Datum</Label>
+              <Input id="ts-date" type="date" required value={values.date} onChange={(e) => set("date", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ts-start">Začátek</Label>
+              <Input id="ts-start" type="time" required value={values.startTime} onChange={(e) => set("startTime", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ts-end">Konec</Label>
+              <Input id="ts-end" type="time" required value={values.endTime} onChange={(e) => set("endTime", e.target.value)} />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="ts-room">Místnost</Label>
+              <Select value={values.roomId ?? NO_ROOM} onValueChange={(v) => set("roomId", v === NO_ROOM ? null : v)}>
+                <SelectTrigger id="ts-room" className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_ROOM}>Bez místnosti</SelectItem>
+                  {rooms.map((r) => <SelectItem key={r.id} value={r.id}>{r.code}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ts-location">Poznámka k místu</Label>
+              <Input
+                id="ts-location"
+                maxLength={TS_LIMITS.locationNoteMax}
+                placeholder="např. venku v parku, online na Meetu…"
+                value={values.locationNote}
+                onChange={(e) => set("locationNote", e.target.value)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Users className="size-4 text-primary" aria-hidden />
+            <span>Facilitace a kapacita</span>
+          </CardTitle>
+          <CardDescription>Kdo setkání vede a kolik míst nabízíte pro členy jiných týmů.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <fieldset className="space-y-2" aria-describedby={facilitatorError ? FACILITATOR_ERROR_ID : undefined}>
+            <legend className="text-sm font-medium">Facilitace (vyber aspoň jednu osobu)</legend>
+            <div className="flex flex-wrap gap-2">
+              {teamMembers.map((m) => {
+                const selected = values.facilitatorIds.includes(m.id)
+                return (
+                  <Button
+                    key={m.id}
+                    type="button"
+                    size="sm"
+                    variant={selected ? "default" : "outline"}
+                    aria-pressed={selected}
+                    className="gap-2"
+                    onClick={() => toggleFacilitator(m.id)}
+                  >
+                    <span aria-hidden="true" className="inline-flex shrink-0">
+                      <ProfileAvatar picture={m.picture} name={m.name} size={18} />
+                    </span>
+                    <span>{m.name ?? "Bez jména"}</span>
+                    {selected && <Check className="size-3.5 shrink-0" aria-hidden />}
+                  </Button>
+                )
+              })}
+            </div>
+            {facilitatorError && (
+              <p id={FACILITATOR_ERROR_ID} role="alert" className="text-sm font-medium text-destructive">
+                {FACILITATOR_REQUIRED_MESSAGE}
+              </p>
+            )}
+          </fieldset>
+
+          <div className="space-y-2">
+            <Label htmlFor="ts-capacity">Místa pro jiné týmy</Label>
+            <div className="flex items-center gap-3">
+              <Input
+                id="ts-capacity"
+                type="number"
+                min={0}
+                max={TS_LIMITS.guestCapacityMax}
+                className="w-32"
+                value={values.guestCapacity}
+                onChange={(e) => set("guestCapacity", e.target.value === "" ? 0 : Number(e.target.value))}
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {[0, 1, 2, 3, 5].map((preset) => (
+                  <Button
+                    key={preset}
+                    type="button"
+                    variant={values.guestCapacity === preset ? "secondary" : "ghost"}
+                    size="sm"
+                    className="h-8 px-2.5 text-xs"
+                    onClick={() => set("guestCapacity", preset)}
+                  >
+                    {preset === 0 ? "Jen pro tým (0)" : `${preset} ${preset === 1 ? "místo" : preset < 5 ? "místa" : "míst"}`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Zadej 0, pokud je setkání určeno pouze pro tvůj tým. Jinak se volná místa zobrazí v sekci Objevovat.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center gap-3 pt-2">
+        <Button type="submit" disabled={pending}>
+          {mode.kind === "create" ? "Vytvořit TS" : "Uložit změny"}
+        </Button>
+        <Button asChild variant="outline">
+          <Link href={mode.kind === "create" ? TS_ROUTES.overview : TS_ROUTES.detail(mode.id)}>
+            Zrušit
+          </Link>
+        </Button>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="ts-description">Krátký popis</Label>
-        <Textarea id="ts-description" maxLength={TS_LIMITS.descriptionMax} value={values.description} onChange={(e) => set("description", e.target.value)} />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="ts-date">Datum</Label>
-          <Input id="ts-date" type="date" required value={values.date} onChange={(e) => set("date", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ts-start">Začátek</Label>
-          <Input id="ts-start" type="time" required value={values.startTime} onChange={(e) => set("startTime", e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ts-end">Konec</Label>
-          <Input id="ts-end" type="time" required value={values.endTime} onChange={(e) => set("endTime", e.target.value)} />
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="ts-room">Místnost</Label>
-          <Select value={values.roomId ?? NO_ROOM} onValueChange={(v) => set("roomId", v === NO_ROOM ? null : v)}>
-            <SelectTrigger id="ts-room" className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_ROOM}>Bez místnosti</SelectItem>
-              {rooms.map((r) => <SelectItem key={r.id} value={r.id}>{r.code}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="ts-location">Poznámka k místu</Label>
-          <Input id="ts-location" maxLength={TS_LIMITS.locationNoteMax} placeholder="např. venku, online" value={values.locationNote} onChange={(e) => set("locationNote", e.target.value)} />
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="ts-capacity">Místa pro jiné týmy</Label>
-        <Input
-          id="ts-capacity"
-          type="number"
-          min={0}
-          max={TS_LIMITS.guestCapacityMax}
-          value={values.guestCapacity}
-          onChange={(e) => set("guestCapacity", e.target.value === "" ? 0 : Number(e.target.value))}
-        />
-        <p className="text-xs text-muted-foreground">0 znamená, že TS je jen pro tým.</p>
-      </div>
-      <fieldset className="space-y-2" aria-describedby={facilitatorError ? FACILITATOR_ERROR_ID : undefined}>
-        <legend className="text-sm font-medium">Facilitace</legend>
-        <div className="flex flex-wrap gap-2">
-          {teamMembers.map((m) => {
-            const selected = values.facilitatorIds.includes(m.id)
-            return (
-              <Button key={m.id} type="button" size="sm" variant={selected ? "default" : "outline"} aria-pressed={selected} onClick={() => toggleFacilitator(m.id)}>
-                {m.name ?? "Bez jména"}
-              </Button>
-            )
-          })}
-        </div>
-        {facilitatorError && (
-          <p id={FACILITATOR_ERROR_ID} role="alert" className="text-sm text-destructive">
-            {FACILITATOR_REQUIRED_MESSAGE}
-          </p>
-        )}
-      </fieldset>
-      <Button type="submit" disabled={pending}>{mode.kind === "create" ? "Vytvořit TS" : "Uložit změny"}</Button>
     </form>
   )
 }
+

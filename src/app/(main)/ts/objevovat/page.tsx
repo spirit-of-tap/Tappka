@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
@@ -17,6 +18,7 @@ import { createClient } from "@/lib/supabase/server"
 import { TS_DISCOVER_FILTERS, TS_ROUTES, type TsDiscoverFilter } from "@/lib/training-sessions/constants"
 import { listSessions, searchSessionIds } from "@/lib/training-sessions/queries"
 import { toTiming, type TrainingSessionListItem } from "@/lib/training-sessions/types"
+import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
 const PAGE_DESCRIPTION = "Tréninkové sessions všech týmů a volná místa, kam se můžeš přihlásit"
 
@@ -80,24 +82,30 @@ export default async function TsDiscoverPage({ searchParams }: PageProps) {
       <PageHeader
         title="Objevovat"
         description={PAGE_DESCRIPTION}
+        count={filtered.length > 0 ? { value: filtered.length, label: pluralizeCz(filtered.length, ["setkání", "setkání", "setkání"]) } : undefined}
         action={
           profile.team_id ? (
             <Button asChild>
-              <Link href={TS_ROUTES.create}>Nové TS</Link>
+              <Link href={TS_ROUTES.create}>
+                <Plus className="size-4 mr-1.5" aria-hidden />
+                Nové TS
+              </Link>
             </Button>
           ) : undefined
         }
       />
       <FeedRefresher />
-      <DiscoverFilters filter={filter} year={year} q={q} />
-      <SessionAgenda
-        sessions={filtered}
-        viewer={viewer}
-        commitments={commitments}
-        now={nowIso}
-        emptyTitle="Žádné TS"
-        emptyDescription={q ? "Zkus jiný výraz nebo jiný filtr." : "Pro tento filtr teď nic není."}
-      />
+      <div className="space-y-6">
+        <DiscoverFilters filter={filter} year={year} q={q} />
+        <SessionAgenda
+          sessions={filtered}
+          viewer={viewer}
+          commitments={commitments}
+          now={nowIso}
+          emptyTitle="Žádné TS"
+          emptyDescription={q ? "Zkus jiný výraz nebo jiný filtr." : "Pro tento filtr teď nic není."}
+        />
+      </div>
     </PageShell>
   )
 }

@@ -24,7 +24,7 @@ export function TsTabBar() {
   return (
     <nav
       aria-label="Tréninkové sessions"
-      className="sticky top-0 z-40 -mx-4 border-b bg-background px-4 md:static md:z-auto md:mx-0 md:px-0"
+      className="sticky top-0 z-40 -mx-4 border-b bg-background/95 backdrop-blur-xs px-4 md:static md:z-auto md:mx-0 md:px-0"
     >
       <div className="no-scrollbar flex max-w-full items-center gap-1 overflow-x-auto md:container md:mx-auto md:px-6">
         {TABS.map((tab) => (

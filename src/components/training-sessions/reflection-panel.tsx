@@ -1,11 +1,13 @@
 "use client"
 
+import { Clock } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 
 import { TiptapEditor } from "@/components/essays/tiptap-editor"
 import { Button } from "@/components/ui/button"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { EMPTY_DOC } from "@/lib/essays/content-text"
 import { PRAGUE_TIME_ZONE } from "@/lib/training-sessions/constants"
 
@@ -30,7 +32,19 @@ export function ReflectionPanel({ sessionId, started, contentJson, lastEditor, u
   const [doc, setDoc] = useState<object>(contentJson ?? EMPTY_DOC)
   const [pending, setPending] = useState(false)
 
-  if (!started) return <p className="text-sm text-muted-foreground">Reflexi půjde psát po začátku TS.</p>
+  if (!started) {
+    return (
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Clock className="size-6 text-muted-foreground" aria-hidden />
+          </EmptyMedia>
+          <EmptyTitle>Reflexe zatím není dostupná</EmptyTitle>
+          <EmptyDescription>Týmovou reflexi bude možné psát po zahájení tohoto setkání.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    )
+  }
 
   async function save() {
     setPending(true)
@@ -55,20 +69,26 @@ export function ReflectionPanel({ sessionId, started, contentJson, lastEditor, u
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         Co jsme se naučili? Co fungovalo a co bychom příště udělali jinak?
       </p>
-      <TiptapEditor initialContent={doc} onChange={(json) => setDoc(json)} placeholder="Týmová reflexe…" />
-      {updatedAt && (
-        <p className="text-xs text-muted-foreground">
-          Naposledy upraveno {UPDATED_FORMAT.format(new Date(updatedAt))}
-          {lastEditor ? ` · ${lastEditor}` : ""}
-        </p>
-      )}
-      <Button disabled={pending} onClick={() => void save()}>
-        Uložit reflexi
-      </Button>
+      <TiptapEditor initialContent={doc} onChange={(json) => setDoc(json)} placeholder="Týmová reflexe z TS…" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+        <div>
+          {updatedAt && (
+            <p className="text-xs text-muted-foreground">
+              Naposledy upraveno {UPDATED_FORMAT.format(new Date(updatedAt))}
+              {lastEditor ? ` · ${lastEditor}` : ""}
+            </p>
+          )}
+        </div>
+        <Button size="sm" disabled={pending} onClick={() => void save()}>
+          Uložit reflexi
+        </Button>
+      </div>
     </div>
   )
 }
+
+
