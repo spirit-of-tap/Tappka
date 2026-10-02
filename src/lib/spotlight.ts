@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   NotebookPen,
+  Presentation,
   SlidersHorizontal,
   User,
   Users,
@@ -244,6 +245,15 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
       "log",
       "diary",
     ],
+  },
+  {
+    id: "page-training-sessions",
+    title: "Tréninkové sessions",
+    description: "Nadcházející TS, příprava a přihlášení na TS jiných týmů",
+    url: "/ts/prehled",
+    feature: "trainingSessions",
+    icon: Presentation,
+    keywords: ["ts", "training session", "tréninková session", "příprava", "facilitace", "docházka", "reflexe"],
   },
   {
     id: "page-tymove-dokumenty",

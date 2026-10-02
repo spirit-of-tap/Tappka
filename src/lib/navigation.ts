@@ -9,6 +9,7 @@ import {
   Handshake,
   LayoutDashboard,
   NotebookPen,
+  Presentation,
   Rocket,
   Users,
   Wrench,
@@ -41,6 +42,7 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Koučování", url: "/koucovani", icon: GraduationCap, feature: "coaching", description: "Evidence koučovacích sezení." },
   { title: "Týmová reflexe", url: "/tymova-reflexe", icon: NotebookPen, feature: "teamReflection", description: "Reflexe týmové spolupráce a ročníková hodnocení." },
   { title: "Týmový deník", url: "/tymovy-denik", icon: Activity, feature: "teamDiary", description: "Denní zápisy a přehled týmových aktivit." },
+  { title: "Tréninkové sessions", url: "/ts/prehled", icon: Presentation, feature: "trainingSessions", description: "Tréninkové sessions týmů, příprava, docházka a reflexe." },
   { title: "Rocket Model", url: "/rocket-model", icon: Rocket, feature: "rocketModel", description: "Osobní a týmové hodnocení podle Rocket Modelu." },
   { title: "Týmové dokumenty", url: "/tymove-dokumenty", icon: Files, feature: "teamDocuments", description: "Smlouvy, finanční politika a další dokumenty týmu." },
   { title: "Nástroje a techniky", url: "/nastroje-techniky", icon: Wrench, feature: "toolsTechniques", featured: true, description: "Katalog modelů, technik a nástrojů pro práci." },
@@ -56,6 +58,7 @@ export const NAV_MODULES: NavModule[] = [
 export const MODULE_HUB_ORDER: string[] = [
   "/cteni/prehled",
   "/reservations",
+  "/ts/prehled",
   "/nastroje-techniky",
   "/schuzky",
   "/tymova-reflexe",
