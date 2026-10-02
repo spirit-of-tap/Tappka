@@ -32,7 +32,7 @@ export const TS_GUEST_ERROR_MESSAGES: Record<TsGuestErrorCode, string> = {
   not_found: "TS nebylo nalezeno",
   cancelled: "TS bylo zrušeno",
   already_started: "TS už začalo, přihlášení je uzavřené",
-  own_team: "Na TS svého týmu se jako host nepřihlašuje",
+  own_team: "Na TS svého týmu se přihlásit nelze",
   capacity_full: "Volná místa už jsou obsazená",
 }
 

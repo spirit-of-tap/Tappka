@@ -18,7 +18,7 @@ import { TS_DISCOVER_FILTERS, TS_ROUTES, type TsDiscoverFilter } from "@/lib/tra
 import { listSessions, searchSessionIds } from "@/lib/training-sessions/queries"
 import { toTiming, type TrainingSessionListItem } from "@/lib/training-sessions/types"
 
-const PAGE_DESCRIPTION = "Všechny tréninkové sessions týmů s volnými místy pro hosty"
+const PAGE_DESCRIPTION = "Tréninkové sessions všech týmů a volná místa, kam se můžeš přihlásit"
 
 export const metadata = {
   title: "Objevovat TS",

@@ -62,12 +62,12 @@ export function PreparationPanel({ sessionId, canEdit, contentJson, publishedAt 
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        {publishedAt ? "Zveřejněno, vidí ji všichni." : "Koncept, vidí ho jen tvůj tým."}
+        {publishedAt ? "Zveřejněno, vidí ji všechny týmy." : "Koncept, vidí ho jen tvůj tým."}
       </p>
       <TiptapEditor
         initialContent={doc}
         onChange={(json) => setDoc(json)}
-        placeholder="Co si mají účastníci a účastnice připravit?"
+        placeholder="Co je potřeba si připravit?"
       />
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" disabled={pending} onClick={() => void save("draft")}>

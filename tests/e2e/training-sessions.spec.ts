@@ -67,7 +67,7 @@ test.describe("training sessions", () => {
     await host.getByLabel("Datum").fill(tomorrow)
     await host.getByLabel("Začátek").fill("08:00")
     await host.getByLabel("Konec").fill("12:00")
-    await host.getByLabel("Místa pro hosty z jiných týmů").fill("2")
+    await host.getByLabel("Místa pro jiné týmy").fill("2")
     await host.getByRole("button", { name: "Vytvořit TS" }).click()
     await expect(host.getByRole("heading", { name: topic })).toBeVisible()
     const detailUrl = host.url()

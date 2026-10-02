@@ -10,7 +10,7 @@ import { pragueDateKey, toTimeInputValue } from "@/lib/training-sessions/format"
 import { getSessionDetail, listRooms } from "@/lib/training-sessions/queries"
 import { listTeamMembers } from "@/lib/tymovy-denik/queries"
 
-const PAGE_DESCRIPTION = "Uprav termín, místo, facilitaci a místa pro hosty"
+const PAGE_DESCRIPTION = "Uprav termín, místo, facilitaci a místa pro jiné týmy"
 
 export const metadata = {
   title: "Upravit TS",

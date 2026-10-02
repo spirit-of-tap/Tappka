@@ -5,6 +5,7 @@ import { FeedRefresher } from "@/components/training-sessions/feed-refresher"
 import { SessionAgenda } from "@/components/training-sessions/session-agenda"
 import { SessionCard, type SessionViewer } from "@/components/training-sessions/session-card"
 import { Button } from "@/components/ui/button"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { PageHeader } from "@/components/ui/page-header"
 import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
@@ -107,13 +108,17 @@ export default async function TsOverviewPage() {
           {nearest ? (
             <SessionCard session={nearest} viewer={viewer} conflicts={[]} now={nowIso} />
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Nemáš naplánované žádné TS.{" "}
-              <Link className="underline" href={TS_ROUTES.discover}>
-                Podívej se do Objevovat
-              </Link>
-              .
-            </p>
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>Nemáš naplánované žádné TS</EmptyTitle>
+                <EmptyDescription>Podívej se, kam se můžeš přihlásit.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button asChild variant="outline">
+                  <Link href={TS_ROUTES.discover}>Objevovat TS</Link>
+                </Button>
+              </EmptyContent>
+            </Empty>
           )}
         </section>
 

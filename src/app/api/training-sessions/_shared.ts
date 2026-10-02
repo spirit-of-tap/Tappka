@@ -94,7 +94,10 @@ export async function parseJson<T>(request: Request, schema: z.ZodType<T>): Prom
   try {
     const parsed = schema.safeParse(await request.json())
     if (parsed.success) return parsed.data
-    return errorResponse(parsed.error.issues[0]?.message ?? "Neplatná data požadavku", HTTP_BAD_REQUEST)
+    const issue = parsed.error.issues[0]
+    // Only our own (Czech) refine messages are safe to expose; zod defaults are English.
+    const message = issue?.code === "custom" ? issue.message : "Neplatná data požadavku"
+    return errorResponse(message, HTTP_BAD_REQUEST)
   } catch {
     return errorResponse("Neplatná data požadavku", HTTP_BAD_REQUEST)
   }

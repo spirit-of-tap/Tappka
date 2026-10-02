@@ -14,6 +14,7 @@ export function useTrainingSessionFeed(onEvent: () => void): void {
   }, [onEvent])
 
   useEffect(() => {
+    let cancelled = false
     const client = createClient()
     const channel = client.channel(TS_REALTIME_TOPIC, { config: { broadcast: { self: false }, private: true } })
     for (const event of Object.values(TS_REALTIME_EVENTS)) {
@@ -21,13 +22,15 @@ export function useTrainingSessionFeed(onEvent: () => void): void {
     }
     client.realtime
       .setAuth()
-      .then(() =>
+      .then(() => {
+        if (cancelled) return
         channel.subscribe((status, err) => {
           if (status === "CHANNEL_ERROR") console.error("Training session feed error:", err)
-        }),
-      )
+        })
+      })
       .catch((err: unknown) => console.error("Failed to set auth for training session feed:", err))
     return () => {
+      cancelled = true
       void client.removeChannel(channel)
     }
   }, [])

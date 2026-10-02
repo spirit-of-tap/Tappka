@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
   if (input.facilitatorIds.length > 0) {
     const { error: facilitatorsError } = await context.supabase.from("training_session_facilitators").insert(
-      input.facilitatorIds.map((profileId) => ({
+      [...new Set(input.facilitatorIds)].map((profileId) => ({
         training_session_id: data.id,
         profile_id: profileId,
         created_by_profile_id: context.profileId,

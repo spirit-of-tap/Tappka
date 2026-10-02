@@ -84,7 +84,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   if (deleteError) return mutationFailed(deleteError).response
   if (patch.facilitatorIds.length > 0) {
     const { error: insertError } = await context.supabase.from("training_session_facilitators").insert(
-      patch.facilitatorIds.map((profileId) => ({
+      [...new Set(patch.facilitatorIds)].map((profileId) => ({
         training_session_id: session.id,
         profile_id: profileId,
         created_by_profile_id: context.profileId,

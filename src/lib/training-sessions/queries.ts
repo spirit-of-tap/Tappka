@@ -20,22 +20,38 @@ export interface ListSessionsFilter {
 }
 
 const DEFAULT_LIST_LIMIT = 200
+const ID_CHUNK_SIZE = 100
 const TRAINING_SESSION_SCHEDULE_TYPE = "training_session"
+
+export function chunk<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size))
+  return chunks
+}
 
 export async function listSessions(
   supabase: SupabaseClient<Database>,
   filter: ListSessionsFilter,
 ): Promise<TrainingSessionListItem[]> {
-  let query = supabase.from("training_sessions").select(SESSION_LIST_SELECT)
-  if (filter.from) query = query.gte("ends_at", filter.from)
-  if (filter.to) query = query.lt("ends_at", filter.to)
-  if (filter.teamId) query = query.eq("team_id", filter.teamId)
-  if (filter.ids) query = query.in("id", filter.ids)
-  const { data, error } = await query
-    .order("starts_at", { ascending: (filter.order ?? "asc") === "asc" })
-    .limit(filter.limit ?? DEFAULT_LIST_LIMIT)
-  if (error) throw error
-  return (data ?? []) as unknown as TrainingSessionListItem[]
+  const ascending = (filter.order ?? "asc") === "asc"
+  const limit = filter.limit ?? DEFAULT_LIST_LIMIT
+
+  const run = async (ids?: string[]): Promise<TrainingSessionListItem[]> => {
+    let query = supabase.from("training_sessions").select(SESSION_LIST_SELECT)
+    if (filter.from) query = query.gte("ends_at", filter.from)
+    if (filter.to) query = query.lt("ends_at", filter.to)
+    if (filter.teamId) query = query.eq("team_id", filter.teamId)
+    if (ids) query = query.in("id", ids)
+    const { data, error } = await query.order("starts_at", { ascending }).limit(limit)
+    if (error) throw error
+    return (data ?? []) as unknown as TrainingSessionListItem[]
+  }
+
+  if (!filter.ids) return run()
+  if (filter.ids.length === 0) return []
+  const results = (await Promise.all(chunk(filter.ids, ID_CHUNK_SIZE).map((ids) => run(ids)))).flat()
+  results.sort((x, y) => (x.starts_at < y.starts_at ? -1 : x.starts_at > y.starts_at ? 1 : 0) * (ascending ? 1 : -1))
+  return results.slice(0, limit)
 }
 
 export async function getSessionDetail(

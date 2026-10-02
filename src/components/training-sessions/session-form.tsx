@@ -140,7 +140,7 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="ts-capacity">Místa pro hosty z jiných týmů</Label>
+        <Label htmlFor="ts-capacity">Místa pro jiné týmy</Label>
         <Input
           id="ts-capacity"
           type="number"
