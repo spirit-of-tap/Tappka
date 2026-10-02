@@ -66,17 +66,17 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
     setPending(true)
-    const payload = {
-      topic: values.topic,
-      description: values.description,
-      startsAt: pragueLocalToUtcISO(values.date, values.startTime),
-      endsAt: pragueLocalToUtcISO(values.date, values.endTime),
-      roomId: values.roomId,
-      locationNote: values.locationNote,
-      guestCapacity: values.guestCapacity,
-      facilitatorIds: values.facilitatorIds,
-    }
     try {
+      const payload = {
+        topic: values.topic,
+        description: values.description,
+        startsAt: pragueLocalToUtcISO(values.date, values.startTime),
+        endsAt: pragueLocalToUtcISO(values.date, values.endTime),
+        roomId: values.roomId,
+        locationNote: values.locationNote,
+        guestCapacity: values.guestCapacity,
+        facilitatorIds: values.facilitatorIds,
+      }
       const res = await fetch(mode.kind === "create" ? "/api/training-sessions" : `/api/training-sessions/${mode.id}`, {
         method: mode.kind === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -85,12 +85,14 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
       const body = (await res.json().catch(() => ({}))) as { data?: { id: string }; error?: string }
       if (!res.ok || !body.data) {
         toast.error(body.error ?? "TS se nepodařilo uložit")
+        setPending(false)
         return
       }
       toast.success(mode.kind === "create" ? "TS vytvořeno" : "TS uloženo")
       router.push(TS_ROUTES.detail(body.data.id))
       router.refresh()
-    } finally {
+    } catch {
+      toast.error("TS se nepodařilo uložit")
       setPending(false)
     }
   }

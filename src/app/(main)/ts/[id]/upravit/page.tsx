@@ -27,6 +27,8 @@ export default async function EditTsPage({ params }: { params: Promise<{ id: str
   if (session.team_id !== profile.team_id) redirect(TS_ROUTES.detail(id))
   const [rooms, teamMembers] = await Promise.all([listRooms(supabase), listTeamMembers(supabase, session.team_id)])
 
+  const teamMemberIds = new Set(teamMembers.map((m) => m.id))
+
   return (
     <PageShell size="medium">
       <PageHeader title="Upravit TS" description={PAGE_DESCRIPTION} back={{ href: TS_ROUTES.detail(id), label: session.topic }} />
@@ -41,7 +43,7 @@ export default async function EditTsPage({ params }: { params: Promise<{ id: str
           roomId: session.room_id,
           locationNote: session.location_note ?? "",
           guestCapacity: session.guest_capacity,
-          facilitatorIds: session.facilitators.flatMap((f) => (f.profile ? [f.profile.id] : [])),
+          facilitatorIds: session.facilitators.flatMap((f) => (f.profile && teamMemberIds.has(f.profile.id) ? [f.profile.id] : [])),
         }}
         rooms={rooms}
         teamMembers={teamMembers}
