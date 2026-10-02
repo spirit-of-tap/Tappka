@@ -8,6 +8,7 @@ import {
   mutationFailed,
   parseJson,
   requireOwnedSession,
+  requireTeamFacilitators,
   requireTsApiContext,
   rpcFailure,
 } from "../_shared"
@@ -25,6 +26,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   if (isApiFailure(session)) return session.response
   const patch = await parseJson(request, sessionPatchSchema)
   if (isApiFailure(patch)) return patch.response
+
+  if (patch.kind === "update") {
+    const facilitatorsFailure = await requireTeamFacilitators(context, patch.facilitatorIds)
+    if (facilitatorsFailure) return facilitatorsFailure.response
+  }
 
   const audit = { updated_by_profile_id: context.profileId }
 

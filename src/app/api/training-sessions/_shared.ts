@@ -99,3 +99,24 @@ export async function parseJson<T>(request: Request, schema: z.ZodType<T>): Prom
     return errorResponse("Neplatná data požadavku", HTTP_BAD_REQUEST)
   }
 }
+
+/** Asserts every facilitator is a current member of the caller's team; call before any write. */
+export async function requireTeamFacilitators(
+  context: TsApiContext,
+  facilitatorIds: string[],
+): Promise<ApiFailure | null> {
+  const uniqueIds = [...new Set(facilitatorIds)]
+  if (uniqueIds.length === 0) return null
+  if (!context.teamId) return errorResponse("TS patří jinému týmu", HTTP_FORBIDDEN)
+  const { data, error } = await context.supabase
+    .from("profiles")
+    .select("id")
+    .eq("team_id", context.teamId)
+    .is("access_removed_at", null)
+    .in("id", uniqueIds)
+  if (error) return mutationFailed(error)
+  if ((data?.length ?? 0) !== uniqueIds.length) {
+    return errorResponse("Facilitovat můžou jen lidé z tvého týmu", HTTP_BAD_REQUEST)
+  }
+  return null
+}

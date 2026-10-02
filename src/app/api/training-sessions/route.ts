@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { sessionInputSchema } from "@/lib/training-sessions/validation"
 
-import { errorResponse, isApiFailure, mutationFailed, parseJson, requireTsApiContext } from "./_shared"
+import { errorResponse, isApiFailure, mutationFailed, parseJson, requireTeamFacilitators, requireTsApiContext } from "./_shared"
 
 const HTTP_CREATED = 201
 const HTTP_FORBIDDEN = 403
@@ -14,6 +14,8 @@ export async function POST(request: Request) {
 
   const input = await parseJson(request, sessionInputSchema)
   if (isApiFailure(input)) return input.response
+  const facilitatorsFailure = await requireTeamFacilitators(context, input.facilitatorIds)
+  if (facilitatorsFailure) return facilitatorsFailure.response
 
   const { data, error } = await context.supabase
     .from("training_sessions")
