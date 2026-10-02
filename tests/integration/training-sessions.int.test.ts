@@ -174,4 +174,123 @@ describe("training_sessions RLS", () => {
   });
 });
 
+// Each call runs in a savepoint so an expected rejection doesn't abort the
+// surrounding withRollback() transaction for later asserts.
+async function join(client: PoolClient, sessionId: string): Promise<number> {
+  await client.query("savepoint join_training_session");
+  try {
+    const { rows } = await client.query("select public.join_training_session($1) as n", [sessionId]);
+    await client.query("release savepoint join_training_session");
+    return rows[0].n as number;
+  } catch (error) {
+    await client.query("rollback to savepoint join_training_session");
+    throw error;
+  }
+}
+
+describe("join_training_session / leave_training_session", () => {
+  it("lets a member of another team join and returns the guest count", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId, { capacity: 2 });
+      await asClaims(client, { sub: s.other.authId });
+      expect(await join(client, id)).toBe(1);
+      expect(await join(client, id)).toBe(1); // idempotent
+    });
+  });
+
+  it("enforces capacity", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId, { capacity: 1 });
+      await asClaims(client, { sub: s.other.authId });
+      await join(client, id);
+      await asClaims(client, { sub: s.outsider.authId });
+      await expect(join(client, id)).rejects.toThrow("capacity_full");
+    });
+  });
+
+  it("rejects own team, started and cancelled sessions", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const future = await insertSession(client, s.teamId, s.owner.profileId);
+      const started = await insertSession(client, s.teamId, s.owner.profileId, { startsInHours: -1 });
+      const cancelled = await insertSession(client, s.teamId, s.owner.profileId);
+      await client.query("update public.training_sessions set cancelled_at = now() where id = $1", [cancelled]);
+
+      await asClaims(client, { sub: s.teammate.authId });
+      await expect(join(client, future)).rejects.toThrow("own_team");
+
+      await asClaims(client, { sub: s.other.authId });
+      await expect(join(client, started)).rejects.toThrow("already_started");
+      await expect(join(client, cancelled)).rejects.toThrow("cancelled");
+    });
+  });
+
+  it("lets a coach without a team join and leave", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      await asClaims(client, { sub: s.coach.authId });
+      expect(await join(client, id)).toBe(1);
+      const { rows } = await client.query("select public.leave_training_session($1) as n", [id]);
+      expect(rows[0].n).toBe(0);
+    });
+  });
+
+  it("returns ids from search only for published preparation", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      await client.query(
+        `insert into public.training_session_preparations
+           (training_session_id, content_json, content_text, created_by_profile_id, updated_by_profile_id)
+         values ($1, '{"type":"doc"}', 'vyjednávání se zákazníkem', $2, $2)`,
+        [id, s.owner.profileId],
+      );
+      await asClaims(client, { sub: s.other.authId });
+      const search = async (q: string) =>
+        (await client.query("select * from public.search_training_sessions($1) as id", [q])).rows.map((r) => r.id);
+      expect(await search("vyjednávání")).toEqual([]);
+      expect(await search("AI v")).toEqual([id]); // topic match
+
+      await asClaims(client, { sub: s.owner.authId });
+      await client.query("update public.training_session_preparations set published_at = now() where training_session_id = $1", [id]);
+      await asClaims(client, { sub: s.other.authId });
+      expect(await search("vyjednávání")).toEqual([id]);
+      expect(await search("100%")).toEqual([]); // wildcard escaped
+    });
+  });
+});
+
+describe("remove_training_session", () => {
+  it("lets the owning team remove a session, hiding it from others", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      await client.query("select public.remove_training_session($1)", [id]);
+
+      await asClaims(client, { sub: s.other.authId });
+      const { rows } = await client.query("select id from public.training_sessions where id = $1", [id]);
+      expect(rows).toHaveLength(0);
+    });
+  });
+
+  it("rejects removal by a member of another team", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      await asClaims(client, { sub: s.other.authId });
+      await expect(client.query("select public.remove_training_session($1)", [id])).rejects.toThrow("forbidden");
+    });
+  });
+});
+
 export { seed, insertSession };

@@ -3312,6 +3312,11 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_coach_or_admin: { Args: never; Returns: boolean }
+      join_training_session: { Args: { p_session_id: string }; Returns: number }
+      leave_training_session: {
+        Args: { p_session_id: string }
+        Returns: number
+      }
       reassign_content_source_essays: {
         Args: {
           p_source_content_source_id: string
@@ -3338,6 +3343,11 @@ export type Database = {
         Returns: number
       }
       record_essay_view: { Args: { p_essay_id: string }; Returns: undefined }
+      remove_training_session: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
+      search_training_sessions: { Args: { p_query: string }; Returns: string[] }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
