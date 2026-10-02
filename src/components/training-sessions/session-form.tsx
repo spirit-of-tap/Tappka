@@ -13,10 +13,12 @@ import { pragueLocalToUtcISO } from "@/lib/reservations/utils"
 import { TS_LIMITS, TS_ROUTES } from "@/lib/training-sessions/constants"
 import { pragueDateKey, toTimeInputValue } from "@/lib/training-sessions/format"
 import type { UpcomingSlot } from "@/lib/training-sessions/slots"
+import { FACILITATOR_REQUIRED_MESSAGE } from "@/lib/training-sessions/validation"
 import type { TeamMemberProfile } from "@/lib/tymovy-denik/types"
 
 import { SlotChips } from "./slot-chips"
 
+const FACILITATOR_ERROR_ID = "ts-facilitator-error"
 const NO_ROOM = "none"
 
 export interface SessionFormValues {
@@ -43,6 +45,7 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
   const router = useRouter()
   const [values, setValues] = useState(initial)
   const [pending, setPending] = useState(false)
+  const [facilitatorError, setFacilitatorError] = useState(false)
   const set = <K extends keyof SessionFormValues>(key: K, value: SessionFormValues[K]) =>
     setValues((v) => ({ ...v, [key]: value }))
 
@@ -57,6 +60,7 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
   }
 
   function toggleFacilitator(id: string) {
+    setFacilitatorError(false)
     set(
       "facilitatorIds",
       values.facilitatorIds.includes(id) ? values.facilitatorIds.filter((x) => x !== id) : [...values.facilitatorIds, id],
@@ -65,6 +69,10 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
+    if (values.facilitatorIds.length === 0) {
+      setFacilitatorError(true)
+      return
+    }
     setPending(true)
     try {
       const payload = {
@@ -151,7 +159,7 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
         />
         <p className="text-xs text-muted-foreground">0 znamená, že TS je jen pro tým.</p>
       </div>
-      <fieldset className="space-y-2">
+      <fieldset className="space-y-2" aria-describedby={facilitatorError ? FACILITATOR_ERROR_ID : undefined}>
         <legend className="text-sm font-medium">Facilitace</legend>
         <div className="flex flex-wrap gap-2">
           {teamMembers.map((m) => {
@@ -163,6 +171,11 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
             )
           })}
         </div>
+        {facilitatorError && (
+          <p id={FACILITATOR_ERROR_ID} role="alert" className="text-sm text-destructive">
+            {FACILITATOR_REQUIRED_MESSAGE}
+          </p>
+        )}
       </fieldset>
       <Button type="submit" disabled={pending}>{mode.kind === "create" ? "Vytvořit TS" : "Uložit změny"}</Button>
     </form>

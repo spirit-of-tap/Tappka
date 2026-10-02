@@ -5,6 +5,8 @@ import { TS_LIMITS } from "./constants"
 const ATTENDANCE_STATUSES = ["present", "absent", "excused", "late"] as const
 const PREPARATION_ACTIONS = ["draft", "publish", "unpublish"] as const
 
+export const FACILITATOR_REQUIRED_MESSAGE = "Vyber aspoň jednu osobu na facilitaci"
+
 const nullableText = (max: number) =>
   z
     .string()
@@ -21,7 +23,11 @@ const sessionFields = z.object({
   roomId: z.uuid().nullable(),
   locationNote: nullableText(TS_LIMITS.locationNoteMax),
   guestCapacity: z.number().int().min(0).max(TS_LIMITS.guestCapacityMax),
-  facilitatorIds: z.array(z.uuid()).max(TS_LIMITS.facilitatorsMax),
+  // A custom issue (not .min) so the API passes the Czech message through to the client.
+  facilitatorIds: z
+    .array(z.uuid())
+    .max(TS_LIMITS.facilitatorsMax)
+    .refine((ids) => ids.length > 0, { message: FACILITATOR_REQUIRED_MESSAGE }),
 })
 
 function hasValidDuration(value: { startsAt: string; endsAt: string }): boolean {

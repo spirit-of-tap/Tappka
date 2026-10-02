@@ -68,11 +68,17 @@ test.describe("training sessions", () => {
     await host.getByLabel("Začátek").fill("08:00")
     await host.getByLabel("Konec").fill("12:00")
     await host.getByLabel("Místa pro jiné týmy").fill("2")
+    // A TS needs at least one facilitator; the host facilitates it so they can edit the preparation.
+    await host.getByRole("button", { name: "Vytvořit TS" }).click()
+    await expect(host.getByText("Vyber aspoň jednu osobu na facilitaci")).toBeVisible()
+    await host.getByRole("group", { name: "Facilitace" }).getByRole("button", { name: "E2E Test User" }).click()
     await host.getByRole("button", { name: "Vytvořit TS" }).click()
     await expect(host.getByRole("heading", { name: topic })).toBeVisible()
     const detailUrl = host.url()
 
-    await host.getByRole("tab", { name: "Příprava" }).click()
+    // Příprava is the default tab.
+    await expect(host.getByRole("tab", { name: "Příprava" })).toHaveAttribute("aria-selected", "true")
+    await expect(host.getByRole("tab", { name: "Přehled" })).toHaveCount(0)
     await host.locator(".ProseMirror").fill("Přečtěte si článek o AI")
     await host.getByRole("button", { name: "Zveřejnit" }).click()
     await expect(host.getByText("Příprava je zveřejněná").first()).toBeVisible()

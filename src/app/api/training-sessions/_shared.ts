@@ -123,3 +123,16 @@ export async function requireTeamFacilitators(
   }
   return null
 }
+
+/** Preparation belongs to the session's facilitators; RLS enforces the same rule. */
+export async function requireSessionFacilitator(context: TsApiContext, sessionId: string): Promise<ApiFailure | null> {
+  const { data, error } = await context.supabase
+    .from("training_session_facilitators")
+    .select("profile_id")
+    .eq("training_session_id", sessionId)
+    .eq("profile_id", context.profileId)
+    .maybeSingle()
+  if (error) return mutationFailed(error)
+  if (!data) return errorResponse("Přípravu může upravovat jen facilitace této TS", HTTP_FORBIDDEN)
+  return null
+}

@@ -17,8 +17,7 @@ describe("SessionDetailTabs", () => {
   })
 
   it("hides Docházka and Reflexe when their panels are absent", () => {
-    render(<SessionDetailTabs panels={{ prehled: <p>Přehled obsah</p>, priprava: <p>Příprava obsah</p> }} />)
-    expect(screen.getByRole("tab", { name: "Přehled" })).toBeInTheDocument()
+    render(<SessionDetailTabs panels={{ priprava: <p>Příprava obsah</p> }} />)
     expect(screen.getByRole("tab", { name: "Příprava" })).toBeInTheDocument()
     expect(screen.queryByRole("tab", { name: "Docházka" })).not.toBeInTheDocument()
     expect(screen.queryByRole("tab", { name: "Reflexe" })).not.toBeInTheDocument()
@@ -27,20 +26,28 @@ describe("SessionDetailTabs", () => {
   it("shows all tabs when every panel is provided", () => {
     render(
       <SessionDetailTabs
-        panels={{ prehled: <p>A</p>, priprava: <p>B</p>, dochazka: <p>C</p>, reflexe: <p>D</p> }}
+        panels={{ priprava: <p>B</p>, dochazka: <p>C</p>, reflexe: <p>D</p> }}
       />,
     )
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Přehled", "Příprava", "Docházka", "Reflexe"])
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Příprava", "Docházka", "Reflexe"])
   })
 
-  it("opens the tab from the query string and falls back to the first tab for unavailable ones", () => {
-    searchParams = new URLSearchParams("tab=priprava")
-    const { unmount } = render(<SessionDetailTabs panels={{ prehled: <p>A</p>, priprava: <p>Příprava obsah</p> }} />)
+  it("opens Příprava by default", () => {
+    render(<SessionDetailTabs panels={{ priprava: <p>B</p>, dochazka: <p>C</p>, reflexe: <p>D</p> }} />)
     expect(screen.getByRole("tab", { name: "Příprava" })).toHaveAttribute("aria-selected", "true")
+  })
+
+  it("opens the tab from the query string and falls back to Příprava for unknown or unavailable ones", () => {
+    searchParams = new URLSearchParams("tab=dochazka")
+    const { unmount } = render(<SessionDetailTabs panels={{ priprava: <p>B</p>, dochazka: <p>C</p> }} />)
+    expect(screen.getByRole("tab", { name: "Docházka" })).toHaveAttribute("aria-selected", "true")
     unmount()
 
-    searchParams = new URLSearchParams("tab=reflexe")
-    render(<SessionDetailTabs panels={{ prehled: <p>A</p>, priprava: <p>B</p> }} />)
-    expect(screen.getByRole("tab", { name: "Přehled" })).toHaveAttribute("aria-selected", "true")
+    for (const tab of ["reflexe", "prehled"]) {
+      searchParams = new URLSearchParams(`tab=${tab}`)
+      const view = render(<SessionDetailTabs panels={{ priprava: <p>B</p>, dochazka: <p>C</p> }} />)
+      expect(screen.getByRole("tab", { name: "Příprava" })).toHaveAttribute("aria-selected", "true")
+      view.unmount()
+    }
   })
 })

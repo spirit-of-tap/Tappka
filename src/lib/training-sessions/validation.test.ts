@@ -10,7 +10,7 @@ const valid = {
   roomId: null,
   locationNote: " ",
   guestCapacity: 5,
-  facilitatorIds: [],
+  facilitatorIds: ["3f0c2b1e-0000-4000-8000-000000000001"],
 }
 
 describe("sessionInputSchema", () => {
@@ -25,6 +25,14 @@ describe("sessionInputSchema", () => {
   it("rejects sessions longer than 12 hours", () => {
     expect(sessionInputSchema.safeParse({ ...valid, endsAt: "2026-10-06T18:01:00.000Z" }).success).toBe(false)
   })
+  it("requires at least one facilitator with a custom Czech message", () => {
+    const result = sessionInputSchema.safeParse({ ...valid, facilitatorIds: [] })
+    expect(result.success).toBe(false)
+    const issue = result.error?.issues[0]
+    expect(issue?.code).toBe("custom")
+    expect(issue?.message).toBe("Vyber aspoň jednu osobu na facilitaci")
+    expect(issue?.path).toEqual(["facilitatorIds"])
+  })
   it("rejects capacity above 50 and negative", () => {
     expect(sessionInputSchema.safeParse({ ...valid, guestCapacity: 51 }).success).toBe(false)
     expect(sessionInputSchema.safeParse({ ...valid, guestCapacity: -1 }).success).toBe(false)
@@ -35,6 +43,7 @@ describe("sessionPatchSchema", () => {
   it("validates update duration and accepts cancel/restore", () => {
     expect(sessionPatchSchema.safeParse({ kind: "update", ...valid }).success).toBe(true)
     expect(sessionPatchSchema.safeParse({ kind: "update", ...valid, endsAt: valid.startsAt }).success).toBe(false)
+    expect(sessionPatchSchema.safeParse({ kind: "update", ...valid, facilitatorIds: [] }).success).toBe(false)
     expect(sessionPatchSchema.safeParse({ kind: "cancel" }).success).toBe(true)
     expect(sessionPatchSchema.safeParse({ kind: "restore" }).success).toBe(true)
   })

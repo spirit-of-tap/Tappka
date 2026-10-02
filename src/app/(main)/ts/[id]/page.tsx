@@ -91,8 +91,10 @@ export default async function TsDetailPage({ params }: PageProps) {
       : null
   }
 
+  const isFacilitator = session.facilitators.some((f) => f.profile?.id === profile.id)
+
   const overview = (
-    <div className="space-y-3 text-sm">
+    <section aria-label="O TS" className="space-y-3 text-sm">
       {session.description && <p className="whitespace-pre-line">{session.description}</p>}
       <p className="inline-flex items-center gap-1.5 text-muted-foreground">
         <Users className="size-4" aria-hidden />
@@ -108,15 +110,14 @@ export default async function TsDetailPage({ params }: PageProps) {
         </ul>
       )}
       {canShowGuestControls && <GuestJoinButton sessionId={session.id} joined={joined} conflictText={conflictText} />}
-    </div>
+    </section>
   )
 
   const panels: SessionDetailPanels = {
-    prehled: overview,
     priprava: (
       <PreparationPanel
         sessionId={session.id}
-        canEdit={isOwnTeam}
+        canEdit={isFacilitator}
         contentJson={(session.preparation?.content_json as object | null) ?? null}
         publishedAt={session.preparation?.published_at ?? null}
       />
@@ -172,6 +173,7 @@ export default async function TsDetailPage({ params }: PageProps) {
         )}
         {facilitatorNames && <span>Facilitace: {facilitatorNames}</span>}
       </div>
+      {overview}
       <Suspense>
         <SessionDetailTabs panels={panels} />
       </Suspense>

@@ -9,6 +9,7 @@ import { teams } from "./teams"
 
 const OWN_TEAM_IDS = sql`(SELECT team_id FROM profiles WHERE id = current_profile_id() AND access_removed_at IS NULL)`
 const OWN_TEAM_SESSION_IDS = sql`(SELECT id FROM training_sessions WHERE team_id IN ${OWN_TEAM_IDS})`
+const FACILITATED_SESSION_IDS = sql`(SELECT training_session_id FROM training_session_facilitators WHERE profile_id = current_profile_id())`
 
 export const trainingSessions = pgTable("training_sessions", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -75,8 +76,8 @@ export const trainingSessionPreparations = pgTable("training_session_preparation
 	foreignKey({ columns: [table.createdByProfileId], foreignColumns: [profiles.id], name: "training_session_preparations_created_by_profile_id_fkey" }).onDelete("restrict"),
 	foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "training_session_preparations_updated_by_profile_id_fkey" }).onDelete("restrict"),
 	pgPolicy("Published preparation is public, drafts team only", { as: "permissive", for: "select", to: ["authenticated"], using: sql`published_at IS NOT NULL OR training_session_id IN ${OWN_TEAM_SESSION_IDS}` }),
-	pgPolicy("Team members can create preparation", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS}` }),
-	pgPolicy("Team members can update preparation", { as: "permissive", for: "update", to: ["authenticated"], using: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS}`, withCheck: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS}` }),
+	pgPolicy("Facilitators can create preparation", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
+	pgPolicy("Facilitators can update preparation", { as: "permissive", for: "update", to: ["authenticated"], using: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}`, withCheck: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
 ]).enableRLS()
 
 export const trainingSessionReflections = pgTable("training_session_reflections", {

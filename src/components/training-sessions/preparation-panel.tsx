@@ -34,7 +34,15 @@ export function PreparationPanel({ sessionId, canEdit, contentJson, publishedAt 
 
   if (!canEdit) {
     if (!contentJson) return <p className="text-sm text-muted-foreground">Příprava zatím nebyla zveřejněná.</p>
-    return <TiptapRenderer content={contentJson} />
+    return (
+      <div className="space-y-3">
+        {/* Only the owning team can read an unpublished draft (RLS), so this note is team-facing. */}
+        {!publishedAt && (
+          <p className="text-sm text-muted-foreground">Koncept, upravovat ho může jen facilitace této TS.</p>
+        )}
+        <TiptapRenderer content={contentJson} />
+      </div>
+    )
   }
 
   async function save(action: PreparationAction) {

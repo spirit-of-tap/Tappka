@@ -9,7 +9,6 @@ import { TS_DETAIL_TABS, type TsDetailTab } from "@/lib/training-sessions/consta
 const TAB_QUERY_PARAM = "tab"
 
 const TAB_LABELS: Record<TsDetailTab, string> = {
-  prehled: "Přehled",
   priprava: "Příprava",
   dochazka: "Docházka",
   reflexe: "Reflexe",

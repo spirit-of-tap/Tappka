@@ -65,7 +65,22 @@ async function insertSession(
      returning id`,
     [teamId, startsIn, opts.capacity ?? 2, profileId],
   );
-  return rows[0].id as string;
+  const id = rows[0].id as string;
+  // The app never creates a TS without facilitators; the creator facilitates by default.
+  await client.query(
+    "insert into public.training_session_facilitators (training_session_id, profile_id, created_by_profile_id) values ($1, $2, $2)",
+    [id, profileId],
+  );
+  return id;
+}
+
+async function insertPreparation(client: PoolClient, sessionId: string, profileId: string): Promise<void> {
+  await client.query(
+    `insert into public.training_session_preparations
+       (training_session_id, content_json, content_text, created_by_profile_id, updated_by_profile_id)
+     values ($1, '{"type":"doc"}', 'Přečtěte si článek', $2, $2)`,
+    [sessionId, profileId],
+  );
 }
 
 describe("training_sessions RLS", () => {
@@ -118,6 +133,43 @@ describe("training_sessions RLS", () => {
 
       await asClaims(client, { sub: s.other.authId });
       expect((await client.query("select 1 from public.training_session_preparations where training_session_id = $1", [id])).rows).toHaveLength(1);
+    });
+  });
+
+  it("lets only facilitators create and update preparation", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+
+      await asClaims(client, { sub: s.teammate.authId });
+      await client.query("savepoint before_insert");
+      await expect(insertPreparation(client, id, s.teammate.profileId)).rejects.toThrow(/row-level security/);
+      await client.query("rollback to savepoint before_insert");
+
+      await asClaims(client, { sub: s.owner.authId });
+      await insertPreparation(client, id, s.owner.profileId);
+
+      await asClaims(client, { sub: s.teammate.authId });
+      const blocked = await client.query(
+        "update public.training_session_preparations set content_text = 'x' where training_session_id = $1",
+        [id],
+      );
+      expect(blocked.rowCount).toBe(0);
+      // A non-facilitating teammate still reads the draft.
+      expect((await client.query("select 1 from public.training_session_preparations where training_session_id = $1", [id])).rows).toHaveLength(1);
+
+      await asClaims(client, { sub: s.owner.authId });
+      await client.query(
+        "insert into public.training_session_facilitators (training_session_id, profile_id, created_by_profile_id) values ($1, $2, $3)",
+        [id, s.teammate.profileId, s.owner.profileId],
+      );
+      await asClaims(client, { sub: s.teammate.authId });
+      const allowed = await client.query(
+        "update public.training_session_preparations set content_text = 'x' where training_session_id = $1",
+        [id],
+      );
+      expect(allowed.rowCount).toBe(1);
     });
   });
 

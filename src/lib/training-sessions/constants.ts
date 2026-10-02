@@ -56,7 +56,7 @@ export const TS_DISCOVER_FILTER_LABELS: Record<TsDiscoverFilter, string> = {
   probehle: "Proběhlé",
 }
 
-export const TS_DETAIL_TABS = ["prehled", "priprava", "dochazka", "reflexe"] as const
+export const TS_DETAIL_TABS = ["priprava", "dochazka", "reflexe"] as const
 export type TsDetailTab = (typeof TS_DETAIL_TABS)[number]
 
 export const PRAGUE_TIME_ZONE = "Europe/Prague"

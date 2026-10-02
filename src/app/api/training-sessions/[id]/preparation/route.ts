@@ -4,13 +4,22 @@ import { contentTextFromJson } from "@/lib/essays/content-text"
 import type { Json } from "@/lib/supabase/database.types"
 import { preparationInputSchema } from "@/lib/training-sessions/validation"
 
-import { isApiFailure, mutationFailed, parseJson, requireOwnedSession, requireTsApiContext } from "../../_shared"
+import {
+  isApiFailure,
+  mutationFailed,
+  parseJson,
+  requireOwnedSession,
+  requireSessionFacilitator,
+  requireTsApiContext,
+} from "../../_shared"
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const context = await requireTsApiContext()
   if (isApiFailure(context)) return context.response
   const session = await requireOwnedSession(context, (await params).id)
   if (isApiFailure(session)) return session.response
+  const notFacilitator = await requireSessionFacilitator(context, session.id)
+  if (notFacilitator) return notFacilitator.response
   const input = await parseJson(request, preparationInputSchema)
   if (isApiFailure(input)) return input.response
 
