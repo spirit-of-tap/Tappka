@@ -2722,6 +2722,341 @@ export type Database = {
           },
         ]
       }
+      training_session_attendees: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          profile_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          training_session_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          profile_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          training_session_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          profile_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          training_session_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_attendees_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_attendees_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_attendees_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_attendees_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_session_facilitators: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          profile_id: string
+          training_session_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          profile_id: string
+          training_session_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          profile_id?: string
+          training_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_facilitators_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_facilitators_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_facilitators_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_session_guests: {
+        Row: {
+          joined_at: string
+          profile_id: string
+          training_session_id: string
+        }
+        Insert: {
+          joined_at?: string
+          profile_id: string
+          training_session_id: string
+        }
+        Update: {
+          joined_at?: string
+          profile_id?: string
+          training_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_guests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_guests_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_session_preparations: {
+        Row: {
+          content_json: Json
+          content_text: string
+          created_at: string
+          created_by_profile_id: string
+          published_at: string | null
+          training_session_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          content_json: Json
+          content_text: string
+          created_at?: string
+          created_by_profile_id: string
+          published_at?: string | null
+          training_session_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          content_json?: Json
+          content_text?: string
+          created_at?: string
+          created_by_profile_id?: string
+          published_at?: string | null
+          training_session_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_preparations_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_preparations_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: true
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_preparations_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_session_reflections: {
+        Row: {
+          content_json: Json
+          content_text: string
+          created_at: string
+          created_by_profile_id: string
+          training_session_id: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          content_json: Json
+          content_text: string
+          created_at?: string
+          created_by_profile_id: string
+          training_session_id: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          content_json?: Json
+          content_text?: string
+          created_at?: string
+          created_by_profile_id?: string
+          training_session_id?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_reflections_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_reflections_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: true
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_reflections_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_sessions: {
+        Row: {
+          cancelled_at: string | null
+          cancelled_by_profile_id: string | null
+          created_at: string
+          created_by_profile_id: string
+          description: string | null
+          ends_at: string
+          guest_capacity: number
+          id: string
+          location_note: string | null
+          removed_at: string | null
+          room_id: string | null
+          starts_at: string
+          team_id: string
+          topic: string
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          cancelled_by_profile_id?: string | null
+          created_at?: string
+          created_by_profile_id: string
+          description?: string | null
+          ends_at: string
+          guest_capacity?: number
+          id?: string
+          location_note?: string | null
+          removed_at?: string | null
+          room_id?: string | null
+          starts_at: string
+          team_id: string
+          topic: string
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          cancelled_by_profile_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string
+          description?: string | null
+          ends_at?: string
+          guest_capacity?: number
+          id?: string
+          location_note?: string | null
+          removed_at?: string | null
+          room_id?: string | null
+          starts_at?: string
+          team_id?: string
+          topic?: string
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_sessions_cancelled_by_profile_id_fkey"
+            columns: ["cancelled_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           auth_user_id: string | null
@@ -2913,6 +3248,17 @@ export type Database = {
         Returns: undefined
       }
       coach_can_review_essay: { Args: { p_essay_id: string }; Returns: boolean }
+      coach_review_coverage_stats: {
+        Args: {
+          p_coach_profile_id: string
+          p_points: string
+          p_reply: string
+          p_rocket: string
+          p_search?: string
+          p_team_id: string
+        }
+        Returns: Json
+      }
       coach_review_filtered_ids: {
         Args: {
           p_coach_profile_id: string
