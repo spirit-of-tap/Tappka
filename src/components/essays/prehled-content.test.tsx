@@ -62,6 +62,19 @@ describe('PrehledContent', () => {
     );
   });
 
+  it('anchors the team section so the dashboard widget can deep-link to it', () => {
+    render(
+      <TooltipProvider>
+        <PrehledContent {...defaultProps} />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getByRole('region', { name: 'Tým a knižní body' })).toHaveAttribute(
+      'id',
+      'tym-a-knizni-body',
+    );
+  });
+
   it('hides team section if user has no team', () => {
     render(
       <TooltipProvider>
