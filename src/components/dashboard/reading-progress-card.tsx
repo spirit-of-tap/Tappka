@@ -13,11 +13,13 @@ import { getMetric } from '@/lib/metrics/config';
 
 interface ReadingProgressCardProps {
   stats: { approved_points: number; pending_points: number; essay_count: number; approved_points_this_semester?: number };
+  /** Team cohort year; drives which semester the progress strip shows. */
+  onboardingYear?: number | null;
 }
 
 const KNIZNI_BODY_METRIC = getMetric('knizni-body');
 
-export function ReadingProgressCard({ stats }: ReadingProgressCardProps) {
+export function ReadingProgressCard({ stats, onboardingYear }: ReadingProgressCardProps) {
   return (
     <Card className="h-full">
       <CardHeader>
@@ -56,6 +58,7 @@ export function ReadingProgressCard({ stats }: ReadingProgressCardProps) {
               label: 'za studium',
             },
           ]}
+          onboardingYear={onboardingYear}
         />
       </CardContent>
     </Card>

@@ -27,6 +27,8 @@ interface PrehledContentProps {
   }[];
   hasTeam: boolean;
   teamId?: string | null;
+  /** Team cohort year; drives which semester the progress strip shows. */
+  onboardingYear?: number | null;
   votedEssayIds: Set<string>;
   loans?: BookLoanWithDetails[];
 }
@@ -39,6 +41,7 @@ export function PrehledContent({
   teamStats,
   hasTeam,
   teamId,
+  onboardingYear,
   votedEssayIds,
   loans = [],
 }: PrehledContentProps) {
@@ -59,6 +62,7 @@ export function PrehledContent({
               label: 'za studium',
             },
           ]}
+          onboardingYear={onboardingYear}
         />
       </section>
 
