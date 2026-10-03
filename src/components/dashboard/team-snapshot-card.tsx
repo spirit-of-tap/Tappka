@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ProfileAvatar } from '@/components/profile-avatar';
+import { TEAM_BOOK_POINTS_HREF } from '@/lib/constants/cteni';
 
 interface TeamSnapshotCardProps {
   stats: {
@@ -33,7 +34,7 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
         <CardDescription>Nejlepší čtenáři:ky podle knižních bodů</CardDescription>
         <CardAction>
           <Link
-            href="/cteni/prehled"
+            href={TEAM_BOOK_POINTS_HREF}
             className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
           >
             Celý tým

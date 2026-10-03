@@ -9,6 +9,7 @@ import { MetricProgress } from '@/components/metrics/metric-progress';
 import { MobileFab, MobileFabSpacer } from '@/components/mobile-fab';
 import { ActiveLoansCard } from '@/components/library/active-loans-card';
 import { getMetric } from '@/lib/metrics/config';
+import { TEAM_BOOK_POINTS_SECTION_ID } from '@/lib/constants/cteni';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookLoanWithDetails } from '@/lib/library/types';
 
@@ -106,7 +107,11 @@ export function PrehledContent({
 
       {/* 4. Team book points overview */}
       {hasTeam && (
-        <section aria-label="Tým a knižní body" className="space-y-4 pt-4 border-t">
+        <section
+          id={TEAM_BOOK_POINTS_SECTION_ID}
+          aria-label="Tým a knižní body"
+          className="scroll-mt-16 space-y-4 pt-4 border-t"
+        >
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-heading text-lg font-semibold">Tým a knižní body</h2>
