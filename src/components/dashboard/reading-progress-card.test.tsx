@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ReadingProgressCard } from "@/components/dashboard/reading-progress-card";
+
+// The semester number and label render as separate text nodes inside one span.
+const semesterLabel = (text: string) => (_: string, el: Element | null) =>
+  el?.tagName === "SPAN" && el.textContent === text;
 
 describe("ReadingProgressCard", () => {
   const stats = { approved_points: 30, pending_points: 5, essay_count: 2 };
@@ -43,5 +47,21 @@ describe("ReadingProgressCard", () => {
     expect(screen.getByText(/za studium/)).toBeInTheDocument();
     expect(screen.getByText("10/20")).toBeInTheDocument();
     expect(screen.getByText(/tento semestr/)).toBeInTheDocument();
+  });
+
+  describe("semester number", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("derives the semester from the team's onboarding year", () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-10-15T12:00:00"));
+
+      render(<ReadingProgressCard stats={stats} onboardingYear={2026} />);
+
+      expect(screen.getAllByText(semesterLabel("1. semestr")).length).toBeGreaterThan(0);
+      expect(screen.queryByText(semesterLabel("3. semestr"))).not.toBeInTheDocument();
+    });
   });
 });

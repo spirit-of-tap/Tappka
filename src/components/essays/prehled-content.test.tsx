@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PrehledContent } from './prehled-content';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -19,6 +19,10 @@ vi.mock('recharts', async () => {
     ),
   };
 });
+
+// The semester number and label render as separate text nodes inside one span.
+const semesterLabel = (text: string) => (_: string, el: Element | null) =>
+  el?.tagName === 'SPAN' && el.textContent === text;
 
 describe('PrehledContent', () => {
   const defaultProps = {
@@ -66,5 +70,25 @@ describe('PrehledContent', () => {
     );
 
     expect(screen.queryByText('Tým a knižní body')).not.toBeInTheDocument();
+  });
+
+  describe('semester number', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("derives the semester from the team's onboarding year", () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-10-15T12:00:00'));
+
+      render(
+        <TooltipProvider>
+          <PrehledContent {...defaultProps} onboardingYear={2026} />
+        </TooltipProvider>,
+      );
+
+      expect(screen.getAllByText(semesterLabel('1. semestr')).length).toBeGreaterThan(0);
+      expect(screen.queryByText(semesterLabel('3. semestr'))).not.toBeInTheDocument();
+    });
   });
 });

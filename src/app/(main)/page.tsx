@@ -109,7 +109,9 @@ export default async function DashboardPage() {
     );
   }
   if (has("reading") && stats) {
-    nodes["reading"] = <ReadingProgressCard stats={stats} />;
+    nodes["reading"] = (
+      <ReadingProgressCard stats={stats} onboardingYear={profile.team?.onboardingYear} />
+    );
   }
   if (has("reservation")) {
     nodes["reservation"] = <NextReservationCard reservation={reservation} />;

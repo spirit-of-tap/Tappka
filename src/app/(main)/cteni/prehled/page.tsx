@@ -21,7 +21,7 @@ export default async function PrehledPage() {
   const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
   if (!user) redirect('/auth/login');
 
-  const profile = await getCurrentUserProfile(supabase, { user });
+  const profile = await getCurrentUserProfile(supabase, { user, includeTeam: true });
   if (!profile) redirect('/auth/login');
 
   const [stats, myEssays, teamStats, votesResult, loans] = await Promise.all([
@@ -53,6 +53,7 @@ export default async function PrehledPage() {
         teamStats={teamStats}
         hasTeam={!!profile.team_id}
         teamId={profile.team_id}
+        onboardingYear={profile.team?.onboardingYear}
         votedEssayIds={votedEssayIds}
         loans={loans}
       />
