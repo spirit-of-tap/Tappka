@@ -50,9 +50,12 @@ describe("sessionPatchSchema", () => {
 })
 
 describe("preparationInputSchema", () => {
-  it("requires a known action", () => {
-    expect(preparationInputSchema.safeParse({ contentJson: { type: "doc" }, action: "publish" }).success).toBe(true)
-    expect(preparationInputSchema.safeParse({ contentJson: { type: "doc" }, action: "x" }).success).toBe(false)
+  it("accepts content without any publish action", () => {
+    expect(preparationInputSchema.safeParse({ contentJson: { type: "doc" } }).success).toBe(true)
+  })
+
+  it("requires content", () => {
+    expect(preparationInputSchema.safeParse({}).success).toBe(false)
   })
 })
 

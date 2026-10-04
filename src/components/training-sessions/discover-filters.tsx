@@ -7,6 +7,7 @@ import { YEAR_LABELS } from "@/lib/komunita/types"
 import {
   TS_DISCOVER_FILTER_LABELS,
   TS_DISCOVER_FILTERS,
+  TS_DISCOVER_HORIZON,
   TS_ROUTES,
   type TsDiscoverFilter,
 } from "@/lib/training-sessions/constants"
@@ -18,6 +19,7 @@ export const DISCOVER_SEARCH_PARAMS = {
   filter: "filtr",
   year: "rocnik",
   query: "q",
+  windows: "mesicu",
 } as const
 
 interface DiscoverFiltersProps {
@@ -26,11 +28,19 @@ interface DiscoverFiltersProps {
   q: string
 }
 
-function buildDiscoverHref(params: { filter: TsDiscoverFilter; year: number | null; q: string }): string {
+export function buildDiscoverHref(params: {
+  filter: TsDiscoverFilter
+  year: number | null
+  q: string
+  windows?: number
+}): string {
   const search = new URLSearchParams()
   if (params.filter !== DEFAULT_DISCOVER_FILTER) search.set(DISCOVER_SEARCH_PARAMS.filter, params.filter)
   if (params.year !== null) search.set(DISCOVER_SEARCH_PARAMS.year, String(params.year))
   if (params.q) search.set(DISCOVER_SEARCH_PARAMS.query, params.q)
+  if (params.windows !== undefined && params.windows !== TS_DISCOVER_HORIZON.defaultWindows) {
+    search.set(DISCOVER_SEARCH_PARAMS.windows, String(params.windows))
+  }
   const qs = search.toString()
   return qs ? `${TS_ROUTES.discover}?${qs}` : TS_ROUTES.discover
 }

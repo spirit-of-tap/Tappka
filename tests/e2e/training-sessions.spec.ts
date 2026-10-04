@@ -80,8 +80,10 @@ test.describe("training sessions", () => {
     await expect(host.getByRole("tab", { name: "Příprava" })).toHaveAttribute("aria-selected", "true")
     await expect(host.getByRole("tab", { name: "Přehled" })).toHaveCount(0)
     await host.locator(".ProseMirror").fill("Přečtěte si článek o AI")
-    await host.getByRole("button", { name: "Zveřejnit" }).click()
-    await expect(host.getByText("Příprava je zveřejněná").first()).toBeVisible()
+    // Saving publishes — there is no draft state.
+    await expect(host.getByRole("button", { name: "Zveřejnit" })).toHaveCount(0)
+    await host.getByRole("button", { name: "Uložit", exact: true }).click()
+    await expect(host.getByText("Příprava uložena")).toBeVisible()
 
     const guestContext = await browser.newContext()
     await declineAnalyticsConsent(guestContext)
@@ -93,10 +95,11 @@ test.describe("training sessions", () => {
     await card.getByRole("button", { name: "Přihlásit se" }).click()
     await expect(card.getByText("1/2 míst")).toBeVisible()
 
+    // A guest only gets the preparation, so it is shown directly without tabs.
     await guest.goto(detailUrl)
-    await guest.getByRole("tab", { name: "Příprava" }).click()
+    await expect(guest.getByRole("heading", { name: "Příprava" })).toBeVisible()
     await expect(guest.getByText("Přečtěte si článek o AI")).toBeVisible()
-    await expect(guest.getByRole("tab", { name: "Reflexe" })).toHaveCount(0)
+    await expect(guest.getByRole("tab")).toHaveCount(0)
 
     await host.reload()
     await host.getByRole("tab", { name: "Docházka" }).click()

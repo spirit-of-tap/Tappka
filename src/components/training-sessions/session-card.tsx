@@ -5,17 +5,22 @@ import { ProfileAvatar } from "@/components/profile-avatar"
 import { Badge } from "@/components/ui/badge"
 import type { SessionConflict } from "@/lib/training-sessions/conflicts"
 import { TS_ROUTES } from "@/lib/training-sessions/constants"
-import { formatDayHeading, formatTimeRange } from "@/lib/training-sessions/format"
+import { formatDayHeading, formatPeopleList, formatTimeRange, teamAccentStyles } from "@/lib/training-sessions/format"
 import { getSessionStatus } from "@/lib/training-sessions/status"
-import { toTiming, type SessionTiming, type TrainingSessionListItem } from "@/lib/training-sessions/types"
+import {
+  toTiming,
+  type SessionTiming,
+  type SessionViewer,
+  type TrainingSessionListItem,
+  type TsPersonSummary,
+} from "@/lib/training-sessions/types"
 import { cn } from "@/lib/utils"
 
 import { GuestJoinButton } from "./guest-join-button"
 
-export interface SessionViewer {
-  profileId: string
-  teamId: string | null
-}
+export type { SessionViewer } from "@/lib/training-sessions/types"
+
+const AVATAR_PREVIEW_COUNT = 3
 
 interface SessionCardProps {
   session: TrainingSessionListItem
@@ -23,56 +28,53 @@ interface SessionCardProps {
   conflicts: SessionConflict<SessionTiming>[]
   now: string
   showDate?: boolean
+  /** Room matters for TS you attend; when browsing other teams' TS it is noise. */
+  showLocation?: boolean
 }
 
-export function SessionCard({ session, viewer, conflicts, now, showDate }: SessionCardProps) {
+export function SessionCard({ session, viewer, conflicts, now, showDate, showLocation = true }: SessionCardProps) {
   const status = getSessionStatus(toTiming(session), new Date(now))
   const isCancelled = status === "cancelled"
   const isOngoing = status === "ongoing"
+  const isUpcoming = status === "upcoming" || isOngoing
   const isOwnTeam = viewer.teamId !== null && viewer.teamId === session.team_id
   const guestCount = session.guests.length
   const joined = session.guests.some((g) => g.profile_id === viewer.profileId)
+  const isAttending = isOwnTeam || joined
   const isFull = guestCount >= session.guest_capacity
   const canShowGuestControls = !isOwnTeam && session.guest_capacity > 0 && status === "upcoming"
   const conflict = conflicts[0]
   const conflictText = conflict
     ? `Kryje se s tvým TS · ${formatTimeRange(conflict.overlapStart, conflict.overlapEnd)}`
     : null
-  const facilitatorNames = session.facilitators
-    .map((f) => f.profile?.name)
-    .filter((name): name is string => Boolean(name))
-    .join(", ")
+  const facilitators = session.facilitators.flatMap((f) => (f.profile ? [f.profile] : []))
+  const guests = session.guests.flatMap((g) => (g.profile ? [g.profile] : []))
   const location = session.room?.code ?? session.location_note
-  // Team color is user data; an invalid value is dropped by the browser, leaving the bg-primary fallback.
-  const teamColor = session.team?.color ?? undefined
+  const hasPreparation = Boolean(session.preparation?.published_at)
+  const accent = teamAccentStyles(session.team?.color)
 
   return (
     <article
+      style={accent.surface}
       className={cn(
-        "group relative rounded-xl border bg-card p-4 transition-all duration-150 sm:p-5 shadow-xs",
-        "hover:border-border/80 hover:bg-card/90",
-        isOngoing && "border-emerald-500/40 bg-emerald-500/[0.03] ring-1 ring-emerald-500/20",
-        isCancelled && "opacity-60 bg-muted/30",
+        "group relative overflow-hidden rounded-xl border bg-card p-4 pl-5 shadow-xs transition-colors sm:p-5 sm:pl-6",
+        "hover:border-border/80",
+        isOngoing && "border-success/40 ring-1 ring-success/20",
+        isCancelled && "opacity-60",
       )}
     >
+      <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-primary" style={accent.stripe} />
+
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          {showDate && (
-            <span className="font-semibold text-foreground">
-              {formatDayHeading(session.starts_at)}
-            </span>
-          )}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          {showDate && <span className="font-semibold text-foreground">{formatDayHeading(session.starts_at)}</span>}
           <span className="inline-flex items-center gap-1 font-medium tabular-nums text-foreground">
             <Clock className="size-3.5 text-muted-foreground" aria-hidden />
             {formatTimeRange(session.starts_at, session.ends_at)}
           </span>
           {session.team && (
-            <span className="inline-flex items-center gap-1.5 font-medium text-foreground/80">
-              <span
-                aria-hidden
-                className="size-2 rounded-full bg-primary shrink-0"
-                style={teamColor ? { backgroundColor: teamColor } : undefined}
-              />
+            <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+              <span aria-hidden className="size-2 shrink-0 rounded-full bg-primary" style={accent.stripe} />
               {session.team.name}
             </span>
           )}
@@ -80,8 +82,8 @@ export function SessionCard({ session, viewer, conflicts, now, showDate }: Sessi
 
         <div className="flex flex-wrap items-center gap-1.5">
           {isOngoing && (
-            <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 gap-1.5 font-medium">
-              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <Badge variant="outline" className="gap-1.5 border-success/30 bg-success/10 font-medium text-success-strong">
+              <span className="size-1.5 animate-pulse rounded-full bg-success motion-reduce:animate-none" />
               Právě probíhá
             </Badge>
           )}
@@ -93,63 +95,53 @@ export function SessionCard({ session, viewer, conflicts, now, showDate }: Sessi
 
       <Link
         href={TS_ROUTES.detail(session.id)}
-        className="group/link mt-2 flex items-start justify-between gap-2 rounded-sm font-heading text-lg font-semibold leading-snug hover:underline focus-ring text-foreground"
+        className="group/link mt-1.5 flex items-start justify-between gap-2 rounded-sm font-heading text-lg font-semibold leading-snug text-foreground hover:underline focus-ring"
       >
         <span>{session.topic}</span>
         <ChevronRight
-          className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/link:translate-x-0.5 group-hover/link:text-foreground mt-1"
+          className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover/link:translate-x-0.5 group-hover/link:text-foreground motion-reduce:transition-none"
           aria-hidden
         />
       </Link>
 
-      {session.description && (
-        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-          {session.description}
-        </p>
+      {session.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{session.description}</p>}
+
+      <dl className="mt-3 grid gap-1.5 text-sm">
+        {facilitators.length > 0 && <PeopleRow label="Facilitace" people={facilitators} />}
+        {guests.length > 0 && <PeopleRow label="Crossy" people={guests} />}
+      </dl>
+
+      {((showLocation && location) || (isUpcoming && !isCancelled)) && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground sm:text-sm">
+          {showLocation && location && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="size-3.5 shrink-0" aria-hidden />
+              {location}
+            </span>
+          )}
+          {isUpcoming && !isCancelled && (
+            <span className="inline-flex items-center gap-1">
+              {hasPreparation ? (
+                <>
+                  <CheckCircle2 className="size-3.5 shrink-0 text-success-strong" aria-hidden />
+                  <span>Příprava je připravená</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle
+                    className={cn("size-3.5 shrink-0", isAttending && "text-warning-strong")}
+                    aria-hidden
+                  />
+                  <span className={cn(isAttending && "font-medium text-warning-strong")}>Příprava zatím chybí</span>
+                </>
+              )}
+            </span>
+          )}
+        </div>
       )}
 
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-sm text-muted-foreground">
-        {location && (
-          <span className="inline-flex items-center gap-1">
-            <MapPin className="size-3.5 shrink-0" aria-hidden />
-            {location}
-          </span>
-        )}
-        {session.facilitators.length > 0 && (
-          <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true" className="flex -space-x-1 overflow-hidden shrink-0">
-              {session.facilitators.slice(0, 2).map((f) => (
-                <ProfileAvatar
-                  key={f.profile?.id ?? Math.random()}
-                  picture={f.profile?.picture}
-                  name={f.profile?.name}
-                  size={18}
-                  className="ring-1 ring-card"
-                />
-              ))}
-            </span>
-            <span>Facilitace: {facilitatorNames}</span>
-          </span>
-        )}
-        {isOwnTeam && (
-          <span className="inline-flex items-center gap-1">
-            {session.preparation?.published_at ? (
-              <>
-                <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden />
-                <span>Příprava je zveřejněná</span>
-              </>
-            ) : (
-              <>
-                <AlertCircle className="size-3.5 text-warning-strong shrink-0" aria-hidden />
-                <span className="font-medium text-warning-strong">Příprava zatím chybí</span>
-              </>
-            )}
-          </span>
-        )}
-      </div>
-
       {conflictText && !isCancelled && (
-        <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border border-warning/30 bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning-strong">
+        <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-md bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning-strong">
           <CircleAlert className="size-3.5 shrink-0" aria-hidden />
           {conflictText}
         </p>
@@ -157,25 +149,10 @@ export function SessionCard({ session, viewer, conflicts, now, showDate }: Sessi
 
       {canShowGuestControls && (
         <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-border/50 pt-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Users className="size-4 shrink-0" aria-hidden />
-              {isFull && !joined ? "Obsazeno" : `${guestCount}/${session.guest_capacity} míst`}
-            </span>
-            {session.guests.length > 0 && (
-              <span aria-hidden="true" className="hidden xs:flex -space-x-1.5 overflow-hidden">
-                {session.guests.slice(0, 3).map((g) => (
-                  <ProfileAvatar
-                    key={g.profile_id}
-                    picture={g.profile?.picture}
-                    name={g.profile?.name}
-                    size={20}
-                    className="ring-1.5 ring-card"
-                  />
-                ))}
-              </span>
-            )}
-          </div>
+          <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Users className="size-4 shrink-0" aria-hidden />
+            {isFull && !joined ? "Obsazeno" : `${guestCount}/${session.guest_capacity} míst`}
+          </span>
           {(!isFull || joined) && (
             <GuestJoinButton sessionId={session.id} joined={joined} conflictText={conflictText} />
           )}
@@ -185,3 +162,20 @@ export function SessionCard({ session, viewer, conflicts, now, showDate }: Sessi
   )
 }
 
+function PeopleRow({ label, people }: { label: string; people: TsPersonSummary[] }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <dt className="w-20 shrink-0 text-xs text-muted-foreground">{label}</dt>
+      <dd className="flex min-w-0 items-center gap-1.5">
+        <span aria-hidden className="flex shrink-0 -space-x-1.5">
+          {people.slice(0, AVATAR_PREVIEW_COUNT).map((p) => (
+            <ProfileAvatar key={p.id} picture={p.picture} name={p.name} size={20} className="ring-2 ring-card" />
+          ))}
+        </span>
+        <span className="truncate text-foreground/90">
+          {formatPeopleList(people.map((p) => p.name ?? "Bez jména"))}
+        </span>
+      </dd>
+    </div>
+  )
+}

@@ -64,4 +64,45 @@ describe("SessionCard", () => {
     render(<SessionCard session={{ ...session, guest_capacity: 0, guests: [] }} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
     expect(screen.queryByRole("button", { name: /Přihlásit se/ })).not.toBeInTheDocument()
   })
+
+  it("shows facilitators and crosses by name", () => {
+    render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
+    expect(screen.getByText("Facilitace")).toBeInTheDocument()
+    expect(screen.getByText("Anna")).toBeInTheDocument()
+    expect(screen.getByText("Crossy")).toBeInTheDocument()
+    expect(screen.getByText("Klára")).toBeInTheDocument()
+  })
+
+  it("hides the room when location is turned off", () => {
+    const { rerender } = render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
+    expect(screen.getByText("E209")).toBeInTheDocument()
+    rerender(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} showLocation={false} />)
+    expect(screen.queryByText("E209")).not.toBeInTheDocument()
+  })
+
+  it("shows whether the preparation is ready", () => {
+    const { rerender } = render(<SessionCard session={session} viewer={{ profileId: "p1", teamId: "t1" }} conflicts={[]} now={now} />)
+    expect(screen.getByText("Příprava zatím chybí")).toBeInTheDocument()
+    rerender(
+      <SessionCard
+        session={{ ...session, preparation: { published_at: now } }}
+        viewer={{ profileId: "p1", teamId: "t1" }}
+        conflicts={[]}
+        now={now}
+      />,
+    )
+    expect(screen.getByText("Příprava je připravená")).toBeInTheDocument()
+  })
+
+  it("marks the card with the team color", () => {
+    const { container } = render(
+      <SessionCard
+        session={{ ...session, team: { id: "t1", name: "Tuuli", color: "#ff0000", onboardingYear: 2 } }}
+        viewer={{ profileId: "x", teamId: "t2" }}
+        conflicts={[]}
+        now={now}
+      />,
+    )
+    expect(container.querySelector("article")?.getAttribute("style")).toContain("color-mix")
+  })
 })

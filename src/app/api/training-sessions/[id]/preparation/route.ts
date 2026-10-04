@@ -30,17 +30,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     .maybeSingle()
   if (existingError) return mutationFailed(existingError).response
 
-  const currentPublishedAt = existing?.published_at ?? null
-  const publishedAt =
-    input.action === "publish"
-      ? (currentPublishedAt ?? new Date().toISOString())
-      : input.action === "unpublish"
-        ? null
-        : currentPublishedAt
+  // Saving publishes; saving an empty document means there is no preparation.
+  const contentText = contentTextFromJson(input.contentJson)
+  const publishedAt = contentText === "" ? null : (existing?.published_at ?? new Date().toISOString())
 
   const content = {
     content_json: input.contentJson as Json,
-    content_text: contentTextFromJson(input.contentJson),
+    content_text: contentText,
     published_at: publishedAt,
     updated_by_profile_id: context.profileId,
   }

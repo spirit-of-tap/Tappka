@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Sparkles } from "lucide-react"
+import { CalendarDays, Clock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { formatDayHeading, formatTimeRange } from "@/lib/training-sessions/format"
@@ -17,9 +17,9 @@ export function SlotChips({ slots, rooms, onPick }: SlotChipsProps) {
   const roomCode = new Map(rooms.map((r) => [r.id, r.code]))
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 space-y-2.5">
+    <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2.5">
       <div className="flex items-center gap-2">
-        <Sparkles className="size-4 text-primary" aria-hidden />
+        <CalendarDays className="size-4 text-muted-foreground" aria-hidden />
         <p className="text-sm font-semibold text-foreground">Volné termíny podle rozvrhu týmu</p>
       </div>
       <p className="text-xs text-muted-foreground">

@@ -3,7 +3,6 @@ import { z } from "zod"
 import { TS_LIMITS } from "./constants"
 
 const ATTENDANCE_STATUSES = ["present", "absent", "excused", "late"] as const
-const PREPARATION_ACTIONS = ["draft", "publish", "unpublish"] as const
 
 export const FACILITATOR_REQUIRED_MESSAGE = "Vyber aspoň jednu osobu na facilitaci"
 
@@ -54,10 +53,8 @@ export type SessionPatch = z.infer<typeof sessionPatchSchema>
 
 const contentJsonSchema = z.record(z.string(), z.unknown())
 
-export const preparationInputSchema = z.object({
-  contentJson: contentJsonSchema,
-  action: z.enum(PREPARATION_ACTIONS),
-})
+// Saving publishes: there is no draft state for preparation.
+export const preparationInputSchema = z.object({ contentJson: contentJsonSchema })
 
 export const reflectionInputSchema = z.object({ contentJson: contentJsonSchema })
 

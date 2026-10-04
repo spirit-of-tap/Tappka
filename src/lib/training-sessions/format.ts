@@ -42,3 +42,29 @@ export function groupByPragueDay<T>(items: T[], getStart: (item: T) => string): 
   }
   return groups
 }
+
+/** Names shown in full before the rest collapse into "+N". */
+export const PEOPLE_PREVIEW_COUNT = 3
+
+/** "Anna, Petr, Klára +2" — a compact list of who will be there. */
+export function formatPeopleList(names: string[], max: number = PEOPLE_PREVIEW_COUNT): string {
+  const shown = names.slice(0, max).join(", ")
+  const rest = names.length - max
+  return rest > 0 ? `${shown} +${rest}` : shown
+}
+
+/** Share of the team color mixed into a card surface — enough to tell teams apart, not enough to hurt contrast. */
+const TEAM_TINT_PERCENT = 7
+
+/**
+ * Inline styles that mark a surface with its team's color. Team colors are user data,
+ * so they can't be semantic tokens; an invalid value is simply dropped by the browser.
+ */
+export function teamAccentStyles(color: string | null | undefined): {
+  stripe: { backgroundColor: string } | undefined
+  surface: { backgroundImage: string } | undefined
+} {
+  if (!color) return { stripe: undefined, surface: undefined }
+  const tint = `color-mix(in oklab, ${color} ${TEAM_TINT_PERCENT}%, transparent)`
+  return { stripe: { backgroundColor: color }, surface: { backgroundImage: `linear-gradient(${tint}, ${tint})` } }
+}

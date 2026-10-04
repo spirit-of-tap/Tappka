@@ -40,10 +40,7 @@ export function AttendancePanel({ sessionId, people, initial }: AttendancePanelP
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Zaznamenej účast všech členů týmu i přihlášených hostujících.
-      </p>
-      <AttendanceSelector teamMembers={people} value={value} onChange={setValue} disabled={pending} />
+      <AttendanceSelector teamMembers={people} value={value} onChange={setValue} disabled={pending} bare />
       <div className="pt-1">
         <Button size="sm" disabled={pending} onClick={() => void save()}>
           Uložit docházku

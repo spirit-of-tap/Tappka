@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest"
 
-import { formatDayHeading, formatTimeRange, groupByPragueDay, pragueDateKey, toTimeInputValue } from "./format"
+import {
+  formatDayHeading,
+  formatPeopleList,
+  formatTimeRange,
+  groupByPragueDay,
+  pragueDateKey,
+  teamAccentStyles,
+  toTimeInputValue,
+} from "./format"
 
 describe("Prague formatting", () => {
   it("keys by Prague date, not UTC date", () => {
@@ -28,5 +36,27 @@ describe("Prague formatting", () => {
       ["2026-10-06", [1, 2]],
       ["2026-10-07", [3]],
     ])
+  })
+})
+
+describe("formatPeopleList", () => {
+  it("lists everyone up to the preview count", () => {
+    expect(formatPeopleList(["Anna", "Petr"])).toBe("Anna, Petr")
+    expect(formatPeopleList([])).toBe("")
+  })
+  it("collapses the rest into +N", () => {
+    expect(formatPeopleList(["Anna", "Petr", "Klára", "Ema", "Jan"])).toBe("Anna, Petr, Klára +2")
+    expect(formatPeopleList(["Anna", "Petr"], 1)).toBe("Anna +1")
+  })
+})
+
+describe("teamAccentStyles", () => {
+  it("returns no styles without a team color", () => {
+    expect(teamAccentStyles(null)).toEqual({ stripe: undefined, surface: undefined })
+  })
+  it("uses the full color for the stripe and a faint tint for the surface", () => {
+    const styles = teamAccentStyles("#ff0000")
+    expect(styles.stripe).toEqual({ backgroundColor: "#ff0000" })
+    expect(styles.surface?.backgroundImage).toContain("color-mix(in oklab, #ff0000 7%, transparent)")
   })
 })

@@ -45,16 +45,23 @@ export const TS_ROUTES = {
   edit: (id: string) => `/ts/${id}/upravit`,
 } as const
 
-export const TS_DISCOVER_FILTERS = ["nadchazejici", "volna-mista", "muj-tym", "prihlasene", "probehle"] as const
+export const TS_DISCOVER_FILTERS = ["nadchazejici", "volna-mista", "probehle"] as const
 export type TsDiscoverFilter = (typeof TS_DISCOVER_FILTERS)[number]
 
 export const TS_DISCOVER_FILTER_LABELS: Record<TsDiscoverFilter, string> = {
   nadchazejici: "Nadcházející",
   "volna-mista": "Volná místa",
-  "muj-tym": "Můj tým",
-  prihlasene: "Přihlášené",
   probehle: "Proběhlé",
 }
+
+/** How far ahead Objevovat looks; each "load more" adds one more window. */
+export const TS_DISCOVER_HORIZON = {
+  windowDays: 30,
+  defaultWindows: 1,
+  maxWindows: 12,
+} as const
+
+export const TS_HISTORY_LIMIT = 20
 
 export const TS_DETAIL_TABS = ["priprava", "dochazka", "reflexe"] as const
 export type TsDetailTab = (typeof TS_DETAIL_TABS)[number]

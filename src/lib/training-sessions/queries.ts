@@ -6,6 +6,7 @@ import type { BreakRange, ScheduleSource } from "./slots"
 import {
   SESSION_DETAIL_SELECT,
   SESSION_LIST_SELECT,
+  type SessionViewer,
   type TrainingSessionDetail,
   type TrainingSessionListItem,
 } from "./types"
@@ -29,6 +30,11 @@ export function chunk<T>(items: readonly T[], size: number): T[][] {
   return chunks
 }
 
+function compareByStart(ascending: boolean) {
+  return (x: TrainingSessionListItem, y: TrainingSessionListItem): number =>
+    (x.starts_at < y.starts_at ? -1 : x.starts_at > y.starts_at ? 1 : 0) * (ascending ? 1 : -1)
+}
+
 export async function listSessions(
   supabase: SupabaseClient<Database>,
   filter: ListSessionsFilter,
@@ -50,8 +56,31 @@ export async function listSessions(
   if (!filter.ids) return run()
   if (filter.ids.length === 0) return []
   const results = (await Promise.all(chunk(filter.ids, ID_CHUNK_SIZE).map((ids) => run(ids)))).flat()
-  results.sort((x, y) => (x.starts_at < y.starts_at ? -1 : x.starts_at > y.starts_at ? 1 : 0) * (ascending ? 1 : -1))
+  results.sort(compareByStart(ascending))
   return results.slice(0, limit)
+}
+
+/** Sessions the viewer takes part in: their own team's plus the ones they joined as a guest (cross). */
+export async function listViewerSessions(
+  supabase: SupabaseClient<Database>,
+  viewer: SessionViewer,
+  filter: Omit<ListSessionsFilter, "teamId" | "ids">,
+): Promise<TrainingSessionListItem[]> {
+  const { data, error } = await supabase
+    .from("training_session_guests")
+    .select("training_session_id")
+    .eq("profile_id", viewer.profileId)
+  if (error) throw error
+  const joinedIds = (data ?? []).map((g) => g.training_session_id)
+
+  const [teamSessions, joinedSessions] = await Promise.all([
+    viewer.teamId ? listSessions(supabase, { ...filter, teamId: viewer.teamId }) : [],
+    joinedIds.length > 0 ? listSessions(supabase, { ...filter, ids: joinedIds }) : [],
+  ])
+  const unique = new Map([...teamSessions, ...joinedSessions].map((s) => [s.id, s]))
+  return [...unique.values()]
+    .sort(compareByStart((filter.order ?? "asc") === "asc"))
+    .slice(0, filter.limit ?? DEFAULT_LIST_LIMIT)
 }
 
 export async function getSessionDetail(

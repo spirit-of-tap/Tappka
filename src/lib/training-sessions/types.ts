@@ -18,6 +18,12 @@ export interface SessionTiming {
   cancelledAt: string | null
 }
 
+/** The signed-in person looking at TS lists; drives "my team" and "joined" state. */
+export interface SessionViewer {
+  profileId: string
+  teamId: string | null
+}
+
 export interface TsPersonSummary {
   id: string
   name: string | null
