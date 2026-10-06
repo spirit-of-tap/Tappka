@@ -11,9 +11,17 @@ import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { contentTextFromJson, EMPTY_DOC } from "@/lib/essays/content-text"
 
+import { CopyPreparationButton } from "./copy-preparation-button"
+import { PreparationInProgress } from "./preparation-in-progress"
+
 interface PreparationPanelProps {
   sessionId: string
+  topic: string
   canEdit: boolean
+  /** Off when the page already shows the copy icon next to its "Příprava" heading. */
+  showCopy?: boolean
+  /** Before the TS starts a missing preparation is "being written"; afterwards it is just missing. */
+  upcoming: boolean
   contentJson: object | null
   publishedAt: string | null
 }
@@ -21,26 +29,53 @@ interface PreparationPanelProps {
 const SAVE_SUCCESS_MESSAGE = "Příprava uložena"
 const SAVE_ERROR_MESSAGE = "Přípravu se nepodařilo uložit"
 
-export function PreparationPanel({ sessionId, canEdit, contentJson, publishedAt }: PreparationPanelProps) {
+export function PreparationPanel({
+  sessionId,
+  topic,
+  canEdit,
+  showCopy = true,
+  upcoming,
+  contentJson,
+  publishedAt,
+}: PreparationPanelProps) {
   const router = useRouter()
   const [doc, setDoc] = useState<object>(contentJson ?? EMPTY_DOC)
   const [pending, setPending] = useState(false)
 
   if (!canEdit) {
     if (!publishedAt || !contentJson || contentTextFromJson(contentJson) === "") {
+      if (upcoming) {
+        return (
+          <Empty className="py-8">
+            <EmptyHeader>
+              <PreparationInProgress />
+              <EmptyTitle className="mt-2">Facilitace na přípravě pracuje</EmptyTitle>
+              <EmptyDescription>Jakmile bude hotová, objeví se tady.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )
+      }
       return (
         <Empty className="py-8">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <FileText className="size-6 text-muted-foreground" aria-hidden />
             </EmptyMedia>
-            <EmptyTitle>Příprava zatím chybí</EmptyTitle>
-            <EmptyDescription>Facilitace přípravu na toto setkání zatím nenapsala.</EmptyDescription>
+            <EmptyTitle>Příprava chybí</EmptyTitle>
+            <EmptyDescription>K tomuto setkání příprava nevznikla.</EmptyDescription>
           </EmptyHeader>
         </Empty>
       )
     }
-    return <TiptapRenderer content={contentJson} />
+    if (!showCopy) return <TiptapRenderer content={contentJson} />
+    return (
+      <div className="relative">
+        <div className="absolute right-0 top-0">
+          <CopyPreparationButton topic={topic} contentJson={contentJson} />
+        </div>
+        <TiptapRenderer content={contentJson} />
+      </div>
+    )
   }
 
   async function save() {

@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, X } from "lucide-react"
+import { Plus, UserCheck, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -25,7 +25,8 @@ export interface GuestJoinButtonProps {
   sessionId: string
   joined: boolean
   conflictText: string | null
-  variant?: "default" | "badge" | "icon"
+  /** "status": while joined, a "you're going" pill that turns into leave on hover/focus. */
+  variant?: "default" | "badge" | "icon" | "status"
   className?: string
 }
 
@@ -39,6 +40,7 @@ export function GuestJoinButton({
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
 
   async function submit() {
     setPending(true)
@@ -60,6 +62,8 @@ export function GuestJoinButton({
 
   function onClick() {
     if (!joined && conflictText) setConfirmOpen(true)
+    // Touch has no hover preview of "Odhlásit se", so a tap on the status pill asks first.
+    else if (joined && variant === "status") setLeaveConfirmOpen(true)
     else void submit()
   }
 
@@ -110,6 +114,31 @@ export function GuestJoinButton({
         <span>{joined ? "Odhlásit se" : "Přihlásit se"}</span>
       </button>
     )
+  } else if (variant === "status" && joined) {
+    trigger = (
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={pending}
+        onClick={onClick}
+        aria-label="Jdeš jako cross – odhlásit se"
+        className={cn(
+          "group/leave grid rounded-full bg-success/15 font-semibold text-success-strong",
+          "hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive",
+          className,
+        )}
+      >
+        {/* Both labels share one grid cell so the pill keeps its width when they swap. */}
+        <span className="inline-flex items-center gap-1.5 [grid-area:1/1] group-hover/leave:invisible group-focus-visible/leave:invisible">
+          {pending ? <Spinner className="size-3.5" /> : <UserCheck className="size-4 shrink-0" aria-hidden />}
+          Jdeš jako cross
+        </span>
+        <span className="invisible inline-flex items-center justify-center gap-1.5 [grid-area:1/1] group-hover/leave:visible group-focus-visible/leave:visible">
+          <X className="size-4 shrink-0" aria-hidden />
+          Odhlásit se
+        </span>
+      </Button>
+    )
   } else {
     trigger = (
       <Button size="sm" variant={joined ? "outline" : "default"} disabled={pending} onClick={onClick} className={className}>
@@ -130,6 +159,18 @@ export function GuestJoinButton({
           <AlertDialogFooter>
             <AlertDialogCancel>Zpět</AlertDialogCancel>
             <AlertDialogAction onClick={() => void submit()}>Přihlásit se</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={leaveConfirmOpen} onOpenChange={setLeaveConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Odhlásit se z TS?</AlertDialogTitle>
+            <AlertDialogDescription>Uvolníš místo pro někoho dalšího. Přihlásit se můžeš znovu, dokud bude volno.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zpět</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void submit()}>Odhlásit se</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

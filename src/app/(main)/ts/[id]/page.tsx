@@ -5,6 +5,7 @@ import { cache, Suspense, type ReactNode } from "react"
 
 import { ProfileAvatar } from "@/components/profile-avatar"
 import { AttendancePanel } from "@/components/training-sessions/attendance-panel"
+import { CopyPreparationButton } from "@/components/training-sessions/copy-preparation-button"
 import { FeedRefresher } from "@/components/training-sessions/feed-refresher"
 import { GuestJoinButton } from "@/components/training-sessions/guest-join-button"
 import { PreparationPanel } from "@/components/training-sessions/preparation-panel"
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { PageHeader } from "@/components/ui/page-header"
 import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
+import { contentTextFromJson } from "@/lib/essays/content-text"
 import { createClient } from "@/lib/supabase/server"
 import { findConflicts } from "@/lib/training-sessions/conflicts"
 import { TS_ROUTES } from "@/lib/training-sessions/constants"
@@ -86,11 +88,22 @@ export default async function TsDetailPage({ params }: PageProps) {
   }
 
   const isFacilitator = session.facilitators.some((f) => f.profile?.id === profile.id)
+  const preparationJson = (session.preparation?.content_json as object | null) ?? null
+  // Own team gets tabs (Docházka, Reflexe); everyone else sees the preparation under a plain heading.
+  const hasTabs = isOwnTeam
+  const canCopyPreparation =
+    !isFacilitator &&
+    Boolean(session.preparation?.published_at) &&
+    preparationJson !== null &&
+    contentTextFromJson(preparationJson) !== ""
   const preparation = (
     <PreparationPanel
       sessionId={session.id}
+      topic={session.topic}
       canEdit={isFacilitator}
-      contentJson={(session.preparation?.content_json as object | null) ?? null}
+      showCopy={hasTabs}
+      upcoming={status === "upcoming"}
+      contentJson={preparationJson}
       publishedAt={session.preparation?.published_at ?? null}
     />
   )
@@ -221,23 +234,28 @@ export default async function TsDetailPage({ params }: PageProps) {
         )}
 
         {session.description && (
-          <section aria-labelledby="ts-about" className="space-y-2">
-            <h2 id="ts-about" className="font-heading text-lg font-semibold">
-              O čem to bude
+          <section aria-labelledby="ts-goal" className="space-y-2">
+            <h2 id="ts-goal" className="font-heading text-lg font-semibold">
+              Cíl
             </h2>
             <p className="whitespace-pre-line text-base leading-relaxed text-foreground/90">{session.description}</p>
           </section>
         )}
 
-        {Object.keys(panels).length > 1 ? (
+        {hasTabs ? (
           <Suspense>
             <SessionDetailTabs panels={panels} />
           </Suspense>
         ) : (
           <section aria-labelledby="ts-preparation" className="space-y-3">
-            <h2 id="ts-preparation" className="font-heading text-lg font-semibold">
-              Příprava
-            </h2>
+            <div className="flex items-center gap-1.5">
+              <h2 id="ts-preparation" className="font-heading text-lg font-semibold">
+                Příprava
+              </h2>
+              {canCopyPreparation && preparationJson && (
+                <CopyPreparationButton topic={session.topic} contentJson={preparationJson} />
+              )}
+            </div>
             {preparation}
           </section>
         )}

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
 
 import type { TrainingSessionListItem } from "@/lib/training-sessions/types"
@@ -27,15 +27,16 @@ const session: TrainingSessionListItem = {
 const now = "2026-10-02T08:00:00.000Z"
 
 describe("SessionCard", () => {
-  it("shows own-team badge and no join button for own team", () => {
+  it("marks own-team sessions as attending, without a join button", () => {
     render(<SessionCard session={session} viewer={{ profileId: "p1", teamId: "t1" }} conflicts={[]} now={now} />)
-    expect(screen.getByText("Můj tým")).toBeInTheDocument()
+    expect(screen.getByText("Jdeš · tvůj tým")).toBeInTheDocument()
+    expect(screen.queryByText("Můj tým")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /Přihlásit se/ })).not.toBeInTheDocument()
   })
 
   it("shows occupancy and a join button for other teams", () => {
     render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
-    expect(screen.getByText("1/3 míst")).toBeInTheDocument()
+    expect(screen.getByRole("img", { name: "Obsazeno 1 z 3 míst" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Přihlásit se/ })).toBeInTheDocument()
   })
 
@@ -104,5 +105,42 @@ describe("SessionCard", () => {
       />,
     )
     expect(container.querySelector("article")?.getAttribute("style")).toContain("color-mix")
+  })
+
+  it("draws an empty seat for every free spot", () => {
+    const { container } = render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
+    expect(container.querySelectorAll(".border-dashed")).toHaveLength(2)
+  })
+
+  it("collapses seats beyond the visible maximum", () => {
+    render(<SessionCard session={{ ...session, guest_capacity: 10 }} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
+    expect(screen.getByText("+4")).toBeInTheDocument()
+  })
+
+  it("lists crosses without seats once the session is over", () => {
+    const { container } = render(
+      <SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now="2026-10-07T08:00:00.000Z" />,
+    )
+    expect(screen.getByText("Klára")).toBeInTheDocument()
+    expect(container.querySelectorAll(".border-dashed")).toHaveLength(0)
+  })
+
+  it("marks a joined session as attending and offers to leave", () => {
+    render(<SessionCard session={session} viewer={{ profileId: "g1", teamId: "t2" }} conflicts={[]} now={now} />)
+    // One control: the "going" pill is also the leave button.
+    expect(screen.getByRole("button", { name: "Jdeš jako cross – odhlásit se" })).toHaveTextContent("Jdeš jako cross")
+    expect(screen.queryByRole("button", { name: "Odhlásit se" })).not.toBeInTheDocument()
+    expect(screen.queryByText("Přihlášeno")).not.toBeInTheDocument()
+  })
+
+  it("shows no attending status on sessions the viewer is not in", () => {
+    render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
+    expect(screen.queryByText(/^Jdeš/)).not.toBeInTheDocument()
+  })
+
+  it("asks before leaving from the status pill", () => {
+    render(<SessionCard session={session} viewer={{ profileId: "g1", teamId: "t2" }} conflicts={[]} now={now} />)
+    fireEvent.click(screen.getByRole("button", { name: "Jdeš jako cross – odhlásit se" }))
+    expect(screen.getByText("Odhlásit se z TS?")).toBeInTheDocument()
   })
 })

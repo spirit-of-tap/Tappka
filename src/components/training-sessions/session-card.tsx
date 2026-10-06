@@ -1,5 +1,6 @@
-import { AlertCircle, CheckCircle2, ChevronRight, CircleAlert, Clock, MapPin, Users } from "lucide-react"
+import { AlertCircle, CheckCircle2, ChevronRight, CircleAlert, Clock, MapPin, UserCheck } from "lucide-react"
 import Link from "next/link"
+import type { ReactNode } from "react"
 
 import { ProfileAvatar } from "@/components/profile-avatar"
 import { Badge } from "@/components/ui/badge"
@@ -21,6 +22,10 @@ import { GuestJoinButton } from "./guest-join-button"
 export type { SessionViewer } from "@/lib/training-sessions/types"
 
 const AVATAR_PREVIEW_COUNT = 3
+/** Seats drawn before the rest collapse into "+N", so a 50-seat TS doesn't fill the card. */
+const SEATS_SHOWN_MAX = 6
+const SEAT_AVATAR_SIZE = 24
+const GUEST_NAMES_SHOWN = 2
 
 interface SessionCardProps {
   session: TrainingSessionListItem
@@ -43,6 +48,8 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
   const isAttending = isOwnTeam || joined
   const isFull = guestCount >= session.guest_capacity
   const canShowGuestControls = !isOwnTeam && session.guest_capacity > 0 && status === "upcoming"
+  // Free spots only make sense while people can still join; afterwards just list who came.
+  const showSeats = session.guest_capacity > 0 && isUpcoming && !isCancelled
   const conflict = conflicts[0]
   const conflictText = conflict
     ? `Kryje se s tvým TS · ${formatTimeRange(conflict.overlapStart, conflict.overlapEnd)}`
@@ -52,6 +59,27 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
   const location = session.room?.code ?? session.location_note
   const hasPreparation = Boolean(session.preparation?.published_at)
   const accent = teamAccentStyles(session.team?.color)
+  const showPreparation = isUpcoming && !isCancelled
+  const hasMeta = (showLocation && Boolean(location)) || showPreparation
+
+  // One spot answers "am I going?": a status pill when attending, otherwise the join action.
+  let attendance: ReactNode = null
+  if (isUpcoming && !isCancelled) {
+    if (isOwnTeam) attendance = <AttendingPill label="Jdeš · tvůj tým" />
+    else if (joined) {
+      attendance = canShowGuestControls ? (
+        <GuestJoinButton sessionId={session.id} joined conflictText={null} variant="status" />
+      ) : (
+        <AttendingPill label="Jdeš jako cross" />
+      )
+    } else if (canShowGuestControls) {
+      attendance = isFull ? (
+        <span className="text-sm font-medium text-muted-foreground">Obsazeno</span>
+      ) : (
+        <GuestJoinButton sessionId={session.id} joined={false} conflictText={conflictText} />
+      )
+    }
+  }
 
   return (
     <article
@@ -87,8 +115,6 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
               Právě probíhá
             </Badge>
           )}
-          {isOwnTeam && <Badge variant="secondary">Můj tým</Badge>}
-          {joined && <Badge variant="secondary">Přihlášeno</Badge>}
           {isCancelled && <Badge variant="destructive">Zrušeno</Badge>}
         </div>
       </div>
@@ -108,37 +134,12 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
 
       <dl className="mt-3 grid gap-1.5 text-sm">
         {facilitators.length > 0 && <PeopleRow label="Facilitace" people={facilitators} />}
-        {guests.length > 0 && <PeopleRow label="Crossy" people={guests} />}
+        {showSeats ? (
+          <CrossSeats guests={guests} capacity={session.guest_capacity} />
+        ) : (
+          guests.length > 0 && <PeopleRow label="Crossy" people={guests} />
+        )}
       </dl>
-
-      {((showLocation && location) || (isUpcoming && !isCancelled)) && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground sm:text-sm">
-          {showLocation && location && (
-            <span className="inline-flex items-center gap-1">
-              <MapPin className="size-3.5 shrink-0" aria-hidden />
-              {location}
-            </span>
-          )}
-          {isUpcoming && !isCancelled && (
-            <span className="inline-flex items-center gap-1">
-              {hasPreparation ? (
-                <>
-                  <CheckCircle2 className="size-3.5 shrink-0 text-success-strong" aria-hidden />
-                  <span>Příprava je připravená</span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle
-                    className={cn("size-3.5 shrink-0", isAttending && "text-warning-strong")}
-                    aria-hidden
-                  />
-                  <span className={cn(isAttending && "font-medium text-warning-strong")}>Příprava zatím chybí</span>
-                </>
-              )}
-            </span>
-          )}
-        </div>
-      )}
 
       {conflictText && !isCancelled && (
         <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-md bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning-strong">
@@ -147,15 +148,32 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
         </p>
       )}
 
-      {canShowGuestControls && (
-        <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-border/50 pt-3">
-          <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Users className="size-4 shrink-0" aria-hidden />
-            {isFull && !joined ? "Obsazeno" : `${guestCount}/${session.guest_capacity} míst`}
-          </span>
-          {(!isFull || joined) && (
-            <GuestJoinButton sessionId={session.id} joined={joined} conflictText={conflictText} />
-          )}
+      {(hasMeta || attendance) && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground sm:text-sm">
+            {showLocation && location && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="size-3.5 shrink-0" aria-hidden />
+                {location}
+              </span>
+            )}
+            {showPreparation && (
+              <span className="inline-flex items-center gap-1">
+                {hasPreparation ? (
+                  <>
+                    <CheckCircle2 className="size-3.5 shrink-0 text-success-strong" aria-hidden />
+                    <span>Příprava je připravená</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className={cn("size-3.5 shrink-0", isAttending && "text-warning-strong")} aria-hidden />
+                    <span className={cn(isAttending && "font-medium text-warning-strong")}>Příprava zatím chybí</span>
+                  </>
+                )}
+              </span>
+            )}
+          </div>
+          {attendance && <div className="ml-auto flex shrink-0 items-center gap-2">{attendance}</div>}
         </div>
       )}
     </article>
@@ -177,5 +195,58 @@ function PeopleRow({ label, people }: { label: string; people: TsPersonSummary[]
         </span>
       </dd>
     </div>
+  )
+}
+
+interface CrossSeatsProps {
+  guests: TsPersonSummary[]
+  capacity: number
+}
+
+/** Joined crosses as avatars and free spots as empty dashed seats. */
+function CrossSeats({ guests, capacity }: CrossSeatsProps) {
+  const filled = guests.slice(0, SEATS_SHOWN_MAX)
+  const emptyShown = Math.max(0, Math.min(capacity - guests.length, SEATS_SHOWN_MAX - filled.length))
+  const hidden = Math.max(0, capacity - filled.length - emptyShown)
+
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <dt className="w-20 shrink-0 text-xs text-muted-foreground">Crossy</dt>
+      <dd className="flex min-w-0 items-center gap-2">
+        <span
+          role="img"
+          aria-label={`Obsazeno ${guests.length} z ${capacity} míst`}
+          className="flex shrink-0 items-center gap-1"
+        >
+          {filled.map((p) => (
+            <ProfileAvatar key={p.id} picture={p.picture} name={p.name} size={SEAT_AVATAR_SIZE} />
+          ))}
+          {Array.from({ length: emptyShown }, (_, i) => (
+            <span
+              key={i}
+              className="size-6 shrink-0 rounded-full border border-dashed border-muted-foreground/50 bg-background/60"
+            />
+          ))}
+          {hidden > 0 && <span className="pl-0.5 text-xs text-muted-foreground">+{hidden}</span>}
+        </span>
+        {guests.length > 0 && (
+          <span className="truncate text-foreground/90">
+            {formatPeopleList(
+              guests.map((p) => p.name ?? "Bez jména"),
+              GUEST_NAMES_SHOWN,
+            )}
+          </span>
+        )}
+      </dd>
+    </div>
+  )
+}
+
+function AttendingPill({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-sm font-semibold text-success-strong">
+      <UserCheck className="size-4 shrink-0" aria-hidden />
+      {label}
+    </span>
   )
 }

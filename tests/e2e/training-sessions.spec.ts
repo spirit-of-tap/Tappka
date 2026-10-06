@@ -91,9 +91,9 @@ test.describe("training sessions", () => {
     const guest = await guestContext.newPage()
     await guest.goto(`/ts/objevovat?q=${encodeURIComponent(topic)}`)
     const card = guest.locator("article", { hasText: topic })
-    await expect(card.getByText("0/2 míst")).toBeVisible()
+    await expect(card.getByRole("img", { name: "Obsazeno 0 z 2 míst" })).toBeVisible()
     await card.getByRole("button", { name: "Přihlásit se" }).click()
-    await expect(card.getByText("1/2 míst")).toBeVisible()
+    await expect(card.getByRole("img", { name: "Obsazeno 1 z 2 míst" })).toBeVisible()
 
     // A guest only gets the preparation, so it is shown directly without tabs.
     await guest.goto(detailUrl)

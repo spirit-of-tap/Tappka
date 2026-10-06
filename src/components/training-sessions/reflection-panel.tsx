@@ -70,10 +70,11 @@ export function ReflectionPanel({ sessionId, started, contentJson, lastEditor, u
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Co jsme se naučili? Co fungovalo a co bychom příště udělali jinak?
-      </p>
-      <TiptapEditor initialContent={doc} onChange={(json) => setDoc(json)} placeholder="Týmová reflexe z TS…" />
+      <TiptapEditor
+        initialContent={doc}
+        onChange={(json) => setDoc(json)}
+        placeholder="Co jsme se naučili? Co fungovalo a co bychom příště udělali jinak?"
+      />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
         <div>
           {updatedAt && (

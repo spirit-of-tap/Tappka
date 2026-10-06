@@ -420,3 +420,46 @@ mark[data-color="orange"] { background-color: #fdba74; }
 
   .save-glow { animation: save-glow 0.8s ease-out; }
 }
+
+/* ── TS preparation "facilitation is writing" animation ───────────────────
+   One 4.8s loop: the pencil writes three lines, rests, the sheet clears.
+   Without motion the sheet is simply shown filled in. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes prep-line-1 {
+    0%, 6%    { transform: scaleX(0); opacity: 1; }
+    24%, 88%  { transform: scaleX(1); opacity: 1; }
+    100%      { transform: scaleX(1); opacity: 0; }
+  }
+  @keyframes prep-line-2 {
+    0%, 30%   { transform: scaleX(0); opacity: 1; }
+    48%, 88%  { transform: scaleX(1); opacity: 1; }
+    100%      { transform: scaleX(1); opacity: 0; }
+  }
+  @keyframes prep-line-3 {
+    0%, 54%   { transform: scaleX(0); opacity: 1; }
+    66%, 88%  { transform: scaleX(1); opacity: 1; }
+    100%      { transform: scaleX(1); opacity: 0; }
+  }
+  /* Pencil tip follows the lines: 64px, 64px and 40px long, 12px apart. */
+  @keyframes prep-pencil {
+    0%        { transform: translate(0, 0); }
+    6%        { transform: translate(0, 0); }
+    24%       { transform: translate(64px, 0); }
+    30%       { transform: translate(0, 12px); }
+    48%       { transform: translate(64px, 12px); }
+    54%       { transform: translate(0, 24px); }
+    66%       { transform: translate(40px, 24px); }
+    78%       { transform: translate(52px, 6px); }
+    100%      { transform: translate(0, 0); }
+  }
+  @keyframes prep-scribble {
+    from { transform: rotate(-10deg); }
+    to   { transform: rotate(6deg); }
+  }
+
+  .prep-line-1 { animation: prep-line-1 4.8s ease-in-out infinite; }
+  .prep-line-2 { animation: prep-line-2 4.8s ease-in-out infinite; }
+  .prep-line-3 { animation: prep-line-3 4.8s ease-in-out infinite; }
+  .prep-pencil { animation: prep-pencil 4.8s ease-in-out infinite; }
+  .prep-scribble { animation: prep-scribble 0.18s ease-in-out infinite alternate; }
+}

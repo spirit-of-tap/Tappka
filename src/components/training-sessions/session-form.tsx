@@ -134,11 +134,11 @@ export function SessionForm({ mode, initial, rooms, teamMembers, slots }: Sessio
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="ts-description">Krátký popis</Label>
+            <Label htmlFor="ts-description">Cíl</Label>
             <Textarea
               id="ts-description"
               maxLength={TS_LIMITS.descriptionMax}
-              placeholder="Co se bude na TS probírat a čeho chcete dosáhnout?"
+              placeholder="Čeho chcete na TS dosáhnout?"
               value={values.description}
               onChange={(e) => set("description", e.target.value)}
             />
