@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Users, Phone, Cake, BookOpen, Sparkles, Pin, UserRound, Gift } from 'lucide-react';
+import { Users, BookOpen, Sparkles, Pin, UserRound, Gift } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
@@ -17,6 +17,7 @@ import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
 import { BirthGivingProfileHistory } from '@/components/birth-giving/profile-history';
 import { BioSection } from '@/components/profile/bio-section';
+import { ProfileContactList } from '@/components/profile/profile-contact-list';
 import { Badge } from '@/components/ui/badge';
 import { PageBack } from '@/components/ui/page-back';
 import { PageShell } from '@/components/ui/page-shell';
@@ -26,8 +27,10 @@ export const metadata = {
   title: 'Profil',
 };
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
-import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
-import { formatPointsWithLabel } from '@/lib/books/points';
+import { ROLE_LABELS, ROLE_COLORS, type ProfileWithTeam } from '@/lib/komunita/types';
+import { formatPoints, formatPointsWithLabel, pointsLabel } from '@/lib/books/points';
+import type { AccessProfile } from '@/lib/feature-access';
+import { getVisibleGatedStats } from '@/lib/profile/profile-stats';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import { cn } from '@/lib/utils';
 
@@ -48,13 +51,26 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
 
   if (!profile) notFound();
 
+  const toAccessProfile = (p: Pick<ProfileWithTeam, 'role' | 'beta_access_granted_at' | 'beta_cohort' | 'team_id'>): AccessProfile => ({
+    role: p.role,
+    beta_access_granted_at: p.beta_access_granted_at,
+    beta_cohort: p.beta_cohort,
+    teamId: p.team_id,
+  });
+  // Feature-backed stats (meetings, coaching, Birth Giving) only show when
+  // both the viewer and the profile owner have that beta feature.
+  const visibleStats = getVisibleGatedStats(
+    currentUserProfile ? toAccessProfile(currentUserProfile) : null,
+    toAccessProfile(profile),
+  );
+
   const [essays, stats, meetingCount, coachingSessionCount, birthGivingHistory, birthGivingCount] = await Promise.all([
     getEssays(supabase, { authorProfileId: id, sort: 'best', pageSize: 100 }),
     getUserBookPointsStats(supabase, id),
-    countCustomerMeetings(supabase, id).catch(() => 0),
-    countIndividualCoachingSessions(supabase, id).catch(() => 0),
-    listProfileBirthGivingHistory(supabase, id).catch(() => []),
-    countProfileBirthGivingParticipations(supabase, id).catch(() => 0),
+    visibleStats.customerMeetings ? countCustomerMeetings(supabase, id).catch(() => 0) : 0,
+    visibleStats.coachingSessions ? countIndividualCoachingSessions(supabase, id).catch(() => 0) : 0,
+    visibleStats.birthGiving ? listProfileBirthGivingHistory(supabase, id).catch(() => []) : [],
+    visibleStats.birthGiving ? countProfileBirthGivingParticipations(supabase, id).catch(() => 0) : 0,
   ]);
 
   const votedIds = new Set<string>();
@@ -78,13 +94,28 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   const topicEssays = essays.filter((e) => getEssaySourceDisplay(e, { viewerCanSeeFrozen }).kind === 'none');
   const teamPictureUrl = profile.team ? getTeamPictureUrl(supabase, profile.team) : null;
   const teamColor = profile.team?.color ?? null;
-  const activeTab = tab === 'eseje' || tab === 'birth-giving' ? tab : 'prehled';
+  const activeTab =
+    tab === 'eseje' || (tab === 'birth-giving' && visibleStats.birthGiving) ? tab : 'prehled';
 
-  const pts   = (n: number) => n === 1 ? 'bod' : n >= 2 && n <= 4 ? 'body' : 'bodů';
-  const eseje = (n: number) => n === 1 ? 'esej' : n >= 2 && n <= 4 ? 'eseje' : 'esejí';
-  const hlasy = (n: number) => n === 1 ? 'hlas' : n >= 2 && n <= 4 ? 'hlasy' : 'hlasů';
-  const schuzky = (n: number) => n === 1 ? 'schůzka' : n >= 2 && n <= 4 ? 'schůzky' : 'schůzek';
-  const koucovaniLabel = 'sezení';
+  const statItems = [
+    { key: 'points', value: formatPoints(stats.approved_points), label: pointsLabel(stats.approved_points) },
+    { key: 'essays', value: String(stats.essay_count), label: pluralizeCz(stats.essay_count, ['esej', 'eseje', 'esejí']) },
+    { key: 'votes', value: String(totalVotes), label: pluralizeCz(totalVotes, ['hlas', 'hlasy', 'hlasů']) },
+    visibleStats.customerMeetings && {
+      key: 'meetings',
+      value: String(meetingCount),
+      label: pluralizeCz(meetingCount, ['schůzka', 'schůzky', 'schůzek']),
+    },
+    visibleStats.coachingSessions && { key: 'coaching', value: String(coachingSessionCount), label: 'sezení' },
+    visibleStats.birthGiving && {
+      key: 'birth-giving',
+      value: String(birthGivingCount),
+      label: pluralizeCz(birthGivingCount, ['participace', 'participace', 'participací']),
+    },
+  ].filter((item) => item !== false);
+  const birthday = profile.date_of_birth
+    ? new Date(profile.date_of_birth).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null;
 
   return (
     <>
@@ -175,58 +206,33 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
               Eseje
               <TabsTriggerCount count={essays.length} />
             </TabsTrigger>
-            <TabsTrigger value="birth-giving">
-              <Gift />
-              Birth Giving
-              <TabsTriggerCount count={birthGivingCount} />
-            </TabsTrigger>
+            {visibleStats.birthGiving && (
+              <TabsTrigger value="birth-giving">
+                <Gift />
+                Birth Giving
+                <TabsTriggerCount count={birthGivingCount} />
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Stats + contact */}
           <TabsContent value="prehled">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 py-4">
-              {/* Stats */}
-              <div className="flex items-center gap-6">
-                {[
-                  { value: stats.approved_points, label: pts(stats.approved_points) },
-                  { value: stats.essay_count,    label: eseje(stats.essay_count) },
-                  { value: totalVotes,           label: hlasy(totalVotes) },
-                  { value: meetingCount,         label: schuzky(meetingCount) },
-                  { value: coachingSessionCount, label: koucovaniLabel },
-                  { value: birthGivingCount, label: pluralizeCz(birthGivingCount, ['participace', 'participace', 'participací']) },
-                ].map(({ value, label }) => (
-                  <div key={label} className="text-center">
-                    <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+            <div className="space-y-4 py-4">
+              <dl className="grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-2">
+                {statItems.map(({ key, value, label }) => (
+                  <div key={key} className="flex flex-col-reverse items-center rounded-lg border bg-card px-2 py-3 text-center">
+                    <dt className="mt-0.5 text-xs text-muted-foreground">{label}</dt>
+                    <dd className="text-xl font-bold tabular-nums leading-none">{value}</dd>
                   </div>
                 ))}
-              </div>
+              </dl>
 
-              {/* Divider */}
-              <div className="h-8 w-px bg-border hidden sm:block" />
-
-              {/* Contact */}
-              <div className="flex flex-wrap gap-x-5 gap-y-1.5 min-w-0">
-                <a href={`mailto:${profile.work_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
-                  <Mail className="size-3.5 shrink-0" /><span className="truncate">{profile.work_email}</span>
-                </a>
-                {profile.personal_email && (
-                  <a href={`mailto:${profile.personal_email}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0">
-                    <Mail className="size-3.5 shrink-0" /><span className="truncate">{profile.personal_email}</span>
-                  </a>
-                )}
-                {profile.phone_number && (
-                  <a href={`tel:${profile.phone_number}`} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    <Phone className="size-3.5" />{profile.phone_number}
-                  </a>
-                )}
-                {profile.date_of_birth && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Cake className="size-3.5" />
-                    {new Date(profile.date_of_birth).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </span>
-                )}
-              </div>
+              <ProfileContactList
+                workEmail={profile.work_email}
+                personalEmail={profile.personal_email}
+                phoneNumber={profile.phone_number}
+                birthday={birthday}
+              />
             </div>
           </TabsContent>
 
@@ -348,9 +354,11 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
           </TabsContent>
 
           {/* Birth Giving */}
-          <TabsContent value="birth-giving" className="mt-4">
-            <BirthGivingProfileHistory items={birthGivingHistory} />
-          </TabsContent>
+          {visibleStats.birthGiving && (
+            <TabsContent value="birth-giving" className="mt-4">
+              <BirthGivingProfileHistory items={birthGivingHistory} />
+            </TabsContent>
+          )}
         </Tabs>
       </PageShell>
     </>
