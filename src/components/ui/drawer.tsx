@@ -3,12 +3,29 @@
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
+import { useKeyboardInset } from "@/lib/hooks/use-keyboard-inset"
 import { cn } from "@/lib/utils"
 
+/** Breathing room kept between the drawer top and the visible-area top while the keyboard is open. */
+const KEYBOARD_OPEN_TOP_GAP_PX = 16
+
+/*
+ * `repositionInputs` is off because vaul's keyboard handling offsets the
+ * drawer by the keyboard height while iOS Safari also pans the viewport, so
+ * the drawer shoots off the top of the screen. `DrawerContent` positions
+ * itself from `visualViewport` instead (see `useKeyboardInset`).
+ */
 function Drawer({
+  repositionInputs = false,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) {
-  return <DrawerPrimitive.Root data-slot="drawer" {...props} />
+  return (
+    <DrawerPrimitive.Root
+      data-slot="drawer"
+      repositionInputs={repositionInputs}
+      {...props}
+    />
+  )
 }
 
 /**
@@ -20,9 +37,16 @@ function Drawer({
  * See https://vaul.emilkowal.ski (Nested drawers).
  */
 function DrawerNestedRoot({
+  repositionInputs = false,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.NestedRoot>) {
-  return <DrawerPrimitive.NestedRoot data-slot="drawer-nested-root" {...props} />
+  return (
+    <DrawerPrimitive.NestedRoot
+      data-slot="drawer-nested-root"
+      repositionInputs={repositionInputs}
+      {...props}
+    />
+  )
 }
 
 function DrawerTrigger({
@@ -62,8 +86,19 @@ function DrawerOverlay({
 function DrawerContent({
   className,
   children,
+  style,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
+  const keyboardInset = useKeyboardInset()
+  // Keep the drawer docked right above the on-screen keyboard and shrink it
+  // to the visible area so the focused input and footer stay reachable.
+  const keyboardStyle: React.CSSProperties | undefined = keyboardInset
+    ? {
+        bottom: keyboardInset.bottom,
+        maxHeight: keyboardInset.visibleHeight - KEYBOARD_OPEN_TOP_GAP_PX,
+      }
+    : undefined
+
   return (
     <DrawerPortal data-slot="drawer-portal">
       <DrawerOverlay />
@@ -77,6 +112,7 @@ function DrawerContent({
           "data-[vaul-drawer-direction=left]:inset-y-0 data-[vaul-drawer-direction=left]:left-0 data-[vaul-drawer-direction=left]:w-3/4 data-[vaul-drawer-direction=left]:border-r data-[vaul-drawer-direction=left]:sm:max-w-sm",
           className
         )}
+        style={{ ...style, ...keyboardStyle }}
         {...props}
       >
         <div className="bg-muted mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
