@@ -31,6 +31,8 @@ import {
   formatUrl,
   getPublicRegistryUrl,
 } from '@/lib/teams/links';
+import { countTeamMembers } from '@/lib/komunita/team-members';
+import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 
 export const metadata = {
   title: 'Tým',
@@ -71,6 +73,7 @@ export default async function TeamPage({ params }: PageProps) {
   const coaches = team.profiles.filter((p) => p.role === 'coach');
   const mentors = team.profiles.filter((p) => p.role === 'mentor');
   const students = team.profiles.filter((p) => p.role === 'student' || p.role === 'admin');
+  const memberCount = countTeamMembers(team.profiles);
 
   const backHref = `/komunita/tymy/${team.id}`;
 
@@ -139,7 +142,7 @@ export default async function TeamPage({ params }: PageProps) {
               )}
               <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/25 text-white shadow-xs">
                 <Users className="size-3 text-white/80" />
-                {team.profiles.length} {team.profiles.length === 1 ? 'člen:ka' : team.profiles.length < 5 ? 'členové:ky' : 'členů:ek'}
+                {memberCount} {pluralizeCz(memberCount, ['člen:ka', 'členové:ky', 'členů:ek'])}
               </span>
 
               {team.ico && (

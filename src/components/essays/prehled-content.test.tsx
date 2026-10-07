@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { PrehledContent } from './prehled-content';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import type { EssayWithDetails } from '@/lib/essays/types';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -102,6 +104,58 @@ describe('PrehledContent', () => {
 
       expect(screen.getAllByText(semesterLabel('1. semestr')).length).toBeGreaterThan(0);
       expect(screen.queryByText(semesterLabel('3. semestr'))).not.toBeInTheDocument();
+    });
+  });
+
+  describe('my essays search', () => {
+    const essay = (id: string, title: string): EssayWithDetails =>
+      ({
+        id,
+        title,
+        content_text: '',
+        created_at: '2026-09-01T00:00:00Z',
+        vote_count: 0,
+        view_count: 0,
+        comment_count: 0,
+        book: null,
+        content_source: null,
+      }) as unknown as EssayWithDetails;
+
+    const renderWithEssays = () =>
+      render(
+        <TooltipProvider>
+          <PrehledContent
+            {...defaultProps}
+            myEssays={[essay('a', 'Vedení týmu'), essay('b', 'Úvaha o čase')]}
+          />
+        </TooltipProvider>,
+      );
+
+    it('keeps the search collapsed behind an icon until opened', async () => {
+      const user = userEvent.setup();
+      renderWithEssays();
+
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Hledat v mých esejích' }));
+      expect(screen.getByRole('searchbox')).toHaveFocus();
+    });
+
+    it('filters essays and shows an empty state when nothing matches', async () => {
+      const user = userEvent.setup();
+      renderWithEssays();
+
+      await user.click(screen.getByRole('button', { name: 'Hledat v mých esejích' }));
+      await user.type(screen.getByRole('searchbox'), 'tymu');
+      expect(screen.getByText('Vedení týmu')).toBeInTheDocument();
+      expect(screen.queryByText('Úvaha o čase')).not.toBeInTheDocument();
+
+      await user.clear(screen.getByRole('searchbox'));
+      await user.type(screen.getByRole('searchbox'), 'xyz');
+      expect(screen.getByText('Nic nenalezeno')).toBeInTheDocument();
+
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+      expect(screen.getByText('Úvaha o čase')).toBeInTheDocument();
     });
   });
 });

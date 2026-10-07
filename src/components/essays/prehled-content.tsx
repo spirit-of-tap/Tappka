@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, FileText, ArrowRight } from 'lucide-react';
+import { Plus, FileText, ArrowRight, Search, SearchX, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 import { MyEssayList } from './my-essay-list';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { MetricProgress } from '@/components/metrics/metric-progress';
@@ -10,6 +13,7 @@ import { MobileFab, MobileFabSpacer } from '@/components/mobile-fab';
 import { ActiveLoansCard } from '@/components/library/active-loans-card';
 import { getMetric } from '@/lib/metrics/config';
 import { TEAM_BOOK_POINTS_SECTION_ID } from '@/lib/constants/cteni';
+import { filterMyEssays } from '@/lib/essays/my-essay-search';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookLoanWithDetails } from '@/lib/library/types';
 
@@ -46,6 +50,15 @@ export function PrehledContent({
   votedEssayIds,
   loans = [],
 }: PrehledContentProps) {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const filteredEssays = filterMyEssays(myEssays, searchQuery);
+
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+  };
+
   return (
     <div className="space-y-8">
       {/* 1. Reading goal / semester progress */}
@@ -79,13 +92,53 @@ export function PrehledContent({
               Tvoje odevzdané eseje
             </p>
           </div>
-          <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link href="/cteni/eseje/nova">
-              <Plus className="size-4 mr-1.5" />
-              Napsat esej
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {myEssays.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={isSearchOpen ? 'Zavřít hledání' : 'Hledat v mých esejích'}
+                aria-expanded={isSearchOpen}
+                aria-controls="my-essays-search"
+                onClick={() => (isSearchOpen ? closeSearch() : setIsSearchOpen(true))}
+                className={isSearchOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}
+              >
+                <Search />
+              </Button>
+            )}
+            <Button asChild size="sm" className="hidden sm:inline-flex">
+              <Link href="/cteni/eseje/nova">
+                <Plus className="size-4 mr-1.5" />
+                Napsat esej
+              </Link>
+            </Button>
+          </div>
         </div>
+
+        {isSearchOpen && (
+          <InputGroup id="my-essays-search">
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput
+              type="search"
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') closeSearch();
+              }}
+              placeholder="Název, kniha nebo text eseje"
+              aria-label="Hledat v mých esejích"
+            />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton size="icon-xs" aria-label="Zavřít hledání" onClick={closeSearch}>
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        )}
 
         {myEssays.length === 0 ? (
           <div className="space-y-3 rounded-xl border border-dashed px-6 py-12 text-center">
@@ -101,7 +154,19 @@ export function PrehledContent({
             </Button>
           </div>
         ) : (
-          <MyEssayList essays={myEssays} votedEssayIds={votedEssayIds} />
+          filteredEssays.length === 0 ? (
+            <Empty className="border border-dashed">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <SearchX />
+                </EmptyMedia>
+                <EmptyTitle>Nic nenalezeno</EmptyTitle>
+                <EmptyDescription>Zkus jiné slovo z názvu, knihy nebo textu eseje.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <MyEssayList essays={filteredEssays} votedEssayIds={votedEssayIds} />
+          )
         )}
       </section>
 
