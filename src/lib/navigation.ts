@@ -9,6 +9,7 @@ import {
   Handshake,
   LayoutDashboard,
   NotebookPen,
+  PiggyBank,
   Rocket,
   Timer,
   Users,
@@ -38,6 +39,7 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, description: "Přehled tvých aktivit a rychlé akce." },
   { title: "Místnosti", url: "/reservations", icon: CalendarDays, featured: true, description: "Rezervace místností a jejich nastavení." },
   { title: "Komunita", url: "/komunita", icon: Users, description: "Lidé, týmy a profily v Tiimiakatemii." },
+  { title: "Komunitní kasa", url: "/komunitni-kasa", icon: PiggyBank, description: "Transparentní účet, cashflow a přehled transakcí." },
   { title: "Zák. schůzky", url: "/schuzky", icon: Handshake, feature: "customerMeetings", description: "Evidence zákaznických schůzek." },
   { title: "Koučování", url: "/koucovani", icon: GraduationCap, feature: "coaching", description: "Evidence koučovacích sezení." },
   { title: "Týmová reflexe", url: "/tymova-reflexe", icon: NotebookPen, feature: "teamReflection", description: "Reflexe týmové spolupráce a ročníková hodnocení." },
@@ -58,6 +60,7 @@ export const NAV_MODULES: NavModule[] = [
 export const MODULE_HUB_ORDER: string[] = [
   "/cteni/prehled",
   "/reservations",
+  "/komunitni-kasa",
   "/nastroje-techniky",
   "/schuzky",
   "/tymova-reflexe",
