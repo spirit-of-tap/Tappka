@@ -2,7 +2,9 @@
 
 import { User, Users, type LucideIcon } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
+
+import { FROM_PARAM, TO_PARAM } from "./cas-query"
 
 interface CasTab {
   title: string
@@ -23,12 +25,24 @@ export function getActiveCasTabUrl(pathname: string): string | undefined {
   return undefined
 }
 
+/** Tab URL carrying over the selected period, so switching Moje ↔ Tým keeps it. */
+export function casTabHref(url: string, searchParams: URLSearchParams): string {
+  const params = new URLSearchParams()
+  for (const key of [FROM_PARAM, TO_PARAM]) {
+    const value = searchParams.get(key)
+    if (value !== null) params.set(key, value)
+  }
+  const query = params.toString()
+  return query ? `${url}?${query}` : url
+}
+
 /**
  * URL-driven sub-navigation for every /cas/* route — same visual language as
  * `CteniTabBar` (pinned full-bleed strip on phones, static on md+).
  */
 export function CasTabBar() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const activeUrl = getActiveCasTabUrl(pathname)
 
   return (
@@ -40,7 +54,7 @@ export function CasTabBar() {
         {CAS_TABS.map((tab) => (
           <Link
             key={tab.url}
-            href={tab.url}
+            href={casTabHref(tab.url, searchParams)}
             aria-current={activeUrl === tab.url ? "page" : undefined}
             data-active={activeUrl === tab.url ? "true" : undefined}
             className={[

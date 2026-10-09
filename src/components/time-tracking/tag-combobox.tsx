@@ -4,8 +4,8 @@ import * as React from "react"
 import { Check, ChevronsUpDown, Plus, Tag, X } from "lucide-react"
 import { toast } from "sonner"
 
-import { TAG_NAME_MAX_LENGTH, TIME_TRACKING_MESSAGES } from "@/lib/time-tracking/constants"
-import type { TimeTag } from "@/lib/time-tracking/types"
+import { TAG_NAME_MAX_LENGTH, TIME_DIRECTION_LABELS, TIME_TRACKING_MESSAGES } from "@/lib/time-tracking/constants"
+import type { TimeDirection, TimeTag } from "@/lib/time-tracking/types"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,11 +21,17 @@ import { Spinner } from "@/components/ui/spinner"
 
 const TAGS_ENDPOINT = "/api/time-tags"
 const NO_TAG_LABEL = "Bez tagu"
+const PICK_DIRECTION_FIRST_LABEL = "Nejdřív vyber směr"
 const NO_TAG_VALUE = "__no-tag__"
 const CREATE_VALUE_PREFIX = "__create__"
 
 export interface TagComboboxProps {
   value: string | null
+  /**
+   * Direction of the entry. Only its tags are offered and new tags are created under it;
+   * without a direction the combobox is disabled (every tag belongs to one direction).
+   */
+  direction: TimeDirection | null
   onChange: (tagId: string | null, tag?: TimeTag) => void
   /** Pre-loaded tags (e.g. from the server); skips the fetch on first open. */
   initialTags?: TimeTag[]
@@ -51,6 +57,7 @@ async function readError(response: Response): Promise<string> {
 
 export function TagCombobox({
   value,
+  direction,
   onChange,
   initialTags,
   id,
@@ -99,7 +106,7 @@ export function TagCombobox({
       const response = await fetch(TAGS_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, direction }),
       })
       if (!response.ok) {
         toast.error(await readError(response))
@@ -118,9 +125,13 @@ export function TagCombobox({
   }
 
   const selectedTag = value === null ? null : (tags?.find((tag) => tag.id === value) ?? null)
+  const directionTags = direction === null ? [] : (tags ?? []).filter((tag) => tag.direction === direction)
   const trimmedQuery = query.trim().slice(0, TAG_NAME_MAX_LENGTH)
   const canCreate =
-    trimmedQuery !== "" && !(tags ?? []).some((tag) => normalize(tag.name) === normalize(trimmedQuery))
+    direction !== null &&
+    trimmedQuery !== "" &&
+    !directionTags.some((tag) => normalize(tag.name) === normalize(trimmedQuery))
+  const isDisabled = disabled || direction === null
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -132,11 +143,13 @@ export function TagCombobox({
           role="combobox"
           aria-expanded={open}
           aria-invalid={ariaInvalid}
-          disabled={disabled}
+          disabled={isDisabled}
           className={cn("w-full justify-start gap-2 font-normal", className)}
         >
           <Tag className="size-4 text-muted-foreground" aria-hidden />
-          {selectedTag ? (
+          {direction === null ? (
+            <span className="text-muted-foreground">{PICK_DIRECTION_FIRST_LABEL}</span>
+          ) : selectedTag ? (
             <span className="truncate">{selectedTag.name}</span>
           ) : value !== null ? (
             <span className="text-muted-foreground">Vybraný tag</span>
@@ -151,7 +164,7 @@ export function TagCombobox({
           <CommandInput
             value={query}
             onValueChange={setQuery}
-            placeholder="Hledat nebo vytvořit tag"
+            placeholder={`Hledat nebo vytvořit tag pro ${direction ? TIME_DIRECTION_LABELS[direction] : "směr"}`}
             aria-label="Hledat nebo vytvořit tag"
             maxLength={TAG_NAME_MAX_LENGTH}
           />
@@ -170,7 +183,7 @@ export function TagCombobox({
                     <span className="flex-1">{NO_TAG_LABEL}</span>
                     {value === null && <Check className="size-4 text-primary" aria-hidden />}
                   </CommandItem>
-                  {(tags ?? []).map((tag) => (
+                  {directionTags.map((tag) => (
                     <CommandItem key={tag.id} value={tag.id} keywords={[tag.name]} onSelect={() => select(tag.id, tag)}>
                       <Tag className="size-4 text-muted-foreground" aria-hidden />
                       <span className="flex-1 truncate">{tag.name}</span>

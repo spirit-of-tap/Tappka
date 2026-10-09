@@ -19,15 +19,17 @@ export interface TimeDirectionOption {
 }
 
 export const TIME_DIRECTIONS: readonly TimeDirectionOption[] = [
-  { value: "training", label: "Training", dotClass: "bg-chart-1" },
-  { value: "reading", label: "Reading", dotClass: "bg-chart-2" },
-  { value: "practise", label: "Practise", dotClass: "bg-chart-3" },
+  { value: "training", label: "Training", dotClass: "bg-time-training" },
+  { value: "reading", label: "Reading", dotClass: "bg-time-reading" },
+  { value: "practise", label: "Practise", dotClass: "bg-time-practise" },
+  { value: "project", label: "Projekt", dotClass: "bg-time-project" },
 ] as const
 
 export const TIME_DIRECTION_LABELS: Record<TimeDirection, string> = {
   training: "Training",
   reading: "Reading",
   practise: "Practise",
+  project: "Projekt",
 }
 
 export const WEEKLY_TARGET_HOURS = 40
@@ -46,12 +48,13 @@ export const TAG_NAME_MAX_LENGTH = 40
 export const ATTENDANCE_ENTRY_TITLE = "Training Session"
 
 /** Select fragment that embeds the tag so callers get `TimeEntryWithTag` back. */
-export const TIME_ENTRY_WITH_TAG_SELECT = "*, tag:time_tags(id, name)"
+export const TIME_ENTRY_WITH_TAG_SELECT = "*, tag:time_tags!time_entries_tag_id_fkey(id, name, direction)"
 
 /** Constraint / index names used to map DB errors to user-facing messages. */
 export const DB_CONSTRAINTS = {
   oneRunningTimer: "time_entries_one_running_key",
-  tagProfileName: "time_tags_profile_name_key",
+  tagProfileDirectionName: "time_tags_profile_direction_name_key",
+  tagDirection: "time_entries_tag_direction_fkey",
   noOverlap: "time_entries_no_overlap",
 } as const
 
@@ -62,7 +65,8 @@ export const TIME_TRACKING_MESSAGES = {
   invalidJson: "Neplatný požadavek",
   overlap: "Záznam se překrývá s jiným záznamem",
   timerAlreadyRunning: "Už ti běží časomíra",
-  tagNameTaken: "Tag s tímto názvem už máš",
+  tagNameTaken: "Tag s tímto názvem už v tomhle směru máš",
+  tagDirectionMismatch: "Tag patří k jinému směru",
   invalidRange: "Neplatný časový rozsah",
   invalidTag: "Neplatný tag",
   forbidden: "Na tuhle akci nemáš oprávnění",

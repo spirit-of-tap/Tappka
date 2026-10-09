@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 
 import type { TimeEntryWithTag, TimeTag } from "@/lib/time-tracking/types"
-import { getWeekRange } from "@/lib/time-tracking/week"
+import { type DateKeyRange, presetRange, rangeToInstants } from "@/lib/time-tracking/date-range"
 
 import { TimePageView } from "./time-page-view"
 
@@ -22,11 +22,12 @@ vi.mock("sonner", () => ({
 
 // Friday 2026-09-25 14:00 Prague; week Mon 21. 9. – Sun 27. 9.
 const NOW = new Date("2026-09-25T12:00:00Z")
-const WEEK = getWeekRange(NOW)
+const TODAY_KEY = "2026-09-25"
+const WEEK = presetRange("this-week", TODAY_KEY)
 const PROFILE_ID = "p1"
 
 const TAGS: TimeTag[] = [
-  { id: "t-book", name: "Kniha", profile_id: PROFILE_ID, created_at: "2026-09-01T00:00:00Z", updated_at: "2026-09-01T00:00:00Z" } as TimeTag,
+  { id: "t-book", name: "Kniha", direction: "reading", profile_id: PROFILE_ID, created_at: "2026-09-01T00:00:00Z", updated_at: "2026-09-01T00:00:00Z" } as TimeTag,
 ]
 
 let seq = 0
@@ -64,7 +65,7 @@ const WEDNESDAY_READING = makeEntry({
   title: "Lean Startup",
   direction: "reading",
   tag_id: "t-book",
-  tag: { id: "t-book", name: "Kniha" },
+  tag: { id: "t-book", name: "Kniha", direction: "reading" },
   started_at: "2026-09-23T16:00:00Z",
   ended_at: "2026-09-23T17:30:00Z",
   duration_ms: 90 * 60_000,
@@ -85,8 +86,18 @@ const RUNNING = makeEntry({
   duration_ms: null,
 })
 
-function renderView(entries: TimeEntryWithTag[]) {
-  return render(<TimePageView entries={entries} tags={TAGS} week={WEEK} now={NOW} profileId={PROFILE_ID} />)
+function renderView(entries: TimeEntryWithTag[], range: DateKeyRange = WEEK) {
+  return render(
+    <TimePageView
+      entries={entries}
+      tags={TAGS}
+      range={range}
+      instants={rangeToInstants(range)}
+      todayKey={TODAY_KEY}
+      now={NOW}
+      profileId={PROFILE_ID}
+    />,
+  )
 }
 
 describe("TimePageView", () => {
@@ -138,23 +149,43 @@ describe("TimePageView", () => {
   })
 
   it("shows a reset when nothing matches the filter", async () => {
-    searchParams = new URLSearchParams("w=2026-09-21&direction=reading")
+    searchParams = new URLSearchParams("from=2026-09-14&to=2026-09-20&direction=reading")
     const user = userEvent.setup()
     renderView([MONDAY_TRAINING])
 
     expect(screen.getByText("Nic neodpovídá filtru")).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Zrušit filtry" }))
-    expect(replace).toHaveBeenCalledWith("/cas?w=2026-09-21", { scroll: false })
+    expect(replace).toHaveBeenCalledWith("/cas?from=2026-09-14&to=2026-09-20", { scroll: false })
   })
 
-  it("toggles a direction chip in the URL and keeps the week param", async () => {
-    searchParams = new URLSearchParams("w=2026-09-21")
+  it("toggles a direction chip in the URL and keeps the range params", async () => {
+    searchParams = new URLSearchParams("from=2026-09-14&to=2026-09-20")
     const user = userEvent.setup()
     renderView([MONDAY_TRAINING])
 
     const filters = screen.getByRole("group", { name: "Filtry" })
     await user.click(within(filters).getByRole("button", { name: "Practise" }))
 
-    expect(replace).toHaveBeenCalledWith("/cas?w=2026-09-21&direction=practise", { scroll: false })
+    expect(replace).toHaveBeenCalledWith("/cas?from=2026-09-14&to=2026-09-20&direction=practise", { scroll: false })
+  })
+
+  it("labels the weekly goal with the preset name", () => {
+    renderView([MONDAY_TRAINING])
+
+    expect(screen.getByRole("progressbar", { name: "Tento týden" })).toHaveAttribute("aria-valuemax", "40")
+  })
+
+  it("scales the goal to the selected range", () => {
+    renderView([MONDAY_TRAINING], presetRange("this-month", TODAY_KEY))
+
+    // September has 30 days: 40 h × 30 / 7 ≈ 171,4 h.
+    expect(screen.getByRole("progressbar", { name: "Tento měsíc" })).toHaveAttribute("aria-valuemax", "171.4")
+  })
+
+  it("uses the date label for a custom range", () => {
+    renderView([MONDAY_TRAINING], { from: "2026-09-21", to: "2026-09-23" })
+
+    expect(screen.getByRole("progressbar", { name: "21.–23. 9. 2026" })).toHaveAttribute("aria-valuemax", "17.1")
+    expect(screen.getByRole("button", { name: "Období: 21.–23. 9. 2026" })).toBeInTheDocument()
   })
 })

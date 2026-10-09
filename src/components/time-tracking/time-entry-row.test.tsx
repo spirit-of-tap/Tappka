@@ -59,7 +59,7 @@ describe("TimeEntryRow", () => {
   })
 
   it("renders title, tag, Prague time range and duration", () => {
-    render(<TimeEntryRow entry={makeEntry({ tag_id: "t1", tag: { id: "t1", name: "Kniha" } })} />)
+    render(<TimeEntryRow entry={makeEntry({ tag_id: "t1", tag: { id: "t1", name: "Kniha", direction: "reading" } })} />)
 
     expect(screen.getByText("Lean Startup")).toBeInTheDocument()
     expect(screen.getByText("Kniha")).toBeInTheDocument()

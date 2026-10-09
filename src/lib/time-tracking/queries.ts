@@ -18,6 +18,9 @@ export interface ListEntriesParams {
   tagId?: string
 }
 
+/** PostgREST caps responses at `max_rows` (1000); longer ranges are fetched page by page. */
+const LIST_PAGE_SIZE = 1000
+
 /** Smallest representable entry, used when `now` is not after a timer's start (clock skew). */
 const MIN_TIMER_DURATION_MS = 1
 
@@ -54,26 +57,40 @@ export async function getEntry(supabase: Client, entryId: string): Promise<TimeE
 /**
  * Entries of the given profiles intersecting `[from, to)`:
  * `started_at < to AND (ended_at IS NULL OR ended_at > from)`, newest first.
- * Running timers are included. RLS limits what the caller can see.
+ * Running timers are included. RLS limits what the caller can see. Long ranges (months,
+ * a whole team for a year) exceed one PostgREST page, so pages are fetched until short.
  */
 export async function listEntries(supabase: Client, params: ListEntriesParams): Promise<TimeEntryWithTag[]> {
   if (params.profileIds.length === 0) return []
 
   const fromIso = toIso(params.from)
-  let query = supabase
-    .from("time_entries")
-    .select(TIME_ENTRY_WITH_TAG_SELECT)
-    .in("profile_id", [...params.profileIds])
-    .lt("started_at", toIso(params.to))
-    .or(`ended_at.is.null,ended_at.gt.${fromIso}`)
+  const toIsoValue = toIso(params.to)
+  // Keyed by id: offset paging is not a snapshot, so a row pushed down by a timer started
+  // between two page requests could otherwise appear (and be summed) twice.
+  const byId = new Map<string, TimeEntryWithTag>()
 
-  if (params.direction !== undefined) query = query.eq("direction", params.direction)
-  if (params.tagId !== undefined) query = query.eq("tag_id", params.tagId)
+  for (let offset = 0; ; offset += LIST_PAGE_SIZE) {
+    let query = supabase
+      .from("time_entries")
+      .select(TIME_ENTRY_WITH_TAG_SELECT)
+      .in("profile_id", [...params.profileIds])
+      .lt("started_at", toIsoValue)
+      .or(`ended_at.is.null,ended_at.gt.${fromIso}`)
 
-  const { data, error } = await query.order("started_at", { ascending: false })
+    if (params.direction !== undefined) query = query.eq("direction", params.direction)
+    if (params.tagId !== undefined) query = query.eq("tag_id", params.tagId)
 
-  if (error) throw error
-  return (data ?? []) as TimeEntryWithTag[]
+    // `id` breaks ties so pages never skip or repeat rows with equal `started_at`.
+    const { data, error } = await query
+      .order("started_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + LIST_PAGE_SIZE - 1)
+
+    if (error) throw error
+    const page = (data ?? []) as TimeEntryWithTag[]
+    for (const entry of page) byId.set(entry.id, entry)
+    if (page.length < LIST_PAGE_SIZE) return [...byId.values()]
+  }
 }
 
 /** Active members of a team, ordered by name. */
@@ -93,13 +110,13 @@ export async function listTeamMembers(supabase: Client, teamId: string): Promise
 export async function listTeamMemberEntries(
   supabase: Client,
   teamId: string,
-  week: TimeRange,
+  range: TimeRange,
 ): Promise<{ members: TeamMember[]; entries: TimeEntryWithTag[] }> {
   const members = await listTeamMembers(supabase, teamId)
   const entries = await listEntries(supabase, {
     profileIds: members.map((member) => member.id),
-    from: week.from,
-    to: week.to,
+    from: range.from,
+    to: range.to,
   })
   return { members, entries }
 }

@@ -28,7 +28,10 @@ export async function GET() {
   }
 }
 
-/** POST /api/time-tags — `{ name }`, trimmed, 1–40 chars, unique per profile (case-insensitive). */
+/**
+ * POST /api/time-tags — `{ name, direction }`; name trimmed, 1–40 chars, unique per profile
+ * and direction (case-insensitive). The direction is fixed for the tag's lifetime.
+ */
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireTimeTrackingContext()
@@ -46,6 +49,7 @@ export async function POST(request: NextRequest) {
 
     const payload: Insertable<"time_tags"> = {
       profile_id: profile.id,
+      direction: parsed.data.direction,
       name: parsed.data.name,
       created_by_profile_id: profile.id,
       updated_by_profile_id: profile.id,

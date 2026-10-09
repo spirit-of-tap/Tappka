@@ -6,12 +6,12 @@
 // Not modelled here (drizzle-kit cannot express them, applied via custom migration):
 // - EXCLUDE constraint `time_entries_no_overlap` (btree_gist) — one person's entries never overlap.
 // - Trigger `team_activity_attendees_sync_time_entry` — auto `training` entry from TS attendance.
-import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, bigint, index, uniqueIndex, check, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgPolicy, uuid, text, timestamp, bigint, index, uniqueIndex, unique, check, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { profiles } from "./profiles"
 import { teamActivityAttendees } from "./team-activities"
 
-export const timeDirection = pgEnum("time_direction", ["training", "reading", "practise"])
+export const timeDirection = pgEnum("time_direction", ["training", "reading", "practise", "project"])
 
 export const timeEntrySource = pgEnum("time_entry_source", ["timer", "manual", "attendance"])
 
@@ -30,13 +30,17 @@ const TEAM_OR_STAFF_READ = sql`(
 export const timeTags = pgTable("time_tags", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	profileId: uuid("profile_id").notNull(),
+	/** Every tag belongs to exactly one direction; entries may only use tags of their own direction. */
+	direction: timeDirection().notNull(),
 	name: text().notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdByProfileId: uuid("created_by_profile_id").notNull(),
 	updatedByProfileId: uuid("updated_by_profile_id").notNull(),
 }, (table) => [
-	uniqueIndex("time_tags_profile_name_key").using("btree", table.profileId.asc().nullsLast().op("uuid_ops"), sql`lower(btrim(${table.name}))`),
+	uniqueIndex("time_tags_profile_direction_name_key").using("btree", table.profileId.asc().nullsLast().op("uuid_ops"), table.direction.asc().nullsLast().op("enum_ops"), sql`lower(btrim(${table.name}))`),
+	/** Target of the composite FK from `time_entries (tag_id, direction)`. */
+	unique("time_tags_id_direction_key").on(table.id, table.direction),
 	foreignKey({
 			columns: [table.profileId],
 			foreignColumns: [profiles.id],
@@ -92,6 +96,14 @@ export const timeEntries = pgTable("time_entries", {
 			foreignColumns: [timeTags.id],
 			name: "time_entries_tag_id_fkey"
 		}).onDelete("set null"),
+	// The tag must belong to the entry's direction. Deleting a tag is handled by the FK
+	// above (SET NULL tag_id), after which this one is satisfied (MATCH SIMPLE); changing a
+	// used tag's direction or an entry's direction to a mismatch is rejected.
+	foreignKey({
+			columns: [table.tagId, table.direction],
+			foreignColumns: [timeTags.id, timeTags.direction],
+			name: "time_entries_tag_direction_fkey"
+		}),
 	foreignKey({
 			columns: [table.attendanceId],
 			foreignColumns: [teamActivityAttendees.id],

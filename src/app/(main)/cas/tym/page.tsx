@@ -2,10 +2,10 @@ import { CalendarClock, Users } from "lucide-react"
 import { redirect } from "next/navigation"
 
 import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
-import { TEAM_PARAM, WEEK_PARAM, resolveWeekParam } from "@/components/time-tracking/cas-query"
+import { TEAM_PARAM, resolveRangeParams } from "@/components/time-tracking/cas-query"
+import { DateRangeNav } from "@/components/time-tracking/date-range-nav"
 import { TeamSelect, type TeamOption } from "@/components/time-tracking/team-select"
 import { TeamTimeTable } from "@/components/time-tracking/team-time-table"
-import { WeekNav } from "@/components/time-tracking/week-nav"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { PageHeader } from "@/components/ui/page-header"
 import { PageShell } from "@/components/ui/page-shell"
@@ -13,13 +13,13 @@ import { getSessionProfile } from "@/lib/auth/session"
 import { canAccessFeature } from "@/lib/feature-access"
 import { createClient } from "@/lib/supabase/server"
 import { WEEKLY_TARGET_HOURS } from "@/lib/time-tracking/constants"
+import { scaleWeeklyTarget } from "@/lib/time-tracking/date-range"
 import { listTeamMemberEntries } from "@/lib/time-tracking/queries"
-import { getWeekRange } from "@/lib/time-tracking/week"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
 export const metadata = {
   title: "Čas týmu",
-  description: "Kolik času tým tento týden věnuje Training, Reading a Practise",
+  description: "Kolik času tým věnuje Training, Reading, Practise a Projektu",
 }
 
 const PAGE_TITLE = "Tým"
@@ -71,7 +71,7 @@ export default async function CasTymPage({ searchParams }: CasTymPageProps) {
   const params = await searchParams
   // One reference time for the whole render so running timers add up consistently.
   const now = new Date()
-  const week = resolveWeekParam(params[WEEK_PARAM], now)
+  const { range, instants, todayKey } = resolveRangeParams(params, now)
 
   const canPickTeam = TEAM_WIDE_ROLES.includes(profile.role)
   let teams: TeamOption[] = []
@@ -107,8 +107,7 @@ export default async function CasTymPage({ searchParams }: CasTymPageProps) {
     )
   }
 
-  const { members, entries } = await listTeamMemberEntries(supabase, team.id, week)
-  const isCurrentWeek = week.from.getTime() === getWeekRange(now).from.getTime()
+  const { members, entries } = await listTeamMemberEntries(supabase, team.id, instants)
 
   return (
     <PageShell size="wide">
@@ -120,7 +119,7 @@ export default async function CasTymPage({ searchParams }: CasTymPageProps) {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         {canPickTeam && <TeamSelect teams={teams} value={team.id} />}
-        <WeekNav week={week} now={now} className="sm:ml-auto" />
+        <DateRangeNav range={range} todayKey={todayKey} align="end" className="sm:ml-auto" />
       </div>
 
       {entries.length === 0 ? (
@@ -131,9 +130,7 @@ export default async function CasTymPage({ searchParams }: CasTymPageProps) {
           <EmptyHeader>
             <EmptyTitle>Zatím prázdno</EmptyTitle>
             <EmptyDescription>
-              {isCurrentWeek
-                ? "Tento týden zatím nikdo z týmu nic nezapsal."
-                : "V tomhle týdnu nikdo z týmu nic nezapsal."}
+              V tomhle období zatím nikdo z týmu nic nezapsal.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -141,9 +138,9 @@ export default async function CasTymPage({ searchParams }: CasTymPageProps) {
         <TeamTimeTable
           members={members}
           entries={entries}
-          week={week}
+          range={instants}
           now={now}
-          weeklyTargetHours={WEEKLY_TARGET_HOURS}
+          targetHours={scaleWeeklyTarget(WEEKLY_TARGET_HOURS, range)}
         />
       )}
     </PageShell>

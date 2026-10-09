@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
-import { WEEK_PARAM, resolveWeekParam } from "@/components/time-tracking/cas-query"
+import { resolveRangeParams } from "@/components/time-tracking/cas-query"
 import { TimePageView } from "@/components/time-tracking/time-page-view"
 import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
@@ -11,7 +11,7 @@ import { listEntries, listTags } from "@/lib/time-tracking/queries"
 
 export const metadata = {
   title: "Čas",
-  description: "Kolik času věnuješ Training, Reading a Practise",
+  description: "Kolik času věnuješ Training, Reading, Practise a Projektu",
 }
 
 interface CasPageProps {
@@ -42,16 +42,24 @@ export default async function CasPage({ searchParams }: CasPageProps) {
   const params = await searchParams
   // One reference time for the whole render so running timers add up consistently.
   const now = new Date()
-  const week = resolveWeekParam(params[WEEK_PARAM], now)
+  const { range, instants, todayKey } = resolveRangeParams(params, now)
 
   const [entries, tags] = await Promise.all([
-    listEntries(supabase, { profileIds: [profile.id], from: week.from, to: week.to }),
+    listEntries(supabase, { profileIds: [profile.id], from: instants.from, to: instants.to }),
     listTags(supabase, profile.id),
   ])
 
   return (
     <PageShell size="wide">
-      <TimePageView entries={entries} tags={tags} week={week} now={now} profileId={profile.id} />
+      <TimePageView
+        entries={entries}
+        tags={tags}
+        range={range}
+        instants={instants}
+        todayKey={todayKey}
+        now={now}
+        profileId={profile.id}
+      />
     </PageShell>
   )
 }

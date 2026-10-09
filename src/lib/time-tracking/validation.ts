@@ -7,8 +7,12 @@ import {
   TIME_TRACKING_MESSAGES,
   TITLE_MAX_LENGTH,
 } from "./constants"
+import { MAX_RANGE_DAYS } from "./date-range"
 
 const END_BEFORE_START_MESSAGE = "Konec musí být po začátku"
+const RANGE_TOO_LONG_MESSAGE = "Období může mít nejvýš dva roky"
+/** One extra day absorbs DST shifts in instant-based ranges. */
+const MAX_LIST_RANGE_MS = (MAX_RANGE_DAYS + 1) * 86_400_000
 const EMPTY_PATCH_MESSAGE = "Nic ke změně"
 
 /** True when both are parseable instants and `end` is strictly after `start`. */
@@ -96,7 +100,8 @@ export const tagNameSchema = z
   .min(TAG_NAME_MIN_LENGTH, { message: "Zadej název tagu" })
   .max(TAG_NAME_MAX_LENGTH, { message: `Název tagu může mít nejvýš ${TAG_NAME_MAX_LENGTH} znaků` })
 
-export const createTagSchema = z.object({ name: tagNameSchema })
+/** A tag is created under one direction and stays there (rename only afterwards). */
+export const createTagSchema = z.object({ name: tagNameSchema, direction: timeDirectionSchema })
 export const updateTagSchema = z.object({ name: tagNameSchema })
 
 export type TagInput = z.infer<typeof createTagSchema>
@@ -129,6 +134,13 @@ export const listEntriesQuerySchema = z
     message: END_BEFORE_START_MESSAGE,
     path: ["to"],
   })
+  .refine(
+    (value) =>
+      value.from === undefined ||
+      value.to === undefined ||
+      Date.parse(value.to) - Date.parse(value.from) <= MAX_LIST_RANGE_MS,
+    { message: RANGE_TOO_LONG_MESSAGE, path: ["to"] },
+  )
 
 export type ListEntriesQuery = z.infer<typeof listEntriesQuerySchema>
 

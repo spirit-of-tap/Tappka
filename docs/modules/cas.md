@@ -1,8 +1,8 @@
 # Čas (time tracking)
 
-Studující v Tiimiakatemia tráví týden mixem tří činností: **Training** (Training Sessions, dialogy, workshopy), **Reading** (knihy, eseje) a **Practise** (projekty, zákazníci, provoz týmové společnosti). Metodika počítá zhruba se **40 hodinami týdně**.
+Studující v Tiimiakatemia tráví týden mixem činností: **Training** (Training Sessions, dialogy, workshopy), **Reading** (knihy, eseje), **Practise** (zákazníci, provoz týmové společnosti) a **Projekt** (vlastní projekty). Metodika počítá zhruba se **40 hodinami týdně**.
 
-Modul **Čas** (`/cas`) umožňuje tento čas jednoduše evidovat: spustit časomíru nebo zapsat čas ručně, zařadit záznam do jednoho ze tří směrů, pojmenovat ho a označit vlastním tagem. Tým vidí, kolik času a čemu věnují jeho členové:ky.
+Modul **Čas** (`/cas`) umožňuje tento čas jednoduše evidovat: spustit časomíru nebo zapsat čas ručně, zařadit záznam do jednoho ze čtyř směrů, pojmenovat ho a označit vlastním tagem. Tým vidí, kolik času a čemu věnují jeho členové:ky.
 
 Design a rozhodnutí: [`docs/plans/2026-09-24-timetracking-design.md`](https://github.com/spirit-of-tap/Tappka/blob/production/docs/plans/2026-09-24-timetracking-design.md).
 
@@ -12,11 +12,12 @@ Design a rozhodnutí: [`docs/plans/2026-09-24-timetracking-design.md`](https://g
 
 - **Časomíra** — jedním klikem spustit a zastavit. Běžící časomíra je vidět v sidebaru (desktop) i uprostřed spodní lišty (mobil) a přežije zavření aplikace, protože je to jen záznam bez konce.
 - **Ruční záznam a editace** — začátek i konec mají datum a čas, záznam smí přesáhnout půlnoc. Hodí se, když zapomeneš časomíru vypnout.
-- **Směr** — `training | reading | practise`, povinný.
+- **Směr** — `training | reading | practise | project`, povinný. Barvy: Training světle modrá, Reading žlutá, Practise TAP červená, Projekt fialová (tokeny `--time-*` v `globals.css`).
 - **Název** — volitelný, např. „Prodávání párků před ČZU".
-- **Vlastní tag** — volitelný, jeden na záznam, např. `practise + fellaship`. Podle tagu jde filtrovat a sečíst, kolik času projekt zabral.
-- **Týdenní progress** — součet všech tří směrů proti cíli 40 h (metrika `time-weekly`), přehled per směr jen informativně.
-- **Týmový přehled** (`/cas/tym`) — tabulka členů:ek týmu za týden: Training / Reading / Practise / celkem a postup k 40 h.
+- **Vlastní tag** — volitelný, jeden na záznam, např. `practise + fellaship`. Každý tag patří právě k jednomu směru: zakládá se pod směrem záznamu, nabízí se jen u záznamů téhož směru a směr se mu později nemění (jen název). Stejný název může existovat pod víc směry. Při změně směru záznamu se tag odebere. Podle tagu jde filtrovat a sečíst, kolik času projekt zabral.
+- **Výběr období** — ve stylu Clockify: rychlé volby (Dnes, Včera, Tento / Minulý týden, Poslední 2 týdny, Tento / Minulý měsíc, Tento / Minulý rok), kalendář na dva měsíce (první klik = začátek, druhý = konec) a šipky ‹ ›, které posouvají o délku období (celé měsíce a roky po měsících). Období je v URL jako `?from=YYYY-MM-DD&to=YYYY-MM-DD` (pražské dny včetně); výchozí je aktuální týden bez parametrů.
+- **Progress** — součet všech čtyř směrů proti cíli 40 h týdně přepočtenému na délku období (40 h × dny / 7, např. měsíc ≈ 171 h; metrika `time-weekly`), přehled per směr jen informativně.
+- **Týmový přehled** (`/cas/tym`) — tabulka členů:ek týmu za vybrané období: Training / Reading / Practise / Projekt / celkem a postup k přepočtenému cíli.
 
 Modul neřeší finance, sazby ani fakturaci.
 
@@ -49,13 +50,14 @@ Trigger: `public.sync_training_session_time_entry()` na tabulce `team_activity_a
 Definováno v [`db/schema/time-tracking.ts`](https://github.com/spirit-of-tap/Tappka/blob/production/db/schema/time-tracking.ts):
 
 ```sql
-create type time_direction as enum ('training', 'reading', 'practise');
+create type time_direction as enum ('training', 'reading', 'practise', 'project');
 create type time_entry_source as enum ('timer', 'manual', 'attendance');
 
 create table time_tags (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid references profiles(id) on delete cascade not null,
-  name text not null,                     -- 1–40 znaků, unikátní per osoba (bez ohledu na velikost písmen)
+  direction time_direction not null,      -- tag patří k jednomu směru, unique (id, direction)
+  name text not null,                     -- 1–40 znaků, unikátní per osoba a směr (bez ohledu na velikost písmen)
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null,
   created_by_profile_id uuid references profiles(id) not null,
@@ -67,6 +69,7 @@ create table time_entries (
   profile_id uuid references profiles(id) on delete cascade not null,
   direction time_direction not null,
   tag_id uuid references time_tags(id) on delete set null,
+  -- + foreign key (tag_id, direction) references time_tags(id, direction): tag musí být ze stejného směru
   title text,                             -- max 120 znaků
   started_at timestamptz not null,
   ended_at timestamptz,                   -- null = běžící časomíra
@@ -99,8 +102,8 @@ Záznamy se mažou natvrdo (žádné `removed_at`), protože na smazaný časov�
 
 ## 5. Cesty v aplikaci a API
 
-- `/cas` — moje záznamy v týdnu, progress k 40 h, souhrn per směr, filtr podle směru a tagu, ruční zápis a editace.
-- `/cas/tym` — týmový přehled za týden; kouči:ky a admini volí tým.
+- `/cas` — moje záznamy ve vybraném období, progress k cíli, souhrn per směr, filtr podle směru a tagu, ruční zápis a editace.
+- `/cas/tym` — týmový přehled za vybrané období (přepnutí záložek Moje / Tým období zachová); kouči:ky a admini volí tým.
 - Časomíra: widget v sidebaru (desktop), tlačítko Play uprostřed spodní lišty (mobil), Spotlight „Čas".
 
 Route Handlers (`src/app/api/`):

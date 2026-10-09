@@ -276,7 +276,7 @@ describe("summarize", () => {
   it("sums totals per direction and per tag, ignoring running timers by default", () => {
     const summary = summarize([training, reading, practise, running])
     expect(summary.totalMs).toBe(3.5 * HOUR)
-    expect(summary.byDirection).toEqual({ training: 2 * HOUR, reading: HOUR, practise: 30 * MINUTE })
+    expect(summary.byDirection).toEqual({ training: 2 * HOUR, reading: HOUR, practise: 30 * MINUTE, project: 0 })
     expect(summary.byTag.get("tag-a")).toBe(90 * MINUTE)
     expect(summary.byTag.get(null)).toBe(2 * HOUR)
   })
@@ -366,7 +366,7 @@ describe("summarize", () => {
   it("returns zeros for no entries", () => {
     const summary = summarize([])
     expect(summary.totalMs).toBe(0)
-    expect(summary.byDirection).toEqual({ training: 0, reading: 0, practise: 0 })
+    expect(summary.byDirection).toEqual({ training: 0, reading: 0, practise: 0, project: 0 })
     expect(summary.byTag.size).toBe(0)
   })
 })

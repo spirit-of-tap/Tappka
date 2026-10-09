@@ -45,13 +45,16 @@ export function mapDbError(error: DbErrorLike | null | undefined): MappedDbError
       if (mentions(error, DB_CONSTRAINTS.oneRunningTimer)) {
         return { status: HTTP_STATUS.conflict, message: TIME_TRACKING_MESSAGES.timerAlreadyRunning }
       }
-      if (mentions(error, DB_CONSTRAINTS.tagProfileName)) {
+      if (mentions(error, DB_CONSTRAINTS.tagProfileDirectionName)) {
         return { status: HTTP_STATUS.conflict, message: TIME_TRACKING_MESSAGES.tagNameTaken }
       }
       return { status: HTTP_STATUS.conflict, message: TIME_TRACKING_MESSAGES.generic }
     case PG_ERROR_CODES.checkViolation:
       return { status: HTTP_STATUS.badRequest, message: TIME_TRACKING_MESSAGES.invalidRange }
     case PG_ERROR_CODES.foreignKeyViolation:
+      if (mentions(error, DB_CONSTRAINTS.tagDirection)) {
+        return { status: HTTP_STATUS.badRequest, message: TIME_TRACKING_MESSAGES.tagDirectionMismatch }
+      }
       return { status: HTTP_STATUS.badRequest, message: TIME_TRACKING_MESSAGES.invalidTag }
     case PG_ERROR_CODES.insufficientPrivilege:
       return { status: HTTP_STATUS.forbidden, message: TIME_TRACKING_MESSAGES.forbidden }

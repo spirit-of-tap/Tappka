@@ -161,10 +161,16 @@ describe("timerActionSchema", () => {
 
 describe("createTagSchema", () => {
   it("trims and bounds the name", () => {
-    expect(createTagSchema.parse({ name: "  fellaship " }).name).toBe("fellaship")
-    expect(createTagSchema.safeParse({ name: "   " }).success).toBe(false)
-    expect(createTagSchema.safeParse({ name: "x".repeat(40) }).success).toBe(true)
-    expect(createTagSchema.safeParse({ name: "x".repeat(41) }).success).toBe(false)
+    expect(createTagSchema.parse({ name: "  fellaship ", direction: "practise" }).name).toBe("fellaship")
+    expect(createTagSchema.safeParse({ name: "   ", direction: "practise" }).success).toBe(false)
+    expect(createTagSchema.safeParse({ name: "x".repeat(40), direction: "practise" }).success).toBe(true)
+    expect(createTagSchema.safeParse({ name: "x".repeat(41), direction: "practise" }).success).toBe(false)
+  })
+
+  it("requires one of the four directions", () => {
+    expect(createTagSchema.safeParse({ name: "fellaship" }).success).toBe(false)
+    expect(createTagSchema.safeParse({ name: "fellaship", direction: "project" }).success).toBe(true)
+    expect(createTagSchema.safeParse({ name: "fellaship", direction: "nonsense" }).success).toBe(false)
   })
 })
 
@@ -176,6 +182,15 @@ describe("listEntriesQuerySchema", () => {
   it("parses comma-separated profile ids", () => {
     const parsed = listEntriesQuerySchema.parse({ profileIds: `${PROFILE_ID}, ${TAG_ID}` })
     expect(parsed.profileIds).toEqual([PROFILE_ID, TAG_ID])
+  })
+
+  it("rejects ranges longer than two years", () => {
+    expect(
+      listEntriesQuerySchema.safeParse({ from: "2025-01-01T00:00:00Z", to: "2026-12-31T00:00:00Z" }).success,
+    ).toBe(true)
+    const tooLong = listEntriesQuerySchema.safeParse({ from: "1970-01-01T00:00:00Z", to: "2100-01-01T00:00:00Z" })
+    expect(tooLong.success).toBe(false)
+    expect(tooLong.error?.issues[0]?.message).toBe("Období může mít nejvýš dva roky")
   })
 
   it("requires both range ends and a valid order", () => {

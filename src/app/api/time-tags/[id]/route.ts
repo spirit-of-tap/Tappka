@@ -16,7 +16,7 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-/** PATCH /api/time-tags/[id] — rename an own tag. */
+/** PATCH /api/time-tags/[id] — rename an own tag (its direction never changes). */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const auth = await requireTimeTrackingContext()

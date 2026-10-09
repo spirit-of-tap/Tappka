@@ -683,8 +683,8 @@ describe("time_entries cascades and uniqueness", () => {
     await withRollback(async (client) => {
       const me = await seedMember(client);
       const { rows: tagRows } = await client.query(
-        `insert into public.time_tags (profile_id, name, created_by_profile_id, updated_by_profile_id)
-         values ($1, 'fellaship', $1, $1) returning id`,
+        `insert into public.time_tags (profile_id, direction, name, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'practise', 'fellaship', $1, $1) returning id`,
         [me.profileId],
       );
       const tagId = tagRows[0].id as string;

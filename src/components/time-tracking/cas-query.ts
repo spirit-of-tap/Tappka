@@ -1,48 +1,86 @@
 import { format } from "date-fns"
 import { cs } from "date-fns/locale"
 
+import {
+  type DateKeyRange,
+  parseRangeParams,
+  presetRange,
+  isSameRange,
+  rangeToInstants,
+  todayKeyOf,
+} from "@/lib/time-tracking/date-range"
 import type { TimeRange } from "@/lib/time-tracking/types"
-import { getWeekRange, pragueDayStart, toPragueDateKey } from "@/lib/time-tracking/week"
 
 /** Query param selecting the team on `/cas/tym` (coach / admin only). */
 export const TEAM_PARAM = "team"
 
-/** Query param holding any `YYYY-MM-DD` day inside the displayed week. */
-export const WEEK_PARAM = "w"
+/** Query params holding the displayed range as inclusive `YYYY-MM-DD` Prague days. */
+export const FROM_PARAM = "from"
+export const TO_PARAM = "to"
 
 const DATE_KEY_PARTS_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 
+export interface ResolvedRange {
+  /** Inclusive Prague days shown in the picker. */
+  range: DateKeyRange
+  /** Same range as instants (`to` exclusive), for queries and summaries. */
+  instants: TimeRange
+  /** Prague „today" for the given `now`. */
+  todayKey: string
+}
+
 /**
- * Week to display for a `?w=` value. Invalid or missing values fall back to the week
+ * Range to display for `?from=&to=`. Invalid or missing values fall back to the week
  * containing `now`. Safe for server and client (no `"use client"`).
  */
-export function resolveWeekParam(value: string | string[] | undefined, now: Date): TimeRange {
-  const raw = Array.isArray(value) ? value[0] : value
-  const dayStart = raw ? pragueDayStart(raw) : null
-  return getWeekRange(dayStart ?? now)
+export function resolveRangeParams(
+  params: Record<string, string | string[] | undefined>,
+  now: Date,
+): ResolvedRange {
+  const todayKey = todayKeyOf(now)
+  const range = parseRangeParams(params[FROM_PARAM], params[TO_PARAM], todayKey)
+  return { range, instants: rangeToInstants(range), todayKey }
 }
 
-/** `?w=` value for a week: its Monday as `YYYY-MM-DD` (Prague). */
-export function toWeekParam(week: TimeRange): string {
-  return toPragueDateKey(week.from)
+/**
+ * Query string for a range, keeping every other param (e.g. `?team=`). The current
+ * week is the default, so it drops `from` / `to` entirely.
+ */
+export function withRangeParams(current: URLSearchParams, range: DateKeyRange, todayKey: string): URLSearchParams {
+  const params = new URLSearchParams(current.toString())
+  if (isSameRange(range, presetRange("this-week", todayKey))) {
+    params.delete(FROM_PARAM)
+    params.delete(TO_PARAM)
+  } else {
+    params.set(FROM_PARAM, range.from)
+    params.set(TO_PARAM, range.to)
+  }
+  return params
 }
 
-/** Local-midnight Date for a `YYYY-MM-DD` key, used only for date-fns formatting. */
-function dateFromKey(dateKey: string): Date {
+/** Local-midnight Date for a `YYYY-MM-DD` key, used only for date-fns formatting and the calendar. */
+export function dateFromKey(dateKey: string): Date {
   const match = DATE_KEY_PARTS_RE.exec(dateKey)
   if (!match) return new Date(Number.NaN)
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
 }
 
+/** `YYYY-MM-DD` of a local Date's calendar fields (inverse of `dateFromKey`). */
+export function keyFromDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
 /**
- * Compact Czech week label: `21.–27. 9. 2026`, `29. 9. – 5. 10. 2026`
+ * Compact Czech range label: `9. 10. 2026`, `21.–27. 9. 2026`, `29. 9. – 5. 10. 2026`
  * or `29. 12. 2025 – 4. 1. 2026` across a year boundary.
  */
-export function formatWeekLabel(week: TimeRange): string {
-  const first = dateFromKey(toPragueDateKey(week.from))
-  // `to` is exclusive — the last displayed day is the one just before it.
-  const last = dateFromKey(toPragueDateKey(new Date(week.to.getTime() - 1)))
+export function formatRangeLabel(range: DateKeyRange): string {
+  const first = dateFromKey(range.from)
+  const last = dateFromKey(range.to)
 
+  if (range.from === range.to) return format(first, "d. M. yyyy", { locale: cs })
   if (first.getFullYear() !== last.getFullYear()) {
     return `${format(first, "d. M. yyyy", { locale: cs })} – ${format(last, "d. M. yyyy", { locale: cs })}`
   }

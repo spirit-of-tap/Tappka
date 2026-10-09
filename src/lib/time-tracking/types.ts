@@ -6,8 +6,8 @@ export type TimeTag = Tables<"time_tags">
 export type TimeDirection = Database["public"]["Enums"]["time_direction"]
 export type TimeEntrySource = Database["public"]["Enums"]["time_entry_source"]
 
-/** Minimal tag shape embedded into entries via `tag:time_tags(id, name)`. */
-export type TimeTagRef = Pick<TimeTag, "id" | "name">
+/** Minimal tag shape embedded into entries (see `TIME_ENTRY_WITH_TAG_SELECT`). */
+export type TimeTagRef = Pick<TimeTag, "id" | "name" | "direction">
 
 export interface TimeEntryWithTag extends TimeEntry {
   tag: TimeTagRef | null

@@ -113,7 +113,10 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
               value={form.direction ?? ""}
               onValueChange={(value) => {
                 if (!value) return
-                setForm((current) => ({ ...current, direction: value as TimeDirection }))
+                // A tag belongs to one direction, so switching direction drops it.
+                setForm((current) =>
+                  current.direction === value ? current : { ...current, direction: value as TimeDirection, tagId: null },
+                )
                 setError(null)
               }}
               className="w-full"
@@ -133,6 +136,7 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
             <TagCombobox
               id={tagId}
               value={form.tagId}
+              direction={form.direction}
               onChange={(nextTagId) => setForm((current) => ({ ...current, tagId: nextTagId }))}
             />
           </Field>

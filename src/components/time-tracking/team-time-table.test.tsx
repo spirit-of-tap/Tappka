@@ -50,7 +50,7 @@ const ENTRIES: TimeEntryWithTag[] = [
     direction: "training",
     title: "Workshop",
     tag_id: "t1",
-    tag: { id: "t1", name: "Klient X" },
+    tag: { id: "t1", name: "Klient X", direction: "training" },
     started_at: "2026-09-22T06:00:00Z",
     ended_at: "2026-09-22T10:00:00Z",
   }),
@@ -81,7 +81,7 @@ const ENTRIES: TimeEntryWithTag[] = [
 
 function renderTable() {
   return render(
-    <TeamTimeTable members={MEMBERS} entries={ENTRIES} week={WEEK} now={NOW} weeklyTargetHours={40} />,
+    <TeamTimeTable members={MEMBERS} entries={ENTRIES} range={WEEK} now={NOW} targetHours={40} />,
   )
 }
 
@@ -160,6 +160,6 @@ describe("TeamTimeTable", () => {
     const user = userEvent.setup()
     renderTable()
     await user.click(rowTrigger("Cyril Černý"))
-    expect(screen.getByText("Tento týden bez záznamů.")).toBeInTheDocument()
+    expect(screen.getByText("V tomhle období bez záznamů.")).toBeInTheDocument()
   })
 })

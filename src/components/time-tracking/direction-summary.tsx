@@ -8,10 +8,10 @@ interface DirectionSummaryProps {
   className?: string
 }
 
-/** Training · Reading · Practise hours for the week — an overview, not a metric. */
+/** Training · Reading · Practise · Projekt hours for the period — an overview, not a metric. */
 export function DirectionSummary({ byDirection, className }: DirectionSummaryProps) {
   return (
-    <dl className={cn("grid grid-cols-3 gap-2", className)}>
+    <dl className={cn("grid grid-cols-2 gap-2 sm:grid-cols-4", className)}>
       {TIME_DIRECTIONS.map((direction) => (
         <div key={direction.value} className="rounded-lg border bg-card px-3 py-2">
           <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">

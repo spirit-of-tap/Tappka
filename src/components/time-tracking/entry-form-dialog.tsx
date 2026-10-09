@@ -203,12 +203,13 @@ function EntryForm({ entry, tags, now, onSaved, onDone }: EntryFormProps) {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = form
 
-  const [startDate, startTime, endDate, endTime] = useWatch({
+  const [startDate, startTime, endDate, endTime, selectedDirection] = useWatch({
     control,
-    name: ["startDate", "startTime", "endDate", "endTime"],
+    name: ["startDate", "startTime", "endDate", "endTime", "direction"],
   })
   const startIso = localInputsToIso(startDate, startTime)
   const endIso = localInputsToIso(endDate, endTime)
@@ -265,7 +266,10 @@ function EntryForm({ entry, tags, now, onSaved, onDone }: EntryFormProps) {
               aria-invalid={fieldState.invalid || undefined}
               value={field.value ?? ""}
               onValueChange={(value) => {
-                if (value) field.onChange(value as TimeDirection)
+                if (!value || value === field.value) return
+                field.onChange(value as TimeDirection)
+                // A tag belongs to one direction, so switching direction drops it.
+                setValue("tagId", null)
               }}
               className="w-full"
             >
@@ -287,7 +291,13 @@ function EntryForm({ entry, tags, now, onSaved, onDone }: EntryFormProps) {
         render={({ field }) => (
           <Field>
             <FieldLabel htmlFor={ids.tag}>Tag</FieldLabel>
-            <TagCombobox id={ids.tag} value={field.value} onChange={(tagId) => field.onChange(tagId)} initialTags={tags} />
+            <TagCombobox
+              id={ids.tag}
+              value={field.value}
+              direction={selectedDirection ?? null}
+              onChange={(tagId) => field.onChange(tagId)}
+              initialTags={tags}
+            />
           </Field>
         )}
       />

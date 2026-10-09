@@ -2733,6 +2733,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "time_entries_tag_direction_fkey"
+            columns: ["tag_id", "direction"]
+            isOneToOne: false
+            referencedRelation: "time_tags"
+            referencedColumns: ["id", "direction"]
+          },
+          {
             foreignKeyName: "time_entries_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
@@ -2752,6 +2759,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by_profile_id: string
+          direction: Database["public"]["Enums"]["time_direction"]
           id: string
           name: string
           profile_id: string
@@ -2761,6 +2769,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by_profile_id: string
+          direction: Database["public"]["Enums"]["time_direction"]
           id?: string
           name: string
           profile_id: string
@@ -2770,6 +2779,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by_profile_id?: string
+          direction?: Database["public"]["Enums"]["time_direction"]
           id?: string
           name?: string
           profile_id?: string
@@ -3168,7 +3178,7 @@ export type Database = {
       profile_role: "student" | "mentor" | "coach" | "admin"
       schedule_type: "training_session" | "houston_calling"
       team_document_type: "team_contract" | "financial_policy" | "other"
-      time_direction: "training" | "reading" | "practise"
+      time_direction: "training" | "reading" | "practise" | "project"
       time_entry_source: "timer" | "manual" | "attendance"
       tool_type: "model" | "technique" | "tool"
     }
@@ -3333,7 +3343,7 @@ export const Constants = {
       profile_role: ["student", "mentor", "coach", "admin"],
       schedule_type: ["training_session", "houston_calling"],
       team_document_type: ["team_contract", "financial_policy", "other"],
-      time_direction: ["training", "reading", "practise"],
+      time_direction: ["training", "reading", "practise", "project"],
       time_entry_source: ["timer", "manual", "attendance"],
       tool_type: ["model", "technique", "tool"],
     },

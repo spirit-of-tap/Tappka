@@ -9,7 +9,10 @@ import {
 import {
   DayPicker,
   getDefaultClassNames,
+  type Chevron as DayPickerChevron,
   type DayButton,
+  type Root as DayPickerRoot,
+  type WeekNumber as DayPickerWeekNumber,
 } from "react-day-picker"
 import { cs } from "date-fns/locale"
 
@@ -135,50 +138,41 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Root: ({ className, rootRef, ...props }) => {
-          return (
-            <div
-              data-slot="calendar"
-              ref={rootRef}
-              className={cn(className)}
-              {...props}
-            />
-          )
-        },
-        Chevron: ({ className, orientation, ...props }) => {
-          if (orientation === "left") {
-            return (
-              <ChevronLeftIcon className={cn("size-4", className)} {...props} />
-            )
-          }
-
-          if (orientation === "right") {
-            return (
-              <ChevronRightIcon
-                className={cn("size-4", className)}
-                {...props}
-              />
-            )
-          }
-
-          return (
-            <ChevronDownIcon className={cn("size-4", className)} {...props} />
-          )
-        },
+        Root: CalendarRoot,
+        Chevron: CalendarChevron,
         DayButton: CalendarDayButton,
-        WeekNumber: ({ children, ...props }) => {
-          return (
-            <td {...props}>
-              <div className="flex size-(--cell-size) items-center justify-center text-center">
-                {children}
-              </div>
-            </td>
-          )
-        },
+        WeekNumber: CalendarWeekNumber,
         ...components,
       }}
       {...props}
     />
+  )
+}
+
+// Slot components live at module level: inline definitions would get a new identity on
+// every render, so DayPicker would remount the whole grid on each hover / focus change,
+// dropping clicks that start on a button that is gone by mouseup and losing keyboard focus.
+function CalendarRoot({ className, rootRef, ...props }: React.ComponentProps<typeof DayPickerRoot>) {
+  return <div data-slot="calendar" ref={rootRef} className={cn(className)} {...props} />
+}
+
+function CalendarChevron({ className, orientation, ...props }: React.ComponentProps<typeof DayPickerChevron>) {
+  if (orientation === "left") {
+    return <ChevronLeftIcon className={cn("size-4", className)} {...props} />
+  }
+
+  if (orientation === "right") {
+    return <ChevronRightIcon className={cn("size-4", className)} {...props} />
+  }
+
+  return <ChevronDownIcon className={cn("size-4", className)} {...props} />
+}
+
+function CalendarWeekNumber({ children, ...props }: React.ComponentProps<typeof DayPickerWeekNumber>) {
+  return (
+    <td {...props}>
+      <div className="flex size-(--cell-size) items-center justify-center text-center">{children}</div>
+    </td>
   )
 }
 

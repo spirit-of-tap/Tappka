@@ -25,10 +25,20 @@ describe("mapDbError", () => {
     expect(
       mapDbError({
         code: "23505",
-        message: 'duplicate key value violates unique constraint "time_tags_profile_name_key"',
-        details: "Key (profile_id, lower(btrim(name)))=(…) already exists.",
+        message: 'duplicate key value violates unique constraint "time_tags_profile_direction_name_key"',
+        details: "Key (profile_id, direction, lower(btrim(name)))=(…) already exists.",
       }),
-    ).toEqual({ status: 409, message: "Tag s tímto názvem už máš" })
+    ).toEqual({ status: 409, message: "Tag s tímto názvem už v tomhle směru máš" })
+  })
+
+  it("maps a tag from another direction", () => {
+    expect(
+      mapDbError({
+        code: "23503",
+        message:
+          'insert or update on table "time_entries" violates foreign key constraint "time_entries_tag_direction_fkey"',
+      }),
+    ).toEqual({ status: 400, message: "Tag patří k jinému směru" })
   })
 
   it("maps other unique violations to a generic conflict", () => {

@@ -93,7 +93,7 @@ export const METRICS = {
     totalForStudy: 0.5,
     individualMinimum: 0,
   },
-  // Čas: ~40 h per week across Training / Reading / Practise (one metric,
+  // Čas: ~40 h per week across Training / Reading / Practise / Projekt (one metric,
   // per-direction breakdown is informative only).
   "time-weekly": {
     label: "Čas týdně",

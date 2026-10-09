@@ -189,6 +189,24 @@ describe("EntryFormDialog", () => {
     })
   })
 
+  it("drops the tag when the direction changes, because tags belong to one direction", async () => {
+    const tagged: TimeEntryWithTag = {
+      ...ENTRY,
+      tag_id: "t-book",
+      tag: { id: "t-book", name: "Kniha", direction: "reading" },
+    }
+    fetchMock.mockResolvedValue(jsonResponse({ data: { ...tagged, direction: "project", tag_id: null, tag: null } }, 200))
+    const user = userEvent.setup()
+    const { onOpenChange } = renderDialog(tagged)
+
+    await user.click(screen.getByRole("radio", { name: "Projekt" }))
+    expect(screen.getByRole("combobox", { name: "Tag" })).toHaveTextContent("Bez tagu")
+    await user.click(screen.getByRole("button", { name: "Uložit" }))
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+    expect(lastRequest().body).toEqual({ direction: "project", tagId: null })
+  })
+
   it("closes without a request when nothing changed", async () => {
     const user = userEvent.setup()
     const { onOpenChange } = renderDialog(ENTRY)

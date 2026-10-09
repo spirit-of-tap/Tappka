@@ -18,7 +18,7 @@ import { formatDayHeading } from "./cas-query"
 
 const AVATAR_SIZE = 32
 const PERCENT_MAX = 100
-const COLUMN_GRID = "sm:grid-cols-[minmax(0,1fr)_repeat(4,4.75rem)_7rem]"
+const COLUMN_GRID = "lg:grid-cols-[minmax(0,1fr)_repeat(5,4.5rem)_7rem]"
 
 const clockFormatter = new Intl.DateTimeFormat("cs-CZ", {
   timeZone: PRAGUE_TIME_ZONE,
@@ -34,10 +34,12 @@ const DIRECTION_DOT_CLASS = Object.fromEntries(TIME_DIRECTIONS.map((d) => [d.val
 export interface TeamTimeTableProps {
   members: readonly TeamMember[]
   entries: readonly TimeEntryWithTag[]
-  week: TimeRange
+  /** Displayed period as instants (`to` exclusive); totals are clipped to it. */
+  range: TimeRange
   /** Reference time for running timers (pass the server's `new Date()`). */
   now: Date
-  weeklyTargetHours: number
+  /** Goal for the displayed period (weekly goal scaled to its length). */
+  targetHours: number
 }
 
 interface MemberRow {
@@ -54,7 +56,7 @@ function formatHours(ms: number): string {
 export function buildMemberRows(
   members: readonly TeamMember[],
   entries: readonly TimeEntryWithTag[],
-  week: TimeRange,
+  range: TimeRange,
   now: Date,
 ): MemberRow[] {
   const byMember = new Map<string, TimeEntryWithTag[]>()
@@ -70,17 +72,17 @@ export function buildMemberRows(
       return {
         member,
         entries: memberEntries,
-        summary: summarize(memberEntries, { includeRunning: true, now, range: week }),
+        summary: summarize(memberEntries, { includeRunning: true, now, range }),
         isRunning: memberEntries.some((entry) => entry.ended_at === null),
       }
     })
     .sort((a, b) => b.summary.totalMs - a.summary.totalMs || a.member.name.localeCompare(b.member.name, "cs"))
 }
 
-export function TeamTimeTable({ members, entries, week, now, weeklyTargetHours }: TeamTimeTableProps) {
-  const rows = useMemo(() => buildMemberRows(members, entries, week, now), [members, entries, week, now])
+export function TeamTimeTable({ members, entries, range, now, targetHours }: TeamTimeTableProps) {
+  const rows = useMemo(() => buildMemberRows(members, entries, range, now), [members, entries, range, now])
 
-  const teamTotals = useMemo(() => summarize(entries, { includeRunning: true, now, range: week }), [entries, now, week])
+  const teamTotals = useMemo(() => summarize(entries, { includeRunning: true, now, range }), [entries, now, range])
   const averageMs = rows.length > 0 ? teamTotals.totalMs / rows.length : 0
 
   return (
@@ -88,7 +90,7 @@ export function TeamTimeTable({ members, entries, week, now, weeklyTargetHours }
       <div
         aria-hidden
         className={cn(
-          "hidden items-center gap-x-3 border-b bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground sm:grid",
+          "hidden items-center gap-x-3 border-b bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground lg:grid",
           COLUMN_GRID,
         )}
       >
@@ -99,13 +101,13 @@ export function TeamTimeTable({ members, entries, week, now, weeklyTargetHours }
           </span>
         ))}
         <span className="text-right">Celkem</span>
-        <span>Cíl {formatMetricValue(weeklyTargetHours, "hours")}</span>
+        <span>Cíl {formatMetricValue(targetHours, "hours")}</span>
       </div>
 
       <ul className="divide-y">
         {rows.map((row) => (
           <li key={row.member.id}>
-            <MemberTimeRow row={row} now={now} weeklyTargetHours={weeklyTargetHours} />
+            <MemberTimeRow row={row} now={now} targetHours={targetHours} />
           </li>
         ))}
       </ul>
@@ -116,16 +118,16 @@ export function TeamTimeTable({ members, entries, week, now, weeklyTargetHours }
           COLUMN_GRID,
         )}
       >
-        <span className="font-medium sm:pl-6">Tým celkem</span>
+        <span className="font-medium lg:pl-6">Tým celkem</span>
         {TIME_DIRECTIONS.map((direction) => (
-          <span key={direction.value} className="hidden text-right tabular-nums text-muted-foreground sm:block">
+          <span key={direction.value} className="hidden text-right tabular-nums text-muted-foreground lg:block">
             {formatHours(teamTotals.byDirection[direction.value])}
           </span>
         ))}
         <span className="text-right font-semibold tabular-nums" data-testid="team-total">
           {formatHours(teamTotals.totalMs)}
         </span>
-        <span className="col-span-2 text-xs text-muted-foreground sm:col-span-1" data-testid="team-average">
+        <span className="col-span-2 text-xs text-muted-foreground lg:col-span-1" data-testid="team-average">
           Průměr na osobu <span className="font-medium tabular-nums text-foreground">{formatHours(averageMs)}</span>
         </span>
       </div>
@@ -136,12 +138,12 @@ export function TeamTimeTable({ members, entries, week, now, weeklyTargetHours }
 interface MemberTimeRowProps {
   row: MemberRow
   now: Date
-  weeklyTargetHours: number
+  targetHours: number
 }
 
-function MemberTimeRow({ row, now, weeklyTargetHours }: MemberTimeRowProps) {
+function MemberTimeRow({ row, now, targetHours }: MemberTimeRowProps) {
   const { member, summary, isRunning } = row
-  const targetMs = weeklyTargetHours * MS_PER_HOUR
+  const targetMs = targetHours * MS_PER_HOUR
   const percent = targetMs > 0 ? Math.min(PERCENT_MAX, (summary.totalMs / targetMs) * PERCENT_MAX) : 0
   const isGoalReached = targetMs > 0 && summary.totalMs >= targetMs
 
@@ -165,7 +167,7 @@ function MemberTimeRow({ row, now, weeklyTargetHours }: MemberTimeRowProps) {
         </span>
 
         {TIME_DIRECTIONS.map((direction) => (
-          <span key={direction.value} className="hidden text-right tabular-nums text-muted-foreground sm:block">
+          <span key={direction.value} className="hidden text-right tabular-nums text-muted-foreground lg:block">
             {formatHours(summary.byDirection[direction.value])}
           </span>
         ))}
@@ -174,12 +176,12 @@ function MemberTimeRow({ row, now, weeklyTargetHours }: MemberTimeRowProps) {
 
         <Progress
           value={percent}
-          aria-label={`${member.name}: ${formatHours(summary.totalMs)} z ${formatMetricValue(weeklyTargetHours, "hours")}`}
-          className="col-span-2 h-1.5 bg-muted/80 sm:col-span-1"
+          aria-label={`${member.name}: ${formatHours(summary.totalMs)} z ${formatMetricValue(targetHours, "hours")}`}
+          className="col-span-2 h-1.5 bg-muted/80 lg:col-span-1"
           indicatorClassName={isGoalReached ? "bg-success" : "bg-foreground/75"}
         />
 
-        <span className="col-span-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground sm:hidden">
+        <span className="col-span-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground lg:hidden">
           {TIME_DIRECTIONS.map((direction) => (
             <span key={direction.value} className="inline-flex items-center gap-1.5">
               <span aria-hidden className={cn("size-2 rounded-full", direction.dotClass)} />
@@ -192,7 +194,7 @@ function MemberTimeRow({ row, now, weeklyTargetHours }: MemberTimeRowProps) {
         </span>
       </CollapsibleTrigger>
 
-      <CollapsibleContent className="border-t bg-muted/20 px-4 py-3 sm:pl-14">
+      <CollapsibleContent className="border-t bg-muted/20 px-4 py-3 lg:pl-14">
         <MemberEntries entries={row.entries} now={now} />
       </CollapsibleContent>
     </Collapsible>
@@ -213,7 +215,7 @@ function RunningIndicator() {
 
 function MemberEntries({ entries, now }: { entries: readonly TimeEntryWithTag[]; now: Date }) {
   if (entries.length === 0) {
-    return <p className="text-sm text-muted-foreground">Tento týden bez záznamů.</p>
+    return <p className="text-sm text-muted-foreground">V tomhle období bez záznamů.</p>
   }
 
   return (

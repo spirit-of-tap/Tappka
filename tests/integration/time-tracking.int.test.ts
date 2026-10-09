@@ -8,6 +8,7 @@ import { asClaims } from "@/tests/setup/rls";
 const UNIQUE_VIOLATION = "23505";
 const EXCLUSION_VIOLATION = "23P01";
 const CHECK_VIOLATION = "23514";
+const FOREIGN_KEY_VIOLATION = "23503";
 const INSUFFICIENT_PRIVILEGE = "42501";
 
 const HOUR_MS = 3_600_000;
@@ -180,8 +181,8 @@ describe("time_entries invariants", () => {
     await withRollback(async (client) => {
       const me = await seedMember(client);
       const { rows: tagRows } = await client.query(
-        `insert into public.time_tags (profile_id, name, created_by_profile_id, updated_by_profile_id)
-         values ($1, 'fellaship', $1, $1) returning id`,
+        `insert into public.time_tags (profile_id, direction, name, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'practise', 'fellaship', $1, $1) returning id`,
         [me.profileId],
       );
       const tagId = tagRows[0].id as string;
@@ -195,22 +196,94 @@ describe("time_entries invariants", () => {
 });
 
 describe("time_tags invariants", () => {
-  it("keeps tag names unique per person, case- and whitespace-insensitively", async () => {
+  const insertTag = `insert into public.time_tags (profile_id, direction, name, created_by_profile_id, updated_by_profile_id)
+                     values ($1, $2, $3, $1, $1) returning id`;
+
+  it("keeps tag names unique per person and direction, case- and whitespace-insensitively", async () => {
     await withRollback(async (client) => {
       const me = await seedMember(client);
       const other = await seedMember(client);
-      const insert = `insert into public.time_tags (profile_id, name, created_by_profile_id, updated_by_profile_id)
-                      values ($1, $2, $1, $1)`;
 
-      await client.query(insert, [me.profileId, "Fellaship"]);
+      await client.query(insertTag, [me.profileId, "practise", "Fellaship"]);
 
       await client.query("savepoint dup");
-      const code = await errorCode(client.query(insert, [me.profileId, "  fellaship "]));
+      const code = await errorCode(client.query(insertTag, [me.profileId, "practise", "  fellaship "]));
       await client.query("rollback to savepoint dup");
       expect(code).toBe(UNIQUE_VIOLATION);
 
-      // Same name is fine for a different person.
-      await expect(client.query(insert, [other.profileId, "fellaship"])).resolves.toBeTruthy();
+      // Same name is fine under another direction and for a different person.
+      await expect(client.query(insertTag, [me.profileId, "project", "fellaship"])).resolves.toBeTruthy();
+      await expect(client.query(insertTag, [other.profileId, "practise", "fellaship"])).resolves.toBeTruthy();
+    });
+  });
+
+  it("requires a direction", async () => {
+    await withRollback(async (client) => {
+      const me = await seedMember(client);
+      const code = await errorCode(
+        client.query(
+          `insert into public.time_tags (profile_id, name, created_by_profile_id, updated_by_profile_id)
+           values ($1, 'fellaship', $1, $1)`,
+          [me.profileId],
+        ),
+      );
+      expect(code).toBe("23502");
+    });
+  });
+
+  it("accepts the project direction for tags and entries", async () => {
+    await withRollback(async (client) => {
+      const me = await seedMember(client);
+      const { rows } = await client.query(insertTag, [me.profileId, "project", "Tappka"]);
+      const entryId = await insertClosedEntry(client, me.profileId, "2026-09-21T08:00:00Z", "2026-09-21T09:00:00Z", {
+        direction: "project",
+        tagId: rows[0].id as string,
+      });
+      expect(entryId).toBeTruthy();
+    });
+  });
+
+  it("lets an entry use only a tag of its own direction", async () => {
+    await withRollback(async (client) => {
+      const me = await seedMember(client);
+      const { rows } = await client.query(insertTag, [me.profileId, "reading", "Lean Startup"]);
+      const readingTag = rows[0].id as string;
+
+      await client.query("savepoint mismatch");
+      const insertCode = await errorCode(
+        insertClosedEntry(client, me.profileId, "2026-09-21T08:00:00Z", "2026-09-21T09:00:00Z", {
+          direction: "practise",
+          tagId: readingTag,
+        }),
+      );
+      await client.query("rollback to savepoint mismatch");
+      expect(insertCode).toBe(FOREIGN_KEY_VIOLATION);
+
+      const entryId = await insertClosedEntry(client, me.profileId, "2026-09-21T10:00:00Z", "2026-09-21T11:00:00Z", {
+        direction: "reading",
+        tagId: readingTag,
+      });
+
+      // Moving the entry to another direction while keeping the tag is rejected ...
+      await client.query("savepoint move");
+      const updateCode = await errorCode(
+        client.query(`update public.time_entries set direction = 'practise' where id = $1`, [entryId]),
+      );
+      await client.query("rollback to savepoint move");
+      expect(updateCode).toBe(FOREIGN_KEY_VIOLATION);
+
+      // ... and so is moving a used tag to another direction.
+      await client.query("savepoint retag");
+      const tagCode = await errorCode(
+        client.query(`update public.time_tags set direction = 'practise' where id = $1`, [readingTag]),
+      );
+      await client.query("rollback to savepoint retag");
+      expect(tagCode).toBe(FOREIGN_KEY_VIOLATION);
+
+      // Changing direction together with dropping the tag is fine.
+      await expect(
+        client.query(`update public.time_entries set direction = 'practise', tag_id = null where id = $1`, [entryId]),
+      ).resolves.toBeTruthy();
     });
   });
 });
@@ -315,8 +388,8 @@ describe("time_entries RLS", () => {
       const me = await seedMember(client, { teamId: teamA });
       const mate = await seedMember(client, { teamId: teamA });
       const { rows } = await client.query(
-        `insert into public.time_tags (profile_id, name, created_by_profile_id, updated_by_profile_id)
-         values ($1, 'fellaship', $1, $1) returning id`,
+        `insert into public.time_tags (profile_id, direction, name, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'practise', 'fellaship', $1, $1) returning id`,
         [me.profileId],
       );
       const tagId = rows[0].id as string;

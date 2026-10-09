@@ -16,21 +16,35 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { PageHeader } from "@/components/ui/page-header"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { METRICS, METRIC_PERIOD_LABELS } from "@/lib/metrics/config"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { METRICS } from "@/lib/metrics/config"
 import { MS_PER_HOUR, TIME_DIRECTIONS, TIME_DIRECTION_VALUES } from "@/lib/time-tracking/constants"
+import {
+  type DateKeyRange,
+  matchPreset,
+  presetLabel,
+  scaleWeeklyTarget,
+} from "@/lib/time-tracking/date-range"
 import { entryDurationMs, formatDurationShort } from "@/lib/time-tracking/duration"
 import type { TimeDirection, TimeEntryWithTag, TimeRange, TimeTag } from "@/lib/time-tracking/types"
-import { getWeekRange, groupEntriesByDay, summarize } from "@/lib/time-tracking/week"
+import { groupEntriesByDay, summarize } from "@/lib/time-tracking/week"
 import { cn } from "@/lib/utils"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
-import { formatDayHeading, formatWeekLabel } from "./cas-query"
+import { formatDayHeading, formatRangeLabel } from "./cas-query"
+import { DateRangeNav } from "./date-range-nav"
 import { DirectionSummary } from "./direction-summary"
 import { EntryFormDialog } from "./entry-form-dialog"
 import { RunningEntryRow, TimeEntryRow } from "./time-entry-row"
 import { useOptionalTimer } from "./timer-provider"
-import { WeekNav } from "./week-nav"
 
 export const DIRECTION_PARAM = "direction"
 export const TAG_PARAM = "tag"
@@ -43,8 +57,15 @@ const EMPTY_DESCRIPTION = "Zatím žádný záznam. Spusť časomíru nebo zapi�
 export interface TimePageViewProps {
   entries: TimeEntryWithTag[]
   tags: TimeTag[]
-  /** Displayed week (`to` exclusive). */
-  week: TimeRange
+  /** Displayed range (inclusive Prague days). */
+  range: DateKeyRange
+  /**
+   * The same range as instants (`to` exclusive), computed on the server: converting
+   * Prague midnights in the browser could be off around the browser's own DST change.
+   */
+  instants: TimeRange
+  /** Prague „today" from the server render. */
+  todayKey: string
   /** Server render time. */
   now: Date
   profileId: string
@@ -65,7 +86,7 @@ function sortNewestFirst(entries: TimeEntryWithTag[]): TimeEntryWithTag[] {
   return [...entries].sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at))
 }
 
-export function TimePageView({ entries, tags, week, now, profileId }: TimePageViewProps) {
+export function TimePageView({ entries, tags, range, instants, todayKey, now, profileId }: TimePageViewProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -92,20 +113,20 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
   const liveNowMs = running
     ? Date.parse(running.started_at) + (timer ? timer.elapsedMs : Math.max(0, now.getTime() - Date.parse(running.started_at)))
     : now.getTime()
-  const runningInWeek =
+  const runningInRange =
     running !== null &&
     running.profile_id === profileId &&
-    Date.parse(running.started_at) < week.to.getTime() &&
-    liveNowMs > week.from.getTime()
+    Date.parse(running.started_at) < instants.to.getTime() &&
+    liveNowMs > instants.from.getTime()
       ? running
       : null
 
   const closed = React.useMemo(() => items.filter((entry) => entry.ended_at !== null), [items])
 
-  const summary = summarize(runningInWeek ? [...closed, runningInWeek] : closed, {
+  const summary = summarize(runningInRange ? [...closed, runningInRange] : closed, {
     includeRunning: true,
     now: new Date(liveNowMs),
-    range: week,
+    range: instants,
   })
 
   const matchesFilter = React.useCallback(
@@ -116,15 +137,27 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
   )
 
   const days = React.useMemo(() => groupEntriesByDay(closed.filter(matchesFilter)), [closed, matchesFilter])
-  const showRunning = runningInWeek !== null && matchesFilter(runningInWeek)
+  const showRunning = runningInRange !== null && matchesFilter(runningInRange)
 
-  const totalCount = closed.length + (runningInWeek ? 1 : 0)
-  const isCurrentWeek = week.from.getTime() === getWeekRange(now).from.getTime()
+  const totalCount = closed.length + (runningInRange ? 1 : 0)
+  const activePreset = matchPreset(range, todayKey)
+  const periodLabel = activePreset ? presetLabel(activePreset) : formatRangeLabel(range)
 
   function setFilterParam(key: string, value: string | null) {
     const params = new URLSearchParams(searchParams.toString())
     if (value === null) params.delete(key)
     else params.set(key, value)
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }
+
+  /** Direction chip toggle; a tag filter from another direction can never match, so it is dropped. */
+  function setDirectionFilter(next: TimeDirection | null) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (next === null) params.delete(DIRECTION_PARAM)
+    else params.set(DIRECTION_PARAM, next)
+    const filteredTag = tags.find((tag) => tag.id === tagFilter)
+    if (next !== null && filteredTag && filteredTag.direction !== next) params.delete(TAG_PARAM)
     const query = params.toString()
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
@@ -171,7 +204,7 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
     <>
       <PageHeader
         title="Čas"
-        description="Kolik času věnuješ Training, Reading a Practise"
+        description="Kolik času věnuješ Training, Reading, Practise a Projektu"
         count={{ value: totalCount, label: pluralizeCz(totalCount, ["záznam", "záznamy", "záznamů"]) }}
         action={
           <Button size="sm" className="hidden sm:inline-flex" onClick={openCreate}>
@@ -181,7 +214,7 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
         }
       />
 
-      <WeekNav week={week} now={now} />
+      <DateRangeNav range={range} todayKey={todayKey} />
 
       <MetricProgress
         period="week"
@@ -189,8 +222,8 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
         goals={[
           {
             current: summary.totalMs / MS_PER_HOUR,
-            target: METRICS["time-weekly"].target,
-            label: isCurrentWeek ? METRIC_PERIOD_LABELS.week : formatWeekLabel(week),
+            target: scaleWeeklyTarget(METRICS["time-weekly"].target, range),
+            label: periodLabel,
           },
         ]}
       />
@@ -209,7 +242,7 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
                 variant={active ? "secondary" : "outline"}
                 aria-pressed={active}
                 className="rounded-full"
-                onClick={() => setFilterParam(DIRECTION_PARAM, active ? null : direction.value)}
+                onClick={() => setDirectionFilter(active ? null : direction.value)}
               >
                 <span aria-hidden className={cn("size-2 rounded-full", direction.dotClass)} />
                 {direction.label}
@@ -225,11 +258,25 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL_TAGS_VALUE}>{ALL_TAGS_LABEL}</SelectItem>
-              {tags.map((tag) => (
-                <SelectItem key={tag.id} value={tag.id}>
-                  {tag.name}
-                </SelectItem>
-              ))}
+              {TIME_DIRECTIONS.filter(
+                (direction) => directionFilter === null || direction.value === directionFilter,
+              ).map((direction) => {
+                const directionTags = tags.filter((tag) => tag.direction === direction.value)
+                if (directionTags.length === 0) return null
+                return (
+                  <SelectGroup key={direction.value}>
+                    <SelectLabel className="flex items-center gap-1.5">
+                      <span aria-hidden className={cn("size-2 rounded-full", direction.dotClass)} />
+                      {direction.label}
+                    </SelectLabel>
+                    {directionTags.map((tag) => (
+                      <SelectItem key={tag.id} value={tag.id}>
+                        {tag.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -241,7 +288,7 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
             <Clock className="size-6" />
           </EmptyMedia>
           <EmptyHeader>
-            <EmptyTitle>{isCurrentWeek ? "Tento týden zatím prázdno" : "V tomhle týdnu prázdno"}</EmptyTitle>
+            <EmptyTitle>{activePreset === "this-week" ? "Tento týden zatím prázdno" : "V tomhle období prázdno"}</EmptyTitle>
             <EmptyDescription>{EMPTY_DESCRIPTION}</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -268,10 +315,10 @@ export function TimePageView({ entries, tags, week, now, profileId }: TimePageVi
         </Empty>
       ) : (
         <div className="space-y-5">
-          {showRunning && runningInWeek && (
+          {showRunning && runningInRange && (
             <RunningEntryRow
-              entry={runningInWeek}
-              elapsedMs={liveNowMs - Date.parse(runningInWeek.started_at)}
+              entry={runningInRange}
+              elapsedMs={liveNowMs - Date.parse(runningInRange.started_at)}
               isPending={timer?.isPending}
               onStop={() => timer?.openStopSheet()}
             />

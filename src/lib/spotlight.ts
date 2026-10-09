@@ -249,7 +249,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
   {
     id: "page-cas",
     title: "Čas",
-    description: "Časomíra a přehled času ve směrech Training / Reading / Practise",
+    description: "Časomíra a přehled času ve směrech Training / Reading / Practise / Projekt",
     url: "/cas",
     icon: Timer,
     feature: "timeTracking",
@@ -266,6 +266,7 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
       "training",
       "reading",
       "practise",
+      "projekt",
       "time tracking",
     ],
   },
