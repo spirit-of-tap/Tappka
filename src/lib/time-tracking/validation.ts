@@ -1,0 +1,201 @@
+import { z } from "zod"
+
+import {
+  TAG_NAME_MAX_LENGTH,
+  TAG_NAME_MIN_LENGTH,
+  TIME_DIRECTION_VALUES,
+  TIME_TRACKING_MESSAGES,
+  TITLE_MAX_LENGTH,
+} from "./constants"
+import { MAX_RANGE_DAYS } from "./date-range"
+import { hasTeamTags, isTagRequired } from "./tag-catalog"
+import type { TimeDirection } from "./types"
+
+const END_BEFORE_START_MESSAGE = "Konec musí být po začátku"
+const RANGE_TOO_LONG_MESSAGE = "Období může mít nejvýš dva roky"
+/** One extra day absorbs DST shifts in instant-based ranges. */
+const MAX_LIST_RANGE_MS = (MAX_RANGE_DAYS + 1) * 86_400_000
+const EMPTY_PATCH_MESSAGE = "Nic ke změně"
+
+/** True when both are parseable instants and `end` is strictly after `start`. */
+export function isValidTimeRange(startedAt: string, endedAt: string): boolean {
+  const start = Date.parse(startedAt)
+  const end = Date.parse(endedAt)
+  return Number.isFinite(start) && Number.isFinite(end) && end > start
+}
+
+export const timeDirectionSchema = z.enum(TIME_DIRECTION_VALUES, { message: "Vyber směr" })
+
+/** ISO 8601 instant with `Z` or an explicit offset. */
+export const isoDateTimeSchema = z.iso.datetime({ offset: true, message: "Neplatné datum a čas" })
+
+/** Route `[id]` segment; anything that is not a UUID is treated as not found. */
+export const idParamSchema = z.uuid()
+
+export const tagIdSchema = z.uuid({ message: TIME_TRACKING_MESSAGES.invalidTag })
+
+/** Trimmed title; empty string becomes `null`, `undefined` stays `undefined` (= unchanged). */
+export const titleSchema = z
+  .string()
+  .trim()
+  .max(TITLE_MAX_LENGTH, { message: `Název může mít nejvýš ${TITLE_MAX_LENGTH} znaků` })
+  .nullable()
+  .optional()
+  .transform((value) => (value === "" ? null : value))
+
+export const tagNameSchema = z
+  .string()
+  .trim()
+  .min(TAG_NAME_MIN_LENGTH, { message: "Zadej název tagu" })
+  .max(TAG_NAME_MAX_LENGTH, { message: `Název tagu může mít nejvýš ${TAG_NAME_MAX_LENGTH} znaků` })
+
+/**
+ * Name of a team tag that does not exist yet: the picker keeps it as a draft and the tag is
+ * created (or an existing one with that name reused) only when the entry is saved.
+ */
+export const newTagNameSchema = tagNameSchema.optional()
+
+/** A new tag name is only for Practise / Projekt, and never together with `tagId`. */
+export function isValidNewTag(value: {
+  direction?: TimeDirection
+  tagId?: string | null
+  newTagName?: string
+}): boolean {
+  if (value.newTagName === undefined) return true
+  const hasTagId = value.tagId !== undefined && value.tagId !== null
+  return !hasTagId && (value.direction === undefined || hasTeamTags(value.direction))
+}
+
+const NEW_TAG_ISSUE = { message: TIME_TRACKING_MESSAGES.systemTagDirection, path: ["newTagName"] }
+
+/** Training and Reading entries need one of their fixed tags. */
+export function hasRequiredTag(value: {
+  direction: TimeDirection
+  tagId?: string | null
+  newTagName?: string | null
+}): boolean {
+  if (!isTagRequired(value.direction)) return true
+  return (value.tagId !== undefined && value.tagId !== null) || (value.newTagName ?? "") !== ""
+}
+
+const REQUIRED_TAG_ISSUE = { message: TIME_TRACKING_MESSAGES.tagRequired, path: ["tagId"] }
+
+export const createEntrySchema = z
+  .object({
+    direction: timeDirectionSchema,
+    tagId: tagIdSchema.nullable().optional(),
+    newTagName: newTagNameSchema,
+    title: titleSchema,
+    startedAt: isoDateTimeSchema,
+    endedAt: isoDateTimeSchema,
+  })
+  .refine(isValidNewTag, NEW_TAG_ISSUE)
+  .refine(hasRequiredTag, REQUIRED_TAG_ISSUE)
+  .refine((value) => isValidTimeRange(value.startedAt, value.endedAt), {
+    message: END_BEFORE_START_MESSAGE,
+    path: ["endedAt"],
+  })
+
+export type CreateEntryInput = z.infer<typeof createEntrySchema>
+
+/**
+ * Partial update. When only one of `startedAt` / `endedAt` is sent, the route must
+ * re-check the range against the stored value.
+ */
+export const updateEntrySchema = z
+  .object({
+    direction: timeDirectionSchema.optional(),
+    tagId: tagIdSchema.nullable().optional(),
+    newTagName: newTagNameSchema,
+    title: titleSchema,
+    startedAt: isoDateTimeSchema.optional(),
+    endedAt: isoDateTimeSchema.optional(),
+  })
+  .refine((value) => Object.values(value).some((field) => field !== undefined), {
+    message: EMPTY_PATCH_MESSAGE,
+  })
+  .refine(isValidNewTag, NEW_TAG_ISSUE)
+  .refine(
+    (value) =>
+      value.startedAt === undefined || value.endedAt === undefined || isValidTimeRange(value.startedAt, value.endedAt),
+    { message: END_BEFORE_START_MESSAGE, path: ["endedAt"] },
+  )
+
+export type UpdateEntryInput = z.infer<typeof updateEntrySchema>
+
+export const startTimerSchema = z
+  .object({
+    action: z.literal("start"),
+    direction: timeDirectionSchema,
+    tagId: tagIdSchema.nullable().optional(),
+    newTagName: newTagNameSchema,
+    title: titleSchema,
+  })
+  .refine(isValidNewTag, NEW_TAG_ISSUE)
+  .refine(hasRequiredTag, REQUIRED_TAG_ISSUE)
+
+export const stopTimerSchema = z.object({
+  action: z.literal("stop"),
+})
+
+export const timerActionSchema = z.discriminatedUnion("action", [startTimerSchema, stopTimerSchema])
+
+export type TimerActionInput = z.infer<typeof timerActionSchema>
+
+/**
+ * A team tag is created under Practise or Projekt and stays there (rename only afterwards);
+ * Training and Reading only have their fixed system tags.
+ */
+export const createTagSchema = z.object({
+  name: tagNameSchema,
+  direction: timeDirectionSchema.refine(hasTeamTags, { message: TIME_TRACKING_MESSAGES.systemTagDirection }),
+})
+export const updateTagSchema = z.object({ name: tagNameSchema })
+
+/** `PUT /api/time-tags/[id]/selection` — show or hide a team tag in one's picker. */
+export const tagSelectionSchema = z.object({ selected: z.boolean({ message: TIME_TRACKING_MESSAGES.invalidJson }) })
+
+export type TagInput = z.infer<typeof createTagSchema>
+
+/** Comma-separated list of profile UUIDs (`?profileIds=a,b`). */
+const profileIdsParamSchema = z
+  .string()
+  .transform((value) =>
+    value
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => id !== ""),
+  )
+  .pipe(z.array(z.uuid({ message: "Neplatný profil" })).min(1))
+
+/** Query params of `GET /api/time-entries`. Missing `from`/`to` = current week. */
+export const listEntriesQuerySchema = z
+  .object({
+    from: isoDateTimeSchema.optional(),
+    to: isoDateTimeSchema.optional(),
+    direction: timeDirectionSchema.optional(),
+    tagId: tagIdSchema.optional(),
+    profileIds: profileIdsParamSchema.optional(),
+  })
+  .refine((value) => (value.from === undefined) === (value.to === undefined), {
+    message: "Zadej začátek i konec období",
+    path: ["to"],
+  })
+  .refine((value) => value.from === undefined || value.to === undefined || isValidTimeRange(value.from, value.to), {
+    message: END_BEFORE_START_MESSAGE,
+    path: ["to"],
+  })
+  .refine(
+    (value) =>
+      value.from === undefined ||
+      value.to === undefined ||
+      Date.parse(value.to) - Date.parse(value.from) <= MAX_LIST_RANGE_MS,
+    { message: RANGE_TOO_LONG_MESSAGE, path: ["to"] },
+  )
+
+export type ListEntriesQuery = z.infer<typeof listEntriesQuerySchema>
+
+/** First issue message of a failed parse, for the `{ error }` response body. */
+export function firstIssueMessage(error: z.ZodError): string {
+  return error.issues[0]?.message ?? TIME_TRACKING_MESSAGES.invalidJson
+}

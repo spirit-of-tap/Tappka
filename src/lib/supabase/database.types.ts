@@ -2661,6 +2661,220 @@ export type Database = {
         }
         Relationships: []
       }
+      time_entries: {
+        Row: {
+          attendance_id: string | null
+          created_at: string
+          created_by_profile_id: string
+          direction: Database["public"]["Enums"]["time_direction"]
+          duration_ms: number | null
+          ended_at: string | null
+          id: string
+          profile_id: string
+          source: Database["public"]["Enums"]["time_entry_source"]
+          started_at: string
+          tag_id: string | null
+          title: string | null
+          updated_at: string
+          updated_by_profile_id: string
+        }
+        Insert: {
+          attendance_id?: string | null
+          created_at?: string
+          created_by_profile_id: string
+          direction: Database["public"]["Enums"]["time_direction"]
+          duration_ms?: number | null
+          ended_at?: string | null
+          id?: string
+          profile_id: string
+          source?: Database["public"]["Enums"]["time_entry_source"]
+          started_at: string
+          tag_id?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by_profile_id: string
+        }
+        Update: {
+          attendance_id?: string | null
+          created_at?: string
+          created_by_profile_id?: string
+          direction?: Database["public"]["Enums"]["time_direction"]
+          duration_ms?: number | null
+          ended_at?: string | null
+          id?: string
+          profile_id?: string
+          source?: Database["public"]["Enums"]["time_entry_source"]
+          started_at?: string
+          tag_id?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_attendance_id_fkey"
+            columns: ["attendance_id"]
+            isOneToOne: false
+            referencedRelation: "team_activity_attendees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_tag_direction_fkey"
+            columns: ["tag_id", "direction"]
+            isOneToOne: false
+            referencedRelation: "time_tags"
+            referencedColumns: ["id", "direction"]
+          },
+          {
+            foreignKeyName: "time_entries_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "time_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_tag_selections: {
+        Row: {
+          created_at: string
+          profile_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          profile_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          profile_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_tag_selections_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_tag_selections_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "time_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_tags: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string | null
+          direction: Database["public"]["Enums"]["time_direction"]
+          id: string
+          name: string
+          system_key: string | null
+          team_id: string | null
+          updated_at: string
+          updated_by_profile_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id?: string | null
+          direction: Database["public"]["Enums"]["time_direction"]
+          id?: string
+          name: string
+          system_key?: string | null
+          team_id?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string | null
+          direction?: Database["public"]["Enums"]["time_direction"]
+          id?: string
+          name?: string
+          system_key?: string | null
+          team_id?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_tags_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_tags_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_tags_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_tracking_preferences: {
+        Row: {
+          created_at: string
+          profile_id: string
+          tags_reviewed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          profile_id: string
+          tags_reviewed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          profile_id?: string
+          tags_reviewed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_tracking_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tools_techniques: {
         Row: {
           created_at: string
@@ -3029,6 +3243,8 @@ export type Database = {
       profile_role: "student" | "mentor" | "coach" | "admin"
       schedule_type: "training_session" | "houston_calling"
       team_document_type: "team_contract" | "financial_policy" | "other"
+      time_direction: "training" | "reading" | "practise" | "project"
+      time_entry_source: "timer" | "manual" | "attendance"
       tool_type: "model" | "technique" | "tool"
     }
     CompositeTypes: {
@@ -3192,6 +3408,8 @@ export const Constants = {
       profile_role: ["student", "mentor", "coach", "admin"],
       schedule_type: ["training_session", "houston_calling"],
       team_document_type: ["team_contract", "financial_policy", "other"],
+      time_direction: ["training", "reading", "practise", "project"],
+      time_entry_source: ["timer", "manual", "attendance"],
       tool_type: ["model", "technique", "tool"],
     },
   },

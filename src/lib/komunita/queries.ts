@@ -12,6 +12,7 @@ import type {
   TeamWithCount,
   ProfileFilters,
 } from './types';
+import { countTeamMembers } from './team-members';
 import { getPublicStorageUrl } from '@/lib/storage/public-url';
 import type { BucketId } from '@/lib/storage/buckets';
 import { serverLogger } from "@/lib/server-logger";
@@ -111,7 +112,7 @@ export async function getTeamsWithCount(
     .from('teams')
     .select(`
       *,
-      profiles!profiles_team_id_fkey(count)
+      profiles!profiles_team_id_fkey(role)
     `)
     .order('name', { ascending: true });
 
@@ -120,14 +121,13 @@ export async function getTeamsWithCount(
     throw error;
   }
 
-  // Transform the data to include member_count
-  return (data || []).map((team) => {
+  return (data ?? []).map((team) => {
     const { profiles, ...rest } = team;
     return {
       ...rest,
-      member_count: profiles?.[0]?.count || 0,
+      member_count: countTeamMembers(profiles ?? []),
     };
-  }) as TeamWithCount[];
+  });
 }
 
 /**

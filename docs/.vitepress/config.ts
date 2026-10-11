@@ -118,7 +118,7 @@ export default defineConfig({
           ],
         },
         {
-          text: 'Katalog modulů (14 modulů)',
+          text: 'Katalog modulů (15 modulů)',
           collapsed: true,
           items: [
             { text: 'Přehled všech modulů', link: '/modules/overview' },
@@ -135,6 +135,7 @@ export default defineConfig({
             { text: 'Zpětná vazba & Rocket Model', link: '/modules/zpetna-vazba' },
             { text: 'Birth Giving', link: '/modules/birth-giving' },
             { text: 'Portfolio studujících', link: '/modules/portfolio' },
+            { text: 'Čas (time tracking)', link: '/modules/cas' },
           ],
         },
         {

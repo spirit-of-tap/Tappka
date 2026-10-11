@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { canAccessFeature, BETA_FEATURES, ROCKET_MODEL_ALLOWED_TEAM_ID } from "./feature-access"
+import { canAccessFeature, BETA_FEATURES, RELEASED_FEATURES, ROCKET_MODEL_ALLOWED_TEAM_ID } from "./feature-access"
 
 const nonBeta = { role: "student", beta_access_granted_at: null, beta_cohort: "A" as const }
 const a = { role: "student", beta_access_granted_at: "2026-01-01T00:00:00Z", beta_cohort: "A" as const }
@@ -21,6 +21,15 @@ describe("canAccessFeature", () => {
       if (f === "rocketModel") continue
       expect(canAccessFeature(b, f)).toBe(true)
     }
+  })
+  it("timeTracking (Čas) is released to everyone, no beta needed", () => {
+    expect(RELEASED_FEATURES).toContain("timeTracking")
+    expect(Object.keys(BETA_FEATURES)).not.toContain("timeTracking")
+    expect(canAccessFeature(nonBeta, "timeTracking")).toBe(true)
+    expect(canAccessFeature(a, "timeTracking")).toBe(true)
+    expect(canAccessFeature(b, "timeTracking")).toBe(true)
+    expect(canAccessFeature(adminNoBeta, "timeTracking")).toBe(true)
+    expect(canAccessFeature(null, "timeTracking")).toBe(false)
   })
   it("admin bypasses regardless of beta status", () => {
     for (const f of Object.keys(BETA_FEATURES) as (keyof typeof BETA_FEATURES)[]) {

@@ -1,12 +1,33 @@
 import { describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MobileBottomNav } from "./mobile-bottom-nav";
+import { TimerProvider } from "@/components/time-tracking/timer-provider";
+import type { TimeEntryWithTag } from "@/lib/time-tracking/types";
 
 const pathname: { current: string } = { current: "/" };
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname.current,
+  useRouter: () => ({ refresh: vi.fn(), replace: vi.fn(), push: vi.fn() }),
 }));
+
+const RUNNING_ENTRY: TimeEntryWithTag = {
+  id: "e1",
+  profile_id: "p1",
+  direction: "practise",
+  tag_id: null,
+  tag: null,
+  title: "Prodávání párků před ČZU",
+  started_at: "2026-09-24T08:00:00.000Z",
+  ended_at: null,
+  duration_ms: null,
+  source: "timer",
+  attendance_id: null,
+  created_at: "2026-09-24T08:00:00.000Z",
+  updated_at: "2026-09-24T08:00:00.000Z",
+  created_by_profile_id: "p1",
+  updated_by_profile_id: "p1",
+};
 
 type TabTitle = "Domů" | "Moduly" | "Komunita" | "Profil";
 
@@ -107,5 +128,47 @@ describe("MobileBottomNav", () => {
     pathname.current = currentPath;
     render(<MobileBottomNav />);
     expectActiveTab(null);
+  });
+
+  describe("timer slot", () => {
+    it("renders only the four link tabs when time tracking is off", () => {
+      pathname.current = "/";
+      render(
+        <TimerProvider initialActive={null} canAccess={false}>
+          <MobileBottomNav />
+        </TimerProvider>,
+      );
+      expect(screen.getAllByRole("link")).toHaveLength(4);
+      expect(screen.queryByRole("button", { name: "Spustit časomíru" })).not.toBeInTheDocument();
+    });
+
+    it("adds the Start button between Moduly and Komunita when time tracking is on", () => {
+      pathname.current = "/";
+      render(
+        <TimerProvider initialActive={null} canAccess>
+          <MobileBottomNav />
+        </TimerProvider>,
+      );
+      const nav = screen.getByRole("navigation", { name: "Hlavní navigace" });
+      const items = Array.from(nav.querySelectorAll("a, button")).map(
+        (el) => el.getAttribute("aria-label") ?? el.textContent,
+      );
+      expect(items).toEqual(["Domů", "Moduly", "Spustit časomíru", "Komunita", "Profil"]);
+      expect(screen.getByRole("button", { name: "Spustit časomíru" })).toHaveTextContent("Start");
+      expectActiveTab("Domů");
+    });
+
+    it("shows a Stop control with the elapsed time while a timer runs", () => {
+      pathname.current = "/";
+      const serverNow = Date.parse(RUNNING_ENTRY.started_at) + 65_000;
+      render(
+        <TimerProvider initialActive={RUNNING_ENTRY} canAccess serverNow={serverNow}>
+          <MobileBottomNav />
+        </TimerProvider>,
+      );
+      const stop = screen.getByRole("button", { name: "Zastavit časomíru" });
+      expect(stop).toHaveTextContent("00:01:05");
+      expect(screen.queryByRole("button", { name: "Spustit časomíru" })).not.toBeInTheDocument();
+    });
   });
 });

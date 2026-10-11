@@ -79,7 +79,7 @@ describe("navigation config", () => {
       expect(NAV_MODULES.find((m) => m.url === url)!.feature).toBe(feature);
     }
     for (const m of NAV_MODULES.filter((m) => !m.feature)) {
-      expect(["/", "/reservations", "/komunita", "/cteni/prehled"]).toContain(m.url);
+      expect(["/", "/reservations", "/komunita", "/cteni/prehled", "/cas"]).toContain(m.url);
     }
   });
 });
@@ -93,6 +93,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/cas",
       "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
@@ -115,6 +116,7 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/cas",
       "/rocket-model",
       "/tymove-dokumenty",
       "/koucovani",
@@ -124,19 +126,28 @@ describe("getHubModules", () => {
   });
 
   it("keeps only non-feature modules (incl. public reading) for non-beta users, preserving hub order", () => {
-    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
-    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
-    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
+    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/cas"]);
+    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/cas"]);
+    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/cas"]);
   });
 
   it("shows reading plus stable for cohort A", () => {
-    expect(getHubModules(cohortA).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
+    expect(getHubModules(cohortA).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/cas"]);
   });
 
   it("filters by canAccessFeature via cohort", () => {
     expect(getHubModules(cohortA).some((m) => m.url === "/schuzky")).toBe(false);
     expect(getHubModules(cohortB).some((m) => m.url === "/schuzky")).toBe(true);
     expect(getHubModules(cohortA).some((m) => m.url === "/cteni/prehled")).toBe(true);
+  });
+
+  it("places Čas right after Týmový deník and shows it to everyone (released from beta)", () => {
+    const urls = getHubModules(cohortB).map((m) => m.url);
+    expect(urls.indexOf("/cas")).toBe(urls.indexOf("/tymovy-denik") + 1);
+    expect(NAV_MODULES.find((m) => m.url === "/cas")!.feature).toBeUndefined();
+    expect(getHubModules(cohortA).some((m) => m.url === "/cas")).toBe(true);
+    expect(getHubModules(nonBeta).some((m) => m.url === "/cas")).toBe(true);
+    expect(getHubModules(admin).some((m) => m.url === "/cas")).toBe(true);
   });
 
   it("gates rocket-model by team Tuuli, not cohort", () => {
@@ -146,7 +157,7 @@ describe("getHubModules", () => {
   });
 
   it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
-    expect(MODULE_HUB_ORDER).toHaveLength(11);
+    expect(MODULE_HUB_ORDER).toHaveLength(12);
     expect(MODULE_HUB_ORDER).not.toContain("/");
     expect(MODULE_HUB_ORDER).not.toContain("/komunita");
   });
@@ -176,12 +187,13 @@ describe("getHubModules", () => {
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/cas",
       "/rocket-model",
       "/tymove-dokumenty",
       "/koucovani",
       "/birth-giving",
       "/osobnostni-testy",
     ]);
-    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations"]);
+    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/cas"]);
   });
 });

@@ -59,6 +59,10 @@
   --color-chart-3-strong: var(--chart-3-strong);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-time-training: var(--time-training);
+  --color-time-reading: var(--time-reading);
+  --color-time-practise: var(--time-practise);
+  --color-time-project: var(--time-project);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -144,6 +148,12 @@
   --chart-4: oklch(0.628 0.183 327.5); /* Magenta */
   --chart-5: oklch(0.554 0.16 287.7); /* Violet */
 
+  /* Čas: one colour per direction (dots, accents — never body text) */
+  --time-training: oklch(0.72 0.13 235); /* Light blue */
+  --time-reading: oklch(0.84 0.16 92); /* Yellow */
+  --time-practise: var(--chart-1); /* TAP Red */
+  --time-project: var(--chart-5); /* Violet */
+
   /* Sidebar */
   --sidebar: oklch(0.985 0.01 121.7);
   --sidebar-foreground: oklch(0.245 0.03 8.6);
@@ -207,6 +217,11 @@
   --chart-3-strong: oklch(0.761 0.103 195.2);
   --chart-4: oklch(0.704 0.158 327.1); /* Magenta */
   --chart-5: oklch(0.653 0.132 289.9); /* Violet */
+
+  --time-training: oklch(0.78 0.12 235); /* Light blue */
+  --time-reading: oklch(0.86 0.15 92); /* Yellow */
+  --time-practise: var(--chart-1); /* TAP Red */
+  --time-project: var(--chart-5); /* Violet */
 
   /* Sidebar */
   --sidebar: oklch(0.205 0.022 8.2);

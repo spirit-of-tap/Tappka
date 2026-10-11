@@ -29,6 +29,7 @@ graph TD
     Feed["Zpětná vazba & Rocket Model (/zpetna-vazba)"]
     Birth["Birth Giving (/birth-giving)"]
     Port["Studentské portfolio (/portfolio)"]
+    Cas["Čas — time tracking (/cas)"]
   end
 ```
 
@@ -51,6 +52,7 @@ graph TD
 | [**Zpětná vazba**](/modules/zpetna-vazba) | `/zpetna-vazba` | Vzájemná 360° zpětná vazba a vyhodnocování týmu dle metodiky Rocket Model | Beta (B) |
 | [**Birth Giving**](/modules/birth-giving) | `/birth-giving` | Rituály a záznamy ze zrození nových týmových projektů a společností | Beta (B) |
 | [**Studentské Portfolio**](/modules/portfolio) | `/portfolio`, `/wiki` | Celková rekapitulace studijních milníků, kreditů a kompetencí pro obhajobu titulu | Beta (B) |
+| [**Čas**](/modules/cas) | `/cas`, `/cas/tym` | Časomíra a evidence času ve směrech Training / Reading / Practise, tagy, týdenní cíl 40 h, týmový přehled | Beta (B) |
 
 ---
 
