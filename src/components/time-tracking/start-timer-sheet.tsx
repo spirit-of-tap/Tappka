@@ -41,10 +41,15 @@ interface FormState {
 
 const EMPTY_FORM: FormState = { direction: null, tagId: null, title: "" }
 
+interface FieldErrorState {
+  field: "direction" | "tagId"
+  message: string
+}
+
 export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
   const { start, isPending } = useTimer()
   const [form, setForm] = React.useState<FormState>(EMPTY_FORM)
-  const [error, setError] = React.useState<string | null>(null)
+  const [error, setError] = React.useState<FieldErrorState | null>(null)
   const directionId = React.useId()
   const tagId = React.useId()
   const titleId = React.useId()
@@ -66,7 +71,8 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
       title: form.title,
     })
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? null)
+      const issue = parsed.error.issues[0]
+      setError(issue ? { field: issue.path[0] === "tagId" ? "tagId" : "direction", message: issue.message } : null)
       return
     }
     setError(null)
@@ -93,23 +99,24 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
     }
   }
 
-  const directionMissing = error !== null && form.direction === null
+  const directionError = error?.field === "direction" ? error.message : null
+  const tagError = error?.field === "tagId" ? error.message : null
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Spustit časomíru</DialogTitle>
-          <DialogDescription>Vyber směr, případně tag a na čem pracuješ.</DialogDescription>
+          <DialogDescription>Vyber směr, tag a na čem pracuješ.</DialogDescription>
         </DialogHeader>
         <form noValidate onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="flex flex-col gap-5">
-          <Field data-invalid={directionMissing || undefined}>
+          <Field data-invalid={directionError !== null || undefined}>
             <FieldLabel id={directionId}>Směr</FieldLabel>
             <ToggleGroup
               type="single"
               variant="outline"
               aria-labelledby={directionId}
-              aria-invalid={directionMissing || undefined}
+              aria-invalid={directionError !== null || undefined}
               value={form.direction ?? ""}
               onValueChange={(value) => {
                 if (!value) return
@@ -128,17 +135,22 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
-            {error !== null && <FieldError>{error}</FieldError>}
+            {directionError !== null && <FieldError>{directionError}</FieldError>}
           </Field>
 
-          <Field>
+          <Field data-invalid={tagError !== null || undefined}>
             <FieldLabel htmlFor={tagId}>Tag</FieldLabel>
             <TagCombobox
               id={tagId}
               value={form.tagId}
               direction={form.direction}
-              onChange={(nextTagId) => setForm((current) => ({ ...current, tagId: nextTagId }))}
+              onChange={(nextTagId) => {
+                setForm((current) => ({ ...current, tagId: nextTagId }))
+                setError(null)
+              }}
+              aria-invalid={tagError !== null || undefined}
             />
+            {tagError !== null && <FieldError>{tagError}</FieldError>}
           </Field>
 
           <Field>

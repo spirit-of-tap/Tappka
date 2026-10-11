@@ -7,7 +7,7 @@ import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
 import { canAccessFeature } from "@/lib/feature-access"
 import { createClient } from "@/lib/supabase/server"
-import { listEntries, listTags } from "@/lib/time-tracking/queries"
+import { getTagCatalog, listEntries } from "@/lib/time-tracking/queries"
 
 export const metadata = {
   title: "Čas",
@@ -44,16 +44,16 @@ export default async function CasPage({ searchParams }: CasPageProps) {
   const now = new Date()
   const { range, instants, todayKey } = resolveRangeParams(params, now)
 
-  const [entries, tags] = await Promise.all([
+  const [entries, { tags, selectedTagIds, newTagCount }] = await Promise.all([
     listEntries(supabase, { profileIds: [profile.id], from: instants.from, to: instants.to }),
-    listTags(supabase, profile.id),
+    getTagCatalog(supabase, profile),
   ])
 
   return (
     <PageShell size="wide">
       <TimePageView
         entries={entries}
-        tags={tags}
+        tagCatalog={{ tags, selectedTagIds, newTagCount }}
         range={range}
         instants={instants}
         todayKey={todayKey}

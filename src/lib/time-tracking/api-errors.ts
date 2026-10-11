@@ -45,7 +45,7 @@ export function mapDbError(error: DbErrorLike | null | undefined): MappedDbError
       if (mentions(error, DB_CONSTRAINTS.oneRunningTimer)) {
         return { status: HTTP_STATUS.conflict, message: TIME_TRACKING_MESSAGES.timerAlreadyRunning }
       }
-      if (mentions(error, DB_CONSTRAINTS.tagProfileDirectionName)) {
+      if (mentions(error, DB_CONSTRAINTS.tagTeamDirectionName)) {
         return { status: HTTP_STATUS.conflict, message: TIME_TRACKING_MESSAGES.tagNameTaken }
       }
       return { status: HTTP_STATUS.conflict, message: TIME_TRACKING_MESSAGES.generic }

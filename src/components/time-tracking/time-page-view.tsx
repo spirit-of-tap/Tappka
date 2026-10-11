@@ -34,7 +34,7 @@ import {
   scaleWeeklyTarget,
 } from "@/lib/time-tracking/date-range"
 import { entryDurationMs, formatDurationShort } from "@/lib/time-tracking/duration"
-import type { TimeDirection, TimeEntryWithTag, TimeRange, TimeTag } from "@/lib/time-tracking/types"
+import type { TagCatalog, TimeDirection, TimeEntryWithTag, TimeRange } from "@/lib/time-tracking/types"
 import { groupEntriesByDay, summarize } from "@/lib/time-tracking/week"
 import { cn } from "@/lib/utils"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
@@ -56,7 +56,7 @@ const EMPTY_DESCRIPTION = "Zatím žádný záznam. Spusť časomíru nebo zapi�
 
 export interface TimePageViewProps {
   entries: TimeEntryWithTag[]
-  tags: TimeTag[]
+  tagCatalog: TagCatalog
   /** Displayed range (inclusive Prague days). */
   range: DateKeyRange
   /**
@@ -86,7 +86,7 @@ function sortNewestFirst(entries: TimeEntryWithTag[]): TimeEntryWithTag[] {
   return [...entries].sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at))
 }
 
-export function TimePageView({ entries, tags, range, instants, todayKey, now, profileId }: TimePageViewProps) {
+export function TimePageView({ entries, tagCatalog, range, instants, todayKey, now, profileId }: TimePageViewProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -102,6 +102,13 @@ export function TimePageView({ entries, tags, range, instants, todayKey, now, pr
 
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [dialog, setDialog] = React.useState<DialogState | null>(null)
+
+  // Filter offers system tags, the tags the person shows and any tag used in the period.
+  const tags = React.useMemo(() => {
+    const visible = new Set(tagCatalog.selectedTagIds)
+    for (const entry of entries) if (entry.tag_id !== null) visible.add(entry.tag_id)
+    return tagCatalog.tags.filter((tag) => tag.team_id === null || visible.has(tag.id))
+  }, [entries, tagCatalog])
 
   const directionFilter = parseDirection(searchParams.get(DIRECTION_PARAM))
   const tagFilter = searchParams.get(TAG_PARAM)
@@ -359,7 +366,7 @@ export function TimePageView({ entries, tags, range, instants, todayKey, now, pr
         onOpenChange={setDialogOpen}
         entry={dialog?.entry ?? null}
         now={dialog?.now}
-        tags={tags}
+        tagCatalog={tagCatalog}
         onSaved={handleSaved}
       />
     </>

@@ -8,6 +8,8 @@ import {
   TITLE_MAX_LENGTH,
 } from "./constants"
 import { MAX_RANGE_DAYS } from "./date-range"
+import { hasTeamTags, isTagRequired } from "./tag-catalog"
+import type { TimeDirection } from "./types"
 
 const END_BEFORE_START_MESSAGE = "Konec musí být po začátku"
 const RANGE_TOO_LONG_MESSAGE = "Období může mít nejvýš dva roky"
@@ -41,6 +43,13 @@ export const titleSchema = z
   .optional()
   .transform((value) => (value === "" ? null : value))
 
+/** Training and Reading entries need one of their fixed tags. */
+export function hasRequiredTag(value: { direction: TimeDirection; tagId?: string | null }): boolean {
+  return !isTagRequired(value.direction) || (value.tagId !== undefined && value.tagId !== null)
+}
+
+const REQUIRED_TAG_ISSUE = { message: TIME_TRACKING_MESSAGES.tagRequired, path: ["tagId"] }
+
 export const createEntrySchema = z
   .object({
     direction: timeDirectionSchema,
@@ -49,6 +58,7 @@ export const createEntrySchema = z
     startedAt: isoDateTimeSchema,
     endedAt: isoDateTimeSchema,
   })
+  .refine(hasRequiredTag, REQUIRED_TAG_ISSUE)
   .refine((value) => isValidTimeRange(value.startedAt, value.endedAt), {
     message: END_BEFORE_START_MESSAGE,
     path: ["endedAt"],
@@ -79,12 +89,14 @@ export const updateEntrySchema = z
 
 export type UpdateEntryInput = z.infer<typeof updateEntrySchema>
 
-export const startTimerSchema = z.object({
-  action: z.literal("start"),
-  direction: timeDirectionSchema,
-  tagId: tagIdSchema.nullable().optional(),
-  title: titleSchema,
-})
+export const startTimerSchema = z
+  .object({
+    action: z.literal("start"),
+    direction: timeDirectionSchema,
+    tagId: tagIdSchema.nullable().optional(),
+    title: titleSchema,
+  })
+  .refine(hasRequiredTag, REQUIRED_TAG_ISSUE)
 
 export const stopTimerSchema = z.object({
   action: z.literal("stop"),
@@ -100,9 +112,18 @@ export const tagNameSchema = z
   .min(TAG_NAME_MIN_LENGTH, { message: "Zadej název tagu" })
   .max(TAG_NAME_MAX_LENGTH, { message: `Název tagu může mít nejvýš ${TAG_NAME_MAX_LENGTH} znaků` })
 
-/** A tag is created under one direction and stays there (rename only afterwards). */
-export const createTagSchema = z.object({ name: tagNameSchema, direction: timeDirectionSchema })
+/**
+ * A team tag is created under Practise or Projekt and stays there (rename only afterwards);
+ * Training and Reading only have their fixed system tags.
+ */
+export const createTagSchema = z.object({
+  name: tagNameSchema,
+  direction: timeDirectionSchema.refine(hasTeamTags, { message: TIME_TRACKING_MESSAGES.systemTagDirection }),
+})
 export const updateTagSchema = z.object({ name: tagNameSchema })
+
+/** `PUT /api/time-tags/[id]/selection` — show or hide a team tag in one's picker. */
+export const tagSelectionSchema = z.object({ selected: z.boolean({ message: TIME_TRACKING_MESSAGES.invalidJson }) })
 
 export type TagInput = z.infer<typeof createTagSchema>
 

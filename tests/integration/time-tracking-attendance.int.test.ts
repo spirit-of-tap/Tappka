@@ -78,8 +78,10 @@ async function markAttendance(client: PoolClient, f: Fixture, status: string): P
 
 async function autoEntries(client: PoolClient, profileId: string) {
   const { rows } = await client.query(
-    `select id, direction, title, source, attendance_id, started_at, ended_at, duration_ms
-       from public.time_entries where profile_id = $1 order by started_at`,
+    `select e.id, e.direction, e.title, e.source, e.attendance_id, e.started_at, e.ended_at, e.duration_ms,
+            t.system_key as tag_key
+       from public.time_entries e left join public.time_tags t on t.id = e.tag_id
+       where e.profile_id = $1 order by e.started_at`,
     [profileId],
   );
   return rows as Array<{
@@ -88,6 +90,7 @@ async function autoEntries(client: PoolClient, profileId: string) {
     title: string | null;
     source: string;
     attendance_id: string | null;
+    tag_key: string | null;
     started_at: Date;
     ended_at: Date | null;
     duration_ms: string | null;
@@ -104,6 +107,7 @@ describe("sync_training_session_time_entry", () => {
       expect(entries).toHaveLength(1);
       expect(entries[0].direction).toBe("training");
       expect(entries[0].title).toBe("Training Session");
+      expect(entries[0].tag_key).toBe("training_session");
       expect(entries[0].source).toBe("attendance");
       expect(entries[0].attendance_id).toBe(attendanceId);
       expect(entries[0].started_at.toISOString()).toBe(EXPECTED_START);

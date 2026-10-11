@@ -81,6 +81,15 @@ describe("createEntrySchema", () => {
     expect(createEntrySchema.safeParse(minimal).success).toBe(true)
   })
 
+  it("requires a tag for Training and Reading entries", () => {
+    for (const direction of ["training", "reading"]) {
+      const result = createEntrySchema.safeParse({ ...validEntry, direction, tagId: null })
+      expect(result.success).toBe(false)
+      expect(result.error?.issues[0]).toMatchObject({ message: "Vyber tag", path: ["tagId"] })
+    }
+    expect(createEntrySchema.safeParse({ ...validEntry, direction: "reading" }).success).toBe(true)
+  })
+
   it("accepts very short entries (no minimum length)", () => {
     expect(
       createEntrySchema.safeParse({ ...validEntry, endedAt: "2026-09-24T08:00:01.000Z" }).success,
@@ -143,10 +152,16 @@ describe("updateEntrySchema", () => {
 
 describe("timerActionSchema", () => {
   it("accepts start with direction and optional fields", () => {
-    expect(timerActionSchema.safeParse({ action: "start", direction: "training" }).success).toBe(true)
+    expect(timerActionSchema.safeParse({ action: "start", direction: "practise" }).success).toBe(true)
     expect(
       timerActionSchema.safeParse({ action: "start", direction: "reading", tagId: TAG_ID, title: "Kniha" }).success,
     ).toBe(true)
+  })
+
+  it("requires a tag to start Training or Reading", () => {
+    const result = timerActionSchema.safeParse({ action: "start", direction: "training", tagId: null })
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]).toMatchObject({ message: "Vyber tag", path: ["tagId"] })
   })
 
   it("requires a direction to start", () => {
@@ -167,10 +182,13 @@ describe("createTagSchema", () => {
     expect(createTagSchema.safeParse({ name: "x".repeat(41), direction: "practise" }).success).toBe(false)
   })
 
-  it("requires one of the four directions", () => {
+  it("creates team tags only under Practise or Projekt", () => {
     expect(createTagSchema.safeParse({ name: "fellaship" }).success).toBe(false)
     expect(createTagSchema.safeParse({ name: "fellaship", direction: "project" }).success).toBe(true)
     expect(createTagSchema.safeParse({ name: "fellaship", direction: "nonsense" }).success).toBe(false)
+    const fixed = createTagSchema.safeParse({ name: "Kniha", direction: "reading" })
+    expect(fixed.success).toBe(false)
+    expect(fixed.error?.issues[0]?.message).toBe("Tagy pro Training a Reading jsou pevně dané")
   })
 })
 

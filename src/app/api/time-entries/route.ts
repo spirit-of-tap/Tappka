@@ -5,7 +5,7 @@ import type { Insertable } from "@/lib/supabase/tables"
 import { HTTP_STATUS } from "@/lib/time-tracking/api-errors"
 import { TIME_ENTRY_WITH_TAG_SELECT, TIME_TRACKING_MESSAGES } from "@/lib/time-tracking/constants"
 import { computeDurationMs } from "@/lib/time-tracking/duration"
-import { isOwnTag, listEntries } from "@/lib/time-tracking/queries"
+import { isUsableTag, listEntries } from "@/lib/time-tracking/queries"
 import {
   dbErrorResponse,
   jsonError,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const input = parsed.data
     const tagId = input.tagId ?? null
 
-    if (tagId !== null && !(await isOwnTag(supabase, profile.id, tagId))) {
+    if (tagId !== null && !(await isUsableTag(supabase, profile.team_id, tagId))) {
       return jsonError(TIME_TRACKING_MESSAGES.invalidTag, HTTP_STATUS.badRequest)
     }
 

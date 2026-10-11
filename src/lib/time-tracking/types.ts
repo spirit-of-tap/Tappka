@@ -9,6 +9,16 @@ export type TimeEntrySource = Database["public"]["Enums"]["time_entry_source"]
 /** Minimal tag shape embedded into entries (see `TIME_ENTRY_WITH_TAG_SELECT`). */
 export type TimeTagRef = Pick<TimeTag, "id" | "name" | "direction">
 
+/** Tags a person can use plus which team tags they chose to see (`GET /api/time-tags`). */
+export interface TagCatalog {
+  /** System tags and all tags of the person's team, ordered by name. */
+  tags: TimeTag[]
+  /** Team tags the person shows in their tag picker. */
+  selectedTagIds: string[]
+  /** Team tags created by others since the person last reviewed their tag settings. */
+  newTagCount: number
+}
+
 export interface TimeEntryWithTag extends TimeEntry {
   tag: TimeTagRef | null
 }

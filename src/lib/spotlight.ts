@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   NotebookPen,
   SlidersHorizontal,
+  Tags,
   Timer,
   User,
   Users,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { canAccessFeature, type BetaCohort, type BetaFeature } from "./feature-access";
+import { TAG_SETTINGS_URL } from "./time-tracking/constants";
 
 export interface SpotlightItem {
   id: string;
@@ -269,6 +271,15 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
       "projekt",
       "time tracking",
     ],
+  },
+  {
+    id: "page-cas-tagy",
+    title: "Tagy v Čase",
+    description: "Které týmové tagy pro Practise a Projekt se ti nabízejí",
+    url: TAG_SETTINGS_URL,
+    icon: Tags,
+    feature: "timeTracking",
+    keywords: ["tagy", "tag", "projekty", "nastavení času", "skrýt tag", "zobrazit tag", "nové tagy"],
   },
   // TODO(cas): timer start/stop actions once TimerProvider lands
   {

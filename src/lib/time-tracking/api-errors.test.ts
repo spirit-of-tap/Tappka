@@ -25,10 +25,10 @@ describe("mapDbError", () => {
     expect(
       mapDbError({
         code: "23505",
-        message: 'duplicate key value violates unique constraint "time_tags_profile_direction_name_key"',
-        details: "Key (profile_id, direction, lower(btrim(name)))=(…) already exists.",
+        message: 'duplicate key value violates unique constraint "time_tags_team_direction_name_key"',
+        details: "Key (team_id, direction, lower(btrim(name)))=(…) already exists.",
       }),
-    ).toEqual({ status: 409, message: "Tag s tímto názvem už v tomhle směru máš" })
+    ).toEqual({ status: 409, message: "Tag s tímto názvem už tým v tomhle směru má" })
   })
 
   it("maps a tag from another direction", () => {
