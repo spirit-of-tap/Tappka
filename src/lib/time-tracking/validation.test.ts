@@ -90,6 +90,15 @@ describe("createEntrySchema", () => {
     expect(createEntrySchema.safeParse({ ...validEntry, direction: "reading" }).success).toBe(true)
   })
 
+  it("accepts a draft tag name only for Practise / Projekt and not with tagId", () => {
+    const draft = { ...validEntry, tagId: undefined, newTagName: "  Kavárna " }
+    expect(createEntrySchema.parse(draft).newTagName).toBe("Kavárna")
+    expect(createEntrySchema.safeParse({ ...draft, tagId: TAG_ID }).success).toBe(false)
+    const reading = createEntrySchema.safeParse({ ...draft, direction: "reading" })
+    expect(reading.success).toBe(false)
+    expect(reading.error?.issues[0]?.path).toEqual(["newTagName"])
+  })
+
   it("accepts very short entries (no minimum length)", () => {
     expect(
       createEntrySchema.safeParse({ ...validEntry, endedAt: "2026-09-24T08:00:01.000Z" }).success,

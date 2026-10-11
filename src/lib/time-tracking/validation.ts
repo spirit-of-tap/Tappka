@@ -43,9 +43,39 @@ export const titleSchema = z
   .optional()
   .transform((value) => (value === "" ? null : value))
 
+export const tagNameSchema = z
+  .string()
+  .trim()
+  .min(TAG_NAME_MIN_LENGTH, { message: "Zadej název tagu" })
+  .max(TAG_NAME_MAX_LENGTH, { message: `Název tagu může mít nejvýš ${TAG_NAME_MAX_LENGTH} znaků` })
+
+/**
+ * Name of a team tag that does not exist yet: the picker keeps it as a draft and the tag is
+ * created (or an existing one with that name reused) only when the entry is saved.
+ */
+export const newTagNameSchema = tagNameSchema.optional()
+
+/** A new tag name is only for Practise / Projekt, and never together with `tagId`. */
+export function isValidNewTag(value: {
+  direction?: TimeDirection
+  tagId?: string | null
+  newTagName?: string
+}): boolean {
+  if (value.newTagName === undefined) return true
+  const hasTagId = value.tagId !== undefined && value.tagId !== null
+  return !hasTagId && (value.direction === undefined || hasTeamTags(value.direction))
+}
+
+const NEW_TAG_ISSUE = { message: TIME_TRACKING_MESSAGES.systemTagDirection, path: ["newTagName"] }
+
 /** Training and Reading entries need one of their fixed tags. */
-export function hasRequiredTag(value: { direction: TimeDirection; tagId?: string | null }): boolean {
-  return !isTagRequired(value.direction) || (value.tagId !== undefined && value.tagId !== null)
+export function hasRequiredTag(value: {
+  direction: TimeDirection
+  tagId?: string | null
+  newTagName?: string | null
+}): boolean {
+  if (!isTagRequired(value.direction)) return true
+  return (value.tagId !== undefined && value.tagId !== null) || (value.newTagName ?? "") !== ""
 }
 
 const REQUIRED_TAG_ISSUE = { message: TIME_TRACKING_MESSAGES.tagRequired, path: ["tagId"] }
@@ -54,10 +84,12 @@ export const createEntrySchema = z
   .object({
     direction: timeDirectionSchema,
     tagId: tagIdSchema.nullable().optional(),
+    newTagName: newTagNameSchema,
     title: titleSchema,
     startedAt: isoDateTimeSchema,
     endedAt: isoDateTimeSchema,
   })
+  .refine(isValidNewTag, NEW_TAG_ISSUE)
   .refine(hasRequiredTag, REQUIRED_TAG_ISSUE)
   .refine((value) => isValidTimeRange(value.startedAt, value.endedAt), {
     message: END_BEFORE_START_MESSAGE,
@@ -74,6 +106,7 @@ export const updateEntrySchema = z
   .object({
     direction: timeDirectionSchema.optional(),
     tagId: tagIdSchema.nullable().optional(),
+    newTagName: newTagNameSchema,
     title: titleSchema,
     startedAt: isoDateTimeSchema.optional(),
     endedAt: isoDateTimeSchema.optional(),
@@ -81,6 +114,7 @@ export const updateEntrySchema = z
   .refine((value) => Object.values(value).some((field) => field !== undefined), {
     message: EMPTY_PATCH_MESSAGE,
   })
+  .refine(isValidNewTag, NEW_TAG_ISSUE)
   .refine(
     (value) =>
       value.startedAt === undefined || value.endedAt === undefined || isValidTimeRange(value.startedAt, value.endedAt),
@@ -94,8 +128,10 @@ export const startTimerSchema = z
     action: z.literal("start"),
     direction: timeDirectionSchema,
     tagId: tagIdSchema.nullable().optional(),
+    newTagName: newTagNameSchema,
     title: titleSchema,
   })
+  .refine(isValidNewTag, NEW_TAG_ISSUE)
   .refine(hasRequiredTag, REQUIRED_TAG_ISSUE)
 
 export const stopTimerSchema = z.object({
@@ -105,12 +141,6 @@ export const stopTimerSchema = z.object({
 export const timerActionSchema = z.discriminatedUnion("action", [startTimerSchema, stopTimerSchema])
 
 export type TimerActionInput = z.infer<typeof timerActionSchema>
-
-export const tagNameSchema = z
-  .string()
-  .trim()
-  .min(TAG_NAME_MIN_LENGTH, { message: "Zadej název tagu" })
-  .max(TAG_NAME_MAX_LENGTH, { message: `Název tagu může mít nejvýš ${TAG_NAME_MAX_LENGTH} znaků` })
 
 /**
  * A team tag is created under Practise or Projekt and stays there (rename only afterwards);

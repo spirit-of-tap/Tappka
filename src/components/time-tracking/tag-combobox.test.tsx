@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event"
 
 import type { TagCatalog, TimeDirection, TimeTag } from "@/lib/time-tracking/types"
 
-import { TagCombobox, newTagsLabel } from "./tag-combobox"
+import { NO_TAG_SELECTION, TagCombobox, newTagsLabel, type TagSelection } from "./tag-combobox"
 
 vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
@@ -56,10 +56,21 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderCombobox(direction: TimeDirection | null, value: string | null = null, initial = catalog()) {
+function renderCombobox(
+  direction: TimeDirection | null,
+  value: string | TagSelection | null = null,
+  initial = catalog(),
+) {
   const onChange = vi.fn()
   const user = userEvent.setup()
-  render(<TagCombobox value={value} direction={direction} onChange={onChange} initialCatalog={initial} />)
+  const selection: TagSelection =
+    value === null ? NO_TAG_SELECTION : typeof value === "string" ? { tagId: value, newTagName: null } : value
+  render(
+    <>
+      <TagCombobox value={selection} direction={direction} onChange={onChange} initialCatalog={initial} />
+      <button type="button">mimo</button>
+    </>,
+  )
   return { onChange, user }
 }
 
@@ -107,23 +118,49 @@ describe("TagCombobox", () => {
     await user.click(screen.getByRole("combobox"))
     await user.click(screen.getByRole("option", { name: "fellaship" }))
 
-    expect(onChange).toHaveBeenCalledWith(FELLA_PROJECT.id, FELLA_PROJECT)
+    expect(onChange).toHaveBeenCalledWith({ tagId: FELLA_PROJECT.id, newTagName: null })
   })
 
-  it("creates a new team tag under the current direction", async () => {
-    const created = tag("t-new", "Kavárna", "project")
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ data: created }), { status: 201 }))
+  it("keeps a new tag name as a draft without creating it", async () => {
     const { onChange, user } = renderCombobox("project")
 
     await user.click(screen.getByRole("combobox"))
     await user.type(screen.getByLabelText("Hledat nebo vytvořit tag"), "Kavárna")
-    await user.click(screen.getByText("Vytvořit tag „Kavárna“"))
+    await user.click(screen.getByText("Nový tag „Kavárna“"))
 
-    await waitFor(() => expect(onChange).toHaveBeenCalledWith("t-new", created))
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/time-tags",
-      expect.objectContaining({ method: "POST", body: JSON.stringify({ name: "Kavárna", direction: "project" }) }),
-    )
+    expect(onChange).toHaveBeenLastCalledWith({ tagId: null, newTagName: "Kavárna" })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("keeps a typed name as a draft when clicking away", async () => {
+    const { onChange, user } = renderCombobox("practise")
+
+    await user.click(screen.getByRole("combobox"))
+    await user.type(screen.getByLabelText("Hledat nebo vytvořit tag"), "Stánek")
+    await user.keyboard("{Escape}")
+
+    expect(onChange).toHaveBeenLastCalledWith({ tagId: null, newTagName: "Stánek" })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("picks an existing tag when the typed name matches it on clicking away", async () => {
+    const { onChange, user } = renderCombobox("project")
+
+    await user.click(screen.getByRole("combobox"))
+    await user.type(screen.getByLabelText("Hledat nebo vytvořit tag"), " FELLASHIP ")
+    await user.keyboard("{Escape}")
+
+    expect(onChange).toHaveBeenLastCalledWith({ tagId: FELLA_PROJECT.id, newTagName: null })
+  })
+
+  it("shows a draft with a badge and reopens it for editing", async () => {
+    const { user } = renderCombobox("project", { tagId: null, newTagName: "Kavarna" })
+    const trigger = screen.getByRole("combobox")
+    expect(trigger).toHaveTextContent("Kavarna")
+    expect(trigger).toHaveTextContent("nový")
+
+    await user.click(trigger)
+    expect(screen.getByLabelText("Hledat nebo vytvořit tag")).toHaveValue("Kavarna")
   })
 
   it("shows a hidden team tag with the typed name instead of creating a duplicate", async () => {
@@ -135,7 +172,7 @@ describe("TagCombobox", () => {
     expect(screen.queryByText(/Vytvořit tag/)).not.toBeInTheDocument()
     await user.click(screen.getByText("Zobrazit tag týmu „Tappka“"))
 
-    await waitFor(() => expect(onChange).toHaveBeenCalledWith(HIDDEN_PROJECT.id, HIDDEN_PROJECT))
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith({ tagId: HIDDEN_PROJECT.id, newTagName: null }))
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/time-tags/${HIDDEN_PROJECT.id}/selection`,
       expect.objectContaining({ method: "PUT", body: JSON.stringify({ selected: true }) }),

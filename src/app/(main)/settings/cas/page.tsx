@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/server"
 import { getTagCatalog } from "@/lib/time-tracking/queries"
 
 const PAGE_TITLE = "Tagy v Čase"
+/** Same roles as the RLS policy that lets coaches and admins rename any team tag. */
+const TAG_ADMIN_ROLES: readonly string[] = ["coach", "admin"]
 const PAGE_DESCRIPTION = "Vyber, které týmové tagy se ti nabízejí při zapisování času"
 
 export const metadata = {
@@ -49,6 +51,7 @@ export default async function TimeTagSettingsPage() {
         newTagCount={catalog.newTagCount}
         profileId={profile.id}
         hasTeam={profile.team_id !== null}
+        canRenameAnyTag={TAG_ADMIN_ROLES.includes(profile.role)}
       />
     </PageShell>
   )

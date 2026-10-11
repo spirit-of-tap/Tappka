@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event"
 import { TITLE_PLACEHOLDER } from "@/lib/time-tracking/constants"
 import type { TimeEntryWithTag } from "@/lib/time-tracking/types"
 
-import { EntryFormDialog } from "./entry-form-dialog"
+import { EntryFormDialog, buildEntryPayload } from "./entry-form-dialog"
 
 const refresh = vi.fn()
 const toastSuccess = vi.fn()
@@ -238,5 +238,33 @@ describe("EntryFormDialog", () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe("buildEntryPayload", () => {
+  const values = {
+    direction: "project" as const,
+    tagId: null,
+    newTagName: "Kavárna",
+    title: "",
+    startDate: "2026-09-24",
+    startTime: "10:00",
+    endDate: "2026-09-24",
+    endTime: "11:30",
+  }
+
+  it("sends a draft tag name instead of tagId for a new entry", () => {
+    expect(buildEntryPayload(values, null)).toEqual({
+      direction: "project",
+      newTagName: "Kavárna",
+      title: null,
+      startedAt: "2026-09-24T10:00:00+02:00",
+      endedAt: "2026-09-24T11:30:00+02:00",
+    })
+  })
+
+  it("sends only the draft tag name when editing", () => {
+    const entry = { ...ENTRY, direction: "project" as const, title: null }
+    expect(buildEntryPayload(values, entry)).toEqual({ newTagName: "Kavárna" })
   })
 })

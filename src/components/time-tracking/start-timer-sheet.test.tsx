@@ -55,7 +55,7 @@ describe("StartTimerSheet", () => {
     await user.click(screen.getByRole("button", { name: "Spustit" }))
 
     await waitFor(() =>
-      expect(start).toHaveBeenCalledWith({ direction: "project", tagId: null, title: "Tappka" }),
+      expect(start).toHaveBeenCalledWith({ direction: "project", tagId: null, newTagName: null, title: "Tappka" }),
     )
     expect(toastSuccess).toHaveBeenCalledWith("Časomíra běží")
     expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -69,7 +69,7 @@ describe("StartTimerSheet", () => {
     await user.click(screen.getByPlaceholderText(TITLE_PLACEHOLDER))
     await user.keyboard("{Control>}{Enter}{/Control}")
 
-    await waitFor(() => expect(start).toHaveBeenCalledWith({ direction: "practise", tagId: null, title: null }))
+    await waitFor(() => expect(start).toHaveBeenCalledWith({ direction: "practise", tagId: null, newTagName: null, title: null }))
   })
 
   it("requires a tag for Training and shows the error under the tag field", async () => {

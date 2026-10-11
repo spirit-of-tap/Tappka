@@ -16,7 +16,7 @@ Design a rozhodnutí: [`docs/plans/2026-09-24-timetracking-design.md`](https://g
 - **Název** — volitelný, např. „Prodávání párků před ČZU".
 - **Tag** — jeden na záznam, každý tag patří právě k jednomu směru a směr se mu později nemění (jen název). Při změně směru záznamu se tag odebere. Podle tagu jde filtrovat a sečíst, kolik času projekt zabral.
   - **Training a Reading** mají pevné tagy pro všechny: `TS`, `Příprava na TS` / `Čtení`, `Esej`. Nejdou přidat, přejmenovat ani schovat a tag je u těchto směrů **povinný** (starší záznamy bez tagu jdou dál upravovat, dokud se nemění směr ani tag).
-  - **Practise a Projekt** mají **týmové tagy**: založit je může kdokoli z týmu přímo ve výběru tagu, přejmenovat nebo smazat autor:ka, kouč:ka nebo admin. Název je unikátní v rámci týmu a směru. Tag je u nich volitelný.
+  - **Practise a Projekt** mají **týmové tagy**: založit je může kdokoli z týmu přímo ve výběru tagu, přejmenovat (v `/settings/cas`) nebo smazat autor:ka, kouč:ka nebo admin. Nový název je nejdřív jen **koncept**: stačí ho napsat a kliknout mimo, jde ho znovu otevřít a opravit. Tag se v týmu založí (nebo se použije existující se stejným názvem) až při spuštění časomíry nebo uložení záznamu, takže překlepy se k týmu nedostanou. Název je unikátní v rámci týmu a směru. Tag je u nich volitelný.
   - **Kdo co vidí ve výběru:** každý si v **Nastavení → Tagy v Čase** (`/settings/cas`) zapne týmové tagy, které chce mít v nabídce. Nový tag se ostatním **nezobrazí** automaticky; ve výběru tagu se objeví krátká hláška „3 nové tagy" s odkazem do nastavení a tlačítkem **Ignorovat**. Autor:ka má svůj nový tag zapnutý hned. Když člověk napíše název schovaného týmového tagu, výběr nabídne „Zobrazit tag týmu" místo založení duplicity.
 - **Výběr období** — ve stylu Clockify: rychlé volby (Dnes, Včera, Tento / Minulý týden, Poslední 2 týdny, Tento / Minulý měsíc, Tento / Minulý rok), kalendář na dva měsíce (první klik = začátek, druhý = konec) a šipky ‹ ›, které posouvají o délku období (celé měsíce a roky po měsících). Období je v URL jako `?from=YYYY-MM-DD&to=YYYY-MM-DD` (pražské dny včetně); výchozí je aktuální týden bez parametrů.
 - **Progress** — součet všech čtyř směrů proti cíli 40 h týdně přepočtenému na délku období (40 h × dny / 7, např. měsíc ≈ 171 h; metrika `time-weekly`), přehled per směr jen informativně.
@@ -138,7 +138,7 @@ Route Handlers (`src/app/api/`):
 | Metoda a cesta | Účel |
 | :--- | :--- |
 | `GET /api/time-entries?from&to&direction&tagId&profileIds` | Záznamy v rozsahu (RLS omezí viditelnost) |
-| `POST /api/time-entries` | Ruční záznam |
+| `POST /api/time-entries` | Ruční záznam (`tagId` nebo koncept `newTagName`) |
 | `PATCH` / `DELETE /api/time-entries/[id]` | Úprava, smazání vlastního záznamu |
 | `GET /api/time-entries/timer` | Běžící časomíra nebo `null` |
 | `POST /api/time-entries/timer` `{ action: "start" \| "stop" }` | Spuštění (zastaví běžící) a zastavení |

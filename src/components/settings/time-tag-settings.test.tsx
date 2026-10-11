@@ -114,6 +114,29 @@ describe("TimeTagSettings", () => {
     expect(toastError).toHaveBeenCalled()
   })
 
+  it("renames own tags inline and hides rename for tags of others", async () => {
+    const mine = { ...TAGS[3], created_by_profile_id: ME }
+    const user = userEvent.setup()
+    renderSettings({ newTagCount: 0, tags: [TAGS[0], TAGS[1], TAGS[2], mine] })
+
+    expect(screen.queryByRole("button", { name: "Přejmenovat tag Fellaship" })).not.toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Přejmenovat tag Kavárna" }))
+    const input = screen.getByRole("textbox", { name: "Nový název tagu Kavárna" })
+    await user.clear(input)
+    await user.type(input, "Kavárna Kampus{Enter}")
+
+    await waitFor(() => expect(screen.getByText("Kavárna Kampus")).toBeInTheDocument())
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/time-tags/cafe",
+      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ name: "Kavárna Kampus" }) }),
+    )
+  })
+
+  it("lets coaches and admins rename any team tag", () => {
+    renderSettings({ newTagCount: 0, canRenameAnyTag: true })
+    expect(screen.getByRole("button", { name: "Přejmenovat tag Fellaship" })).toBeInTheDocument()
+  })
+
   it("explains team tags to someone without a team", () => {
     renderSettings({ hasTeam: false, selectedTagIds: [], tags: TAGS.filter((t) => t.team_id === null) })
     expect(screen.getByText("Nejsi v žádném týmu")).toBeInTheDocument()

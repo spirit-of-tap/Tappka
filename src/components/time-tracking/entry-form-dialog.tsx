@@ -53,6 +53,8 @@ const entryFormSchema = z
   .object({
     direction: timeDirectionSchema,
     tagId: z.string().nullable(),
+    /** Draft name of a team tag created on save (see `TagSelection`). */
+    newTagName: z.string().nullable(),
     title: z.string().max(TITLE_MAX_LENGTH, { message: `Název může mít nejvýš ${TITLE_MAX_LENGTH} znaků` }),
     startDate: z.string().min(1, { message: DATE_REQUIRED_MESSAGE }),
     startTime: z.string().min(1, { message: TIME_REQUIRED_MESSAGE }),
@@ -74,6 +76,7 @@ type EntryFormValues = z.output<typeof entryFormSchema>
 interface EntryPayload {
   direction?: TimeDirection
   tagId?: string | null
+  newTagName?: string
   title?: string | null
   startedAt?: string
   endedAt?: string
@@ -91,6 +94,7 @@ function defaultsFor(entry: TimeEntryWithTag | null, now: Date): DefaultValues<E
     return {
       direction: entry.direction,
       tagId: entry.tag_id,
+      newTagName: null,
       title: entry.title ?? "",
       startDate: start.date,
       startTime: start.time,
@@ -104,6 +108,7 @@ function defaultsFor(entry: TimeEntryWithTag | null, now: Date): DefaultValues<E
   return {
     // `direction` is required but deliberately has no default (design §5).
     tagId: null,
+    newTagName: null,
     title: "",
     startDate: start.date,
     startTime: start.time,
@@ -122,13 +127,18 @@ export function buildEntryPayload(
   if (startedAt === null || endedAt === null) return null
   const title = normalizeTitle(values.title)
 
+  // A draft tag name is sent instead of `tagId`; the API creates (or reuses) the team tag.
+  const newTagName = values.newTagName ?? undefined
   if (entry === null) {
-    return { direction: values.direction, tagId: values.tagId, title, startedAt, endedAt }
+    return newTagName === undefined
+      ? { direction: values.direction, tagId: values.tagId, title, startedAt, endedAt }
+      : { direction: values.direction, newTagName, title, startedAt, endedAt }
   }
 
   const patch: EntryPayload = {}
   if (values.direction !== entry.direction) patch.direction = values.direction
-  if (values.tagId !== entry.tag_id) patch.tagId = values.tagId
+  if (newTagName !== undefined) patch.newTagName = newTagName
+  else if (values.tagId !== entry.tag_id) patch.tagId = values.tagId
   if (title !== entry.title) patch.title = title
   if (Date.parse(startedAt) !== Date.parse(entry.started_at)) patch.startedAt = startedAt
   if (entry.ended_at === null || Date.parse(endedAt) !== Date.parse(entry.ended_at)) patch.endedAt = endedAt
@@ -207,9 +217,9 @@ function EntryForm({ entry, tagCatalog, now, onSaved, onDone }: EntryFormProps) 
     formState: { errors, isSubmitting },
   } = form
 
-  const [startDate, startTime, endDate, endTime, selectedDirection] = useWatch({
+  const [startDate, startTime, endDate, endTime, selectedDirection, newTagName] = useWatch({
     control,
-    name: ["startDate", "startTime", "endDate", "endTime", "direction"],
+    name: ["startDate", "startTime", "endDate", "endTime", "direction", "newTagName"],
   })
   const startIso = localInputsToIso(startDate, startTime)
   const endIso = localInputsToIso(endDate, endTime)
@@ -219,7 +229,11 @@ function EntryForm({ entry, tagCatalog, now, onSaved, onDone }: EntryFormProps) 
   async function onSubmit(values: EntryFormValues) {
     // Like the API: an older untagged Training / Reading entry stays editable until its
     // direction or tag is touched.
-    const touchesTag = entry === null || values.direction !== entry.direction || values.tagId !== entry.tag_id
+    const touchesTag =
+      entry === null ||
+      values.direction !== entry.direction ||
+      values.tagId !== entry.tag_id ||
+      values.newTagName !== null
     if (touchesTag && !hasRequiredTag(values)) {
       setError("tagId", { type: "required", message: TIME_TRACKING_MESSAGES.tagRequired })
       return
@@ -277,6 +291,7 @@ function EntryForm({ entry, tagCatalog, now, onSaved, onDone }: EntryFormProps) 
                 field.onChange(value as TimeDirection)
                 // A tag belongs to one direction, so switching direction drops it.
                 setValue("tagId", null)
+                setValue("newTagName", null)
               }}
               className="w-full"
             >
@@ -300,10 +315,11 @@ function EntryForm({ entry, tagCatalog, now, onSaved, onDone }: EntryFormProps) 
             <FieldLabel htmlFor={ids.tag}>Tag</FieldLabel>
             <TagCombobox
               id={ids.tag}
-              value={field.value}
+              value={{ tagId: field.value, newTagName: newTagName ?? null }}
               direction={selectedDirection ?? null}
-              onChange={(tagId) => {
-                field.onChange(tagId)
+              onChange={(selection) => {
+                field.onChange(selection.tagId)
+                setValue("newTagName", selection.newTagName)
                 form.clearErrors("tagId")
               }}
               initialCatalog={tagCatalog}

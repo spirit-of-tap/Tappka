@@ -13,6 +13,8 @@ const TICK_INTERVAL_MS = MS_PER_SECOND
 export interface StartTimerPayload {
   direction: TimeDirection
   tagId?: string | null
+  /** Draft team tag name; the API creates (or reuses) the tag when the timer starts. */
+  newTagName?: string | null
   title?: string | null
 }
 
@@ -137,6 +139,7 @@ export function TimerProvider({ initialActive, canAccess, serverNow, children }:
         action: "start",
         direction: payload.direction,
         tagId: payload.tagId ?? null,
+        ...(payload.newTagName ? { newTagName: payload.newTagName } : {}),
         title: payload.title ?? null,
       }),
     [mutate],
