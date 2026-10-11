@@ -4,7 +4,8 @@ import { serverLogger } from "@/lib/server-logger"
 import type { Insertable } from "@/lib/supabase/tables"
 import { HTTP_STATUS } from "@/lib/time-tracking/api-errors"
 import { TIME_ENTRY_WITH_TAG_SELECT, TIME_TRACKING_MESSAGES } from "@/lib/time-tracking/constants"
-import { getActiveTimer, isUsableTag, stopActiveTimer } from "@/lib/time-tracking/queries"
+import { resolveEntryTag } from "@/lib/time-tracking/entry-tag"
+import { getActiveTimer, stopActiveTimer } from "@/lib/time-tracking/queries"
 import {
   dbErrorResponse,
   jsonError,
@@ -30,7 +31,8 @@ export async function GET() {
 
 /**
  * POST /api/time-entries/timer
- * - `{ action: "start", direction, tagId?, title? }` stops any running timer, then starts a new one.
+ * - `{ action: "start", direction, tagId? | newTagName?, title? }` stops any running timer, then
+ *   starts a new one (a draft `newTagName` becomes a team tag now).
  * - `{ action: "stop" }` stops the running timer (always saved, no minimum length).
  */
 export async function POST(request: NextRequest) {
@@ -54,10 +56,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: stopped })
     }
 
-    const tagId = input.tagId ?? null
-    if (tagId !== null && !(await isUsableTag(supabase, profile.team_id, tagId))) {
-      return jsonError(TIME_TRACKING_MESSAGES.invalidTag, HTTP_STATUS.badRequest)
-    }
+    const tag = await resolveEntryTag(supabase, profile, input)
+    if (!tag.ok) return jsonError(tag.message, HTTP_STATUS.badRequest)
+    const tagId = tag.tagId ?? null
 
     const stopped = await stopActiveTimer(supabase, profile.id, new Date())
 

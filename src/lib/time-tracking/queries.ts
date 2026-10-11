@@ -4,7 +4,7 @@ import type { Database } from "@/lib/supabase/database.types"
 
 import { TIME_ENTRY_WITH_TAG_SELECT } from "./constants"
 import { computeDurationMs } from "./duration"
-import { listNewTeamTags } from "./tag-catalog"
+import { findTeamTagByName, listNewTeamTags } from "./tag-catalog"
 import type { TagCatalog, TeamMember, TimeDirection, TimeEntryWithTag, TimeRange, TimeTag } from "./types"
 
 type Client = SupabaseClient<Database>
@@ -179,6 +179,65 @@ export async function isUsableTag(supabase: Client, teamId: string | null, tagId
 
   if (error) throw error
   return data !== null && (data.team_id === null || data.team_id === teamId)
+}
+
+/** PostgREST / Postgres code for a unique violation (two people creating the same tag at once). */
+const UNIQUE_VIOLATION = "23505"
+
+async function findTeamTagByNameInDb(
+  supabase: Client,
+  teamId: string,
+  direction: TimeDirection,
+  name: string,
+): Promise<TimeTag | undefined> {
+  const { data, error } = await supabase
+    .from("time_tags")
+    .select("*")
+    .eq("team_id", teamId)
+    .eq("direction", direction)
+
+  if (error) throw error
+  return findTeamTagByName(data ?? [], direction, name)
+}
+
+/**
+ * The team tag a saved entry should use for a draft tag name: an existing tag with the same
+ * name (case- and whitespace-insensitive) or a newly created one. Either way the profile
+ * sees it in its picker from now on. Called only when an entry is saved, so typos made
+ * while picking never reach the team.
+ */
+export async function findOrCreateTeamTag(
+  supabase: Client,
+  profile: { id: string; team_id: string },
+  direction: TimeDirection,
+  name: string,
+): Promise<TimeTag> {
+  let tag = await findTeamTagByNameInDb(supabase, profile.team_id, direction, name)
+  if (!tag) {
+    const { data, error } = await supabase
+      .from("time_tags")
+      .insert({
+        team_id: profile.team_id,
+        direction,
+        name: name.trim(),
+        created_by_profile_id: profile.id,
+        updated_by_profile_id: profile.id,
+      })
+      .select("*")
+      .single()
+
+    if (error?.code === UNIQUE_VIOLATION) {
+      tag = await findTeamTagByNameInDb(supabase, profile.team_id, direction, name)
+    } else if (error) {
+      throw error
+    } else {
+      tag = data
+    }
+  }
+  if (!tag) throw new Error("Team tag vanished right after a unique violation")
+
+  await setTagSelected(supabase, profile.id, tag.id, true)
+  return tag
 }
 
 /** Shows (`selected`) or hides a team tag in the profile's tag picker; idempotent. */

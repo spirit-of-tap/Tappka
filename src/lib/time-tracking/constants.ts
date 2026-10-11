@@ -40,6 +40,12 @@ export const TEAM_TAG_DIRECTIONS: readonly TimeDirection[] = ["practise", "proje
 /** `time_tags.system_key` of the tag the Training Session attendance trigger assigns. */
 export const TRAINING_SESSION_TAG_KEY = "training_session"
 
+/** Pre-selected tag when an entry switches to Training / Reading (the most common one). */
+export const DEFAULT_SYSTEM_TAG_KEYS: Partial<Record<TimeDirection, string>> = {
+  training: TRAINING_SESSION_TAG_KEY,
+  reading: "reading",
+}
+
 /** Where a person picks which team tags they see. */
 export const TAG_SETTINGS_URL = "/settings/cas"
 

@@ -4,7 +4,8 @@ import { redirect } from "next/navigation"
 import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { TEAM_PARAM, resolveRangeParams } from "@/components/time-tracking/cas-query"
 import { DateRangeNav } from "@/components/time-tracking/date-range-nav"
-import { TeamSelect, type TeamOption } from "@/components/time-tracking/team-select"
+import { resolveCasTeam } from "@/components/time-tracking/cas-team"
+import { TeamSelect } from "@/components/time-tracking/team-select"
 import { TeamTimeTable } from "@/components/time-tracking/team-time-table"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { PageHeader } from "@/components/ui/page-header"
@@ -23,7 +24,6 @@ export const metadata = {
 }
 
 const PAGE_TITLE = "Tým"
-const TEAM_WIDE_ROLES: readonly string[] = ["coach", "admin"]
 
 interface CasTymPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -73,23 +73,7 @@ export default async function CasTymPage({ searchParams }: CasTymPageProps) {
   const now = new Date()
   const { range, instants, todayKey } = resolveRangeParams(params, now)
 
-  const canPickTeam = TEAM_WIDE_ROLES.includes(profile.role)
-  let teams: TeamOption[] = []
-  let team: TeamOption | null = null
-
-  if (canPickTeam) {
-    const { data, error } = await supabase
-      .from("teams")
-      .select("id, name")
-      .is("removed_at", null)
-      .order("name", { ascending: true })
-    if (error) throw error
-    teams = data ?? []
-    const requestedTeamId = firstParam(params[TEAM_PARAM])
-    team = teams.find((candidate) => candidate.id === requestedTeamId) ?? teams[0] ?? null
-  } else if (profile.team_id) {
-    team = { id: profile.team_id, name: profile.team?.name ?? "" }
-  }
+  const { canPickTeam, teams, team } = await resolveCasTeam(supabase, profile, firstParam(params[TEAM_PARAM]))
 
   if (!team) {
     return (

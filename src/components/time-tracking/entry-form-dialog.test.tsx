@@ -3,9 +3,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 
 import { TITLE_PLACEHOLDER } from "@/lib/time-tracking/constants"
-import type { TimeEntryWithTag } from "@/lib/time-tracking/types"
+import type { TagCatalog, TimeEntryWithTag, TimeTag } from "@/lib/time-tracking/types"
 
-import { EntryFormDialog } from "./entry-form-dialog"
+import { EntryFormDialog, buildEntryPayload } from "./entry-form-dialog"
 
 const refresh = vi.fn()
 const toastSuccess = vi.fn()
@@ -34,13 +34,39 @@ const ENTRY: TimeEntryWithTag = {
   direction: "reading",
   source: "manual",
   title: "Lean Startup",
-  tag_id: null,
-  tag: null,
+  tag_id: "reading",
+  tag: { id: "reading", name: "Čtení", direction: "reading" },
   started_at: "2026-09-24T08:00:00Z",
   ended_at: "2026-09-24T09:30:00Z",
   duration_ms: 90 * 60_000,
   created_at: "2026-09-24T09:30:00Z",
   updated_at: "2026-09-24T09:30:00Z",
+}
+
+function systemTag(id: string, name: string, direction: "training" | "reading"): TimeTag {
+  return {
+    id,
+    name,
+    direction,
+    team_id: null,
+    system_key: id,
+    created_by_profile_id: null,
+    updated_by_profile_id: null,
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  }
+}
+
+/** System tags only, passed in so the picker never fetches (and pre-selects TS / Čtení). */
+const TAG_CATALOG: TagCatalog = {
+  tags: [
+    systemTag("training_session", "TS", "training"),
+    systemTag("training_session_prep", "Příprava na TS", "training"),
+    systemTag("reading", "Čtení", "reading"),
+    systemTag("essay", "Esej", "reading"),
+  ],
+  selectedTagIds: [],
+  newTagCount: 0,
 }
 
 const fetchMock = vi.fn<typeof fetch>()
@@ -61,7 +87,7 @@ function lastRequest(): { url: string; method: string | undefined; body: Record<
 function renderDialog(entry: TimeEntryWithTag | null = null) {
   const onOpenChange = vi.fn()
   const onSaved = vi.fn()
-  render(<EntryFormDialog open onOpenChange={onOpenChange} entry={entry} now={NOW} onSaved={onSaved} />)
+  render(<EntryFormDialog open onOpenChange={onOpenChange} entry={entry} now={NOW} tagCatalog={TAG_CATALOG} onSaved={onSaved} />)
   return { onOpenChange, onSaved }
 }
 
@@ -169,27 +195,28 @@ describe("EntryFormDialog", () => {
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Neplatný tag"))
   })
 
-  it("requires a tag for a new Reading entry", async () => {
+  it("pre-selects Čtení for a new Reading entry", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: { ...ENTRY, id: "new" } }, 201))
     const user = userEvent.setup()
     renderDialog()
 
     await user.click(screen.getByRole("radio", { name: "Reading" }))
+    expect(screen.getByRole("combobox", { name: "Tag" })).toHaveTextContent("Čtení")
     await user.click(screen.getByRole("button", { name: "Uložit" }))
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Vyber tag")
-    expect(screen.getByRole("combobox", { name: "Tag" })).toHaveAttribute("aria-invalid", "true")
-    expect(fetchMock).not.toHaveBeenCalled()
+    await waitFor(() => expect(lastRequest().body).toMatchObject({ direction: "reading", tagId: "reading" }))
   })
 
-  it("requires a tag when an entry is switched to Training", async () => {
+  it("pre-selects TS when an entry is switched to Training", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ data: ENTRY }, 200))
     const user = userEvent.setup()
-    renderDialog({ ...ENTRY, direction: "practise" })
+    renderDialog({ ...ENTRY, direction: "practise", tag_id: null, tag: null })
 
     await user.click(screen.getByRole("radio", { name: "Training" }))
+    expect(screen.getByRole("combobox", { name: "Tag" })).toHaveTextContent("TS")
     await user.click(screen.getByRole("button", { name: "Uložit" }))
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Vyber tag")
-    expect(fetchMock).not.toHaveBeenCalled()
+    await waitFor(() => expect(lastRequest().body).toEqual({ direction: "training", tagId: "training_session" }))
   })
 
   it("edits with PATCH sending only changed fields", async () => {
@@ -213,11 +240,7 @@ describe("EntryFormDialog", () => {
   })
 
   it("drops the tag when the direction changes, because tags belong to one direction", async () => {
-    const tagged: TimeEntryWithTag = {
-      ...ENTRY,
-      tag_id: "t-book",
-      tag: { id: "t-book", name: "Kniha", direction: "reading" },
-    }
+    const tagged: TimeEntryWithTag = ENTRY
     fetchMock.mockResolvedValue(jsonResponse({ data: { ...tagged, direction: "project", tag_id: null, tag: null } }, 200))
     const user = userEvent.setup()
     const { onOpenChange } = renderDialog(tagged)
@@ -238,5 +261,33 @@ describe("EntryFormDialog", () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe("buildEntryPayload", () => {
+  const values = {
+    direction: "project" as const,
+    tagId: null,
+    newTagName: "Kavárna",
+    title: "",
+    startDate: "2026-09-24",
+    startTime: "10:00",
+    endDate: "2026-09-24",
+    endTime: "11:30",
+  }
+
+  it("sends a draft tag name instead of tagId for a new entry", () => {
+    expect(buildEntryPayload(values, null)).toEqual({
+      direction: "project",
+      newTagName: "Kavárna",
+      title: null,
+      startedAt: "2026-09-24T10:00:00+02:00",
+      endedAt: "2026-09-24T11:30:00+02:00",
+    })
+  })
+
+  it("sends only the draft tag name when editing", () => {
+    const entry = { ...ENTRY, direction: "project" as const, title: null, tag_id: null, tag: null }
+    expect(buildEntryPayload(values, entry)).toEqual({ newTagName: "Kavárna" })
   })
 })

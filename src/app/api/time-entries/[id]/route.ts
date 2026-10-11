@@ -5,7 +5,8 @@ import type { Updatable } from "@/lib/supabase/tables"
 import { HTTP_STATUS } from "@/lib/time-tracking/api-errors"
 import { TIME_ENTRY_WITH_TAG_SELECT, TIME_TRACKING_MESSAGES } from "@/lib/time-tracking/constants"
 import { computeDurationMs } from "@/lib/time-tracking/duration"
-import { getEntry, isUsableTag } from "@/lib/time-tracking/queries"
+import { resolveEntryTag } from "@/lib/time-tracking/entry-tag"
+import { getEntry } from "@/lib/time-tracking/queries"
 import {
   dbErrorResponse,
   jsonError,
@@ -17,6 +18,7 @@ import {
   firstIssueMessage,
   hasRequiredTag,
   idParamSchema,
+  isValidNewTag,
   isValidTimeRange,
   updateEntrySchema,
 } from "@/lib/time-tracking/validation"
@@ -55,18 +57,26 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return jsonError(TIME_TRACKING_MESSAGES.entryNotFound, HTTP_STATUS.notFound)
     }
 
-    if (input.tagId !== undefined && input.tagId !== null && !(await isUsableTag(supabase, profile.team_id, input.tagId))) {
-      return jsonError(TIME_TRACKING_MESSAGES.invalidTag, HTTP_STATUS.badRequest)
-    }
+    const nextDirection = input.direction ?? existing.direction
     // Checked only when direction or tag changes, so older untagged entries stay editable otherwise.
-    const touchesTag = input.direction !== undefined || input.tagId !== undefined
-    const next = {
-      direction: input.direction ?? existing.direction,
+    const touchesTag = input.direction !== undefined || input.tagId !== undefined || input.newTagName !== undefined
+    const nextTag = {
+      direction: nextDirection,
       tagId: input.tagId === undefined ? existing.tag_id : input.tagId,
+      newTagName: input.newTagName,
     }
-    if (touchesTag && !hasRequiredTag(next)) {
+    if (touchesTag && !hasRequiredTag(nextTag)) {
       return jsonError(TIME_TRACKING_MESSAGES.tagRequired, HTTP_STATUS.badRequest)
     }
+    if (!isValidNewTag({ direction: nextDirection, tagId: input.tagId, newTagName: input.newTagName })) {
+      return jsonError(TIME_TRACKING_MESSAGES.systemTagDirection, HTTP_STATUS.badRequest)
+    }
+    const tag = await resolveEntryTag(supabase, profile, {
+      direction: nextDirection,
+      tagId: input.tagId,
+      newTagName: input.newTagName,
+    })
+    if (!tag.ok) return jsonError(tag.message, HTTP_STATUS.badRequest)
 
     const startedAt = input.startedAt === undefined ? existing.started_at : new Date(input.startedAt).toISOString()
     const endedAt = input.endedAt === undefined ? existing.ended_at : new Date(input.endedAt).toISOString()
@@ -76,7 +86,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const update: Updatable<"time_entries"> = { updated_by_profile_id: profile.id }
     if (input.direction !== undefined) update.direction = input.direction
-    if (input.tagId !== undefined) update.tag_id = input.tagId
+    if (tag.tagId !== undefined) update.tag_id = tag.tagId
     if (input.title !== undefined) update.title = input.title
     if (input.startedAt !== undefined || input.endedAt !== undefined) {
       update.started_at = startedAt

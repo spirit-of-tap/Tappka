@@ -23,7 +23,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
-import { TagCombobox } from "./tag-combobox"
+import { NO_TAG_SELECTION, TagCombobox, type TagSelection } from "./tag-combobox"
 import { useTimer } from "./timer-provider"
 
 export const TIMER_STARTED_MESSAGE = "Časomíra běží"
@@ -35,11 +35,11 @@ interface StartTimerSheetProps {
 
 interface FormState {
   direction: TimeDirection | null
-  tagId: string | null
+  tag: TagSelection
   title: string
 }
 
-const EMPTY_FORM: FormState = { direction: null, tagId: null, title: "" }
+const EMPTY_FORM: FormState = { direction: null, tag: NO_TAG_SELECTION, title: "" }
 
 interface FieldErrorState {
   field: "direction" | "tagId"
@@ -67,7 +67,8 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
     const parsed = startTimerSchema.safeParse({
       action: "start",
       direction: form.direction ?? undefined,
-      tagId: form.tagId,
+      tagId: form.tag.tagId,
+      newTagName: form.tag.newTagName ?? undefined,
       title: form.title,
     })
     if (!parsed.success) {
@@ -79,6 +80,7 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
     const ok = await start({
       direction: parsed.data.direction,
       tagId: parsed.data.tagId ?? null,
+      newTagName: parsed.data.newTagName ?? null,
       title: parsed.data.title ?? null,
     })
     if (ok) {
@@ -122,7 +124,9 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
                 if (!value) return
                 // A tag belongs to one direction, so switching direction drops it.
                 setForm((current) =>
-                  current.direction === value ? current : { ...current, direction: value as TimeDirection, tagId: null },
+                  current.direction === value
+                    ? current
+                    : { ...current, direction: value as TimeDirection, tag: NO_TAG_SELECTION },
                 )
                 setError(null)
               }}
@@ -142,10 +146,10 @@ export function StartTimerSheet({ open, onOpenChange }: StartTimerSheetProps) {
             <FieldLabel htmlFor={tagId}>Tag</FieldLabel>
             <TagCombobox
               id={tagId}
-              value={form.tagId}
+              value={form.tag}
               direction={form.direction}
-              onChange={(nextTagId) => {
-                setForm((current) => ({ ...current, tagId: nextTagId }))
+              onChange={(selection) => {
+                setForm((current) => ({ ...current, tag: selection }))
                 setError(null)
               }}
               aria-invalid={tagError !== null || undefined}
