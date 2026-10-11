@@ -29,9 +29,9 @@ function tag(id: string, name: string, direction: TimeDirection, teamId: string 
   }
 }
 
-const TS = tag("t-ts", "TS", "training", null)
+const TS = { ...tag("t-ts", "TS", "training", null), system_key: "training_session" }
 const ESSAY = tag("t-essay", "Esej", "reading", null)
-const READING = tag("t-reading", "Čtení", "reading", null)
+const READING = { ...tag("t-reading", "Čtení", "reading", null), system_key: "reading" }
 const FELLA_PRACTISE = tag("t-fella-practise", "fellaship", "practise")
 const FELLA_PROJECT = tag("t-fella-project", "fellaship", "project")
 const HIDDEN_PROJECT = tag("t-tappka", "Tappka", "project")
@@ -94,6 +94,11 @@ describe("TagCombobox", () => {
 
     await user.type(screen.getByLabelText("Hledat tag"), "Kniha")
     expect(screen.queryByText(/Vytvořit tag/)).not.toBeInTheDocument()
+  })
+
+  it("pre-selects the most common fixed tag for Training and Reading", () => {
+    const { onChange } = renderCombobox("training")
+    expect(onChange).toHaveBeenCalledWith({ tagId: TS.id, newTagName: null })
   })
 
   it("offers only shown team tags for Projekt", async () => {

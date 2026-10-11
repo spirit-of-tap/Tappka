@@ -6,6 +6,7 @@ import { Check, ChevronsUpDown, Eye, Plus, Sparkles, Tag, X } from "lucide-react
 import { toast } from "sonner"
 
 import {
+  DEFAULT_SYSTEM_TAG_KEYS,
   TAG_NAME_MAX_LENGTH,
   TAG_SETTINGS_URL,
   TIME_DIRECTION_LABELS,
@@ -194,10 +195,23 @@ export function TagCombobox({
 
   const allTags = catalog?.tags ?? []
   const selectedTagIds = new Set(catalog?.selectedTagIds ?? [])
+  const required = direction !== null && isTagRequired(direction)
+  // Training / Reading pre-select their most common fixed tag (TS, Čtení); the person
+  // switches to the other one when needed.
+  const needsDefault = required && value.tagId === null && value.newTagName === null
+  const defaultTag =
+    needsDefault && direction !== null
+      ? allTags.find((tag) => tag.system_key === DEFAULT_SYSTEM_TAG_KEYS[direction])
+      : undefined
+  React.useEffect(() => {
+    if (!needsDefault) return
+    if (defaultTag) onChange({ tagId: defaultTag.id, newTagName: null })
+    else if (catalog === null && !isLoading) void loadCatalog()
+  }, [needsDefault, defaultTag, catalog, isLoading, loadCatalog, onChange])
+
   const selectedTag = value.tagId === null ? null : (allTags.find((tag) => tag.id === value.tagId) ?? null)
   const options =
     direction === null ? [] : pickerTags({ tags: allTags, selectedTagIds, direction, currentTagId: value.tagId })
-  const required = direction !== null && isTagRequired(direction)
   const canCreateTags = direction !== null && hasTeamTags(direction)
   const trimmedQuery = query.trim().slice(0, TAG_NAME_MAX_LENGTH)
   const matchingTeamTag =
