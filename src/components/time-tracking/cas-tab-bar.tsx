@@ -1,6 +1,6 @@
 "use client"
 
-import { ChartColumn, User, Users, type LucideIcon } from "lucide-react"
+import { CalendarDays, ChartColumn, User, Users, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 
@@ -14,11 +14,14 @@ interface CasTab {
 
 const CAS_TABS: readonly CasTab[] = [
   { title: "Moje", url: "/cas", icon: User },
+  { title: "Kalendář", url: "/cas/kalendar", icon: CalendarDays },
   { title: "Tým", url: "/cas/tym", icon: Users },
   { title: "Reporting", url: "/cas/reporting", icon: ChartColumn },
 ]
 
 const MY_TAB_URL = "/cas"
+/** Tabs about a team; a coach's `?team=` choice carries over between them. */
+const TEAM_TAB_URLS: readonly string[] = ["/cas/tym", "/cas/reporting"]
 
 export function getActiveCasTabUrl(pathname: string): string | undefined {
   const subTab = CAS_TABS.find(
@@ -32,7 +35,7 @@ export function getActiveCasTabUrl(pathname: string): string | undefined {
 /** Tab URL carrying over the period (and a coach's team), so switching tabs keeps them. */
 export function casTabHref(url: string, searchParams: URLSearchParams): string {
   const params = new URLSearchParams()
-  const keys = url === MY_TAB_URL ? [FROM_PARAM, TO_PARAM] : [FROM_PARAM, TO_PARAM, TEAM_PARAM]
+  const keys = TEAM_TAB_URLS.includes(url) ? [FROM_PARAM, TO_PARAM, TEAM_PARAM] : [FROM_PARAM, TO_PARAM]
   for (const key of keys) {
     const value = searchParams.get(key)
     if (value !== null) params.set(key, value)

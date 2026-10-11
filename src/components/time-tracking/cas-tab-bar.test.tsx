@@ -7,6 +7,7 @@ describe("getActiveCasTabUrl", () => {
     ["/cas", "/cas"],
     ["/cas/tym", "/cas/tym"],
     ["/cas/reporting", "/cas/reporting"],
+    ["/cas/kalendar", "/cas/kalendar"],
     ["/cas/neco", "/cas"],
     ["/cteni", undefined],
   ])("%s → %s", (pathname, expected) => {
@@ -21,7 +22,8 @@ describe("casTabHref", () => {
     expect(casTabHref("/cas/reporting", params)).toBe("/cas/reporting?from=2026-10-01&to=2026-10-31&team=t1")
   })
 
-  it("keeps only the period on Moje", () => {
+  it("keeps only the period on the personal tabs", () => {
     expect(casTabHref("/cas", params)).toBe("/cas?from=2026-10-01&to=2026-10-31")
+    expect(casTabHref("/cas/kalendar", params)).toBe("/cas/kalendar?from=2026-10-01&to=2026-10-31")
   })
 })
