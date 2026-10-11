@@ -104,7 +104,8 @@ describe("spotlight", () => {
       expect(cohortAItems.some((i) => i.id === "page-birth-giving")).toBe(false);
       expect(cohortAItems.some((i) => i.id === "page-schuzky")).toBe(false);
       expect(cohortAItems.some((i) => i.id === "page-portfolio")).toBe(false);
-      expect(cohortAItems.some((i) => i.id === "page-cas")).toBe(false);
+      // Čas is released from beta, so cohort A sees it too.
+      expect(cohortAItems.some((i) => i.id === "page-cas")).toBe(true);
     });
 
     it("shows all feature items for cohort B", () => {

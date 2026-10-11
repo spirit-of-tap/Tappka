@@ -148,4 +148,4 @@ Route Handlers (`src/app/api/`):
 | `PUT /api/time-tags/[id]/selection` `{ selected }` | Zapnout / schovat týmový tag ve výběru |
 | `POST /api/time-tags/review` | „Ignorovat" nové tagy (otevření nastavení dělá totéž) |
 
-Přístup je řízen beta kohortou **B** (`timeTracking` v `src/lib/feature-access.ts`), admin má přístup vždy.
+Modul je **mimo betu** a mají ho všichni přihlášení (`timeTracking` v `RELEASED_FEATURES`, `src/lib/feature-access.ts`).
