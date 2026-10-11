@@ -4,7 +4,8 @@ import type { Database } from "@/lib/supabase/database.types"
 
 import { TIME_ENTRY_WITH_TAG_SELECT } from "./constants"
 import { computeDurationMs } from "./duration"
-import type { TeamMember, TimeDirection, TimeEntryWithTag, TimeRange, TimeTag } from "./types"
+import { listNewTeamTags } from "./tag-catalog"
+import type { TagCatalog, TeamMember, TimeDirection, TimeEntryWithTag, TimeRange, TimeTag } from "./types"
 
 type Client = SupabaseClient<Database>
 
@@ -121,29 +122,93 @@ export async function listTeamMemberEntries(
   return { members, entries }
 }
 
-/** The profile's tags, ordered by name. */
-export async function listTags(supabase: Client, profileId: string): Promise<TimeTag[]> {
-  const { data, error } = await supabase
-    .from("time_tags")
-    .select("*")
-    .eq("profile_id", profileId)
-    .order("name", { ascending: true })
+/**
+ * Tags usable by a member of `teamId`: system tags plus the team's tags, ordered by name.
+ * Filtered explicitly because coaches and admins can read every team's tags (RLS).
+ */
+export async function listTags(supabase: Client, teamId: string | null): Promise<TimeTag[]> {
+  let query = supabase.from("time_tags").select("*")
+  query = teamId === null ? query.is("team_id", null) : query.or(`team_id.is.null,team_id.eq.${teamId}`)
+  const { data, error } = await query.order("name", { ascending: true })
 
   if (error) throw error
   return data ?? []
 }
 
-/** True when `tagId` exists and belongs to `profileId`. */
-export async function isOwnTag(supabase: Client, profileId: string, tagId: string): Promise<boolean> {
+/** Ids of the team tags the profile chose to see. */
+export async function listSelectedTagIds(supabase: Client, profileId: string): Promise<string[]> {
+  const { data, error } = await supabase.from("time_tag_selections").select("tag_id").eq("profile_id", profileId)
+
+  if (error) throw error
+  return (data ?? []).map((row) => row.tag_id)
+}
+
+/** When the profile last reviewed its tag settings, or `null`. */
+export async function getTagsReviewedAt(supabase: Client, profileId: string): Promise<string | null> {
   const { data, error } = await supabase
-    .from("time_tags")
-    .select("id")
-    .eq("id", tagId)
+    .from("time_tracking_preferences")
+    .select("tags_reviewed_at")
     .eq("profile_id", profileId)
     .maybeSingle()
 
   if (error) throw error
-  return data !== null
+  return data?.tags_reviewed_at ?? null
+}
+
+export interface TagCatalogWithReview extends TagCatalog {
+  reviewedAt: string | null
+}
+
+/** Usable tags, the profile's shown team tags and how many new team tags await review. */
+export async function getTagCatalog(
+  supabase: Client,
+  profile: { id: string; team_id: string | null },
+): Promise<TagCatalogWithReview> {
+  const [tags, selectedTagIds, reviewedAt] = await Promise.all([
+    listTags(supabase, profile.team_id),
+    listSelectedTagIds(supabase, profile.id),
+    getTagsReviewedAt(supabase, profile.id),
+  ])
+  const newTags = listNewTeamTags({ tags, selectedTagIds: new Set(selectedTagIds), reviewedAt, profileId: profile.id })
+  return { tags, selectedTagIds, newTagCount: newTags.length, reviewedAt }
+}
+
+/** True when `tagId` is a system tag or a tag of `teamId`. */
+export async function isUsableTag(supabase: Client, teamId: string | null, tagId: string): Promise<boolean> {
+  const { data, error } = await supabase.from("time_tags").select("team_id").eq("id", tagId).maybeSingle()
+
+  if (error) throw error
+  return data !== null && (data.team_id === null || data.team_id === teamId)
+}
+
+/** Shows (`selected`) or hides a team tag in the profile's tag picker; idempotent. */
+export async function setTagSelected(
+  supabase: Client,
+  profileId: string,
+  tagId: string,
+  selected: boolean,
+): Promise<void> {
+  const { error } = selected
+    ? await supabase
+        .from("time_tag_selections")
+        .upsert({ profile_id: profileId, tag_id: tagId }, { onConflict: "profile_id,tag_id", ignoreDuplicates: true })
+    : await supabase.from("time_tag_selections").delete().eq("profile_id", profileId).eq("tag_id", tagId)
+
+  if (error) throw error
+}
+
+/** Marks every team tag existing at `now` as reviewed (no longer announced as new). */
+export async function markTagsReviewed(supabase: Client, profileId: string, now: Date = new Date()): Promise<string> {
+  const reviewedAt = now.toISOString()
+  const { error } = await supabase
+    .from("time_tracking_preferences")
+    .upsert(
+      { profile_id: profileId, tags_reviewed_at: reviewedAt, updated_at: reviewedAt },
+      { onConflict: "profile_id" },
+    )
+
+  if (error) throw error
+  return reviewedAt
 }
 
 /**

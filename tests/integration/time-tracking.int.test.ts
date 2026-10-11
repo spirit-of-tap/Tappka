@@ -60,6 +60,26 @@ async function insertClosedEntry(
   return rows[0].id as string;
 }
 
+async function insertTeamTag(
+  client: PoolClient,
+  teamId: string,
+  creatorId: string,
+  direction: string,
+  name: string,
+): Promise<string> {
+  const { rows } = await client.query(
+    `insert into public.time_tags (team_id, direction, name, created_by_profile_id, updated_by_profile_id)
+     values ($1, $2, $3, $4, $4) returning id`,
+    [teamId, direction, name, creatorId],
+  );
+  return rows[0].id as string;
+}
+
+async function systemTagId(client: PoolClient, systemKey: string): Promise<string> {
+  const { rows } = await client.query(`select id from public.time_tags where system_key = $1`, [systemKey]);
+  return rows[0].id as string;
+}
+
 async function errorCode(promise: Promise<unknown>): Promise<string | undefined> {
   try {
     await promise;
@@ -179,13 +199,9 @@ describe("time_entries invariants", () => {
 
   it("nulls tag_id when the tag is deleted", async () => {
     await withRollback(async (client) => {
-      const me = await seedMember(client);
-      const { rows: tagRows } = await client.query(
-        `insert into public.time_tags (profile_id, direction, name, created_by_profile_id, updated_by_profile_id)
-         values ($1, 'practise', 'fellaship', $1, $1) returning id`,
-        [me.profileId],
-      );
-      const tagId = tagRows[0].id as string;
+      const teamId = await seedTeam(client, "BASED");
+      const me = await seedMember(client, { teamId });
+      const tagId = await insertTeamTag(client, teamId, me.profileId, "practise", "fellaship");
       const entryId = await insertClosedEntry(client, me.profileId, "2026-09-21T08:00:00Z", "2026-09-21T09:00:00Z", { tagId });
 
       await client.query(`delete from public.time_tags where id = $1`, [tagId]);
@@ -196,48 +212,83 @@ describe("time_entries invariants", () => {
 });
 
 describe("time_tags invariants", () => {
-  const insertTag = `insert into public.time_tags (profile_id, direction, name, created_by_profile_id, updated_by_profile_id)
-                     values ($1, $2, $3, $1, $1) returning id`;
-
-  it("keeps tag names unique per person and direction, case- and whitespace-insensitively", async () => {
+  it("seeds the fixed Training and Reading tags", async () => {
     await withRollback(async (client) => {
-      const me = await seedMember(client);
-      const other = await seedMember(client);
+      const { rows } = await client.query(
+        `select system_key, direction, name from public.time_tags where team_id is null order by system_key`,
+      );
+      expect(rows).toEqual([
+        { system_key: "essay", direction: "reading", name: "Esej" },
+        { system_key: "reading", direction: "reading", name: "Čtení" },
+        { system_key: "training_session", direction: "training", name: "TS" },
+        { system_key: "training_session_prep", direction: "training", name: "Příprava na TS" },
+      ]);
+    });
+  });
 
-      await client.query(insertTag, [me.profileId, "practise", "Fellaship"]);
+  it("keeps tag names unique per team and direction, case- and whitespace-insensitively", async () => {
+    await withRollback(async (client) => {
+      const teamA = await seedTeam(client, "BASED");
+      const teamB = await seedTeam(client, "TIMACE");
+      const me = await seedMember(client, { teamId: teamA });
+      const mate = await seedMember(client, { teamId: teamA });
+      const other = await seedMember(client, { teamId: teamB });
+
+      await insertTeamTag(client, teamA, me.profileId, "practise", "Fellaship");
 
       await client.query("savepoint dup");
-      const code = await errorCode(client.query(insertTag, [me.profileId, "practise", "  fellaship "]));
+      const code = await errorCode(insertTeamTag(client, teamA, mate.profileId, "practise", "  fellaship "));
       await client.query("rollback to savepoint dup");
       expect(code).toBe(UNIQUE_VIOLATION);
 
-      // Same name is fine under another direction and for a different person.
-      await expect(client.query(insertTag, [me.profileId, "project", "fellaship"])).resolves.toBeTruthy();
-      await expect(client.query(insertTag, [other.profileId, "practise", "fellaship"])).resolves.toBeTruthy();
+      // Same name is fine under another direction and in another team.
+      await expect(insertTeamTag(client, teamA, me.profileId, "project", "fellaship")).resolves.toBeTruthy();
+      await expect(insertTeamTag(client, teamB, other.profileId, "practise", "fellaship")).resolves.toBeTruthy();
     });
   });
 
   it("requires a direction", async () => {
     await withRollback(async (client) => {
-      const me = await seedMember(client);
+      const teamId = await seedTeam(client, "BASED");
       const code = await errorCode(
-        client.query(
-          `insert into public.time_tags (profile_id, name, created_by_profile_id, updated_by_profile_id)
-           values ($1, 'fellaship', $1, $1)`,
-          [me.profileId],
-        ),
+        client.query(`insert into public.time_tags (team_id, name) values ($1, 'fellaship')`, [teamId]),
       );
       expect(code).toBe("23502");
     });
   });
 
+  it("allows team tags only for Practise / Projekt and system tags only for Training / Reading", async () => {
+    await withRollback(async (client) => {
+      const teamId = await seedTeam(client, "BASED");
+      const me = await seedMember(client, { teamId });
+
+      await client.query("savepoint team_reading");
+      const teamReading = await errorCode(insertTeamTag(client, teamId, me.profileId, "reading", "Kniha"));
+      await client.query("rollback to savepoint team_reading");
+      expect(teamReading).toBe(CHECK_VIOLATION);
+
+      await client.query("savepoint system_practise");
+      const systemPractise = await errorCode(
+        client.query(`insert into public.time_tags (system_key, direction, name) values ('x', 'practise', 'X')`),
+      );
+      await client.query("rollback to savepoint system_practise");
+      expect(systemPractise).toBe(CHECK_VIOLATION);
+
+      const teamWithoutKey = await errorCode(
+        client.query(`insert into public.time_tags (direction, name) values ('reading', 'Kniha')`),
+      );
+      expect(teamWithoutKey).toBe(CHECK_VIOLATION);
+    });
+  });
+
   it("accepts the project direction for tags and entries", async () => {
     await withRollback(async (client) => {
-      const me = await seedMember(client);
-      const { rows } = await client.query(insertTag, [me.profileId, "project", "Tappka"]);
+      const teamId = await seedTeam(client, "BASED");
+      const me = await seedMember(client, { teamId });
+      const tagId = await insertTeamTag(client, teamId, me.profileId, "project", "Tappka");
       const entryId = await insertClosedEntry(client, me.profileId, "2026-09-21T08:00:00Z", "2026-09-21T09:00:00Z", {
         direction: "project",
-        tagId: rows[0].id as string,
+        tagId,
       });
       expect(entryId).toBeTruthy();
     });
@@ -245,9 +296,9 @@ describe("time_tags invariants", () => {
 
   it("lets an entry use only a tag of its own direction", async () => {
     await withRollback(async (client) => {
-      const me = await seedMember(client);
-      const { rows } = await client.query(insertTag, [me.profileId, "reading", "Lean Startup"]);
-      const readingTag = rows[0].id as string;
+      const teamId = await seedTeam(client, "BASED");
+      const me = await seedMember(client, { teamId });
+      const readingTag = await systemTagId(client, "reading");
 
       await client.query("savepoint mismatch");
       const insertCode = await errorCode(
@@ -272,10 +323,15 @@ describe("time_tags invariants", () => {
       await client.query("rollback to savepoint move");
       expect(updateCode).toBe(FOREIGN_KEY_VIOLATION);
 
-      // ... and so is moving a used tag to another direction.
+      // ... and so is moving a used team tag to another direction.
+      const practiseTag = await insertTeamTag(client, teamId, me.profileId, "practise", "fellaship");
+      await insertClosedEntry(client, me.profileId, "2026-09-21T12:00:00Z", "2026-09-21T13:00:00Z", {
+        direction: "practise",
+        tagId: practiseTag,
+      });
       await client.query("savepoint retag");
       const tagCode = await errorCode(
-        client.query(`update public.time_tags set direction = 'practise' where id = $1`, [readingTag]),
+        client.query(`update public.time_tags set direction = 'project' where id = $1`, [practiseTag]),
       );
       await client.query("rollback to savepoint retag");
       expect(tagCode).toBe(FOREIGN_KEY_VIOLATION);
@@ -382,23 +438,144 @@ describe("time_entries RLS", () => {
     });
   });
 
-  it("teammates can read each other's tags but not edit them", async () => {
+  it("team tags: the team reads them, only the creator edits, other teams see nothing", async () => {
     await withRollback(async (client) => {
       const teamA = await seedTeam(client, "BASED");
+      const teamB = await seedTeam(client, "TIMACE");
       const me = await seedMember(client, { teamId: teamA });
       const mate = await seedMember(client, { teamId: teamA });
-      const { rows } = await client.query(
-        `insert into public.time_tags (profile_id, direction, name, created_by_profile_id, updated_by_profile_id)
-         values ($1, 'practise', 'fellaship', $1, $1) returning id`,
-        [me.profileId],
-      );
-      const tagId = rows[0].id as string;
+      const stranger = await seedMember(client, { teamId: teamB });
+      const tagId = await insertTeamTag(client, teamA, me.profileId, "practise", "fellaship");
 
+      await client.query("savepoint as_mate");
       await asClaims(client, { sub: mate.authUserId });
-      const { rowCount: sees } = await client.query(`select id from public.time_tags where id = $1`, [tagId]);
-      const { rowCount: edits } = await client.query(`update public.time_tags set name = 'x' where id = $1`, [tagId]);
+      const { rowCount: mateSees } = await client.query(`select id from public.time_tags where id = $1`, [tagId]);
+      const { rowCount: mateEdits } = await client.query(`update public.time_tags set name = 'x' where id = $1`, [tagId]);
+      const { rowCount: mateDeletes } = await client.query(`delete from public.time_tags where id = $1`, [tagId]);
+      await client.query("rollback to savepoint as_mate");
+      expect(mateSees).toBe(1);
+      expect(mateEdits).toBe(0);
+      expect(mateDeletes).toBe(0);
+
+      await client.query("savepoint as_stranger");
+      await asClaims(client, { sub: stranger.authUserId });
+      const { rowCount: strangerSees } = await client.query(`select id from public.time_tags where id = $1`, [tagId]);
+      await client.query("rollback to savepoint as_stranger");
+      expect(strangerSees).toBe(0);
+
+      await asClaims(client, { sub: me.authUserId });
+      const { rowCount: ownerEdits } = await client.query(`update public.time_tags set name = 'Fellaship' where id = $1`, [tagId]);
+      expect(ownerEdits).toBe(1);
+    });
+  });
+
+  it("members create tags only for their own team", async () => {
+    await withRollback(async (client) => {
+      const teamA = await seedTeam(client, "BASED");
+      const teamB = await seedTeam(client, "TIMACE");
+      const me = await seedMember(client, { teamId: teamA });
+
+      await asClaims(client, { sub: me.authUserId });
+      await expect(insertTeamTag(client, teamA, me.profileId, "project", "Tappka")).resolves.toBeTruthy();
+
+      await client.query("savepoint foreign_team");
+      const code = await errorCode(insertTeamTag(client, teamB, me.profileId, "project", "Tappka"));
+      await client.query("rollback to savepoint foreign_team");
+      expect(code).toBe(INSUFFICIENT_PRIVILEGE);
+    });
+  });
+
+  it("everyone reads system tags, nobody changes them", async () => {
+    await withRollback(async (client) => {
+      const coach = await seedMember(client, { role: "coach" });
+      const student = await seedMember(client);
+      const tsTag = await systemTagId(client, "training_session");
+
+      await client.query("savepoint as_student");
+      await asClaims(client, { sub: student.authUserId });
+      const { rowCount: sees } = await client.query(`select id from public.time_tags where id = $1`, [tsTag]);
+      await client.query("rollback to savepoint as_student");
       expect(sees).toBe(1);
+
+      await asClaims(client, { sub: coach.authUserId });
+      const { rowCount: edits } = await client.query(`update public.time_tags set name = 'x' where id = $1`, [tsTag]);
+      const { rowCount: deletes } = await client.query(`delete from public.time_tags where id = $1`, [tsTag]);
       expect(edits).toBe(0);
+      expect(deletes).toBe(0);
+    });
+  });
+
+  it("coaches can rename and delete any team tag", async () => {
+    await withRollback(async (client) => {
+      const teamId = await seedTeam(client, "BASED");
+      const me = await seedMember(client, { teamId });
+      const coach = await seedMember(client, { role: "coach" });
+      const tagId = await insertTeamTag(client, teamId, me.profileId, "practise", "fellaship");
+
+      await asClaims(client, { sub: coach.authUserId });
+      const { rowCount: edits } = await client.query(`update public.time_tags set name = 'Fella' where id = $1`, [tagId]);
+      const { rowCount: deletes } = await client.query(`delete from public.time_tags where id = $1`, [tagId]);
+      expect(edits).toBe(1);
+      expect(deletes).toBe(1);
+    });
+  });
+});
+
+describe("time_tag_selections and time_tracking_preferences RLS", () => {
+  it("each person shows only own team tags and sees only own selections", async () => {
+    await withRollback(async (client) => {
+      const teamA = await seedTeam(client, "BASED");
+      const teamB = await seedTeam(client, "TIMACE");
+      const me = await seedMember(client, { teamId: teamA });
+      const mate = await seedMember(client, { teamId: teamA });
+      const stranger = await seedMember(client, { teamId: teamB });
+      const ownTag = await insertTeamTag(client, teamA, mate.profileId, "practise", "fellaship");
+      const foreignTag = await insertTeamTag(client, teamB, stranger.profileId, "practise", "kavárna");
+      await client.query(`insert into public.time_tag_selections (profile_id, tag_id) values ($1, $2)`, [
+        mate.profileId,
+        ownTag,
+      ]);
+
+      await asClaims(client, { sub: me.authUserId });
+      await expect(
+        client.query(`insert into public.time_tag_selections (profile_id, tag_id) values ($1, $2)`, [me.profileId, ownTag]),
+      ).resolves.toBeTruthy();
+
+      await client.query("savepoint foreign_tag");
+      const foreignCode = await errorCode(
+        client.query(`insert into public.time_tag_selections (profile_id, tag_id) values ($1, $2)`, [me.profileId, foreignTag]),
+      );
+      await client.query("rollback to savepoint foreign_tag");
+      expect(foreignCode).toBe(INSUFFICIENT_PRIVILEGE);
+
+      await client.query("savepoint for_mate");
+      const forMateCode = await errorCode(
+        client.query(`insert into public.time_tag_selections (profile_id, tag_id) values ($1, $2)`, [mate.profileId, ownTag]),
+      );
+      await client.query("rollback to savepoint for_mate");
+      expect(forMateCode).toBe(INSUFFICIENT_PRIVILEGE);
+
+      const { rows } = await client.query(`select profile_id from public.time_tag_selections`);
+      expect(rows).toEqual([{ profile_id: me.profileId }]);
+    });
+  });
+
+  it("time tracking preferences are private", async () => {
+    await withRollback(async (client) => {
+      const me = await seedMember(client);
+      const other = await seedMember(client);
+      await client.query(`insert into public.time_tracking_preferences (profile_id, tags_reviewed_at) values ($1, now())`, [
+        other.profileId,
+      ]);
+
+      await asClaims(client, { sub: me.authUserId });
+      await expect(
+        client.query(`insert into public.time_tracking_preferences (profile_id, tags_reviewed_at) values ($1, now())`, [
+          me.profileId,
+        ]),
+      ).resolves.toBeTruthy();
+      const { rows } = await client.query(`select profile_id from public.time_tracking_preferences`);
+      expect(rows).toEqual([{ profile_id: me.profileId }]);
     });
   });
 });

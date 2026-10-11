@@ -29,8 +29,8 @@ import {
   TITLE_PLACEHOLDER,
 } from "@/lib/time-tracking/constants"
 import { formatDurationShort } from "@/lib/time-tracking/duration"
-import type { TimeDirection, TimeEntryWithTag, TimeTag } from "@/lib/time-tracking/types"
-import { timeDirectionSchema } from "@/lib/time-tracking/validation"
+import type { TagCatalog, TimeDirection, TimeEntryWithTag } from "@/lib/time-tracking/types"
+import { hasRequiredTag, timeDirectionSchema } from "@/lib/time-tracking/validation"
 import { cn } from "@/lib/utils"
 
 import { isoToLocalInputs, localInputsToIso } from "./local-datetime"
@@ -140,8 +140,8 @@ export interface EntryFormDialogProps {
   onOpenChange: (open: boolean) => void
   /** Entry to edit; `null` / omitted = create („Zapsat ručně"). */
   entry?: TimeEntryWithTag | null
-  /** Pre-loaded tags for the combobox. */
-  tags?: TimeTag[]
+  /** Pre-loaded tag catalog for the combobox. */
+  tagCatalog?: TagCatalog
   /** Reference time for create defaults (end = now rounded down, start = 1 h before). */
   now?: Date
   /** Called with the saved entry (for an optimistic update) before `router.refresh()`. */
@@ -149,7 +149,7 @@ export interface EntryFormDialogProps {
 }
 
 /** One dialog for „Zapsat ručně" (POST) and „Upravit" (PATCH with changed fields only). */
-export function EntryFormDialog({ open, onOpenChange, entry = null, tags, now, onSaved }: EntryFormDialogProps) {
+export function EntryFormDialog({ open, onOpenChange, entry = null, tagCatalog, now, onSaved }: EntryFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -163,7 +163,7 @@ export function EntryFormDialog({ open, onOpenChange, entry = null, tags, now, o
         <EntryForm
           key={entry?.id ?? "new"}
           entry={entry}
-          tags={tags}
+          tagCatalog={tagCatalog}
           now={now}
           onSaved={onSaved}
           onDone={() => onOpenChange(false)}
@@ -175,13 +175,13 @@ export function EntryFormDialog({ open, onOpenChange, entry = null, tags, now, o
 
 interface EntryFormProps {
   entry: TimeEntryWithTag | null
-  tags?: TimeTag[]
+  tagCatalog?: TagCatalog
   now?: Date
   onSaved?: (entry: TimeEntryWithTag) => void
   onDone: () => void
 }
 
-function EntryForm({ entry, tags, now, onSaved, onDone }: EntryFormProps) {
+function EntryForm({ entry, tagCatalog, now, onSaved, onDone }: EntryFormProps) {
   const router = useRouter()
   const [referenceNow] = React.useState(() => now ?? new Date())
   const ids = {
@@ -217,6 +217,13 @@ function EntryForm({ entry, tags, now, onSaved, onDone }: EntryFormProps) {
   const preview = previewMs !== null && previewMs > 0 ? formatDurationShort(previewMs) : EMPTY_PREVIEW
 
   async function onSubmit(values: EntryFormValues) {
+    // Like the API: an older untagged Training / Reading entry stays editable until its
+    // direction or tag is touched.
+    const touchesTag = entry === null || values.direction !== entry.direction || values.tagId !== entry.tag_id
+    if (touchesTag && !hasRequiredTag(values)) {
+      setError("tagId", { type: "required", message: TIME_TRACKING_MESSAGES.tagRequired })
+      return
+    }
     const payload = buildEntryPayload(values, entry)
     if (payload === null) return
     if (entry !== null && Object.keys(payload).length === 0) {
@@ -288,16 +295,21 @@ function EntryForm({ entry, tags, now, onSaved, onDone }: EntryFormProps) {
       <Controller
         control={control}
         name="tagId"
-        render={({ field }) => (
-          <Field>
+        render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid || undefined}>
             <FieldLabel htmlFor={ids.tag}>Tag</FieldLabel>
             <TagCombobox
               id={ids.tag}
               value={field.value}
               direction={selectedDirection ?? null}
-              onChange={(tagId) => field.onChange(tagId)}
-              initialTags={tags}
+              onChange={(tagId) => {
+                field.onChange(tagId)
+                form.clearErrors("tagId")
+              }}
+              initialCatalog={tagCatalog}
+              aria-invalid={fieldState.invalid || undefined}
             />
+            <FieldError errors={[fieldState.error]} />
           </Field>
         )}
       />

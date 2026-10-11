@@ -5,7 +5,7 @@ import type { Updatable } from "@/lib/supabase/tables"
 import { HTTP_STATUS } from "@/lib/time-tracking/api-errors"
 import { TIME_ENTRY_WITH_TAG_SELECT, TIME_TRACKING_MESSAGES } from "@/lib/time-tracking/constants"
 import { computeDurationMs } from "@/lib/time-tracking/duration"
-import { getEntry, isOwnTag } from "@/lib/time-tracking/queries"
+import { getEntry, isUsableTag } from "@/lib/time-tracking/queries"
 import {
   dbErrorResponse,
   jsonError,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/time-tracking/route-auth"
 import {
   firstIssueMessage,
+  hasRequiredTag,
   idParamSchema,
   isValidTimeRange,
   updateEntrySchema,
@@ -54,8 +55,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return jsonError(TIME_TRACKING_MESSAGES.entryNotFound, HTTP_STATUS.notFound)
     }
 
-    if (input.tagId !== undefined && input.tagId !== null && !(await isOwnTag(supabase, profile.id, input.tagId))) {
+    if (input.tagId !== undefined && input.tagId !== null && !(await isUsableTag(supabase, profile.team_id, input.tagId))) {
       return jsonError(TIME_TRACKING_MESSAGES.invalidTag, HTTP_STATUS.badRequest)
+    }
+    // Checked only when direction or tag changes, so older untagged entries stay editable otherwise.
+    const touchesTag = input.direction !== undefined || input.tagId !== undefined
+    const next = {
+      direction: input.direction ?? existing.direction,
+      tagId: input.tagId === undefined ? existing.tag_id : input.tagId,
+    }
+    if (touchesTag && !hasRequiredTag(next)) {
+      return jsonError(TIME_TRACKING_MESSAGES.tagRequired, HTTP_STATUS.badRequest)
     }
 
     const startedAt = input.startedAt === undefined ? existing.started_at : new Date(input.startedAt).toISOString()

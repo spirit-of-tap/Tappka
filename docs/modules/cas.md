@@ -14,7 +14,10 @@ Design a rozhodnutí: [`docs/plans/2026-09-24-timetracking-design.md`](https://g
 - **Ruční záznam a editace** — začátek i konec mají datum a čas, záznam smí přesáhnout půlnoc. Hodí se, když zapomeneš časomíru vypnout.
 - **Směr** — `training | reading | practise | project`, povinný. Barvy: Training světle modrá, Reading žlutá, Practise TAP červená, Projekt fialová (tokeny `--time-*` v `globals.css`).
 - **Název** — volitelný, např. „Prodávání párků před ČZU".
-- **Vlastní tag** — volitelný, jeden na záznam, např. `practise + fellaship`. Každý tag patří právě k jednomu směru: zakládá se pod směrem záznamu, nabízí se jen u záznamů téhož směru a směr se mu později nemění (jen název). Stejný název může existovat pod víc směry. Při změně směru záznamu se tag odebere. Podle tagu jde filtrovat a sečíst, kolik času projekt zabral.
+- **Tag** — jeden na záznam, každý tag patří právě k jednomu směru a směr se mu později nemění (jen název). Při změně směru záznamu se tag odebere. Podle tagu jde filtrovat a sečíst, kolik času projekt zabral.
+  - **Training a Reading** mají pevné tagy pro všechny: `TS`, `Příprava na TS` / `Čtení`, `Esej`. Nejdou přidat, přejmenovat ani schovat a tag je u těchto směrů **povinný** (starší záznamy bez tagu jdou dál upravovat, dokud se nemění směr ani tag).
+  - **Practise a Projekt** mají **týmové tagy**: založit je může kdokoli z týmu přímo ve výběru tagu, přejmenovat nebo smazat autor:ka, kouč:ka nebo admin. Název je unikátní v rámci týmu a směru. Tag je u nich volitelný.
+  - **Kdo co vidí ve výběru:** každý si v **Nastavení → Tagy v Čase** (`/settings/cas`) zapne týmové tagy, které chce mít v nabídce. Nový tag se ostatním **nezobrazí** automaticky; ve výběru tagu se objeví krátká hláška „3 nové tagy" s odkazem do nastavení a tlačítkem **Ignorovat**. Autor:ka má svůj nový tag zapnutý hned. Když člověk napíše název schovaného týmového tagu, výběr nabídne „Zobrazit tag týmu" místo založení duplicity.
 - **Výběr období** — ve stylu Clockify: rychlé volby (Dnes, Včera, Tento / Minulý týden, Poslední 2 týdny, Tento / Minulý měsíc, Tento / Minulý rok), kalendář na dva měsíce (první klik = začátek, druhý = konec) a šipky ‹ ›, které posouvají o délku období (celé měsíce a roky po měsících). Období je v URL jako `?from=YYYY-MM-DD&to=YYYY-MM-DD` (pražské dny včetně); výchozí je aktuální týden bez parametrů.
 - **Progress** — součet všech čtyř směrů proti cíli 40 h týdně přepočtenému na délku období (40 h × dny / 7, např. měsíc ≈ 171 h; metrika `time-weekly`), přehled per směr jen informativně.
 - **Týmový přehled** (`/cas/tym`) — tabulka členů:ek týmu za vybrané období: Training / Reading / Practise / Projekt / celkem a postup k přepočtenému cíli.
@@ -34,7 +37,7 @@ Modul neřeší finance, sazby ani fakturaci.
 
 ## 3. Automatické doplnění z Training Session
 
-Když manažer:ka týmu zapíše docházku na Training Session a člen:ka je označen:a jako **přítomný:á**, vznikne mu automaticky záznam `training` s názvem „Training Session" na celé okno TS podle rozvrhu týmu (`recurring_schedules`, typ `training_session`).
+Když manažer:ka týmu zapíše docházku na Training Session a člen:ka je označen:a jako **přítomný:á**, vznikne mu automaticky záznam `training` s tagem `TS` a názvem „Training Session" na celé okno TS podle rozvrhu týmu (`recurring_schedules`, typ `training_session`).
 
 - Pokud má člověk v okně TS vlastní záznam, platí ten a nic se nezakládá.
 - Automatický záznam lze upravit i smazat jako každý jiný. Upravený záznam už docházka nepřepíše.
@@ -55,13 +58,32 @@ create type time_entry_source as enum ('timer', 'manual', 'attendance');
 
 create table time_tags (
   id uuid primary key default gen_random_uuid(),
-  profile_id uuid references profiles(id) on delete cascade not null,
+  team_id uuid references teams(id) on delete cascade, -- null = pevný systémový tag
+  system_key text unique,                 -- training_session, training_session_prep, reading, essay
   direction time_direction not null,      -- tag patří k jednomu směru, unique (id, direction)
-  name text not null,                     -- 1–40 znaků, unikátní per osoba a směr (bez ohledu na velikost písmen)
+  name text not null,                     -- 1–40 znaků, unikátní per tým a směr (bez ohledu na velikost písmen)
   created_at timestamptz default now() not null,
   updated_at timestamptz default now() not null,
-  created_by_profile_id uuid references profiles(id) not null,
-  updated_by_profile_id uuid references profiles(id) not null
+  created_by_profile_id uuid references profiles(id) on delete set null,
+  updated_by_profile_id uuid references profiles(id) on delete set null,
+  -- systémové tagy jen pro training / reading, týmové jen pro practise / project
+  constraint time_tags_scope_check check (...)
+);
+
+-- týmové tagy, které má člověk zapnuté ve výběru
+create table time_tag_selections (
+  profile_id uuid references profiles(id) on delete cascade,
+  tag_id uuid references time_tags(id) on delete cascade,
+  created_at timestamptz default now() not null,
+  primary key (profile_id, tag_id)
+);
+
+-- osobní nastavení modulu; tags_reviewed_at = od kdy hlásit „nové tagy"
+create table time_tracking_preferences (
+  profile_id uuid primary key references profiles(id) on delete cascade,
+  tags_reviewed_at timestamptz,
+  created_at timestamptz default now() not null,
+  updated_at timestamptz default now() not null
 );
 
 create table time_entries (
@@ -94,9 +116,13 @@ Záznamy se mažou natvrdo (žádné `removed_at`), protože na smazaný časov�
 
 | Akce | Kdo |
 | :--- | :--- |
-| Vytvořit, upravit, smazat záznam nebo tag | Jen vlastník:ice |
-| Číst záznamy a tagy | Vlastník:ice, členové:ky stejného týmu, kouči:ky a admini (všechny) |
+| Vytvořit, upravit, smazat záznam | Jen vlastník:ice |
+| Číst záznamy | Vlastník:ice, členové:ky stejného týmu, kouči:ky a admini (všechny) |
 | Vložit záznam se `source = attendance` | Jen trigger docházky |
+| Číst tagy | Systémové všichni, týmové členové:ky týmu, kouči:ky a admini |
+| Založit týmový tag | Člen:ka týmu (jen pro svůj tým) |
+| Přejmenovat, smazat týmový tag | Autor:ka, kouči:ky a admini; systémové tagy nikdo |
+| Zapnout tag ve výběru, nastavení modulu | Jen pro sebe, jen tagy vlastního týmu |
 
 ---
 
@@ -104,6 +130,7 @@ Záznamy se mažou natvrdo (žádné `removed_at`), protože na smazaný časov�
 
 - `/cas` — moje záznamy ve vybraném období, progress k cíli, souhrn per směr, filtr podle směru a tagu, ruční zápis a editace.
 - `/cas/tym` — týmový přehled za vybrané období (přepnutí záložek Moje / Tým období zachová); kouči:ky a admini volí tým.
+- `/settings/cas` — Tagy v Čase: přepínače týmových tagů pro Practise a Projekt, nové tagy označené „Nový", přehled pevných tagů. Odkaz v profilu, v menu uživatele a ve Spotlightu.
 - Časomíra: widget v sidebaru (desktop), tlačítko Play uprostřed spodní lišty (mobil), Spotlight „Čas".
 
 Route Handlers (`src/app/api/`):
@@ -115,6 +142,10 @@ Route Handlers (`src/app/api/`):
 | `PATCH` / `DELETE /api/time-entries/[id]` | Úprava, smazání vlastního záznamu |
 | `GET /api/time-entries/timer` | Běžící časomíra nebo `null` |
 | `POST /api/time-entries/timer` `{ action: "start" \| "stop" }` | Spuštění (zastaví běžící) a zastavení |
-| `GET` / `POST /api/time-tags`, `PATCH` / `DELETE /api/time-tags/[id]` | Vlastní tagy |
+| `GET /api/time-tags` | Systémové a týmové tagy, zapnuté tagy a počet nových |
+| `POST /api/time-tags` `{ name, direction }` | Nový týmový tag (Practise / Projekt), autor:ka ho má rovnou zapnutý |
+| `PATCH` / `DELETE /api/time-tags/[id]` | Přejmenování, smazání týmového tagu |
+| `PUT /api/time-tags/[id]/selection` `{ selected }` | Zapnout / schovat týmový tag ve výběru |
+| `POST /api/time-tags/review` | „Ignorovat" nové tagy (otevření nastavení dělá totéž) |
 
-Přístup je řízen beta kohortou **B** (`timeTracking` v `src/lib/feature-access.ts`), admin má přístup vždy.
+Modul je **mimo betu** a mají ho všichni přihlášení (`timeTracking` v `RELEASED_FEATURES`, `src/lib/feature-access.ts`).

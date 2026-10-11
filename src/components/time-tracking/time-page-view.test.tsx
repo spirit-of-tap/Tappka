@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 
-import type { TimeEntryWithTag, TimeTag } from "@/lib/time-tracking/types"
+import type { TagCatalog, TimeEntryWithTag, TimeTag } from "@/lib/time-tracking/types"
 import { type DateKeyRange, presetRange, rangeToInstants } from "@/lib/time-tracking/date-range"
 
 import { TimePageView } from "./time-page-view"
@@ -26,9 +26,18 @@ const TODAY_KEY = "2026-09-25"
 const WEEK = presetRange("this-week", TODAY_KEY)
 const PROFILE_ID = "p1"
 
-const TAGS: TimeTag[] = [
-  { id: "t-book", name: "Kniha", direction: "reading", profile_id: PROFILE_ID, created_at: "2026-09-01T00:00:00Z", updated_at: "2026-09-01T00:00:00Z" } as TimeTag,
-]
+const READING_TAG: TimeTag = {
+  id: "t-book",
+  name: "Čtení",
+  direction: "reading",
+  team_id: null,
+  system_key: "reading",
+  created_by_profile_id: null,
+  updated_by_profile_id: null,
+  created_at: "2026-09-01T00:00:00Z",
+  updated_at: "2026-09-01T00:00:00Z",
+}
+const TAG_CATALOG: TagCatalog = { tags: [READING_TAG], selectedTagIds: [], newTagCount: 0 }
 
 let seq = 0
 function makeEntry(overrides: Partial<TimeEntryWithTag>): TimeEntryWithTag {
@@ -65,7 +74,7 @@ const WEDNESDAY_READING = makeEntry({
   title: "Lean Startup",
   direction: "reading",
   tag_id: "t-book",
-  tag: { id: "t-book", name: "Kniha", direction: "reading" },
+  tag: { id: "t-book", name: "Čtení", direction: "reading" },
   started_at: "2026-09-23T16:00:00Z",
   ended_at: "2026-09-23T17:30:00Z",
   duration_ms: 90 * 60_000,
@@ -90,7 +99,7 @@ function renderView(entries: TimeEntryWithTag[], range: DateKeyRange = WEEK) {
   return render(
     <TimePageView
       entries={entries}
-      tags={TAGS}
+      tagCatalog={TAG_CATALOG}
       range={range}
       instants={rangeToInstants(range)}
       todayKey={TODAY_KEY}

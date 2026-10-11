@@ -16,7 +16,10 @@ interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-/** PATCH /api/time-tags/[id] — rename an own tag (its direction never changes). */
+/**
+ * PATCH /api/time-tags/[id] — rename a team tag (its direction never changes). RLS allows
+ * the creator, coaches and admins; system tags never change.
+ */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const auth = await requireTimeTrackingContext()
@@ -41,7 +44,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .from("time_tags")
       .update({ name: parsed.data.name, updated_by_profile_id: profile.id })
       .eq("id", id)
-      .eq("profile_id", profile.id)
       .select("*")
       .maybeSingle()
 
@@ -59,12 +61,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-/** DELETE /api/time-tags/[id] — delete an own tag; entries keep their time (`tag_id` set to null). */
+/**
+ * DELETE /api/time-tags/[id] — delete a team tag (creator, coach or admin via RLS); entries
+ * keep their time (`tag_id` set to null). System tags cannot be deleted.
+ */
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const auth = await requireTimeTrackingContext()
     if (!auth.ok) return auth.response
-    const { supabase, profile } = auth.context
+    const { supabase } = auth.context
 
     const { id } = await params
     if (!idParamSchema.safeParse(id).success) {
@@ -75,7 +80,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       .from("time_tags")
       .delete()
       .eq("id", id)
-      .eq("profile_id", profile.id)
       .select("id")
       .maybeSingle()
 

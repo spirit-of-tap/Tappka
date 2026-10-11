@@ -679,13 +679,15 @@ describe("time_entries_duration_matches check", () => {
 // ---------------------------------------------------------------------------
 
 describe("time_entries cascades and uniqueness", () => {
-  it("cascades a profile's own entries and tags when the profile is deleted", async () => {
+  it("cascades a profile's own entries; team tags it created stay for the team", async () => {
     await withRollback(async (client) => {
-      const me = await seedMember(client);
+      const { rows: teamRows } = await client.query(`insert into public.teams (name) values ('BASED') returning id`);
+      const teamId = teamRows[0].id as string;
+      const me = await seedMember(client, { teamId });
       const { rows: tagRows } = await client.query(
-        `insert into public.time_tags (profile_id, direction, name, created_by_profile_id, updated_by_profile_id)
-         values ($1, 'practise', 'fellaship', $1, $1) returning id`,
-        [me.profileId],
+        `insert into public.time_tags (team_id, direction, name, created_by_profile_id, updated_by_profile_id)
+         values ($1, 'practise', 'fellaship', $2, $2) returning id`,
+        [teamId, me.profileId],
       );
       const tagId = tagRows[0].id as string;
       await insertClosedEntry(client, me.profileId, "2026-09-21T08:00:00Z", "2026-09-21T09:00:00Z", { tagId });
@@ -693,9 +695,9 @@ describe("time_entries cascades and uniqueness", () => {
       await client.query(`delete from public.profiles where id = $1`, [me.profileId]);
 
       const { rows: entries } = await client.query(`select id from public.time_entries where profile_id = $1`, [me.profileId]);
-      const { rows: tags } = await client.query(`select id from public.time_tags where id = $1`, [tagId]);
+      const { rows: tags } = await client.query(`select created_by_profile_id from public.time_tags where id = $1`, [tagId]);
       expect(entries).toHaveLength(0);
-      expect(tags).toHaveLength(0);
+      expect(tags).toEqual([{ created_by_profile_id: null }]);
     });
   });
 

@@ -32,6 +32,17 @@ export const TIME_DIRECTION_LABELS: Record<TimeDirection, string> = {
   project: "Projekt",
 }
 
+/** Directions with fixed system tags (TS, Příprava na TS / Čtení, Esej): a tag is required. */
+export const SYSTEM_TAG_DIRECTIONS: readonly TimeDirection[] = ["training", "reading"]
+/** Directions whose tags the team creates and each person shows or hides. */
+export const TEAM_TAG_DIRECTIONS: readonly TimeDirection[] = ["practise", "project"]
+
+/** `time_tags.system_key` of the tag the Training Session attendance trigger assigns. */
+export const TRAINING_SESSION_TAG_KEY = "training_session"
+
+/** Where a person picks which team tags they see. */
+export const TAG_SETTINGS_URL = "/settings/cas"
+
 export const WEEKLY_TARGET_HOURS = 40
 export const WEEKLY_TARGET_MS = WEEKLY_TARGET_HOURS * MS_PER_HOUR
 
@@ -53,7 +64,7 @@ export const TIME_ENTRY_WITH_TAG_SELECT = "*, tag:time_tags!time_entries_tag_id_
 /** Constraint / index names used to map DB errors to user-facing messages. */
 export const DB_CONSTRAINTS = {
   oneRunningTimer: "time_entries_one_running_key",
-  tagProfileDirectionName: "time_tags_profile_direction_name_key",
+  tagTeamDirectionName: "time_tags_team_direction_name_key",
   tagDirection: "time_entries_tag_direction_fkey",
   noOverlap: "time_entries_no_overlap",
 } as const
@@ -65,7 +76,10 @@ export const TIME_TRACKING_MESSAGES = {
   invalidJson: "Neplatný požadavek",
   overlap: "Záznam se překrývá s jiným záznamem",
   timerAlreadyRunning: "Už ti běží časomíra",
-  tagNameTaken: "Tag s tímto názvem už v tomhle směru máš",
+  tagNameTaken: "Tag s tímto názvem už tým v tomhle směru má",
+  tagRequired: "Vyber tag",
+  tagNeedsTeam: "Tag můžeš založit, jen když jsi v týmu",
+  systemTagDirection: "Tagy pro Training a Reading jsou pevně dané",
   tagDirectionMismatch: "Tag patří k jinému směru",
   invalidRange: "Neplatný časový rozsah",
   invalidTag: "Neplatný tag",

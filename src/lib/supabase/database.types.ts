@@ -2755,36 +2755,72 @@ export type Database = {
           },
         ]
       }
-      time_tags: {
+      time_tag_selections: {
         Row: {
           created_at: string
-          created_by_profile_id: string
-          direction: Database["public"]["Enums"]["time_direction"]
-          id: string
-          name: string
           profile_id: string
-          updated_at: string
-          updated_by_profile_id: string
+          tag_id: string
         }
         Insert: {
           created_at?: string
-          created_by_profile_id: string
-          direction: Database["public"]["Enums"]["time_direction"]
-          id?: string
-          name: string
           profile_id: string
-          updated_at?: string
-          updated_by_profile_id: string
+          tag_id: string
         }
         Update: {
           created_at?: string
-          created_by_profile_id?: string
+          profile_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_tag_selections_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_tag_selections_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "time_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_tags: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string | null
+          direction: Database["public"]["Enums"]["time_direction"]
+          id: string
+          name: string
+          system_key: string | null
+          team_id: string | null
+          updated_at: string
+          updated_by_profile_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id?: string | null
+          direction: Database["public"]["Enums"]["time_direction"]
+          id?: string
+          name: string
+          system_key?: string | null
+          team_id?: string | null
+          updated_at?: string
+          updated_by_profile_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string | null
           direction?: Database["public"]["Enums"]["time_direction"]
           id?: string
           name?: string
-          profile_id?: string
+          system_key?: string | null
+          team_id?: string | null
           updated_at?: string
-          updated_by_profile_id?: string
+          updated_by_profile_id?: string | null
         }
         Relationships: [
           {
@@ -2795,16 +2831,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "time_tags_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "time_tags_team_id_fkey"
+            columns: ["team_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "time_tags_updated_by_profile_id_fkey"
             columns: ["updated_by_profile_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_tracking_preferences: {
+        Row: {
+          created_at: string
+          profile_id: string
+          tags_reviewed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          profile_id: string
+          tags_reviewed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          profile_id?: string
+          tags_reviewed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_tracking_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

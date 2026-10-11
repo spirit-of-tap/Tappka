@@ -12,6 +12,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  Tags,
   User as UserIcon,
 } from "lucide-react"
 
@@ -20,6 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { getAvatarUrl } from "@/lib/storage/public-url"
+import { TAG_SETTINGS_URL } from "@/lib/time-tracking/constants"
 import { createClient } from "@/lib/supabase/client"
 import posthog from "posthog-js"
 
@@ -52,6 +54,7 @@ export function ProfileHub({ user }: ProfileHubProps) {
     beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
   }
   const canViewPortfolio = canAccessFeature(accessProfile, "portfolio")
+  const canTrackTime = canAccessFeature(accessProfile, "timeTracking")
 
   const getInitials = (name: string) =>
     name
@@ -97,6 +100,12 @@ export function ProfileHub({ user }: ProfileHubProps) {
           <Bell className="size-4 text-muted-foreground" />
           Notifikace
         </Link>
+        {canTrackTime && (
+          <Link href={TAG_SETTINGS_URL} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
+            <Tags className="size-4 text-muted-foreground" />
+            Tagy v Čase
+          </Link>
+        )}
         {canViewPortfolio && (
           <Link href="/portfolio" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
             <BriefcaseBusiness className="size-4 text-muted-foreground" />

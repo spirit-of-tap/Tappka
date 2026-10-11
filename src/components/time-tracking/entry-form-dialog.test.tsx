@@ -61,7 +61,7 @@ function lastRequest(): { url: string; method: string | undefined; body: Record<
 function renderDialog(entry: TimeEntryWithTag | null = null) {
   const onOpenChange = vi.fn()
   const onSaved = vi.fn()
-  render(<EntryFormDialog open onOpenChange={onOpenChange} entry={entry} now={NOW} tags={[]} onSaved={onSaved} />)
+  render(<EntryFormDialog open onOpenChange={onOpenChange} entry={entry} now={NOW} onSaved={onSaved} />)
   return { onOpenChange, onSaved }
 }
 
@@ -149,7 +149,7 @@ describe("EntryFormDialog", () => {
     const user = userEvent.setup()
     const { onOpenChange } = renderDialog()
 
-    await user.click(screen.getByRole("radio", { name: "Reading" }))
+    await user.click(screen.getByRole("radio", { name: "Practise" }))
     await user.click(screen.getByRole("button", { name: "Uložit" }))
 
     expect(await screen.findByText("Záznam se překrývá s jiným záznamem")).toBeInTheDocument()
@@ -163,10 +163,33 @@ describe("EntryFormDialog", () => {
     const user = userEvent.setup()
     renderDialog()
 
-    await user.click(screen.getByRole("radio", { name: "Reading" }))
+    await user.click(screen.getByRole("radio", { name: "Practise" }))
     await user.click(screen.getByRole("button", { name: "Uložit" }))
 
     await waitFor(() => expect(toastError).toHaveBeenCalledWith("Neplatný tag"))
+  })
+
+  it("requires a tag for a new Reading entry", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(screen.getByRole("radio", { name: "Reading" }))
+    await user.click(screen.getByRole("button", { name: "Uložit" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Vyber tag")
+    expect(screen.getByRole("combobox", { name: "Tag" })).toHaveAttribute("aria-invalid", "true")
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("requires a tag when an entry is switched to Training", async () => {
+    const user = userEvent.setup()
+    renderDialog({ ...ENTRY, direction: "practise" })
+
+    await user.click(screen.getByRole("radio", { name: "Training" }))
+    await user.click(screen.getByRole("button", { name: "Uložit" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Vyber tag")
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it("edits with PATCH sending only changed fields", async () => {
