@@ -1,10 +1,10 @@
 "use client"
 
-import { User, Users, type LucideIcon } from "lucide-react"
+import { ChartColumn, User, Users, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 
-import { FROM_PARAM, TO_PARAM } from "./cas-query"
+import { FROM_PARAM, TEAM_PARAM, TO_PARAM } from "./cas-query"
 
 interface CasTab {
   title: string
@@ -15,20 +15,25 @@ interface CasTab {
 const CAS_TABS: readonly CasTab[] = [
   { title: "Moje", url: "/cas", icon: User },
   { title: "Tým", url: "/cas/tym", icon: Users },
+  { title: "Reporting", url: "/cas/reporting", icon: ChartColumn },
 ]
 
-const TEAM_TAB_URL = "/cas/tym"
+const MY_TAB_URL = "/cas"
 
 export function getActiveCasTabUrl(pathname: string): string | undefined {
-  if (pathname === TEAM_TAB_URL || pathname.startsWith(`${TEAM_TAB_URL}/`)) return TEAM_TAB_URL
-  if (pathname === "/cas" || pathname.startsWith("/cas/")) return "/cas"
+  const subTab = CAS_TABS.find(
+    (tab) => tab.url !== MY_TAB_URL && (pathname === tab.url || pathname.startsWith(`${tab.url}/`)),
+  )
+  if (subTab) return subTab.url
+  if (pathname === MY_TAB_URL || pathname.startsWith(`${MY_TAB_URL}/`)) return MY_TAB_URL
   return undefined
 }
 
-/** Tab URL carrying over the selected period, so switching Moje ↔ Tým keeps it. */
+/** Tab URL carrying over the period (and a coach's team), so switching tabs keeps them. */
 export function casTabHref(url: string, searchParams: URLSearchParams): string {
   const params = new URLSearchParams()
-  for (const key of [FROM_PARAM, TO_PARAM]) {
+  const keys = url === MY_TAB_URL ? [FROM_PARAM, TO_PARAM] : [FROM_PARAM, TO_PARAM, TEAM_PARAM]
+  for (const key of keys) {
     const value = searchParams.get(key)
     if (value !== null) params.set(key, value)
   }
