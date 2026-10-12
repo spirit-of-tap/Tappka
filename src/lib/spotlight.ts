@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   NotebookPen,
+  Presentation,
   SlidersHorizontal,
   Tags,
   Timer,
@@ -280,6 +281,15 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     keywords: ["tagy", "tag", "projekty", "nastavení času", "skrýt tag", "zobrazit tag", "nové tagy"],
   },
   // TODO(cas): timer start/stop actions once TimerProvider lands
+  {
+    id: "page-training-sessions",
+    title: "Tréninkové sessions",
+    description: "Nadcházející TS, příprava a přihlášení na TS jiných týmů",
+    url: "/ts/prehled",
+    feature: "trainingSessions",
+    icon: Presentation,
+    keywords: ["ts", "training session", "tréninková session", "příprava", "facilitace", "docházka", "reflexe"],
+  },
   {
     id: "page-tymove-dokumenty",
     title: "Týmové dokumenty",

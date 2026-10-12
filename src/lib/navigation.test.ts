@@ -35,6 +35,7 @@ describe("navigation config", () => {
       "/koucovani",
       "/tymova-reflexe",
       "/tymovy-denik",
+      "/ts/prehled",
       "/rocket-model",
       "/tymove-dokumenty",
       "/nastroje-techniky",
@@ -69,6 +70,7 @@ describe("navigation config", () => {
       "/koucovani": "coaching",
       "/tymova-reflexe": "teamReflection",
       "/tymovy-denik": "teamDiary",
+      "/ts/prehled": "trainingSessions",
       "/rocket-model": "rocketModel",
       "/tymove-dokumenty": "teamDocuments",
       "/nastroje-techniky": "toolsTechniques",
@@ -90,6 +92,7 @@ describe("getHubModules", () => {
       "/cteni/prehled",
       "/reservations",
       "/komunitni-kasa",
+      "/ts/prehled",
       "/nastroje-techniky",
       "/schuzky",
       "/tymova-reflexe",
@@ -114,6 +117,7 @@ describe("getHubModules", () => {
       "/cteni/prehled",
       "/reservations",
       "/komunitni-kasa",
+      "/ts/prehled",
       "/nastroje-techniky",
       "/schuzky",
       "/tymova-reflexe",
@@ -159,7 +163,7 @@ describe("getHubModules", () => {
   });
 
   it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
-    expect(MODULE_HUB_ORDER).toHaveLength(13);
+    expect(MODULE_HUB_ORDER).toHaveLength(14);
     expect(MODULE_HUB_ORDER).not.toContain("/");
     expect(MODULE_HUB_ORDER).not.toContain("/komunita");
   });
@@ -186,6 +190,7 @@ describe("getHubModules", () => {
       "/cteni/prehled",
       "/reservations",
       "/komunitni-kasa",
+      "/ts/prehled",
       "/nastroje-techniky",
       "/schuzky",
       "/tymova-reflexe",

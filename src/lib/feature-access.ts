@@ -10,6 +10,7 @@ export const BETA_FEATURES = {
   rocketModel: ["B"],
   portfolio: ["B"],
   dashboardMetrics: ["B"],
+  trainingSessions: ["B"],
 } as const
 
 /**
