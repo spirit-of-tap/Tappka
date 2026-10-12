@@ -3462,17 +3462,6 @@ export type Database = {
         Returns: undefined
       }
       coach_can_review_essay: { Args: { p_essay_id: string }; Returns: boolean }
-      coach_review_coverage_stats: {
-        Args: {
-          p_coach_profile_id: string
-          p_points: string
-          p_reply: string
-          p_rocket: string
-          p_search?: string
-          p_team_id: string
-        }
-        Returns: Json
-      }
       coach_review_filtered_ids: {
         Args: {
           p_coach_profile_id: string
