@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { serverLogger } from "@/lib/server-logger";
+import { getCurrentUserProfile } from "@/lib/auth-helpers";
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access";
 import {
   KASA_BANK_ACCOUNT_ID,
   KASA_MAX_PAGES,
@@ -87,6 +89,21 @@ export async function GET() {
     const { data: claimsData } = await supabase.auth.getClaims();
     if (!claimsData?.claims?.sub) {
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
+    }
+
+    const profile = await getCurrentUserProfile(supabase, { user: { id: claimsData.claims.sub } });
+    const allowed = profile
+      ? canAccessFeature(
+          {
+            role: profile.role,
+            beta_access_granted_at: profile.beta_access_granted_at,
+            beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+          },
+          "komunitniKasa",
+        )
+      : false;
+    if (!allowed) {
+      return NextResponse.json({ error: "K této funkci nemáš přístup" }, { status: 403 });
     }
 
     const [account, transactions] = await Promise.all([

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { StanovyView } from "@/components/komunitni-kasa/stanovy-view";
+import { FeatureComingSoon } from "@/components/beta/feature-coming-soon";
+import { canAccessFeature, type BetaCohort } from "@/lib/feature-access";
 
 export const metadata = {
   title: "Stanovy a rejstřík spolku",
@@ -15,6 +17,18 @@ export const metadata = {
 export default async function StanovyPage() {
   const profile = await getSessionProfile();
   if (!profile) redirect("/auth/login");
+  if (
+    !canAccessFeature(
+      {
+        role: profile.role,
+        beta_access_granted_at: profile.beta_access_granted_at,
+        beta_cohort: ((profile as unknown as { beta_cohort: BetaCohort }).beta_cohort ?? "A") as BetaCohort,
+      },
+      "komunitniKasa",
+    )
+  ) {
+    return <FeatureComingSoon featureName="Komunitní kasa" />;
+  }
 
   return (
     <PageShell>

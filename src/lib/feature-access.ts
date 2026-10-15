@@ -11,6 +11,7 @@ export const BETA_FEATURES = {
   portfolio: ["B"],
   dashboardMetrics: ["B"],
   trainingSessions: ["B"],
+  komunitniKasa: ["B"],
 } as const
 
 /**
