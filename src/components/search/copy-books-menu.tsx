@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatVerifiedBooksForClipboard } from '@/lib/books/export-text';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
-import type { BookWithProfiles } from '@/lib/books/types';
 import { copyTextToClipboard } from '@/lib/utils/clipboard';
+import type { BookWithProfiles } from '@/lib/books/types';
 
 const SHORTLIST_PAGE_SIZE = 500;
 

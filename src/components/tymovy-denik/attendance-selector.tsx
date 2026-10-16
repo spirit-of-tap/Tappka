@@ -13,6 +13,8 @@ interface AttendanceSelectorProps {
   value: TeamActivityAttendeeInput[]
   onChange: (value: TeamActivityAttendeeInput[]) => void
   disabled?: boolean
+  /** Drops the card frame when the selector already sits in its own section. */
+  bare?: boolean
 }
 
 const STATUS_CONFIG: Record<
@@ -50,6 +52,7 @@ export function AttendanceSelector({
   value,
   onChange,
   disabled = false,
+  bare = false,
 }: AttendanceSelectorProps) {
   const statusMap = new Map<string, AttendanceStatus>(
     value.map((a) => [a.profileId, a.status]),
@@ -92,7 +95,7 @@ export function AttendanceSelector({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-border/60 bg-card/50 p-3.5 sm:p-4">
+    <div className={cn("space-y-3", !bare && "rounded-xl border border-border/60 bg-card/50 p-3.5 sm:p-4")}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Users className="size-4 text-muted-foreground" />

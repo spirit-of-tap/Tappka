@@ -306,6 +306,9 @@ export async function cleanupTestData(): Promise<void> {
     restFetch(`/recurring_schedules?team_id=eq.${tid}`, "DELETE").catch(() => {}),
     restFetch(`/team_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
     restFetch(`/team_activities?team_id=eq.${tid}`, "DELETE").catch(() => {}),
+    // created_by_profile_id is RESTRICT; children (guests, attendees, preparations,
+    // reflections, facilitators) cascade from the session.
+    restFetch(`/training_sessions?team_id=eq.${tid}`, "DELETE").catch(() => {}),
     restFetch(`/team_semester_reflections?team_id=eq.${tid}`, "DELETE").catch(() => {}),
   ]));
 
@@ -378,6 +381,24 @@ export async function seedTeamActivity(
     updated_by_profile_id: profileId,
   })) as { id: string }[];
   return { activityId: rows[0].id };
+}
+
+/** Seeds a training session row directly, bypassing the UI (e.g. a past one). */
+export async function seedTrainingSession(
+  teamId: string,
+  profileId: string,
+  opts: { startsAt: string; endsAt: string; topic?: string },
+): Promise<{ sessionId: string; topic: string }> {
+  const topic = opts.topic ?? `E2E TS seed ${randomUUID().slice(0, 8)}`;
+  const rows = (await restFetch("/training_sessions", "POST", {
+    team_id: teamId,
+    topic,
+    starts_at: opts.startsAt,
+    ends_at: opts.endsAt,
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
+  })) as { id: string }[];
+  return { sessionId: rows[0].id, topic };
 }
 
 /** Create a seeded book for E2E tests. */
