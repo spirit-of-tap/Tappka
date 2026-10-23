@@ -39,6 +39,27 @@ describe('getEssaySourceDisplay', () => {
     expect(display.isArchived).toBe(true);
   });
 
+  it('prefers a frozen value over a shared content source and flags isFrozen', () => {
+    const display = getEssaySourceDisplay({
+      book: null,
+      content_source: { id: 's1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 2, status: 'approved' },
+      frozen_book_points: '0.33',
+    });
+    expect(display.points).toBe(0.33);
+    expect(display.isFrozen).toBe(true);
+  });
+
+  it('keeps a frozen value on a content source even when the source is archived', () => {
+    const display = getEssaySourceDisplay({
+      book: null,
+      content_source: { id: 's1', kind: 'podcast', title: 'Founders', creator: 'David Senra', points: 0, status: 'archived' },
+      frozen_book_points: '2.00',
+    });
+    expect(display.points).toBe(2);
+    expect(display.isFrozen).toBe(true);
+    expect(display.isArchived).toBe(false);
+  });
+
   it('falls back to "none" when neither is set', () => {
     const display = getEssaySourceDisplay({ book: null, content_source: null, frozen_book_points: null });
     expect(display).toEqual({

@@ -723,7 +723,7 @@ export async function getUserBookPointsStats(
 }> {
   const { data: bookEssays, error } = await supabase
     .from('essays')
-    .select('book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
+    .select('id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .eq('author_profile_id', profileId)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -733,7 +733,7 @@ export async function getUserBookPointsStats(
 
   const { data: sourceEssays, error: sourceError } = await supabase
     .from('essays')
-    .select('content_source_id, published_at, content_sources!inner(points, status)')
+    .select('id, content_source_id, frozen_book_points, published_at, content_sources!inner(points, status)')
     .eq('author_profile_id', profileId)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -756,12 +756,19 @@ export async function getUserBookPointsStats(
   if (orphanError) throw orphanError;
 
   type BookRow = {
+    id: string;
     book_id: string;
     frozen_book_points: string | null;
     published_at: string;
     books: { book_points: number | string; list_status: string };
   };
-  type SourceRow = { content_source_id: string; published_at: string; content_sources: { points: number; status: string } };
+  type SourceRow = {
+    id: string;
+    content_source_id: string;
+    frozen_book_points: string | null;
+    published_at: string;
+    content_sources: { points: number; status: string };
+  };
   type OrphanRow = { id: string; frozen_book_points: string; published_at: string };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
@@ -773,13 +780,24 @@ export async function getUserBookPointsStats(
 
   for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
     if (!row.book_id) continue;
+
+    // Legacy credit is frozen per essay. Several essays may share one book
+    // record (e.g. podcast episodes imported under a single "book"), and the
+    // retired system awarded each of them separately — so they must not be
+    // collapsed by the live one-credit-per-book rule. Frozen credit is also
+    // immune to the book's later archival.
+    if (row.frozen_book_points != null) {
+      const key = `frozen:${row.id}`;
+      approved.set(key, pointsNumber(row.frozen_book_points));
+      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(key);
+      continue;
+    }
+
     const key = `book:${row.book_id}`;
-    // A frozen essay counts regardless of the book's current list_status —
-    // once earned, credit is baked in and immune to a later archival.
-    if (ELIGIBLE.has(row.books.list_status) || row.frozen_book_points != null) {
+    if (ELIGIBLE.has(row.books.list_status)) {
       const existingAt = approvedAt.get(key);
       if (!existingAt || row.published_at < existingAt) {
-        approved.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
+        approved.set(key, pointsNumber(row.books.book_points));
         approvedAt.set(key, row.published_at);
       }
       if (new Date(row.published_at) >= semesterStart) semesterApproved.add(key);
@@ -797,6 +815,16 @@ export async function getUserBookPointsStats(
 
   for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
     if (!row.content_source_id) continue;
+
+    // Same rule as book-linked essays: a frozen legacy value is authoritative
+    // and credited per essay, regardless of the shared source record.
+    if (row.frozen_book_points != null) {
+      const key = `frozen:${row.id}`;
+      approved.set(key, pointsNumber(row.frozen_book_points));
+      if (new Date(row.published_at) >= semesterStart) semesterApproved.add(key);
+      continue;
+    }
+
     if (row.content_sources.status === 'approved') {
       approved.set(`source:${row.content_source_id}`, Number(row.content_sources.points));
       if (new Date(row.published_at) >= semesterStart) semesterApproved.add(`source:${row.content_source_id}`);
@@ -836,7 +864,7 @@ export async function getAuthorsApprovedBookPoints(
 
   const { data: bookEssays, error } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
+    .select('id, author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .in('author_profile_id', authorProfileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -846,7 +874,7 @@ export async function getAuthorsApprovedBookPoints(
 
   const { data: sourceEssays, error: sourceError } = await supabase
     .from('essays')
-    .select('author_profile_id, content_source_id, content_sources!inner(points, status)')
+    .select('id, author_profile_id, content_source_id, frozen_book_points, content_sources!inner(points, status)')
     .in('author_profile_id', authorProfileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -869,13 +897,20 @@ export async function getAuthorsApprovedBookPoints(
   if (orphanError) throw orphanError;
 
   type BookRow = {
+    id: string;
     author_profile_id: string;
     book_id: string;
     frozen_book_points: string | null;
     published_at: string;
     books: { book_points: number | string; list_status: string };
   };
-  type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
+  type SourceRow = {
+    id: string;
+    author_profile_id: string;
+    content_source_id: string;
+    frozen_book_points: string | null;
+    content_sources: { points: number; status: string };
+  };
   type OrphanRow = { id: string; author_profile_id: string; frozen_book_points: string };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
@@ -887,16 +922,22 @@ export async function getAuthorsApprovedBookPoints(
   }
 
   for (const row of (bookEssays ?? []) as unknown as BookRow[]) {
-    // A frozen essay counts regardless of the book's current list_status —
-    // once earned, credit is baked in and immune to a later archival.
-    if (!row.book_id || (!ELIGIBLE.has(row.books.list_status) && row.frozen_book_points == null)) continue;
-    const key = `book:${row.book_id}`;
+    if (!row.book_id) continue;
     const at = atByAuthor[row.author_profile_id];
     const points = pointsByAuthor[row.author_profile_id];
     if (!at || !points) continue;
+
+    // Legacy credit is frozen per essay, even when several essays share a book.
+    if (row.frozen_book_points != null) {
+      points.set(`frozen:${row.id}`, pointsNumber(row.frozen_book_points));
+      continue;
+    }
+
+    if (!ELIGIBLE.has(row.books.list_status)) continue;
+    const key = `book:${row.book_id}`;
     const existingAt = at.get(key);
     if (!existingAt || row.published_at < existingAt) {
-      points.set(key, pointsNumber(row.frozen_book_points ?? row.books.book_points));
+      points.set(key, pointsNumber(row.books.book_points));
       at.set(key, row.published_at);
     }
   }
@@ -907,8 +948,18 @@ export async function getAuthorsApprovedBookPoints(
   }
 
   for (const row of (sourceEssays ?? []) as unknown as SourceRow[]) {
-    if (!row.content_source_id || row.content_sources.status !== 'approved') continue;
-    pointsByAuthor[row.author_profile_id]?.set(`source:${row.content_source_id}`, Number(row.content_sources.points));
+    const points = pointsByAuthor[row.author_profile_id];
+    if (!row.content_source_id || !points) continue;
+
+    // Same rule as book-linked essays: a frozen legacy value is authoritative
+    // and credited per essay, regardless of the shared source record.
+    if (row.frozen_book_points != null) {
+      points.set(`frozen:${row.id}`, pointsNumber(row.frozen_book_points));
+      continue;
+    }
+
+    if (row.content_sources.status !== 'approved') continue;
+    points.set(`source:${row.content_source_id}`, Number(row.content_sources.points));
   }
 
   const result: Record<string, number> = {};
@@ -936,7 +987,7 @@ export async function getTeamBookPointsStats(
 
   const { data: bookEssays, error: essayError } = await supabase
     .from('essays')
-    .select('author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
+    .select('id, author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
     .in('author_profile_id', profileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -946,7 +997,7 @@ export async function getTeamBookPointsStats(
 
   const { data: sourceEssays, error: sourceError } = await supabase
     .from('essays')
-    .select('author_profile_id, content_source_id, content_sources!inner(points, status)')
+    .select('id, author_profile_id, content_source_id, frozen_book_points, content_sources!inner(points, status)')
     .in('author_profile_id', profileIds)
     .not('published_at', 'is', null)
     .is('removed_at', null)
@@ -969,13 +1020,20 @@ export async function getTeamBookPointsStats(
   if (orphanError) throw orphanError;
 
   type BookRow = {
+    id: string;
     author_profile_id: string;
     book_id: string;
     frozen_book_points: string | null;
     published_at: string;
     books: { book_points: number | string; list_status: string };
   };
-  type SourceRow = { author_profile_id: string; content_source_id: string; content_sources: { points: number; status: string } };
+  type SourceRow = {
+    id: string;
+    author_profile_id: string;
+    content_source_id: string;
+    frozen_book_points: string | null;
+    content_sources: { points: number; status: string };
+  };
   type OrphanRow = { id: string; author_profile_id: string; frozen_book_points: string };
 
   const ELIGIBLE = new Set<string>(POINTS_ELIGIBLE_LIST_STATUSES);
@@ -987,13 +1045,22 @@ export async function getTeamBookPointsStats(
   for (const essay of (bookEssays ?? []) as unknown as BookRow[]) {
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.book_id) continue;
+
+    // Legacy credit is frozen per essay. Several essays may share one book
+    // record (e.g. podcast episodes imported under a single "book"), and the
+    // retired system awarded each of them separately — so they must not be
+    // collapsed by the live one-credit-per-book rule. Frozen credit is also
+    // immune to the book's later archival.
+    if (essay.frozen_book_points != null) {
+      bucket.approved.set(`frozen:${essay.id}`, pointsNumber(essay.frozen_book_points));
+      continue;
+    }
+
     const key = `book:${essay.book_id}`;
-    // A frozen essay counts regardless of the book's current list_status —
-    // once earned, credit is baked in and immune to a later archival.
-    if (ELIGIBLE.has(essay.books.list_status) || essay.frozen_book_points != null) {
+    if (ELIGIBLE.has(essay.books.list_status)) {
       const existingAt = bucket.approvedAt.get(key);
       if (!existingAt || essay.published_at < existingAt) {
-        bucket.approved.set(key, pointsNumber(essay.frozen_book_points ?? essay.books.book_points));
+        bucket.approved.set(key, pointsNumber(essay.books.book_points));
         bucket.approvedAt.set(key, essay.published_at);
       }
     } else if (essay.books.list_status === 'processing') {
@@ -1011,6 +1078,14 @@ export async function getTeamBookPointsStats(
   for (const essay of (sourceEssays ?? []) as unknown as SourceRow[]) {
     const bucket = byProfile[essay.author_profile_id];
     if (!bucket || !essay.content_source_id) continue;
+
+    // Same rule as book-linked essays: a frozen legacy value is authoritative
+    // and credited per essay, regardless of the shared source record.
+    if (essay.frozen_book_points != null) {
+      bucket.approved.set(`frozen:${essay.id}`, pointsNumber(essay.frozen_book_points));
+      continue;
+    }
+
     const key = `source:${essay.content_source_id}`;
     if (essay.content_sources.status === 'approved') {
       if (!bucket.approved.has(key)) bucket.approved.set(key, pointsNumber(essay.content_sources.points));

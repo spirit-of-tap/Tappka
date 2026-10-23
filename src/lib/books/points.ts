@@ -38,15 +38,16 @@ export interface ResolveEssayPointsInput {
  * book afterward — a rescore, a book_id reassignment, archival, or even the
  * essay never getting a book linked at all (some legacy essays reference a
  * book that was never imported into the catalog; the frozen value still
- * counts). Only a *live* (unfrozen) essay is zeroed when its book is
- * archived, matching `books_archived_points_check`, which forces
- * `book_points = 0` on archived books. Content-source essays have no freeze
- * concept (frozen points only apply to book-linked essays), so they just
- * read the source's live points.
+ * counts). Because it was awarded per essay in the retired system, it also
+ * wins over a shared content-source record, so podcast episodes imported
+ * under one source keep their individual credit. Only a *live* (unfrozen)
+ * essay is zeroed when its book is archived, matching
+ * `books_archived_points_check`, which forces `book_points = 0` on archived
+ * books.
  */
 export function resolveEssayPoints({ frozenBookPoints, book, contentSource }: ResolveEssayPointsInput): number {
-  if (contentSource) return pointsNumber(contentSource.points);
   if (frozenBookPoints != null) return pointsNumber(frozenBookPoints);
+  if (contentSource) return pointsNumber(contentSource.points);
   if (book) {
     if (book.list_status === 'archived') return 0;
     return pointsNumber(book.book_points);

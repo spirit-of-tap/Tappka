@@ -63,9 +63,11 @@ export async function POST(request: NextRequest) {
     .eq('author_profile_id', profile.id)
     .not('published_at', 'is', null)
     .is('removed_at', null)
-    // Every essay that carries a source, book or otherwise — an essay with
-    // neither is "nad rámec četby" and has nothing to itemize.
-    .or('book_id.not.is.null,content_source_id.not.is.null')
+    // Every essay that carries a book, content source, or legacy frozen
+    // credit — a live essay with neither is "nad rámec četby" and has
+    // nothing to itemize. Frozen legacy essays count even when their
+    // old-system book was never imported (no book_id/content_source_id).
+    .or('book_id.not.is.null,content_source_id.not.is.null,frozen_book_points.not.is.null')
     .order('created_at', { ascending: true });
 
   if (essayData.error) throw essayData.error;
@@ -87,16 +89,17 @@ export async function POST(request: NextRequest) {
     const essayTitle = valid.length === 0
       ? ''
       : valid.reduce((best, row) => (row.revision_no > best.revision_no ? row : best)).title;
+    const hasLegacyCredit = essay.frozen_book_points != null;
 
     return {
       index: i + 1,
-      bookTitle: book?.title_cs ?? contentSource?.title ?? '',
+      bookTitle: book?.title_cs ?? contentSource?.title ?? (hasLegacyCredit ? 'Esej ze starého systému' : ''),
       author: book?.author ?? contentSource?.creator ?? '',
       essayId: essay.id,
       essayTitle,
       essayUrl: `${origin}/cteni/eseje/${essay.id}`,
       category,
-      source: book ? 'Kniha' : contentSource ? CONTENT_SOURCE_KIND_LABELS[contentSource.kind] : '',
+      source: book ? 'Kniha' : contentSource ? CONTENT_SOURCE_KIND_LABELS[contentSource.kind] : hasLegacyCredit ? 'Kniha' : '',
       points: resolveEssayPoints({ frozenBookPoints: essay.frozen_book_points, book, contentSource }),
     };
   });
