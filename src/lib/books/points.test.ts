@@ -4,6 +4,7 @@ import {
   formatPoints,
   formatPointsWithLabel,
   pointsNumber,
+  resolveEssayPoints,
   suggestedBookPoints,
   suggestedReviewPoints,
 } from './points';
@@ -32,6 +33,43 @@ describe('formatPointsWithLabel', () => {
     expect(formatPointsWithLabel(1)).toBe('1 bod');
     expect(formatPointsWithLabel(2)).toBe('2 body');
     expect(formatPointsWithLabel(5)).toBe('5 bodů');
+  });
+});
+
+describe('resolveEssayPoints', () => {
+  it('prefers a frozen legacy value over the live book, even when archived', () => {
+    expect(resolveEssayPoints({
+      frozenBookPoints: '0.33',
+      book: { book_points: '2.00', list_status: 'archived' },
+    })).toBe(0.33);
+  });
+
+  it('prefers a frozen legacy value over a shared content source', () => {
+    expect(resolveEssayPoints({
+      frozenBookPoints: '0.33',
+      contentSource: { points: '2.00' },
+    })).toBe(0.33);
+  });
+
+  it('zeroes a live essay on an archived book', () => {
+    expect(resolveEssayPoints({
+      frozenBookPoints: null,
+      book: { book_points: '2.00', list_status: 'archived' },
+    })).toBe(0);
+  });
+
+  it('reads the live book points for an unarchived book', () => {
+    expect(resolveEssayPoints({
+      frozenBookPoints: null,
+      book: { book_points: '2.00', list_status: 'shortlist' },
+    })).toBe(2);
+  });
+
+  it('reads content-source points for a live source essay', () => {
+    expect(resolveEssayPoints({
+      frozenBookPoints: null,
+      contentSource: { points: '3.00' },
+    })).toBe(3);
   });
 });
 

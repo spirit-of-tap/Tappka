@@ -80,6 +80,7 @@ describe("getUserBookPointsStats", () => {
         {
           data: [
             {
+              id: "essay-1",
               book_id: "book-1",
               frozen_book_points: "2.00",
               published_at: "2026-08-01T00:00:00Z",
@@ -88,6 +89,7 @@ describe("getUserBookPointsStats", () => {
           ],
         },
         { data: [] }, // content_source essays (none)
+        { data: [] }, // orphan frozen essays (none)
         { count: 1 }, // essay_count
       ],
     });
@@ -103,6 +105,7 @@ describe("getUserBookPointsStats", () => {
         {
           data: [
             {
+              id: "essay-1",
               book_id: "book-1",
               frozen_book_points: null,
               published_at: "2026-09-05T00:00:00Z",
@@ -110,6 +113,7 @@ describe("getUserBookPointsStats", () => {
             },
           ],
         },
+        { data: [] },
         { data: [] },
         { count: 1 },
       ],
@@ -120,26 +124,29 @@ describe("getUserBookPointsStats", () => {
     expect(result.approved_points).toBe(3);
   });
 
-  it("credits the same book only once, using the earliest essay's value regardless of row order", async () => {
+  it("credits the same book only once when both essays are live (unfrozen)", async () => {
     const client = fakeSupabase({
       essays: [
         {
-          // Later essay (higher points, post-cutover) returned FIRST — must not win.
+          // Later essay (higher points) returned FIRST — must not win.
           data: [
             {
+              id: "essay-late",
               book_id: "book-1",
               frozen_book_points: null,
               published_at: "2026-09-10T00:00:00Z",
               books: { book_points: "3.00", list_status: "shortlist" },
             },
             {
+              id: "essay-early",
               book_id: "book-1",
-              frozen_book_points: "1.00",
-              published_at: "2026-08-01T00:00:00Z",
-              books: { book_points: "3.00", list_status: "shortlist" },
+              frozen_book_points: null,
+              published_at: "2026-09-01T00:00:00Z",
+              books: { book_points: "1.00", list_status: "shortlist" },
             },
           ],
         },
+        { data: [] },
         { data: [] },
         { count: 2 },
       ],
@@ -150,12 +157,100 @@ describe("getUserBookPointsStats", () => {
     expect(result.approved_points).toBe(1);
   });
 
+  it("counts a frozen essay separately from a live essay on the same book", async () => {
+    const client = fakeSupabase({
+      essays: [
+        {
+          data: [
+            {
+              id: "essay-live",
+              book_id: "book-1",
+              frozen_book_points: null,
+              published_at: "2026-09-10T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+            {
+              id: "essay-frozen",
+              book_id: "book-1",
+              frozen_book_points: "1.00",
+              published_at: "2026-08-01T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+        { data: [] },
+        { count: 2 },
+      ],
+    });
+
+    const result = await getUserBookPointsStats(client, "profile-1");
+
+    expect(result.approved_points).toBe(4);
+  });
+
+  it("counts every frozen essay individually even when they share one book — legacy podcast episodes", async () => {
+    const episodes = Array.from({ length: 9 }, (_, i) => ({
+      id: `episode-${i + 1}`,
+      book_id: "book-diary-ceo",
+      frozen_book_points: "0.33",
+      published_at: `2026-0${(i % 8) + 1}-01T00:00:00Z`,
+      books: { book_points: "2.00", list_status: "shortlist" },
+    }));
+
+    const client = fakeSupabase({
+      essays: [
+        { data: episodes },
+        { data: [] },
+        { data: [] },
+        { count: 9 },
+      ],
+    });
+
+    const result = await getUserBookPointsStats(client, "profile-1");
+
+    expect(result.approved_points).toBeCloseTo(2.97, 5);
+  });
+
+  it("counts every frozen source-linked essay individually, using the frozen value over the source's points", async () => {
+    const client = fakeSupabase({
+      essays: [
+        { data: [] }, // book essays (none)
+        {
+          data: [
+            {
+              id: "essay-1",
+              content_source_id: "cs-1",
+              frozen_book_points: "0.33",
+              published_at: "2026-08-01T00:00:00Z",
+              content_sources: { points: 2, status: "approved" },
+            },
+            {
+              id: "essay-2",
+              content_source_id: "cs-1",
+              frozen_book_points: "0.33",
+              published_at: "2026-08-02T00:00:00Z",
+              content_sources: { points: 2, status: "approved" },
+            },
+          ],
+        },
+        { data: [] },
+        { count: 2 },
+      ],
+    });
+
+    const result = await getUserBookPointsStats(client, "profile-1");
+
+    expect(result.approved_points).toBeCloseTo(0.66, 5);
+  });
+
   it("counts a frozen essay even when its book is now archived — earned credit is immune to later archival", async () => {
     const client = fakeSupabase({
       essays: [
         {
           data: [
             {
+              id: "essay-1",
               book_id: "book-1",
               frozen_book_points: "2.00",
               published_at: "2026-08-01T00:00:00Z",
@@ -163,6 +258,7 @@ describe("getUserBookPointsStats", () => {
             },
           ],
         },
+        { data: [] },
         { data: [] },
         { count: 1 },
       ],
@@ -179,6 +275,7 @@ describe("getUserBookPointsStats", () => {
         {
           data: [
             {
+              id: "essay-1",
               book_id: "book-1",
               frozen_book_points: null,
               published_at: "2026-09-05T00:00:00Z",
@@ -186,6 +283,7 @@ describe("getUserBookPointsStats", () => {
             },
           ],
         },
+        { data: [] },
         { data: [] },
         { count: 1 },
       ],
@@ -215,12 +313,13 @@ describe("getUserBookPointsStats", () => {
 });
 
 describe("getAuthorsApprovedBookPoints", () => {
-  it("credits the earliest essay's value per (author, book) when rows are out of order", async () => {
+  it("counts live essays once per (author, book) using the earliest row", async () => {
     const client = fakeSupabase({
       essays: [
         {
           data: [
             {
+              id: "essay-late",
               author_profile_id: "author-1",
               book_id: "book-1",
               frozen_book_points: null,
@@ -228,14 +327,16 @@ describe("getAuthorsApprovedBookPoints", () => {
               books: { book_points: "3.00", list_status: "shortlist" },
             },
             {
+              id: "essay-early",
               author_profile_id: "author-1",
               book_id: "book-1",
-              frozen_book_points: "1.00",
-              published_at: "2026-08-01T00:00:00Z",
-              books: { book_points: "3.00", list_status: "shortlist" },
+              frozen_book_points: null,
+              published_at: "2026-09-01T00:00:00Z",
+              books: { book_points: "1.00", list_status: "shortlist" },
             },
           ],
         },
+        { data: [] },
         { data: [] },
       ],
     });
@@ -245,12 +346,79 @@ describe("getAuthorsApprovedBookPoints", () => {
     expect(result["author-1"]).toBe(1);
   });
 
+  it("counts a frozen essay separately from a live essay on the same book", async () => {
+    const client = fakeSupabase({
+      essays: [
+        {
+          data: [
+            {
+              id: "essay-live",
+              author_profile_id: "author-1",
+              book_id: "book-1",
+              frozen_book_points: null,
+              published_at: "2026-09-10T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+            {
+              id: "essay-frozen",
+              author_profile_id: "author-1",
+              book_id: "book-1",
+              frozen_book_points: "1.00",
+              published_at: "2026-08-01T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+        { data: [] },
+      ],
+    });
+
+    const result = await getAuthorsApprovedBookPoints(client, ["author-1"]);
+
+    expect(result["author-1"]).toBe(4);
+  });
+
+  it("counts every frozen essay individually even when they share one book", async () => {
+    const client = fakeSupabase({
+      essays: [
+        {
+          data: [
+            {
+              id: "essay-1",
+              author_profile_id: "author-1",
+              book_id: "book-1",
+              frozen_book_points: "0.33",
+              published_at: "2026-08-01T00:00:00Z",
+              books: { book_points: "2.00", list_status: "shortlist" },
+            },
+            {
+              id: "essay-2",
+              author_profile_id: "author-1",
+              book_id: "book-1",
+              frozen_book_points: "0.33",
+              published_at: "2026-08-02T00:00:00Z",
+              books: { book_points: "2.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+        { data: [] },
+      ],
+    });
+
+    const result = await getAuthorsApprovedBookPoints(client, ["author-1"]);
+
+    expect(result["author-1"]).toBeCloseTo(0.66, 5);
+  });
+
   it("falls back to live book_points when frozen_book_points is null (post-cutover essay)", async () => {
     const client = fakeSupabase({
       essays: [
         {
           data: [
             {
+              id: "essay-1",
               author_profile_id: "author-1",
               book_id: "book-1",
               frozen_book_points: null,
@@ -259,6 +427,7 @@ describe("getAuthorsApprovedBookPoints", () => {
             },
           ],
         },
+        { data: [] },
         { data: [] },
       ],
     });
@@ -286,13 +455,14 @@ describe("getAuthorsApprovedBookPoints", () => {
 });
 
 describe("getTeamBookPointsStats", () => {
-  it("credits the earliest essay's frozen value per (profile, book)", async () => {
+  it("counts live essays once per (profile, book) using the earliest row", async () => {
     const client = fakeSupabase({
       profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
       essays: [
         {
           data: [
             {
+              id: "essay-late",
               author_profile_id: "profile-1",
               book_id: "book-1",
               frozen_book_points: null,
@@ -300,14 +470,16 @@ describe("getTeamBookPointsStats", () => {
               books: { book_points: "3.00", list_status: "shortlist" },
             },
             {
+              id: "essay-early",
               author_profile_id: "profile-1",
               book_id: "book-1",
-              frozen_book_points: "1.00",
-              published_at: "2026-08-01T00:00:00Z",
-              books: { book_points: "3.00", list_status: "shortlist" },
+              frozen_book_points: null,
+              published_at: "2026-09-01T00:00:00Z",
+              books: { book_points: "1.00", list_status: "shortlist" },
             },
           ],
         },
+        { data: [] },
         { data: [] },
       ],
     });
@@ -319,6 +491,76 @@ describe("getTeamBookPointsStats", () => {
     ]);
   });
 
+  it("counts a frozen essay separately from a live essay on the same book", async () => {
+    const client = fakeSupabase({
+      profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
+      essays: [
+        {
+          data: [
+            {
+              id: "essay-live",
+              author_profile_id: "profile-1",
+              book_id: "book-1",
+              frozen_book_points: null,
+              published_at: "2026-09-10T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+            {
+              id: "essay-frozen",
+              author_profile_id: "profile-1",
+              book_id: "book-1",
+              frozen_book_points: "1.00",
+              published_at: "2026-08-01T00:00:00Z",
+              books: { book_points: "3.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+        { data: [] },
+      ],
+    });
+
+    const result = await getTeamBookPointsStats(client, "team-1");
+
+    expect(result).toEqual([
+      { profile: { id: "profile-1", name: "Test Student", picture: null }, approved_points: 4, pending_points: 0 },
+    ]);
+  });
+
+  it("counts every frozen essay individually even when they share one book", async () => {
+    const client = fakeSupabase({
+      profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
+      essays: [
+        {
+          data: [
+            {
+              id: "essay-1",
+              author_profile_id: "profile-1",
+              book_id: "book-1",
+              frozen_book_points: "0.33",
+              published_at: "2026-08-01T00:00:00Z",
+              books: { book_points: "2.00", list_status: "shortlist" },
+            },
+            {
+              id: "essay-2",
+              author_profile_id: "profile-1",
+              book_id: "book-1",
+              frozen_book_points: "0.33",
+              published_at: "2026-08-02T00:00:00Z",
+              books: { book_points: "2.00", list_status: "shortlist" },
+            },
+          ],
+        },
+        { data: [] },
+        { data: [] },
+      ],
+    });
+
+    const result = await getTeamBookPointsStats(client, "team-1");
+
+    expect(result[0].approved_points).toBeCloseTo(0.66, 5);
+  });
+
   it("falls back to live book_points when frozen_book_points is null (post-cutover essay)", async () => {
     const client = fakeSupabase({
       profiles: [{ data: [{ id: "profile-1", name: "Test Student", picture: null }] }],
@@ -326,6 +568,7 @@ describe("getTeamBookPointsStats", () => {
         {
           data: [
             {
+              id: "essay-1",
               author_profile_id: "profile-1",
               book_id: "book-1",
               frozen_book_points: null,
@@ -334,6 +577,7 @@ describe("getTeamBookPointsStats", () => {
             },
           ],
         },
+        { data: [] },
         { data: [] },
       ],
     });
@@ -353,12 +597,15 @@ describe("getTeamBookPointsStats", () => {
         {
           data: [
             {
+              id: "essay-1",
               author_profile_id: "profile-1",
               content_source_id: "cs-1",
+              frozen_book_points: null,
               content_sources: { points: 2, status: "approved" },
             },
           ],
         },
+        { data: [] }, // orphan frozen essays (none)
       ],
     });
 
@@ -377,12 +624,15 @@ describe("getTeamBookPointsStats", () => {
         {
           data: [
             {
+              id: "essay-1",
               author_profile_id: "profile-1",
               content_source_id: "cs-1",
+              frozen_book_points: null,
               content_sources: { points: 2, status: "pending_review" },
             },
           ],
         },
+        { data: [] }, // orphan frozen essays (none)
       ],
     });
 

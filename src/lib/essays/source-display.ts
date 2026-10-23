@@ -82,13 +82,19 @@ export function getEssaySourceDisplay(
   }
 
   if (essay.content_source) {
+    // A legacy frozen value is authoritative per essay, even when the essay
+    // points at a shared content source — and it is immune to archival.
+    const isFrozen = essay.frozen_book_points != null;
     return {
       kind: 'content_source',
       title: essay.content_source.title,
       author: essay.content_source.creator,
-      points: resolveEssayPoints({ contentSource: essay.content_source }),
-      isArchived: essay.content_source.status === 'archived',
-      isFrozen: false,
+      points: resolveEssayPoints({
+        frozenBookPoints: essay.frozen_book_points,
+        contentSource: essay.content_source,
+      }),
+      isArchived: !isFrozen && essay.content_source.status === 'archived',
+      isFrozen,
       illustrationKind: essay.content_source.kind,
     };
   }
