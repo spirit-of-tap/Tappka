@@ -31,6 +31,15 @@ describe("canAccessFeature", () => {
     expect(canAccessFeature(adminNoBeta, "timeTracking")).toBe(true)
     expect(canAccessFeature(null, "timeTracking")).toBe(false)
   })
+  it("komunitniKasa (Komunitní kasa) is released to everyone, no beta needed", () => {
+    expect(RELEASED_FEATURES).toContain("komunitniKasa")
+    expect(Object.keys(BETA_FEATURES)).not.toContain("komunitniKasa")
+    expect(canAccessFeature(nonBeta, "komunitniKasa")).toBe(true)
+    expect(canAccessFeature(a, "komunitniKasa")).toBe(true)
+    expect(canAccessFeature(b, "komunitniKasa")).toBe(true)
+    expect(canAccessFeature(adminNoBeta, "komunitniKasa")).toBe(true)
+    expect(canAccessFeature(null, "komunitniKasa")).toBe(false)
+  })
   it("admin bypasses regardless of beta status", () => {
     for (const f of Object.keys(BETA_FEATURES) as (keyof typeof BETA_FEATURES)[]) {
       expect(canAccessFeature(adminNoBeta, f)).toBe(true)

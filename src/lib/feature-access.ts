@@ -11,14 +11,13 @@ export const BETA_FEATURES = {
   portfolio: ["B"],
   dashboardMetrics: ["B"],
   trainingSessions: ["B"],
-  komunitniKasa: ["B"],
 } as const
 
 /**
  * Features that graduated from beta: open to every signed-in profile. Their keys stay so
  * existing gates (`canAccessFeature(profile, "timeTracking")`) keep working unchanged.
  */
-export const RELEASED_FEATURES = ["timeTracking"] as const
+export const RELEASED_FEATURES = ["timeTracking", "komunitniKasa"] as const
 
 export type BetaFeature = keyof typeof BETA_FEATURES
 export type ReleasedFeature = (typeof RELEASED_FEATURES)[number]
