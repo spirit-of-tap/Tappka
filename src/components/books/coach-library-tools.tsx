@@ -35,7 +35,9 @@ import { Spinner } from '@/components/ui/spinner';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { StorageImage } from '@/components/storage/storage-image';
 import { LibraryImportScanner } from '@/components/library/library-import-scanner';
+import { LibraryScanSession } from '@/components/library/library-scan-session';
 import { cn } from '@/lib/utils';
+import type { LibraryLabelEntry } from '@/lib/library/scan-session';
 import type { PhysicalLibraryBookItem, PhysicalLibraryCopy } from '@/lib/library/types';
 
 interface CoachLibraryToolsProps {
@@ -69,6 +71,16 @@ export function CoachLibraryTools({ initialInventory }: CoachLibraryToolsProps) 
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Label code -> book title, for the live scan mode (read-only, no API calls).
+  const labelEntries = useMemo<LibraryLabelEntry[]>(
+    () =>
+      inventory.flatMap((item) =>
+        item.copies.flatMap((copy) =>
+          copy.label_code == null ? [] : [{ code: copy.label_code, title: item.book.title_cs }],
+        ),
+      ),
+    [inventory],
+  );
 
   // Filtered inventory
   const filteredInventory = useMemo(() => {
@@ -208,6 +220,7 @@ export function CoachLibraryTools({ initialInventory }: CoachLibraryToolsProps) 
                 <span>Přiřazení štítků</span>
               </Link>
             </Button>
+            <LibraryScanSession labels={labelEntries} />
           </div>
         </div>
 
