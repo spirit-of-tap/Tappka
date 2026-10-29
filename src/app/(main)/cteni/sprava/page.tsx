@@ -14,10 +14,11 @@ import {
 } from '@/lib/books/queries';
 import { getContentSources, getPendingContentSources } from '@/lib/content-sources/queries';
 import { getPhysicalLibraryInventory } from '@/lib/library/queries';
+import { cn } from '@/lib/utils';
 import { CoachDashboard } from '@/components/books/coach-dashboard';
 import { PageShell } from '@/components/ui/page-shell';
 import { PageHeader } from '@/components/ui/page-header';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,12 +77,14 @@ export default async function SpravaKnihovnyPage({ searchParams }: SpravaKnihovn
         description="Zařaď knihy a zdroje do seznamů a spravuj výběr"
         action={
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" className="gap-1.5 shrink-0">
-                <Plus className="size-4" />
-                <span>Přidat</span>
-                <ChevronDown className="size-3.5 opacity-70" />
-              </Button>
+            {/*
+              No `asChild` + `Button` here: cloning the trigger via Radix Slot
+              causes a known React 19 hydration mismatch (radix-ui/primitives#3700).
+            */}
+            <DropdownMenuTrigger className={cn(buttonVariants({ size: 'sm' }), 'shrink-0 gap-1.5')}>
+              <Plus className="size-4" />
+              <span>Přidat</span>
+              <ChevronDown className="size-3.5 opacity-70" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem asChild>
