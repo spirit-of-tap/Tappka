@@ -183,3 +183,24 @@ describe('SearchPageClient — category subpages', () => {
     expect(screen.getByText('Návyky, mentální odolnost, sebereflexe a osobní růst')).toBeInTheDocument();
   });
 });
+
+describe('SearchPageClient — Melvil discount', () => {
+  beforeEach(() => vi.setSystemTime(new Date('2026-11-04T11:00:00Z')));
+
+  it('shows the discount card on the discovery view', () => {
+    render(<SearchPageClient {...requiredProps} />);
+
+    expect(screen.getByRole('heading', { name: '30 % na knihy od Melvilu' })).toBeInTheDocument();
+    expect(screen.getByText('TIIMI30')).toBeInTheDocument();
+  });
+
+  it('hides the discount card once a search query is typed', async () => {
+    mockSearchEndpoints();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<SearchPageClient {...requiredProps} />);
+    await user.type(screen.getByPlaceholderText('Hledat eseje, knihy, lidi, témata…'), 'Atomic');
+
+    expect(screen.queryByRole('heading', { name: '30 % na knihy od Melvilu' })).not.toBeInTheDocument();
+  });
+});
