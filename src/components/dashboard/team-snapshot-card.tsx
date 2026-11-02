@@ -1,15 +1,21 @@
 import Link from 'next/link';
-import { ArrowRight, Users } from 'lucide-react';
+import { ArrowRight, Tag, Users } from 'lucide-react';
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { ProfileAvatar } from '@/components/profile-avatar';
-import { TEAM_BOOK_POINTS_HREF } from '@/lib/constants/cteni';
+import { isMelvilDiscountLive } from '@/lib/books/melvil-discount';
+import {
+  CTENI_DISCOVER_HREF,
+  MELVIL_DISCOUNT,
+  TEAM_BOOK_POINTS_HREF,
+} from '@/lib/constants/cteni';
 
 interface TeamSnapshotCardProps {
   stats: {
@@ -71,6 +77,18 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
           </ul>
         )}
       </CardContent>
+      {isMelvilDiscountLive(new Date()) && (
+        <CardFooter className="mt-auto">
+          <Link
+            href={CTENI_DISCOVER_HREF}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-4"
+          >
+            <Tag className="size-3" aria-hidden="true" />
+            Mimochodem: s kódem {MELVIL_DISCOUNT.code} máš {MELVIL_DISCOUNT.percent} % na knihy od
+            Melvilu
+          </Link>
+        </CardFooter>
+      )}
     </Card>
   );
 }

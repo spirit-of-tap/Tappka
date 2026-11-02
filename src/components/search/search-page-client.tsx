@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { MelvilDiscountCard } from '@/components/cteni/melvil-discount-card';
 import {
   Empty,
   EmptyDescription,
@@ -359,6 +360,9 @@ function DiscoveryView({
 }) {
   return (
     <div className="space-y-8">
+      {/* 0. Partner discount — highest-visibility spot, above every other block */}
+      <MelvilDiscountCard />
+
       {/* 1. Curated Selections: TOP BOB & Rocket Model */}
       {(highlightedByCategory.length > 0 || rocketModelBooks.length > 0) && (
         <div className="grid grid-cols-2 gap-2 sm:gap-3">

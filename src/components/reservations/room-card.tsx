@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { addMinutes } from "date-fns";
 import { Clock, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +19,16 @@ interface RoomCardProps {
 /**
  * Card component displaying a room's current status and availability
  */
-export function RoomCard({ room, filterState: _filterState, onRoomClick }: RoomCardProps) {
-  const isOccupied = room.currentReservation !== null;
+export function RoomCard({ room, filterState, onRoomClick }: RoomCardProps) {
   const filterAvailability = room.availabilityForFilter;
-  const isFilteredOut = filterAvailability && !filterAvailability.isAvailable;
+  const isFilterActive = filterState?.duration != null;
+  const isOccupiedNow = room.currentReservation !== null;
+  const isFilteredOut = isFilterActive && filterAvailability !== undefined;
+  // With a filter active the card must describe the filtered window, not the
+  // snapshot of "now" taken when the page was rendered on the server.
+  const isOccupied = isFilterActive ? isFilteredOut : isOccupiedNow;
+  const isDayRestricted =
+    isFilterActive && filterAvailability?.reason === "day_restricted";
 
   // Determine status color
   const statusColor = isOccupied
@@ -29,8 +36,22 @@ export function RoomCard({ room, filterState: _filterState, onRoomClick }: RoomC
     : "border-success bg-success/5";
 
   const statusBadge = isOccupied
-    ? { label: "Obsazeno", variant: "destructive" as const }
+    ? {
+        label: isDayRestricted ? "Nedostupná" : "Obsazeno",
+        variant: "destructive" as const,
+      }
     : { label: "Volná", variant: "default" as const };
+
+  const filterWindowLabel =
+    filterState?.duration != null ? getFilterWindowLabel(filterState) : null;
+
+  const statusDetail = isFilterActive
+    ? isFilteredOut
+      ? null
+      : filterWindowLabel && `Volná ${filterWindowLabel}`
+    : isOccupiedNow && room.nextAvailableTime
+      ? `Volná od ${formatTime(room.nextAvailableTime)}`
+      : "Volná nyní";
 
   const handleClick = (e: React.MouseEvent) => {
     // If onRoomClick is provided (filter active), intercept the click
@@ -89,8 +110,8 @@ export function RoomCard({ room, filterState: _filterState, onRoomClick }: RoomC
 
         {/* Status info */}
         <div className="space-y-2 flex-1">
-          {/* Current reservation */}
-          {isOccupied && room.currentReservation && (
+          {/* Current reservation (live state only - it is stale for a filter window) */}
+          {!isFilterActive && isOccupiedNow && room.currentReservation && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Users className="size-4 flex-shrink-0" />
               <span className="text-sm">
@@ -99,15 +120,13 @@ export function RoomCard({ room, filterState: _filterState, onRoomClick }: RoomC
             </div>
           )}
 
-          {/* Next available time */}
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Clock className="size-4 flex-shrink-0" />
-            <span className="text-sm">
-              {isOccupied && room.nextAvailableTime
-                ? `Volná od ${formatTime(room.nextAvailableTime)}`
-                : "Volná nyní"}
-            </span>
-          </div>
+          {/* Availability for the filtered window / live availability */}
+          {statusDetail && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="size-4 flex-shrink-0" />
+              <span className="text-sm">{statusDetail}</span>
+            </div>
+          )}
         </div>
 
         {/* Room features - always at bottom */}
@@ -136,6 +155,15 @@ export function RoomCard({ room, filterState: _filterState, onRoomClick }: RoomC
       {cardContent}
     </Link>
   );
+}
+
+function getFilterWindowLabel(filterState: FilterState): string {
+  const [hours, minutes] = filterState.startTime.split(":").map(Number);
+  const start = new Date(filterState.date);
+  start.setHours(hours, minutes, 0, 0);
+  const end = addMinutes(start, Number(filterState.duration ?? 0));
+
+  return `${formatTime(start)}–${formatTime(end)}`;
 }
 
 function getReservationLabel(reservation: RoomWithStatus["currentReservation"]): string {

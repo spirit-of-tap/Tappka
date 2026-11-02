@@ -26,9 +26,9 @@ export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
   const [reservationStartTime, setReservationStartTime] = useState<Date | null>(null);
   const [reservationEndTime, setReservationEndTime] = useState<Date | null>(null);
 
-  const handleFilterChange = (newRooms: RoomWithStatus[]) => {
+  const handleFilterChange = useCallback((newRooms: RoomWithStatus[]) => {
     setFilteredRooms(newRooms);
-  };
+  }, []);
 
   const handleFilterStateChange = useCallback((state: FilterState) => {
     setFilterState(state);
