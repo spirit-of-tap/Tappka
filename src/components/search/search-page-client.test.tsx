@@ -185,7 +185,7 @@ describe('SearchPageClient — category subpages', () => {
 });
 
 describe('SearchPageClient — Melvil discount', () => {
-  beforeEach(() => vi.setSystemTime(new Date('2026-11-04T11:00:00Z')));
+  beforeEach(() => vi.setSystemTime(new Date('2026-11-04T10:00:00Z')));
 
   it('shows the discount card on the discovery view', () => {
     render(<SearchPageClient {...requiredProps} />);

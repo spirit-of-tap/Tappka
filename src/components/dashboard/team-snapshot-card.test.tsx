@@ -87,16 +87,16 @@ describe("TeamSnapshotCard", () => {
   describe("Melvil discount hint", () => {
     afterEach(() => vi.useRealTimers());
 
-    it("stays hidden before 4. 11. 12:00", () => {
+    it("stays hidden before 4. 11. 11:00", () => {
       vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(new Date("2026-11-04T10:59:59Z"));
+      vi.setSystemTime(new Date("2026-11-04T09:59:59Z"));
       render(<TeamSnapshotCard stats={stats} hasTeam teamName="Ambiciózní" />);
       expect(screen.queryByText(/na knihy od Melvilu/)).not.toBeInTheDocument();
     });
 
     it("links to Objevovat once the discount is live", () => {
       vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(new Date("2026-11-04T11:00:00Z"));
+      vi.setSystemTime(new Date("2026-11-04T10:00:00Z"));
       render(<TeamSnapshotCard stats={stats} hasTeam teamName="Ambiciózní" />);
       expect(screen.getByRole("link", { name: /na knihy od Melvilu/ })).toHaveAttribute(
         "href",
