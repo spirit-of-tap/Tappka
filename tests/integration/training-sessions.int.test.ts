@@ -320,6 +320,36 @@ describe("join_training_session / leave_training_session", () => {
   });
 });
 
+describe("search_training_sessions", () => {
+  async function search(client: PoolClient, q: string): Promise<string[]> {
+    const { rows } = await client.query("select * from public.search_training_sessions($1) as id", [q]);
+    return rows.map((row) => row.id);
+  }
+
+  it("ignores diacritics and tolerates typos in topic and preparation", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      await client.query("update public.training_sessions set topic = $1 where id = $2", ["Příprava a reflexe", id]);
+      await client.query(
+        `insert into public.training_session_preparations
+           (training_session_id, content_json, content_text, created_by_profile_id, updated_by_profile_id, published_at)
+         values ($1, '{"type":"doc"}', 'vyjednávání se zákazníkem', $2, $2, now())`,
+        [id, s.owner.profileId],
+      );
+      await asClaims(client, { sub: s.other.authId });
+
+      expect(await search(client, "Příprava")).toEqual([id]);
+      expect(await search(client, "priprava")).toEqual([id]); // missing diacritics
+      expect(await search(client, "pripravva")).toEqual([id]); // typo
+      expect(await search(client, "vyjednavani")).toEqual([id]); // diacritics in preparation
+      expect(await search(client, "reflexe priprava")).toEqual([id]); // imprecise word order
+      expect(await search(client, "fotbal")).toEqual([]);
+    });
+  });
+});
+
 describe("remove_training_session", () => {
   it("lets the owning team remove a session, hiding it from others", async () => {
     await withRollback(async (client) => {
