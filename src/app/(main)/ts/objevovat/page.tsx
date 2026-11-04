@@ -1,12 +1,9 @@
-import { ChevronDown, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
-import {
-  buildDiscoverHref,
-  DEFAULT_DISCOVER_FILTER,
-  DiscoverFilters,
-} from "@/components/training-sessions/discover-filters"
+import { DiscoverFilters } from "@/components/training-sessions/discover-filters"
+import { DiscoverLoadMore } from "@/components/training-sessions/discover-load-more"
 import { FeedRefresher } from "@/components/training-sessions/feed-refresher"
 import { SessionAgenda } from "@/components/training-sessions/session-agenda"
 import { Button } from "@/components/ui/button"
@@ -22,6 +19,7 @@ import {
   TS_ROUTES,
   type TsDiscoverFilter,
 } from "@/lib/training-sessions/constants"
+import { buildDiscoverHref, DEFAULT_DISCOVER_FILTER } from "@/lib/training-sessions/discover-params"
 import { listSessions, listViewerSessions, searchSessionIds } from "@/lib/training-sessions/queries"
 import { toTiming, type SessionViewer, type TrainingSessionListItem } from "@/lib/training-sessions/types"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
@@ -127,19 +125,20 @@ export default async function TsDiscoverPage({ searchParams }: PageProps) {
           commitments={commitments}
           now={nowIso}
           showLocation={false}
+          showPreparation={false}
           emptyTitle="Žádné TS"
-          emptyDescription={q ? "Zkus jiný výraz nebo jiný filtr." : "V tomto období nic není. Zkus se podívat dál dopředu."}
+          emptyDescription={
+            q
+              ? "Zkus jiný výraz nebo jiný filtr."
+              : canLoadMore
+                ? "Načítám další termíny…"
+                : "V tomto období nic není."
+          }
         />
-        {canLoadMore && (
-          <div className="flex justify-center">
-            <Button asChild variant="outline">
-              <Link href={buildDiscoverHref({ filter, year, q, windows: windows + 1 })} scroll={false}>
-                <ChevronDown className="mr-1.5 size-4" aria-hidden />
-                Načíst další měsíc
-              </Link>
-            </Button>
-          </div>
-        )}
+        <DiscoverLoadMore
+          nextHref={canLoadMore ? buildDiscoverHref({ filter, year, q, windows: windows + 1 }) : null}
+          autoLoad={filtered.length === 0}
+        />
       </div>
     </PageShell>
   )

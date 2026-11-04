@@ -6,7 +6,7 @@ import { ProfileAvatar } from "@/components/profile-avatar"
 import { Badge } from "@/components/ui/badge"
 import type { SessionConflict } from "@/lib/training-sessions/conflicts"
 import { TS_ROUTES } from "@/lib/training-sessions/constants"
-import { formatDayHeading, formatPeopleList, formatTimeRange, teamAccentStyles } from "@/lib/training-sessions/format"
+import { formatConflict, formatDayHeading, formatPeopleList, formatTimeRange, teamAccentStyles } from "@/lib/training-sessions/format"
 import { getSessionStatus } from "@/lib/training-sessions/status"
 import {
   toTiming,
@@ -35,10 +35,21 @@ interface SessionCardProps {
   showDate?: boolean
   /** Room matters for TS you attend; when browsing other teams' TS it is noise. */
   showLocation?: boolean
+  /** Preparation state is useful for your own programme, not when browsing other teams. */
+  showPreparation?: boolean
 }
 
-export function SessionCard({ session, viewer, conflicts, now, showDate, showLocation = true }: SessionCardProps) {
-  const status = getSessionStatus(toTiming(session), new Date(now))
+export function SessionCard({
+  session,
+  viewer,
+  conflicts,
+  now,
+  showDate,
+  showLocation = true,
+  showPreparation = true,
+}: SessionCardProps) {
+  const timing = toTiming(session)
+  const status = getSessionStatus(timing, new Date(now))
   const isCancelled = status === "cancelled"
   const isOngoing = status === "ongoing"
   const isUpcoming = status === "upcoming" || isOngoing
@@ -51,16 +62,16 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
   // Free spots only make sense while people can still join; afterwards just list who came.
   const showSeats = session.guest_capacity > 0 && isUpcoming && !isCancelled
   const conflict = conflicts[0]
-  const conflictText = conflict
-    ? `Kryje se s tvým TS · ${formatTimeRange(conflict.overlapStart, conflict.overlapEnd)}`
-    : null
+  const conflictChip = conflict ? formatConflict(timing, conflict) : null
+  // The chip sits next to the time; the dialog needs the full sentence because the time is not in view there.
+  const conflictSentence = conflict ? formatConflict(timing, conflict, "sentence") : null
   const facilitators = session.facilitators.flatMap((f) => (f.profile ? [f.profile] : []))
   const guests = session.guests.flatMap((g) => (g.profile ? [g.profile] : []))
   const location = session.room?.code ?? session.location_note
   const hasPreparation = Boolean(session.preparation?.published_at)
   const accent = teamAccentStyles(session.team?.color)
-  const showPreparation = isUpcoming && !isCancelled
-  const hasMeta = (showLocation && Boolean(location)) || showPreparation
+  const showPreparationState = showPreparation && isUpcoming && !isCancelled
+  const hasMeta = (showLocation && Boolean(location)) || showPreparationState
 
   // One spot answers "am I going?": a status pill when attending, otherwise the join action.
   let attendance: ReactNode = null
@@ -76,7 +87,7 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
       attendance = isFull ? (
         <span className="text-sm font-medium text-muted-foreground">Obsazeno</span>
       ) : (
-        <GuestJoinButton sessionId={session.id} joined={false} conflictText={conflictText} />
+        <GuestJoinButton sessionId={session.id} joined={false} conflictText={conflictSentence} />
       )
     }
   }
@@ -100,6 +111,12 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
             <Clock className="size-3.5 text-muted-foreground" aria-hidden />
             {formatTimeRange(session.starts_at, session.ends_at)}
           </span>
+          {conflictChip && !isCancelled && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning-strong">
+              <CircleAlert className="size-3.5 shrink-0" aria-hidden />
+              {conflictChip}
+            </span>
+          )}
           {session.team && (
             <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
               <span aria-hidden className="size-2 shrink-0 rounded-full bg-primary" style={accent.stripe} />
@@ -141,13 +158,6 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
         )}
       </dl>
 
-      {conflictText && !isCancelled && (
-        <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-md bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning-strong">
-          <CircleAlert className="size-3.5 shrink-0" aria-hidden />
-          {conflictText}
-        </p>
-      )}
-
       {(hasMeta || attendance) && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground sm:text-sm">
@@ -157,7 +167,7 @@ export function SessionCard({ session, viewer, conflicts, now, showDate, showLoc
                 {location}
               </span>
             )}
-            {showPreparation && (
+            {showPreparationState && (
               <span className="inline-flex items-center gap-1">
                 {hasPreparation ? (
                   <>

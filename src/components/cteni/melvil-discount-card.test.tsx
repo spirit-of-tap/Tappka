@@ -5,8 +5,8 @@ import { MELVIL_DISCOUNT } from '@/lib/constants/cteni';
 
 import { MelvilDiscountCard } from './melvil-discount-card';
 
-const BEFORE_LAUNCH = new Date('2026-11-04T10:59:59Z');
-const AFTER_LAUNCH = new Date('2026-11-04T11:00:00Z');
+const BEFORE_LAUNCH = new Date('2026-11-04T09:59:59Z');
+const AFTER_LAUNCH = new Date('2026-11-04T10:00:00Z');
 
 describe('MelvilDiscountCard', () => {
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe('MelvilDiscountCard', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders nothing before 4. 11. 12:00', () => {
+  it('renders nothing before 4. 11. 11:00', () => {
     vi.setSystemTime(BEFORE_LAUNCH);
     const { container } = render(<MelvilDiscountCard />);
 

@@ -3,8 +3,8 @@ export const MELVIL_DISCOUNT = {
   code: 'TIIMI30',
   percent: 30,
   url: 'https://www.melvil.cz/?utm_source=tappka&utm_medium=referral&utm_campaign=tiimi30',
-  /** Card stays hidden until 4. 11. 2026 12:00 Prague time (CET). */
-  startsAt: '2026-11-04T12:00:00+01:00',
+  /** Card stays hidden until 4. 11. 2026 11:00 Prague time (CET). */
+  startsAt: '2026-11-04T11:00:00+01:00',
 } as const;
 
 /** Objevovat tab, where the Melvil discount card lives. */

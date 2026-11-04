@@ -15,6 +15,7 @@ interface SessionAgendaProps {
   emptyTitle: string
   emptyDescription: string
   showLocation?: boolean
+  showPreparation?: boolean
 }
 
 export function SessionAgenda({
@@ -25,6 +26,7 @@ export function SessionAgenda({
   emptyTitle,
   emptyDescription,
   showLocation,
+  showPreparation,
 }: SessionAgendaProps) {
   if (sessions.length === 0) {
     return (
@@ -59,6 +61,7 @@ export function SessionAgenda({
                 conflicts={findConflicts(toTiming(session), commitments)}
                 now={now}
                 showLocation={showLocation}
+                showPreparation={showPreparation}
               />
             ))}
           </div>

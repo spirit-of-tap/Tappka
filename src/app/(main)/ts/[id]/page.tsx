@@ -20,7 +20,7 @@ import { contentTextFromJson } from "@/lib/essays/content-text"
 import { createClient } from "@/lib/supabase/server"
 import { findConflicts } from "@/lib/training-sessions/conflicts"
 import { TS_ROUTES } from "@/lib/training-sessions/constants"
-import { formatDayHeading, formatTimeRange, teamAccentStyles } from "@/lib/training-sessions/format"
+import { formatConflict, formatDayHeading, formatTimeRange, teamAccentStyles } from "@/lib/training-sessions/format"
 import { getReflection, getSessionDetail, listAttendance, listViewerSessions } from "@/lib/training-sessions/queries"
 import { getSessionStatus } from "@/lib/training-sessions/status"
 import { toTiming, type TrainingSessionDetail, type TsPersonSummary } from "@/lib/training-sessions/types"
@@ -84,7 +84,7 @@ export default async function TsDetailPage({ params }: PageProps) {
   if (canJoin) {
     const commitments = (await listViewerSessions(supabase, viewer, { from: now.toISOString() })).map(toTiming)
     const conflict = findConflicts(toTiming(session), commitments)[0]
-    conflictText = conflict ? `Kryje se s tvým TS · ${formatTimeRange(conflict.overlapStart, conflict.overlapEnd)}` : null
+    conflictText = conflict ? formatConflict(toTiming(session), conflict, "sentence") : null
   }
 
   const isFacilitator = session.facilitators.some((f) => f.profile?.id === profile.id)

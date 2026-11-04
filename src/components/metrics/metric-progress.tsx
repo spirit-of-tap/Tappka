@@ -31,7 +31,9 @@ export interface MetricProgressProps {
  * "Where am I relative to the cumulative benchmark of my current semester (e.g. 41/40 b → +1 b surplus)?"
  */
 export function MetricProgress(props: MetricProgressProps) {
-  if (props.period === "week") {
+  // Weekly goals and percentage metrics are a single bar against a target;
+  // cumulative semester milestones only make sense for count-based metrics.
+  if (props.period === "week" || props.unit === "percent") {
     const goal = props.goals[0]
     if (!goal) return null
     return <SingleGoalProgress goal={goal} unit={props.unit} />

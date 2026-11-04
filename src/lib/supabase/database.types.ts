@@ -3513,6 +3513,7 @@ export type Database = {
           team_name: string
         }[]
       }
+      immutable_unaccent: { Args: { p_text: string }; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       is_coach_or_admin: { Args: never; Returns: boolean }
       join_training_session: { Args: { p_session_id: string }; Returns: number }
@@ -3553,6 +3554,7 @@ export type Database = {
       search_training_sessions: { Args: { p_query: string }; Returns: string[] }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       annual_reflection_topic:
