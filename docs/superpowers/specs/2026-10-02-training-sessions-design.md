@@ -237,8 +237,12 @@ gate for cohort B, added to `MODULE_HUB_ORDER` and spotlight.
   label for own team) · topic (largest text) · room / location · facilitators
   · guest occupancy `3/5` · `Přihlásit se` / `Odhlásit se`. Cancelled cards are
   muted with a "Zrušeno" badge. Capacity 0 → no guest controls.
-- Overlap: card shows "Kryje se s tvým TS · 10:00–12:00"; joining asks for
-  confirmation in a responsive `AlertDialog` but never blocks.
+- Overlap: the card puts a small amber chip next to the time — "souběh s
+  tvým TS", carrying only the edge that differs ("od 10:00" / "do 12:00")
+  or the inner range; a full overlap repeats no time at all. Detail banner
+  and join dialog use the sentence form "Kryje se s tvým TS · 10:00–12:00"
+  (both from `formatConflict`). Joining asks for confirmation in a
+  responsive `AlertDialog` but never blocks.
 - Live occupancy via `useTrainingSessionFeed()` (private channel, cleanup on
   unmount); on `session_updated` the affected card refetches.
 

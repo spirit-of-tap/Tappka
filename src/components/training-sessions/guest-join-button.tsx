@@ -154,7 +154,7 @@ export function GuestJoinButton({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>TS se kryje s tvým programem</AlertDialogTitle>
-            <AlertDialogDescription>{conflictText} Chceš se přesto přihlásit?</AlertDialogDescription>
+            <AlertDialogDescription>{conflictText}. Chceš se přesto přihlásit?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Zpět</AlertDialogCancel>

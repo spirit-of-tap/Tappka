@@ -1,4 +1,6 @@
+import type { SessionConflict } from "./conflicts"
 import { PRAGUE_TIME_ZONE } from "./constants"
+import type { SessionTiming } from "./types"
 
 const DATE_KEY_FORMAT = new Intl.DateTimeFormat("en-CA", { timeZone: PRAGUE_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" })
 const DAY_HEADING_FORMAT = new Intl.DateTimeFormat("cs-CZ", { timeZone: PRAGUE_TIME_ZONE, weekday: "long", day: "numeric", month: "long" })
@@ -29,6 +31,28 @@ export function toTimeInputValue(iso: string): string {
 
 export function formatTimeRange(startIso: string, endIso: string): string {
   return `${formatTime(startIso)}–${formatTime(endIso)}`
+}
+
+/**
+ * "souběh s tvým TS" for the card, "Kryje se s tvým TS" for the detail banner and dialog.
+ * The session's own time is already visible next to the chip, so a full overlap
+ * carries no time at all — only the edge that actually differs.
+ */
+export function formatConflict(
+  session: SessionTiming,
+  conflict: SessionConflict<SessionTiming>,
+  style: "chip" | "sentence" = "chip",
+): string {
+  const label = style === "chip" ? "souběh s tvým TS" : "Kryje se s tvým TS"
+  const startsInside = new Date(conflict.overlapStart).getTime() > new Date(session.startsAt).getTime()
+  const endsInside = new Date(conflict.overlapEnd).getTime() < new Date(session.endsAt).getTime()
+
+  if (!startsInside && !endsInside) return label
+  if (style === "chip") {
+    if (startsInside && !endsInside) return `${label} od ${formatTime(conflict.overlapStart)}`
+    if (!startsInside && endsInside) return `${label} do ${formatTime(conflict.overlapEnd)}`
+  }
+  return `${label} · ${formatTimeRange(conflict.overlapStart, conflict.overlapEnd)}`
 }
 
 export function groupByPragueDay<T>(items: T[], getStart: (item: T) => string): DayGroup<T>[] {

@@ -2,6 +2,7 @@ import { CalendarDays, FileEdit, MessageSquareText, Plus } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
+import { MetricProgress } from "@/components/metrics/metric-progress"
 import { FeedRefresher } from "@/components/training-sessions/feed-refresher"
 import { SessionAgenda } from "@/components/training-sessions/session-agenda"
 import { Button } from "@/components/ui/button"
@@ -10,9 +11,11 @@ import { PageHeader } from "@/components/ui/page-header"
 import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
 import { createClient } from "@/lib/supabase/server"
+import { TS_ATTENDANCE_TARGET_PERCENT } from "@/lib/training-sessions/attendance"
 import { TS_HISTORY_LIMIT, TS_ROUTES } from "@/lib/training-sessions/constants"
 import { formatDayHeading, formatTimeRange } from "@/lib/training-sessions/format"
-import { listSessions, listViewerSessions } from "@/lib/training-sessions/queries"
+import { getViewerAttendance, listSessions, listViewerSessions } from "@/lib/training-sessions/queries"
+import { hasMissingReflection } from "@/lib/training-sessions/reflections"
 import { toTiming, type SessionViewer, type TrainingSessionListItem } from "@/lib/training-sessions/types"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
@@ -34,9 +37,10 @@ export default async function TsOverviewPage() {
   const nowIso = now.toISOString()
   const viewer: SessionViewer = { profileId: profile.id, teamId: profile.team_id }
 
-  const [upcomingAll, pastAll] = await Promise.all([
+  const [upcomingAll, pastAll, attendance] = await Promise.all([
     listViewerSessions(supabase, viewer, { from: nowIso }),
     listViewerSessions(supabase, viewer, { to: nowIso, order: "desc", limit: TS_HISTORY_LIMIT }),
+    getViewerAttendance(supabase, viewer, now).catch(() => null),
   ])
   const upcoming = upcomingAll.filter((s) => !s.cancelled_at)
   const history = pastAll.filter((s) => !s.cancelled_at)
@@ -64,7 +68,7 @@ export default async function TsOverviewPage() {
           recent.map((s) => s.id),
         )
       const withReflection = new Set((reflections ?? []).map((r) => r.training_session_id))
-      missingReflections = recent.filter((s) => !s.cancelled_at && !withReflection.has(s.id))
+      missingReflections = recent.filter((s) => hasMissingReflection(s, withReflection))
     }
   }
 
@@ -90,6 +94,19 @@ export default async function TsOverviewPage() {
         }
       />
       <FeedRefresher />
+
+      {attendance && attendance.heldCount > 0 && (
+        <MetricProgress
+          unit="percent"
+          goals={[
+            {
+              current: attendance.percent,
+              target: TS_ATTENDANCE_TARGET_PERCENT,
+              label: "Tvoje docházka na TS · tento semestr",
+            },
+          ]}
+        />
+      )}
 
       <div className="space-y-10">
         {facilitating.length > 0 && (

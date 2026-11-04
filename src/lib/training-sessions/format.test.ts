@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  formatConflict,
   formatDayHeading,
   formatPeopleList,
   formatTimeRange,
@@ -36,6 +37,34 @@ describe("Prague formatting", () => {
       ["2026-10-06", [1, 2]],
       ["2026-10-07", [3]],
     ])
+  })
+})
+
+describe("formatConflict", () => {
+  const session = { id: "s", startsAt: "2026-10-06T06:00:00Z", endsAt: "2026-10-06T10:00:00Z", cancelledAt: null }
+  const commitment = { id: "c", startsAt: "2026-10-06T06:00:00Z", endsAt: "2026-10-06T08:00:00Z", cancelledAt: null }
+
+  it("skips the time when the whole session overlaps", () => {
+    const conflict = { commitment, overlapStart: session.startsAt, overlapEnd: session.endsAt }
+    expect(formatConflict(session, conflict)).toBe("souběh s tvým TS")
+  })
+  it("names only the late start when the conflict starts inside the session", () => {
+    const conflict = { commitment, overlapStart: "2026-10-06T08:00:00Z", overlapEnd: session.endsAt }
+    expect(formatConflict(session, conflict)).toBe("souběh s tvým TS od 10:00")
+  })
+  it("names only the early end when the conflict ends inside the session", () => {
+    const conflict = { commitment, overlapStart: session.startsAt, overlapEnd: "2026-10-06T08:00:00Z" }
+    expect(formatConflict(session, conflict)).toBe("souběh s tvým TS do 10:00")
+  })
+  it("shows the inner range when the conflict sits inside the session", () => {
+    const conflict = { commitment, overlapStart: "2026-10-06T08:00:00Z", overlapEnd: "2026-10-06T09:00:00Z" }
+    expect(formatConflict(session, conflict)).toBe("souběh s tvým TS · 10:00–11:00")
+  })
+  it("uses a sentence for the detail banner and the join dialog", () => {
+    const full = { commitment, overlapStart: session.startsAt, overlapEnd: session.endsAt }
+    const partial = { commitment, overlapStart: "2026-10-06T08:00:00Z", overlapEnd: session.endsAt }
+    expect(formatConflict(session, full, "sentence")).toBe("Kryje se s tvým TS")
+    expect(formatConflict(session, partial, "sentence")).toBe("Kryje se s tvým TS · 10:00–12:00")
   })
 })
 

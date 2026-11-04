@@ -114,4 +114,32 @@ describe("MetricProgress", () => {
     expect(screen.getByText("42 h / 40 h")).toBeInTheDocument()
     expect(screen.getByText(/Splněno \(\+2 h\)/)).toBeInTheDocument()
   })
+
+  it("renders a percentage goal as a single bar against its target", () => {
+    const { container } = render(
+      <MetricProgress
+        unit="percent"
+        goals={[{ current: 75, target: 80, label: "Docházka na TS" }]}
+      />,
+    )
+
+    expect(screen.getByText("Docházka na TS")).toBeInTheDocument()
+    expect(screen.getByText("75 % / 80 %")).toBeInTheDocument()
+    expect(screen.getByText("(zbývá 5 %)")).toBeInTheDocument()
+    const bars = container.querySelectorAll('[data-slot="metric-bar"]')
+    expect(bars).toHaveLength(1)
+    expect(bars[0]).toHaveStyle({ width: "93.75%" })
+  })
+
+  it("marks a percentage goal as done with the surplus in percent", () => {
+    render(
+      <MetricProgress
+        unit="percent"
+        goals={[{ current: 85, target: 80, label: "Docházka na TS" }]}
+      />,
+    )
+
+    expect(screen.getByText("85 % / 80 %")).toBeInTheDocument()
+    expect(screen.getByText(/Splněno \(\+5 %\)/)).toBeInTheDocument()
+  })
 })

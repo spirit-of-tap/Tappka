@@ -1,7 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+import { getCurrentSemesterRange } from "@/lib/metrics/periods"
 import type { Database } from "@/lib/supabase/database.types"
 
+import {
+  summarizeAttendance,
+  type AttendanceRecordInput,
+  type AttendanceSessionInput,
+  type AttendanceSummary,
+} from "./attendance"
 import type { BreakRange, ScheduleSource } from "./slots"
 import {
   SESSION_DETAIL_SELECT,
@@ -115,6 +122,48 @@ export async function listAttendance(supabase: SupabaseClient<Database>, id: str
     .eq("training_session_id", id)
   if (error) throw error
   return data ?? []
+}
+
+/** The viewer's own-team TS attendance for the current academic semester. */
+export async function getViewerAttendance(
+  supabase: SupabaseClient<Database>,
+  viewer: SessionViewer,
+  now = new Date(),
+): Promise<AttendanceSummary | null> {
+  if (!viewer.teamId) return null
+
+  const { start, end } = getCurrentSemesterRange(now)
+  const { data: sessions, error } = await supabase
+    .from("training_sessions")
+    .select("id, starts_at, ends_at, cancelled_at")
+    .eq("team_id", viewer.teamId)
+    .gte("starts_at", start.toISOString())
+    .lt("starts_at", end.toISOString())
+  if (error) throw error
+
+  const sessionInputs: AttendanceSessionInput[] = (sessions ?? []).map((session) => ({
+    id: session.id,
+    startsAt: session.starts_at,
+    endsAt: session.ends_at,
+    cancelledAt: session.cancelled_at,
+  }))
+  const sessionIds = sessionInputs.map((session) => session.id)
+
+  let records: AttendanceRecordInput[] = []
+  if (sessionIds.length > 0) {
+    const { data, error: attendanceError } = await supabase
+      .from("training_session_attendees")
+      .select("training_session_id, status")
+      .eq("profile_id", viewer.profileId)
+      .in("training_session_id", sessionIds)
+    if (attendanceError) throw attendanceError
+    records = (data ?? []).map((record) => ({
+      trainingSessionId: record.training_session_id,
+      status: record.status,
+    }))
+  }
+
+  return summarizeAttendance(sessionInputs, records, now)
 }
 
 export async function listTeamSlotSources(

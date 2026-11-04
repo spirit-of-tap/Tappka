@@ -52,7 +52,28 @@ describe("SessionCard", () => {
       overlapEnd: "2026-10-06T08:00:00.000Z",
     }
     render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[conflict]} now={now} />)
-    expect(screen.getByText("Kryje se s tvým TS · 8:00–10:00")).toBeInTheDocument()
+    expect(screen.getByText("souběh s tvým TS do 10:00")).toBeInTheDocument()
+  })
+
+  it("does not repeat the session time when the whole session overlaps", () => {
+    const conflict = {
+      commitment: { id: "m", startsAt: "2026-10-06T06:00:00.000Z", endsAt: "2026-10-06T10:00:00.000Z", cancelledAt: null },
+      overlapStart: "2026-10-06T06:00:00.000Z",
+      overlapEnd: "2026-10-06T10:00:00.000Z",
+    }
+    render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[conflict]} now={now} />)
+    expect(screen.getByText("souběh s tvým TS")).toBeInTheDocument()
+  })
+
+  it("spells the conflict out in the join dialog", () => {
+    const conflict = {
+      commitment: { id: "m", startsAt: "2026-10-06T06:00:00.000Z", endsAt: "2026-10-06T08:00:00.000Z", cancelledAt: null },
+      overlapStart: "2026-10-06T06:00:00.000Z",
+      overlapEnd: "2026-10-06T08:00:00.000Z",
+    }
+    render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[conflict]} now={now} />)
+    fireEvent.click(screen.getByRole("button", { name: /Přihlásit se/ }))
+    expect(screen.getByText(/Kryje se s tvým TS · 8:00–10:00\. Chceš se přesto přihlásit\?/)).toBeInTheDocument()
   })
 
   it("mutes a cancelled session and hides guest controls", () => {
@@ -93,6 +114,31 @@ describe("SessionCard", () => {
       />,
     )
     expect(screen.getByText("Příprava je připravená")).toBeInTheDocument()
+  })
+
+  it("can hide the preparation state when browsing", () => {
+    render(
+      <SessionCard
+        session={session}
+        viewer={{ profileId: "x", teamId: "t2" }}
+        conflicts={[]}
+        now={now}
+        showPreparation={false}
+      />,
+    )
+    expect(screen.queryByText("Příprava zatím chybí")).not.toBeInTheDocument()
+  })
+
+  it("shows the session goal as its description", () => {
+    render(
+      <SessionCard
+        session={{ ...session, description: "Naučit se pracovat s rizikem v projektech." }}
+        viewer={{ profileId: "x", teamId: "t2" }}
+        conflicts={[]}
+        now={now}
+      />,
+    )
+    expect(screen.getByText("Naučit se pracovat s rizikem v projektech.")).toBeInTheDocument()
   })
 
   it("marks the card with the team color", () => {
