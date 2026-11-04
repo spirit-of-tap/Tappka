@@ -40,6 +40,15 @@ describe("canAccessFeature", () => {
     expect(canAccessFeature(adminNoBeta, "komunitniKasa")).toBe(true)
     expect(canAccessFeature(null, "komunitniKasa")).toBe(false)
   })
+  it("trainingSessions (Training sessions) is released to everyone, no beta needed", () => {
+    expect(RELEASED_FEATURES).toContain("trainingSessions")
+    expect(Object.keys(BETA_FEATURES)).not.toContain("trainingSessions")
+    expect(canAccessFeature(nonBeta, "trainingSessions")).toBe(true)
+    expect(canAccessFeature(a, "trainingSessions")).toBe(true)
+    expect(canAccessFeature(b, "trainingSessions")).toBe(true)
+    expect(canAccessFeature(adminNoBeta, "trainingSessions")).toBe(true)
+    expect(canAccessFeature(null, "trainingSessions")).toBe(false)
+  })
   it("admin bypasses regardless of beta status", () => {
     for (const f of Object.keys(BETA_FEATURES) as (keyof typeof BETA_FEATURES)[]) {
       expect(canAccessFeature(adminNoBeta, f)).toBe(true)

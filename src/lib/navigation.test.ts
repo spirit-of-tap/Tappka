@@ -35,7 +35,6 @@ describe("navigation config", () => {
       "/koucovani",
       "/tymova-reflexe",
       "/tymovy-denik",
-      "/ts/prehled",
       "/rocket-model",
       "/tymove-dokumenty",
       "/nastroje-techniky",
@@ -70,7 +69,6 @@ describe("navigation config", () => {
       "/koucovani": "coaching",
       "/tymova-reflexe": "teamReflection",
       "/tymovy-denik": "teamDiary",
-      "/ts/prehled": "trainingSessions",
       "/rocket-model": "rocketModel",
       "/tymove-dokumenty": "teamDocuments",
       "/nastroje-techniky": "toolsTechniques",
@@ -81,7 +79,7 @@ describe("navigation config", () => {
       expect(NAV_MODULES.find((m) => m.url === url)!.feature).toBe(feature);
     }
     for (const m of NAV_MODULES.filter((m) => !m.feature)) {
-      expect(["/", "/reservations", "/komunita", "/komunitni-kasa", "/cteni/prehled", "/cas"]).toContain(m.url);
+      expect(["/", "/reservations", "/komunita", "/komunitni-kasa", "/ts/prehled", "/cteni/prehled", "/cas"]).toContain(m.url);
     }
   });
 });
@@ -132,13 +130,13 @@ describe("getHubModules", () => {
   });
 
   it("keeps only non-feature modules (incl. public reading) for non-beta users, preserving hub order", () => {
-    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/cas"]);
-    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/cas"]);
-    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/cas"]);
+    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
   });
 
   it("shows reading plus stable for cohort A", () => {
-    expect(getHubModules(cohortA).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/cas"]);
+    expect(getHubModules(cohortA).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
   });
 
   it("filters by canAccessFeature via cohort", () => {
@@ -209,6 +207,6 @@ describe("getHubModules", () => {
       "/birth-giving",
       "/osobnostni-testy",
     ]);
-    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/cas"]);
+    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
   });
 });

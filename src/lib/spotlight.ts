@@ -286,7 +286,6 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     title: "Tréninkové sessions",
     description: "Nadcházející TS, příprava a přihlášení na TS jiných týmů",
     url: "/ts/prehled",
-    feature: "trainingSessions",
     icon: Presentation,
     keywords: ["ts", "training session", "tréninková session", "příprava", "facilitace", "docházka", "reflexe"],
   },
