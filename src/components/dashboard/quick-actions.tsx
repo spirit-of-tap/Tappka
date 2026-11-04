@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { PenLine, DoorOpen, Search, Inbox } from 'lucide-react';
+import { PenLine, DoorOpen, Search, Inbox, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CTENI_SCROLLKY_HREF } from '@/lib/constants/cteni';
 
 interface QuickActionsProps {
   isCoach: boolean;
@@ -40,6 +41,12 @@ export function QuickActions({ isCoach, unreadCount = 0 }: QuickActionsProps) {
         <Link href="/cteni/hledat">
           <Search className="size-4 mr-1.5" />
           Hledat knihu
+        </Link>
+      </Button>
+      <Button asChild variant="outline">
+        <Link href={CTENI_SCROLLKY_HREF}>
+          <ScrollText className="size-4 mr-1.5" />
+          Scrollky
         </Link>
       </Button>
     </div>

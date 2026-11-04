@@ -45,6 +45,7 @@ import { DiscoveryMixedFeed } from './discovery-mixed-feed';
 import { CopyBooksMenu } from './copy-books-menu';
 import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { CTENI_SCROLLKY_SECTION_ID } from '@/lib/constants/cteni';
 import { cn } from '@/lib/utils';
 import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 import { structureBookTitle } from '@/lib/books/format-title';
@@ -395,19 +396,21 @@ function DiscoveryView({
       )}
 
       {/* 3. Mixed Stream: Books with Interleaved Community Essays */}
-      <DiscoveryMixedFeed
-        books={books}
-        libraryBookIds={libraryBookIds}
-        essaysByBookId={essaysByBookId}
-        recentEssays={recentEssays}
-        popularEssays={popularEssays}
-        teamEssays={teamEssays}
-        teamNamesById={teamNamesById}
-        authorStatsById={authorStatsById}
-        userTeamName={userTeamName}
-        userTeamId={userTeamId}
-        currentProfileId={currentProfileId}
-      />
+      <div id={CTENI_SCROLLKY_SECTION_ID} className="scroll-mt-24">
+        <DiscoveryMixedFeed
+          books={books}
+          libraryBookIds={libraryBookIds}
+          essaysByBookId={essaysByBookId}
+          recentEssays={recentEssays}
+          popularEssays={popularEssays}
+          teamEssays={teamEssays}
+          teamNamesById={teamNamesById}
+          authorStatsById={authorStatsById}
+          userTeamName={userTeamName}
+          userTeamId={userTeamId}
+          currentProfileId={currentProfileId}
+        />
+      </div>
     </div>
   );
 }

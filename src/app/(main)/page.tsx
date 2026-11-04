@@ -16,8 +16,10 @@ import {
   type DashboardWidgetId,
 } from "@/lib/dashboard/types";
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access";
+import { listViewerSessions } from "@/lib/training-sessions/queries";
 import { FirstLoginConfetti } from "@/components/first-login-confetti";
 import { DashboardEditor } from "@/components/dashboard/dashboard-editor";
+import { NextTrainingSessionCard, type DashboardTrainingSession } from "@/components/dashboard/next-training-session-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { ReadingProgressCard } from "@/components/dashboard/reading-progress-card";
 import {
@@ -86,7 +88,7 @@ export default async function DashboardPage() {
 
   // Only fetch data for widgets the user actually placed on the dashboard.
   const needsStats = has("reading") || has("metrics");
-  const [stats, reservation, unreadEssays, teamStats, meetingCount] = await Promise.all([
+  const [stats, reservation, unreadEssays, teamStats, meetingCount, viewerSessions] = await Promise.all([
     needsStats
       ? getUserBookPointsStats(supabase, profile.id).catch(() => EMPTY_STATS)
       : null,
@@ -100,13 +102,39 @@ export default async function DashboardPage() {
       ? getTeamBookPointsStats(supabase, profile.team_id).catch(() => [])
       : [],
     has("metrics") ? countCustomerMeetings(supabase, profile.id).catch(() => 0) : 0,
+    has("next-session")
+      ? listViewerSessions(
+          supabase,
+          { profileId: profile.id, teamId: profile.team_id },
+          { from: new Date().toISOString(), order: "asc", limit: 10 },
+        ).catch(() => [])
+      : [],
   ]);
+
+  const nextSession = viewerSessions.find((session) => !session.cancelled_at) ?? null;
+  const nextSessionData: DashboardTrainingSession | null = nextSession
+    ? {
+        id: nextSession.id,
+        topic: nextSession.topic,
+        starts_at: nextSession.starts_at,
+        ends_at: nextSession.ends_at,
+        location: nextSession.room?.code ?? nextSession.location_note,
+        team: nextSession.team
+          ? { name: nextSession.team.name, color: nextSession.team.color }
+          : null,
+        facilitators: nextSession.facilitators,
+        isCross: nextSession.guests.some((guest) => guest.profile_id === profile.id),
+      }
+    : null;
 
   const nodes: Partial<Record<DashboardWidgetId, ReactNode>> = {};
   if (has("quick-actions")) {
     nodes["quick-actions"] = (
       <QuickActions isCoach={isCoach} unreadCount={unreadEssays.length} />
     );
+  }
+  if (has("next-session")) {
+    nodes["next-session"] = <NextTrainingSessionCard session={nextSessionData} />;
   }
   if (has("reading") && stats) {
     nodes["reading"] = (
