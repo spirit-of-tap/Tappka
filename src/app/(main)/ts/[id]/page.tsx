@@ -1,9 +1,11 @@
 import { CircleAlert, Lock } from "lucide-react"
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { cache, Suspense, type ReactNode } from "react"
 
 import { ProfileAvatar } from "@/components/profile-avatar"
+import { AddToGoogleCalendarButton } from "@/components/training-sessions/add-to-google-calendar-button"
 import { AttendancePanel } from "@/components/training-sessions/attendance-panel"
 import { CopyPreparationButton } from "@/components/training-sessions/copy-preparation-button"
 import { FeedRefresher } from "@/components/training-sessions/feed-refresher"
@@ -18,6 +20,7 @@ import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
 import { contentTextFromJson } from "@/lib/essays/content-text"
 import { createClient } from "@/lib/supabase/server"
+import { buildGoogleCalendarUrl } from "@/lib/training-sessions/calendar"
 import { findConflicts } from "@/lib/training-sessions/conflicts"
 import { TS_ROUTES } from "@/lib/training-sessions/constants"
 import { formatConflict, formatDayHeading, formatTimeRange, teamAccentStyles } from "@/lib/training-sessions/format"
@@ -35,6 +38,7 @@ const FALLBACK_METADATA: Metadata = {
 
 const GUEST_ROLE = "student"
 const UNNAMED_PERSON = "Bez jména"
+const FALLBACK_ORIGIN = "https://tappka.cz"
 const PERSON_CHIP_CLASS = "inline-flex h-8 items-center gap-2 rounded-full bg-muted/60 pl-1 pr-3 text-sm text-foreground"
 
 interface PageProps {
@@ -78,6 +82,25 @@ export default async function TsDetailPage({ params }: PageProps) {
   const canJoin = !isOwnTeam && status === "upcoming" && session.guest_capacity > 0 && !joined && !isFull
   const canLeave = joined && status === "upcoming"
   const accent = teamAccentStyles(session.team?.color)
+
+  // Only cross attendees get the calendar action; team members already have the session in their overview.
+  let calendarUrl: string | null = null
+  if (joined && status === "upcoming") {
+    const requestHeaders = await headers()
+    const host = requestHeaders.get("host")
+    const protocol = requestHeaders.get("x-forwarded-proto") ?? (process.env.NODE_ENV === "production" ? "https" : "http")
+    const origin = host ? `${protocol}://${host}` : FALLBACK_ORIGIN
+    calendarUrl = buildGoogleCalendarUrl({
+      topic: session.topic,
+      startsAt: session.starts_at,
+      endsAt: session.ends_at,
+      location,
+      teamName: session.team?.name ?? null,
+      facilitatorNames: session.facilitators.flatMap((f) => (f.profile?.name ? [f.profile.name] : [])),
+      description: session.description,
+      sessionUrl: `${origin}${TS_ROUTES.detail(session.id)}`,
+    })
+  }
 
   // Overlap warning compares against the viewer's upcoming program (own team + joined TS), as on Objevovat.
   let conflictText: string | null = null
@@ -163,6 +186,7 @@ export default async function TsDetailPage({ params }: PageProps) {
             {status === "cancelled" && <Badge variant="destructive">Zrušeno</Badge>}
             {isOwnTeam && <Badge variant="secondary">Můj tým</Badge>}
             {joined && <Badge variant="secondary">Přihlášeno</Badge>}
+            {calendarUrl && <AddToGoogleCalendarButton href={calendarUrl} />}
           </div>
         )}
 
