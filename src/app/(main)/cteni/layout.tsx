@@ -3,8 +3,10 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getCoachUnreadCount } from '@/lib/essays/queries';
+import { getMyWishlistBookIds } from '@/lib/books/wishlist';
 import { serverLogger } from '@/lib/server-logger';
 import { CteniTabBar } from '@/components/cteni/cteni-tab-bar';
+import { WishlistProvider } from '@/components/books/wishlist-provider';
 
 export default async function CteniLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -27,10 +29,17 @@ export default async function CteniLayout({ children }: { children: ReactNode })
     );
   }
 
+  // One query for the whole section; cards read this through WishlistProvider
+  // instead of each issuing its own request.
+  const wishlistIds = await getMyWishlistBookIds(supabase, profile.id).catch((err) => {
+    serverLogger.console.error('getMyWishlistBookIds failed:', err);
+    return new Set<string>();
+  });
+
   return (
-    <>
+    <WishlistProvider initialSavedIds={[...wishlistIds]}>
       <CteniTabBar isCoachOrAdmin={isCoachOrAdmin} reviewCount={reviewCount} />
       {children}
-    </>
+    </WishlistProvider>
   );
 }

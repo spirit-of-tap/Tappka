@@ -1,4 +1,5 @@
-import { Check } from "lucide-react"
+import type { ReactNode } from "react"
+import { Check, ChevronDown } from "lucide-react"
 import { formatMetricValue, type MetricPeriod, type MetricUnit } from "@/lib/metrics/config"
 import { getSemesterInfo } from "@/lib/timeline/semester-utils"
 
@@ -23,6 +24,13 @@ export interface MetricProgressProps {
   period?: MetricPeriod
   /** Unit used to format amounts in the single-goal bar. Defaults to plain counts. */
   unit?: MetricUnit
+  /**
+   * Extra content revealed when the semester bar is expanded (e.g. the team
+   * ranking on Moje čtení). Requires `detailsLabel`, which becomes the
+   * visible "tap to open" cue on the bar.
+   */
+  details?: ReactNode
+  detailsLabel?: string
 }
 
 /**
@@ -97,6 +105,8 @@ function CumulativeSemesterProgress({
   currentSemester: explicitSemester,
   onboardingYear = 2025,
   now = new Date(),
+  details,
+  detailsLabel,
 }: MetricProgressProps) {
   const semesterGoal = goals.find((g) => g.label.toLowerCase().includes("semestr"))
   const studyGoal = goals.find((g) => g.label.toLowerCase().includes("studium"))
@@ -269,7 +279,17 @@ function CumulativeSemesterProgress({
             })}
           </div>
         </div>
+        {details && detailsLabel && (
+          <span className="mt-2 flex items-center justify-end gap-1 text-[11px] font-medium text-muted-foreground group-hover:text-foreground">
+            {detailsLabel}
+            <ChevronDown className="size-3.5 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+          </span>
+        )}
       </summary>
+
+      {details && (
+        <div className="mt-2.5 border-t border-border/30 pt-3">{details}</div>
+      )}
 
       <p className="mt-2.5 border-t border-border/30 pt-2 text-xs leading-relaxed text-muted-foreground">
         Cíl studia se načítá kumulativně: 1. semestr ({semesterTarget}) → 2. semestr ({semesterTarget * 2}) → 3. semestr ({semesterTarget * 3}) → 4. semestr ({semesterTarget * 4}) → 5. semestr ({semesterTarget * 5}) → 6. semestr ({studyTarget}).

@@ -16,6 +16,12 @@ describe("widgetsForRole", () => {
     expect(ids).not.toContain("ke-kontrole");
   });
 
+  it("offers the next training session widget to every role", () => {
+    for (const role of ["student", "mentor", "coach", "admin"] as const) {
+      expect(widgetsForRole(role).map((w) => w.id)).toContain("next-session");
+    }
+  });
+
   it("returns ke-kontrole widget for coach", () => {
     const widgets = widgetsForRole("coach");
     const ids = widgets.map((w) => w.id);

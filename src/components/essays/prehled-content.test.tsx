@@ -11,17 +11,6 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-// Mock recharts ResponsiveContainer since it needs DOM size calculations
-vi.mock('recharts', async () => {
-  const actual = await vi.importActual<typeof import('recharts')>('recharts');
-  return {
-    ...actual,
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-      <div style={{ width: 500, height: 300 }}>{children}</div>
-    ),
-  };
-});
-
 // The semester number and label render as separate text nodes inside one span.
 const semesterLabel = (text: string) => (_: string, el: Element | null) =>
   el?.tagName === 'SPAN' && el.textContent === text;
@@ -35,56 +24,56 @@ describe('PrehledContent', () => {
       approved_points_this_semester: 12,
     },
     myEssays: [],
-    teamStats: [
-      {
-        profile: { id: 'user-1', name: 'Jan Novák', picture: null },
-        approved_points: 30,
-        pending_points: 5,
-      },
-    ],
-    hasTeam: true,
-    teamId: 'team-1',
     votedEssayIds: new Set<string>(),
     loans: [],
   };
 
-  it('renders progress, essays empty state, and team book points section', () => {
+  it('shows only progress and essays — team and shelf live elsewhere', () => {
     render(
       <TooltipProvider>
         <PrehledContent {...defaultProps} />
       </TooltipProvider>,
     );
 
-    expect(screen.getByText('Moje eseje')).toBeInTheDocument();
-    expect(screen.getByText('Ještě tu nic není')).toBeInTheDocument();
-    expect(screen.getByText('Tým a knižní body')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Detail týmu/i })).toHaveAttribute(
-      'href',
-      '/komunita/tymy/team-1?tab=statistiky',
-    );
+    expect(screen.getByRole('heading', { name: 'Moje eseje' })).toBeInTheDocument();
+    expect(screen.getByText('Zatím žádná esej')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Tým' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Chci si přečíst/ })).not.toBeInTheDocument();
   });
 
-  it('anchors the team section so the dashboard widget can deep-link to it', () => {
+  it('reveals the team ranking when the progress bar is expanded', async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <PrehledContent
+          {...defaultProps}
+          currentProfileId="me"
+          teamStats={[
+            { profile: { id: 'me', name: 'Ondřej Kulhavý', picture: null }, approved_points: 12, pending_points: 0 },
+            { profile: { id: 'p2', name: 'Jan Novák', picture: null }, approved_points: 30, pending_points: 5 },
+          ]}
+        />
+      </TooltipProvider>,
+    );
+
+    const cue = screen.getByText('Pořadí v týmu');
+    const details = cue.closest('details');
+    expect(details).not.toHaveAttribute('open');
+
+    await user.click(cue);
+    expect(details).toHaveAttribute('open');
+    expect(screen.getByText('Jan N.')).toBeVisible();
+    expect(screen.getByText('Ty')).toBeVisible();
+  });
+
+  it('has no team cue without a team', () => {
     render(
       <TooltipProvider>
         <PrehledContent {...defaultProps} />
       </TooltipProvider>,
     );
 
-    expect(screen.getByRole('region', { name: 'Tým a knižní body' })).toHaveAttribute(
-      'id',
-      'tym-a-knizni-body',
-    );
-  });
-
-  it('hides team section if user has no team', () => {
-    render(
-      <TooltipProvider>
-        <PrehledContent {...defaultProps} hasTeam={false} teamId={null} />
-      </TooltipProvider>,
-    );
-
-    expect(screen.queryByText('Tým a knižní body')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pořadí v týmu')).not.toBeInTheDocument();
   });
 
   describe('semester number', () => {

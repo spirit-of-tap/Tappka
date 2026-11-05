@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { BookStatusBadges } from './book-status-badges';
+import { WishlistButton } from './wishlist-button';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { structureBookTitle } from '@/lib/books/format-title';
@@ -108,6 +109,7 @@ export function FeedBookCard({
               <ArrowRight className="size-3 ml-0.5" />
             </Link>
           </Button>
+          <WishlistButton bookId={book.id} />
         </div>
       </div>
 

@@ -33,6 +33,7 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { WishlistSection } from '@/components/books/wishlist-section';
 import { PageShell } from '@/components/ui/page-shell';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
@@ -45,6 +46,7 @@ import { DiscoveryMixedFeed } from './discovery-mixed-feed';
 import { CopyBooksMenu } from './copy-books-menu';
 import type { AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
+import { CTENI_SCROLLKY_SECTION_ID } from '@/lib/constants/cteni';
 import { cn } from '@/lib/utils';
 import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 import { structureBookTitle } from '@/lib/books/format-title';
@@ -91,6 +93,8 @@ interface SearchPageClientProps {
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
   contentSources?: ContentSource[];
+  /** The viewer's "Chci si přečíst" shelf, shown at the top of discovery. */
+  wishlist?: BookWithProfiles[];
   /** Viewer id — only the author sees their frozen (locked) points; others see live book points. */
   currentProfileId?: string | null;
 }
@@ -189,6 +193,7 @@ export function SearchPageClient({
   rocketModelBooks,
   highlightedByCategory,
   contentSources = [],
+  wishlist = [],
   currentProfileId = null,
 }: SearchPageClientProps) {
   const [query, setQuery] = usePersistedState('tappka:search:query', '', { storage: 'sessionStorage' });
@@ -312,6 +317,7 @@ export function SearchPageClient({
             rocketModelBooks={rocketModelBooks}
             highlightedByCategory={highlightedByCategory}
             contentSources={contentSources}
+            wishlist={wishlist}
             onSelectCategory={setSelectedCategory}
             currentProfileId={currentProfileId}
           />
@@ -338,6 +344,7 @@ function DiscoveryView({
   rocketModelBooks,
   highlightedByCategory,
   contentSources,
+  wishlist,
   onSelectCategory,
   currentProfileId,
 }: {
@@ -355,6 +362,7 @@ function DiscoveryView({
   rocketModelBooks: BookWithProfiles[];
   highlightedByCategory: HighlightedGroup[];
   contentSources: ContentSource[];
+  wishlist: BookWithProfiles[];
   onSelectCategory: (key: string) => void;
   currentProfileId?: string | null;
 }) {
@@ -362,6 +370,9 @@ function DiscoveryView({
     <div className="space-y-8">
       {/* 0. Partner discount — highest-visibility spot, above every other block */}
       <MelvilDiscountCard />
+
+      {/* 0b. The viewer's saved books — right where they bookmark new ones */}
+      <WishlistSection books={wishlist} />
 
       {/* 1. Curated Selections: TOP BOB & Rocket Model */}
       {(highlightedByCategory.length > 0 || rocketModelBooks.length > 0) && (
@@ -395,19 +406,21 @@ function DiscoveryView({
       )}
 
       {/* 3. Mixed Stream: Books with Interleaved Community Essays */}
-      <DiscoveryMixedFeed
-        books={books}
-        libraryBookIds={libraryBookIds}
-        essaysByBookId={essaysByBookId}
-        recentEssays={recentEssays}
-        popularEssays={popularEssays}
-        teamEssays={teamEssays}
-        teamNamesById={teamNamesById}
-        authorStatsById={authorStatsById}
-        userTeamName={userTeamName}
-        userTeamId={userTeamId}
-        currentProfileId={currentProfileId}
-      />
+      <div id={CTENI_SCROLLKY_SECTION_ID} className="scroll-mt-24">
+        <DiscoveryMixedFeed
+          books={books}
+          libraryBookIds={libraryBookIds}
+          essaysByBookId={essaysByBookId}
+          recentEssays={recentEssays}
+          popularEssays={popularEssays}
+          teamEssays={teamEssays}
+          teamNamesById={teamNamesById}
+          authorStatsById={authorStatsById}
+          userTeamName={userTeamName}
+          userTeamId={userTeamId}
+          currentProfileId={currentProfileId}
+        />
+      </div>
     </div>
   );
 }

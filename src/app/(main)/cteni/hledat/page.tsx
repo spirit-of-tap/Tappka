@@ -5,6 +5,7 @@ import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import { getFallbackBookEssays, mergeBookEssayMaps } from '@/lib/essays/book-essay-lists';
 import { getBooks, getRocketModelBooks, getHighlightedBooks, getHighlightCategories } from '@/lib/books/queries';
 import { getBookIdsInLibrary } from '@/lib/library/book-ids';
+import { getMyWishlist } from '@/lib/books/wishlist';
 import { getContentSources } from '@/lib/content-sources/queries';
 import { groupHighlightedBooks } from '@/lib/books/highlight-groups';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
@@ -32,6 +33,7 @@ export default async function HledatPage() {
     highlightedBooks,
     highlightCategories,
     contentSources,
+    wishlist,
   ] = await Promise.all([
     getBooks(supabase, { listStatus: 'shortlist', minEssayCount: 2, sortBy: 'popular', pageSize: 60 }),
     getBookIdsInLibrary(supabase),
@@ -44,6 +46,7 @@ export default async function HledatPage() {
     getHighlightedBooks(supabase),
     getHighlightCategories(supabase),
     getContentSources(supabase, { pageSize: 12 }),
+    profile ? getMyWishlist(supabase, profile.id).catch(() => []) : Promise.resolve([]),
   ]);
 
   type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number; list_status: BookListStatus; is_rocket_model: boolean; highlight_category: HighlightCategory | null };
@@ -164,6 +167,7 @@ export default async function HledatPage() {
       rocketModelBooks={rocketModelBooks}
       highlightedByCategory={highlightedByCategory}
       contentSources={contentSources}
+      wishlist={wishlist}
       currentProfileId={profile?.id ?? null}
     />
   );

@@ -25,6 +25,8 @@ export interface ListSessionsFilter {
   ids?: string[]
   order?: "asc" | "desc"
   limit?: number
+  /** Rows to skip; only used for id-less listing (cursor-style feeds). */
+  offset?: number
 }
 
 const DEFAULT_LIST_LIMIT = 200
@@ -55,7 +57,10 @@ export async function listSessions(
     if (filter.to) query = query.lt("ends_at", filter.to)
     if (filter.teamId) query = query.eq("team_id", filter.teamId)
     if (ids) query = query.in("id", ids)
-    const { data, error } = await query.order("starts_at", { ascending }).limit(limit)
+    // Chunked id lookups already sort globally below, so offset belongs to the plain listing path.
+    const offset = ids ? 0 : (filter.offset ?? 0)
+    query = query.order("starts_at", { ascending }).range(offset, offset + limit - 1)
+    const { data, error } = await query
     if (error) throw error
     return (data ?? []) as unknown as TrainingSessionListItem[]
   }

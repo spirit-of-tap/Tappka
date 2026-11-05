@@ -57,3 +57,32 @@ describe('MyEssayList source buckets', () => {
     expect(screen.getByText('Nad rámec četby')).toBeInTheDocument();
   });
 });
+
+describe('MyEssayList comments', () => {
+  it('shows the comment count on every essay, including zero', () => {
+    render(
+      <MyEssayList
+        essays={[essay({ id: 'a', comment_count: 3 }), essay({ id: 'b', title: 'Druhá', comment_count: 0 })]}
+      />,
+    );
+
+    expect(screen.getByLabelText('3 komentáře')).toBeInTheDocument();
+    expect(screen.getByLabelText('0 komentářů')).toBeInTheDocument();
+  });
+
+  it('floats essays awaiting a reply to the top, flags them, and links to the comments', () => {
+    render(
+      <MyEssayList
+        essays={[essay({ id: 'a', title: 'Bez komentáře' }), essay({ id: 'b', title: 'S komentářem', comment_count: 1 })]}
+        awaitingReplyIds={new Set(['b'])}
+      />,
+    );
+
+    const links = screen.getAllByRole('link');
+    expect(links[0]).toHaveTextContent('S komentářem');
+    expect(links[0]).toHaveTextContent('Kouč:ka čeká na tvou odpověď');
+    expect(links[0]).toHaveAttribute('href', '/cteni/eseje/b#komentare');
+    expect(links[1]).not.toHaveTextContent('čeká na tvou odpověď');
+    expect(links[1]).toHaveAttribute('href', '/cteni/eseje/a');
+  });
+});

@@ -12,7 +12,7 @@ const SEARCH_DEBOUNCE_MS = 300
 
 /**
  * Search-as-you-type for Objevovat. The URL stays the source of truth so the
- * result list can keep rendering on the server (filters, RLS, horizon).
+ * result list can keep rendering on the server (filters, RLS, the first batch).
  */
 export function DiscoverSearch() {
   const router = useRouter()
@@ -49,8 +49,6 @@ export function DiscoverSearch() {
       const params = new URLSearchParams(searchParams.toString())
       if (trimmed) params.set(DISCOVER_SEARCH_PARAMS.query, trimmed)
       else params.delete(DISCOVER_SEARCH_PARAMS.query)
-      // Search spans every month, so a previously loaded horizon must not leak back in.
-      params.delete(DISCOVER_SEARCH_PARAMS.windows)
 
       const qs = params.toString()
       startTransition(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }))

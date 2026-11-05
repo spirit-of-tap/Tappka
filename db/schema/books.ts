@@ -187,6 +187,33 @@ export const libraryBooks = pgTable("library_books", {
 	check("library_books_label_code_check", sql`(label_code IS NULL) OR (label_code > 0)`),
 ]).enableRLS();
 
+/**
+ * Personal "Chci si přečíst" shelf. A bookmark, not a lifecycle: the row
+ * exists or it doesn't. Private by design — every policy is scoped to the
+ * owner, so no one else can read someone's list.
+ */
+export const bookWishlist = pgTable("book_wishlist", {
+	profileId: uuid("profile_id").notNull(),
+	bookId: uuid("book_id").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("book_wishlist_profile_created_idx").using("btree", table.profileId.asc().nullsLast().op("uuid_ops"), table.createdAt.desc().nullsLast().op("timestamptz_ops")),
+	foreignKey({
+			columns: [table.profileId],
+			foreignColumns: [profiles.id],
+			name: "book_wishlist_profile_id_fkey"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.bookId],
+			foreignColumns: [books.id],
+			name: "book_wishlist_book_id_fkey"
+		}).onDelete("cascade"),
+	primaryKey({ columns: [table.profileId, table.bookId], name: "book_wishlist_pkey" }),
+	pgPolicy("Users can view their own book wishlist", { as: "permissive", for: "select", to: ["authenticated"], using: sql`(profile_id = current_profile_id())` }),
+	pgPolicy("Users can add to their own book wishlist", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(profile_id = current_profile_id())` }),
+	pgPolicy("Users can remove from their own book wishlist", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`(profile_id = current_profile_id())` }),
+]).enableRLS();
+
 export const bookLoans = pgTable("book_loans", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	libraryBookId: uuid("library_book_id").notNull(),

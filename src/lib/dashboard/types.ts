@@ -2,6 +2,7 @@ import type { ProfileRole } from '@/lib/auth-helpers';
 
 export type DashboardWidgetId =
   | 'quick-actions'
+  | 'next-session'
   | 'reading'
   | 'reservation'
   | 'ke-kontrole'
@@ -21,6 +22,12 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
     id: 'quick-actions',
     label: 'Rychlé akce',
     description: 'Tlačítka pro nejčastější činnosti — psaní esejí, rezervace, hledání knih.',
+    roles: ['student', 'mentor', 'coach', 'admin'],
+  },
+  {
+    id: 'next-session',
+    label: 'Nejbližší training session',
+    description: 'Tvoje nejbližší TS — vlastní tým nebo cross, na který jsi přihlášený:á.',
     roles: ['student', 'mentor', 'coach', 'admin'],
   },
   {

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserBookPointsStats, getTeamBookPointsStats, getEssays } from '@/lib/essays/queries';
 import { getMyLoans } from '@/lib/library/queries';
+import { getEssaysAwaitingReply } from '@/lib/essays/awaiting-reply';
 import { PrehledContent } from '@/components/essays/prehled-content';
 import { CteniViewTracker } from '@/components/cteni/cteni-view-tracker';
 import { HelpDialog } from '@/components/help-dialog';
@@ -12,7 +13,7 @@ import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
   title: 'Moje čtení',
-  description: 'Tvůj pokrok, eseje a srovnání s týmem',
+  description: 'Tvůj pokrok a eseje',
 };
 
 export default async function PrehledPage() {
@@ -33,13 +34,19 @@ export default async function PrehledPage() {
   ]);
 
   const votedEssayIds = new Set<string>((votesResult.data ?? []).map((r) => r.essay_id));
+  // Only essays that have comments can be waiting on a reply.
+  const awaitingReplyIds = await getEssaysAwaitingReply(
+    supabase,
+    profile.id,
+    myEssays.filter((e) => e.comment_count > 0).map((e) => e.id),
+  ).catch(() => new Set<string>());
 
   return (
-    <PageShell size="full">
+    <PageShell size="medium">
       <CteniViewTracker />
       <PageHeader
         title="Moje čtení"
-        description="Tvůj pokrok, eseje a srovnání s týmem"
+        description="Tvůj pokrok a eseje"
         action={
           <HelpDialog question="Co jsou esejbanka a knižní body?">
             <InfoCard />
@@ -50,12 +57,12 @@ export default async function PrehledPage() {
       <PrehledContent
         stats={stats}
         myEssays={myEssays}
-        teamStats={teamStats}
-        hasTeam={!!profile.team_id}
-        teamId={profile.team_id}
         onboardingYear={profile.team?.onboardingYear}
         votedEssayIds={votedEssayIds}
+        awaitingReplyIds={awaitingReplyIds}
         loans={loans}
+        teamStats={teamStats}
+        currentProfileId={profile.id}
       />
     </PageShell>
   );

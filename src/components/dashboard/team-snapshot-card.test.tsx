@@ -31,11 +31,11 @@ describe("TeamSnapshotCard", () => {
     expect(screen.getByText("Tým Ambiciózní")).toBeInTheDocument();
   });
 
-  it("links straight to the team section of Moje čtení", () => {
-    render(<TeamSnapshotCard stats={stats} hasTeam teamName="Ambiciózní" />);
+  it("links to the team's book points statistics", () => {
+    render(<TeamSnapshotCard stats={stats} hasTeam teamId="t1" teamName="Ambiciózní" />);
     expect(screen.getByRole("link", { name: /Celý tým/ })).toHaveAttribute(
       "href",
-      "/cteni/prehled#tym-a-knizni-body",
+      "/komunita/tymy/t1?tab=statistiky",
     );
   });
 

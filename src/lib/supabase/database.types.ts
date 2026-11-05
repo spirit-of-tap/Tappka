@@ -359,6 +359,46 @@ export type Database = {
           },
         ]
       }
+      book_wishlist: {
+        Row: {
+          book_id: string
+          created_at: string
+          profile_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          profile_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_wishlist_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_wishlist_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books_with_essay_count"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_wishlist_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       books: {
         Row: {
           author: string

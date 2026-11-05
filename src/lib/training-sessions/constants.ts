@@ -54,12 +54,11 @@ export const TS_DISCOVER_FILTER_LABELS: Record<TsDiscoverFilter, string> = {
   probehle: "Proběhlé",
 }
 
-/** How far ahead Objevovat looks; each "load more" adds one more window. */
-export const TS_DISCOVER_HORIZON = {
-  windowDays: 30,
-  defaultWindows: 1,
-  maxWindows: 12,
-} as const
+/** How many sessions Objevovat fetches per batch while scrolling. */
+export const TS_DISCOVER_PAGE_SIZE = 15
+
+/** Search resolves ids first, so cap the set it can page through. */
+export const TS_DISCOVER_SEARCH_LIMIT = 200
 
 export const TS_HISTORY_LIMIT = 20
 

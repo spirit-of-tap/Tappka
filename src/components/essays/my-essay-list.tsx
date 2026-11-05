@@ -12,13 +12,23 @@ import { formatPoints } from '@/lib/books/points';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { isEssayPinned, type EssayWithDetails } from '@/lib/essays/types';
+import { pluralizeCz } from '@/lib/utils/pluralize-cz';
+import { cn } from '@/lib/utils';
 
 interface MyEssayListProps {
   essays: EssayWithDetails[];
-  votedEssayIds?: Set<string>;
+  votedEssayIds?: ReadonlySet<string>;
+  /** Essays where a coach has the last word — floated to the top and highlighted. */
+  awaitingReplyIds?: ReadonlySet<string>;
 }
 
-export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListProps) {
+const NO_IDS: ReadonlySet<string> = new Set();
+
+export function MyEssayList({
+  essays,
+  votedEssayIds = NO_IDS,
+  awaitingReplyIds = NO_IDS,
+}: MyEssayListProps) {
   // "Nad rámec četby" means no source at all — a content-source essay belongs
   // with the sourced ones, not with the beyond-the-list bucket.
   const bookEssays = essays.filter((e) => getEssaySourceDisplay(e).kind !== 'none');
@@ -32,14 +42,14 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
     return 0;
   };
 
-  const sorted = [...bookEssays.sort(sortPinned), ...topicEssays.sort(sortPinned)];
+  // Essays waiting on the author's reply come first, keeping the existing order otherwise.
+  const sorted = [...bookEssays.sort(sortPinned), ...topicEssays.sort(sortPinned)].sort(
+    (a, b) => Number(awaitingReplyIds.has(b.id)) - Number(awaitingReplyIds.has(a.id)),
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-      <div className="divide-y divide-border/50">
-      {sorted.map((essay, i) => {
-        const snippet = (essay.content_text ?? '').slice(0, 120).trimEnd();
+    <ul className="divide-y divide-border/60">
+      {sorted.map((essay) => {
         const date = new Date(essay.created_at).toLocaleDateString('cs-CZ', {
           day: 'numeric',
           month: 'short',
@@ -50,115 +60,113 @@ export function MyEssayList({ essays, votedEssayIds = new Set() }: MyEssayListPr
         const hasPoints = !source.isArchived && points > 0;
         const isRejected = source.isArchived;
         const isTopic = source.kind === 'none';
+        const awaitingReply = awaitingReplyIds.has(essay.id);
 
         return (
-          <Link
-            key={essay.id}
-            href={`/cteni/eseje/${essay.id}`}
-            className="group focus-ring flex items-start gap-4 py-4 hover:bg-muted/30 transition-colors rounded-lg px-2 -mx-2"
-          >
-            {/* Index — only for book essays */}
-            {!isTopic && (
-              <span className="hidden sm:block w-6 shrink-0 text-right text-xs text-muted-foreground/40 font-mono pt-1 select-none">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-            )}
-            {isTopic && (
-              <span className="hidden sm:block w-6 shrink-0 pt-1 select-none" />
-            )}
-
-            {/* Cover */}
-            <div className="shrink-0 w-10 h-14 rounded-md overflow-hidden bg-muted flex items-center justify-center border border-border/40">
-              {essay.book?.google_books_cover_url ? (
-                <StorageImage
-                  storageKey={essay.book.google_books_cover_url}
-                  alt={essay.book.title_cs}
-                  width={40}
-                  height={56}
-                  className="w-full h-full object-cover"
-                />
-              ) : essay.content_source ? (
-                <ContentSourceIllustration kind={essay.content_source.kind} className="size-full" />
-              ) : isTopic ? (
-                <Sparkles className="size-4 text-amber-500/40" />
-              ) : (
-                <BookOpen className="size-4 text-muted-foreground/30" />
+          <li key={essay.id}>
+            <Link
+              href={awaitingReply ? `/cteni/eseje/${essay.id}#komentare` : `/cteni/eseje/${essay.id}`}
+              className={cn(
+                'group focus-ring -mx-2 flex items-center gap-3 rounded-md px-2 py-3 transition-colors',
+                awaitingReply ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-accent/50',
               )}
-            </div>
+            >
+              <div className="flex h-12 w-8.5 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted ring-1 ring-border/50">
+                {essay.book?.google_books_cover_url ? (
+                  <StorageImage
+                    storageKey={essay.book.google_books_cover_url}
+                    alt=""
+                    width={34}
+                    height={48}
+                    className="size-full object-cover"
+                  />
+                ) : essay.content_source ? (
+                  <ContentSourceIllustration kind={essay.content_source.kind} className="size-full" />
+                ) : isTopic ? (
+                  <Sparkles className="size-4 text-warning-strong/60" aria-hidden="true" />
+                ) : (
+                  <BookOpen className="size-4 text-muted-foreground/40" aria-hidden="true" />
+                )}
+              </div>
 
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="flex items-center gap-1.5 min-w-0">
                   {isEssayPinned(essay) && (
-                    <Pin className="size-3 shrink-0 text-primary fill-primary" />
+                    <Pin className="size-3 shrink-0 fill-primary text-primary" aria-label="Připnuto" />
                   )}
-                  <h3 className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                  <h3 className="truncate text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
                     {essay.title}
                   </h3>
                 </div>
-                {hasPoints && (
-                  source.isFrozen ? (
-                    <LegacyPointsBadge points={points} className="shrink-0" />
+
+                {awaitingReply && (
+                  <p className="flex items-center gap-1 text-xs font-medium text-primary">
+                    <MessageCircle className="size-3 fill-current" aria-hidden="true" />
+                    Kouč:ka čeká na tvou odpověď
+                  </p>
+                )}
+
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex min-w-0 items-center gap-1.5 truncate">
+                    {essay.book ? (
+                      <>
+                        <span className="truncate">{essay.book.title_cs}</span>
+                        <BookStatusBadges book={essay.book} />
+                      </>
+                    ) : source.kind === 'content_source' || source.kind === 'legacy' ? (
+                      <span className="truncate">{source.title}</span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-warning-strong">
+                        <Sparkles className="size-3" aria-hidden="true" />
+                        Nad rámec četby
+                      </span>
+                    )}
+                  </span>
+                  <span className="hidden shrink-0 items-center gap-3 sm:flex">
+                    <EssayVoteButton
+                      essayId={essay.id}
+                      initialVoteCount={essay.vote_count}
+                      initialVoted={votedEssayIds.has(essay.id)}
+                      readOnly
+                    />
+                    <span className="flex items-center gap-1" aria-label={`${essay.view_count} zobrazení`}>
+                      <Eye className="size-3" aria-hidden="true" />
+                      {essay.view_count}
+                    </span>
+                  </span>
+                  <span
+                    className={cn(
+                      'flex shrink-0 items-center gap-1',
+                      essay.comment_count > 0 && 'text-foreground',
+                    )}
+                    aria-label={`${essay.comment_count} ${pluralizeCz(essay.comment_count, ['komentář', 'komentáře', 'komentářů'])}`}
+                  >
+                    <MessageCircle className="size-3" aria-hidden="true" />
+                    {essay.comment_count}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {hasPoints &&
+                  (source.isFrozen ? (
+                    <LegacyPointsBadge points={points} />
                   ) : (
-                    <span className="shrink-0 text-xs font-semibold tabular-nums bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
                       {formatPoints(points)} b.
                     </span>
-                  )
-                )}
+                  ))}
                 {isRejected && (
-                  <span className="shrink-0 text-xs font-semibold tabular-nums bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full">
+                  <span className="rounded-full bg-destructive/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-destructive">
                     0 b.
                   </span>
                 )}
+                <span className="text-[11px] tabular-nums text-muted-foreground">{date}</span>
               </div>
-
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                {essay.book ? (
-                  <>
-                    {essay.book.title_cs}
-                    <BookStatusBadges book={essay.book} />
-                  </>
-                ) : source.kind === 'content_source' || source.kind === 'legacy' ? (
-                  source.title
-                ) : (
-                  <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                    <Sparkles className="size-3" />
-                    Nad rámec četby
-                  </span>
-                )}
-              </p>
-
-              {snippet && (
-                <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
-                  {snippet}{snippet.length === 120 ? '…' : ''}
-                </p>
-              )}
-
-              <div className="flex items-center gap-3 pt-0.5 text-xs text-muted-foreground/50">
-                <EssayVoteButton
-                  essayId={essay.id}
-                  initialVoteCount={essay.vote_count}
-                  initialVoted={votedEssayIds.has(essay.id)}
-                  readOnly
-                />
-                <span className="flex items-center gap-1">
-                  <Eye className="size-3" />
-                  {essay.view_count}
-                </span>
-                {essay.comment_count > 0 && (
-                  <span className="flex items-center gap-1 text-primary">
-                    <MessageCircle className="size-3" />
-                    {essay.comment_count}
-                  </span>
-                )}
-                <span className="ml-auto">{date}</span>
-              </div>
-            </div>
-          </Link>
+            </Link>
+          </li>
         );
       })}
-      </div>
-      </div>
-    </div>
+    </ul>
   );
 }
