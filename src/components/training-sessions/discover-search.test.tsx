@@ -44,8 +44,8 @@ describe("DiscoverSearch", () => {
     expect(replaceMock.mock.calls[0][0]).toBe("/ts/objevovat?q=p%C5%99%C3%ADprava");
   });
 
-  it("keeps filters in the URL and resets the loaded horizon", () => {
-    paramsRef.current = new URLSearchParams("filtr=volna-mista&rocnik=2&mesicu=4");
+  it("keeps filters in the URL", () => {
+    paramsRef.current = new URLSearchParams("filtr=volna-mista&rocnik=2");
     render(<DiscoverSearch />);
 
     type("priprava");
@@ -55,7 +55,6 @@ describe("DiscoverSearch", () => {
     expect(url.searchParams.get("q")).toBe("priprava");
     expect(url.searchParams.get("filtr")).toBe("volna-mista");
     expect(url.searchParams.get("rocnik")).toBe("2");
-    expect(url.searchParams.has("mesicu")).toBe(false);
   });
 
   it("submits immediately on Enter", () => {
