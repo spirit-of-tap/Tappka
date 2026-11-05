@@ -85,7 +85,7 @@ export function FeedBookCard({
                 </Badge>
               )}
               {inLibrary && (
-                <span className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 font-medium">
+                <span className="inline-flex items-center gap-0.5 text-chart-3-strong font-medium">
                   <Library className="size-2.5" />
                   V TAP Knihovně
                 </span>
@@ -115,7 +115,7 @@ export function FeedBookCard({
 
       {/* 2. THE HERO: Prominent Description (Why read it, review synopsis) */}
       {book.description ? (
-        <p className="text-sm sm:text-[15px] leading-relaxed text-foreground/90 font-normal">
+        <p className="line-clamp-4 text-sm sm:text-[15px] leading-relaxed text-foreground/90 font-normal">
           {book.description}
         </p>
       ) : null}

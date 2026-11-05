@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getEssays, getEssaysByTeam } from '@/lib/essays/queries';
 import { getFallbackBookEssays, mergeBookEssayMaps } from '@/lib/essays/book-essay-lists';
+import { annotateViewerFlags, getViewerEssayFlags } from '@/lib/essays/viewer-flags';
+import { SCROLLKY_INITIAL_BOOK_COUNT, SCROLLKY_INITIAL_ESSAY_COUNT, SCROLLKY_MIN_BOOK_ESSAYS } from '@/lib/feed/scrollky';
 import { getBooks, getRocketModelBooks, getHighlightedBooks, getHighlightCategories } from '@/lib/books/queries';
 import { getBookIdsInLibrary } from '@/lib/library/book-ids';
 import { getMyWishlist } from '@/lib/books/wishlist';
@@ -35,10 +37,10 @@ export default async function HledatPage() {
     contentSources,
     wishlist,
   ] = await Promise.all([
-    getBooks(supabase, { listStatus: 'shortlist', minEssayCount: 2, sortBy: 'popular', pageSize: 60 }),
+    getBooks(supabase, { listStatus: 'shortlist', minEssayCount: SCROLLKY_MIN_BOOK_ESSAYS, sortBy: 'popular', pageSize: SCROLLKY_INITIAL_BOOK_COUNT }),
     getBookIdsInLibrary(supabase),
     getEssays(supabase, { sort: 'month', pageSize: 40 }),
-    getEssays(supabase, { sort: 'recent', pageSize: 40 }),
+    getEssays(supabase, { sort: 'recent', pageSize: SCROLLKY_INITIAL_ESSAY_COUNT }),
     (profile?.team_id ? getEssaysByTeam(supabase, profile.team_id, { pageSize: 40 }) : Promise.resolve([])) as Promise<EssayWithDetails[]>,
     supabase.rpc('get_best_books_per_category', { top_n: 3 }),
     supabase.rpc('get_teams_with_member_stats'),
@@ -105,15 +107,7 @@ export default async function HledatPage() {
   const allEssayIds = Array.from(
     new Set([...popularEssays, ...recentEssays, ...teamEssays].map((e) => e.id)),
   );
-  const votedIds = new Set<string>();
-  if (profile && allEssayIds.length > 0) {
-    const { data } = await supabase
-      .from('essay_votes')
-      .select('essay_id')
-      .in('essay_id', allEssayIds)
-      .eq('voter_profile_id', profile.id);
-    data?.forEach((v: { essay_id: string }) => votedIds.add(v.essay_id));
-  }
+  const viewerFlags = await getViewerEssayFlags(supabase, profile?.id, allEssayIds);
 
   // Extract latest essays for books
   const essaysByBookId: Record<string, Array<{ id: string; title: string; author: { id: string; name: string | null; picture: string | null; team_id?: string | null } | null }>> = {};
@@ -145,9 +139,9 @@ export default async function HledatPage() {
   );
   const mergedEssaysByBookId = mergeBookEssayMaps(essaysByBookId, fallbackEssaysByBookId);
 
-  const popularWithVoted = popularEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
-  const recentWithVoted = recentEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
-  const teamWithVoted = teamEssays.map((e) => ({ ...e, user_has_voted: votedIds.has(e.id) }));
+  const popularWithVoted = annotateViewerFlags(popularEssays, viewerFlags);
+  const recentWithVoted = annotateViewerFlags(recentEssays, viewerFlags);
+  const teamWithVoted = annotateViewerFlags(teamEssays, viewerFlags);
 
   const userTeamName = profile?.team_id ? teamNamesById[profile.team_id] ?? null : null;
 

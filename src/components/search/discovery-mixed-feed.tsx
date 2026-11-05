@@ -1,20 +1,35 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { BookOpen, Loader2, RotateCw } from 'lucide-react';
+
 import { FeedBookCard, type BookEssayItem } from '@/components/books/feed-book-card';
 import { SocialEssayFeedCard, type AuthorGamificationStats } from '@/components/essays/social-essay-feed-card';
 import { AlsoWroteCard } from '@/components/books/also-wrote-card';
+import { Button } from '@/components/ui/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { getDailySeed } from '@/lib/feed/daily-seed';
+import {
+  buildScrollkySegment,
+  collectShownIds,
+  getScrollkyItemKey,
+  type ScrollkyEssay,
+  type ScrollkyItem,
+} from '@/lib/feed/scrollky';
 import type { BookWithProfiles } from '@/lib/books/types';
-import type { EssayWithDetails } from '@/lib/essays/types';
 
-export type EssayWithVoted = EssayWithDetails & { user_has_voted?: boolean };
+export type EssayWithVoted = ScrollkyEssay;
+export type MixedFeedItem = ScrollkyItem;
 
-export type MixedFeedItem =
-  | { type: 'book'; data: BookWithProfiles }
-  | { type: 'essay'; data: EssayWithVoted; spotlightLabel?: string }
-  | { type: 'also_wrote'; book: BookWithProfiles; essays: EssayWithVoted[] };
+/** Start loading the next batch this far before the sentinel scrolls into view. */
+const PREFETCH_ROOT_MARGIN = '600px';
+
+interface ScrollkyBatchResponse {
+  books?: BookWithProfiles[];
+  essays?: ScrollkyEssay[];
+  essaysByBookId?: Record<string, BookEssayItem[]>;
+  hasMore?: boolean;
+}
 
 export interface DiscoveryMixedFeedProps {
   books: BookWithProfiles[];
@@ -31,282 +46,198 @@ export interface DiscoveryMixedFeedProps {
   currentProfileId?: string | null;
 }
 
-// Deterministic pseudo-random number generator (Mulberry32)
-function createPrng(seed: number) {
-  let s = seed | 0;
-  return () => {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function shuffleArray<T>(array: T[], prng: () => number): T[] {
-  const result = [...array];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(prng() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
+function dedupeById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true)));
 }
 
 export function DiscoveryMixedFeed({
-  books: initialBooks,
+  books,
   libraryBookIds = [],
-  recentEssays: initialRecentEssays,
+  recentEssays,
   popularEssays,
   teamEssays = [],
   essaysByBookId: initialEssaysByBookId = {},
   teamNamesById = {},
   authorStatsById = {},
+  userTeamId,
   currentProfileId,
 }: DiscoveryMixedFeedProps) {
   // Daily seed: stable within a day, rotates at local midnight.
   const [feedSeed] = useState(() => getDailySeed());
+  const viewer = useMemo(
+    () => ({ profileId: currentProfileId, teamId: userTeamId }),
+    [currentProfileId, userTeamId],
+  );
 
-  // Infinite scroll state
-  const [extraBooks, setExtraBooks] = useState<BookWithProfiles[]>([]);
-  const [extraEssays, setExtraEssays] = useState<EssayWithVoted[]>([]);
+  const initialPool = useMemo(
+    () => dedupeById([...teamEssays, ...popularEssays, ...recentEssays]),
+    [teamEssays, popularEssays, recentEssays],
+  );
+  const popularEssayIds = useMemo(() => popularEssays.map((e) => e.id), [popularEssays]);
+
+  const firstSegment = useMemo(
+    () =>
+      buildScrollkySegment({
+        books,
+        essays: initialPool,
+        essayPool: initialPool,
+        popularEssayIds,
+        viewer,
+        seed: feedSeed,
+        segmentIndex: 0,
+      }),
+    [books, initialPool, popularEssayIds, viewer, feedSeed],
+  );
+
+  // Later batches are appended as their own segments and never reshuffled,
+  // so cards the viewer already scrolled past stay where they were.
+  const [extraItems, setExtraItems] = useState<ScrollkyItem[]>([]);
+  const [extraPool, setExtraPool] = useState<ScrollkyEssay[]>([]);
   const [extraEssaysByBookId, setExtraEssaysByBookId] = useState<Record<string, BookEssayItem[]>>({});
-  const [page, setPage] = useState(1);
+  const [batch, setBatch] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
+  const feedItems = useMemo(() => [...firstSegment, ...extraItems], [firstSegment, extraItems]);
   const librarySet = useMemo(() => new Set(libraryBookIds), [libraryBookIds]);
+  const mergedEssaysByBookId = useMemo(
+    () => ({ ...initialEssaysByBookId, ...extraEssaysByBookId }),
+    [initialEssaysByBookId, extraEssaysByBookId],
+  );
 
-  const allBooks = useMemo(() => {
-    const seen = new Set<string>();
-    const combined: BookWithProfiles[] = [];
-    for (const b of [...initialBooks, ...extraBooks]) {
-      if (!seen.has(b.id)) {
-        seen.add(b.id);
-        combined.push(b);
-      }
-    }
-    return combined;
-  }, [initialBooks, extraBooks]);
-
-  const allRecentEssays = useMemo(() => {
-    const seen = new Set<string>();
-    const combined: EssayWithVoted[] = [];
-    for (const e of [...initialRecentEssays, ...extraEssays]) {
-      if (!seen.has(e.id)) {
-        seen.add(e.id);
-        combined.push(e);
-      }
-    }
-    return combined;
-  }, [initialRecentEssays, extraEssays]);
-
-  const mergedEssaysByBookId = useMemo(() => {
-    return { ...initialEssaysByBookId, ...extraEssaysByBookId };
-  }, [initialEssaysByBookId, extraEssaysByBookId]);
-
-  // Load next page automatically from /api/scrollky
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
     setIsLoadingMore(true);
+    setLoadFailed(false);
 
     try {
-      const nextPage = page + 1;
-      const res = await fetch(`/api/scrollky?page=${nextPage}&pageSize=15`);
-      if (!res.ok) throw new Error('Failed to fetch');
+      const nextBatch = batch + 1;
+      const res = await fetch(`/api/scrollky?batch=${nextBatch}`);
+      if (!res.ok) throw new Error(`Scrollky batch failed: ${res.status}`);
+      const data = (await res.json()) as ScrollkyBatchResponse;
 
-      const data = await res.json();
-      if (data.books?.length || data.essays?.length) {
-        setExtraBooks((prev) => [...prev, ...(data.books ?? [])]);
-        setExtraEssays((prev) => [...prev, ...(data.essays ?? [])]);
-        setExtraEssaysByBookId((prev) => ({ ...prev, ...(data.essaysByBookId ?? {}) }));
-        setPage(nextPage);
-      }
+      const shown = collectShownIds(feedItems);
+      const newBooks = (data.books ?? []).filter((b) => !shown.bookIds.has(b.id));
+      const newEssays = (data.essays ?? []).filter((e) => !shown.essayIds.has(e.id));
+      const pool = dedupeById([...initialPool, ...extraPool, ...newEssays]);
+
+      const segment = buildScrollkySegment({
+        books: newBooks,
+        essays: newEssays,
+        essayPool: pool,
+        popularEssayIds,
+        viewer,
+        seed: feedSeed,
+        segmentIndex: nextBatch,
+      });
+
+      setExtraItems((prev) => [...prev, ...segment]);
+      setExtraPool((prev) => [...prev, ...newEssays]);
+      setExtraEssaysByBookId((prev) => ({ ...prev, ...(data.essaysByBookId ?? {}) }));
+      setBatch(nextBatch);
       setHasMore(Boolean(data.hasMore));
     } catch (err) {
       console.error('Error loading more scrollky posts:', err);
+      setLoadFailed(true);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, page]);
+  }, [isLoadingMore, hasMore, batch, feedItems, initialPool, extraPool, popularEssayIds, viewer, feedSeed]);
 
-  // Attach IntersectionObserver to sentinel
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasMore || typeof IntersectionObserver === 'undefined') return;
+    if (!sentinel || !hasMore || loadFailed || typeof IntersectionObserver === 'undefined') return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          void loadMore();
-        }
+        if (entries[0].isIntersecting) void loadMore();
       },
-      { rootMargin: '400px' },
+      { rootMargin: PREFETCH_ROOT_MARGIN },
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMore, hasMore]);
-
-  const feedItems = useMemo<MixedFeedItem[]>(() => {
-    const prng = createPrng(feedSeed);
-
-    // Filter strictly to Shortlist books with >= 2 essays
-    const shortlistVerifiedBooks = allBooks.filter(
-      (b) => b.list_status === 'shortlist' && (b.essay_count ?? 0) >= 2,
-    );
-    const selectedBooks = shuffleArray(shortlistVerifiedBooks, prng);
-
-    // Group essays by book for "Taky napsali" cross-perspectives
-    const essaysByBookMap = new Map<string, EssayWithVoted[]>();
-    const allEssaysPool = [...teamEssays, ...popularEssays, ...allRecentEssays];
-    for (const essay of allEssaysPool) {
-      if (!essay.book_id) continue;
-      const list = essaysByBookMap.get(essay.book_id) ?? [];
-      if (!list.some((e) => e.id === essay.id)) {
-        list.push(essay);
-        essaysByBookMap.set(essay.book_id, list);
-      }
-    }
-
-    const spotlightEssays = shuffleArray(popularEssays.slice(0, 8), prng).slice(0, 4);
-    const standardEssays = shuffleArray(allRecentEssays, prng);
-
-    // Interleave evenly: 1 Book -> 1 Essay (standard or spotlight) -> 1 "Taky napsali" / Book...
-    const result: MixedFeedItem[] = [];
-    let bookIdx = 0;
-    let standardEssayIdx = 0;
-    let spotlightIdx = 0;
-    const usedAlsoWroteBookIds = new Set<string>();
-
-    const totalAvailable = selectedBooks.length + standardEssays.length + spotlightEssays.length;
-
-    while (result.length < totalAvailable) {
-      // Check if we should insert a "Taky napsali" card (every ~5 items)
-      if (result.length > 0 && result.length % 5 === 0 && bookIdx < selectedBooks.length) {
-        const candidateBook = selectedBooks[bookIdx];
-        const loadedEssays = essaysByBookMap.get(candidateBook.id) ?? [];
-        if (loadedEssays.length >= 2 && !usedAlsoWroteBookIds.has(candidateBook.id)) {
-          usedAlsoWroteBookIds.add(candidateBook.id);
-          result.push({
-            type: 'also_wrote',
-            book: candidateBook,
-            essays: loadedEssays,
-          });
-          bookIdx++;
-          continue;
-        }
-      }
-
-      // 1. Add Book if available
-      if (bookIdx < selectedBooks.length) {
-        result.push({ type: 'book', data: selectedBooks[bookIdx] });
-        bookIdx++;
-      }
-
-      // 2. Add Essay if available (alternating spotlight and standard)
-      if (spotlightIdx < spotlightEssays.length && (result.length % 3 === 1)) {
-        result.push({
-          type: 'essay',
-          data: spotlightEssays[spotlightIdx],
-          spotlightLabel: 'Nejčtenější reflexe týdne',
-        });
-        spotlightIdx++;
-      } else if (standardEssayIdx < standardEssays.length) {
-        result.push({
-          type: 'essay',
-          data: standardEssays[standardEssayIdx],
-        });
-        standardEssayIdx++;
-      } else if (spotlightIdx < spotlightEssays.length) {
-        result.push({
-          type: 'essay',
-          data: spotlightEssays[spotlightIdx],
-          spotlightLabel: 'Populární esej',
-        });
-        spotlightIdx++;
-      }
-
-      // If we made no progress in this loop iteration, break
-      if (
-        bookIdx >= selectedBooks.length &&
-        standardEssayIdx >= standardEssays.length &&
-        spotlightIdx >= spotlightEssays.length
-      ) {
-        break;
-      }
-    }
-
-    return result;
-  }, [feedSeed, allBooks, popularEssays, allRecentEssays, teamEssays]);
+  }, [loadMore, hasMore, loadFailed]);
 
   return (
     <section className="space-y-4 pt-1">
-      {/* Stream Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-foreground">Scrollky</h2>
-          <p className="text-xs text-muted-foreground">
-            Proud ověřených knih a komunitních reflexí pro každodenní inspiraci.
-          </p>
-        </div>
+      <div>
+        <h2 className="font-heading text-lg font-semibold text-foreground">Scrollky</h2>
+        <p className="text-xs text-muted-foreground">
+          Ověřené knihy a reflexe komunity. Nahoře je to, co je pro tebe nové.
+        </p>
       </div>
 
-      {/* Interleaved Mixed Stream */}
       {feedItems.length > 0 ? (
         <div className="space-y-4">
-          {feedItems.map((item, index) => {
+          {feedItems.map((item) => {
+            const key = getScrollkyItemKey(item);
+
             if (item.type === 'book') {
-              const inLib = librarySet.has(item.data.id);
-              const essays = mergedEssaysByBookId[item.data.id] ?? [];
               return (
                 <FeedBookCard
-                  key={`book-${item.data.id}-${index}`}
+                  key={key}
                   book={item.data}
-                  essays={essays}
-                  inLibrary={inLib}
+                  essays={mergedEssaysByBookId[item.data.id] ?? []}
+                  inLibrary={librarySet.has(item.data.id)}
                 />
               );
             }
 
-            if (item.type === 'also_wrote') {
+            if (item.type === 'multi_perspective') {
               return (
-                <AlsoWroteCard
-                  key={`also-wrote-${item.book.id}-${index}`}
-                  book={item.book}
-                  essays={item.essays}
-                  teamNamesById={teamNamesById}
-                />
+                <AlsoWroteCard key={key} book={item.book} essays={item.essays} teamNamesById={teamNamesById} />
               );
             }
 
             return (
               <SocialEssayFeedCard
-                key={`essay-${item.data.id}-${index}`}
+                key={key}
                 essay={item.data}
                 initialVoted={item.data.user_has_voted ?? false}
+                isViewed={item.data.user_has_viewed ?? false}
                 teamName={item.data.author?.team_id ? teamNamesById[item.data.author.team_id] : null}
                 authorStats={item.data.author?.id ? authorStatsById[item.data.author.id] : null}
-                spotlightLabel={item.spotlightLabel}
+                reason={item.reason}
                 currentProfileId={currentProfileId}
               />
             );
           })}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground space-y-2">
-          <BookOpen className="size-8 mx-auto text-muted-foreground/40" />
-          <p>Zatím zde nejsou žádné položky k zobrazení.</p>
-        </div>
+        <Empty className="border border-dashed">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <BookOpen />
+            </EmptyMedia>
+            <EmptyTitle>Zatím tu nic není</EmptyTitle>
+            <EmptyDescription>Jakmile přibudou ověřené knihy a reflexe, objeví se tady.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       )}
 
-      {/* Infinite Scroll Sentinel & Loader */}
-      <div ref={sentinelRef} className="py-4 flex items-center justify-center min-h-[40px]">
-        {isLoadingMore && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div ref={sentinelRef} className="flex min-h-10 items-center justify-center py-4">
+        {isLoadingMore ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground" role="status">
             <Loader2 className="size-4 animate-spin text-primary" />
-            <span>Načítám další inspiraci...</span>
+            <span>Načítám další inspiraci…</span>
           </div>
-        )}
+        ) : loadFailed ? (
+          <div className="flex flex-col items-center gap-2 text-xs text-muted-foreground">
+            <span>Další příspěvky se nepodařilo načíst.</span>
+            <Button variant="outline" size="sm" onClick={() => void loadMore()}>
+              <RotateCw className="size-3.5" />
+              Zkusit znovu
+            </Button>
+          </div>
+        ) : !hasMore && feedItems.length > 0 ? (
+          <p className="text-center text-xs text-muted-foreground">
+            Pro dnešek je to všechno. Zítra Scrollky zamícháme znovu.
+          </p>
+        ) : null}
       </div>
     </section>
   );
