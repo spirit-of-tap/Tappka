@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { StorageImage } from '@/components/storage/storage-image';
 import { useWishlistOptional } from '@/components/books/wishlist-provider';
 import { structureBookTitle } from '@/lib/books/format-title';
@@ -14,10 +13,9 @@ interface WishlistSectionProps {
 }
 
 /**
- * A light cover shelf on Moje. Deliberately not a full list section: it sits
- * between loans and essays, so it stays one row tall and disappears when empty
- * (the bookmark on every book card is the entry point). Removal happens on the
- * book detail, where the saved state is labeled.
+ * The viewer's saved books as a scrolling cover strip at the top of
+ * Objevovat — next to where books get bookmarked. Disappears when empty.
+ * Removal happens on the book detail or any card's bookmark.
  */
 export function WishlistSection({ books }: WishlistSectionProps) {
   const wishlist = useWishlistOptional();
@@ -30,18 +28,10 @@ export function WishlistSection({ books }: WishlistSectionProps) {
 
   return (
     <section aria-labelledby="wishlist-heading" className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="wishlist-heading" className="text-sm font-semibold">
-          Chci si přečíst{' '}
-          <span className="font-normal text-muted-foreground">{visibleBooks.length}</span>
-        </h2>
-        <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground">
-          <Link href="/cteni/hledat">
-            Objevovat
-            <ArrowRight className="size-3.5" />
-          </Link>
-        </Button>
-      </div>
+      <h2 id="wishlist-heading" className="font-heading text-lg font-semibold">
+        Chci si přečíst{' '}
+        <span className="font-normal text-muted-foreground">{visibleBooks.length}</span>
+      </h2>
 
       <ul className="no-scrollbar -mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
         {visibleBooks.map((book) => {

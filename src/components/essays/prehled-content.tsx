@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, FileText, ArrowRight, Search, SearchX, X } from 'lucide-react';
+import { Plus, FileText, Search, SearchX, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -14,17 +14,14 @@ import {
 } from '@/components/ui/empty';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 import { MyEssayList } from './my-essay-list';
-import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { MetricProgress } from '@/components/metrics/metric-progress';
+import { TeamPointsRanking } from '@/components/teams/team-points-ranking';
 import { MobileFab, MobileFabSpacer } from '@/components/mobile-fab';
 import { ActiveLoansCard } from '@/components/library/active-loans-card';
-import { WishlistSection } from '@/components/books/wishlist-section';
 import { getMetric } from '@/lib/metrics/config';
-import { TEAM_BOOK_POINTS_SECTION_ID } from '@/lib/constants/cteni';
 import { filterMyEssays } from '@/lib/essays/my-essay-search';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookLoanWithDetails } from '@/lib/library/types';
-import type { BookWithProfiles } from '@/lib/books/types';
 
 interface PrehledContentProps {
   stats: {
@@ -34,18 +31,20 @@ interface PrehledContentProps {
     approved_points_this_semester: number;
   };
   myEssays: EssayWithDetails[];
-  teamStats: {
+  /** Team cohort year; drives which semester the progress strip shows. */
+  onboardingYear?: number | null;
+  votedEssayIds: Set<string>;
+  /** Essays where a coach commented after the author's last comment. */
+  awaitingReplyIds?: Set<string>;
+  loans?: BookLoanWithDetails[];
+  /** Team members' points; shown when the progress bar is expanded. Empty = no team. */
+  teamStats?: {
     profile: { id: string; name: string; picture: string | null };
     approved_points: number;
     pending_points: number;
   }[];
-  hasTeam: boolean;
-  teamId?: string | null;
-  /** Team cohort year; drives which semester the progress strip shows. */
-  onboardingYear?: number | null;
-  votedEssayIds: Set<string>;
-  loans?: BookLoanWithDetails[];
-  wishlist?: BookWithProfiles[];
+  /** Highlights the viewer's row in the team ranking. */
+  currentProfileId?: string;
 }
 
 const KNIZNI_BODY_METRIC = getMetric('knizni-body');
@@ -53,13 +52,12 @@ const KNIZNI_BODY_METRIC = getMetric('knizni-body');
 export function PrehledContent({
   stats,
   myEssays,
-  teamStats,
-  hasTeam,
-  teamId,
   onboardingYear,
   votedEssayIds,
+  awaitingReplyIds,
   loans = [],
-  wishlist = [],
+  teamStats = [],
+  currentProfileId,
 }: PrehledContentProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,25 +86,35 @@ export function PrehledContent({
             },
           ]}
           onboardingYear={onboardingYear}
+          detailsLabel={teamStats.length > 0 ? 'Pořadí v týmu' : undefined}
+          details={
+            teamStats.length > 0 ? (
+              <TeamPointsRanking
+                stats={teamStats}
+                goal={KNIZNI_BODY_METRIC.totalForStudy ?? 0}
+                currentProfileId={currentProfileId}
+              />
+            ) : undefined
+          }
         />
       </section>
 
-      {/* 2. Active Loan(s) banner / card if borrowed */}
+      {/* 2. Borrowed books — full width, due dates are time-sensitive */}
       <ActiveLoansCard loans={loans} />
 
-      {/* 3. Personal want-to-read shelf (hidden when empty) */}
-      <WishlistSection books={wishlist} />
-
-      {/* 4. My essays & drafts */}
-      <section aria-label="Moje eseje" className="space-y-4">
-        <div className="flex items-end justify-between gap-3 border-b pb-2">
-          <div>
-            <h2 className="font-heading text-lg font-semibold">Moje eseje</h2>
-            <p className="text-xs text-muted-foreground">
-              Tvoje odevzdané eseje
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+      {/* 3. My essays */}
+      <section
+        aria-labelledby="my-essays-heading"
+        className="space-y-3"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="my-essays-heading" className="text-base font-semibold">
+            Moje eseje{' '}
+            {myEssays.length > 0 && (
+              <span className="font-normal text-muted-foreground">{myEssays.length}</span>
+            )}
+          </h2>
+          <div className="flex items-center gap-1">
             {myEssays.length > 0 && (
               <Button
                 type="button"
@@ -124,7 +132,7 @@ export function PrehledContent({
             {myEssays.length > 0 && (
               <Button asChild size="sm" className="hidden sm:inline-flex">
                 <Link href="/cteni/eseje/nova">
-                  <Plus className="size-4 mr-1.5" />
+                  <Plus className="size-4" />
                   Napsat esej
                 </Link>
               </Button>
@@ -173,49 +181,24 @@ export function PrehledContent({
               </Button>
             </EmptyContent>
           </Empty>
+        ) : filteredEssays.length === 0 ? (
+          <Empty className="border border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <SearchX />
+              </EmptyMedia>
+              <EmptyTitle>Nic nenalezeno</EmptyTitle>
+              <EmptyDescription>Zkus jiné slovo z názvu, knihy nebo textu eseje.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
-          filteredEssays.length === 0 ? (
-            <Empty className="border border-dashed">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <SearchX />
-                </EmptyMedia>
-                <EmptyTitle>Nic nenalezeno</EmptyTitle>
-                <EmptyDescription>Zkus jiné slovo z názvu, knihy nebo textu eseje.</EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <MyEssayList essays={filteredEssays} votedEssayIds={votedEssayIds} />
-          )
+          <MyEssayList
+                essays={filteredEssays}
+                votedEssayIds={votedEssayIds}
+                awaitingReplyIds={awaitingReplyIds}
+              />
         )}
       </section>
-
-      {/* 5. Team book points overview */}
-      {hasTeam && (
-        <section
-          id={TEAM_BOOK_POINTS_SECTION_ID}
-          aria-label="Tým a knižní body"
-          className="scroll-mt-16 space-y-4 pt-4 border-t"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-heading text-lg font-semibold">Tým a knižní body</h2>
-              <p className="text-sm text-muted-foreground">
-                Schválené a čekající knihy na cestu k cíli 120 bodů
-              </p>
-            </div>
-            {teamId && (
-              <Button asChild variant="ghost" size="sm" className="gap-1 text-xs shrink-0">
-                <Link href={`/komunita/tymy/${teamId}?tab=statistiky`}>
-                  Detail týmu
-                  <ArrowRight className="size-3.5" />
-                </Link>
-              </Button>
-            )}
-          </div>
-          <TeamBookPointsChart stats={teamStats} />
-        </section>
-      )}
 
       {/* Mobile Floating Action Button */}
       <MobileFab label="Napsat esej" href="/cteni/eseje/nova" />

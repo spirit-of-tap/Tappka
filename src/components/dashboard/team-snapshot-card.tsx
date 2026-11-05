@@ -14,7 +14,7 @@ import { isMelvilDiscountLive } from '@/lib/books/melvil-discount';
 import {
   CTENI_DISCOVER_HREF,
   MELVIL_DISCOUNT,
-  TEAM_BOOK_POINTS_HREF,
+  teamBookPointsHref,
 } from '@/lib/constants/cteni';
 
 interface TeamSnapshotCardProps {
@@ -24,10 +24,11 @@ interface TeamSnapshotCardProps {
     pending_points: number;
   }[];
   hasTeam: boolean;
+  teamId?: string | null;
   teamName?: string | null;
 }
 
-export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardProps) {
+export function TeamSnapshotCard({ stats, hasTeam, teamId, teamName }: TeamSnapshotCardProps) {
   const top = [...stats].sort((a, b) => b.approved_points - a.approved_points).slice(0, 3);
 
   return (
@@ -38,15 +39,17 @@ export function TeamSnapshotCard({ stats, hasTeam, teamName }: TeamSnapshotCardP
           {teamName ? `Tým ${teamName}` : 'Tým'}
         </CardTitle>
         <CardDescription>Nejlepší čtenáři:ky podle knižních bodů</CardDescription>
-        <CardAction>
-          <Link
-            href={TEAM_BOOK_POINTS_HREF}
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
-          >
-            Celý tým
-            <ArrowRight className="size-3.5" />
-          </Link>
-        </CardAction>
+        {teamId && (
+          <CardAction>
+            <Link
+              href={teamBookPointsHref(teamId)}
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
+            >
+              Celý tým
+              <ArrowRight className="size-3.5" />
+            </Link>
+          </CardAction>
+        )}
       </CardHeader>
       <CardContent>
         {!hasTeam ? (

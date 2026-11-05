@@ -16,7 +16,7 @@ saved from the catalogue and visible inside **Moje čtení**.
 | Primary job | Private reading pipeline |
 | What can be saved | Catalogue books only (`books.id`) |
 | State per book | One flag: saved / not saved |
-| Placement | Section inside `/cteni/prehled` (Moje) |
+| Placement | Cover strip at the top of `/cteni/hledat` (Objevovat) |
 | Library integration | None — no availability, reservations or notifications |
 | Visibility | Private; RLS scopes every read/write to the owner |
 
@@ -48,7 +48,7 @@ prop-drilling a set through each component.
 
 - `POST /api/books/[id]/wishlist` — idempotent upsert.
 - `DELETE /api/books/[id]/wishlist` — idempotent delete of the caller's row.
-- `getMyWishlist()` — joined `BookWithProfiles[]`, newest first (Moje).
+- `getMyWishlist()` — joined `BookWithProfiles[]`, newest first (Objevovat).
 - `getMyWishlistBookIds()` — IDs for the layout.
 
 The button toggles optimistically, shows a toast, and reverts its state if the
@@ -57,11 +57,11 @@ filters by the same context.
 
 ## UI
 
-- **Moje → Chci si přečíst** (after active loans, before essays): a light,
-  one-row horizontal shelf of covers with titles, a small heading with the
-  count, and an “Objevovat” link. Hidden entirely when empty — the bookmark on
-  every book card is the entry point. Removal happens on the book detail (or
-  any card's bookmark), not on the shelf.
+- **Objevovat → Chci si přečíst** (after the partner discount card, before
+  curated picks): a scrolling strip of covers with titles and a count.
+  Hidden when empty and while searching or browsing a category. Saving and
+  browsing live on the same page; Moje stays focused on progress, loans and
+  essays.
 - **Book detail**: one equal-width action stack under the cover —
   Číst zdarma → Chci si přečíst / Uloženo ke čtení → Náhled.
 - **Feed cards, search rows, shelf rows**: icon-only bookmark, always on the

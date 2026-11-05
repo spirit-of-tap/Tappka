@@ -154,6 +154,7 @@ export default async function DashboardPage() {
       <TeamSnapshotCard
         stats={teamStats}
         hasTeam={!!profile.team_id}
+        teamId={profile.team_id}
         teamName={profile.team?.name}
       />
     );
