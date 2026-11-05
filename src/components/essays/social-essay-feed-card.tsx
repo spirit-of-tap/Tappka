@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Clock, MessageCircle, Sparkles, Trophy, Flame } from 'lucide-react';
+import { ArrowRight, BookOpen, Check, Clock, Flame, MessageCircle, Sparkles, Trophy, Users } from 'lucide-react';
 import { StorageImage } from '@/components/storage/storage-image';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { EssayVoteButton } from './essay-vote-button';
@@ -18,6 +18,28 @@ import { formatRelativeTime, isRecentEssay } from '@/lib/essays/date-helpers';
 import { cn } from '@/lib/utils';
 import { structureBookTitle } from '@/lib/books/format-title';
 import type { EssayWithDetails } from '@/lib/essays/types';
+import type { ScrollkyEssayReason } from '@/lib/feed/scrollky';
+
+/** Feed excerpts stay short so a card fits a phone screen; the full text is one tap away. */
+const FEED_SNIPPET_MAX_LENGTH = 320;
+
+const REASON_EYEBROWS: Record<ScrollkyEssayReason, { label: string; icon: React.ElementType; className: string }> = {
+  team: {
+    label: 'Z tvého týmu',
+    icon: Users,
+    className: 'text-chart-3-strong border-chart-3/20',
+  },
+  popular: {
+    label: 'Oblíbené tento měsíc',
+    icon: Flame,
+    className: 'text-warning-strong border-warning/20',
+  },
+};
+
+const REASON_CARD_CLASSES: Record<ScrollkyEssayReason, string> = {
+  team: 'border-chart-3/30 bg-gradient-to-br from-chart-3/5 via-card to-card',
+  popular: 'border-warning/30 bg-gradient-to-br from-warning/5 via-card to-card',
+};
 
 export interface AuthorGamificationStats {
   bookPoints: number;
@@ -30,7 +52,10 @@ export interface SocialEssayFeedCardProps {
   initialVoted?: boolean;
   teamName?: string | null;
   authorStats?: AuthorGamificationStats | null;
-  spotlightLabel?: string | null;
+  /** Why the feed picked this essay; renders an eyebrow above the card. */
+  reason?: ScrollkyEssayReason | null;
+  /** The viewer already opened this essay. */
+  isViewed?: boolean;
   className?: string;
   /** Viewer id — only the author sees their frozen (locked) points; others see live book points. */
   currentProfileId?: string | null;
@@ -44,7 +69,7 @@ export function getEssayGamificationBadge(
     return {
       label: `Největší čtenář:ka týmu · ${authorStats.bookPoints} b.`,
       icon: Trophy,
-      className: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+      className: 'border-warning/30 bg-warning/10 text-warning-strong',
     };
   }
 
@@ -52,7 +77,7 @@ export function getEssayGamificationBadge(
     return {
       label: 'Živá diskuze',
       icon: Flame,
-      className: 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300',
+      className: 'border-chart-2/30 bg-chart-2/10 text-chart-2-strong',
     };
   }
 
@@ -86,7 +111,8 @@ export function SocialEssayFeedCard({
   initialVoted = false,
   teamName,
   authorStats,
-  spotlightLabel,
+  reason,
+  isViewed = false,
   className,
   currentProfileId,
 }: SocialEssayFeedCardProps) {
@@ -94,26 +120,26 @@ export function SocialEssayFeedCard({
   const readingTime = formatReadingTime(words);
   const relativeTime = formatRelativeTime(essay.created_at);
   const badge = getEssayGamificationBadge(essay, authorStats);
-  const snippet = extractEssaySnippet(essay);
+  const snippet = extractEssaySnippet(essay, FEED_SNIPPET_MAX_LENGTH);
   const viewerCanSeeFrozen =
     currentProfileId == null ? true : essay.author_profile_id === currentProfileId;
   const source = getEssaySourceDisplay(essay, { viewerCanSeeFrozen });
 
-  const isSpotlight = Boolean(spotlightLabel);
+  const eyebrow = reason ? REASON_EYEBROWS[reason] : null;
 
   return (
     <article
       className={cn(
         'group flex flex-col rounded-2xl border bg-card p-4.5 sm:p-5 transition-all hover:border-border hover:shadow-sm space-y-3.5',
-        isSpotlight && 'border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-card to-card dark:from-amber-950/20 shadow-xs',
+        reason && REASON_CARD_CLASSES[reason],
         className,
       )}
     >
       {/* Optional Spotlight Eyebrow */}
-      {spotlightLabel && (
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 pb-1 border-b border-amber-500/20">
-          <Flame className="size-3.5 text-amber-500" />
-          <span>{spotlightLabel}</span>
+      {eyebrow && (
+        <div className={cn('flex items-center gap-1.5 border-b pb-1 text-xs font-semibold', eyebrow.className)}>
+          <eyebrow.icon className="size-3.5" />
+          <span>{eyebrow.label}</span>
         </div>
       )}
 
@@ -143,7 +169,15 @@ export function SocialEssayFeedCard({
                 <span className="text-xs text-muted-foreground">· {teamName}</span>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground">{relativeTime}</p>
+            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span>{relativeTime}</span>
+              {isViewed && (
+                <span className="inline-flex items-center gap-0.5 text-success-strong">
+                  <Check className="size-3" />
+                  Přečteno
+                </span>
+              )}
+            </p>
           </div>
         </div>
 
@@ -233,7 +267,7 @@ export function SocialEssayFeedCard({
 
         {snippet ? (
           <Link href={`/cteni/eseje/${essay.id}`} className="block">
-            <p className="text-sm sm:text-[15px] leading-relaxed text-muted-foreground hover:text-foreground transition-colors">
+            <p className="line-clamp-5 text-sm sm:text-[15px] leading-relaxed text-muted-foreground hover:text-foreground transition-colors">
               „{snippet}“
             </p>
           </Link>

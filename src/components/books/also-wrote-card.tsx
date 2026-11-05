@@ -9,6 +9,7 @@ import { ProfileAvatar } from '@/components/profile-avatar';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { formatPoints, pointsNumber } from '@/lib/books/points';
 import { formatCzechRelativeTime } from '@/lib/essays/date-helpers';
+import { structureBookTitle } from '@/lib/books/format-title';
 import { extractEssaySnippet } from '@/components/essays/social-essay-feed-card';
 import type { BookWithProfiles } from '@/lib/books/types';
 import type { EssayWithDetails } from '@/lib/essays/types';
@@ -25,14 +26,15 @@ export function AlsoWroteCard({
   teamNamesById = {},
 }: AlsoWroteCardProps) {
   const points = pointsNumber(book.book_points);
+  const { title: bookTitle, fullTitle } = structureBookTitle(book.title_cs);
 
   return (
     <article className="group flex flex-col rounded-2xl border bg-card p-4 sm:p-5 transition-all hover:border-border hover:shadow-sm space-y-3.5">
       {/* Header Pill */}
       <div className="flex items-center justify-between gap-2">
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-chart-3/30 bg-chart-3/10 px-2.5 py-0.5 text-xs font-semibold text-chart-3-strong">
           <Users className="size-3.5" />
-          <span>Taky napsali</span>
+          <span>Další pohledy na knihu</span>
         </div>
 
         {points > 0 && book.list_status !== 'archived' && (
@@ -49,7 +51,7 @@ export function AlsoWroteCard({
             {book.google_books_cover_url ? (
               <StorageImage
                 storageKey={book.google_books_cover_url}
-                alt={book.title_cs}
+                alt={bookTitle}
                 width={32}
                 height={44}
                 className="size-full object-cover"
@@ -60,8 +62,8 @@ export function AlsoWroteCard({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-bold text-xs sm:text-sm text-foreground hover:text-primary transition-colors truncate">
-                {book.title_cs}
+              <span className="font-bold text-xs sm:text-sm text-foreground hover:text-primary transition-colors truncate" title={fullTitle}>
+                {bookTitle}
               </span>
               <BookStatusBadges book={book} />
             </div>

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DiscoveryMixedFeed, type EssayWithVoted } from './discovery-mixed-feed';
 import type { BookWithProfiles } from '@/lib/books/types';
@@ -153,6 +153,105 @@ describe('DiscoveryMixedFeed', () => {
 
     expect(screen.getByText(/Esej z detailu knihy/)).toBeInTheDocument();
     expect(screen.queryByText(/Zatím bez eseje/)).not.toBeInTheDocument();
+  });
+
+  it('hides the viewer’s own essays from the feed', () => {
+    render(
+      <DiscoveryMixedFeed
+        books={[mockBook1]}
+        recentEssays={[mockEssay1]}
+        popularEssays={[]}
+        currentProfileId="p1"
+      />,
+    );
+
+    expect(screen.queryByText('Skvělá reflexe o leadershipu')).not.toBeInTheDocument();
+  });
+
+  it('labels unseen teammate essays and marks viewed ones', () => {
+    const viewed: EssayWithVoted = { ...mockEssay1, id: 'essay-viewed', title: 'Už otevřená', user_has_viewed: true, author: { ...mockEssay1.author!, team_id: 't-other' } };
+    render(
+      <DiscoveryMixedFeed
+        books={[mockBook1]}
+        recentEssays={[mockEssay1, viewed]}
+        popularEssays={[]}
+        userTeamId="t1"
+        currentProfileId="someone-else"
+      />,
+    );
+
+    expect(screen.getByText('Z tvého týmu')).toBeInTheDocument();
+    expect(screen.getByText('Přečteno')).toBeInTheDocument();
+  });
+
+  describe('infinite scroll', () => {
+    let triggerIntersection: () => void = () => {};
+
+    beforeEach(() => {
+      vi.stubGlobal(
+        'IntersectionObserver',
+        class {
+          constructor(cb: IntersectionObserverCallback) {
+            triggerIntersection = () => cb([{ isIntersecting: true } as IntersectionObserverEntry], this as never);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const initialBooks = Array.from({ length: 8 }, (_, i) => ({
+      ...mockBook1,
+      id: `b-init-${i}`,
+      title_cs: `Úvodní kniha ${i}`,
+    }));
+
+    it('appends the next batch without reordering cards already shown', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          books: [{ ...mockBook1, id: 'b-next', title_cs: 'Další kniha' }, initialBooks[0]],
+          essays: [],
+          essaysByBookId: {},
+          hasMore: false,
+        }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      render(<DiscoveryMixedFeed books={initialBooks} recentEssays={[]} popularEssays={[]} />);
+      const before = screen.getAllByText(/Úvodní kniha \d/).map((el) => el.textContent);
+
+      await act(async () => triggerIntersection());
+
+      await waitFor(() => expect(screen.getByText('Další kniha')).toBeInTheDocument());
+      expect(fetchMock).toHaveBeenCalledWith('/api/scrollky?batch=1');
+      expect(screen.getAllByText(/Úvodní kniha \d/).map((el) => el.textContent)).toEqual(before);
+      const titles = screen.getAllByText(/(Úvodní|Další) kniha/).map((el) => el.textContent);
+      expect(titles.at(-1)).toBe('Další kniha');
+      expect(screen.getByText(/Pro dnešek je to všechno/)).toBeInTheDocument();
+    });
+
+    it('offers a retry when a batch fails to load', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ books: [], essays: [], hasMore: false }) });
+      vi.stubGlobal('fetch', fetchMock);
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(<DiscoveryMixedFeed books={initialBooks} recentEssays={[]} popularEssays={[]} />);
+      await act(async () => triggerIntersection());
+
+      const retry = await screen.findByRole('button', { name: /Zkusit znovu/ });
+      await act(async () => fireEvent.click(retry));
+
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+      expect(screen.queryByRole('button', { name: /Zkusit znovu/ })).not.toBeInTheDocument();
+    });
   });
 
   describe('daily seed rotation', () => {

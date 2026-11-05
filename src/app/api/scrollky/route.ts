@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getBooks } from '@/lib/books/queries';
 import { getEssays } from '@/lib/essays/queries';
-import { getFallbackBookEssays, mergeBookEssayMaps } from '@/lib/essays/book-essay-lists';
+import { getFallbackBookEssays, mergeBookEssayMaps, toBookEssayPreview } from '@/lib/essays/book-essay-lists';
+import { annotateViewerFlags, getViewerEssayFlags } from '@/lib/essays/viewer-flags';
+import {
+  SCROLLKY_BATCH_SIZE,
+  SCROLLKY_INITIAL_BOOK_COUNT,
+  SCROLLKY_INITIAL_ESSAY_COUNT,
+  SCROLLKY_MIN_BOOK_ESSAYS,
+  getScrollkyBatchPage,
+} from '@/lib/feed/scrollky';
 import type { BookEssayItem } from '@/components/books/feed-book-card';
-import { serverLogger } from "@/lib/server-logger";
+import { serverLogger } from '@/lib/server-logger';
+
+const MAX_ESSAYS_PER_BOOK_PREVIEW = 4;
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,65 +29,36 @@ export async function GET(request: NextRequest) {
 
     const profile = await getCurrentUserProfile(supabase, { user });
     const { searchParams } = new URL(request.url);
-    const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
-    const pageSize = Math.min(30, Math.max(5, parseInt(searchParams.get('pageSize') ?? '15', 10)));
+    // 1-based count of batches after the server-rendered first segment.
+    const batch = Math.max(1, parseInt(searchParams.get('batch') ?? '1', 10) || 1);
 
-    // Fetch next batch of shortlist verified books and recent essays via SQL
     const [books, essays] = await Promise.all([
       getBooks(supabase, {
         listStatus: 'shortlist',
-        minEssayCount: 2,
+        minEssayCount: SCROLLKY_MIN_BOOK_ESSAYS,
         sortBy: 'popular',
-        page,
-        pageSize,
+        page: getScrollkyBatchPage(SCROLLKY_INITIAL_BOOK_COUNT, batch),
+        pageSize: SCROLLKY_BATCH_SIZE,
       }),
       getEssays(supabase, {
         sort: 'recent',
-        page,
-        pageSize,
+        page: getScrollkyBatchPage(SCROLLKY_INITIAL_ESSAY_COUNT, batch),
+        pageSize: SCROLLKY_BATCH_SIZE,
       }),
     ]);
 
-    // Check user votes on essays
-    const essayIds = essays.map((e) => e.id);
-    const votedSet = new Set<string>();
-    if (profile && essayIds.length > 0) {
-      const { data: votes } = await supabase
-        .from('essay_votes')
-        .select('essay_id')
-        .eq('voter_profile_id', profile.id)
-        .in('essay_id', essayIds);
-      votes?.forEach((v: { essay_id: string }) => votedSet.add(v.essay_id));
-    }
+    const flags = await getViewerEssayFlags(supabase, profile?.id, essays.map((e) => e.id));
 
-    const annotatedEssays = essays.map((e) => ({
-      ...e,
-      user_has_voted: votedSet.has(e.id),
-    }));
-
-    // Build essays by book mapping
     const essaysByBookId: Record<string, BookEssayItem[]> = {};
     for (const essay of essays) {
       if (!essay.book_id) continue;
       const list = (essaysByBookId[essay.book_id] ??= []);
-      if (list.length < 4 && !list.some((item) => item.id === essay.id)) {
-        list.push({
-          id: essay.id,
-          title: essay.title,
-          author: essay.author
-            ? {
-                id: essay.author.id,
-                name: essay.author.name,
-                picture: essay.author.picture,
-                team_id: essay.author.team_id,
-              }
-            : null,
-        });
+      if (list.length < MAX_ESSAYS_PER_BOOK_PREVIEW && !list.some((item) => item.id === essay.id)) {
+        list.push(toBookEssayPreview(essay));
       }
     }
 
-    // Same backfill as the initial page: books missed by the recent-essays
-    // page would wrongly render "Zatím bez eseje".
+    // Books missed by this essay page would wrongly render "Zatím bez eseje".
     const booksMissingEssays = books.filter(
       (book) => (essaysByBookId[book.id] ?? []).length === 0 && (book.essay_count ?? 0) > 0,
     );
@@ -84,21 +66,15 @@ export async function GET(request: NextRequest) {
       supabase,
       booksMissingEssays.map((book) => book.id),
     );
-    const mergedEssaysByBookId = mergeBookEssayMaps(essaysByBookId, fallbackEssaysByBookId);
-
-    const hasMore = books.length >= pageSize || essays.length >= pageSize;
 
     return NextResponse.json({
       books,
-      essays: annotatedEssays,
-      essaysByBookId: mergedEssaysByBookId,
-      hasMore,
+      essays: annotateViewerFlags(essays, flags),
+      essaysByBookId: mergeBookEssayMaps(essaysByBookId, fallbackEssaysByBookId),
+      hasMore: books.length >= SCROLLKY_BATCH_SIZE || essays.length >= SCROLLKY_BATCH_SIZE,
     });
   } catch (error) {
     serverLogger.console.error('Failed to load scrollky feed batch:', error);
-    return NextResponse.json(
-      { error: 'Chyba při načítání feedu' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Chyba při načítání feedu' }, { status: 500 });
   }
 }

@@ -112,7 +112,7 @@ const mockEssays: EssayWithDetails[] = [
 ];
 
 describe('AlsoWroteCard', () => {
-  it('renders "Taky napsali" badge, book capsule and comparative reflections', () => {
+  it('renders "Další pohledy na knihu" badge, book capsule and comparative reflections', () => {
     render(
       <AlsoWroteCard
         book={mockBook}
@@ -121,7 +121,7 @@ describe('AlsoWroteCard', () => {
       />,
     );
 
-    expect(screen.getByText('Taky napsali')).toBeInTheDocument();
+    expect(screen.getByText('Další pohledy na knihu')).toBeInTheDocument();
     expect(screen.getByText('The Lean Startup')).toBeInTheDocument();
     expect(screen.getByText('Lukáš Dvořák')).toBeInTheDocument();
     expect(screen.getByText('Tuuli')).toBeInTheDocument();
