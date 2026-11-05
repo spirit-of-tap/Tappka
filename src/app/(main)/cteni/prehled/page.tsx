@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserBookPointsStats, getTeamBookPointsStats, getEssays } from '@/lib/essays/queries';
 import { getMyLoans } from '@/lib/library/queries';
+import { getMyWishlist } from '@/lib/books/wishlist';
 import { PrehledContent } from '@/components/essays/prehled-content';
 import { CteniViewTracker } from '@/components/cteni/cteni-view-tracker';
 import { HelpDialog } from '@/components/help-dialog';
@@ -24,12 +25,13 @@ export default async function PrehledPage() {
   const profile = await getCurrentUserProfile(supabase, { user, includeTeam: true });
   if (!profile) redirect('/auth/login');
 
-  const [stats, myEssays, teamStats, votesResult, loans] = await Promise.all([
+  const [stats, myEssays, teamStats, votesResult, loans, wishlist] = await Promise.all([
     getUserBookPointsStats(supabase, profile.id),
     getEssays(supabase, { authorProfileId: profile.id, pageSize: 50 }),
     profile.team_id ? getTeamBookPointsStats(supabase, profile.team_id) : Promise.resolve([]),
     supabase.from('essay_votes').select('essay_id').eq('voter_profile_id', profile.id),
     getMyLoans(supabase, profile.id).catch(() => []),
+    getMyWishlist(supabase, profile.id).catch(() => []),
   ]);
 
   const votedEssayIds = new Set<string>((votesResult.data ?? []).map((r) => r.essay_id));
@@ -56,6 +58,7 @@ export default async function PrehledPage() {
         onboardingYear={profile.team?.onboardingYear}
         votedEssayIds={votedEssayIds}
         loans={loans}
+        wishlist={wishlist}
       />
     </PageShell>
   );

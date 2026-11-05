@@ -4,18 +4,27 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, FileText, ArrowRight, Search, SearchX, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '@/components/ui/empty';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 import { MyEssayList } from './my-essay-list';
 import { TeamBookPointsChart } from '@/components/teams/team-book-points-chart';
 import { MetricProgress } from '@/components/metrics/metric-progress';
 import { MobileFab, MobileFabSpacer } from '@/components/mobile-fab';
 import { ActiveLoansCard } from '@/components/library/active-loans-card';
+import { WishlistSection } from '@/components/books/wishlist-section';
 import { getMetric } from '@/lib/metrics/config';
 import { TEAM_BOOK_POINTS_SECTION_ID } from '@/lib/constants/cteni';
 import { filterMyEssays } from '@/lib/essays/my-essay-search';
 import type { EssayWithDetails } from '@/lib/essays/types';
 import type { BookLoanWithDetails } from '@/lib/library/types';
+import type { BookWithProfiles } from '@/lib/books/types';
 
 interface PrehledContentProps {
   stats: {
@@ -36,6 +45,7 @@ interface PrehledContentProps {
   onboardingYear?: number | null;
   votedEssayIds: Set<string>;
   loans?: BookLoanWithDetails[];
+  wishlist?: BookWithProfiles[];
 }
 
 const KNIZNI_BODY_METRIC = getMetric('knizni-body');
@@ -49,6 +59,7 @@ export function PrehledContent({
   onboardingYear,
   votedEssayIds,
   loans = [],
+  wishlist = [],
 }: PrehledContentProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,7 +94,10 @@ export function PrehledContent({
       {/* 2. Active Loan(s) banner / card if borrowed */}
       <ActiveLoansCard loans={loans} />
 
-      {/* 3. My essays & drafts */}
+      {/* 3. Personal want-to-read shelf (hidden when empty) */}
+      <WishlistSection books={wishlist} />
+
+      {/* 4. My essays & drafts */}
       <section aria-label="Moje eseje" className="space-y-4">
         <div className="flex items-end justify-between gap-3 border-b pb-2">
           <div>
@@ -107,12 +121,14 @@ export function PrehledContent({
                 <Search />
               </Button>
             )}
-            <Button asChild size="sm" className="hidden sm:inline-flex">
-              <Link href="/cteni/eseje/nova">
-                <Plus className="size-4 mr-1.5" />
-                Napsat esej
-              </Link>
-            </Button>
+            {myEssays.length > 0 && (
+              <Button asChild size="sm" className="hidden sm:inline-flex">
+                <Link href="/cteni/eseje/nova">
+                  <Plus className="size-4 mr-1.5" />
+                  Napsat esej
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -141,18 +157,22 @@ export function PrehledContent({
         )}
 
         {myEssays.length === 0 ? (
-          <div className="space-y-3 rounded-xl border border-dashed px-6 py-12 text-center">
-            <FileText className="mx-auto size-8 text-muted-foreground/50" />
-            <div className="space-y-1">
-              <p className="font-medium">Ještě tu nic není</p>
-              <p className="text-sm text-muted-foreground">
+          <Empty className="gap-4 border border-dashed p-6 md:p-8">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <FileText />
+              </EmptyMedia>
+              <EmptyTitle>Zatím žádná esej</EmptyTitle>
+              <EmptyDescription>
                 Piš průběžně, ukládá se to samo. Esej uvidí ostatní, jakmile jí dáš název.
-              </p>
-            </div>
-            <Button asChild>
-              <Link href="/cteni/eseje/nova">Napsat esej</Link>
-            </Button>
-          </div>
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button asChild size="sm">
+                <Link href="/cteni/eseje/nova">Napsat esej</Link>
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : (
           filteredEssays.length === 0 ? (
             <Empty className="border border-dashed">
@@ -170,7 +190,7 @@ export function PrehledContent({
         )}
       </section>
 
-      {/* 4. Team book points overview */}
+      {/* 5. Team book points overview */}
       {hasTeam && (
         <section
           id={TEAM_BOOK_POINTS_SECTION_ID}

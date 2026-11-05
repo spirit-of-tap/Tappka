@@ -25,6 +25,7 @@ import { BookDescription } from '@/components/books/book-description';
 import { BookEssaysList } from '@/components/books/book-essays-list';
 import { VerifiedBadge, RocketBadge, HighlightBadge } from '@/components/books/book-status-badges';
 import { BookportReadButton } from '@/components/books/bookport-read-button';
+import { WishlistButton } from '@/components/books/wishlist-button';
 import { resolveBookportBook } from '@/lib/books/bookport';
 import { BOOK_CATEGORY_LABELS, BOOK_STATUS_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
@@ -99,24 +100,24 @@ export default async function BookDetailPage({ params }: PageProps) {
               <BookOpen className="size-14 text-muted-foreground/60" />
             )}
           </div>
-          {previewUrl && (
-            <Button asChild variant="outline" className="w-44 mt-3">
-              <a
-                href={previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="gap-2"
-              >
-                Náhled
-                <ExternalLink className="size-3.5" />
-              </a>
-            </Button>
-          )}
-          {bookport && (
-            <div className="mt-3">
-              <BookportReadButton match={bookport} />
-            </div>
-          )}
+          {/* Actions: read now → save for later → peek inside */}
+          <div className="mt-3 flex w-44 flex-col gap-2">
+            {bookport && <BookportReadButton match={bookport} />}
+            {profile && <WishlistButton bookId={book.id} variant="labeled" className="w-full" />}
+            {previewUrl && (
+              <Button asChild variant="outline" className="w-full">
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gap-2"
+                >
+                  Náhled
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="min-w-0 flex-1 space-y-4">

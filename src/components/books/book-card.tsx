@@ -3,6 +3,7 @@ import { BookOpen, FileText, ExternalLink, Library } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from './book-status-badges';
+import { WishlistButton } from './wishlist-button';
 import { BOOK_CATEGORY_LABELS } from '@/lib/books/types';
 import { formatPointsWithLabel } from '@/lib/books/points';
 import { structureBookTitle } from '@/lib/books/format-title';
@@ -80,6 +81,11 @@ export function BookCard({ book, libraryInfo }: BookCardProps) {
           )}
         </div>
       </div>
+
+      <WishlistButton
+        bookId={book.id}
+        className="self-center"
+      />
     </div>
   );
 }

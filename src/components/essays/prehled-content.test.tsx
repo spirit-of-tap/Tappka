@@ -56,7 +56,7 @@ describe('PrehledContent', () => {
     );
 
     expect(screen.getByText('Moje eseje')).toBeInTheDocument();
-    expect(screen.getByText('Ještě tu nic není')).toBeInTheDocument();
+    expect(screen.getByText('Zatím žádná esej')).toBeInTheDocument();
     expect(screen.getByText('Tým a knižní body')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Detail týmu/i })).toHaveAttribute(
       'href',
