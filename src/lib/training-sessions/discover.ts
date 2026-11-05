@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import type { Database } from "@/lib/supabase/database.types"
+import {
+  normalizeOnboardingYear,
+  rocnikForSchoolYear,
+  schoolYearStartYearFor,
+} from "@/lib/tymova-reflexe/month-grid"
 
 import {
   TS_DISCOVER_PAGE_SIZE,
@@ -25,14 +30,43 @@ export interface DiscoverPage {
 /** Upper bound on per-request scans so a filter that matches nothing cannot fan out forever. */
 const MAX_SCAN_BATCHES = 4
 
+/** Length of a "YYYY-MM" month key. */
+const MONTH_KEY_LENGTH = 7
+
+/**
+ * Study year (ročník) the team was in when the session took place.
+ *
+ * `teams.onboardingYear` is stored as a 4-digit school-year start (e.g. 2024)
+ * in production; older/test data may hold a relative 1–3 or be empty, which
+ * `normalizeOnboardingYear` resolves against the current school year.
+ */
+export function sessionStudyYear(
+  startsAt: string,
+  onboardingYear: number | null | undefined,
+  now: string,
+): number | null {
+  const currentStartYear = schoolYearStartYearFor(now.slice(0, MONTH_KEY_LENGTH))
+  const sessionStartYear = schoolYearStartYearFor(startsAt.slice(0, MONTH_KEY_LENGTH))
+  return rocnikForSchoolYear(
+    normalizeOnboardingYear(onboardingYear, currentStartYear),
+    sessionStartYear,
+  )
+}
+
 /** Shared by the server-rendered first page and the scroll API so both apply identical rules. */
 export function matchesDiscoverFilter(
   session: TrainingSessionListItem,
   filter: TsDiscoverFilter,
   year: number | null,
   viewer: SessionViewer,
+  now: string,
 ): boolean {
-  if (year !== null && session.team?.onboardingYear !== year) return false
+  if (
+    year !== null &&
+    sessionStudyYear(session.starts_at, session.team?.onboardingYear, now) !== year
+  ) {
+    return false
+  }
   if (filter !== "volna-mista") return true
   return (
     !session.cancelled_at &&
@@ -66,7 +100,9 @@ export async function listDiscoverPage(
       ids,
       limit: TS_DISCOVER_SEARCH_LIMIT,
     })
-    const filtered = found.filter((session) => matchesDiscoverFilter(session, query.filter, query.year, viewer))
+    const filtered = found.filter((session) =>
+      matchesDiscoverFilter(session, query.filter, query.year, viewer, now),
+    )
     const sessions = filtered.slice(offset, offset + TS_DISCOVER_PAGE_SIZE)
     const consumed = offset + sessions.length
     return { sessions, nextOffset: consumed < filtered.length ? consumed : null }
@@ -86,7 +122,11 @@ export async function listDiscoverPage(
     })
     rawOffset += batch.length
     exhausted = batch.length < TS_DISCOVER_PAGE_SIZE
-    sessions.push(...batch.filter((session) => matchesDiscoverFilter(session, query.filter, query.year, viewer)))
+    sessions.push(
+      ...batch.filter((session) =>
+        matchesDiscoverFilter(session, query.filter, query.year, viewer, now),
+      ),
+    )
   }
 
   return { sessions, nextOffset: exhausted ? null : rawOffset }
