@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { claimsHaveEmailProvider } from "@/lib/auth/onboarding-state";
 import { isPublicRoute, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 import { validateRedirectUrl } from "@/lib/utils";
 
@@ -114,10 +115,7 @@ export async function updateSession(request: NextRequest) {
   // this needs no getUser() round trip. The claim is refreshed the moment it
   // matters: verify-email-form calls refreshSession() right after the email
   // identity is added.
-  const providers: string[] =
-    (claims.app_metadata as { providers?: string[] } | undefined)?.providers ??
-    [];
-  if (!providers.includes("email")) {
+  if (!claimsHaveEmailProvider(claims)) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/onboarding";
     url.search = "";

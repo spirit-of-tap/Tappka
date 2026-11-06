@@ -4,15 +4,17 @@ import { useState } from "react";
 import { WizardLayout } from "@/components/onboarding/wizard-layout";
 import { WelcomeStep } from "@/components/onboarding/welcome-step";
 import { WaitingForApprovalStep } from "@/components/onboarding/waiting-for-approval-step";
+import { RefreshSessionStep } from "@/components/onboarding/refresh-session-step";
 import { VerifyEmailForm } from "@/components/verify-email-form";
 import { LogoutButton } from "@/components/logout-button";
 import { EmailVerificationRealtimeListener } from "@/components/email-verification-realtime-listener";
 import { ProfileLinkRealtimeListener } from "@/components/profile-link-realtime-listener";
+import { ONBOARDING_STATE, type OnboardingState } from "@/lib/auth/onboarding-state";
 
 interface OnboardingClientProps {
   next?: string;
-  /** Whether the user already has a verified email identity */
-  hasEmail: boolean;
+  /** Resolved server-side; never `app` (the page redirects instead) */
+  state: OnboardingState;
   /** The user's verified CZU email (if verified) */
   verifiedEmail?: string | null;
 }
@@ -21,13 +23,14 @@ interface OnboardingClientProps {
  * Client-side onboarding wizard
  * Guides first-time users through the verification process
  *
- * Two modes:
- * - hasEmail=false → show the verification wizard (welcome → email → OTP)
- * - hasEmail=true  → show "waiting for approval" screen (email verified, no profile yet)
+ * Modes:
+ * - verify          → verification wizard (welcome → email → OTP)
+ * - waiting         → "waiting for approval" screen (email verified, no profile yet)
+ * - refresh-session → account ready, session token is stale
  */
 export function OnboardingClient({
   next,
-  hasEmail,
+  state,
   verifiedEmail,
 }: OnboardingClientProps) {
   const [currentScreen, setCurrentScreen] = useState<"welcome" | "verify">("welcome");
@@ -54,8 +57,15 @@ export function OnboardingClient({
         <LogoutButton />
       </div>
 
-      {/* Show waiting screen if email is verified but no profile exists */}
-      {hasEmail ? (
+      {state === ONBOARDING_STATE.REFRESH_SESSION ? (
+        <WizardLayout
+          currentStep={totalSteps}
+          totalSteps={totalSteps}
+          showProgress={false}
+        >
+          <RefreshSessionStep next={next} />
+        </WizardLayout>
+      ) : state === ONBOARDING_STATE.WAITING ? (
         <WizardLayout
           currentStep={totalSteps}
           totalSteps={totalSteps}
