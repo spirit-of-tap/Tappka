@@ -1,6 +1,7 @@
-import { isTransactionValid, transactionDate } from "./stats";
+import { isTransactionValid, transactionDate, type TransactionFilter } from "./stats";
 import {
   TRANSACTION_CATEGORY,
+  TRANSACTION_CATEGORY_LABELS,
   TRANSACTION_NOTES,
   type TransactionCategory,
   type TransactionNote,
@@ -102,4 +103,29 @@ export function yearRange(now: Date): DateRange {
 /** Odchozí výdaje (bez vrácení družstvům), od nejnovějšího. */
 export function recentExpenses(items: AnnotatedTransaction[], limit: number): AnnotatedTransaction[] {
   return items.filter((item) => item.amount < 0 && !isRefund(item)).slice(0, limit);
+}
+
+/** Hledání v popisu, kategorii, protiúčtu a částce + filtr směru platby. */
+export function filterAnnotated(
+  items: AnnotatedTransaction[],
+  query: string,
+  filter: TransactionFilter,
+): AnnotatedTransaction[] {
+  const q = query.trim().toLocaleLowerCase("cs");
+  return items.filter((item) => {
+    if (filter === "income" && item.amount <= 0) return false;
+    if (filter === "expense" && item.amount >= 0) return false;
+    if (!q) return true;
+    const haystack = [
+      item.description,
+      TRANSACTION_CATEGORY_LABELS[item.category],
+      stripCardNumber(item.tx.accountName ?? ""),
+      item.tx.varSymbol,
+      String(Math.abs(item.amount)),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLocaleLowerCase("cs");
+    return haystack.includes(q);
+  });
 }

@@ -132,3 +132,21 @@ describe("recentExpenses", () => {
     expect(recentExpenses(items, 2).map((i) => i.tx.idTransaction)).toEqual([10, 30]);
   });
 });
+
+describe("filterAnnotated", () => {
+  it("matches description, category label and counterparty, and filters direction", async () => {
+    const { filterAnnotated } = await import("./summary");
+    const items = annotateTransactions(
+      [
+        tx({ idTransaction: 1, amount: 500, accountName: "Družstvo Alfa", datum: "2026-10-01T10:00:00" }),
+        tx({ idTransaction: 10, amount: -7500, datum: "2026-10-02T10:00:00" }),
+      ],
+      NOTES,
+    );
+    expect(filterAnnotated(items, "sklad", "all").map((i) => i.tx.idTransaction)).toEqual([10]);
+    expect(filterAnnotated(items, "služba", "all").map((i) => i.tx.idTransaction)).toEqual([10]);
+    expect(filterAnnotated(items, "alfa", "all").map((i) => i.tx.idTransaction)).toEqual([1]);
+    expect(filterAnnotated(items, "", "expense").map((i) => i.tx.idTransaction)).toEqual([10]);
+    expect(filterAnnotated(items, "", "income").map((i) => i.tx.idTransaction)).toEqual([1]);
+  });
+});
