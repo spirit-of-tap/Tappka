@@ -81,7 +81,6 @@ export interface SbirkaListinDokument {
   stran: number;
   popis: string;
   url: string;
-  pdfSoubor: string;
 }
 
 export interface UsneseniZapis {
