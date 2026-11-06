@@ -1,0 +1,134 @@
+import { describe, it, expect } from "vitest";
+
+import {
+  annotateTransactions,
+  monthRange,
+  recentExpenses,
+  stripCardNumber,
+  summarizePeriod,
+  TRANSACTION_CATEGORY,
+} from "./summary";
+import type { TransactionNote } from "./transaction-notes";
+import type { RbTransaction } from "./types";
+
+function tx(overrides: Partial<RbTransaction>): RbTransaction {
+  return {
+    idTransaction: 1,
+    accountName: "",
+    info: "",
+    transactionType: "Platba",
+    accountNumber: "",
+    amount: 0,
+    datum: "2026-10-01T10:00:00",
+    realizationDate: null,
+    valutaDate: null,
+    varSymbol: null,
+    ...overrides,
+  };
+}
+
+const NOTES: Record<number, TransactionNote> = {
+  10: { description: "Vyklizení skladu", category: TRANSACTION_CATEGORY.SLUZBA },
+  11: { description: "Vrácení příspěvku", category: TRANSACTION_CATEGORY.VRACENI },
+};
+
+describe("stripCardNumber", () => {
+  it("removes PK card masks", () => {
+    expect(stripCardNumber("PK:408361XXXXXX7726")).toBe("");
+    expect(stripCardNumber("PK:408361XXXXXX9798 zasilkovna.cz; Praha 9, LIBE; CZE")).toBe(
+      "zasilkovna.cz; Praha 9, LIBE; CZE",
+    );
+  });
+});
+
+describe("annotateTransactions", () => {
+  it("uses the note when present and keeps the signed amount", () => {
+    const [item] = annotateTransactions([tx({ idTransaction: 10, amount: -7500, info: "raw" })], NOTES);
+    expect(item.description).toBe("Vyklizení skladu");
+    expect(item.category).toBe("sluzba");
+    expect(item.amount).toBe(-7500);
+  });
+
+  it("falls back to bank text without card number, jine for outgoing and prijem for incoming", () => {
+    const items = annotateTransactions(
+      [
+        tx({ idTransaction: 20, amount: -30, info: "PK:408361XXXXXX7726 KSDS; Praha 1", datum: "2026-10-02T10:00:00" }),
+        tx({ idTransaction: 21, amount: 500, info: "", accountName: "Družstvo A", datum: "2026-10-01T10:00:00" }),
+      ],
+      {},
+    );
+    expect(items[0].description).toBe("KSDS; Praha 1");
+    expect(items[0].category).toBe("jine");
+    expect(items[1].description).toBe("Družstvo A");
+    expect(items[1].category).toBe("prijem");
+  });
+
+  it("falls back to 'Platba kartou' when bank text is only a card mask", () => {
+    const [item] = annotateTransactions([tx({ idTransaction: 22, amount: -30, info: "PK:408361XXXXXX7726" })], {});
+    expect(item.description).toBe("Platba kartou");
+  });
+
+  it("drops invalid transactions and sorts newest first", () => {
+    const items = annotateTransactions(
+      [
+        tx({ idTransaction: 1, amount: 1, datum: "2026-01-01T10:00:00" }),
+        tx({ idTransaction: 2, amount: 1, datum: "not a date" }),
+        tx({ idTransaction: 3, amount: 1, datum: "2026-05-01T10:00:00" }),
+      ],
+      {},
+    );
+    expect(items.map((i) => i.tx.idTransaction)).toEqual([3, 1]);
+  });
+});
+
+describe("summarizePeriod", () => {
+  const from = new Date(2026, 9, 1);
+  const to = new Date(2026, 10, 1);
+
+  it("excludes refunds from spending and reports them separately", () => {
+    const items = annotateTransactions(
+      [
+        tx({ idTransaction: 1, amount: 18000, datum: "2026-10-03T10:00:00" }),
+        tx({ idTransaction: 10, amount: -7500, datum: "2026-10-04T10:00:00" }),
+        tx({ idTransaction: 11, amount: -4582, datum: "2026-10-05T10:00:00" }),
+      ],
+      NOTES,
+    );
+    expect(summarizePeriod(items, from, to)).toEqual({ income: 18000, spending: 7500, refunds: 4582, count: 3 });
+  });
+
+  it("counts unannotated outgoing as spending", () => {
+    const items = annotateTransactions([tx({ idTransaction: 99, amount: -30, datum: "2026-10-04T10:00:00" })], {});
+    expect(summarizePeriod(items, from, to).spending).toBe(30);
+  });
+
+  it("is all zeros with count 0 when nothing is in range", () => {
+    const items = annotateTransactions([tx({ idTransaction: 1, amount: 100, datum: "2026-05-04T10:00:00" })], {});
+    expect(summarizePeriod(items, from, to)).toEqual({ income: 0, spending: 0, refunds: 0, count: 0 });
+  });
+});
+
+describe("ranges", () => {
+  it("monthRange and yearRange are inclusive of the first instant and exclusive of the next period", async () => {
+    const { yearRange } = await import("./summary");
+    const now = new Date(2026, 10, 6, 12);
+    expect(monthRange(now)).toEqual({ from: new Date(2026, 10, 1), to: new Date(2026, 11, 1) });
+    expect(yearRange(now)).toEqual({ from: new Date(2026, 0, 1), to: new Date(2027, 0, 1) });
+  });
+});
+
+describe("recentExpenses", () => {
+  it("returns only outgoing non-refund items, newest first, at most limit", () => {
+    const items = annotateTransactions(
+      [
+        tx({ idTransaction: 1, amount: 100, datum: "2026-10-09T10:00:00" }),
+        tx({ idTransaction: 10, amount: -7500, datum: "2026-10-08T10:00:00" }),
+        tx({ idTransaction: 11, amount: -4582, datum: "2026-10-07T10:00:00" }),
+        tx({ idTransaction: 30, amount: -10, datum: "2026-10-06T10:00:00" }),
+        tx({ idTransaction: 31, amount: -20, datum: "2026-10-05T10:00:00" }),
+      ],
+      NOTES,
+    );
+    expect(recentExpenses(items, 2).map((i) => i.tx.idTransaction)).toEqual([10, 30]);
+  });
+});
