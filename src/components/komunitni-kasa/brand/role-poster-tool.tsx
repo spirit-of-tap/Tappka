@@ -19,11 +19,18 @@ const FIELDS: { key: keyof Omit<RolePosterFields, "napln">; label: string; place
 const NAPLN_PLACEHOLDER =
   "Koordinuje společné akce a setkání TAP Spirit, pečuje o klubovnu a společné vybavení a sbírá potřeby družstev pro měsíční plán výdajů.";
 
-const EMPTY: RolePosterFields = { role: "", kdo: "", druzstvo: "", obdobi: "", napln: "" };
+/** Ukázkové hodnoty z manuálu — náhled není prázdný, stačí je přepsat. */
+const SAMPLE: RolePosterFields = {
+  role: "Správa klubovny",
+  kdo: "Jméno Příjmení",
+  druzstvo: "Název družstva",
+  obdobi: "září–prosinec 2026",
+  napln: NAPLN_PLACEHOLDER,
+};
 
 /** Formulář → A4 plakát komunitní role. */
 export function RolePosterTool() {
-  const [fields, setFields] = useState<RolePosterFields>(EMPTY);
+  const [fields, setFields] = useState<RolePosterFields>(SAMPLE);
   const poster = useMemo(() => rolePosterAsset(fields), [fields]);
   const set = (key: keyof RolePosterFields) => (e: { target: { value: string } }) =>
     setFields((prev) => ({ ...prev, [key]: e.target.value }));
@@ -48,7 +55,7 @@ export function RolePosterTool() {
             placeholder={NAPLN_PLACEHOLDER}
             rows={4}
           />
-          <p className="text-xs text-muted-foreground">Na plakát se vejde zhruba 6 řádků.</p>
+          <p className="text-xs text-muted-foreground">Na plakát se vejde zhruba 6 řádků. Ukázkové texty přepiš.</p>
         </div>
         <DownloadButtons asset={poster} label="plakát" />
       </div>

@@ -11,10 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 const dateFormatter = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 
-/** Protiúčet pod popisem — jen pokud říká něco navíc. */
-function detail(item: AnnotatedTransaction): string {
+/** Protiúčet pod popisem — jen pokud říká něco navíc (u plateb kartou banka uvádí vlastní účet kasy). */
+function detail(item: AnnotatedTransaction, ownAccountNumber?: string): string {
   const name = stripCardNumber(item.tx.accountName ?? "");
-  return [name && name !== item.description ? name : null, item.tx.accountNumber || null]
+  const account = item.tx.accountNumber && item.tx.accountNumber !== ownAccountNumber ? item.tx.accountNumber : null;
+  return [name && name !== item.description ? name : null, account]
     .filter(Boolean)
     .join(" · ");
 }
@@ -49,7 +50,7 @@ function DirectionIcon({ income }: { income: boolean }) {
   );
 }
 
-export function TransactionsTable({ items }: { items: AnnotatedTransaction[] }) {
+export function TransactionsTable({ items, ownAccountNumber }: { items: AnnotatedTransaction[]; ownAccountNumber?: string }) {
   if (items.length === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">Nic tu není, zkus upravit hledání nebo filtr</p>;
   }
@@ -58,7 +59,7 @@ export function TransactionsTable({ items }: { items: AnnotatedTransaction[] }) 
       {/* Mobil: seznam, nikdy nepřeteče do šířky */}
       <ul className="divide-y border-y sm:hidden">
         {items.map((item) => {
-          const sub = detail(item);
+          const sub = detail(item, ownAccountNumber);
           return (
             <li key={item.tx.idTransaction} className="flex items-center justify-between gap-3 py-3">
               <div className="flex min-w-0 items-center gap-3">
@@ -90,7 +91,7 @@ export function TransactionsTable({ items }: { items: AnnotatedTransaction[] }) 
           </TableHeader>
           <TableBody>
             {items.map((item) => {
-              const sub = detail(item);
+              const sub = detail(item, ownAccountNumber);
               return (
                 <TableRow key={item.tx.idTransaction}>
                   <TableCell className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">

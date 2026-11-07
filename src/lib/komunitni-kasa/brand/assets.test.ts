@@ -133,3 +133,23 @@ describe("buildSvgPreview", () => {
     expect(buildSvgPreview(byId("logo"), 'a "b"')).toContain('aria-label="a &quot;b&quot;"');
   });
 });
+
+describe("buildSvgPreview aspect", () => {
+  it("expands the viewBox to the requested aspect ratio so the backdrop fills the tile", async () => {
+    const { buildSvgPreview } = await import("./assets");
+    for (const id of ["logo", "banner", "sestava"]) {
+      const svg = buildSvgPreview(byId(id), undefined, 4 / 3);
+      const [, , w, h] = svg.match(/viewBox="([^"]+)"/)![1].split(" ").map(Number);
+      expect(w / h).toBeCloseTo(4 / 3, 5);
+    }
+  });
+});
+
+describe("buildSvgPreview full pages", () => {
+  it("adds no margin around A4 pages so the paper edge is the asset edge", async () => {
+    const { buildSvgPreview } = await import("./assets");
+    for (const asset of [rolePosterAsset(EMPTY_POSTER), stickerSheetAsset()]) {
+      expect(buildSvgPreview(asset)).toContain(`viewBox="0 0 ${asset.width} ${asset.height}"`);
+    }
+  });
+});

@@ -30,6 +30,8 @@ export interface KasaAsset {
   fonts: FontFamily[];
   /** Tmavý náhled (bílá značka, tmavý štítek). */
   darkPreview?: boolean;
+  /** Celá stránka (A4) — náhled bez okraje kolem. */
+  fullPage?: boolean;
   body: () => string;
 }
 
@@ -239,6 +241,7 @@ export function rolePosterAsset(fields: RolePosterFields): KasaAsset {
     mm: A4_MM,
     pngWidth: 2480,
     fonts: BOTH_FONTS,
+    fullPage: true,
     body: () =>
       `<rect width="840" height="1188" fill="${WHITE}"/>` +
       `<rect width="840" height="420" fill="${RED}"/>` +
@@ -274,6 +277,7 @@ export function stickerSheetAsset(): KasaAsset {
     mm: A4_MM,
     pngWidth: 2480,
     fonts: BOTH_FONTS,
+    fullPage: true,
     body: () => {
       const sticker = stickerBody();
       let out = `<rect width="${A4_MM[0]}" height="${A4_MM[1]}" fill="${WHITE}"/>`;
@@ -305,14 +309,20 @@ const PREVIEW_PADDING_RATIO = 0.12;
  * (bílým, nebo tmavým pro bílé varianty), aby byl čitelný ve světlém i tmavém
  * motivu aplikace.
  */
-export function buildSvgPreview(asset: KasaAsset, label: string = asset.name): string {
-  const pad = Math.round(Math.max(asset.width, asset.height) * PREVIEW_PADDING_RATIO);
-  const w = asset.width + pad * 2;
-  const h = asset.height + pad * 2;
+export function buildSvgPreview(asset: KasaAsset, label: string = asset.name, aspect?: number): string {
+  const pad = asset.fullPage ? 0 : Math.round(Math.max(asset.width, asset.height) * PREVIEW_PADDING_RATIO);
+  let w = asset.width + pad * 2;
+  let h = asset.height + pad * 2;
+  if (aspect) {
+    if (w / h < aspect) w = h * aspect;
+    else h = w / aspect;
+  }
+  const x = (asset.width - w) / 2;
+  const y = (asset.height - h) / 2;
   const backdrop = asset.darkPreview ? INK : WHITE;
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-pad} ${-pad} ${w} ${h}" role="img" aria-label="${escapeSvgText(label)}" preserveAspectRatio="xMidYMid meet">` +
-    `<rect x="${-pad}" y="${-pad}" width="${w}" height="${h}" fill="${backdrop}"/>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" role="img" aria-label="${escapeSvgText(label)}" preserveAspectRatio="xMidYMid meet">` +
+    `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${backdrop}"/>` +
     asset.body() +
     `</svg>`
   );

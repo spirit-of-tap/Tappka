@@ -25,7 +25,7 @@ const DATA: KasaResponse = {
   transactions: [
     tx({ idTransaction: 1, amount: 20000, accountName: "Družstvo Alfa", datum: "2026-05-01T10:00:00" }),
     tx({ idTransaction: 9615689405, amount: -7500, info: "raw", datum: "2026-06-01T10:00:00" }),
-    tx({ idTransaction: 77, amount: -30, info: "PK:408361XXXXXX7726 KSDS; Praha 1", datum: "2026-10-29T10:00:00" }),
+    tx({ idTransaction: 77, amount: -30, info: "PK:408361XXXXXX7726 KSDS; Praha 1", accountNumber: "223152036/5500", datum: "2026-10-29T10:00:00" }),
   ],
   fetchedAt: "2026-11-06T10:00:00Z",
 };
@@ -47,6 +47,13 @@ describe("TransactionsView", () => {
     expect((await screen.findAllByText("Vyklizení a reorganizace skladu")).length).toBeGreaterThan(0);
     expect(rowsMentioning("KSDS; Praha 1").length).toBeGreaterThan(0);
     expect(screen.queryByText(/408361/)).not.toBeInTheDocument();
+  });
+
+  it("does not show the kasa's own account as the counterparty", async () => {
+    mockOk();
+    render(<TransactionsView />);
+    await screen.findAllByText("KSDS; Praha 1");
+    expect(screen.queryByText(/223152036/)).not.toBeInTheDocument();
   });
 
   it("narrows rows by search", async () => {

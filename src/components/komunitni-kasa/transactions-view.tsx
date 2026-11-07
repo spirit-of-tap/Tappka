@@ -77,7 +77,7 @@ export function TransactionsView() {
       <p className="text-xs text-muted-foreground" aria-live="polite">
         {visible.length} z {items.length} {pluralizeCz(items.length, MOVEMENT_FORMS)} · od nejnovějšího
       </p>
-      <TransactionsTable items={visible} />
+      <TransactionsTable items={visible} ownAccountNumber={state.data.account.number} />
     </div>
   );
 }

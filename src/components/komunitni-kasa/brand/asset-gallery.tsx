@@ -9,6 +9,8 @@ import { AssetPreview } from "./asset-preview";
 import { DownloadButtons } from "./download-buttons";
 import { useDownload } from "./use-download";
 
+const TILE_ASPECT = 4 / 3;
+
 /** Všechny soubory značky s náhledem a stažením. */
 export function AssetGallery() {
   const { run, pending } = useDownload();
@@ -31,7 +33,7 @@ export function AssetGallery() {
       <ul className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
         {KASA_ASSETS.map((asset) => (
           <li key={asset.id} className="space-y-3">
-            <AssetPreview asset={asset} className="aspect-[4/3] overflow-hidden rounded-lg border" />
+            <AssetPreview asset={asset} aspect={TILE_ASPECT} className="aspect-[4/3] overflow-hidden rounded-lg border" />
             <div className="space-y-0.5">
               <h3 className="text-sm font-semibold">{asset.name}</h3>
               <p className="text-xs text-muted-foreground">{asset.hint}</p>

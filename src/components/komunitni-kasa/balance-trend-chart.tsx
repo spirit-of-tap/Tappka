@@ -29,7 +29,7 @@ export function BalanceTrendChart({ data }: { data: BalancePoint[] }) {
   return (
     <ChartContainer config={config} className="min-h-[180px] w-full sm:min-h-[240px]">
       <ResponsiveContainer>
-        <AreaChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: -16 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="kasa-balance" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-balance)" stopOpacity={0.35} />
@@ -65,7 +65,7 @@ export function BalanceTrendChart({ data }: { data: BalancePoint[] }) {
           <Area
             dataKey="balance"
             name="Zůstatek"
-            type="monotone"
+            type="stepAfter"
             stroke="var(--color-balance)"
             fill="url(#kasa-balance)"
             strokeWidth={2}
