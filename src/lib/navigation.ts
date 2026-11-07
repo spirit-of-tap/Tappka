@@ -1,5 +1,6 @@
 import {
   Activity,
+  BookMarked,
   BookOpen,
   Brain,
   CalendarDays,
@@ -50,6 +51,7 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Rocket Model", url: "/rocket-model", icon: Rocket, feature: "rocketModel", description: "Osobní a týmové hodnocení podle Rocket Modelu." },
   { title: "Týmové dokumenty", url: "/tymove-dokumenty", icon: Files, feature: "teamDocuments", description: "Smlouvy, finanční politika a další dokumenty týmu." },
   { title: "Nástroje a techniky", url: "/nastroje-techniky", icon: Wrench, feature: "toolsTechniques", featured: true, description: "Katalog modelů, technik a nástrojů pro práci." },
+  { title: "Playbook", url: "/playbook", icon: BookMarked, description: "Interní příručka TAP: procesy, metriky a pravidla komunity." },
   { title: "Osobnostní testy", url: "/osobnostni-testy", icon: Brain, feature: "personalityTests", description: "Výsledky osobnostních testů a jejich vývoj v čase." },
   // Čtení renders as a plain link; its sub-navigation lives in
   // src/app/(main)/cteni/layout.tsx as a tab bar.
@@ -65,6 +67,7 @@ export const MODULE_HUB_ORDER: string[] = [
   "/komunitni-kasa",
   "/ts/prehled",
   "/nastroje-techniky",
+  "/playbook",
   "/schuzky",
   "/tymova-reflexe",
   "/tymovy-denik",
