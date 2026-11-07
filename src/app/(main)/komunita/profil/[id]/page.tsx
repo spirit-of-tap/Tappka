@@ -4,7 +4,7 @@ import { Users, BookOpen, Sparkles, Pin, UserRound, Gift } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getProfileById, getTeamPictureUrl } from '@/lib/komunita/queries';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getEssays, getUserBookPointsStats } from '@/lib/essays/queries';
+import { getAllEssays, getUserBookPointsStats } from '@/lib/essays/queries';
 import { countCustomerMeetings } from '@/lib/customer-meetings/queries';
 import { countIndividualCoachingSessions } from '@/lib/individual-coaching-sessions/queries';
 import { countProfileBirthGivingParticipations, listProfileBirthGivingHistory } from '@/lib/birth-giving/queries';
@@ -65,7 +65,7 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
   );
 
   const [essays, stats, meetingCount, coachingSessionCount, birthGivingHistory, birthGivingCount] = await Promise.all([
-    getEssays(supabase, { authorProfileId: id, sort: 'best', pageSize: 100 }),
+    getAllEssays(supabase, { authorProfileId: id, sort: 'best' }),
     getUserBookPointsStats(supabase, id),
     visibleStats.customerMeetings ? countCustomerMeetings(supabase, id).catch(() => 0) : 0,
     visibleStats.coachingSessions ? countIndividualCoachingSessions(supabase, id).catch(() => 0) : 0,
