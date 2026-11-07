@@ -110,3 +110,26 @@ describe("brand assets", () => {
     }
   });
 });
+
+describe("buildSvgPreview", () => {
+  it("is a labelled, responsive image on a light backdrop", async () => {
+    const { buildSvgPreview } = await import("./assets");
+    const { KASA_COLORS } = await import("./constants");
+    const svg = buildSvgPreview(byId("sestava"));
+    expect(svg).toContain('role="img"');
+    expect(svg).toContain('aria-label="Sestava s textem"');
+    expect(svg).not.toMatch(/^<svg[^>]* width="/);
+    expect(svg).toContain(`fill="${KASA_COLORS.WHITE}"`);
+  });
+
+  it("uses a dark backdrop for white assets", async () => {
+    const { buildSvgPreview } = await import("./assets");
+    const { KASA_COLORS } = await import("./constants");
+    expect(buildSvgPreview(byId("logo-bile"))).toContain(`fill="${KASA_COLORS.INK}"`);
+  });
+
+  it("escapes the label", async () => {
+    const { buildSvgPreview } = await import("./assets");
+    expect(buildSvgPreview(byId("logo"), 'a "b"')).toContain('aria-label="a &quot;b&quot;"');
+  });
+});

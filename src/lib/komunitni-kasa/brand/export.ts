@@ -5,22 +5,11 @@
  * nainstalovaných písem.
  */
 import { buildSvgDocument, type FontFamily, type KasaAsset } from "./assets";
+import { fontFaceRule, KASA_FONT_BASE_URL, KASA_FONT_FILES } from "./fonts";
 
-const FONT_BASE_URL = "/fonts/kasa";
 const FILE_PREFIX = "komunitni-kasa_";
 const ZIP_NAME = "komunitni-kasa-znacka";
 const PNG_RENDER_DELAY_MS = 120;
-
-const FONT_FILES: Record<FontFamily, { weight: number; file: string }[]> = {
-  Poppins: [
-    { weight: 600, file: "poppins-600.woff" },
-    { weight: 700, file: "poppins-700.woff" },
-  ],
-  Roboto: [
-    { weight: 400, file: "roboto-400.woff" },
-    { weight: 500, file: "roboto-500.woff" },
-  ],
-};
 
 const ZIP_README = [
   "Komunitní kasa · podklady pro označení",
@@ -44,11 +33,11 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
 
 async function familyCss(family: FontFamily): Promise<string> {
   const rules = await Promise.all(
-    FONT_FILES[family].map(async ({ weight, file }) => {
-      const res = await fetch(`${FONT_BASE_URL}/${file}`);
+    KASA_FONT_FILES[family].map(async ({ weight, file }) => {
+      const res = await fetch(`${KASA_FONT_BASE_URL}/${file}`);
       if (!res.ok) throw new Error(`Font ${file}: ${res.status}`);
       const dataUrl = await blobToDataUrl(await res.blob());
-      return `@font-face{font-family:"${family}";font-weight:${weight};font-style:normal;src:url(${dataUrl}) format("woff");}`;
+      return fontFaceRule(family, weight, dataUrl);
     }),
   );
   return rules.join("");

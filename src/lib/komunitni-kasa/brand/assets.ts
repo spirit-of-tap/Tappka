@@ -297,3 +297,23 @@ export function buildSvgDocument(asset: KasaAsset, fontCss?: string): string {
   const style = fontCss ? `<style>${fontCss}</style>` : "";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${asset.width} ${asset.height}" ${size}>${style}${asset.body()}</svg>`;
 }
+
+const PREVIEW_PADDING_RATIO = 0.12;
+
+/**
+ * Náhled pro stránku: responzivní (bez width/height), s vlastním podkladem
+ * (bílým, nebo tmavým pro bílé varianty), aby byl čitelný ve světlém i tmavém
+ * motivu aplikace.
+ */
+export function buildSvgPreview(asset: KasaAsset, label: string = asset.name): string {
+  const pad = Math.round(Math.max(asset.width, asset.height) * PREVIEW_PADDING_RATIO);
+  const w = asset.width + pad * 2;
+  const h = asset.height + pad * 2;
+  const backdrop = asset.darkPreview ? INK : WHITE;
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-pad} ${-pad} ${w} ${h}" role="img" aria-label="${escapeSvgText(label)}" preserveAspectRatio="xMidYMid meet">` +
+    `<rect x="${-pad}" y="${-pad}" width="${w}" height="${h}" fill="${backdrop}"/>` +
+    asset.body() +
+    `</svg>`
+  );
+}
