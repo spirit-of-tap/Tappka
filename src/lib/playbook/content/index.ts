@@ -1,8 +1,10 @@
 import { FUNGOVANI_PRINCIPY } from "./fungovani-principy";
+import { HARMONOGRAM } from "./harmonogram";
 import { KOMUNIKACNI_STRUKTURA } from "./komunikacni-struktura";
 import { KOUCOVE_MENTORI } from "./koucove-mentori";
 import { METRIKY } from "./metriky";
 import { OBECNE_INFORMACE } from "./obecne-informace";
+import { SLOVNIK } from "./slovnik";
 import { STUDIUM_ROZVOJ } from "./studium-rozvoj";
 import { TAP_SPIRIT } from "./tap-spirit";
 import { TRP_LC } from "./trp-lc";
@@ -20,6 +22,8 @@ export const PLAYBOOK_CHAPTERS: readonly PlaybookChapter[] = [
   STUDIUM_ROZVOJ,
   TAP_SPIRIT,
   KOUCOVE_MENTORI,
+  HARMONOGRAM,
+  SLOVNIK,
 ];
 
 export function getChapterBySlug(slug: string): PlaybookChapter | null {
