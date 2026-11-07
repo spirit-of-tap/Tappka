@@ -75,6 +75,7 @@ export function BalanceTrendChart({ data }: { data: BalancePoint[] }) {
             stroke="var(--color-balance)"
             fill="url(#kasa-balance)"
             strokeWidth={2}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

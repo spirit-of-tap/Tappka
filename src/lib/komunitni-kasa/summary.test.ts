@@ -63,6 +63,14 @@ describe("annotateTransactions", () => {
     expect(items[1].category).toBe("prijem");
   });
 
+  it("uses the shop name from the payee field when the note holds only the card mask", () => {
+    const [item] = annotateTransactions(
+      [tx({ idTransaction: 23, amount: -30, info: "PK:408361XXXXXX7726", accountName: "KSDS; Praha 1; CZE" })],
+      {},
+    );
+    expect(item.description).toBe("KSDS");
+  });
+
   it("falls back to 'Platba kartou' when bank text is only a card mask", () => {
     const [item] = annotateTransactions([tx({ idTransaction: 22, amount: -30, info: "PK:408361XXXXXX7726" })], {});
     expect(item.description).toBe("Platba kartou");

@@ -48,13 +48,11 @@ function merchantName(text: string): string {
 }
 
 function fallbackDescription(tx: RbTransaction): string {
-  const cardPayment = new RegExp(CARD_MASK_PATTERN.source, "i").test(tx.info ?? "");
-  const info = stripCardNumber(tx.info ?? "");
-  if (info) return cardPayment ? merchantName(info) || info : info;
-  const name = stripCardNumber(tx.accountName ?? "");
-  if (name) return name;
-  const hadCardMask = new RegExp(CARD_MASK_PATTERN.source, "i").test(`${tx.info ?? ""} ${tx.accountName ?? ""}`);
-  return hadCardMask ? CARD_PAYMENT_FALLBACK : NO_DESCRIPTION_FALLBACK;
+  const raw = `${tx.info ?? ""} ${tx.accountName ?? ""}`;
+  const cardPayment = new RegExp(CARD_MASK_PATTERN.source, "i").test(raw);
+  const text = stripCardNumber(tx.info ?? "") || stripCardNumber(tx.accountName ?? "");
+  if (text) return cardPayment ? merchantName(text) || text : text;
+  return cardPayment ? CARD_PAYMENT_FALLBACK : NO_DESCRIPTION_FALLBACK;
 }
 
 /** Platné transakce s popisem a kategorií, od nejnovější. */
