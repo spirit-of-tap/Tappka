@@ -28,7 +28,7 @@ export const TAP_SPIRIT: PlaybookChapter = {
     },
     {
       slug: "tap-spirit-houses",
-      title: "Tap spirit houses",
+      title: "TAP Spirit Houses",
       blocks: [
         {
           kind: "heading",

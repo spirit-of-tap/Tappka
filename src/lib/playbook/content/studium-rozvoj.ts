@@ -199,11 +199,12 @@ export const STUDIUM_ROZVOJ: PlaybookChapter = {
             "Více informací k SZZ na webu PEF: https://www.pef.czu.cz/cs/r-7008-studium/r-7026-informace-pro-studenty/r-12272-statni-zaverecna-zkouska",
           ],
         },
-        {
-          kind: "heading",
-          level: 3,
-          text: "Studijní plán",
-        },
+      ],
+    },
+    {
+      slug: "studijni-plan",
+      title: "Studijní plán",
+      blocks: [
         {
           kind: "table",
           headers: ["Ročník", "Semestr", "Předmět + vyučující"],
@@ -259,11 +260,12 @@ export const STUDIUM_ROZVOJ: PlaybookChapter = {
             ["3 ECTS – Cizí jazyk II (zkouška)"],
           ],
         },
-        {
-          kind: "heading",
-          level: 3,
-          text: "Jak číst studijní plán Tiimiakatemia Prague",
-        },
+      ],
+    },
+    {
+      slug: "jak-cist-studijni-plan-tiimiakatemia-prague",
+      title: "Jak číst studijní plán Tiimiakatemia Prague",
+      blocks: [
         {
           kind: "paragraph",
           text: "Studijní plán programu Tiimiakatemia je postaven na principu učení skrze praxi, týmovou spolupráci a podnikání. Studenti se během studia učí ve spirále – znamená to, že se k důležitým tématům vracejí opakovaně, ale pokaždé na hlubší úrovni.",
@@ -285,11 +287,12 @@ export const STUDIUM_ROZVOJ: PlaybookChapter = {
           kind: "paragraph",
           text: "Tyto tři oblasti se v průběhu studia neustále propojují a podporují. Studijní plán je proto sestaven tak, aby v každé fázi studia rozvíjel právě tu oblast, která je pro daný moment vývoje týmu a podnikání nejdůležitější.",
         },
-        {
-          kind: "heading",
-          level: 3,
-          text: "Cíl studia a profil absolventa",
-        },
+      ],
+    },
+    {
+      slug: "cil-studia-a-profil-absolventa",
+      title: "Cíl studia a profil absolventa",
+      blocks: [
         {
           kind: "paragraph",
           text: "Studijní program Inovativní podnikání vybavuje a motivuje jedince k co nejvyšší míře využití svého potenciálu v dynamicky se měnícím světě ve prospěch jak svého vlastního rozvoje, tak s ohledem na druhé a ve prospěch rozvoje celé společnosti.",
@@ -310,11 +313,12 @@ export const STUDIUM_ROZVOJ: PlaybookChapter = {
           kind: "paragraph",
           text: "Absolvent profesního bakalářského studijního programu Inovativní podnikání získá ucelené, teoretické i praktické, vzájemně provázané znalosti, dovednosti a kompetence díky komplexnímu systému výukových procesů pokrývajících celý rozsah podnikatelských činností a specificky použité kombinace andragogických technik kladoucích důraz na vlastní a týmový rozvoj.",
         },
-        {
-          kind: "heading",
-          level: 3,
-          text: "1. ročník – vytvoření základů",
-        },
+      ],
+    },
+    {
+      slug: "1-rocnik-vytvoreni-zakladu",
+      title: "1. ročník – vytvoření základů",
+      blocks: [
         {
           kind: "paragraph",
           text: "První rok je zaměřen především na pochopení metodiky Tiimiakatemia, vytvoření fungujícího týmu a rozjezd podnikání.",
@@ -373,11 +377,12 @@ export const STUDIUM_ROZVOJ: PlaybookChapter = {
           kind: "paragraph",
           text: "Semestr je opět doplněn výukou anglického jazyka, která je zakončena zkouškou.",
         },
-        {
-          kind: "heading",
-          level: 3,
-          text: "2. ročník – prohlubování podnikání",
-        },
+      ],
+    },
+    {
+      slug: "2-rocnik-prohlubovani-podnikani",
+      title: "2. ročník – prohlubování podnikání",
+      blocks: [
         {
           kind: "paragraph",
           text: "Druhý ročník rozvíjí podnikatelská témata z prvního roku více do hloubky a zaměřuje se především na rozvoj podnikání a řízení společnosti.",
@@ -424,11 +429,12 @@ export const STUDIUM_ROZVOJ: PlaybookChapter = {
           kind: "paragraph",
           text: "Součástí semestru je také předmět Portfolio I, který monitoruje naplňování individuálních i týmových portfolií a sleduje plnění minimální hranice nastavených metrik.",
         },
-        {
-          kind: "heading",
-          level: 3,
-          text: "3. ročník – integrace a završení studia",
-        },
+      ],
+    },
+    {
+      slug: "3-rocnik-integrace-a-zavrseni-studia",
+      title: "3. ročník – integrace a završení studia",
+      blocks: [
         {
           kind: "paragraph",
           text: "Třetí ročník je zaměřen na propojení všech dosavadních zkušeností a přípravu na závěrečnou státní zkoušku.",

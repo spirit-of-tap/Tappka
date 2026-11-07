@@ -22,6 +22,7 @@ export const SLOVNIK: PlaybookChapter = {
           kind: "table",
           headers: ["Pojem", "Význam"],
           rows: [
+            // Digit-first terms ("360° …") collate before letters — placed in A.
             [
               "360° zpětná vazba",
               "Hodnocení činnosti člověka různými osobami, tedy z různých úhlů → objektivní hodnocení.",

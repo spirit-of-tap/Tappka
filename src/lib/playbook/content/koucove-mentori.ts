@@ -28,6 +28,8 @@ export const KOUCOVE_MENTORI: PlaybookChapter = {
       blocks: [
         {
           kind: "paragraph",
+          // The PDF source duplicates this sentence verbatim (copy-paste error
+          // in the original document) — kept once.
           text: "K hladšímu onboardingu nového kouče slouží ucelený Průvodce, který slouží jako přehled základních oblastí a sfér působení kouče v komunitě TAPu. Nastupující kouč má také svého Buddyho, který mu pomáhá v prvních měsících jeho adaptace.",
         },
         {
