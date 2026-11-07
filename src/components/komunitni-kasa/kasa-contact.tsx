@@ -2,21 +2,19 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { KASA_CONTACT } from "@/lib/komunitni-kasa/brand/constants";
-import { getProfileById } from "@/lib/komunita/queries";
+import { fetchKasaContact, type KasaContactInfo } from "@/lib/komunitni-kasa/contact";
 import { createClient } from "@/lib/supabase/server";
 import { StorageAvatar } from "@/components/storage/storage-avatar";
 import { KasaSection } from "./kasa-section";
 
 const PROFILE_HREF = `/komunita/profil/${KASA_CONTACT.profileId}`;
 
-async function loadContact(): Promise<{ name: string; picture: string | null }> {
+async function loadContact(): Promise<KasaContactInfo> {
   try {
-    const profile = await getProfileById(await createClient(), KASA_CONTACT.profileId);
-    if (profile?.name) return { name: profile.name, picture: profile.picture ?? null };
+    return await fetchKasaContact(await createClient());
   } catch {
-    // Profil je jen doplněk — při chybě zobrazíme statické jméno.
+    return { name: KASA_CONTACT.fallbackName, picture: null };
   }
-  return { name: KASA_CONTACT.fallbackName, picture: null };
 }
 
 /** Kontaktní osoba pro dotazy ke kase. */
