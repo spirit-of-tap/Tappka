@@ -7,12 +7,24 @@ export interface PlaybookSearchResult {
   chapterTitle: string;
   sectionSlug: string;
   sectionTitle: string;
-  /** Text around the first match, ready to render with <mark> segments. */
+  /** Plain text around the first match; the UI renders <mark> highlighting. */
   snippet: string;
+}
+
+/** Document shape stored in the MiniSearch index (mirrors storeFields). */
+interface SearchDoc {
+  id: string;
+  chapterSlug: string;
+  chapterTitle: string;
+  sectionSlug: string;
+  sectionTitle: string;
+  title: string;
+  text: string;
 }
 
 const MINISEARCH_OPTIONS: MiniSearchOptions = {
   idField: "id",
+  // `title` duplicates `sectionTitle` on purpose — it is the boosted field.
   fields: ["title", "chapterTitle", "text"],
   storeFields: ["chapterSlug", "chapterTitle", "sectionSlug", "sectionTitle", "text"],
   // Folds diacritics on both indexed terms and query terms, so searches are
@@ -27,6 +39,8 @@ const SEARCH_OPTIONS: SearchOptions = {
 };
 
 const SNIPPET_RADIUS = 120;
+const MIN_QUERY_LENGTH = 2;
+const MAX_RESULTS = 20;
 
 export function normalizePlaybookText(text: string): string {
   return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
@@ -49,8 +63,8 @@ function sectionText(blocks: PlaybookBlock[]): string {
     .join("\n");
 }
 
-export function buildPlaybookIndex(chapters: readonly PlaybookChapter[]): MiniSearch {
-  const index = new MiniSearch(MINISEARCH_OPTIONS);
+export function buildPlaybookIndex(chapters: readonly PlaybookChapter[]): MiniSearch<SearchDoc> {
+  const index = new MiniSearch<SearchDoc>(MINISEARCH_OPTIONS);
   index.addAll(
     chapters.flatMap((chapter) =>
       chapter.sections.map((section) => ({
@@ -67,20 +81,16 @@ export function buildPlaybookIndex(chapters: readonly PlaybookChapter[]): MiniSe
   return index;
 }
 
-export function searchPlaybook(index: MiniSearch, query: string): PlaybookSearchResult[] {
+export function searchPlaybook(index: MiniSearch<SearchDoc>, query: string): PlaybookSearchResult[] {
   const normalized = normalizePlaybookText(query.trim());
-  if (normalized.length < 2) return [];
+  if (normalized.length < MIN_QUERY_LENGTH) return [];
 
   const results = index.search(normalized, SEARCH_OPTIONS);
-  return results.slice(0, 20).map((result) => {
-    const text = result.text as string;
-    const chapterSlug = result.chapterSlug as string;
-    const chapterTitle = result.chapterTitle as string;
-    const sectionSlug = result.sectionSlug as string;
-    const sectionTitle = result.sectionTitle as string;
-
+  return results.slice(0, MAX_RESULTS).map(({ text, chapterSlug, chapterTitle, sectionSlug, sectionTitle }) => {
+    // Positions in textLower map 1:1 onto `text` because the content is
+    // precomposed (NFD + diacritic strip keeps code-unit counts per char).
     const textLower = normalizePlaybookText(text);
-    const terms = normalized.split(/\s+/).filter((term) => term.length >= 2);
+    const terms = normalized.split(/\s+/).filter((term) => term.length >= MIN_QUERY_LENGTH);
     let hit = -1;
     for (const term of terms) {
       const indexInText = textLower.indexOf(term);
