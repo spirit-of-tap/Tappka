@@ -51,7 +51,7 @@ test.describe("komunitní kasa", () => {
     await page.route("**/api/komunitni-kasa", (r) => r.fulfill({ status: 502, body: '{"error":"Banka neodpovídá"}' }));
     await page.goto("/komunitni-kasa");
     await expect(page.getByText("Data se nepodařilo načíst")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Jak se o penězích rozhoduje" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kdo rozhoduje o výdajích" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kontakt" })).toBeVisible();
   });
 

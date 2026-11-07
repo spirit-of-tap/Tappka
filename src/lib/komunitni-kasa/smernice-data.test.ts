@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  DECISION_CYCLE,
   EXPENSE_KINDS,
   OPERATIONAL_LIMIT_EXAMPLE,
   SMERNICE_ARTICLES,
@@ -30,8 +29,8 @@ describe("smernice data", () => {
     expect(EXPENSE_KINDS.map((k) => k.id)).toEqual(["provozni", "strategicke"]);
   });
 
-  it("describes the monthly cycle in four steps", () => {
-    expect(DECISION_CYCLE).toHaveLength(4);
+  it("has a one-sentence plain explanation for each kind", () => {
+    for (const kind of EXPENSE_KINDS) expect(kind.plain.split(". ").length).toBe(1);
   });
 
   it("computes the limit example as 2 565 Kč", () => {

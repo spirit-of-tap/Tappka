@@ -11,8 +11,6 @@ import type { RbTransaction } from "./types";
 export { TRANSACTION_CATEGORY, TRANSACTION_CATEGORY_LABELS } from "./transaction-notes";
 export type { TransactionCategory, TransactionNote } from "./transaction-notes";
 
-export const RECENT_EXPENSES_LIMIT = 6;
-
 const CARD_MASK_PATTERN = /PK:\s*\d{6}X+\d{4}/gi;
 const CARD_PAYMENT_FALLBACK = "Platba kartou";
 const NO_DESCRIPTION_FALLBACK = "Bez popisu";
@@ -23,18 +21,6 @@ export interface AnnotatedTransaction {
   description: string;
   category: TransactionCategory;
   amount: number;
-}
-
-export interface PeriodSummary {
-  income: number;
-  spending: number;
-  refunds: number;
-  count: number;
-}
-
-export interface DateRange {
-  from: Date;
-  to: Date;
 }
 
 /** Odstraní maskované číslo karty („PK:408361XXXXXX7726“) z textu banky. */
@@ -74,39 +60,6 @@ export function annotateTransactions(
       };
     })
     .sort((a, b) => b.date.getTime() - a.date.getTime());
-}
-
-function isRefund(item: AnnotatedTransaction): boolean {
-  return item.category === TRANSACTION_CATEGORY.VRACENI;
-}
-
-/** Souhrn za období [from, to). Vrácení družstvům se nepočítá do výdajů. */
-export function summarizePeriod(items: AnnotatedTransaction[], from: Date, to: Date): PeriodSummary {
-  const summary: PeriodSummary = { income: 0, spending: 0, refunds: 0, count: 0 };
-  for (const item of items) {
-    if (item.date < from || item.date >= to) continue;
-    summary.count += 1;
-    if (item.amount > 0) summary.income += item.amount;
-    else if (isRefund(item)) summary.refunds += Math.abs(item.amount);
-    else summary.spending += Math.abs(item.amount);
-  }
-  return summary;
-}
-
-export function monthRange(now: Date): DateRange {
-  return {
-    from: new Date(now.getFullYear(), now.getMonth(), 1),
-    to: new Date(now.getFullYear(), now.getMonth() + 1, 1),
-  };
-}
-
-export function yearRange(now: Date): DateRange {
-  return { from: new Date(now.getFullYear(), 0, 1), to: new Date(now.getFullYear() + 1, 0, 1) };
-}
-
-/** Odchozí výdaje (bez vrácení družstvům), od nejnovějšího. */
-export function recentExpenses(items: AnnotatedTransaction[], limit: number): AnnotatedTransaction[] {
-  return items.filter((item) => item.amount < 0 && !isRefund(item)).slice(0, limit);
 }
 
 /** Hledání v popisu, kategorii, protiúčtu a částce + filtr směru platby. */

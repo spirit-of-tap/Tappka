@@ -17,11 +17,11 @@ export const metadata = {
   description: DESCRIPTION,
 };
 
-const FOOTER_LINKS = [
+const QUICK_LINKS = [
   {
     href: "/komunitni-kasa/znacka",
     title: "Značka a materiály",
-    description: "Logo, samolepky a plakáty ke stažení",
+    description: "Logo, samolepky a plakáty ke stažení a jak je používat",
     icon: Palette,
   },
   {
@@ -37,27 +37,32 @@ export default async function KomunitniKasaPage() {
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-3xl space-y-10">
+      <div className="mx-auto max-w-3xl space-y-8">
         <PageHeader title="Komunitní kasa" description={DESCRIPTION} icon={<KasaMark className="size-10" />} />
-        <KasaOverview />
-        <DecisionExplainer />
-        <KasaContact />
-        <nav aria-label="Další stránky kasy" className="grid gap-2 border-t pt-6 sm:grid-cols-2">
-          {FOOTER_LINKS.map(({ href, title, description, icon: Icon }) => (
+        <nav aria-label="Materiály a dokumenty kasy" className="grid gap-3 sm:grid-cols-2">
+          {QUICK_LINKS.map(({ href, title, description, icon: Icon }) => (
             <Link
               key={href}
               href={href}
-              className="group flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-accent focus-ring -mx-3 sm:mx-0"
+              className="group flex items-center gap-4 rounded-xl border p-4 transition-colors hover:bg-accent focus-ring"
             >
-              <Icon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">{title}</span>
-                <span className="block text-xs text-muted-foreground">{description}</span>
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="size-5" aria-hidden />
               </span>
-              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block font-heading text-base font-semibold">{title}</span>
+                <span className="block text-sm text-muted-foreground">{description}</span>
+              </span>
+              <ArrowRight
+                className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                aria-hidden
+              />
             </Link>
           ))}
         </nav>
+        <KasaOverview />
+        <DecisionExplainer />
+        <KasaContact />
       </div>
     </PageShell>
   );

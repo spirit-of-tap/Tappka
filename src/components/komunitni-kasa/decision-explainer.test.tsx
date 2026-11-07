@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import { DECISION_CYCLE, EXPENSE_KINDS, SMERNICE_DRAFT_LABEL } from "@/lib/komunitni-kasa/smernice-data";
+import { EXPENSE_KINDS, SMERNICE_DRAFT_LABEL } from "@/lib/komunitni-kasa/smernice-data";
 import { DecisionExplainer } from "./decision-explainer";
 
 describe("DecisionExplainer", () => {
@@ -10,11 +10,12 @@ describe("DecisionExplainer", () => {
     expect(screen.getByText(SMERNICE_DRAFT_LABEL)).toBeInTheDocument();
   });
 
-  it("explains both kinds of expense and the four cycle steps", () => {
+  it("says in one sentence each who decides small and big expenses", () => {
     render(<DecisionExplainer />);
-    for (const kind of EXPENSE_KINDS) expect(screen.getByRole("heading", { name: kind.title })).toBeInTheDocument();
-    for (const step of DECISION_CYCLE) expect(screen.getByText(step.title)).toBeInTheDocument();
-    expect(screen.getByText(/2\s565\sKč/)).toBeInTheDocument();
+    const rules = screen.getAllByRole("listitem");
+    expect(rules).toHaveLength(EXPENSE_KINDS.length);
+    expect(rules[0]).toHaveTextContent(EXPENSE_KINDS[0].plain);
+    expect(rules[1]).toHaveTextContent(EXPENSE_KINDS[1].plain);
   });
 
   it("links to the full text", () => {

@@ -62,57 +62,49 @@ describe("KasaOverview", () => {
     expect(await screen.findByText(czk(18000))).toBeInTheDocument();
   });
 
-  it("says the month has no movement instead of showing zeros", async () => {
-    mockFetch(response(HISTORY));
-    render(<KasaOverview />);
-    const line = await screen.findByText("Tento měsíc zatím bez pohybu");
-    expect(line.textContent).not.toContain("0 Kč");
-  });
-
-  it("lists annotated expenses with their category and leaves refunds out", async () => {
-    mockFetch(response(HISTORY));
-    render(<KasaOverview />);
-    const list = await screen.findByRole("list", { name: "Poslední výdaje" });
-    expect(list).toHaveTextContent("Vyklizení a reorganizace skladu");
-    expect(list).toHaveTextContent("Služba");
-    expect(list).not.toHaveTextContent("Vrácení nevyčerpané části příspěvku");
-  });
-
-  it("shows this year's income and spending as two figures, without refunds", async () => {
-    mockFetch(response(HISTORY));
-    render(<KasaOverview />);
-    const year = await screen.findByRole("list", { name: "Letos" });
-    expect(within(year).getByText("Příjmy").nextSibling).toHaveTextContent(czk(20000));
-    expect(within(year).getByText("Výdaje").nextSibling).toHaveTextContent(czk(7530));
-    expect(within(year).getAllByRole("listitem")).toHaveLength(2);
-    expect(screen.queryByText(/vráceno/i)).not.toBeInTheDocument();
-  });
-
-  it("keeps the balance chart off the overview", async () => {
+  it("does not show income or spending totals", async () => {
     mockFetch(response(HISTORY));
     render(<KasaOverview />);
     await screen.findByText(czk(18000));
-    expect(screen.queryByText("Vývoj zůstatku od založení účtu")).not.toBeInTheDocument();
+    expect(screen.queryByText(/letos/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tento měsíc/i)).not.toBeInTheDocument();
   });
 
-  it("hides card numbers of unannotated card payments", async () => {
+  it("lists the latest movements in both directions with readable descriptions", async () => {
     mockFetch(response(HISTORY));
     render(<KasaOverview />);
-    expect(await screen.findByText("KSDS")).toBeInTheDocument();
-    expect(screen.queryByText(/408361/)).not.toBeInTheDocument();
+    const list = await screen.findByRole("list", { name: "Poslední pohyby" });
+    expect(list).toHaveTextContent("Vyklizení a reorganizace skladu");
+    expect(list).toHaveTextContent(`+${czk(20000)}`);
+    expect(list).toHaveTextContent("KSDS");
+    expect(list).not.toHaveTextContent("408361");
   });
 
-  it("shows an empty state when there are no expenses", async () => {
+  it("marks each movement as incoming or outgoing", async () => {
+    mockFetch(response(HISTORY));
+    render(<KasaOverview />);
+    const list = await screen.findByRole("list", { name: "Poslední pohyby" });
+    const rows = within(list).getAllByRole("listitem");
+    const income = rows.find((r) => r.textContent?.includes("Družstvo A"));
+    const expense = rows.find((r) => r.textContent?.includes("KSDS"));
+    expect(within(income!).getByText("Příchozí platba")).toHaveClass("sr-only");
+    expect(within(expense!).getByText("Odchozí platba")).toHaveClass("sr-only");
+    expect(income!.querySelector("svg")).not.toBeNull();
+  });
+
+  it("offers a button to all movements under the list", async () => {
+    mockFetch(response(HISTORY));
+    render(<KasaOverview />);
+    const link = await screen.findByRole("link", { name: "Zobrazit všechny pohyby" });
+    expect(link).toHaveAttribute("href", "/komunitni-kasa/pohyby");
+    const list = screen.getByRole("list", { name: "Poslední pohyby" });
+    expect(list.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows an empty state when the account has no movements", async () => {
     mockFetch(response([]));
     render(<KasaOverview />);
-    expect(await screen.findByText("Zatím tu nejsou žádné výdaje")).toBeInTheDocument();
-  });
-
-  it("links to all transactions", async () => {
-    mockFetch(response(HISTORY));
-    render(<KasaOverview />);
-    const link = await screen.findByRole("link", { name: /zobrazit všechny pohyby/i });
-    expect(link).toHaveAttribute("href", "/komunitni-kasa/pohyby");
+    expect(await screen.findByText("Zatím tu nejsou žádné pohyby")).toBeInTheDocument();
   });
 
   it("does not show the browser's English network error", async () => {
@@ -120,12 +112,6 @@ describe("KasaOverview", () => {
     render(<KasaOverview />);
     expect(await screen.findByText("Data se nepodařilo načíst")).toBeInTheDocument();
     expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
-  });
-
-  it("treats a month with only zero-amount items as without movement", async () => {
-    mockFetch(response([...HISTORY, tx({ idTransaction: 500, amount: 0, datum: "2026-11-02T10:00:00" })]));
-    render(<KasaOverview />);
-    expect(await screen.findByText("Tento měsíc zatím bez pohybu")).toBeInTheDocument();
   });
 
   it("shows an error with retry when loading fails", async () => {

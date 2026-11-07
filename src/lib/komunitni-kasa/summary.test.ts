@@ -2,10 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   annotateTransactions,
-  monthRange,
-  recentExpenses,
   stripCardNumber,
-  summarizePeriod,
   TRANSACTION_CATEGORY,
 } from "./summary";
 import type { TransactionNote } from "./transaction-notes";
@@ -86,58 +83,6 @@ describe("annotateTransactions", () => {
       {},
     );
     expect(items.map((i) => i.tx.idTransaction)).toEqual([3, 1]);
-  });
-});
-
-describe("summarizePeriod", () => {
-  const from = new Date(2026, 9, 1);
-  const to = new Date(2026, 10, 1);
-
-  it("excludes refunds from spending and reports them separately", () => {
-    const items = annotateTransactions(
-      [
-        tx({ idTransaction: 1, amount: 18000, datum: "2026-10-03T10:00:00" }),
-        tx({ idTransaction: 10, amount: -7500, datum: "2026-10-04T10:00:00" }),
-        tx({ idTransaction: 11, amount: -4582, datum: "2026-10-05T10:00:00" }),
-      ],
-      NOTES,
-    );
-    expect(summarizePeriod(items, from, to)).toEqual({ income: 18000, spending: 7500, refunds: 4582, count: 3 });
-  });
-
-  it("counts unannotated outgoing as spending", () => {
-    const items = annotateTransactions([tx({ idTransaction: 99, amount: -30, datum: "2026-10-04T10:00:00" })], {});
-    expect(summarizePeriod(items, from, to).spending).toBe(30);
-  });
-
-  it("is all zeros with count 0 when nothing is in range", () => {
-    const items = annotateTransactions([tx({ idTransaction: 1, amount: 100, datum: "2026-05-04T10:00:00" })], {});
-    expect(summarizePeriod(items, from, to)).toEqual({ income: 0, spending: 0, refunds: 0, count: 0 });
-  });
-});
-
-describe("ranges", () => {
-  it("monthRange and yearRange are inclusive of the first instant and exclusive of the next period", async () => {
-    const { yearRange } = await import("./summary");
-    const now = new Date(2026, 10, 6, 12);
-    expect(monthRange(now)).toEqual({ from: new Date(2026, 10, 1), to: new Date(2026, 11, 1) });
-    expect(yearRange(now)).toEqual({ from: new Date(2026, 0, 1), to: new Date(2027, 0, 1) });
-  });
-});
-
-describe("recentExpenses", () => {
-  it("returns only outgoing non-refund items, newest first, at most limit", () => {
-    const items = annotateTransactions(
-      [
-        tx({ idTransaction: 1, amount: 100, datum: "2026-10-09T10:00:00" }),
-        tx({ idTransaction: 10, amount: -7500, datum: "2026-10-08T10:00:00" }),
-        tx({ idTransaction: 11, amount: -4582, datum: "2026-10-07T10:00:00" }),
-        tx({ idTransaction: 30, amount: -10, datum: "2026-10-06T10:00:00" }),
-        tx({ idTransaction: 31, amount: -20, datum: "2026-10-05T10:00:00" }),
-      ],
-      NOTES,
-    );
-    expect(recentExpenses(items, 2).map((i) => i.tx.idTransaction)).toEqual([10, 30]);
   });
 });
 

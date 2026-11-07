@@ -8,7 +8,7 @@
  * 2. Přidej `<id>: { description: "…", category: TRANSACTION_CATEGORY.… }`.
  *
  * Kategorie: nakup (věci), sluzba (práce, faktury), proplaceni (náhrada
- * výdaje), vraceni (vrácení peněz družstvu — NEpočítá se do výdajů kasy),
+ * výdaje), vraceni (vrácení nevyčerpaných peněz družstvu),
  * prijem, jine. Pohyb bez popisku se zobrazí s textem z banky bez čísla karty.
  */
 

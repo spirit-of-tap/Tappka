@@ -81,57 +81,22 @@ export const SMERNICE_ARTICLES: StanovyArticle[] = [
 export interface ExpenseKind {
   id: "provozni" | "strategicke";
   title: string;
-  whoDecides: string;
-  summary: string;
-  examples: string[];
-  rule: string;
+  /** Jedna srozumitelná věta pro hlavní stránku kasy. */
+  plain: string;
 }
 
 export const EXPENSE_KINDS: [ExpenseKind, ExpenseKind] = [
   {
     id: "provozni",
-    title: "Provozní výdaje",
-    whoDecides: "Rozhoduje vedení spolku samo",
-    summary: "Jednorázové nákupy pro chod spolku a podporu družstev.",
-    examples: ["kancelářské potřeby", "vybavení", "drobné služby", "společné akce"],
-    rule: "Za měsíc nejvýš 30 % příspěvků z minulého měsíce.",
+    title: "Menší nákupy",
+    plain:
+      "Jednorázové nákupy pro chod spolku schvaluje vedení spolku samo, za měsíc nejvýš do 30 % příspěvků z minulého měsíce.",
   },
   {
     id: "strategicke",
-    title: "Strategické výdaje",
-    whoDecides: "Schvalují družstva hlasováním",
-    summary: "Opakované platby, komunitní role, rozpočty housů a vše nad limit.",
-    examples: ["předplatné", "komunitní role", "rozpočet housu", "výdaje z darů"],
-    rule: "Každé družstvo má jeden hlas, lhůta 7 dní. Kdo neodpoví, hlasuje proti. Rozhoduje většina všech družstev.",
-  },
-];
-
-export interface CycleStep {
-  title: string;
-  description: string;
-  icon: "users" | "clipboard-list" | "vote" | "receipt";
-}
-
-export const DECISION_CYCLE: CycleStep[] = [
-  {
-    title: "Družstva sdílí potřeby",
-    description: "Na setkání TAP Spirit, zpravidla první středu v měsíci.",
-    icon: "users",
-  },
-  {
-    title: "Vedení spolku připraví plán",
-    description: "Plán výdajů na další měsíc podle přínosu a naléhavosti.",
-    icon: "clipboard-list",
-  },
-  {
-    title: "Družstva hlasují o strategických výdajích",
-    description: "Per rollam, jedno družstvo = jeden hlas, 7 dní.",
-    icon: "vote",
-  },
-  {
-    title: "Výdaj je vidět v Tappce a označený",
-    description: "Každý výdaj má doklad a věci nesou značku kasy.",
-    icon: "receipt",
+    title: "Větší a opakované výdaje",
+    plain:
+      "Předplatné, komunitní role, rozpočty housů a vše nad tento limit musí předem odhlasovat družstva, každé má jeden hlas.",
   },
 ];
 
