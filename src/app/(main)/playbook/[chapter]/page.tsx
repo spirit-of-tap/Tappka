@@ -5,10 +5,8 @@ import { PlaybookRenderer } from "@/components/playbook/playbook-renderer"
 import { PageHeader } from "@/components/ui/page-header"
 import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
+import { PLAYBOOK_FALLBACK_DESCRIPTION } from "@/lib/playbook/constants"
 import { PLAYBOOK_CHAPTERS, getChapterBySlug } from "@/lib/playbook/content"
-
-const FALLBACK_DESCRIPTION =
-  "Příručka Tiimiakatemia Prague: procesy, pravidla a principy života v komunitě"
 
 /** DESIGN.md: meta description ≤ ~90 chars, no trailing period. */
 const MAX_DESCRIPTION_LENGTH = 88;
@@ -32,10 +30,10 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PlaybookChapterPageProps): Promise<Metadata> {
   const { chapter: slug } = await params
   const chapter = getChapterBySlug(slug)
-  if (!chapter) return { title: "Playbook", description: FALLBACK_DESCRIPTION }
+  if (!chapter) return { title: "Playbook", description: PLAYBOOK_FALLBACK_DESCRIPTION }
   return {
     title: chapter.title,
-    description: chapter.lead ? metaDescriptionFromLead(chapter.lead) : FALLBACK_DESCRIPTION,
+    description: chapter.lead ? metaDescriptionFromLead(chapter.lead) : PLAYBOOK_FALLBACK_DESCRIPTION,
   }
 }
 

@@ -39,11 +39,58 @@ const SEARCH_OPTIONS: SearchOptions = {
 };
 
 const SNIPPET_RADIUS = 120;
-const MIN_QUERY_LENGTH = 2;
+export const MIN_QUERY_LENGTH = 2;
 const MAX_RESULTS = 20;
+
+/** One highlighted slice of a search snippet (`match` renders as <mark>). */
+export interface PlaybookSnippetSegment {
+  text: string;
+  match: boolean;
+}
 
 export function normalizePlaybookText(text: string): string {
   return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+}
+
+/**
+ * Splits a snippet into matched/unmatched segments for every query term
+ * (diacritics- and case-insensitively). Overlapping ranges are merged so the
+ * caller renders each character at most once.
+ */
+export function highlightPlaybookSnippet(snippet: string, query: string): PlaybookSnippetSegment[] {
+  const terms = normalizePlaybookText(query).split(/\s+/).filter((term) => term.length >= MIN_QUERY_LENGTH);
+  if (terms.length === 0) return [{ text: snippet, match: false }];
+
+  const lower = normalizePlaybookText(snippet);
+  const ranges: Array<[number, number]> = [];
+  for (const term of terms) {
+    let from = 0;
+    while (true) {
+      const index = lower.indexOf(term, from);
+      if (index === -1) break;
+      ranges.push([index, index + term.length]);
+      from = index + term.length;
+    }
+  }
+  if (ranges.length === 0) return [{ text: snippet, match: false }];
+
+  ranges.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const merged: Array<[number, number]> = [];
+  for (const [start, end] of ranges) {
+    const last = merged[merged.length - 1];
+    if (last && start <= last[1]) last[1] = Math.max(last[1], end);
+    else merged.push([start, end]);
+  }
+
+  const segments: PlaybookSnippetSegment[] = [];
+  let cursor = 0;
+  for (const [start, end] of merged) {
+    if (start > cursor) segments.push({ text: snippet.slice(cursor, start), match: false });
+    segments.push({ text: snippet.slice(start, end), match: true });
+    cursor = end;
+  }
+  if (cursor < snippet.length) segments.push({ text: snippet.slice(cursor), match: false });
+  return segments;
 }
 
 function sectionText(blocks: PlaybookBlock[]): string {
