@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Search } from "lucide-react"
+import Link from "next/link"
 
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
@@ -12,9 +13,8 @@ import {
   highlightPlaybookSnippet,
   normalizePlaybookText,
   searchPlaybook,
+  type PlaybookSearchResult,
 } from "@/lib/playbook/search"
-
-import type { PlaybookSearchResult } from "@/lib/playbook/search"
 
 type PlaybookIndex = ReturnType<typeof buildPlaybookIndex>
 
@@ -37,7 +37,7 @@ interface ChapterResultGroup {
 export function PlaybookSearch() {
   const [query, setQuery] = useState("")
 
-  const canSearch = normalizePlaybookText(query).length >= MIN_QUERY_LENGTH
+  const canSearch = normalizePlaybookText(query.trim()).length >= MIN_QUERY_LENGTH
   const results = useMemo(
     () => (canSearch ? searchPlaybook(getIndex(), query) : []),
     [canSearch, query],
@@ -97,12 +97,14 @@ export function PlaybookSearch() {
               <ul className="space-y-0.5">
                 {group.results.map((result) => (
                   <li key={`${result.chapterSlug}/${result.sectionSlug}`}>
-                    <a
+                    <Link
                       href={`/playbook/${result.chapterSlug}#${result.sectionSlug}`}
                       className="block rounded-md px-1.5 py-1 transition-colors hover:bg-accent focus-ring"
                     >
                       <span className="block text-sm font-medium">{result.sectionTitle}</span>
                       <span className="mt-0.5 line-clamp-2 block text-xs leading-relaxed text-muted-foreground">
+                        {/* Note: prefix/fuzzy matches may produce snippets without
+                            literal query substrings, so no <mark> appears — by design. */}
                         {highlightPlaybookSnippet(result.snippet, query).map((segment, index) =>
                           segment.match ? (
                             <mark
@@ -116,7 +118,7 @@ export function PlaybookSearch() {
                           ),
                         )}
                       </span>
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

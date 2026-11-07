@@ -30,7 +30,7 @@ export function PlaybookSidebar() {
             className="size-4 transition-transform duration-150 motion-reduce:transition-none group-data-[state=open]:rotate-180"
           />
         </CollapsibleTrigger>
-        <CollapsibleContent forceMount className="data-[state=closed]:hidden lg:block">
+        <CollapsibleContent forceMount className="max-lg:data-[state=closed]:hidden lg:block">
           <nav aria-label="Kapitoly">
             <ul className="space-y-0.5">
               {PLAYBOOK_CHAPTERS.map((chapter) => {
