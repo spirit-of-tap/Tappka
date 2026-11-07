@@ -106,6 +106,19 @@ describe("KasaOverview", () => {
     expect(link).toHaveAttribute("href", "/komunitni-kasa/pohyby");
   });
 
+  it("does not show the browser's English network error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    render(<KasaOverview />);
+    expect(await screen.findByText("Data se nepodařilo načíst")).toBeInTheDocument();
+    expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
+  });
+
+  it("treats a month with only zero-amount items as without movement", async () => {
+    mockFetch(response([...HISTORY, tx({ idTransaction: 500, amount: 0, datum: "2026-11-02T10:00:00" })]));
+    render(<KasaOverview />);
+    expect(await screen.findByText("Tento měsíc zatím bez pohybu")).toBeInTheDocument();
+  });
+
   it("shows an error with retry when loading fails", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("Síť nedostupná"));
     vi.stubGlobal("fetch", fn);

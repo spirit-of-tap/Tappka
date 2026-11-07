@@ -33,11 +33,11 @@ export const RB_TRANSPARENT_URL =
 const dateFormatter = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 
 function monthLine(summary: PeriodSummary): string {
-  if (summary.count === 0) return "Tento měsíc zatím bez pohybu";
   const parts: string[] = [];
   if (summary.income > 0) parts.push(`příjmy +${formatCzk(summary.income)}`);
   if (summary.spending > 0) parts.push(`výdaje −${formatCzk(summary.spending)}`);
   if (summary.refunds > 0) parts.push(`vráceno družstvům ${formatCzk(summary.refunds)}`);
+  if (parts.length === 0) return "Tento měsíc zatím bez pohybu";
   return `Tento měsíc: ${parts.join(" · ")}`;
 }
 

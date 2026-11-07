@@ -7,6 +7,9 @@ import type { KasaResponse } from "@/lib/komunitni-kasa/types";
 const KASA_API_URL = "/api/komunitni-kasa";
 const FALLBACK_ERROR = "Načtení selhalo";
 
+/** Chyba s hláškou ze serveru (česky); ostatní chyby prohlížeče nahradíme obecnou. */
+class KasaApiError extends Error {}
+
 export type KasaLoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
@@ -26,7 +29,7 @@ export function useKasaData(): { state: KasaLoadState; reload: () => void } {
     let cancelled = false;
     fetch(KASA_API_URL)
       .then(async (res) => {
-        if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? FALLBACK_ERROR);
+        if (!res.ok) throw new KasaApiError((await res.json().catch(() => null))?.error ?? FALLBACK_ERROR);
         return (await res.json()) as KasaResponse;
       })
       .then((data) => {
@@ -34,7 +37,7 @@ export function useKasaData(): { state: KasaLoadState; reload: () => void } {
       })
       .catch((error: unknown) => {
         if (!cancelled) {
-          setState({ status: "error", message: error instanceof Error ? error.message : FALLBACK_ERROR });
+          setState({ status: "error", message: error instanceof KasaApiError ? error.message : FALLBACK_ERROR });
         }
       });
     return () => {

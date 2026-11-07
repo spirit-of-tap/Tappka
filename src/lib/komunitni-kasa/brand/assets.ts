@@ -48,6 +48,10 @@ export const STICKER_SHEET = { columns: 3, rows: 10, stickerMm: [60, 25], gapMm:
 const A4_MM: [number, number] = [210, 297];
 const POSTER_NAPLN_MAX_CHARS = 48;
 const POSTER_NAPLN_MAX_LINES = 6;
+/** Šířky sloupců plakátu (840 jednotek, okraj 70/72): role přes celou šířku, jméno/družstvo vlevo, období vpravo. */
+const POSTER_ROLE_MAX_WIDTH = 700;
+const POSTER_KDO_MAX_WIDTH = 370;
+const POSTER_OBDOBI_MAX_WIDTH = 300;
 const BOTH_FONTS: FontFamily[] = ["Poppins", "Roboto"];
 const { RED, INK, MUTED, WHITE, MUTED_ON_DARK, RULE } = KASA_COLORS;
 
@@ -81,6 +85,18 @@ export function wrapLines(text: string, maxChars: number, maxLines: number): str
     if (line) out.push(line);
   }
   return out.slice(0, maxLines);
+}
+
+/** Odhad šířky znaku vůči velikosti písma (Poppins tučné je široké). */
+const CHAR_WIDTH_RATIO = { Poppins: 0.62, Roboto: 0.52 } as const;
+
+/**
+ * Atribut `textLength`, který dlouhý text stáhne do dané šířky; krátký text
+ * nechá být. Bez něj by dlouhé jméno nebo role přetekly přes okraj plakátu.
+ */
+function fitAttr(text: string, family: FontFamily, fontSize: number, maxWidth: number): string {
+  const estimated = text.length * fontSize * CHAR_WIDTH_RATIO[family];
+  return estimated > maxWidth ? ` textLength="${maxWidth}" lengthAdjust="spacingAndGlyphs"` : "";
 }
 
 export function markSvg(fill: string): string {
@@ -226,7 +242,10 @@ export const KASA_ASSETS: KasaAsset[] = [
 
 export function rolePosterAsset(fields: RolePosterFields): KasaAsset {
   const e = escapeSvgText;
-  const naplnLines = wrapLines(fields.napln, POSTER_NAPLN_MAX_CHARS, POSTER_NAPLN_MAX_LINES)
+  const allLines = wrapLines(fields.napln, POSTER_NAPLN_MAX_CHARS, Number.POSITIVE_INFINITY);
+  const shown = allLines.slice(0, POSTER_NAPLN_MAX_LINES);
+  if (allLines.length > shown.length) shown[shown.length - 1] = `${shown[shown.length - 1]}…`;
+  const naplnLines = shown
     .map(
       (line, i) =>
         `<text x="72" y="${760 + i * 40}" font-family="Roboto" font-size="27" fill="${INK}">${e(line)}</text>`,
@@ -247,12 +266,12 @@ export function rolePosterAsset(fields: RolePosterFields): KasaAsset {
       `<rect width="840" height="420" fill="${RED}"/>` +
       markAt(WHITE, 72, 72, 120) +
       `<text x="72" y="300" font-family="Roboto" font-weight="500" font-size="26" letter-spacing="5" fill="${WHITE}" fill-opacity=".85">KOMUNITNÍ ROLE</text>` +
-      `<text x="70" y="370" font-family="Poppins" font-weight="700" font-size="62" fill="${WHITE}">${e(fields.role)}</text>` +
+      `<text x="70" y="370" font-family="Poppins" font-weight="700" font-size="62" fill="${WHITE}"${fitAttr(fields.role, "Poppins", 62, POSTER_ROLE_MAX_WIDTH)}>${e(fields.role)}</text>` +
       `<text x="72" y="510" font-family="Roboto" font-size="22" fill="${MUTED}">Roli zastává</text>` +
-      `<text x="72" y="554" font-family="Poppins" font-weight="600" font-size="34" fill="${INK}">${e(fields.kdo)}</text>` +
-      `<text x="72" y="592" font-family="Roboto" font-size="24" fill="${INK}">${e(fields.druzstvo)}</text>` +
+      `<text x="72" y="554" font-family="Poppins" font-weight="600" font-size="34" fill="${INK}"${fitAttr(fields.kdo, "Poppins", 34, POSTER_KDO_MAX_WIDTH)}>${e(fields.kdo)}</text>` +
+      `<text x="72" y="592" font-family="Roboto" font-size="24" fill="${INK}"${fitAttr(fields.druzstvo, "Roboto", 24, POSTER_KDO_MAX_WIDTH)}>${e(fields.druzstvo)}</text>` +
       `<text x="460" y="510" font-family="Roboto" font-size="22" fill="${MUTED}">Období</text>` +
-      `<text x="460" y="554" font-family="Poppins" font-weight="600" font-size="26" fill="${INK}">${e(fields.obdobi)}</text>` +
+      `<text x="460" y="554" font-family="Poppins" font-weight="600" font-size="26" fill="${INK}"${fitAttr(fields.obdobi, "Poppins", 26, POSTER_OBDOBI_MAX_WIDTH)}>${e(fields.obdobi)}</text>` +
       `<line x1="72" y1="650" x2="768" y2="650" stroke="${RULE}" stroke-width="2"/>` +
       `<text x="72" y="712" font-family="Roboto" font-size="22" fill="${MUTED}">Náplň role</text>` +
       naplnLines +

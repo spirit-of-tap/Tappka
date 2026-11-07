@@ -153,3 +153,25 @@ describe("buildSvgPreview full pages", () => {
     }
   });
 });
+
+describe("role poster long input", () => {
+  const LONG = "Koordinace společných akcí a klubovny TAP";
+
+  it("squeezes a long role, name and period into their columns", () => {
+    const body = rolePosterAsset({ ...EMPTY_POSTER, role: LONG, kdo: "Anna-Marie Dvořáková-Nováková", obdobi: "1. 9. 2026 – 31. 8. 2027" }).body();
+    expect(body).toMatch(/textLength="700"[^>]*>Koordinace/);
+    expect(body).toMatch(/textLength="370"[^>]*>Anna-Marie/);
+    expect(body).toMatch(/textLength="300"[^>]*>1\. 9\./);
+  });
+
+  it("leaves short fields untouched", () => {
+    const body = rolePosterAsset({ ...EMPTY_POSTER, role: "Klubovna", kdo: "Alex", obdobi: "2026" }).body();
+    expect(body).not.toContain("textLength");
+  });
+
+  it("marks a trimmed náplň with an ellipsis", () => {
+    const napln = Array.from({ length: 10 }, (_, i) => `řádek ${i}`).join("\n");
+    expect(rolePosterAsset({ ...EMPTY_POSTER, napln }).body()).toContain("řádek 5…");
+    expect(rolePosterAsset({ ...EMPTY_POSTER, napln: "krátká náplň" }).body()).not.toContain("…");
+  });
+});

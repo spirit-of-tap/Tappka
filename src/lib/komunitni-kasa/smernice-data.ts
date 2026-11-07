@@ -92,7 +92,7 @@ export const EXPENSE_KINDS: [ExpenseKind, ExpenseKind] = [
     id: "provozni",
     title: "Provozní výdaje",
     whoDecides: "Rozhoduje vedení spolku samo",
-    summary: "Jednorázové nákupy pro chod spolku a podporu členů.",
+    summary: "Jednorázové nákupy pro chod spolku a podporu družstev.",
     examples: ["kancelářské potřeby", "vybavení", "drobné služby", "společné akce"],
     rule: "Za měsíc nejvýš 30 % příspěvků z minulého měsíce.",
   },

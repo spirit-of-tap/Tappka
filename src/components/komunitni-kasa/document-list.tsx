@@ -35,7 +35,7 @@ const DOCUMENTS: DocumentRow[] = [
   },
   {
     title: "Zápis z členské schůze 3. 6. 2026",
-    description: "Změna sídla, nové stanovy, přijetí člena a volba předsednictví.",
+    description: "Změna sídla, nové stanovy, přijetí nového družstva a volba předsednictví.",
     status: "Ve Sbírce listin",
     icon: FileSignature,
     action: { label: "Otevřít", srLabel: "Otevřít zápis na justice.cz", href: ZAPIS_URL, external: true },

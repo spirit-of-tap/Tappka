@@ -72,7 +72,7 @@ export function UsageRules() {
             <li key={dont.id} className="space-y-2">
               <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted/40">
                 <KasaMark className={cn("size-14", DONT_MARK_CLASS[dont.id])} tone={dont.id === "barvy" ? "current" : "brand"} />
-                <span className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white">
+                <span className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
                   <X className="size-4" aria-hidden />
                 </span>
               </div>
