@@ -19,8 +19,9 @@ export function PlaybookSidebar() {
   return (
     <div className="space-y-3">
       <PlaybookSearch />
-      {/* Collapsed behind a toggle on mobile; the lg:block override keeps the
-          content visible on desktop regardless of the collapsible state. */}
+      {/* Collapsed behind a toggle on mobile; forceMount + the lg:block
+          override keeps the content mounted and visible on desktop
+          regardless of the collapsible state. */}
       <Collapsible defaultOpen>
         <CollapsibleTrigger className="group flex w-full items-center justify-between rounded-md px-1.5 py-1.5 text-sm font-medium transition-colors hover:bg-accent focus-ring lg:hidden">
           Kapitoly
@@ -29,7 +30,7 @@ export function PlaybookSidebar() {
             className="size-4 transition-transform duration-150 motion-reduce:transition-none group-data-[state=open]:rotate-180"
           />
         </CollapsibleTrigger>
-        <CollapsibleContent className="lg:block">
+        <CollapsibleContent forceMount className="data-[state=closed]:hidden lg:block">
           <nav aria-label="Kapitoly">
             <ul className="space-y-0.5">
               {PLAYBOOK_CHAPTERS.map((chapter) => {

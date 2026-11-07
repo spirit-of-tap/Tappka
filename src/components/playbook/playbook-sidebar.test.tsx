@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 
 import { PlaybookSidebar } from "@/components/playbook/playbook-sidebar"
 import { PLAYBOOK_CHAPTERS } from "@/lib/playbook/content"
@@ -48,5 +48,16 @@ describe("PlaybookSidebar", () => {
     render(<PlaybookSidebar />)
 
     expect(screen.getByRole("button", { name: "Kapitoly" })).toBeInTheDocument()
+  })
+
+  it("keeps chapter links mounted when the mobile list is collapsed", () => {
+    pathname.current = "/playbook"
+    render(<PlaybookSidebar />)
+
+    fireEvent.click(screen.getByRole("button", { name: "Kapitoly" }))
+
+    // forceMount keeps the links in the DOM (hidden via CSS on mobile) so the
+    // desktop layout can always show them regardless of the collapsed state.
+    expect(screen.getAllByRole("link", { hidden: true })).toHaveLength(PLAYBOOK_CHAPTERS.length)
   })
 })
