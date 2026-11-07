@@ -45,14 +45,14 @@ describe("TransactionsView", () => {
     mockOk();
     render(<TransactionsView />);
     expect((await screen.findAllByText("Vyklizení a reorganizace skladu")).length).toBeGreaterThan(0);
-    expect(rowsMentioning("KSDS; Praha 1").length).toBeGreaterThan(0);
+    expect(rowsMentioning("KSDS").length).toBeGreaterThan(0);
     expect(screen.queryByText(/408361/)).not.toBeInTheDocument();
   });
 
   it("does not show the kasa's own account as the counterparty", async () => {
     mockOk();
     render(<TransactionsView />);
-    await screen.findAllByText("KSDS; Praha 1");
+    await screen.findAllByText("KSDS");
     expect(screen.queryByText(/223152036/)).not.toBeInTheDocument();
   });
 
@@ -71,7 +71,7 @@ describe("TransactionsView", () => {
     await screen.findAllByText("Družstvo Alfa");
     fireEvent.click(screen.getByRole("radio", { name: "Výdaje" }));
     expect(rowsMentioning("Družstvo Alfa")).toHaveLength(0);
-    expect(rowsMentioning("KSDS; Praha 1").length).toBeGreaterThan(0);
+    expect(rowsMentioning("KSDS").length).toBeGreaterThan(0);
   });
 
   it("shows an error with retry", async () => {

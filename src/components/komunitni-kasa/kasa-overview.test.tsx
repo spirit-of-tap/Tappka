@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import { formatCzk } from "@/lib/komunitni-kasa/stats";
 import type { KasaResponse, RbTransaction } from "@/lib/komunitni-kasa/types";
@@ -78,18 +78,27 @@ describe("KasaOverview", () => {
     expect(list).not.toHaveTextContent("Vrácení nevyčerpané části příspěvku");
   });
 
-  it("shows refunds in the year line", async () => {
+  it("shows this year's income and spending as two figures, without refunds", async () => {
     mockFetch(response(HISTORY));
     render(<KasaOverview />);
-    const line = await screen.findByText(/^Letos:/);
-    expect(line).toHaveTextContent(`vráceno družstvům ${czk(4582)}`);
-    expect(line).toHaveTextContent(`výdaje ${czk(7530)}`);
+    const year = await screen.findByRole("list", { name: "Letos" });
+    expect(within(year).getByText("Příjmy").nextSibling).toHaveTextContent(czk(20000));
+    expect(within(year).getByText("Výdaje").nextSibling).toHaveTextContent(czk(7530));
+    expect(within(year).getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.queryByText(/vráceno/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the balance chart off the overview", async () => {
+    mockFetch(response(HISTORY));
+    render(<KasaOverview />);
+    await screen.findByText(czk(18000));
+    expect(screen.queryByText("Vývoj zůstatku od založení účtu")).not.toBeInTheDocument();
   });
 
   it("hides card numbers of unannotated card payments", async () => {
     mockFetch(response(HISTORY));
     render(<KasaOverview />);
-    expect(await screen.findByText("KSDS; Praha 1")).toBeInTheDocument();
+    expect(await screen.findByText("KSDS")).toBeInTheDocument();
     expect(screen.queryByText(/408361/)).not.toBeInTheDocument();
   });
 

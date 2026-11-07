@@ -6,6 +6,8 @@ export const KASA_PAGE_SIZE = 50;
 
 export interface BalancePoint {
   key: string;
+  /** Čas pohybu v ms — osa grafu je časová, ne pořadová. */
+  time: number;
   label: string;
   balance: number;
 }
@@ -43,6 +45,7 @@ export function computeBalanceTrend(
     const date = transactionDate(tx);
     return {
       key: `${tx.idTransaction}`,
+      time: date.getTime(),
       label: date.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "2-digit" }),
       balance: Math.round(running * 100) / 100,
     };

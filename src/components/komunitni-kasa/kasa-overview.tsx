@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowRight, Check, Copy, ExternalLink } from "lucide-react";
+import { Check, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -16,12 +16,10 @@ import {
   type AnnotatedTransaction,
   type PeriodSummary,
 } from "@/lib/komunitni-kasa/summary";
-import { computeBalanceTrend, formatCzk } from "@/lib/komunitni-kasa/stats";
-
+import { formatCzk } from "@/lib/komunitni-kasa/stats";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BalanceTrendChart } from "./balance-trend-chart";
 import { KasaLoadError } from "./kasa-load-error";
 import { KasaSection } from "./kasa-section";
 import { useCopy } from "./use-copy";
@@ -32,33 +30,29 @@ export const RB_TRANSPARENT_URL =
 
 const dateFormatter = new Intl.DateTimeFormat("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
 
-function monthLine(summary: PeriodSummary): string {
+/**
+ * Věta o tomto měsíci. Vrácení nevyčerpaných příspěvků družstvům sem
+ * nepatří — nejsou to výdaje kasy (najdeš je ve Všech pohybech).
+ */
+function monthSentence(summary: PeriodSummary): string {
   const parts: string[] = [];
-  if (summary.income > 0) parts.push(`příjmy +${formatCzk(summary.income)}`);
-  if (summary.spending > 0) parts.push(`výdaje −${formatCzk(summary.spending)}`);
-  if (summary.refunds > 0) parts.push(`vráceno družstvům ${formatCzk(summary.refunds)}`);
+  if (summary.income > 0) parts.push(`přišlo ${formatCzk(summary.income)}`);
+  if (summary.spending > 0) parts.push(`utratilo se ${formatCzk(summary.spending)}`);
   if (parts.length === 0) return "Tento měsíc zatím bez pohybu";
-  return `Tento měsíc: ${parts.join(" · ")}`;
-}
-
-function yearLine(summary: PeriodSummary): string {
-  if (summary.count === 0) return "Letos zatím bez pohybu";
-  const parts = [`příjmy ${formatCzk(summary.income)}`, `výdaje ${formatCzk(summary.spending)}`];
-  if (summary.refunds > 0) parts.push(`vráceno družstvům ${formatCzk(summary.refunds)}`);
-  return `Letos: ${parts.join(" · ")}`;
+  return `Tento měsíc ${parts.join(" a ")}`;
 }
 
 function OverviewSkeleton() {
   return (
-    <div className="space-y-8" aria-busy="true" aria-label="Načítám data kasy">
-      <div className="space-y-3 border-t pt-8">
-        <Skeleton className="h-6 w-32" />
-        <Skeleton className="h-12 w-56" />
-        <Skeleton className="h-4 w-72" />
+    <div className="space-y-10" aria-busy="true" aria-label="Načítám data kasy">
+      <div className="space-y-3 border-t pt-6">
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-4 w-56" />
       </div>
-      <div className="space-y-3 border-t pt-8">
-        <Skeleton className="h-6 w-40" />
-        <Skeleton className="h-40 w-full" />
+      <div className="space-y-3 border-t pt-6">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-32 w-full" />
       </div>
     </div>
   );
@@ -66,18 +60,21 @@ function OverviewSkeleton() {
 
 function ExpenseRow({ item }: { item: AnnotatedTransaction }) {
   return (
-    <li className="flex items-baseline justify-between gap-4 py-3">
-      <div className="min-w-0 space-y-0.5">
-        <p className="text-sm font-medium text-foreground">{item.description}</p>
+    <li className="grid grid-cols-[1fr_auto] gap-x-4 py-3 sm:grid-cols-[6.5rem_1fr_auto]">
+      <time
+        dateTime={item.date.toISOString()}
+        className="hidden text-sm tabular-nums text-muted-foreground sm:block"
+      >
+        {dateFormatter.format(item.date)}
+      </time>
+      <div className="min-w-0">
+        <p className="text-sm text-foreground">{item.description}</p>
         <p className="text-xs text-muted-foreground">
-          <time dateTime={item.date.toISOString()}>{dateFormatter.format(item.date)}</time>
-          <span aria-hidden> · </span>
+          <span className="sm:hidden">{dateFormatter.format(item.date)}, </span>
           {TRANSACTION_CATEGORY_LABELS[item.category]}
         </p>
       </div>
-      <p className="shrink-0 text-sm font-medium tabular-nums text-foreground">
-        −{formatCzk(Math.abs(item.amount))}
-      </p>
+      <p className="text-sm tabular-nums text-foreground">−{formatCzk(Math.abs(item.amount))}</p>
     </li>
   );
 }
@@ -99,74 +96,85 @@ export function KasaOverview() {
       month: summarizePeriod(items, month.from, month.to),
       year: summarizePeriod(items, year.from, year.to),
       expenses: recentExpenses(items, RECENT_EXPENSES_LIMIT),
-      trend: computeBalanceTrend(state.data.transactions, state.data.account.balance),
     };
   }, [state]);
 
   if (state.status === "loading") return <OverviewSkeleton />;
   if (state.status === "error" || !derived) {
     return (
-      <div className="border-t pt-8">
+      <div className="border-t pt-6">
         <KasaLoadError message={state.status === "error" ? state.message : "Načtení selhalo"} onRetry={reload} />
       </div>
     );
   }
 
   const { account } = state.data;
+  const yearFigures = [
+    { label: "Příjmy", value: derived.year.income },
+    { label: "Výdaje", value: derived.year.spending },
+  ];
 
   const handleCopy = async () => {
-    const ok = await copy(account.number);
-    if (ok) toast.success("Číslo účtu zkopírováno");
+    if (await copy(account.number)) toast.success("Číslo účtu zkopírováno");
     else toast.error("Číslo účtu se nepodařilo zkopírovat");
   };
 
   return (
-    <div className="space-y-12">
-      <KasaSection id="stav-kasy" title="Stav kasy">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-end">
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground">Na účtu je teď</p>
-              <p className="font-heading text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
-                {formatCzk(derived.balance)}
-              </p>
-            </div>
-            <p className="text-sm text-foreground">{monthLine(derived.month)}</p>
-            <p className="text-sm text-muted-foreground">{yearLine(derived.year)}</p>
-            <div className="flex flex-wrap items-center gap-x-1 gap-y-1 pt-1 text-sm text-muted-foreground">
-              <span>Transparentní účet</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1.5 px-2 font-mono"
-                onClick={handleCopy}
-                aria-label={`Zkopírovat číslo účtu ${account.number}`}
-              >
-                {account.number}
-                {copied === account.number ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
-              </Button>
-              <Button asChild variant="link" size="sm" className="h-8 gap-1 px-2">
-                <a href={RB_TRANSPARENT_URL} target="_blank" rel="noopener noreferrer">
-                  Otevřít v bance <ExternalLink className="size-3.5" aria-hidden />
-                </a>
-              </Button>
-            </div>
-          </div>
-          <figure className="space-y-2">
-            <BalanceTrendChart data={derived.trend} />
-            <figcaption className="text-xs text-muted-foreground">Vývoj zůstatku od založení účtu</figcaption>
-          </figure>
+    <div className="space-y-10">
+      <KasaSection
+        id="stav-kasy"
+        title="Stav kasy"
+        aside={
+          <Button asChild variant="ghost" size="sm" className="-mr-2 gap-1.5 text-muted-foreground">
+            <a href={RB_TRANSPARENT_URL} target="_blank" rel="noopener noreferrer">
+              Otevřít v bance <ExternalLink className="size-3.5" aria-hidden />
+            </a>
+          </Button>
+        }
+      >
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">Zůstatek</p>
+          <p className="font-heading text-4xl font-bold tracking-tight tabular-nums">{formatCzk(derived.balance)}</p>
+          <p className="text-sm text-muted-foreground">{monthSentence(derived.month)}</p>
         </div>
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Letos</h3>
+          <ul aria-label="Letos" className="flex gap-10">
+            {yearFigures.map((figure) => (
+              <li key={figure.label} className="space-y-0.5">
+                <span className="block text-sm text-muted-foreground">{figure.label}</span>
+                <span className="block text-lg font-semibold tabular-nums">{formatCzk(figure.value)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground">
+          Transparentní účet u Raiffeisenbank
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-1.5 tabular-nums text-foreground"
+            onClick={handleCopy}
+            aria-label={`Zkopírovat číslo účtu ${account.number}`}
+          >
+            {account.number}
+            {copied === account.number ? (
+              <Check className="size-3.5" aria-hidden />
+            ) : (
+              <Copy className="size-3.5 text-muted-foreground" aria-hidden />
+            )}
+          </Button>
+        </p>
       </KasaSection>
 
       <KasaSection
         id="kam-jdou-penize"
         title="Kam jdou peníze"
         aside={
-          <Button asChild variant="link" size="sm" className="h-auto gap-1 px-0">
-            <Link href="/komunitni-kasa/pohyby">
-              Zobrazit všechny pohyby <ArrowRight className="size-3.5" aria-hidden />
-            </Link>
+          <Button asChild variant="ghost" size="sm" className="-mr-2 text-muted-foreground">
+            <Link href="/komunitni-kasa/pohyby">Zobrazit všechny pohyby</Link>
           </Button>
         }
       >
@@ -178,16 +186,11 @@ export function KasaOverview() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <>
-            <p className="text-sm text-muted-foreground">
-              Poslední výdaje z účtu. Vrácení nevyčerpaných příspěvků družstvům sem nepočítáme.
-            </p>
-            <ul aria-label="Poslední výdaje" className="divide-y border-y">
-              {derived.expenses.map((item) => (
-                <ExpenseRow key={item.tx.idTransaction} item={item} />
-              ))}
-            </ul>
-          </>
+          <ul aria-label="Poslední výdaje" className="divide-y border-y">
+            {derived.expenses.map((item) => (
+              <ExpenseRow key={item.tx.idTransaction} item={item} />
+            ))}
+          </ul>
         )}
       </KasaSection>
     </div>

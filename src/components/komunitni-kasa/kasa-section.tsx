@@ -14,9 +14,9 @@ interface KasaSectionProps {
 /** Sekce stránky kasy: nadpis + obsah, oddělené jen linkou — žádné karty. */
 export function KasaSection({ id, title, aside, className, children }: KasaSectionProps) {
   return (
-    <section aria-labelledby={id} className={cn("space-y-5 border-t pt-8", className)}>
+    <section aria-labelledby={id} className={cn("space-y-5 border-t pt-6", className)}>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 id={id} className="font-heading text-xl font-semibold tracking-tight">
+        <h2 id={id} className="font-heading text-lg font-semibold">
           {title}
         </h2>
         {aside}

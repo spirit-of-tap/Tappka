@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
 import { annotateTransactions, filterAnnotated } from "@/lib/komunitni-kasa/summary";
+import { computeBalanceTrend } from "@/lib/komunitni-kasa/stats";
 import type { TransactionFilter } from "@/lib/komunitni-kasa/stats";
 import { pluralizeCz } from "@/lib/utils/pluralize-cz";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { BalanceTrendChart } from "./balance-trend-chart";
 import { KasaLoadError } from "./kasa-load-error";
 import { TransactionsTable } from "./transactions-table";
 import { useKasaData } from "./use-kasa-data";
@@ -32,6 +34,10 @@ export function TransactionsView() {
     [state],
   );
   const visible = useMemo(() => filterAnnotated(items, query, filter), [items, query, filter]);
+  const trend = useMemo(
+    () => (state.status === "ready" ? computeBalanceTrend(state.data.transactions, state.data.account.balance) : []),
+    [state],
+  );
 
   if (state.status === "loading") {
     return (
@@ -44,7 +50,12 @@ export function TransactionsView() {
   if (state.status === "error") return <KasaLoadError message={state.message} onRetry={reload} />;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
+      <figure className="space-y-2">
+        <figcaption className="text-sm font-medium">Vývoj zůstatku</figcaption>
+        <BalanceTrendChart data={trend} />
+      </figure>
+      <div className="space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search
@@ -78,6 +89,7 @@ export function TransactionsView() {
         {visible.length} z {items.length} {pluralizeCz(items.length, MOVEMENT_FORMS)} · od nejnovějšího
       </p>
       <TransactionsTable items={visible} ownAccountNumber={state.data.account.number} />
+      </div>
     </div>
   );
 }

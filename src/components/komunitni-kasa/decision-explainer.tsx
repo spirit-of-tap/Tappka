@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardList, Receipt, Users, Vote, Wallet, type LucideIcon } from "lucide-react";
+import { ClipboardList, Receipt, Users, Vote, Wallet, type LucideIcon } from "lucide-react";
 
 import {
   DECISION_CYCLE,
@@ -47,25 +47,16 @@ function limitExample(): string {
 function KindBlock({ kind }: { kind: ExpenseKind }) {
   const Icon = KIND_ICONS[kind.id];
   return (
-    <div className="space-y-3 rounded-lg bg-muted/40 p-5">
-      <div className="flex items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Icon className="size-5" aria-hidden />
-        </span>
-        <div>
-          <h3 className="font-heading text-base font-semibold">{kind.title}</h3>
-          <p className="text-sm text-muted-foreground">{kind.whoDecides}</p>
-        </div>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2.5">
+        <Icon className="size-5 text-primary" aria-hidden />
+        <h3 className="font-heading text-base font-semibold">{kind.title}</h3>
       </div>
-      <p className="text-sm">{kind.summary}</p>
-      <ul className="flex flex-wrap gap-1.5" aria-label={`Příklady: ${kind.title}`}>
-        {kind.examples.map((example) => (
-          <li key={example} className="rounded-full border bg-background px-2.5 py-0.5 text-xs text-muted-foreground">
-            {example}
-          </li>
-        ))}
-      </ul>
-      <p className="text-sm font-medium">{kind.rule}</p>
+      <p className="text-sm font-medium">{kind.whoDecides}</p>
+      <p className="text-sm text-muted-foreground">
+        {kind.summary} Třeba {kind.examples.join(", ")}.
+      </p>
+      <p className="text-sm text-muted-foreground">{kind.rule}</p>
       {kind.id === "provozni" ? <p className="text-xs text-muted-foreground">{limitExample()}</p> : null}
     </div>
   );
@@ -81,24 +72,22 @@ export function DecisionExplainer() {
     >
       {SMERNICE_IS_DRAFT ? <p className="text-sm text-muted-foreground">{SMERNICE_DRAFT_NOTE}</p> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2 sm:gap-10">
         {EXPENSE_KINDS.map((kind) => (
           <KindBlock key={kind.id} kind={kind} />
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <h3 className="font-heading text-base font-semibold">Každý měsíc</h3>
-        <ol className="grid gap-5 md:grid-cols-4 md:gap-4">
+        <ol className="grid gap-4 md:grid-cols-4">
           {DECISION_CYCLE.map((step, index) => {
             const Icon = CYCLE_ICONS[step.icon];
             return (
-              <li key={step.title} className="flex gap-3 md:flex-col md:gap-2">
-                <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full border bg-background text-primary">
-                  <Icon className="size-5" aria-hidden />
-                  <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground tabular-nums">
-                    {index + 1}
-                  </span>
+              <li key={step.title} className="flex gap-3 md:flex-col md:gap-1.5">
+                <span className="flex shrink-0 items-center gap-2 pt-0.5 text-sm text-muted-foreground tabular-nums md:pt-0">
+                  <Icon className="size-4" aria-hidden />
+                  <span aria-hidden>{index + 1}.</span>
                 </span>
                 <div className="space-y-0.5">
                   <p className="text-sm font-medium">{step.title}</p>
@@ -110,10 +99,8 @@ export function DecisionExplainer() {
         </ol>
       </div>
 
-      <Button asChild variant="outline" size="sm" className="gap-1.5">
-        <Link href={SMERNICE_HREF}>
-          Celé znění směrnice <ArrowRight className="size-4" aria-hidden />
-        </Link>
+      <Button asChild variant="link" size="sm" className="h-auto px-0">
+        <Link href={SMERNICE_HREF}>Celé znění směrnice</Link>
       </Button>
     </KasaSection>
   );

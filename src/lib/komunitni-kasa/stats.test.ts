@@ -33,6 +33,13 @@ describe("computeBalanceTrend", () => {
   });
 });
 
+describe("computeBalanceTrend time axis", () => {
+  it("gives each point its timestamp so the chart can space points by time", () => {
+    const points = computeBalanceTrend([tx({ idTransaction: 1, amount: 100, datum: "2025-07-13T10:00:00Z" })], 100);
+    expect(points[0].time).toBe(new Date("2025-07-13T10:00:00Z").getTime());
+  });
+});
+
 describe("formatCzk", () => {
   it("formátuje české koruny", () => {
     expect(formatCzk(18000)).toContain("18");

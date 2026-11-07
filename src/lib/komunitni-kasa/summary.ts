@@ -42,9 +42,15 @@ export function stripCardNumber(text: string): string {
   return text.replace(CARD_MASK_PATTERN, "").replace(/\s+/g, " ").trim();
 }
 
+/** U platby kartou banka píše „obchod; město, ulice; země“ — stačí název obchodu. */
+function merchantName(text: string): string {
+  return text.split(";")[0].trim();
+}
+
 function fallbackDescription(tx: RbTransaction): string {
+  const cardPayment = new RegExp(CARD_MASK_PATTERN.source, "i").test(tx.info ?? "");
   const info = stripCardNumber(tx.info ?? "");
-  if (info) return info;
+  if (info) return cardPayment ? merchantName(info) || info : info;
   const name = stripCardNumber(tx.accountName ?? "");
   if (name) return name;
   const hadCardMask = new RegExp(CARD_MASK_PATTERN.source, "i").test(`${tx.info ?? ""} ${tx.accountName ?? ""}`);

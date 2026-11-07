@@ -18,8 +18,10 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 
+const monthTick = new Intl.DateTimeFormat("cs-CZ", { month: "numeric", year: "2-digit" });
+
 const config = {
-  balance: { label: "Zůstatek", color: "var(--color-chart-3)" },
+  balance: { label: "Zůstatek", color: "var(--color-primary)" },
 } satisfies ChartConfig;
 
 export function BalanceTrendChart({ data }: { data: BalancePoint[] }) {
@@ -27,7 +29,7 @@ export function BalanceTrendChart({ data }: { data: BalancePoint[] }) {
     return <p className="py-8 text-center text-sm text-muted-foreground">Zatím tu nejsou žádná data</p>;
   }
   return (
-    <ChartContainer config={config} className="min-h-[180px] w-full sm:min-h-[240px]">
+    <ChartContainer config={config} className="h-40 w-full sm:h-48">
       <ResponsiveContainer>
         <AreaChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
           <defs>
@@ -38,12 +40,15 @@ export function BalanceTrendChart({ data }: { data: BalancePoint[] }) {
           </defs>
           <CartesianGrid vertical={false} />
           <XAxis
-            dataKey="label"
+            dataKey="time"
+            type="number"
+            scale="time"
+            domain={["dataMin", "dataMax"]}
+            tickFormatter={(t: number) => monthTick.format(new Date(t))}
             tick={{ fontSize: 10 }}
             tickLine={false}
             axisLine={false}
-            minTickGap={20}
-            padding={{ left: 12, right: 12 }}
+            minTickGap={32}
           />
           <YAxis
             tick={{ fontSize: 10 }}
@@ -56,6 +61,7 @@ export function BalanceTrendChart({ data }: { data: BalancePoint[] }) {
           <Tooltip
             content={
               <ChartTooltipContent
+                labelFormatter={(_, payload) => String(payload?.[0]?.payload?.label ?? "")}
                 formatter={(value) => (
                   <span className="font-mono font-medium tabular-nums">{formatCzk(Number(value))}</span>
                 )}

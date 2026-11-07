@@ -57,7 +57,7 @@ describe("annotateTransactions", () => {
       ],
       {},
     );
-    expect(items[0].description).toBe("KSDS; Praha 1");
+    expect(items[0].description).toBe("KSDS");
     expect(items[0].category).toBe("jine");
     expect(items[1].description).toBe("Družstvo A");
     expect(items[1].category).toBe("prijem");

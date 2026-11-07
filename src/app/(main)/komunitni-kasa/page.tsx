@@ -37,12 +37,12 @@ export default async function KomunitniKasaPage() {
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-4xl space-y-12">
+      <div className="mx-auto max-w-3xl space-y-10">
         <PageHeader title="Komunitní kasa" description={DESCRIPTION} icon={<KasaMark className="size-10" />} />
         <KasaOverview />
         <DecisionExplainer />
         <KasaContact />
-        <nav aria-label="Další stránky kasy" className="grid gap-2 border-t pt-8 sm:grid-cols-2">
+        <nav aria-label="Další stránky kasy" className="grid gap-2 border-t pt-6 sm:grid-cols-2">
           {FOOTER_LINKS.map(({ href, title, description, icon: Icon }) => (
             <Link
               key={href}
