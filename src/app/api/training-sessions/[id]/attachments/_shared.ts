@@ -4,8 +4,7 @@ import {
   errorResponse,
   isApiFailure,
   mutationFailed,
-  requireOwnedSession,
-  requireSessionFacilitator,
+  requirePreparationEditor,
   requireTsApiContext,
   type ApiFailure,
   type TsApiContext,
@@ -13,16 +12,14 @@ import {
 
 const HTTP_CONFLICT = 409
 
-/** Attachments belong to the session's facilitators, like the preparation they support. */
+/** Attachments follow the preparation they support: facilitators, or an admin for any session. */
 export async function requireAttachmentWriter(
   sessionIdParam: string,
 ): Promise<{ context: TsApiContext; sessionId: string } | ApiFailure> {
   const context = await requireTsApiContext()
   if (isApiFailure(context)) return context
-  const session = await requireOwnedSession(context, sessionIdParam)
+  const session = await requirePreparationEditor(context, sessionIdParam)
   if (isApiFailure(session)) return session
-  const notFacilitator = await requireSessionFacilitator(context, session.id)
-  if (notFacilitator) return notFacilitator
   return { context, sessionId: session.id }
 }
 

@@ -7,6 +7,7 @@ import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { serverLogger } from "@/lib/server-logger"
 import type { Database } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
+import { PREPARATION_ADMIN_ROLE } from "@/lib/training-sessions/permissions"
 import { mapTsRpcError } from "@/lib/training-sessions/rpc-errors"
 
 const HTTP_BAD_REQUEST = 400
@@ -136,4 +137,25 @@ export async function requireSessionFacilitator(context: TsApiContext, sessionId
   if (error) return mutationFailed(error)
   if (!data) return errorResponse("Přípravu může upravovat jen facilitace této TS", HTTP_FORBIDDEN)
   return null
+}
+
+/**
+ * Loads a session whose příprava/attachments the caller may write: its own team's
+ * facilitators, or an admin for any session. RLS enforces the same rule.
+ */
+export async function requirePreparationEditor(
+  context: TsApiContext,
+  id: string,
+): Promise<{ id: string; team_id: string } | ApiFailure> {
+  if (context.role !== PREPARATION_ADMIN_ROLE) {
+    const session = await requireOwnedSession(context, id)
+    if (isApiFailure(session)) return session
+    const notFacilitator = await requireSessionFacilitator(context, session.id)
+    return notFacilitator ?? session
+  }
+  if (!isValidId(id)) return invalidIdFailure()
+  const { data, error } = await context.supabase.from("training_sessions").select("id, team_id").eq("id", id).maybeSingle()
+  if (error) return mutationFailed(error)
+  if (!data) return errorResponse("TS nebylo nalezeno", HTTP_NOT_FOUND)
+  return data
 }

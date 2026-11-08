@@ -75,15 +75,16 @@ export const trainingSessionPreparations = pgTable("training_session_preparation
 	foreignKey({ columns: [table.trainingSessionId], foreignColumns: [trainingSessions.id], name: "training_session_preparations_session_id_fkey" }).onDelete("cascade"),
 	foreignKey({ columns: [table.createdByProfileId], foreignColumns: [profiles.id], name: "training_session_preparations_created_by_profile_id_fkey" }).onDelete("restrict"),
 	foreignKey({ columns: [table.updatedByProfileId], foreignColumns: [profiles.id], name: "training_session_preparations_updated_by_profile_id_fkey" }).onDelete("restrict"),
-	pgPolicy("Published preparation is public, drafts team only", { as: "permissive", for: "select", to: ["authenticated"], using: sql`published_at IS NOT NULL OR training_session_id IN ${OWN_TEAM_SESSION_IDS}` }),
-	pgPolicy("Facilitators can create preparation", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
-	pgPolicy("Facilitators can update preparation", { as: "permissive", for: "update", to: ["authenticated"], using: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}`, withCheck: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
+	pgPolicy("Published preparation is public, drafts team only", { as: "permissive", for: "select", to: ["authenticated"], using: sql`published_at IS NOT NULL OR training_session_id IN ${OWN_TEAM_SESSION_IDS} OR is_admin()` }),
+	pgPolicy("Facilitators can create preparation", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`(training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}) OR is_admin()` }),
+	pgPolicy("Facilitators can update preparation", { as: "permissive", for: "update", to: ["authenticated"], using: sql`(training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}) OR is_admin()`, withCheck: sql`(training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}) OR is_admin()` }),
 ]).enableRLS()
 
 const PUBLISHED_PREPARATION_SESSION_IDS = sql`(SELECT training_session_id FROM training_session_preparations WHERE published_at IS NOT NULL)`
 
 // Supporting files for a preparation (books, articles, worksheets) — never the preparation itself.
 // Visible exactly like the preparation: everyone once published, the owning team always.
+// Admins may read and write any session's preparation and attachments (is_admin()).
 export const trainingSessionAttachments = pgTable("training_session_attachments", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	trainingSessionId: uuid("training_session_id").notNull(),
@@ -102,9 +103,9 @@ export const trainingSessionAttachments = pgTable("training_session_attachments"
 	check("training_session_attachments_file_size_check", sql`file_size > 0`),
 	foreignKey({ columns: [table.trainingSessionId], foreignColumns: [trainingSessions.id], name: "training_session_attachments_session_id_fkey" }).onDelete("cascade"),
 	foreignKey({ columns: [table.createdByProfileId], foreignColumns: [profiles.id], name: "training_session_attachments_created_by_profile_id_fkey" }).onDelete("restrict"),
-	pgPolicy("Attachments follow preparation visibility", { as: "permissive", for: "select", to: ["authenticated"], using: sql`training_session_id IN ${PUBLISHED_PREPARATION_SESSION_IDS} OR training_session_id IN ${OWN_TEAM_SESSION_IDS}` }),
-	pgPolicy("Facilitators can add attachments", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`created_by_profile_id = current_profile_id() AND training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
-	pgPolicy("Facilitators can remove attachments", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
+	pgPolicy("Attachments follow preparation visibility", { as: "permissive", for: "select", to: ["authenticated"], using: sql`training_session_id IN ${PUBLISHED_PREPARATION_SESSION_IDS} OR training_session_id IN ${OWN_TEAM_SESSION_IDS} OR is_admin()` }),
+	pgPolicy("Facilitators can add attachments", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`created_by_profile_id = current_profile_id() AND ((training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}) OR is_admin())` }),
+	pgPolicy("Facilitators can remove attachments", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`(training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}) OR is_admin()` }),
 ]).enableRLS()
 
 export const trainingSessionReflections = pgTable("training_session_reflections", {
