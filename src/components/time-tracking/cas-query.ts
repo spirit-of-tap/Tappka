@@ -36,9 +36,11 @@ export interface ResolvedRange {
 export function resolveRangeParams(
   params: Record<string, string | string[] | undefined>,
   now: Date,
+  /** Page-specific default (e.g. the semester); the current week otherwise. */
+  defaultRangeOf?: (todayKey: string) => DateKeyRange,
 ): ResolvedRange {
   const todayKey = todayKeyOf(now)
-  const range = parseRangeParams(params[FROM_PARAM], params[TO_PARAM], todayKey)
+  const range = parseRangeParams(params[FROM_PARAM], params[TO_PARAM], todayKey, defaultRangeOf?.(todayKey))
   return { range, instants: rangeToInstants(range), todayKey }
 }
 
@@ -46,9 +48,14 @@ export function resolveRangeParams(
  * Query string for a range, keeping every other param (e.g. `?team=`). The current
  * week is the default, so it drops `from` / `to` entirely.
  */
-export function withRangeParams(current: URLSearchParams, range: DateKeyRange, todayKey: string): URLSearchParams {
+export function withRangeParams(
+  current: URLSearchParams,
+  range: DateKeyRange,
+  todayKey: string,
+  defaultRange: DateKeyRange = presetRange("this-week", todayKey),
+): URLSearchParams {
   const params = new URLSearchParams(current.toString())
-  if (isSameRange(range, presetRange("this-week", todayKey))) {
+  if (isSameRange(range, defaultRange)) {
     params.delete(FROM_PARAM)
     params.delete(TO_PARAM)
   } else {

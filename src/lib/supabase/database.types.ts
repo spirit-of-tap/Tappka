@@ -2976,6 +2976,57 @@ export type Database = {
           },
         ]
       }
+      training_session_attachments: {
+        Row: {
+          content_type: string
+          created_at: string
+          created_by_profile_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          label: string
+          training_session_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          created_by_profile_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          label: string
+          training_session_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          created_by_profile_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          label?: string
+          training_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_attachments_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_attachments_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_session_attendees: {
         Row: {
           created_at: string

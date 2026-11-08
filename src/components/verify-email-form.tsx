@@ -28,35 +28,46 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { validateRedirectUrl } from "@/lib/utils";
+import { getEmailLinkErrorMessage } from "@/lib/auth/onboarding-state";
 import { isValidWorkEmailDomain, OTP_LENGTH, DEFAULT_LOGGED_IN_PAGE } from "@/lib/constants/auth";
 
 type BrowserSupabaseClient = ReturnType<typeof createClient>;
+
+interface LinkedAccountState {
+  /** work_email of the linked profile, or null when no profile is linked */
+  linkedWorkEmail: string | null;
+  hasEmailIdentity: boolean;
+}
 
 /**
  * Client-safe linked-profile check. Lives here instead of auth-helpers so the
  * client bundle never pulls server-only modules (next/headers, OTel logger).
  */
-async function hasLinkedProfileClient(
+async function getLinkedAccountStateClient(
   supabaseClient: BrowserSupabaseClient,
-): Promise<boolean> {
+): Promise<LinkedAccountState> {
   const {
     data: { user },
   } = await supabaseClient.auth.getUser();
-  if (!user) return false;
+  if (!user) return { linkedWorkEmail: null, hasEmailIdentity: false };
+
+  const hasEmailIdentity = (user.identities ?? []).some(
+    (identity) => identity.provider === "email",
+  );
 
   const { data: profile, error } = await supabaseClient
     .from("profiles")
-    .select("*, users!inner(auth_user_id)")
+    .select("work_email, users!inner(auth_user_id)")
     .eq("users.auth_user_id", user.id)
     .limit(1)
     .maybeSingle();
 
   if (error) {
     console.error("Error fetching user profile:", error);
-    return false;
+    return { linkedWorkEmail: null, hasEmailIdentity };
   }
 
-  return profile !== null;
+  return { linkedWorkEmail: profile?.work_email ?? null, hasEmailIdentity };
 }
 
 const STORAGE_KEY = "verify-email-form-state";
@@ -177,11 +188,18 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
     setIsLoading(true);
 
     try {
-      // Check if user already has a linked profile
-      // Once linked, email changes are not allowed to maintain profile connection
-      const hasProfile = await hasLinkedProfileClient(supabase);
-      if (hasProfile) {
+      // Once a profile is linked AND verified, the email can't change — it is
+      // how we recognise the profile. A linked profile without an email
+      // identity (e.g. the email was held by another account) may still
+      // verify, but only the email the profile already has.
+      const { linkedWorkEmail, hasEmailIdentity } = await getLinkedAccountStateClient(supabase);
+      if (linkedWorkEmail && hasEmailIdentity) {
         setError("Email už nejde změnit, protože je propojený s tvým profilem. Díky němu tě poznáváme!");
+        setIsLoading(false);
+        return;
+      }
+      if (linkedWorkEmail && linkedWorkEmail.toLowerCase() !== email.trim()) {
+        setError(`Tvůj profil je propojený s emailem ${linkedWorkEmail}. Ověř prosím ten.`);
         setIsLoading(false);
         return;
       }
@@ -238,13 +256,8 @@ export function VerifyEmailForm({ next, wizardMode = false, onStepChange }: Veri
       );
 
       if (updateError) {
-        // If email already exists, that's actually fine - it means it might already be linked
-        // or we need to handle it differently
-        if (updateError.message?.includes("already registered")) {
-          setError("Tento email už někdo používá. Zkus jiný, nebo se přihlas pomocí tohoto emailu.");
-        } else {
-          setError(updateError.message || "Nepodařilo se poslat kód, zkus to znovu");
-        }
+        console.error("Failed to start email verification:", updateError);
+        setError(getEmailLinkErrorMessage(updateError));
         setIsLoading(false);
         return;
       }

@@ -3,6 +3,7 @@ import type { Tables } from "@/lib/supabase/tables"
 export type TrainingSession = Tables<"training_sessions">
 export type TrainingSessionPreparation = Tables<"training_session_preparations">
 export type TrainingSessionReflection = Tables<"training_session_reflections">
+export type TrainingSessionAttachment = Tables<"training_session_attachments">
 export type TrainingSessionAttendee = Tables<"training_session_attendees">
 export type TeamRow = Tables<"teams">
 export type RoomRow = Tables<"rooms">
@@ -58,6 +59,9 @@ export const SESSION_DETAIL_SELECT = SESSION_LIST_SELECT.replace(
   "preparation:training_session_preparations(published_at)",
   "preparation:training_session_preparations(published_at, content_json, updated_at)",
 )
+
+/** What the detail page needs to list an attachment; the storage path stays server-side. */
+export type TsAttachmentSummary = Pick<TrainingSessionAttachment, "id" | "label" | "file_name" | "file_size" | "content_type">
 
 export function toTiming(session: Pick<TrainingSession, "id" | "starts_at" | "ends_at" | "cancelled_at">): SessionTiming {
   return { id: session.id, startsAt: session.starts_at, endsAt: session.ends_at, cancelledAt: session.cancelled_at }

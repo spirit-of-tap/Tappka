@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 import { getCurrentSemesterRange } from "@/lib/metrics/periods"
 import type { Database } from "@/lib/supabase/database.types"
+import type { TimeRange } from "@/lib/time-tracking/types"
 
 import {
   summarizeAttendance,
@@ -10,6 +11,7 @@ import {
   type AttendanceSummary,
 } from "./attendance"
 import type { BreakRange, ScheduleSource } from "./slots"
+import type { StatsSession } from "./stats"
 import {
   SESSION_DETAIL_SELECT,
   SESSION_LIST_SELECT,
@@ -120,6 +122,16 @@ export async function getReflection(supabase: SupabaseClient<Database>, id: stri
   return data
 }
 
+export async function listAttachments(supabase: SupabaseClient<Database>, id: string) {
+  const { data, error } = await supabase
+    .from("training_session_attachments")
+    .select("id, label, file_name, file_size, content_type")
+    .eq("training_session_id", id)
+    .order("created_at", { ascending: true })
+  if (error) throw error
+  return data
+}
+
 export async function listAttendance(supabase: SupabaseClient<Database>, id: string) {
   const { data, error } = await supabase
     .from("training_session_attendees")
@@ -216,4 +228,68 @@ export async function searchSessionIds(supabase: SupabaseClient<Database>, q: st
   const { data, error } = await supabase.rpc("search_training_sessions", { p_query: q })
   if (error) throw error
   return (data ?? []) as string[]
+}
+
+interface StatsSessionRow {
+  id: string
+  topic: string
+  starts_at: string
+  facilitators: { profile: { id: string; name: string | null } | null }[]
+  preparation: { published_at: string | null } | null
+}
+
+const STATS_SESSION_SELECT =
+  "id, topic, starts_at, " +
+  "facilitators:training_session_facilitators(profile:profiles!training_session_facilitators_profile_id_fkey(id, name)), " +
+  "preparation:training_session_preparations(published_at)"
+
+/**
+ * Non-cancelled sessions of a team starting inside `range`, shaped for `stats.ts`.
+ * Attendance is only requested when the viewer may see it (team members, not coaches).
+ */
+export async function listStatsSessions(
+  supabase: SupabaseClient<Database>,
+  teamId: string,
+  range: TimeRange,
+  opts: { includeAttendance: boolean },
+): Promise<StatsSession[]> {
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .select(STATS_SESSION_SELECT)
+    .eq("team_id", teamId)
+    .is("cancelled_at", null)
+    .gte("starts_at", range.from.toISOString())
+    .lt("starts_at", range.to.toISOString())
+    .order("starts_at", { ascending: true })
+    .returns<StatsSessionRow[]>()
+  if (error) throw error
+  const rows = data ?? []
+
+  const attendanceBySession = new Map<string, StatsSession["attendance"]>()
+  if (opts.includeAttendance && rows.length > 0) {
+    const { data: attendance, error: attendanceError } = await supabase
+      .from("training_session_attendees")
+      .select("training_session_id, profile_id, status")
+      .in(
+        "training_session_id",
+        rows.map((row) => row.id),
+      )
+    if (attendanceError) throw attendanceError
+    for (const row of attendance ?? []) {
+      // "absent" is never stored, but the enum allows it; such a row means the same as no row.
+      if (row.status === "absent") continue
+      const list = attendanceBySession.get(row.training_session_id) ?? []
+      list.push({ profileId: row.profile_id, status: row.status })
+      attendanceBySession.set(row.training_session_id, list)
+    }
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    topic: row.topic,
+    startsAt: row.starts_at,
+    facilitators: row.facilitators.flatMap((f) => (f.profile ? [{ id: f.profile.id, name: f.profile.name }] : [])),
+    preparationPublishedAt: row.preparation?.published_at ?? null,
+    attendance: attendanceBySession.get(row.id) ?? [],
+  }))
 }

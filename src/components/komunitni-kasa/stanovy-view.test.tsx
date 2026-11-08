@@ -5,61 +5,35 @@ import userEvent from "@testing-library/user-event";
 import { StanovyView } from "./stanovy-view";
 
 describe("StanovyView", () => {
-  it("renders top overview card with association name and IČO", () => {
+  it("lists the articles without the old tabs", () => {
     render(<StanovyView />);
-
-    expect(screen.getByText("Spirit of TAP, z.s.")).toBeInTheDocument();
-    expect(screen.getByText(/231 52 036/)).toBeInTheDocument();
-    expect(screen.getByText(/L 80354/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /veřejný rejstřík/i })).toHaveAttribute(
-      "href",
-      expect.stringContaining("or.justice.cz"),
-    );
-  });
-
-  it("renders the 3 main tabs and defaults to Platné stanovy", () => {
-    render(<StanovyView />);
-
-    expect(screen.getByRole("tab", { name: /platné stanovy/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /výpis z rejstříku/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /sbírka listin/i })).toBeInTheDocument();
-
     expect(screen.getByText(/Čl\. 1 · Základní ustanovení/i)).toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
   });
 
   it("filters articles based on search query", async () => {
     const user = userEvent.setup();
     render(<StanovyView />);
 
-    const searchInput = screen.getByRole("textbox", { name: /hledat v textu stanov/i });
-    await user.type(searchInput, "likvidační zůstatek");
+    await user.type(screen.getByRole("searchbox", { name: /hledat v textu stanov/i }), "likvidační zůstatek");
 
     expect(screen.getByText(/Čl\. 4 · Zisk a likvidační zůstatek/i)).toBeInTheDocument();
     expect(screen.queryByText(/Čl\. 1 · Základní ustanovení/i)).not.toBeInTheDocument();
   });
 
-  it("displays výpis z rejstříku when tab is clicked", async () => {
+  it("says when nothing matches", async () => {
     const user = userEvent.setup();
     render(<StanovyView />);
-
-    await user.click(screen.getByRole("tab", { name: /výpis z rejstříku/i }));
-
-    expect(screen.getByText(/Statutární orgán — předseda/i)).toBeInTheDocument();
-    expect(screen.getByText(/Tuuli Co\. Družstvo/i)).toBeInTheDocument();
-    expect(screen.getByText(/Julie Holá/i)).toBeInTheDocument();
-    expect(screen.getByText(/Předmět hlavní činnosti/i)).toBeInTheDocument();
+    await user.type(screen.getByRole("searchbox", { name: /hledat v textu stanov/i }), "xyzxyz");
+    expect(screen.getByText(/žádný článek/i)).toBeInTheDocument();
   });
 
-  it("displays sbírka listin and zápis z členské schůze when tab is clicked", async () => {
+  it("expands an article to show its text", async () => {
     const user = userEvent.setup();
     render(<StanovyView />);
-
-    await user.click(screen.getByRole("tab", { name: /sbírka listin/i }));
-
-    expect(screen.getByText(/L 80354\/SL3\/MSPH/i)).toBeInTheDocument();
-    expect(screen.getByText(/L 80354\/SL2\/MSPH/i)).toBeInTheDocument();
-    expect(screen.getByText(/L 80354\/SL1\/MSPH/i)).toBeInTheDocument();
-    expect(screen.getByText(/Zápis z členské schůze ze dne 3\. 6\. 2026/i)).toBeInTheDocument();
-    expect(screen.getByText(/Změna sídla spolku/i)).toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: /Čl\. 4 · Zisk a likvidační zůstatek/i });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
   });
 });

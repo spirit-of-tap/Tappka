@@ -13,6 +13,7 @@ import {
   rangeDayCount,
   rangeToInstants,
   scaleWeeklyTarget,
+  semesterRange,
   shiftRange,
   todayKeyOf,
 } from "./date-range"
@@ -209,5 +210,30 @@ describe("scaleWeeklyTarget", () => {
     expect(scaleWeeklyTarget(40, { from: "2026-09-28", to: "2026-10-11" })).toBe(80)
     expect(scaleWeeklyTarget(40, { from: "2026-09-01", to: "2026-09-30" })).toBe(171.4)
     expect(scaleWeeklyTarget(40, { from: "2026-10-09", to: "2026-10-09" })).toBe(5.7)
+  })
+})
+
+describe("semesterRange", () => {
+  it("covers the winter semester into January", () => {
+    expect(semesterRange("2026-11-08")).toEqual({ from: "2026-09-01", to: "2027-01-31" })
+    expect(semesterRange("2027-01-15")).toEqual({ from: "2026-09-01", to: "2027-01-31" })
+  })
+
+  it("covers the summer semester", () => {
+    expect(semesterRange("2027-03-10")).toEqual({ from: "2027-02-01", to: "2027-08-31" })
+  })
+})
+
+describe("this-semester preset", () => {
+  it("offers the current semester as a preset", () => {
+    expect(presetRange("this-semester", "2026-11-08")).toEqual(semesterRange("2026-11-08"))
+    expect(matchPreset({ from: "2026-09-01", to: "2027-01-31" }, "2026-11-08")).toBe("this-semester")
+  })
+})
+
+describe("parseRangeParams fallback", () => {
+  it("uses the given fallback when params are missing", () => {
+    const fallback = { from: "2026-09-01", to: "2027-01-31" }
+    expect(parseRangeParams(undefined, undefined, TODAY, fallback)).toEqual(fallback)
   })
 })

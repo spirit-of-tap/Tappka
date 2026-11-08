@@ -14,6 +14,8 @@ export interface DateRangeNavProps {
   /** Prague „today" from the server render. */
   todayKey: string
   align?: "start" | "end"
+  /** The page's default range, which is kept out of the URL (the current week if omitted). */
+  defaultRange?: DateKeyRange
   className?: string
 }
 
@@ -21,7 +23,7 @@ export interface DateRangeNavProps {
  * Period picker bound to the URL: writes `?from=&to=` via `router.replace`, keeping
  * every other query param (e.g. `?team=`, filters). The current week drops both params.
  */
-export function DateRangeNav({ range, todayKey, align, className }: DateRangeNavProps) {
+export function DateRangeNav({ range, todayKey, align, defaultRange, className }: DateRangeNavProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -31,7 +33,7 @@ export function DateRangeNav({ range, todayKey, align, className }: DateRangeNav
   const [displayed, setDisplayed] = useOptimistic(range)
 
   function handleChange(next: DateKeyRange) {
-    const query = withRangeParams(searchParams, next, todayKey).toString()
+    const query = withRangeParams(searchParams, next, todayKey, defaultRange).toString()
     startTransition(() => {
       setDisplayed(next)
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })

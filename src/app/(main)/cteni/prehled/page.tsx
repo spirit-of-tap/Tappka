@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
-import { getUserBookPointsStats, getTeamBookPointsStats, getEssays } from '@/lib/essays/queries';
+import { getUserBookPointsStats, getTeamBookPointsStats, getAllEssays } from '@/lib/essays/queries';
 import { getMyLoans } from '@/lib/library/queries';
 import { getEssaysAwaitingReply } from '@/lib/essays/awaiting-reply';
 import { PrehledContent } from '@/components/essays/prehled-content';
@@ -27,7 +27,7 @@ export default async function PrehledPage() {
 
   const [stats, myEssays, teamStats, votesResult, loans] = await Promise.all([
     getUserBookPointsStats(supabase, profile.id),
-    getEssays(supabase, { authorProfileId: profile.id, pageSize: 50 }),
+    getAllEssays(supabase, { authorProfileId: profile.id }),
     profile.team_id ? getTeamBookPointsStats(supabase, profile.team_id) : Promise.resolve([]),
     supabase.from('essay_votes').select('essay_id').eq('voter_profile_id', profile.id),
     getMyLoans(supabase, profile.id).catch(() => []),

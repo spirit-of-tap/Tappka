@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
 import {
+  collectPagedResults,
+  getAllEssays,
   getAuthorsApprovedBookPoints,
   getEssayViewers,
   getEssayVoters,
@@ -55,6 +57,11 @@ class FakeChain {
 
   order(column: string, options?: unknown): this {
     this.calls.push({ method: "order", args: [column, options] });
+    return this;
+  }
+
+  range(from: number, to: number): this {
+    this.calls.push({ method: "range", args: [from, to] });
     return this;
   }
 
@@ -756,6 +763,90 @@ describe("getEssayVoters", () => {
 
     const result = await getEssayVoters(client, "essay-123");
     expect(result).toEqual([]);
+  });
+});
+
+describe("collectPagedResults", () => {
+  it("walks pages until a short page and concatenates them in order", async () => {
+    const pages = [["a1", "b1"], ["a2", "b2"], ["a3"]];
+
+    const result = await collectPagedResults(async (page) => pages[page - 1] ?? [], 2);
+
+    expect(result).toEqual(["a1", "b1", "a2", "b2", "a3"]);
+  });
+
+  it("makes one final request when the last full page is an exact multiple", async () => {
+    const requestedPages: number[] = [];
+
+    const result = await collectPagedResults(async (page) => {
+      requestedPages.push(page);
+      return page <= 2 ? [`a${page}`, `b${page}`] : [];
+    }, 2);
+
+    expect(result).toEqual(["a1", "b1", "a2", "b2"]);
+    expect(requestedPages).toEqual([1, 2, 3]);
+  });
+});
+
+describe("getAllEssays", () => {
+  function essayRow(id: string, createdAt: string, votes: number, views: number) {
+    return {
+      id,
+      author_profile_id: "profile-1",
+      book_id: null,
+      content_source_id: null,
+      frozen_book_points: null,
+      published_at: createdAt,
+      pinned_at: null,
+      pinned_by_profile_id: null,
+      removed_at: null,
+      created_at: createdAt,
+      updated_at: createdAt,
+      created_by_profile_id: "profile-1",
+      updated_by_profile_id: "profile-1",
+      essay_revisions: [
+        {
+          title: id,
+          content_json: { type: "doc", content: [{ type: "paragraph" }] },
+          revision_no: 1,
+          invalid_since: null,
+          created_at: createdAt,
+          updated_at: createdAt,
+        },
+      ],
+      essay_votes: [{ count: votes }],
+      essay_views: [{ count: views }],
+      essay_comments: [{ count: 0 }],
+      author: { id: "profile-1", name: "Author", picture: null, role: "student", team_id: null },
+      book: null,
+      content_source: null,
+    };
+  }
+
+  it("keeps recency order for the default sort", async () => {
+    const rows = [
+      essayRow("newest", "2026-09-03T00:00:00Z", 0, 0),
+      essayRow("middle", "2026-09-02T00:00:00Z", 0, 0),
+      essayRow("oldest", "2026-09-01T00:00:00Z", 0, 0),
+    ];
+    const client = fakeSupabase({ essays: [{ data: rows }] });
+
+    const result = await getAllEssays(client, { authorProfileId: "profile-1" });
+
+    expect(result.map((essay) => essay.id)).toEqual(["newest", "middle", "oldest"]);
+  });
+
+  it("ranks the complete set by popularity for the best sort", async () => {
+    const rows = [
+      essayRow("unvoted", "2026-09-03T00:00:00Z", 0, 0),
+      essayRow("popular", "2026-09-01T00:00:00Z", 4, 1),
+      essayRow("middling", "2026-09-02T00:00:00Z", 1, 2),
+    ];
+    const client = fakeSupabase({ essays: [{ data: rows }] });
+
+    const result = await getAllEssays(client, { authorProfileId: "profile-1", sort: "best" });
+
+    expect(result.map((essay) => essay.id)).toEqual(["popular", "middling", "unvoted"]);
   });
 });
 

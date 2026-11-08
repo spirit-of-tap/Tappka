@@ -214,7 +214,8 @@ export async function getEssays(
       .select(ESSAY_DETAIL_SELECT)
       .not('published_at', 'is', null)
       .is('removed_at', null)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false });
 
     if (isPopularSort) {
       if (sinceIso) q = q.gte('created_at', sinceIso);
@@ -251,6 +252,51 @@ export async function getEssays(
   }
 
   return essays;
+}
+
+/** Rows per request when walking a complete list — below Supabase's max_rows (1000). */
+const ALL_ESSAYS_PAGE_SIZE = 100;
+
+/**
+ * Walks pages until a short page signals the end. Collecting in pages keeps
+ * each request small and avoids PostgREST's row ceiling silently truncating
+ * the list.
+ */
+export async function collectPagedResults<T>(
+  fetchPage: (page: number) => Promise<T[]>,
+  pageSize: number,
+): Promise<T[]> {
+  const results: T[] = [];
+  for (let page = 1; ; page += 1) {
+    const batch = await fetchPage(page);
+    results.push(...batch);
+    if (batch.length < pageSize) return results;
+  }
+}
+
+/**
+ * Fetches every essay matching the filters, ignoring the pagination limits
+ * used by feeds. The popularity sort is applied to the complete set because
+ * `getEssays`' 'best' ranking only ever looks at a bounded candidate pool.
+ */
+export async function getAllEssays(
+  supabase: SupabaseClient<Database>,
+  filters: Omit<EssayFilters, 'page' | 'pageSize'> = {},
+): Promise<EssayWithDetails[]> {
+  const { sort, ...rest } = filters;
+  const essays = await collectPagedResults(
+    (page) =>
+      getEssays(supabase, {
+        ...rest,
+        // Recency order paginates cleanly, so rank by popularity afterwards.
+        sort: sort === 'best' ? 'recent' : sort,
+        page,
+        pageSize: ALL_ESSAYS_PAGE_SIZE,
+      }),
+    ALL_ESSAYS_PAGE_SIZE,
+  );
+
+  return sort === 'best' ? sortByPopularity(essays) : essays;
 }
 
 export async function getEssaysByTeam(

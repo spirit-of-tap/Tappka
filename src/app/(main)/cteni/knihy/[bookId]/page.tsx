@@ -66,6 +66,7 @@ export default async function BookDetailPage({ params }: PageProps) {
   const bookport = await resolveBookportBook({
     titleCs: book.title_cs,
     isbn13: book.isbn_13 ?? null,
+    author: book.author,
   });
 
   const previewUrl = book.preview_link ? book.preview_link.replace(/^http:\/\//, 'https://') : null;

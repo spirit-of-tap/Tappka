@@ -40,6 +40,7 @@ export const TS_ROUTES = {
   root: "/ts",
   overview: "/ts/prehled",
   discover: "/ts/objevovat",
+  stats: "/ts/statistiky",
   create: "/ts/nova",
   detail: (id: string) => `/ts/${id}`,
   edit: (id: string) => `/ts/${id}/upravit`,

@@ -9,7 +9,6 @@ import {
   Handshake,
   LayoutDashboard,
   NotebookPen,
-  PiggyBank,
   Presentation,
   Rocket,
   Timer,
@@ -18,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { KasaIcon } from "@/lib/komunitni-kasa/brand/kasa-icon";
 import { canAccessFeature, type AccessProfile, type BetaFeature } from "./feature-access";
 
 export interface NavModule {
@@ -40,7 +40,7 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, description: "Přehled tvých aktivit a rychlé akce." },
   { title: "Místnosti", url: "/reservations", icon: CalendarDays, featured: true, description: "Rezervace místností a jejich nastavení." },
   { title: "Komunita", url: "/komunita", icon: Users, description: "Lidé, týmy a profily v Tiimiakatemii." },
-  { title: "Komunitní kasa", url: "/komunitni-kasa", icon: PiggyBank, description: "Transparentní účet, cashflow a přehled transakcí." },
+  { title: "Komunitní kasa", url: "/komunitni-kasa", icon: KasaIcon, description: "Stav kasy, kam jdou peníze, pravidla a značka." },
   { title: "Zák. schůzky", url: "/schuzky", icon: Handshake, feature: "customerMeetings", description: "Evidence zákaznických schůzek." },
   { title: "Koučování", url: "/koucovani", icon: GraduationCap, feature: "coaching", description: "Evidence koučovacích sezení." },
   { title: "Týmová reflexe", url: "/tymova-reflexe", icon: NotebookPen, feature: "teamReflection", description: "Reflexe týmové spolupráce a ročníková hodnocení." },

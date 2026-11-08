@@ -69,7 +69,6 @@ export const SBIRKA_LISTIN_DOKUMENTY: SbirkaListinDokument[] = [
     popis:
       "Nové úplné znění stanov spolku schválené členskou schůzí dne 3. 6. 2026. Reflektuje změnu sídla do Chomutova, novou úpravu řádného a čestného členství a statutárního orgánu.",
     url: "https://or.justice.cz/ias/ui/vypis-sl-detail?dokument=92013600&subjektId=1276393&spis=1437314",
-    pdfSoubor: "BRN3C2AF4F22D92_032985.pdf",
   },
   {
     id: "sl2",
@@ -81,7 +80,6 @@ export const SBIRKA_LISTIN_DOKUMENTY: SbirkaListinDokument[] = [
     popis:
       "Zápis ze zasedání členské schůze konané 3. 6. 2026 na ČZU v Praze. Obsahuje usnesení o změně sídla, schválení nových stanov, přijetí Tuuli Co. Družstvo za řádného člena a volbě předsedy spolku.",
     url: "https://or.justice.cz/ias/ui/vypis-sl-detail?dokument=92013595&subjektId=1276393&spis=1437314",
-    pdfSoubor: "BRN3C2AF4F22D92_032982.pdf",
   },
   {
     id: "sl1",
@@ -93,7 +91,6 @@ export const SBIRKA_LISTIN_DOKUMENTY: SbirkaListinDokument[] = [
     popis:
       "Původní zakládající stanovy schválené dne 3. 4. 2025 zakládajícími členy (Niklas Kovanda, Minh Ly Bui Thi, Vojtěch Maňour) s původním sídlem Vojtěšská 211/6, Praha 1.",
     url: "https://or.justice.cz/ias/ui/vypis-sl-detail?dokument=86324243&subjektId=1276393&spis=1437314",
-    pdfSoubor: "BRN3C2AF4F22D95_007197.pdf",
   },
 ];
 

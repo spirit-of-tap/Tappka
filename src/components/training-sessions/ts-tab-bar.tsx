@@ -1,6 +1,6 @@
 "use client"
 
-import { Compass, User } from "lucide-react"
+import { ChartColumn, Compass, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -9,12 +9,14 @@ import { TS_ROUTES } from "@/lib/training-sessions/constants"
 const TABS = [
   { title: "Přehled", url: TS_ROUTES.overview, icon: User },
   { title: "Objevovat", url: TS_ROUTES.discover, icon: Compass },
+  { title: "Statistiky", url: TS_ROUTES.stats, icon: ChartColumn },
 ] as const
 
 const TS_ROUTE_PREFIX = `${TS_ROUTES.root}/`
 
 export function getActiveTsTabUrl(pathname: string): string | undefined {
   if (pathname.startsWith(TS_ROUTES.overview) || pathname === TS_ROUTES.create) return TS_ROUTES.overview
+  if (pathname.startsWith(TS_ROUTES.stats)) return TS_ROUTES.stats
   if (pathname.startsWith(TS_ROUTE_PREFIX)) return TS_ROUTES.discover
   return undefined
 }
