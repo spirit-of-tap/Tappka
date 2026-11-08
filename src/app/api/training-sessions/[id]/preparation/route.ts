@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { contentTextFromJson } from "@/lib/essays/content-text"
 import type { Json } from "@/lib/supabase/database.types"
+import { scheduleSessionSync } from "@/lib/training-sessions/calendar-sync"
 import { preparationInputSchema } from "@/lib/training-sessions/validation"
 
 import {
@@ -50,5 +51,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         .from("training_session_preparations")
         .insert({ ...content, training_session_id: session.id, created_by_profile_id: context.profileId })
   if (error) return mutationFailed(error).response
+  // The team calendar marks published preparations; only a publish/unpublish changes the event.
+  if (Boolean(existing?.published_at) !== Boolean(publishedAt)) scheduleSessionSync(session.id)
   return NextResponse.json({ data: { publishedAt } })
 }

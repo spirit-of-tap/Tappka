@@ -59,12 +59,16 @@ interface LoadedSession {
   room: { code: string } | null
   team: { name: string } | null
   facilitators: { profile: { name: string | null } | null }[]
+  /** One-to-one embed (PK = session id); normalised defensively in case PostgREST returns a list. */
+  preparation: { published_at: string | null } | { published_at: string | null }[] | null
 }
 
 function toSyncable(session: LoadedSession): SyncableSession {
+  const preparation = Array.isArray(session.preparation) ? session.preparation[0] : session.preparation
   return {
     ...session,
     facilitatorNames: session.facilitators.flatMap((f) => (f.profile?.name ? [f.profile.name] : [])),
+    preparationPublished: Boolean(preparation?.published_at),
   }
 }
 

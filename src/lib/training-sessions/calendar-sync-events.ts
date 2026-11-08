@@ -5,6 +5,8 @@ import { buildEventDetails } from "./calendar"
 import { PRAGUE_TIME_ZONE, TS_ROUTES } from "./constants"
 
 const EVENT_SUMMARY_PREFIX = "TS: "
+const PREPARATION_MARK = "✅ "
+const PREPARATION_READY_LINE = "✅ Příprava je zveřejněná, najdeš ji v detailu TS."
 const EVENT_SOURCE_TITLE = "Tappka"
 const HTTP_UNAUTHORIZED = 401
 const HTTP_FORBIDDEN = 403
@@ -26,7 +28,8 @@ export const CALENDAR_ERRORS = {
 export const SYNC_SESSION_COLUMNS =
   "id, team_id, topic, description, starts_at, ends_at, location_note, cancelled_at, removed_at, " +
   "room:rooms(code), team:teams(name), " +
-  "facilitators:training_session_facilitators(profile:profiles!training_session_facilitators_profile_id_fkey(name))"
+  "facilitators:training_session_facilitators(profile:profiles!training_session_facilitators_profile_id_fkey(name)), " +
+  "preparation:training_session_preparations(published_at)"
 
 export interface SyncableSession {
   id: string
@@ -38,6 +41,8 @@ export interface SyncableSession {
   room: { code: string } | null
   team: { name: string } | null
   facilitatorNames: string[]
+  /** Facilitators published the příprava: the team can start preparing. */
+  preparationPublished: boolean
 }
 
 /** Deterministic Google event id: a dash-less UUID is valid base32hex, so retries never duplicate. */
@@ -48,14 +53,15 @@ export function calendarEventId(sessionId: string): string {
 export function buildTeamCalendarEvent(session: SyncableSession, appOrigin: string): CalendarEventBody {
   const sessionUrl = `${appOrigin}${TS_ROUTES.detail(session.id)}`
   const location = session.room?.code ?? session.location_note
+  const details = buildEventDetails({
+    teamName: session.team?.name ?? null,
+    facilitatorNames: session.facilitatorNames,
+    description: session.description,
+    sessionUrl,
+  })
   return {
-    summary: `${EVENT_SUMMARY_PREFIX}${session.topic}`,
-    description: buildEventDetails({
-      teamName: session.team?.name ?? null,
-      facilitatorNames: session.facilitatorNames,
-      description: session.description,
-      sessionUrl,
-    }),
+    summary: `${session.preparationPublished ? PREPARATION_MARK : ""}${EVENT_SUMMARY_PREFIX}${session.topic}`,
+    description: session.preparationPublished ? `${PREPARATION_READY_LINE}\n\n${details}` : details,
     ...(location ? { location } : {}),
     start: { dateTime: session.starts_at, timeZone: PRAGUE_TIME_ZONE },
     end: { dateTime: session.ends_at, timeZone: PRAGUE_TIME_ZONE },
