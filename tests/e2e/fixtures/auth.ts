@@ -421,6 +421,11 @@ export async function seedTrainingSession(
   return { sessionId: rows[0].id, topic };
 }
 
+/** Service-role read through PostgREST; throws on query errors (e.g. ambiguous embeds). */
+export async function selectRows(table: string, select: string, filter: string): Promise<unknown[]> {
+  return (await restFetch(`/${table}?select=${encodeURIComponent(select)}&${filter}`, "GET")) as unknown[];
+}
+
 /** Seeds a connected team Google Calendar, optionally with a failed session sync. Cleaned up with the team. */
 export async function seedTeamCalendar(
   teamId: string,

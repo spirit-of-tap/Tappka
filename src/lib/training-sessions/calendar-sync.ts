@@ -11,13 +11,17 @@ import { serverLogger } from "@/lib/server-logger"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Database } from "@/lib/supabase/database.types"
 
-import { buildTeamCalendarEvent, calendarEventId, describeCalendarError, type SyncableSession } from "./calendar-sync-events"
+import {
+  buildTeamCalendarEvent,
+  calendarEventId,
+  describeCalendarError,
+  SYNC_SESSION_COLUMNS,
+  type SyncableSession,
+} from "./calendar-sync-events"
 
 /** Origin used in event links when neither `APP_URL` nor `SITE_URL` is configured. */
 const FALLBACK_APP_URL = "https://tappka.cz"
 
-const SESSION_COLUMNS =
-  "id, team_id, topic, description, starts_at, ends_at, location_note, cancelled_at, removed_at, room:rooms(code), team:teams(name), facilitators:training_session_facilitators(profile:profiles(name))"
 
 export type SyncOutcome = "synced" | "removed" | "failed" | "skipped"
 
@@ -110,7 +114,7 @@ async function loadCalendarId(deps: SyncDeps, teamId: string): Promise<string | 
 
 /** Pushes one session's current state to its team calendar; `skipped` when the team has none. */
 export async function syncTrainingSession(deps: SyncDeps, sessionId: string): Promise<SyncOutcome> {
-  const { data, error } = await deps.admin.from("training_sessions").select(SESSION_COLUMNS).eq("id", sessionId).maybeSingle()
+  const { data, error } = await deps.admin.from("training_sessions").select(SYNC_SESSION_COLUMNS).eq("id", sessionId).maybeSingle()
   if (error || !data) {
     if (error) serverLogger.console.error("Failed to load training session for calendar sync:", error)
     return "skipped"
@@ -129,7 +133,7 @@ export async function syncTeamCalendar(deps: SyncDeps, teamId: string, mode: "up
   const calendarId = await loadCalendarId(deps, teamId)
   if (!calendarId) return { synced: 0, failed: 0 }
 
-  let query = deps.admin.from("training_sessions").select(SESSION_COLUMNS).eq("team_id", teamId)
+  let query = deps.admin.from("training_sessions").select(SYNC_SESSION_COLUMNS).eq("team_id", teamId)
   if (mode === "upcoming") {
     query = query.is("removed_at", null).is("cancelled_at", null).gte("ends_at", new Date().toISOString())
   } else {

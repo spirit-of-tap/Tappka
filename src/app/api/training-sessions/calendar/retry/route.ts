@@ -8,7 +8,10 @@ import { requireCalendarManager, teamBodySchema } from "../_shared"
 
 const HTTP_SERVICE_UNAVAILABLE = 503
 
-/** Retries every session whose last sync failed; waits so the page can show the result. */
+/**
+ * "Synchronizovat teď": pushes every upcoming TS, then retries whatever still failed
+ * (e.g. a cancelled TS whose delete failed). Waits so the page can show the result.
+ */
 export async function POST(request: Request) {
   const guard = await requireCalendarManager(request, teamBodySchema)
   if (isApiFailure(guard)) return guard.response
@@ -16,6 +19,8 @@ export async function POST(request: Request) {
   const deps = createSyncDeps()
   if (!deps) return errorResponse("Synchronizace s Google Kalendářem zatím není na Tappce nastavená", HTTP_SERVICE_UNAVAILABLE).response
 
-  const result = await syncTeamCalendar(deps, guard.input.teamId, "failed")
-  return NextResponse.json({ data: result })
+  const upcoming = await syncTeamCalendar(deps, guard.input.teamId, "upcoming")
+  const retried = await syncTeamCalendar(deps, guard.input.teamId, "failed")
+  // Retried sessions were already counted as failed in the upcoming pass when they were upcoming.
+  return NextResponse.json({ data: { synced: upcoming.synced + retried.synced, failed: retried.failed } })
 }

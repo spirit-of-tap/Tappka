@@ -19,6 +19,15 @@ export const CALENDAR_ERRORS = {
   unavailable: "Google Kalendář je teď nedostupný. Zkus to prosím znovu.",
 } as const
 
+/**
+ * Columns the sync loads per session. `training_session_facilitators` has two FKs to
+ * `profiles` (facilitator and creator), so the embed must name the facilitator FK.
+ */
+export const SYNC_SESSION_COLUMNS =
+  "id, team_id, topic, description, starts_at, ends_at, location_note, cancelled_at, removed_at, " +
+  "room:rooms(code), team:teams(name), " +
+  "facilitators:training_session_facilitators(profile:profiles!training_session_facilitators_profile_id_fkey(name))"
+
 export interface SyncableSession {
   id: string
   topic: string
