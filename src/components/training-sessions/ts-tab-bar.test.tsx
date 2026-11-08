@@ -9,4 +9,8 @@ describe("getActiveTsTabUrl", () => {
     expect(getActiveTsTabUrl("/ts/objevovat")).toBe("/ts/objevovat")
     expect(getActiveTsTabUrl("/ts/3f0c2b1e-0000-4000-8000-000000000000")).toBe("/ts/objevovat")
   })
+
+  it("marks Statistiky active on the stats route, with or without a period", () => {
+    expect(getActiveTsTabUrl("/ts/statistiky")).toBe("/ts/statistiky")
+  })
 })

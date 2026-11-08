@@ -18,6 +18,7 @@ export const DATE_RANGE_PRESETS = [
   { id: "past-two-weeks", label: "Poslední 2 týdny" },
   { id: "this-month", label: "Tento měsíc" },
   { id: "last-month", label: "Minulý měsíc" },
+  { id: "this-semester", label: "Tento semestr" },
   { id: "this-year", label: "Tento rok" },
   { id: "last-year", label: "Minulý rok" },
 ] as const
@@ -98,6 +99,26 @@ export function weekRangeOf(key: string): DateKeyRange {
   return { from, to: addDaysToKey(from, DAYS_PER_WEEK - 1) }
 }
 
+const WINTER_SEMESTER_START_MONTH = 9
+const SUMMER_SEMESTER_START_MONTH = 2
+
+/** Academic semester containing `todayKey`: Sep 1 – Jan 31 (winter) or Feb 1 – Aug 31 (summer). */
+export function semesterRange(todayKey: string): DateKeyRange {
+  const today = parseKey(todayKey)
+  if (!today) throw new Error(`Invalid date key: ${todayKey}`)
+  if (today.month >= SUMMER_SEMESTER_START_MONTH && today.month < WINTER_SEMESTER_START_MONTH) {
+    return {
+      from: monthRange(today.year, SUMMER_SEMESTER_START_MONTH).from,
+      to: monthRange(today.year, WINTER_SEMESTER_START_MONTH - 1).to,
+    }
+  }
+  const startYear = today.month >= WINTER_SEMESTER_START_MONTH ? today.year : today.year - 1
+  return {
+    from: monthRange(startYear, WINTER_SEMESTER_START_MONTH).from,
+    to: monthRange(startYear + 1, SUMMER_SEMESTER_START_MONTH - 1).to,
+  }
+}
+
 /** Range for a preset relative to `todayKey` (Prague „today"). */
 export function presetRange(id: DateRangePresetId, todayKey: string): DateKeyRange {
   const today = parseKey(todayKey)
@@ -122,6 +143,8 @@ export function presetRange(id: DateRangePresetId, todayKey: string): DateKeyRan
       return monthRange(today.year, today.month)
     case "last-month":
       return monthRange(today.year, today.month - 1)
+    case "this-semester":
+      return semesterRange(todayKey)
     case "this-year":
       return yearRange(today.year)
     case "last-year":
@@ -200,10 +223,10 @@ export function parseRangeParams(
   fromValue: string | string[] | undefined,
   toValue: string | string[] | undefined,
   todayKey: string,
+  fallback: DateKeyRange = presetRange("this-week", todayKey),
 ): DateKeyRange {
   const fromRaw = Array.isArray(fromValue) ? fromValue[0] : fromValue
   const toRaw = Array.isArray(toValue) ? toValue[0] : toValue
-  const fallback = presetRange("this-week", todayKey)
   if (!fromRaw || !toRaw || !isDateKey(fromRaw) || !isDateKey(toRaw)) return fallback
 
   const range = fromRaw <= toRaw ? { from: fromRaw, to: toRaw } : { from: toRaw, to: fromRaw }

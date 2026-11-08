@@ -421,6 +421,34 @@ export async function seedTrainingSession(
   return { sessionId: rows[0].id, topic };
 }
 
+/** Seeds a published příprava for a training session. */
+export async function seedPreparation(sessionId: string, profileId: string, publishedAt: string): Promise<void> {
+  await restFetch("/training_session_preparations", "POST", {
+    training_session_id: sessionId,
+    content_json: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "E2E příprava" }] }] },
+    content_text: "E2E příprava",
+    published_at: publishedAt,
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
+  });
+}
+
+/** Seeds one attendance row (the app never stores "absent"; omit the row instead). */
+export async function seedAttendance(
+  sessionId: string,
+  profileId: string,
+  status: "present" | "late" | "excused",
+  actorProfileId: string,
+): Promise<void> {
+  await restFetch("/training_session_attendees", "POST", {
+    training_session_id: sessionId,
+    profile_id: profileId,
+    status,
+    created_by_profile_id: actorProfileId,
+    updated_by_profile_id: actorProfileId,
+  });
+}
+
 /** Create a seeded book for E2E tests. */
 export async function seedBook(profileId: string): Promise<{ bookId: string }> {
   const books = (await restFetch("/books", "POST", {
