@@ -14,6 +14,7 @@ const SESSION = {
   room: { code: "C2" },
   team: { name: "Alfa" },
   facilitatorNames: ["Ema", "Ota"],
+  preparationPublished: false,
 }
 
 describe("calendarEventId", () => {
@@ -36,6 +37,13 @@ describe("buildTeamCalendarEvent", () => {
     })
     expect(event.description).toContain("Facilitace: Ema, Ota")
     expect(event.description).toContain("Naučit se BATNA")
+  })
+
+  it("marks a published preparation with ✅ in the title and says so in the description", () => {
+    const event = buildTeamCalendarEvent({ ...SESSION, preparationPublished: true }, "https://tappka.cz")
+    expect(event.summary).toBe("✅ TS: Vyjednávání")
+    expect(event.description?.split("\n")[0]).toBe("✅ Příprava je zveřejněná, najdeš ji v detailu TS.")
+    expect(buildTeamCalendarEvent(SESSION, "https://tappka.cz").description).not.toContain("Příprava")
   })
 
   it("falls back to the location note and omits an empty location", () => {

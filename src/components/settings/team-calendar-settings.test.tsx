@@ -86,4 +86,15 @@ describe("TeamCalendarSettings", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled())
     expect(fetchMock.mock.calls[0][0]).toBe("/api/training-sessions/calendar/retry")
   })
+
+  it("says honestly when nothing has synced yet and offers a manual sync with its result", async () => {
+    const { toast } = await import("sonner")
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { data: { synced: 2, failed: 0 } }))
+    render(<TeamCalendarSettings team={TEAM} teams={null} robotEmail={ROBOT} connection={{ ...CONNECTED, lastSyncedAt: null }} />)
+    expect(screen.getByText("Zatím se nepropsala žádná TS")).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Synchronizovat teď" }))
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Propsáno TS: 2."))
+    expect(refresh).toHaveBeenCalled()
+  })
 })

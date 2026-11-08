@@ -62,19 +62,37 @@ function formatMoment(iso: string): string {
   return `${formatDayHeading(iso)}, ${formatTime(iso)}`
 }
 
-async function callApi(url: string, method: "POST" | "DELETE", body: unknown): Promise<string | null> {
+interface SyncResult {
+  synced: number
+  failed: number
+}
+
+type ApiResult<T> = { ok: true; data: T | null } | { ok: false; error: string }
+
+async function requestApi<T>(url: string, method: "POST" | "DELETE", body: unknown): Promise<ApiResult<T>> {
   try {
     const response = await fetch(url, {
       method,
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     })
-    if (response.ok) return null
-    const data = (await response.json().catch(() => null)) as { error?: string } | null
-    return data?.error ?? GENERIC_ERROR
+    const json = (await response.json().catch(() => null)) as { data?: T; error?: string } | null
+    if (response.ok) return { ok: true, data: json?.data ?? null }
+    return { ok: false, error: json?.error ?? GENERIC_ERROR }
   } catch {
-    return GENERIC_ERROR
+    return { ok: false, error: GENERIC_ERROR }
   }
+}
+
+async function callApi(url: string, method: "POST" | "DELETE", body: unknown): Promise<string | null> {
+  const result = await requestApi(url, method, body)
+  return result.ok ? null : result.error
+}
+
+function describeSyncResult({ synced, failed }: SyncResult): string {
+  if (synced === 0 && failed === 0) return "Žádná nadcházející TS k propsání."
+  const done = `Propsáno TS: ${synced}.`
+  return failed > 0 ? `${done} Nepovedlo se: ${failed}.` : done
 }
 
 export function TeamCalendarSettings({ team, teams, robotEmail, connection }: TeamCalendarSettingsProps) {
@@ -192,14 +210,15 @@ function ConnectCalendar({ teamId, robotEmail }: { teamId: string; robotEmail: s
 
 function ConnectedCalendar({ teamId, connection }: { teamId: string; connection: TeamCalendarConnection }) {
   const router = useRouter()
-  const [retrying, setRetrying] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
 
-  async function handleRetry() {
-    setRetrying(true)
-    const failure = await callApi(RETRY_API, "POST", { teamId })
-    setRetrying(false)
-    if (failure) toast.error(failure)
+  async function handleSync() {
+    setSyncing(true)
+    const result = await requestApi<SyncResult>(RETRY_API, "POST", { teamId })
+    setSyncing(false)
+    if (!result.ok) toast.error(result.error)
+    else if (result.data) toast[result.data.failed > 0 ? "error" : "success"](describeSyncResult(result.data))
     router.refresh()
   }
 
@@ -226,29 +245,35 @@ function ConnectedCalendar({ teamId, connection }: { teamId: string; connection:
             <p className="text-sm text-muted-foreground">
               {connection.lastSyncedAt
                 ? `Naposledy synchronizováno ${formatMoment(connection.lastSyncedAt).toLocaleLowerCase("cs-CZ")}`
-                : "Probíhá první synchronizace…"}
+                : "Zatím se nepropsala žádná TS"}
             </p>
           </div>
         </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" disabled={disconnecting} className="shrink-0">
-              Odpojit
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Odpojit kalendář týmu?</AlertDialogTitle>
-              <AlertDialogDescription>
-                TS se přestanou do kalendáře propisovat. Události, které už v něm jsou, tam zůstanou.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Zrušit</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDisconnect}>Odpojit</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button variant="outline" onClick={handleSync} disabled={syncing}>
+            {syncing ? <Spinner /> : <RefreshCw />}
+            Synchronizovat teď
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={disconnecting}>
+                Odpojit
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Odpojit kalendář týmu?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  TS se přestanou do kalendáře propisovat. Události, které už v něm jsou, tam zůstanou.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDisconnect}>Odpojit</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       {connection.failures.length > 0 && (
@@ -267,8 +292,8 @@ function ConnectedCalendar({ teamId, connection }: { teamId: string; connection:
                 </li>
               ))}
             </ul>
-            <Button variant="outline" size="sm" onClick={handleRetry} disabled={retrying}>
-              {retrying ? <Spinner /> : <RefreshCw />}
+            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
+              {syncing ? <Spinner /> : <RefreshCw />}
               Zkusit znovu
             </Button>
           </AlertDescription>

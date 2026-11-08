@@ -1,12 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+import { SYNC_SESSION_COLUMNS } from "@/lib/training-sessions/calendar-sync-events";
+
 import {
   cleanupTestData,
   createTestTeam,
   getSetupSessionCookie,
   grantBetaAccess,
+  seedPreparation,
   seedTeamCalendar,
   seedTrainingSession,
+  selectRows,
   setAuthCookie,
 } from "./fixtures/auth";
 
@@ -22,6 +26,7 @@ test.describe("Google Kalendář týmu settings", () => {
   test.describe.configure({ mode: "serial" });
   let unconnectedCookie: string;
   let connectedCookie: string;
+  let connectedSessionId: string;
 
   test.beforeAll(async () => {
     const freeTeam = await createTestTeam();
@@ -35,10 +40,13 @@ test.describe("Google Kalendář týmu settings", () => {
     connectedCookie = connected.cookie;
     const startsAt = new Date(Date.now() + 2 * DAY_MS).toISOString();
     const { sessionId } = await seedTrainingSession(connectedTeam, connected.profileId, {
+      facilitate: true,
       startsAt,
       endsAt: new Date(Date.parse(startsAt) + 3 * 60 * 60 * 1000).toISOString(),
       topic: "Vyjednávání",
     });
+    connectedSessionId = sessionId;
+    await seedPreparation(sessionId, connected.profileId, new Date().toISOString());
     await seedTeamCalendar(connectedTeam, {
       calendarName: "Tým E2E",
       failedSessionId: sessionId,
@@ -48,6 +56,21 @@ test.describe("Google Kalendář týmu settings", () => {
 
   test.afterAll(async () => {
     await cleanupTestData();
+  });
+
+  // Regression: the sync's session query once failed with PGRST201 (ambiguous profiles embed),
+  // so every sync was silently skipped. Run the exact query against the real database.
+  test("the sync's session query loads a TS with its facilitators and preparation", async () => {
+    const rows = (await selectRows("training_sessions", SYNC_SESSION_COLUMNS, `id=eq.${connectedSessionId}`)) as {
+      topic: string;
+      facilitators: { profile: { name: string | null } | null }[];
+      preparation: { published_at: string | null } | null;
+    }[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].topic).toBe("Vyjednávání");
+    expect(rows[0].facilitators).toHaveLength(1);
+    // One-to-one embed: a single object, not a list.
+    expect(rows[0].preparation?.published_at).toBeTruthy();
   });
 
   test("a team member finds the section in the hub and sees the connect steps", async ({ page, context }) => {
