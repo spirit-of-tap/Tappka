@@ -1,5 +1,5 @@
 // Schema source of truth (drizzle-kit only; NOT imported at runtime — app uses supabase-js).
-import { pgTable, foreignKey, pgPolicy, uuid, text, integer, timestamp, index, check, jsonb, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, pgPolicy, uuid, text, integer, timestamp, index, uniqueIndex, check, jsonb, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 import { profiles } from "./profiles"
@@ -78,6 +78,33 @@ export const trainingSessionPreparations = pgTable("training_session_preparation
 	pgPolicy("Published preparation is public, drafts team only", { as: "permissive", for: "select", to: ["authenticated"], using: sql`published_at IS NOT NULL OR training_session_id IN ${OWN_TEAM_SESSION_IDS}` }),
 	pgPolicy("Facilitators can create preparation", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
 	pgPolicy("Facilitators can update preparation", { as: "permissive", for: "update", to: ["authenticated"], using: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}`, withCheck: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
+]).enableRLS()
+
+const PUBLISHED_PREPARATION_SESSION_IDS = sql`(SELECT training_session_id FROM training_session_preparations WHERE published_at IS NOT NULL)`
+
+// Supporting files for a preparation (books, articles, worksheets) — never the preparation itself.
+// Visible exactly like the preparation: everyone once published, the owning team always.
+export const trainingSessionAttachments = pgTable("training_session_attachments", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	trainingSessionId: uuid("training_session_id").notNull(),
+	label: text().notNull(),
+	filePath: text("file_path").notNull(),
+	fileName: text("file_name").notNull(),
+	fileSize: integer("file_size").notNull(),
+	contentType: text("content_type").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdByProfileId: uuid("created_by_profile_id").notNull(),
+}, (table) => [
+	index("training_session_attachments_session_idx").using("btree", table.trainingSessionId.asc().nullsLast().op("uuid_ops"), table.createdAt.asc().nullsLast().op("timestamptz_ops")),
+	uniqueIndex("training_session_attachments_file_path_idx").using("btree", table.filePath.asc().nullsLast().op("text_ops")),
+	check("training_session_attachments_label_check", sql`char_length(trim(label)) >= 1 AND char_length(label) <= 120`),
+	check("training_session_attachments_file_name_check", sql`char_length(file_name) >= 1 AND char_length(file_name) <= 255`),
+	check("training_session_attachments_file_size_check", sql`file_size > 0`),
+	foreignKey({ columns: [table.trainingSessionId], foreignColumns: [trainingSessions.id], name: "training_session_attachments_session_id_fkey" }).onDelete("cascade"),
+	foreignKey({ columns: [table.createdByProfileId], foreignColumns: [profiles.id], name: "training_session_attachments_created_by_profile_id_fkey" }).onDelete("restrict"),
+	pgPolicy("Attachments follow preparation visibility", { as: "permissive", for: "select", to: ["authenticated"], using: sql`training_session_id IN ${PUBLISHED_PREPARATION_SESSION_IDS} OR training_session_id IN ${OWN_TEAM_SESSION_IDS}` }),
+	pgPolicy("Facilitators can add attachments", { as: "permissive", for: "insert", to: ["authenticated"], withCheck: sql`created_by_profile_id = current_profile_id() AND training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
+	pgPolicy("Facilitators can remove attachments", { as: "permissive", for: "delete", to: ["authenticated"], using: sql`training_session_id IN ${OWN_TEAM_SESSION_IDS} AND training_session_id IN ${FACILITATED_SESSION_IDS}` }),
 ]).enableRLS()
 
 export const trainingSessionReflections = pgTable("training_session_reflections", {

@@ -376,3 +376,82 @@ describe("remove_training_session", () => {
 });
 
 export { seed, insertSession };
+
+async function insertAttachment(client: PoolClient, sessionId: string, profileId: string): Promise<string> {
+  const { rows } = await client.query(
+    `insert into public.training_session_attachments
+       (training_session_id, label, file_path, file_name, file_size, content_type, created_by_profile_id)
+     values ($1::uuid, 'Kniha k přečtení', 'ts-attachment/' || $1::text || '/' || gen_random_uuid()::text || '.pdf', 'kniha.pdf', 1024, 'application/pdf', $2)
+     returning id`,
+    [sessionId, profileId],
+  );
+  return rows[0].id as string;
+}
+
+describe("training_session_attachments RLS", () => {
+  const countAttachments = async (client: PoolClient, sessionId: string): Promise<number> =>
+    (await client.query("select 1 from public.training_session_attachments where training_session_id = $1", [sessionId])).rows.length;
+
+  it("lets only facilitators add attachments", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+
+      for (const person of [s.teammate, s.other]) {
+        await asClaims(client, { sub: person.authId });
+        await client.query("savepoint before_insert");
+        await expect(insertAttachment(client, id, person.profileId)).rejects.toThrow(/row-level security/);
+        await client.query("rollback to savepoint before_insert");
+      }
+
+      await asClaims(client, { sub: s.owner.authId });
+      await client.query("savepoint before_spoof");
+      await expect(insertAttachment(client, id, s.teammate.profileId)).rejects.toThrow(/row-level security/);
+      await client.query("rollback to savepoint before_spoof");
+
+      await insertAttachment(client, id, s.owner.profileId);
+      expect(await countAttachments(client, id)).toBe(1);
+    });
+  });
+
+  it("follows preparation visibility: team always, others only once published", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      await insertAttachment(client, id, s.owner.profileId);
+
+      await asClaims(client, { sub: s.teammate.authId });
+      expect(await countAttachments(client, id)).toBe(1);
+      await asClaims(client, { sub: s.other.authId });
+      expect(await countAttachments(client, id)).toBe(0);
+
+      await asClaims(client, { sub: s.owner.authId });
+      await insertPreparation(client, id, s.owner.profileId);
+      await client.query("update public.training_session_preparations set published_at = now() where training_session_id = $1", [id]);
+
+      for (const person of [s.other, s.coach]) {
+        await asClaims(client, { sub: person.authId });
+        expect(await countAttachments(client, id)).toBe(1);
+      }
+    });
+  });
+
+  it("lets only facilitators remove attachments", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      await asClaims(client, { sub: s.owner.authId });
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      const attachmentId = await insertAttachment(client, id, s.owner.profileId);
+
+      await asClaims(client, { sub: s.teammate.authId });
+      const blocked = await client.query("delete from public.training_session_attachments where id = $1", [attachmentId]);
+      expect(blocked.rowCount).toBe(0);
+
+      await asClaims(client, { sub: s.owner.authId });
+      const allowed = await client.query("delete from public.training_session_attachments where id = $1", [attachmentId]);
+      expect(allowed.rowCount).toBe(1);
+    });
+  });
+});

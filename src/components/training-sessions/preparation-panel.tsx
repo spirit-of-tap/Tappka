@@ -1,6 +1,6 @@
 "use client"
 
-import { FileText } from "lucide-react"
+import { FileText, Megaphone } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -10,8 +10,11 @@ import { TiptapRenderer } from "@/components/essays/tiptap-renderer"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { contentTextFromJson, EMPTY_DOC } from "@/lib/essays/content-text"
+import type { TsAttachmentSummary } from "@/lib/training-sessions/types"
 
 import { CopyPreparationButton } from "./copy-preparation-button"
+import { CopyTeamsMessageButton } from "./copy-teams-message-button"
+import { PreparationAttachments } from "./preparation-attachments"
 import { PreparationInProgress } from "./preparation-in-progress"
 
 interface PreparationPanelProps {
@@ -24,6 +27,12 @@ interface PreparationPanelProps {
   upcoming: boolean
   contentJson: object | null
   publishedAt: string | null
+  /** Supporting files shown under the text; never a substitute for it. */
+  attachments: TsAttachmentSummary[]
+  /** For the facilitators' Teams announcement. */
+  startsAt: string
+  endsAt: string
+  facilitatorNames: string[]
 }
 
 const SAVE_SUCCESS_MESSAGE = "Příprava uložena"
@@ -37,6 +46,10 @@ export function PreparationPanel({
   upcoming,
   contentJson,
   publishedAt,
+  attachments,
+  startsAt,
+  endsAt,
+  facilitatorNames,
 }: PreparationPanelProps) {
   const router = useRouter()
   const [doc, setDoc] = useState<object>(contentJson ?? EMPTY_DOC)
@@ -67,16 +80,25 @@ export function PreparationPanel({
         </Empty>
       )
     }
-    if (!showCopy) return <TiptapRenderer content={contentJson} />
     return (
-      <div className="relative">
-        <div className="absolute right-0 top-0">
-          <CopyPreparationButton topic={topic} contentJson={contentJson} />
-        </div>
-        <TiptapRenderer content={contentJson} />
+      <div className="space-y-6">
+        {showCopy ? (
+          <div className="relative">
+            <div className="absolute right-0 top-0">
+              <CopyPreparationButton topic={topic} contentJson={contentJson} />
+            </div>
+            <TiptapRenderer content={contentJson} />
+          </div>
+        ) : (
+          <TiptapRenderer content={contentJson} />
+        )}
+        <PreparationAttachments sessionId={sessionId} attachments={attachments} canEdit={false} />
       </div>
     )
   }
+
+  // The announcement links to what others will see, so it waits for a saved, non-empty preparation.
+  const isSavedWithText = Boolean(publishedAt) && contentJson !== null && contentTextFromJson(contentJson) !== ""
 
   async function save() {
     setPending(true)
@@ -101,18 +123,41 @@ export function PreparationPanel({
   }
 
   return (
-    <div className="space-y-3">
-      <TiptapEditor
-        initialContent={doc}
-        onChange={(json) => setDoc(json)}
-        placeholder="Co je potřeba si připravit, přečíst nebo promyslet předem?"
-      />
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-muted-foreground">Uloženou přípravu uvidí všichni, kdo si TS otevřou.</p>
-        <Button size="sm" disabled={pending} onClick={() => void save()} className="self-start sm:self-auto">
-          Uložit
-        </Button>
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <TiptapEditor
+          initialContent={doc}
+          onChange={(json) => setDoc(json)}
+          placeholder="Co je potřeba si připravit, přečíst nebo promyslet předem?"
+        />
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">Uloženou přípravu uvidí všichni, kdo si TS otevřou.</p>
+          <Button size="sm" disabled={pending} onClick={() => void save()} className="self-start sm:self-auto">
+            Uložit
+          </Button>
+        </div>
       </div>
+      <PreparationAttachments sessionId={sessionId} attachments={attachments} canEdit />
+      {isSavedWithText && (
+        <div className="flex flex-col gap-3 rounded-lg bg-muted/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-success/10 text-success-strong">
+              <Megaphone className="size-4" aria-hidden />
+            </span>
+            <div>
+              <p className="text-sm font-medium">Příprava je hotová? Dej týmu vědět</p>
+              <p className="text-xs text-muted-foreground">Zkopíruj zprávu s odkazem a vlož ji do Teams.</p>
+            </div>
+          </div>
+          <CopyTeamsMessageButton
+            sessionId={sessionId}
+            topic={topic}
+            startsAt={startsAt}
+            endsAt={endsAt}
+            facilitatorNames={facilitatorNames}
+          />
+        </div>
+      )}
     </div>
   )
 }

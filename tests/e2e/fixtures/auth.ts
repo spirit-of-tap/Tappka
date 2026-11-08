@@ -301,6 +301,19 @@ export async function cleanupTestData(): Promise<void> {
     await restFetch(`/personality_tests?profile_id=eq.${pid}`, "DELETE").catch(() => {});
   }));
 
+  // TS attachment rows cascade with their session, but their files would stay in storage.
+  await Promise.all(teamIds.map(async (tid) => {
+    const rows = (await restFetch(
+      `/training_session_attachments?select=file_path,training_sessions!inner(team_id)&training_sessions.team_id=eq.${tid}`,
+      "GET",
+    ).catch(() => [] as { file_path: string }[])) as { file_path: string }[];
+    await Promise.all(rows.map(({ file_path: key }) =>
+      storageRemoveFile("documents", key).catch((err) => {
+        console.error(`E2E cleanup: failed to remove storage file ${key}`, err);
+      })
+    ));
+  }));
+
   // Phase 2 — delete team-scoped data
   await Promise.all(teamIds.flatMap((tid) => [
     restFetch(`/recurring_schedules?team_id=eq.${tid}`, "DELETE").catch(() => {}),
@@ -387,7 +400,7 @@ export async function seedTeamActivity(
 export async function seedTrainingSession(
   teamId: string,
   profileId: string,
-  opts: { startsAt: string; endsAt: string; topic?: string },
+  opts: { startsAt: string; endsAt: string; topic?: string; facilitate?: boolean },
 ): Promise<{ sessionId: string; topic: string }> {
   const topic = opts.topic ?? `E2E TS seed ${randomUUID().slice(0, 8)}`;
   const rows = (await restFetch("/training_sessions", "POST", {
@@ -398,6 +411,13 @@ export async function seedTrainingSession(
     created_by_profile_id: profileId,
     updated_by_profile_id: profileId,
   })) as { id: string }[];
+  if (opts.facilitate) {
+    await restFetch("/training_session_facilitators", "POST", {
+      training_session_id: rows[0].id,
+      profile_id: profileId,
+      created_by_profile_id: profileId,
+    });
+  }
   return { sessionId: rows[0].id, topic };
 }
 

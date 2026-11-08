@@ -24,7 +24,13 @@ import { buildGoogleCalendarUrl } from "@/lib/training-sessions/calendar"
 import { findConflicts } from "@/lib/training-sessions/conflicts"
 import { TS_ROUTES } from "@/lib/training-sessions/constants"
 import { formatConflict, formatDayHeading, formatTimeRange, teamAccentStyles } from "@/lib/training-sessions/format"
-import { getReflection, getSessionDetail, listAttendance, listViewerSessions } from "@/lib/training-sessions/queries"
+import {
+  getReflection,
+  getSessionDetail,
+  listAttachments,
+  listAttendance,
+  listViewerSessions,
+} from "@/lib/training-sessions/queries"
 import { getSessionStatus } from "@/lib/training-sessions/status"
 import { toTiming, type TrainingSessionDetail, type TsPersonSummary } from "@/lib/training-sessions/types"
 import { listTeamMembers } from "@/lib/tymovy-denik/queries"
@@ -112,6 +118,7 @@ export default async function TsDetailPage({ params }: PageProps) {
 
   const isFacilitator = session.facilitators.some((f) => f.profile?.id === profile.id)
   const preparationJson = (session.preparation?.content_json as object | null) ?? null
+  const attachments = await listAttachments(supabase, session.id)
   // Own team gets tabs (Docházka, Reflexe); everyone else sees the preparation under a plain heading.
   const hasTabs = isOwnTeam
   const canCopyPreparation =
@@ -128,6 +135,10 @@ export default async function TsDetailPage({ params }: PageProps) {
       upcoming={status === "upcoming"}
       contentJson={preparationJson}
       publishedAt={session.preparation?.published_at ?? null}
+      attachments={attachments}
+      startsAt={session.starts_at}
+      endsAt={session.ends_at}
+      facilitatorNames={session.facilitators.flatMap((f) => (f.profile?.name ? [f.profile.name] : []))}
     />
   )
   const panels: SessionDetailPanels = { priprava: preparation }

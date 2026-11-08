@@ -120,6 +120,16 @@ export async function getReflection(supabase: SupabaseClient<Database>, id: stri
   return data
 }
 
+export async function listAttachments(supabase: SupabaseClient<Database>, id: string) {
+  const { data, error } = await supabase
+    .from("training_session_attachments")
+    .select("id, label, file_name, file_size, content_type")
+    .eq("training_session_id", id)
+    .order("created_at", { ascending: true })
+  if (error) throw error
+  return data
+}
+
 export async function listAttendance(supabase: SupabaseClient<Database>, id: string) {
   const { data, error } = await supabase
     .from("training_session_attendees")
@@ -217,3 +227,4 @@ export async function searchSessionIds(supabase: SupabaseClient<Database>, q: st
   if (error) throw error
   return (data ?? []) as string[]
 }
+

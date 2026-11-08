@@ -135,13 +135,15 @@ export async function deleteFile(bucket: BucketId, key: string): Promise<void> {
 export async function getSignedStorageUrl(
   bucket: BucketId,
   key: string,
-  expiresIn: number = SIGNED_DOWNLOAD_EXPIRY_SECONDS
+  expiresIn: number = SIGNED_DOWNLOAD_EXPIRY_SECONDS,
+  /** When set, the browser downloads the object under this file name. */
+  downloadAs?: string
 ): Promise<string> {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase.storage
     .from(BUCKETS[bucket].name)
-    .createSignedUrl(key, expiresIn);
+    .createSignedUrl(key, expiresIn, downloadAs ? { download: downloadAs } : undefined);
 
   if (error || !data) {
     throw new Error(`Failed to create signed URL: ${error?.message}`);
