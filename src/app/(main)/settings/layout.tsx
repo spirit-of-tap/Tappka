@@ -15,6 +15,7 @@ export default async function SettingsLayout({ children }: { children: ReactNode
     role: profile.role,
     beta_access_granted_at: profile.beta_access_granted_at,
     beta_cohort: profile.beta_cohort ?? DEFAULT_BETA_COHORT,
+    teamId: profile.team_id,
   })
 
   return (

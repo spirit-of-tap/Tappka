@@ -16,7 +16,8 @@ function toGoogleCalendarDate(iso: string): string {
   return new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "")
 }
 
-function buildDetails(event: GoogleCalendarEvent): string {
+/** Event description shared by the "add to calendar" link and the team-calendar sync. */
+export function buildEventDetails(event: Omit<GoogleCalendarEvent, "topic" | "startsAt" | "endsAt" | "location">): string {
   const lines: string[] = []
   if (event.teamName) lines.push(`Tým: ${event.teamName}`)
   if (event.facilitatorNames.length > 0) lines.push(`Facilitace: ${event.facilitatorNames.join(", ")}`)
@@ -36,6 +37,6 @@ export function buildGoogleCalendarUrl(event: GoogleCalendarEvent): string {
   url.searchParams.set("text", event.topic)
   url.searchParams.set("dates", `${toGoogleCalendarDate(event.startsAt)}/${toGoogleCalendarDate(event.endsAt)}`)
   if (event.location) url.searchParams.set("location", event.location)
-  url.searchParams.set("details", buildDetails(event))
+  url.searchParams.set("details", buildEventDetails(event))
   return url.toString()
 }

@@ -8,14 +8,15 @@ export const SETTINGS_ROUTES = {
   root: "/settings",
   notifikace: "/settings/notifikace",
   cas: "/settings/cas",
+  ts: "/settings/ts",
   mistnosti: "/settings/mistnosti",
 } as const
 
-export const SETTINGS_SECTION_IDS = ["notifikace", "cas", "mistnosti"] as const
+export const SETTINGS_SECTION_IDS = ["notifikace", "cas", "ts", "mistnosti"] as const
 export type SettingsSectionId = (typeof SETTINGS_SECTION_IDS)[number]
 
-/** Same roles the room/TS schedule page has always required. */
-const ROOM_SETTINGS_ROLES: readonly string[] = ["coach", "admin"]
+/** Same roles the room/TS schedule page has always required; they also manage any team's calendar. */
+const COACH_ROLES: readonly string[] = ["coach", "admin"]
 
 export interface SettingsSection {
   id: SettingsSectionId
@@ -39,12 +40,20 @@ const SECTIONS: Record<SettingsSectionId, SettingsSection & { visible: (profile:
     href: SETTINGS_ROUTES.cas,
     visible: (profile) => canAccessFeature(profile, "timeTracking"),
   },
+  ts: {
+    id: "ts",
+    title: "Google Kalendář týmu",
+    description: "TS se samy propíšou do kalendáře týmu",
+    href: SETTINGS_ROUTES.ts,
+    visible: (profile) =>
+      canAccessFeature(profile, "trainingSessions") && (Boolean(profile.teamId) || COACH_ROLES.includes(profile.role)),
+  },
   mistnosti: {
     id: "mistnosti",
     title: "Místnosti",
     description: "Rozvrh TS a volna",
     href: SETTINGS_ROUTES.mistnosti,
-    visible: (profile) => ROOM_SETTINGS_ROLES.includes(profile.role),
+    visible: (profile) => COACH_ROLES.includes(profile.role),
   },
 }
 
