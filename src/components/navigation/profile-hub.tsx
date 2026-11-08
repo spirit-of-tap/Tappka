@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
-  Bell,
+  Settings,
   BriefcaseBusiness,
   FlaskConical,
   Heart,
@@ -12,7 +12,6 @@ import {
   LogOut,
   Moon,
   Sun,
-  Tags,
   User as UserIcon,
 } from "lucide-react"
 
@@ -21,7 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { getAvatarUrl } from "@/lib/storage/public-url"
-import { TAG_SETTINGS_URL } from "@/lib/time-tracking/constants"
+import { SETTINGS_ROUTES } from "@/lib/settings/sections"
 import { createClient } from "@/lib/supabase/client"
 import posthog from "posthog-js"
 
@@ -54,7 +53,6 @@ export function ProfileHub({ user }: ProfileHubProps) {
     beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
   }
   const canViewPortfolio = canAccessFeature(accessProfile, "portfolio")
-  const canTrackTime = canAccessFeature(accessProfile, "timeTracking")
 
   const getInitials = (name: string) =>
     name
@@ -96,16 +94,10 @@ export function ProfileHub({ user }: ProfileHubProps) {
           <UserIcon className="size-4 text-muted-foreground" />
           Můj profil
         </Link>
-        <Link href="/settings/notifikace" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
-          <Bell className="size-4 text-muted-foreground" />
-          Notifikace
+        <Link href={SETTINGS_ROUTES.root} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
+          <Settings className="size-4 text-muted-foreground" />
+          Nastavení
         </Link>
-        {canTrackTime && (
-          <Link href={TAG_SETTINGS_URL} className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
-            <Tags className="size-4 text-muted-foreground" />
-            Tagy v Čase
-          </Link>
-        )}
         {canViewPortfolio && (
           <Link href="/portfolio" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
             <BriefcaseBusiness className="size-4 text-muted-foreground" />

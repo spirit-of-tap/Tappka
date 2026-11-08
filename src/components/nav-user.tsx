@@ -9,8 +9,7 @@ import {
   User as UserIcon,
   BriefcaseBusiness,
   FlaskConical,
-  Bell,
-  Tags,
+  Settings,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
@@ -37,7 +36,7 @@ import {
 } from "@/components/ui/sidebar"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { createClient } from "@/lib/supabase/client"
-import { TAG_SETTINGS_URL } from "@/lib/time-tracking/constants"
+import { SETTINGS_ROUTES } from "@/lib/settings/sections"
 import posthog from "posthog-js"
 
 interface NavUserProps {
@@ -62,7 +61,6 @@ export function NavUser({ user }: NavUserProps) {
     beta_cohort: (user.beta_cohort ?? (user.beta_access ? "B" : "A")) as BetaCohort,
   }
   const canViewPortfolio = canAccessFeature(accessProfile, "portfolio")
-  const canTrackTime = canAccessFeature(accessProfile, "timeTracking")
 
   const logout = async () => {
     try {
@@ -134,16 +132,10 @@ export function NavUser({ user }: NavUserProps) {
                 <UserIcon className="mr-2 h-4 w-4" />
                 Profil
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/settings/notifikace")}>
-                <Bell className="mr-2 h-4 w-4" />
-                Notifikace
+              <DropdownMenuItem onClick={() => router.push(SETTINGS_ROUTES.root)}>
+                <Settings className="mr-2 h-4 w-4" />
+                Nastavení
               </DropdownMenuItem>
-              {canTrackTime && (
-                <DropdownMenuItem onClick={() => router.push(TAG_SETTINGS_URL)}>
-                  <Tags className="mr-2 h-4 w-4" />
-                  Tagy v Čase
-                </DropdownMenuItem>
-              )}
               {canViewPortfolio && (
                 <DropdownMenuItem onClick={() => router.push("/portfolio")}>
                   <BriefcaseBusiness className="mr-2 h-4 w-4" />
