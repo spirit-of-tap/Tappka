@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 
+import { scheduleSessionSync } from "@/lib/training-sessions/calendar-sync"
 import { isCapacityBelowGuests, sessionPatchSchema } from "@/lib/training-sessions/validation"
 
 import {
@@ -45,6 +46,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       })
       .eq("id", session.id)
     if (error) return mutationFailed(error).response
+    scheduleSessionSync(session.id)
     return NextResponse.json({ data: { id: session.id } })
   }
 
@@ -93,6 +95,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (insertError) return mutationFailed(insertError).response
   }
 
+  scheduleSessionSync(session.id)
   return NextResponse.json({ data: { id: session.id } })
 }
 
@@ -103,5 +106,6 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
   if (isApiFailure(session)) return session.response
   const { error } = await context.supabase.rpc("remove_training_session", { p_session_id: session.id })
   if (error) return rpcFailure(error).response
+  scheduleSessionSync(session.id)
   return NextResponse.json({ data: { id: session.id } })
 }

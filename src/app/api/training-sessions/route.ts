@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { serverLogger } from "@/lib/server-logger"
+import { scheduleSessionSync } from "@/lib/training-sessions/calendar-sync"
 import { listDiscoverPage } from "@/lib/training-sessions/discover"
 import { DISCOVER_SEARCH_PARAMS, parseDiscoverFilter, parseDiscoverYear } from "@/lib/training-sessions/discover-params"
 import { sessionInputSchema } from "@/lib/training-sessions/validation"
@@ -76,5 +77,6 @@ export async function POST(request: Request) {
     if (facilitatorsError) return mutationFailed(facilitatorsError).response
   }
 
+  scheduleSessionSync(data.id)
   return NextResponse.json({ data: { id: data.id } }, { status: HTTP_CREATED })
 }

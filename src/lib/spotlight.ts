@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   NotebookPen,
   Presentation,
+  Settings,
   SlidersHorizontal,
   Tags,
   Timer,
@@ -423,6 +424,14 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
     ],
   },
   {
+    id: "settings",
+    title: "Nastavení",
+    description: "Notifikace, tagy v Čase a další nastavení",
+    url: "/settings",
+    icon: Settings,
+    keywords: ["nastavení", "settings", "konfigurace", "předvolby", "preferences"],
+  },
+  {
     id: "profile-notifications",
     title: "Notifikace",
     description: "Nastavení e-mailových a systémových upozornění",
@@ -442,8 +451,8 @@ export const RAW_SPOTLIGHT_ITEMS: SpotlightItem[] = [
   {
     id: "page-reservation-settings",
     title: "Nastavení místností",
-    description: "Konfigurace a pravidla rezervací místností",
-    url: "/reservations/settings",
+    description: "Rozvrh TS a volna v místnostech",
+    url: "/settings/mistnosti",
     icon: SlidersHorizontal,
     coachOrAdminOnly: true,
     keywords: [

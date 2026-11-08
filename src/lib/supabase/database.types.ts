@@ -2516,6 +2516,48 @@ export type Database = {
           },
         ]
       }
+      team_google_calendars: {
+        Row: {
+          calendar_id: string
+          calendar_name: string
+          connected_at: string
+          connected_by_profile_id: string | null
+          last_synced_at: string | null
+          team_id: string
+        }
+        Insert: {
+          calendar_id: string
+          calendar_name: string
+          connected_at?: string
+          connected_by_profile_id?: string | null
+          last_synced_at?: string | null
+          team_id: string
+        }
+        Update: {
+          calendar_id?: string
+          calendar_name?: string
+          connected_at?: string
+          connected_by_profile_id?: string | null
+          last_synced_at?: string | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_google_calendars_connected_by_profile_id_fkey"
+            columns: ["connected_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_google_calendars_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_reflection_action_steps: {
         Row: {
           assignee_profile_id: string | null
@@ -3082,6 +3124,45 @@ export type Database = {
             columns: ["updated_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_session_calendar_events: {
+        Row: {
+          attempted_at: string
+          error_message: string | null
+          status: Database["public"]["Enums"]["calendar_sync_status"]
+          team_id: string
+          training_session_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          error_message?: string | null
+          status: Database["public"]["Enums"]["calendar_sync_status"]
+          team_id: string
+          training_session_id: string
+        }
+        Update: {
+          attempted_at?: string
+          error_message?: string | null
+          status?: Database["public"]["Enums"]["calendar_sync_status"]
+          team_id?: string
+          training_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_session_calendar_events_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: true
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_session_calendar_events_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -3668,6 +3749,7 @@ export type Database = {
       birth_giving_team_result_state: "pending" | "present" | "missing"
       book_list_status: "processing" | "shortlist" | "longlist" | "archived"
       book_source: "manual" | "google_books" | "open_library"
+      calendar_sync_status: "synced" | "removed" | "failed"
       content_source_kind: "podcast" | "conference" | "program" | "other"
       content_source_status: "pending_review" | "approved" | "archived"
       personality_test_type:
@@ -3832,6 +3914,7 @@ export const Constants = {
       birth_giving_team_result_state: ["pending", "present", "missing"],
       book_list_status: ["processing", "shortlist", "longlist", "archived"],
       book_source: ["manual", "google_books", "open_library"],
+      calendar_sync_status: ["synced", "removed", "failed"],
       content_source_kind: ["podcast", "conference", "program", "other"],
       content_source_status: ["pending_review", "approved", "archived"],
       personality_test_type: [

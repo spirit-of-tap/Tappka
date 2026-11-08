@@ -421,6 +421,27 @@ export async function seedTrainingSession(
   return { sessionId: rows[0].id, topic };
 }
 
+/** Seeds a connected team Google Calendar, optionally with a failed session sync. Cleaned up with the team. */
+export async function seedTeamCalendar(
+  teamId: string,
+  opts: { calendarName: string; failedSessionId?: string; errorMessage?: string },
+): Promise<void> {
+  await restFetch("/team_google_calendars", "POST", {
+    team_id: teamId,
+    calendar_id: `e2e-${teamId.slice(0, 8)}@group.calendar.google.com`,
+    calendar_name: opts.calendarName,
+    last_synced_at: new Date().toISOString(),
+  });
+  if (opts.failedSessionId) {
+    await restFetch("/training_session_calendar_events", "POST", {
+      training_session_id: opts.failedSessionId,
+      team_id: teamId,
+      status: "failed",
+      error_message: opts.errorMessage ?? null,
+    });
+  }
+}
+
 /** Seeds a published příprava for a training session. */
 export async function seedPreparation(sessionId: string, profileId: string, publishedAt: string): Promise<void> {
   await restFetch("/training_session_preparations", "POST", {

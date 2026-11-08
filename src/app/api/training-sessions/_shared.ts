@@ -17,6 +17,7 @@ const HTTP_SERVER_ERROR = 500
 
 export interface TsApiContext {
   profileId: string
+  role: string
   teamId: string | null
   supabase: SupabaseClient<Database>
 }
@@ -50,7 +51,7 @@ export async function requireTsApiContext(): Promise<TsApiContext | ApiFailure> 
     "trainingSessions",
   )
   if (!allowed) return errorResponse("K této funkci nemáš přístup", HTTP_FORBIDDEN)
-  return { profileId: profile.id, teamId: profile.team_id, supabase }
+  return { profileId: profile.id, role: profile.role, teamId: profile.team_id, supabase }
 }
 
 export function mutationFailed(error: unknown): ApiFailure {

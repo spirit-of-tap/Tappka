@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 import { FeatureComingSoon } from "@/components/beta/feature-coming-soon"
 import { TimeTagSettings } from "@/components/settings/time-tag-settings"
 import { PageHeader } from "@/components/ui/page-header"
-import { PageShell } from "@/components/ui/page-shell"
 import { getSessionProfile } from "@/lib/auth/session"
 import { canAccessFeature } from "@/lib/feature-access"
 import { createClient } from "@/lib/supabase/server"
@@ -42,7 +41,7 @@ export default async function TimeTagSettingsPage() {
   const catalog = await getTagCatalog(supabase, profile)
 
   return (
-    <PageShell size="narrow">
+    <div className="max-w-2xl space-y-6">
       <PageHeader title={PAGE_TITLE} description={PAGE_DESCRIPTION} />
       <TimeTagSettings
         tags={catalog.tags}
@@ -53,6 +52,6 @@ export default async function TimeTagSettingsPage() {
         hasTeam={profile.team_id !== null}
         canRenameAnyTag={TAG_ADMIN_ROLES.includes(profile.role)}
       />
-    </PageShell>
+    </div>
   )
 }

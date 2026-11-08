@@ -4,7 +4,6 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  ChevronRight,
   Database,
   Heart,
   Mail,
@@ -29,16 +28,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user?: {
@@ -58,7 +49,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const pathname = usePathname()
   const { state } = useSidebar()
   const showTimer = useOptionalTimer()?.canAccess ?? false
-  const isCoachOrAdmin = user?.role === "coach" || user?.role === "admin"
   const accessProfile = user
     ? {
         role: user.role ?? "student",
@@ -69,7 +59,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
         teamName: user.teamName ?? null,
       }
     : null
-  const isReservationsActive = pathname.startsWith("/reservations")
   const isDevelopment = process.env.NODE_ENV === "development"
 
   const DEV_INSPECT_ITEMS: NavModule[] = [
@@ -110,55 +99,6 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
-                  // Special handling for Rezervace with sub-menu for coach/admin
-                  if (item.title === "Místnosti" && isCoachOrAdmin) {
-                    return (
-                      <Collapsible
-                        key={item.title}
-                        asChild
-                        defaultOpen={isReservationsActive}
-                        className="group/collapsible"
-                      >
-                        <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                              isActive={isReservationsActive}
-                              tooltip={item.title}
-                            >
-                              <item.icon className="size-4" />
-                              <span>{item.title}</span>
-                              <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={(pathname === "/reservations" || pathname.startsWith("/reservations/")) && pathname !== "/reservations/settings"}
-                                >
-                                  <Link href="/reservations">
-                                    Místnosti
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={pathname === "/reservations/settings"}
-                                >
-                                  <Link href="/reservations/settings">
-                                    Nastavení
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
-                    )
-                  }
-
                   // Feature-gated modules — badge item, hidden without cohort access.
                   if (item.feature) {
                     if (!canAccessFeature(accessProfile, item.feature)) return null

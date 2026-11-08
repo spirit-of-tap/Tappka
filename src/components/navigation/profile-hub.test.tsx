@@ -45,7 +45,7 @@ describe("ProfileHub", () => {
     expect(screen.getByText("anna@example.com")).toBeInTheDocument();
     expect(screen.getByText("Student:ka")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Můj profil/ })).toHaveAttribute("href", "/komunita/profil/profile-1");
-    expect(screen.getByRole("link", { name: /Notifikace/ })).toHaveAttribute("href", "/settings/notifikace");
+    expect(screen.getByRole("link", { name: /Nastavení/ })).toHaveAttribute("href", "/settings");
     expect(screen.getByRole("link", { name: /Zpětná vazba/ })).toHaveAttribute("href", "/zpetna-vazba");
     expect(screen.getByRole("link", { name: /Beta přístup/ })).toHaveAttribute("href", "/beta");
   });

@@ -27,7 +27,7 @@ export default async function NotificationSettingsPage() {
     .maybeSingle();
 
   return (
-    <div className="container mx-auto py-6 space-y-6 max-w-4xl">
+    <div className="space-y-6">
       <PageHeader
         title="Notifikace"
         description="Vyber si, o čem tě budeme informovat e-mailem"
