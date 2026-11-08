@@ -359,6 +359,10 @@ export async function grantBetaAccess(profileId: string): Promise<void> {
 }
 
 /** Sets the beta cohort, needed for pages gated to a specific cohort. */
+export async function setProfileRole(profileId: string, role: "student" | "coach" | "admin"): Promise<void> {
+  await restFetch(`/profiles?id=eq.${profileId}`, "PATCH", { role });
+}
+
 export async function setBetaCohort(profileId: string, cohort: "A" | "B"): Promise<void> {
   await restFetch(`/profiles?id=eq.${profileId}`, "PATCH", {
     beta_cohort: cohort,

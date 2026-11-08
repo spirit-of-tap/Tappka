@@ -32,6 +32,7 @@ import {
   listViewerSessions,
 } from "@/lib/training-sessions/queries"
 import { getSessionStatus } from "@/lib/training-sessions/status"
+import { canEditPreparation } from "@/lib/training-sessions/permissions"
 import { toTiming, type TrainingSessionDetail, type TsPersonSummary } from "@/lib/training-sessions/types"
 import { listTeamMembers } from "@/lib/tymovy-denik/queries"
 import type { TeamMemberProfile } from "@/lib/tymovy-denik/types"
@@ -117,6 +118,10 @@ export default async function TsDetailPage({ params }: PageProps) {
   }
 
   const isFacilitator = session.facilitators.some((f) => f.profile?.id === profile.id)
+  const canEditPrep = canEditPreparation(
+    { profileId: profile.id, role: profile.role },
+    session.facilitators.flatMap((f) => (f.profile ? [f.profile.id] : [])),
+  )
   const preparationJson = (session.preparation?.content_json as object | null) ?? null
   const attachments = await listAttachments(supabase, session.id)
   // Own team gets tabs (Docházka, Reflexe); everyone else sees the preparation under a plain heading.
@@ -130,7 +135,7 @@ export default async function TsDetailPage({ params }: PageProps) {
     <PreparationPanel
       sessionId={session.id}
       topic={session.topic}
-      canEdit={isFacilitator}
+      canEdit={canEditPrep}
       showCopy={hasTabs}
       upcoming={status === "upcoming"}
       contentJson={preparationJson}
