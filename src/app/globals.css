@@ -478,3 +478,17 @@ mark[data-color="orange"] { background-color: #fdba74; }
   .prep-pencil { animation: prep-pencil 4.8s ease-in-out infinite; }
   .prep-scribble { animation: prep-scribble 0.18s ease-in-out infinite alternate; }
 }
+
+/* ── Playbook section anchor highlight ─────────────────────────────────────
+   Deep links (#section-slug) briefly tint the target section so readers see
+   where they landed. Without motion the section is simply shown in place. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes playbook-target-flash {
+    from { background-color: var(--accent); }
+    to   { background-color: transparent; }
+  }
+
+  .playbook-section:target {
+    animation: playbook-target-flash 1.2s ease-out;
+  }
+}

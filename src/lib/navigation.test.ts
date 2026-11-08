@@ -63,6 +63,13 @@ describe("navigation config", () => {
     expect(reading.feature).toBeUndefined();
   });
 
+  it("registers the playbook module without a feature gate", () => {
+    const playbook = NAV_MODULES.find((m) => m.url === "/playbook");
+    expect(playbook).toBeDefined();
+    expect(playbook?.feature).toBeUndefined();
+    expect(playbook?.title).toBe("Playbook");
+  });
+
   it("maps each url to its expected feature key", () => {
     const map: Record<string, string> = {
       "/schuzky": "customerMeetings",
@@ -79,7 +86,7 @@ describe("navigation config", () => {
       expect(NAV_MODULES.find((m) => m.url === url)!.feature).toBe(feature);
     }
     for (const m of NAV_MODULES.filter((m) => !m.feature)) {
-      expect(["/", "/reservations", "/komunita", "/komunitni-kasa", "/ts/prehled", "/cteni/prehled", "/cas"]).toContain(m.url);
+      expect(["/", "/reservations", "/komunita", "/komunitni-kasa", "/ts/prehled", "/cteni/prehled", "/cas", "/playbook"]).toContain(m.url);
     }
   });
 });
@@ -92,6 +99,7 @@ describe("getHubModules", () => {
       "/komunitni-kasa",
       "/ts/prehled",
       "/nastroje-techniky",
+      "/playbook",
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
@@ -117,6 +125,7 @@ describe("getHubModules", () => {
       "/komunitni-kasa",
       "/ts/prehled",
       "/nastroje-techniky",
+      "/playbook",
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
@@ -130,13 +139,13 @@ describe("getHubModules", () => {
   });
 
   it("keeps only non-feature modules (incl. public reading) for non-beta users, preserving hub order", () => {
-    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
-    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
-    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/playbook", "/cas"]);
+    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/playbook", "/cas"]);
+    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/playbook", "/cas"]);
   });
 
   it("shows reading plus stable for cohort A", () => {
-    expect(getHubModules(cohortA).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(cohortA).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/playbook", "/cas"]);
   });
 
   it("filters by canAccessFeature via cohort", () => {
@@ -168,7 +177,7 @@ describe("getHubModules", () => {
   });
 
   it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
-    expect(MODULE_HUB_ORDER).toHaveLength(14);
+    expect(MODULE_HUB_ORDER).toHaveLength(15);
     expect(MODULE_HUB_ORDER).not.toContain("/");
     expect(MODULE_HUB_ORDER).not.toContain("/komunita");
   });
@@ -197,6 +206,7 @@ describe("getHubModules", () => {
       "/komunitni-kasa",
       "/ts/prehled",
       "/nastroje-techniky",
+      "/playbook",
       "/schuzky",
       "/tymova-reflexe",
       "/tymovy-denik",
@@ -207,6 +217,6 @@ describe("getHubModules", () => {
       "/birth-giving",
       "/osobnostni-testy",
     ]);
-    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/playbook", "/cas"]);
   });
 });
