@@ -13,6 +13,7 @@ import { StorageImage } from '@/components/storage/storage-image';
 import { EssayVoteButton } from '@/components/essays/essay-vote-button';
 import { EssayPinButton } from '@/components/essays/essay-pin-button';
 import { EssayEngagementTrigger } from '@/components/essays/essay-engagement-trigger';
+import { CopyEssaysButton } from '@/components/essays/copy-essays-button';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageShell } from '@/components/ui/page-shell';
@@ -88,17 +89,20 @@ export default async function EssayDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between mb-8">
         {/* History-aware: essays are reached from both Moje and Objevovat. */}
         <BackButton />
-        {isAuthor && (
-          <div className="flex items-center gap-2">
-            <EssayPinButton essayId={essayId} isPinned={essay.pinned_at != null} />
-            <Button variant="outline" asChild size="sm">
-              <Link href={`/cteni/eseje/${essayId}/upravit`}>
-                <Pencil className="size-4 mr-2" />
-                Upravit
-              </Link>
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <CopyEssaysButton essays={[essay]} />
+          {isAuthor && (
+            <>
+              <EssayPinButton essayId={essayId} isPinned={essay.pinned_at != null} />
+              <Button variant="outline" asChild size="sm">
+                <Link href={`/cteni/eseje/${essayId}/upravit`}>
+                  <Pencil className="size-4 mr-2" />
+                  Upravit
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {isAuthor && coachReads.length > 0 && (
