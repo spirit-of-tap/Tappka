@@ -3,6 +3,7 @@ import {
   BookOpen,
   Brain,
   CalendarDays,
+  CalendarRange,
   Files,
   Gift,
   GraduationCap,
@@ -26,7 +27,7 @@ export interface NavModule {
   icon: LucideIcon;
   /** Feature key for cohort gating — hidden unless canAccessFeature(profile, feature). */
   feature?: BetaFeature;
-  /** Opens in a new browser tab; used only by dev-tool items. */
+  /** Opens in a new browser tab instead of navigating inside the app. */
   external?: boolean;
   /** When set, links to the signed-in user's own profile tab: /komunita/profil/:id?tab=<value>. Requires profileId at render time. */
   ownProfileTab?: string;
@@ -36,9 +37,12 @@ export interface NavModule {
   featured?: boolean;
 }
 
+export const HARMONOGRAM_URL = "https://docs.google.com/spreadsheets/d/1NLVDSlRzAAg0JysRx6F6qaMs5Vh96Pe4NLRSPzWzGBY/edit?gid=204439";
+
 export const NAV_MODULES: NavModule[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, description: "Přehled tvých aktivit a rychlé akce." },
   { title: "Místnosti", url: "/reservations", icon: CalendarDays, featured: true, description: "Rezervace místností a jejich nastavení." },
+  { title: "Harmonogram", url: HARMONOGRAM_URL, icon: CalendarRange, external: true, description: "Aktuální harmonogram školy a rozvrhu." },
   { title: "Komunita", url: "/komunita", icon: Users, description: "Lidé, týmy a profily v Tiimiakatemii." },
   { title: "Komunitní kasa", url: "/komunitni-kasa", icon: KasaIcon, description: "Stav kasy, kam jdou peníze, pravidla a značka." },
   { title: "Zák. schůzky", url: "/schuzky", icon: Handshake, feature: "customerMeetings", description: "Evidence zákaznických schůzek." },
@@ -62,6 +66,7 @@ export const NAV_MODULES: NavModule[] = [
 export const MODULE_HUB_ORDER: string[] = [
   "/cteni/prehled",
   "/reservations",
+  HARMONOGRAM_URL,
   "/komunitni-kasa",
   "/ts/prehled",
   "/nastroje-techniky",

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { TeamBadges } from '@/components/komunita/team-badges';
 import { UserCard } from '@/components/komunita/user-card';
+import { isAlumnus } from '@/lib/komunita/alumni';
 import type { ProfileWithTeam, TeamWithCount } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +32,7 @@ export function KomunitaContent({
   initialQuery = '',
 }: KomunitaContentProps) {
   const [query, setQuery] = useState(initialQuery);
-  const [showOldTeams, setShowOldTeams] = useState(false);
+  const [showAlumni, setShowAlumni] = useState(false);
 
   // Keep ?search= in the URL without triggering a server navigation/refetch.
   useEffect(() => {
@@ -58,20 +59,26 @@ export function KomunitaContent({
     });
   }, [profiles, query]);
 
-  const { activeProfiles, oldTeamProfiles } = useMemo(() => {
+  const isSearching = query.trim() !== '';
+
+  const { activeProfiles, alumniProfiles } = useMemo(() => {
+    // A search is aimed at one specific person, so it never hides a match
+    // behind the collapsed alumni section.
+    if (isSearching) return { activeProfiles: filtered, alumniProfiles: [] };
+
     const active: ProfileWithTeam[] = [];
-    const oldTeams: ProfileWithTeam[] = [];
+    const alumni: ProfileWithTeam[] = [];
 
     for (const profile of filtered) {
-      if (profile.team?.removed_at) {
-        oldTeams.push(profile);
+      if (isAlumnus(profile)) {
+        alumni.push(profile);
       } else {
         active.push(profile);
       }
     }
 
-    return { activeProfiles: active, oldTeamProfiles: oldTeams };
-  }, [filtered]);
+    return { activeProfiles: active, alumniProfiles: alumni };
+  }, [filtered, isSearching]);
 
   return (
     <div className="space-y-6">
@@ -136,26 +143,33 @@ export function KomunitaContent({
             </div>
           )}
 
-          {oldTeamProfiles.length > 0 && (
+          {alumniProfiles.length > 0 && (
             <div className="space-y-3 pt-2">
-              <button
+              <Button
                 type="button"
-                onClick={() => setShowOldTeams((v) => !v)}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAlumni((v) => !v)}
+                aria-expanded={showAlumni}
+                aria-controls="komunita-alumni"
+                className="h-auto gap-1.5 px-0 text-xs font-medium text-muted-foreground hover:bg-transparent hover:text-foreground"
               >
                 <ChevronDown
                   className={cn(
                     'size-3.5 transition-transform duration-200',
-                    showOldTeams && 'rotate-180'
+                    showAlumni && 'rotate-180'
                   )}
                 />
-                Lidé ze starých týmů
-                <span className="text-muted-foreground/70">({oldTeamProfiles.length})</span>
-              </button>
+                Už nestudující
+                <span className="text-muted-foreground/70">({alumniProfiles.length})</span>
+              </Button>
 
-              {showOldTeams && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {oldTeamProfiles.map((profile) => (
+              {showAlumni && (
+                <div
+                  id="komunita-alumni"
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
+                >
+                  {alumniProfiles.map((profile) => (
                     <UserCard
                       key={profile.id}
                       profile={profile}

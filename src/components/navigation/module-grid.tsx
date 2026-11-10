@@ -25,6 +25,7 @@ export function ModuleGrid({ modules, profileId }: ModuleGridProps) {
           <Link
             key={m.title}
             href={href}
+            {...(m.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             className={cn(
               "group rounded-xl border bg-card p-4 transition-colors hover:bg-accent hover:text-accent-foreground focus-ring",
               m.featured ? "col-span-2 flex items-center gap-3" : "flex flex-col gap-3",
