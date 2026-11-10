@@ -4,12 +4,13 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  ArrowUpRight,
   Database,
   Heart,
   Mail,
 } from "lucide-react"
 
-import { NAV_MODULES, type NavModule } from "@/lib/navigation"
+import { getSidebarSections, type NavModule } from "@/lib/navigation"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -66,10 +67,9 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
     { title: "Supabase Studio", url: "http://127.0.0.1:54323", icon: Database, description: "", external: true },
   ]
 
-  const sections: { title: string; items: NavModule[] }[] = [
-    { title: "Hlavní", items: NAV_MODULES },
-    ...(isDevelopment ? [{ title: "Dev", items: DEV_INSPECT_ITEMS }] : []),
-  ]
+  const sections: { title: string; items: NavModule[] }[] = getSidebarSections(
+    isDevelopment ? DEV_INSPECT_ITEMS : [],
+  )
 
   return (
     <>
@@ -138,6 +138,15 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                         >
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
+                          {item.external && (
+                            <>
+                              <ArrowUpRight
+                                className="ml-auto size-3.5 shrink-0 text-muted-foreground"
+                                aria-hidden="true"
+                              />
+                              <span className="sr-only">(otevře se v nové záložce)</span>
+                            </>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

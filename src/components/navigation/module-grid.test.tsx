@@ -18,6 +18,14 @@ describe("ModuleGrid", () => {
     expect(within(mistnosti).queryByText("Beta")).not.toBeInTheDocument();
   });
 
+  it("separates external links from in-app modules", () => {
+    render(<ModuleGrid modules={NAV_MODULES} />);
+    const section = screen.getByRole("region", { name: "Externí odkazy" });
+
+    expect(within(section).getByRole("link", { name: /Harmonogram/ })).toBeInTheDocument();
+    expect(within(section).queryByRole("link", { name: /Místnosti/ })).not.toBeInTheDocument();
+  });
+
   it("opens external modules in a new tab", () => {
     render(<ModuleGrid modules={NAV_MODULES} />);
     const link = screen.getByRole("link", { name: /Harmonogram/ });

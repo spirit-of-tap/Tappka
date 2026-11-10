@@ -91,3 +91,23 @@ export function getHubModules(profile: AccessProfile | null | undefined | boolea
     return canAccessFeature(profile, m.feature);
   });
 }
+
+export interface NavSection {
+  title: string;
+  items: NavModule[];
+}
+
+/**
+ * Sidebar grouping: internal modules stay in "Hlavní", external links get
+ * their own section so they never read as in-app modules.
+ */
+export function getSidebarSections(devItems: NavModule[] = []): NavSection[] {
+  const internal = NAV_MODULES.filter((m) => !m.external);
+  const external = NAV_MODULES.filter((m) => m.external);
+
+  return [
+    { title: "Hlavní", items: internal },
+    ...(external.length > 0 ? [{ title: "Externí odkazy", items: external }] : []),
+    ...(devItems.length > 0 ? [{ title: "Dev", items: devItems }] : []),
+  ];
+}

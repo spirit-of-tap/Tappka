@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BETA_FEATURES } from "./feature-access";
 import type { AccessProfile } from "./feature-access";
-import { HARMONOGRAM_URL, MODULE_HUB_ORDER, NAV_MODULES, getHubModules } from "./navigation";
+import { HARMONOGRAM_URL, MODULE_HUB_ORDER, NAV_MODULES, getHubModules, getSidebarSections } from "./navigation";
 
 const nonBeta: AccessProfile = { role: "student", beta_access_granted_at: null, beta_cohort: "A" };
 const cohortA: AccessProfile = { role: "student", beta_access_granted_at: "2026-01-01T00:00:00Z", beta_cohort: "A" };
@@ -90,6 +90,31 @@ describe("navigation config", () => {
         "/cas",
       ]).toContain(m.url);
     }
+  });
+});
+
+describe("getSidebarSections", () => {
+  it("keeps external links out of the main section", () => {
+    const sections = getSidebarSections();
+    const main = sections.find((s) => s.title === "Hlavní")!;
+    const external = sections.find((s) => s.title === "Externí odkazy")!;
+
+    expect(main.items.some((m) => m.external)).toBe(false);
+    expect(external.items.map((m) => m.url)).toEqual([HARMONOGRAM_URL]);
+  });
+
+  it("puts dev tools in their own trailing section", () => {
+    const dev = [
+      {
+        title: "Mailpit",
+        url: "http://127.0.0.1:54324",
+        icon: NAV_MODULES[0].icon,
+        description: "",
+        external: true,
+      },
+    ];
+
+    expect(getSidebarSections(dev).at(-1)).toEqual({ title: "Dev", items: dev });
   });
 });
 
