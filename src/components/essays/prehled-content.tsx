@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/empty';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 import { MyEssayList } from './my-essay-list';
+import { CopyEssaysButton } from './copy-essays-button';
 import { MetricProgress } from '@/components/metrics/metric-progress';
 import { TeamPointsRanking } from '@/components/teams/team-points-ranking';
 import { MobileFab, MobileFabSpacer } from '@/components/mobile-fab';
@@ -115,6 +116,7 @@ export function PrehledContent({
             )}
           </h2>
           <div className="flex items-center gap-1">
+            {myEssays.length > 0 && <CopyEssaysButton essays={myEssays} />}
             {myEssays.length > 0 && (
               <Button
                 type="button"
