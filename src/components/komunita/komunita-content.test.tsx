@@ -113,7 +113,17 @@ describe('KomunitaContent', () => {
     },
   });
 
-  it('renders active profiles and coach without team in the main grid', () => {
+  const leftTeamProfile = createMockProfile({
+    id: 'p-left',
+    name: 'Odešlý Student',
+    work_email: 'odesly@tap.cz',
+    team_id: null,
+    former_team_id: 'team-old',
+    team_left_at: '2024-06-30T00:00:00Z',
+    team: null,
+  });
+
+  it('renders active profiles and staff without a team in the main grid', () => {
     render(
       <KomunitaContent
         profiles={[activeProfile, coachWithoutTeam]}
@@ -124,12 +134,25 @@ describe('KomunitaContent', () => {
 
     expect(screen.getByText('Aktivní Student')).toBeInTheDocument();
     expect(screen.getByText('Kouč Bez Týmu')).toBeInTheDocument();
-    expect(
-      screen.queryByText(/Lidé ze starých týmů/),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Už nestudující/)).not.toBeInTheDocument();
   });
 
-  it('hides people from old teams in a collapsed section by default', () => {
+  it('collapses students who left their team into the alumni section by default', () => {
+    render(
+      <KomunitaContent
+        profiles={[activeProfile, leftTeamProfile]}
+        pictureUrls={{}}
+        teams={[createMockTeam()]}
+      />,
+    );
+
+    expect(screen.getByText('Aktivní Student')).toBeInTheDocument();
+    expect(screen.queryByText('Odešlý Student')).not.toBeInTheDocument();
+    expect(screen.getByText('Už nestudující')).toBeInTheDocument();
+    expect(screen.getByText('(1)')).toBeInTheDocument();
+  });
+
+  it('collapses students from archived teams into the same section', () => {
     render(
       <KomunitaContent
         profiles={[activeProfile, oldTeamProfile]}
@@ -140,30 +163,52 @@ describe('KomunitaContent', () => {
 
     expect(screen.getByText('Aktivní Student')).toBeInTheDocument();
     expect(screen.queryByText('Absolvent Starý')).not.toBeInTheDocument();
-    expect(screen.getByText('Lidé ze starých týmů')).toBeInTheDocument();
-    expect(screen.getByText('(1)')).toBeInTheDocument();
+    expect(screen.getByText('Už nestudující')).toBeInTheDocument();
   });
 
-  it('expands and collapses old team members when clicking the toggle', async () => {
+  it('expands and collapses alumni when clicking the toggle', async () => {
     const user = userEvent.setup();
     render(
       <KomunitaContent
-        profiles={[activeProfile, oldTeamProfile]}
+        profiles={[activeProfile, oldTeamProfile, leftTeamProfile]}
         pictureUrls={{}}
         teams={[createMockTeam()]}
       />,
     );
 
     const toggleButton = screen.getByRole('button', {
-      name: /Lidé ze starých týmů/,
+      name: /Už nestudující/,
     });
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('Absolvent Starý')).not.toBeInTheDocument();
 
     await user.click(toggleButton);
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('Absolvent Starý')).toBeInTheDocument();
+    expect(screen.getByText('Odešlý Student')).toBeInTheDocument();
+    expect(screen.getByText('(2)')).toBeInTheDocument();
 
     await user.click(toggleButton);
     expect(screen.queryByText('Absolvent Starý')).not.toBeInTheDocument();
+  });
+
+  it('finds an alumnus directly when searching', async () => {
+    const user = userEvent.setup();
+    render(
+      <KomunitaContent
+        profiles={[activeProfile, leftTeamProfile]}
+        pictureUrls={{}}
+        teams={[createMockTeam()]}
+      />,
+    );
+
+    await user.type(
+      screen.getByPlaceholderText('Hledat podle jména nebo emailu…'),
+      'Odešlý',
+    );
+
+    expect(screen.getByText('Odešlý Student')).toBeInTheDocument();
+    expect(screen.queryByText(/Už nestudující/)).not.toBeInTheDocument();
   });
 
   it('filters people when searching by query', async () => {
@@ -183,7 +228,7 @@ describe('KomunitaContent', () => {
 
     expect(screen.getByText('Kouč Bez Týmu')).toBeInTheDocument();
     expect(screen.queryByText('Aktivní Student')).not.toBeInTheDocument();
-    expect(screen.queryByText('Lidé ze starých týmů')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Už nestudující/)).not.toBeInTheDocument();
   });
 
   it('shows empty state when no profiles match search', async () => {
