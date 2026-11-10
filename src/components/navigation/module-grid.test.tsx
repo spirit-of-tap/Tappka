@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { ModuleGrid } from "./module-grid";
-import { NAV_MODULES } from "@/lib/navigation";
+import { HARMONOGRAM_URL, NAV_MODULES } from "@/lib/navigation";
 
 describe("ModuleGrid", () => {
   it("renders a card per module with title, description and link", () => {
@@ -16,6 +16,14 @@ describe("ModuleGrid", () => {
     expect(screen.getAllByText("Beta").length).toBe(NAV_MODULES.filter((m) => m.feature).length);
     const mistnosti = screen.getByRole("link", { name: /Místnosti/ });
     expect(within(mistnosti).queryByText("Beta")).not.toBeInTheDocument();
+  });
+
+  it("opens external modules in a new tab", () => {
+    render(<ModuleGrid modules={NAV_MODULES} />);
+    const link = screen.getByRole("link", { name: /Harmonogram/ });
+    expect(link).toHaveAttribute("href", HARMONOGRAM_URL);
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("links the personality tests card to /osobnostni-testy", () => {

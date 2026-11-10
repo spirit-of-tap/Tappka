@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BETA_FEATURES } from "./feature-access";
 import type { AccessProfile } from "./feature-access";
-import { MODULE_HUB_ORDER, NAV_MODULES, getHubModules } from "./navigation";
+import { HARMONOGRAM_URL, MODULE_HUB_ORDER, NAV_MODULES, getHubModules } from "./navigation";
 
 const nonBeta: AccessProfile = { role: "student", beta_access_granted_at: null, beta_cohort: "A" };
 const cohortA: AccessProfile = { role: "student", beta_access_granted_at: "2026-01-01T00:00:00Z", beta_cohort: "A" };
@@ -13,7 +13,7 @@ describe("navigation config", () => {
   it("contains every module with url, icon and Czech description", () => {
     expect(NAV_MODULES.length).toBeGreaterThanOrEqual(10);
     for (const m of NAV_MODULES) {
-      expect(m.url).toMatch(/^\//);
+      expect(m.url).toMatch(m.external ? /^https:\/\// : /^\//);
       expect(m.icon).toBeDefined();
       expect(m.description.length).toBeGreaterThan(10);
     }
@@ -79,7 +79,16 @@ describe("navigation config", () => {
       expect(NAV_MODULES.find((m) => m.url === url)!.feature).toBe(feature);
     }
     for (const m of NAV_MODULES.filter((m) => !m.feature)) {
-      expect(["/", "/reservations", "/komunita", "/komunitni-kasa", "/ts/prehled", "/cteni/prehled", "/cas"]).toContain(m.url);
+      expect([
+        "/",
+        "/reservations",
+        HARMONOGRAM_URL,
+        "/komunita",
+        "/komunitni-kasa",
+        "/ts/prehled",
+        "/cteni/prehled",
+        "/cas",
+      ]).toContain(m.url);
     }
   });
 });
@@ -89,6 +98,7 @@ describe("getHubModules", () => {
     expect(getHubModules(cohortB).map((m) => m.url)).toEqual([
       "/cteni/prehled",
       "/reservations",
+      HARMONOGRAM_URL,
       "/komunitni-kasa",
       "/ts/prehled",
       "/nastroje-techniky",
@@ -114,6 +124,7 @@ describe("getHubModules", () => {
     expect(getHubModules(admin).map((m) => m.url)).toEqual([
       "/cteni/prehled",
       "/reservations",
+      HARMONOGRAM_URL,
       "/komunitni-kasa",
       "/ts/prehled",
       "/nastroje-techniky",
@@ -130,13 +141,13 @@ describe("getHubModules", () => {
   });
 
   it("keeps only non-feature modules (incl. public reading) for non-beta users, preserving hub order", () => {
-    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
-    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
-    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(null).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", HARMONOGRAM_URL, "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(nonBeta).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", HARMONOGRAM_URL, "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(undefined).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", HARMONOGRAM_URL, "/komunitni-kasa", "/ts/prehled", "/cas"]);
   });
 
   it("shows reading plus stable for cohort A", () => {
-    expect(getHubModules(cohortA).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(cohortA).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", HARMONOGRAM_URL, "/komunitni-kasa", "/ts/prehled", "/cas"]);
   });
 
   it("filters by canAccessFeature via cohort", () => {
@@ -168,7 +179,7 @@ describe("getHubModules", () => {
   });
 
   it("excludes Dashboard and Komunita (permanent bottom-bar tabs)", () => {
-    expect(MODULE_HUB_ORDER).toHaveLength(14);
+    expect(MODULE_HUB_ORDER).toHaveLength(15);
     expect(MODULE_HUB_ORDER).not.toContain("/");
     expect(MODULE_HUB_ORDER).not.toContain("/komunita");
   });
@@ -194,6 +205,7 @@ describe("getHubModules", () => {
     expect(getHubModules(true as unknown as AccessProfile).map((m) => m.url)).toEqual([
       "/cteni/prehled",
       "/reservations",
+      HARMONOGRAM_URL,
       "/komunitni-kasa",
       "/ts/prehled",
       "/nastroje-techniky",
@@ -207,6 +219,6 @@ describe("getHubModules", () => {
       "/birth-giving",
       "/osobnostni-testy",
     ]);
-    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", "/komunitni-kasa", "/ts/prehled", "/cas"]);
+    expect(getHubModules(false as unknown as AccessProfile).map((m) => m.url)).toEqual(["/cteni/prehled", "/reservations", HARMONOGRAM_URL, "/komunitni-kasa", "/ts/prehled", "/cas"]);
   });
 });
