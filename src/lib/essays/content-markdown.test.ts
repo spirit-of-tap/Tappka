@@ -44,6 +44,68 @@ describe("contentJsonToMarkdown", () => {
     expect(contentJsonToMarkdown(json)).toBe("- A\n  1. B\n- C\n\n3. D\n4. E")
   })
 
+  it("renders a table as a GFM pipe table", () => {
+    const header = (...content: object[]) => ({ type: "tableHeader", content })
+    const cellNode = (...content: object[]) => ({ type: "tableCell", content })
+    const json = doc({
+      type: "table",
+      content: [
+        { type: "tableRow", content: [header(p(text("Datum"))), header(p(text("Téma")))] },
+        { type: "tableRow", content: [cellNode(p(text("1. 10."))), cellNode(p(text("Úvod")))] },
+      ],
+    })
+    expect(contentJsonToMarkdown(json)).toBe("| Datum | Téma |\n| --- | --- |\n| 1. 10. | Úvod |")
+  })
+
+  it("marks column alignment in the table separator", () => {
+    const cellWithAlign = (type: string, align: string, value: string) => ({
+      type,
+      attrs: { align },
+      content: [p(text(value))],
+    })
+    const json = doc({
+      type: "table",
+      content: [
+        {
+          type: "tableRow",
+          content: [
+            cellWithAlign("tableHeader", "left", "Vlevo"),
+            cellWithAlign("tableHeader", "center", "Střed"),
+            cellWithAlign("tableHeader", "right", "Vpravo"),
+          ],
+        },
+        {
+          type: "tableRow",
+          content: [
+            cellWithAlign("tableCell", "left", "a"),
+            cellWithAlign("tableCell", "center", "b"),
+            cellWithAlign("tableCell", "right", "c"),
+          ],
+        },
+      ],
+    })
+    expect(contentJsonToMarkdown(json)).toBe("| Vlevo | Střed | Vpravo |\n| :--- | :---: | ---: |\n| a | b | c |")
+  })
+
+  it("escapes pipes and flattens breaks inside table cells", () => {
+    const json = doc({
+      type: "table",
+      content: [
+        { type: "tableRow", content: [{ type: "tableHeader", content: [p(text("A | B"))] }] },
+        {
+          type: "tableRow",
+          content: [
+            {
+              type: "tableCell",
+              content: [p(text("první"), { type: "hardBreak" }, text("druhá")), p(text("třetí"))],
+            },
+          ],
+        },
+      ],
+    })
+    expect(contentJsonToMarkdown(json)).toBe("| A \\| B |\n| --- |\n| první druhá třetí |")
+  })
+
   it("renders quotes, code blocks, rules and hard breaks", () => {
     const json = doc(
       { type: "blockquote", content: [p(text("Citace"))] },
