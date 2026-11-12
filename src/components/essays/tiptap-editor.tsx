@@ -1,14 +1,7 @@
 'use client';
 
-import { useEditor, EditorContent, type Editor } from '@tiptap/react';
+import { useEditor, EditorContent, useEditorState, type Editor } from '@tiptap/react';
 import { BubbleMenuPlugin } from '@tiptap/extension-bubble-menu';
-import StarterKit from '@tiptap/starter-kit';
-import Highlight from '@tiptap/extension-highlight';
-import Underline from '@tiptap/extension-underline';
-import Placeholder from '@tiptap/extension-placeholder';
-import Link from '@tiptap/extension-link';
-import TextAlign from '@tiptap/extension-text-align';
-import Typography from '@tiptap/extension-typography';
 import Image from '@tiptap/extension-image';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -17,6 +10,7 @@ import {
   Quote, List, ListOrdered, Code, Minus,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Link as LinkIcon, ImageIcon, Pencil, Trash2, ExternalLink, Camera,
+  Table2, Rows3, Columns3, TableCellsMerge,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -34,18 +28,8 @@ import { PENDING_IMAGE_ATTR, stripPendingImages } from '@/lib/essays/pending-ima
 import { EMPTY_DOC, normalizeContentJson } from '@/lib/essays/content-text';
 import { prepareEssayImage, uploadEssayImage, validateEssayImage } from '@/lib/essays/image-upload';
 import { extractImageFiles } from '@/lib/essays/pasted-images';
-
-const MultiHighlight = Highlight.extend({
-  addAttributes() {
-    return {
-      color: {
-        default: 'yellow',
-        parseHTML: (el) => el.getAttribute('data-color') ?? 'yellow',
-        renderHTML: ({ color }) => ({ 'data-color': color ?? 'yellow' }),
-      },
-    };
-  },
-});
+import { parseMarkdownTable } from '@/lib/essays/markdown-table';
+import { createTiptapExtensions } from '@/lib/essays/tiptap-extensions';
 
 /**
  * Carries the in-flight marker into the DOM as `data-uploading`, which the
@@ -171,32 +155,31 @@ export function TiptapEditor({
   const editor = useEditor({
     immediatelyRender: false,
     editable,
-    extensions: [
-      StarterKit.configure({
-        link: false,
-        underline: false,
-      }),
-      MultiHighlight.configure({ multicolor: true }),
-      Underline,
-      // showOnlyCurrent defaults to true, which hides the placeholder until the
-      // editor has focus — a blank essay would open as an empty box. Our CSS
-      // only styles `p.is-editor-empty:first-child`, so turning it off shows
-      // the prompt on an untouched document without littering empty paragraphs.
-      Placeholder.configure({ placeholder, showOnlyCurrent: false }),
-      Link.configure({ openOnClick: false, HTMLAttributes: { rel: 'noopener noreferrer' } }),
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      Typography,
-      UploadableImage.configure({ inline: false, allowBase64: false }),
-    ],
+    extensions: createTiptapExtensions({
+      image: UploadableImage.configure({ inline: false, allowBase64: false }),
+      placeholder,
+    }),
     // A pasted or dropped image (screenshot via Ctrl+V, a file from the
     // desktop) carries image files in the payload — send each through the
     // same upload pipeline as the toolbar picker. Anything else (text, HTML)
     // falls through to the default handling by returning false.
     editorProps: {
-      handlePaste: (_view, event) => {
+      handlePaste: (view, event) => {
         const images = extractImageFiles(event.clipboardData?.files);
-        if (images.length === 0) return false;
-        images.forEach((file) => handleImageUploadRef.current(file));
+        if (images.length > 0) {
+          images.forEach((file) => handleImageUploadRef.current(file));
+          return true;
+        }
+
+        // Pipe tables pasted as plain text (from a chat, a doc, a code block)
+        // become real tables; anything else keeps the browser's paste paths.
+        const table = parseMarkdownTable(event.clipboardData?.getData('text/plain') ?? '');
+        if (!table) return false;
+        try {
+          view.dispatch(view.state.tr.replaceSelectionWith(view.state.schema.nodeFromJSON(table)));
+        } catch {
+          return false;
+        }
         return true;
       },
       handleDrop: (_view, event) => {
@@ -213,6 +196,16 @@ export function TiptapEditor({
       onChangeRef.current?.(stripPendingImages(editor.getJSON()), editor.getText());
     },
   });
+
+  // Selection changes don't re-render the editor on their own, so the toolbar
+  // state has to be subscribed to explicitly. The dropdown inserts a table
+  // outside one and edits the current table inside it.
+  const inTable =
+    useEditorState({
+      editor,
+      selector: ({ editor: current }) =>
+        Boolean(current?.isActive('tableCell') || current?.isActive('tableHeader')),
+    }) ?? false;
 
   useEffect(() => {
     if (editor && initialContent && editor.isEmpty) {
@@ -431,6 +424,66 @@ export function TiptapEditor({
             <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Číslovaný seznam"><ListOrdered className="size-4" /></ToolbarButton>
             <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Citát"><Quote className="size-4" /></ToolbarButton>
             <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive('code')} title="Kód"><Code className="size-4" /></ToolbarButton>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                title="Tabulka"
+                className={cn(
+                  'rounded p-1.5 transition-colors',
+                  inTable ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+              >
+                <Table2 className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {inTable ? (
+                  <>
+                    <DropdownMenuItem
+                      disabled={!editor.can().addRowAfter()}
+                      onSelect={() => editor.chain().focus().addRowAfter().run()}
+                    >
+                      <Rows3 className="size-4" /> Přidat řádek
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={!editor.can().addColumnAfter()}
+                      onSelect={() => editor.chain().focus().addColumnAfter().run()}
+                    >
+                      <Columns3 className="size-4" /> Přidat sloupec
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={!editor.can().deleteRow()}
+                      onSelect={() => editor.chain().focus().deleteRow().run()}
+                    >
+                      <Trash2 className="size-4" /> Smazat řádek
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={!editor.can().deleteColumn()}
+                      onSelect={() => editor.chain().focus().deleteColumn().run()}
+                    >
+                      <Trash2 className="size-4" /> Smazat sloupec
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={!editor.can().toggleHeaderRow()}
+                      onSelect={() => editor.chain().focus().toggleHeaderRow().run()}
+                    >
+                      <TableCellsMerge className="size-4" /> Přepnout hlavičku
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => editor.chain().focus().deleteTable().run()}
+                    >
+                      <Trash2 className="size-4" /> Smazat tabulku
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem
+                    onSelect={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                  >
+                    <Table2 className="size-4" /> Vložit tabulku
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Divider />
 

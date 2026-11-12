@@ -305,6 +305,39 @@
 .tiptap ol, .tiptap-content ol { list-style: decimal; padding-left: 1.5em; margin: 0.6em 0; }
 .tiptap li, .tiptap-content li { margin: 0.2em 0; }
 
+/* Tables sit on the same token borders as the rest of the UI. The wrapper
+   (added by TipTap) scrolls horizontally so a wide table never widens the
+   page on a phone. */
+.tiptap .tableWrapper, .tiptap-content .tableWrapper {
+  margin: 1em 0;
+  overflow-x: auto;
+}
+.tiptap table, .tiptap-content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.tiptap th, .tiptap-content th,
+.tiptap td, .tiptap-content td {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  vertical-align: top;
+  min-width: 5rem;
+}
+.tiptap th, .tiptap-content th {
+  background: var(--muted);
+  font-weight: 600;
+}
+/* Every cell in a CellSelection gets this class; without a tint nobody can
+   tell which row or column a command is about to touch. */
+.tiptap .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  pointer-events: none;
+}
+.tiptap th, .tiptap td { position: relative; }
+
 .tiptap code, .tiptap-content code {
   font-family: ui-monospace, monospace;
   font-size: 0.875em;

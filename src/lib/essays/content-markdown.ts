@@ -87,6 +87,58 @@ function list(node: PmNode, ordered: boolean): string {
     .join("\n")
 }
 
+function cellText(node: PmNode | undefined): string {
+  if (!node) return ""
+  return blocks(node)
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\|/g, "\\|")
+}
+
+function columnAlignments(rows: PmNode[][], width: number): (string | null)[] {
+  return Array.from({ length: width }, (_, index) => {
+    for (const row of rows) {
+      const align = row[index]?.attrs?.align
+      if (align === "left" || align === "center" || align === "right") return align
+    }
+    return null
+  })
+}
+
+function separatorRow(width: number, aligns: (string | null)[]): string {
+  const cells = Array.from({ length: width }, (_, index) => {
+    const align = aligns[index]
+    if (align === "left") return ":---"
+    if (align === "center") return ":---:"
+    if (align === "right") return "---:"
+    return "---"
+  })
+  return `| ${cells.join(" | ")} |`
+}
+
+function pipeRow(cells: string[], width: number): string {
+  const padded = Array.from({ length: width }, (_, index) => cells[index] ?? "")
+  return `| ${padded.join(" | ")} |`
+}
+
+/** GFM pipe table, so a copied preparation keeps its shape in an AI chat. */
+function table(node: PmNode): string {
+  const rows = children(node).map((row) => children(row))
+  if (rows.length === 0) return ""
+
+  const width = Math.max(...rows.map((row) => row.length))
+  const hasHeader = rows[0].some((cell) => cell.type === "tableHeader")
+  const aligns = columnAlignments(rows, width)
+  const header = hasHeader ? rows[0] : []
+  const body = hasHeader ? rows.slice(1) : rows
+
+  return [
+    pipeRow(header.map(cellText), width),
+    separatorRow(width, aligns),
+    ...body.map((row) => pipeRow(row.map(cellText), width)),
+  ].join("\n")
+}
+
 function block(node: PmNode): string {
   switch (node.type) {
     case "paragraph":
@@ -107,6 +159,8 @@ function block(node: PmNode): string {
     }
     case "horizontalRule":
       return "---"
+    case "table":
+      return table(node)
     case "image":
       return image(node)
     default:
