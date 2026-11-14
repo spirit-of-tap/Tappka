@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatTime, formatDateShort } from "@/lib/reservations/utils";
+import { formatDateShort, formatOwnOverlapWarning, formatTime } from "@/lib/reservations/utils";
+import type { ReservationMutationResponse, ReservationWithDetails } from "@/lib/reservations/types";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/responsive-alert-dialog";
 import { TimePicker } from "./time-picker";
-import type { ReservationWithDetails } from "@/lib/reservations/types";
 
 interface EditReservationDialogProps {
   reservation: ReservationWithDetails;
@@ -164,13 +164,21 @@ export function EditReservationDialog({
         }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as ReservationMutationResponse;
 
       if (!response.ok) {
         throw new Error(result.error || "Nepodařilo se upravit rezervaci");
       }
 
-      toast.success("Rezervace upravena");
+      const overlapMessage = formatOwnOverlapWarning(result.warning);
+      if (overlapMessage) {
+        toast.warning("Rezervace upravena", {
+          description: overlapMessage,
+          duration: 6000,
+        });
+      } else {
+        toast.success("Rezervace upravena");
+      }
       setOpen(false);
       router.refresh();
       onSuccess?.();

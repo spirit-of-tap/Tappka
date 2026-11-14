@@ -3,7 +3,9 @@ import { NextRequest, NextResponse, after } from "next/server";
 import {
   OPERATING_HOURS,
   type CreateReservationInput,
+  type ReservationOverlapWarning,
 } from "@/lib/reservations/types";
+import { findOwnOverlappingReservations } from "@/lib/reservations/queries";
 import { ALLOWED_PAST_MS, isRoomAvailableOnDay } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { trackServer } from "@/lib/analytics-server";
@@ -208,19 +210,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check: user doesn't have another reservation at the same time
-    const { data: existingUserReservations } = await supabase
-      .from("reservations")
-      .select("id, room:rooms(name)")
-      .eq("owner_profile_id", profile.id)
-      .is("cancelled_at", null)
-      .lt("start_at", end_at)
-      .gt("end_at", start_at);
+    // Overlapping reservations in other rooms are allowed. Surface them as a
+    // non-blocking warning; a failed lookup must never block the booking.
+    let warning: ReservationOverlapWarning | undefined;
+    try {
+      const overlappingReservations = await findOwnOverlappingReservations(
+        supabase,
+        {
+          profileId: profile.id,
+          startAt: start_at,
+          endAt: end_at,
+        }
+      );
 
-    if (existingUserReservations && existingUserReservations.length > 0) {
-      return NextResponse.json(
-        { error: "V tomto čase už máš jinou rezervaci" },
-        { status: 409 }
+      if (overlappingReservations.length > 0) {
+        warning = {
+          code: "OWN_RESERVATIONS_OVERLAP",
+          reservations: overlappingReservations,
+        };
+      }
+    } catch (overlapError) {
+      serverLogger.console.error(
+        "Failed to check own reservation overlaps:",
+        overlapError
       );
     }
 
@@ -267,7 +279,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: reservation,
-      message: "Rezervace vytvořena"
+      message: "Rezervace vytvořena",
+      ...(warning ? { warning } : {}),
     });
   } catch (error) {
     serverLogger.console.error("POST /api/reservations error:", error);

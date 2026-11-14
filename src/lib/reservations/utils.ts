@@ -11,6 +11,7 @@ import {
   type Room,
   type Reservation,
   type ReservationKind,
+  type ReservationOverlapWarning,
 } from './types';
 
 /**
@@ -473,7 +474,30 @@ export function getQuickReservationEnd(durationMinutes: 30 | 60 | 120): Date {
 }
 
 /**
- * Check if room is currently free
+ * Build the user-facing description for a non-blocking own-overlap warning.
+ * Returns null when there is nothing to warn about.
+ */
+export function formatOwnOverlapWarning(
+  warning: ReservationOverlapWarning | null | undefined
+): string | null {
+  if (!warning || warning.reservations.length === 0) {
+    return null;
+  }
+
+  const roomNames = warning.reservations.map(
+    (reservation) => reservation.room_name ?? 'jiná místnost'
+  );
+  const uniqueRoomNames = Array.from(new Set(roomNames));
+
+  if (uniqueRoomNames.length === 1) {
+    return `V tomto čase už máš rezervaci: ${uniqueRoomNames[0]}.`;
+  }
+
+  return `V tomto čase už máš rezervace: ${uniqueRoomNames.join(', ')}.`;
+}
+
+/**
+ * Check if a room is currently free
  */
 export function isRoomFreeNow(reservations: Reservation[]): boolean {
   const now = new Date();

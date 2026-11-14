@@ -72,6 +72,31 @@ export interface UpdateReservationInput {
   end_at?: string;
 }
 
+/** One of the current user's other reservations overlapping a requested time range. */
+export interface OverlappingReservation {
+  id: string;
+  title: string;
+  room_name: string | null;
+}
+
+/**
+ * Non-blocking notice returned when a reservation overlaps another one of the
+ * user's own reservations. Different rooms at the same time are allowed.
+ */
+export interface ReservationOverlapWarning {
+  code: 'OWN_RESERVATIONS_OVERLAP';
+  reservations: OverlappingReservation[];
+}
+
+/** Response body for POST /api/reservations and PATCH /api/reservations/[id]. */
+export interface ReservationMutationResponse {
+  success?: boolean;
+  data?: Reservation;
+  message?: string;
+  error?: string;
+  warning?: ReservationOverlapWarning;
+}
+
 // Constants
 export const OPERATING_HOURS = {
   start: 7, // 7:00

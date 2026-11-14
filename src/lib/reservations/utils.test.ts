@@ -2,12 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   ALLOWED_PAST_MS,
   doTimesOverlap,
+  formatOwnOverlapWarning,
   getFirstBookableRange,
   isDayInPast,
   isRoomAvailableOnDay,
   isSlotInPast,
 } from "@/lib/reservations/utils";
-import type { Reservation, Room } from "@/lib/reservations/types";
+import type {
+  Reservation,
+  ReservationOverlapWarning,
+  Room,
+} from "@/lib/reservations/types";
 
 describe("doTimesOverlap", () => {
   const at = (h: number) => new Date(`2026-07-09T${String(h).padStart(2, "0")}:00:00Z`);
@@ -133,5 +138,58 @@ describe("getFirstBookableRange", () => {
     );
     expect(startTime).toEqual(at(21));
     expect(endTime).toEqual(at(22));
+  });
+});
+
+describe("formatOwnOverlapWarning", () => {
+  const warning = (
+    reservations: ReservationOverlapWarning["reservations"]
+  ): ReservationOverlapWarning => ({
+    code: "OWN_RESERVATIONS_OVERLAP",
+    reservations,
+  });
+
+  it("returns null when there is no warning", () => {
+    expect(formatOwnOverlapWarning(undefined)).toBeNull();
+    expect(formatOwnOverlapWarning(null)).toBeNull();
+    expect(formatOwnOverlapWarning(warning([]))).toBeNull();
+  });
+
+  it("names the single conflicting room", () => {
+    expect(
+      formatOwnOverlapWarning(
+        warning([{ id: "1", title: "Porada", room_name: "Ateliér" }])
+      )
+    ).toBe("V tomto čase už máš rezervaci: Ateliér.");
+  });
+
+  it("lists multiple rooms on separate conflicts", () => {
+    expect(
+      formatOwnOverlapWarning(
+        warning([
+          { id: "1", title: "Porada", room_name: "Ateliér" },
+          { id: "2", title: "Workshop", room_name: "Klubovna" },
+        ])
+      )
+    ).toBe("V tomto čase už máš rezervace: Ateliér, Klubovna.");
+  });
+
+  it("de-duplicates room names", () => {
+    expect(
+      formatOwnOverlapWarning(
+        warning([
+          { id: "1", title: "Porada", room_name: "Ateliér" },
+          { id: "2", title: "Workshop", room_name: "Ateliér" },
+        ])
+      )
+    ).toBe("V tomto čase už máš rezervaci: Ateliér.");
+  });
+
+  it("falls back to a generic room name when the room is missing", () => {
+    expect(
+      formatOwnOverlapWarning(
+        warning([{ id: "1", title: "Porada", room_name: null }])
+      )
+    ).toBe("V tomto čase už máš rezervaci: jiná místnost.");
   });
 });

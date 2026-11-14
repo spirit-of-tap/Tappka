@@ -283,6 +283,8 @@ export async function cleanupTestData(): Promise<void> {
     restFetch(`/feedback?author_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
     restFetch(`/essays?author_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
     restFetch(`/books?created_by_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
+    restFetch(`/reservations?owner_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
+    restFetch(`/rooms?created_by_profile_id=eq.${pid}`, "DELETE").catch(() => {}),
   ]));
 
   // Delete personality tests together with their files — the created_by /
@@ -477,6 +479,22 @@ export async function seedAttendance(
     created_by_profile_id: actorProfileId,
     updated_by_profile_id: actorProfileId,
   });
+}
+
+/** Creates a room owned by the given profile. Cleaned up with the profile. */
+export async function seedRoom(
+  profileId: string,
+  opts?: { code?: string; name?: string },
+): Promise<{ roomId: string; code: string; name: string }> {
+  const code = opts?.code ?? `e2e-${randomUUID().slice(0, 8)}`;
+  const name = opts?.name ?? `E2E Room ${code}`;
+  const rooms = (await restFetch("/rooms", "POST", {
+    code,
+    name,
+    created_by_profile_id: profileId,
+    updated_by_profile_id: profileId,
+  })) as { id: string }[];
+  return { roomId: rooms[0].id, code, name };
 }
 
 /** Create a seeded book for E2E tests. */

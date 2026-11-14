@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { roundToSlot } from "@/lib/reservations/utils";
+import { formatOwnOverlapWarning, roundToSlot } from "@/lib/reservations/utils";
+import type { ReservationMutationResponse } from "@/lib/reservations/types";
 
 interface QRQuickReserveDialogProps {
   open: boolean;
@@ -79,13 +80,21 @@ export function QRQuickReserveDialog({
         }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as ReservationMutationResponse;
 
       if (!response.ok) {
         throw new Error(result.error || "Nepodařilo se vytvořit rezervaci");
       }
 
-      toast.success("Rezervace vytvořena");
+      const overlapMessage = formatOwnOverlapWarning(result.warning);
+      if (overlapMessage) {
+        toast.warning("Rezervace vytvořena", {
+          description: overlapMessage,
+          duration: 6000,
+        });
+      } else {
+        toast.success("Rezervace vytvořena");
+      }
       // Success
       onOpenChange(false);
       resetForm();
