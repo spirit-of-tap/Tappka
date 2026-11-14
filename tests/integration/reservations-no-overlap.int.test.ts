@@ -30,9 +30,9 @@ async function insertReservation(
 ) {
   const { rows } = await client.query(
     `insert into public.reservations
-       (room_id, title, start_at, end_at, created_by_profile_id, updated_by_profile_id)
-     values ($1, 'Team Mastery', $2, $3, $4, $4) returning id`,
-    [roomId, startAt, endAt, profileId],
+       (room_id, owner_profile_id, title, start_at, end_at, created_by_profile_id, updated_by_profile_id)
+     values ($1, $2, 'Team Mastery', $3, $4, $2, $2) returning id`,
+    [roomId, profileId, startAt, endAt],
   );
   return rows[0].id as string;
 }
@@ -52,6 +52,32 @@ describe("reservations no_overlap", () => {
       await expect(
         insertReservation(client, roomId, profileId, "2026-10-26T12:00:00Z", "2026-10-26T16:00:00Z"),
       ).rejects.toThrow(/no_overlap|23P01/);
+    });
+  });
+
+  it("allows overlapping active reservations in different rooms", async () => {
+    await withRollback(async (client) => {
+      const profileId = await seedProfile(client);
+      const firstRoomId = await seedRoom(client, profileId);
+      const secondRoomId = await seedRoom(client, profileId);
+
+      await insertReservation(
+        client,
+        firstRoomId,
+        profileId,
+        "2026-10-26T12:00:00Z",
+        "2026-10-26T14:00:00Z",
+      );
+
+      const secondId = await insertReservation(
+        client,
+        secondRoomId,
+        profileId,
+        "2026-10-26T12:00:00Z",
+        "2026-10-26T14:00:00Z",
+      );
+
+      expect(secondId).toBeDefined();
     });
   });
 

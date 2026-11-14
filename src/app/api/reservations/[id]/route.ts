@@ -2,8 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import {
   OPERATING_HOURS,
+  type ReservationOverlapWarning,
   type UpdateReservationInput,
 } from "@/lib/reservations/types";
+import { findOwnOverlappingReservations } from "@/lib/reservations/queries";
 import { ALLOWED_PAST_MS, isRoomAvailableOnDay } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { serverLogger } from "@/lib/server-logger";
@@ -166,6 +168,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Validate times if they changed
     const hasTimeChange = "start_at" in body || "end_at" in body;
+    let warning: ReservationOverlapWarning | undefined;
     if (hasTimeChange) {
       const start_at = (body.start_at ?? existing.start_at) as string;
       const end_at = (body.end_at ?? existing.end_at) as string;
@@ -235,20 +238,29 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      // Check no overlap with user's other reservations (exclude self)
-      const { data: overlappingUser } = await supabase
-        .from("reservations")
-        .select("id, room:rooms(name)")
-        .eq("owner_profile_id", profile.id)
-        .is("cancelled_at", null)
-        .lt("start_at", end_at)
-        .gt("end_at", start_at)
-        .neq("id", id);
+      // Overlapping reservations in other rooms are allowed. Surface them as a
+      // non-blocking warning; a failed lookup must never block the update.
+      try {
+        const overlappingReservations = await findOwnOverlappingReservations(
+          supabase,
+          {
+            profileId: profile.id,
+            startAt: start_at,
+            endAt: end_at,
+            excludeReservationId: id,
+          }
+        );
 
-      if (overlappingUser && overlappingUser.length > 0) {
-        return NextResponse.json(
-          { error: "V tomto čase už máš jinou rezervaci" },
-          { status: 409 }
+        if (overlappingReservations.length > 0) {
+          warning = {
+            code: "OWN_RESERVATIONS_OVERLAP",
+            reservations: overlappingReservations,
+          };
+        }
+      } catch (overlapError) {
+        serverLogger.console.error(
+          "Failed to check own reservation overlaps:",
+          overlapError
         );
       }
     }
@@ -290,6 +302,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       success: true,
       data: updated,
       message: "Rezervace aktualizována",
+      ...(warning ? { warning } : {}),
     });
   } catch (error) {
     serverLogger.console.error("PATCH /api/reservations/[id] error:", error);

@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TimePicker } from "./time-picker";
+import { formatOwnOverlapWarning } from "@/lib/reservations/utils";
+import type { ReservationMutationResponse } from "@/lib/reservations/types";
 
 interface QuickReservationDialogProps {
   open: boolean;
@@ -139,13 +141,21 @@ export function QuickReservationDialog({
         }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as ReservationMutationResponse;
 
       if (!response.ok) {
         throw new Error(result.error || "Nepodařilo se vytvořit rezervaci");
       }
 
-      toast.success("Rezervace vytvořena");
+      const overlapMessage = formatOwnOverlapWarning(result.warning);
+      if (overlapMessage) {
+        toast.warning("Rezervace vytvořena", {
+          description: overlapMessage,
+          duration: 6000,
+        });
+      } else {
+        toast.success("Rezervace vytvořena");
+      }
       // Success
       onOpenChange(false);
       resetForm();
