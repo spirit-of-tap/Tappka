@@ -511,3 +511,55 @@ mark[data-color="orange"] { background-color: #fdba74; }
   .prep-pencil { animation: prep-pencil 4.8s ease-in-out infinite; }
   .prep-scribble { animation: prep-scribble 0.18s ease-in-out infinite alternate; }
 }
+
+/* ── TS preparation "move it into Tappka" animation ───────────────────────
+   One 4.2s loop: each line of the outside document lifts off, flies 128px
+   into the Tappka sheet and lands there; the sheet then clears. Without
+   motion the flying copies stay hidden and the Tappka sheet is shown filled. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes prep-move-fly-1 {
+    0%, 4%    { transform: translateX(0); opacity: 0; }
+    10%       { transform: translateX(0); opacity: 1; }
+    26%       { transform: translateX(128px); opacity: 1; }
+    30%, 100% { transform: translateX(128px); opacity: 0; }
+  }
+  @keyframes prep-move-fly-2 {
+    0%, 22%   { transform: translateX(0); opacity: 0; }
+    28%       { transform: translateX(0); opacity: 1; }
+    44%       { transform: translateX(128px); opacity: 1; }
+    48%, 100% { transform: translateX(128px); opacity: 0; }
+  }
+  @keyframes prep-move-fly-3 {
+    0%, 40%   { transform: translateX(0); opacity: 0; }
+    46%       { transform: translateX(0); opacity: 1; }
+    62%       { transform: translateX(128px); opacity: 1; }
+    66%, 100% { transform: translateX(128px); opacity: 0; }
+  }
+  @keyframes prep-move-land-1 {
+    0%, 25%   { transform: scaleX(0); opacity: 0; }
+    30%, 88%  { transform: scaleX(1); opacity: 1; }
+    100%      { transform: scaleX(1); opacity: 0; }
+  }
+  @keyframes prep-move-land-2 {
+    0%, 43%   { transform: scaleX(0); opacity: 0; }
+    48%, 88%  { transform: scaleX(1); opacity: 1; }
+    100%      { transform: scaleX(1); opacity: 0; }
+  }
+  @keyframes prep-move-land-3 {
+    0%, 61%   { transform: scaleX(0); opacity: 0; }
+    66%, 88%  { transform: scaleX(1); opacity: 1; }
+    100%      { transform: scaleX(1); opacity: 0; }
+  }
+  @keyframes prep-move-arrow {
+    0%, 100%  { transform: translateX(0); }
+    50%       { transform: translateX(4px); }
+  }
+
+  .prep-move-fly-1 { animation: prep-move-fly-1 4.2s ease-in-out infinite; }
+  .prep-move-fly-2 { animation: prep-move-fly-2 4.2s ease-in-out infinite; }
+  .prep-move-fly-3 { animation: prep-move-fly-3 4.2s ease-in-out infinite; }
+  .prep-move-land-1 { animation: prep-move-land-1 4.2s ease-out infinite; }
+  .prep-move-land-2 { animation: prep-move-land-2 4.2s ease-out infinite; }
+  .prep-move-land-3 { animation: prep-move-land-3 4.2s ease-out infinite; }
+  .prep-move-arrow { animation: prep-move-arrow 1.4s ease-in-out infinite; }
+}

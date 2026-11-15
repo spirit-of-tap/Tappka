@@ -1,6 +1,6 @@
 "use client"
 
-import { FileText, Megaphone } from "lucide-react"
+import { FileText, Link2Off, Megaphone } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -8,14 +8,27 @@ import { toast } from "sonner"
 import { TiptapEditor } from "@/components/essays/tiptap-editor"
 import { TiptapRenderer } from "@/components/essays/tiptap-renderer"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/responsive-alert-dialog"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { contentTextFromJson, EMPTY_DOC } from "@/lib/essays/content-text"
+import { findPreparationLink, isLinkOnlyPreparation } from "@/lib/training-sessions/preparation-links"
 import type { TsAttachmentSummary } from "@/lib/training-sessions/types"
 
 import { CopyPreparationButton } from "./copy-preparation-button"
 import { CopyTeamsMessageButton } from "./copy-teams-message-button"
+import { LinkOnlyPreparationSteps } from "./link-only-preparation-steps"
 import { PreparationAttachments } from "./preparation-attachments"
 import { PreparationInProgress } from "./preparation-in-progress"
+import { PreparationMoveIllustration } from "./preparation-move-illustration"
 
 interface PreparationPanelProps {
   sessionId: string
@@ -54,6 +67,7 @@ export function PreparationPanel({
   const router = useRouter()
   const [doc, setDoc] = useState<object>(contentJson ?? EMPTY_DOC)
   const [pending, setPending] = useState(false)
+  const [linkWarningOpen, setLinkWarningOpen] = useState(false)
 
   if (!canEdit) {
     if (!publishedAt || !contentJson || contentTextFromJson(contentJson) === "") {
@@ -100,7 +114,7 @@ export function PreparationPanel({
   // The announcement links to what others will see, so it waits for a saved, non-empty preparation.
   const isSavedWithText = Boolean(publishedAt) && contentJson !== null && contentTextFromJson(contentJson) !== ""
 
-  async function save() {
+  async function saveNow() {
     setPending(true)
     try {
       const res = await fetch(`/api/training-sessions/${sessionId}/preparation`, {
@@ -122,6 +136,24 @@ export function PreparationPanel({
     }
   }
 
+  function handleSaveClick() {
+    if (isLinkOnlyPreparation(doc)) {
+      setLinkWarningOpen(true)
+      return
+    }
+    void saveNow()
+  }
+
+  function handleConfirmLinkOnly() {
+    setLinkWarningOpen(false)
+    void saveNow()
+  }
+
+  // Live nudge: flags a link-only draft under the editor, before saving even comes up.
+  // The modal on save stays as the backstop.
+  const showLinkHint = isLinkOnlyPreparation(doc)
+  const linkHref = showLinkHint ? findPreparationLink(doc) : null
+
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -130,13 +162,57 @@ export function PreparationPanel({
           onChange={(json) => setDoc(json)}
           placeholder="Co je potřeba si připravit, přečíst nebo promyslet předem?"
         />
+        {showLinkHint && (
+          <div role="note" aria-label="Příprava je zatím jen odkaz" className="space-y-3 rounded-lg bg-warning/10 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-warning/15 text-warning-strong">
+                <Link2Off className="size-4" aria-hidden />
+              </span>
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-warning-strong">Zatím je tu jen odkaz</p>
+                <p className="text-sm text-muted-foreground">
+                  Stejně jako eseje i příprava patří přímo do Tappky, ať ji mají všichni po ruce i za rok. Přenést
+                  ji zabere pár vteřin:
+                </p>
+              </div>
+            </div>
+            <div className="sm:pl-11">
+              <LinkOnlyPreparationSteps href={linkHref} />
+            </div>
+          </div>
+        )}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">Uloženou přípravu uvidí všichni, kdo si TS otevřou.</p>
-          <Button size="sm" disabled={pending} onClick={() => void save()} className="self-start sm:self-auto">
+          <Button size="sm" disabled={pending} onClick={handleSaveClick} className="self-start sm:self-auto">
             Uložit
           </Button>
         </div>
       </div>
+      <AlertDialog open={linkWarningOpen} onOpenChange={setLinkWarningOpen}>
+        <AlertDialogContent>
+          <div className="pt-2">
+            <PreparationMoveIllustration />
+          </div>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vložit přípravu rovnou do Tappky?</AlertDialogTitle>
+            <AlertDialogDescription>
+              V přípravě je jen odkaz na dokument mimo Tappku. Ostatní ho musí otevírat bokem, a když se změní
+              přístup nebo dokument zmizí, z historie TS zmizí i příprava. Odkaz klidně nech pod textem jako
+              zdroj.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="rounded-lg bg-muted/50 p-3">
+            <LinkOnlyPreparationSteps href={linkHref} />
+          </div>
+          {/* Primary last: right on desktop, on top in the mobile drawer (its footer is column-reversed). */}
+          <AlertDialogFooter>
+            <AlertDialogAction variant="ghost" onClick={handleConfirmLinkOnly}>
+              Uložit jen odkaz
+            </AlertDialogAction>
+            <AlertDialogCancel variant="default">Doplním text sem</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <PreparationAttachments sessionId={sessionId} attachments={attachments} canEdit />
       {isSavedWithText && (
         <div className="flex flex-col gap-3 rounded-lg bg-muted/50 p-4 sm:flex-row sm:items-center sm:justify-between">
