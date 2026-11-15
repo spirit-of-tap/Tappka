@@ -50,6 +50,12 @@ describe("serverLogger", () => {
   });
 
   it("registers delivery with after() so exports survive serverless freeze", async () => {
+    // Earlier tests trigger floating scheduleFlush() dynamic imports. Let any
+    // in-flight ones settle before resetting modules, or they may resolve
+    // against the mock below and register stale `after` callbacks that close
+    // over the previous provider instance (flaky under CI load).
+    for (let i = 0; i < 10; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+
     vi.resetModules();
     const callbacks: Array<() => unknown> = [];
     vi.doMock("next/server", () => ({
@@ -67,9 +73,10 @@ describe("serverLogger", () => {
       const flushSpy = vi.spyOn(freshProvider, "forceFlush");
 
       try {
+        const seen = callbacks.length;
         freshLogger.info("after flush test");
-        await vi.waitFor(() => expect(callbacks).toHaveLength(1));
-        await callbacks[0]();
+        await vi.waitFor(() => expect(callbacks.length).toBeGreaterThan(seen));
+        await callbacks[callbacks.length - 1]();
         expect(flushSpy).toHaveBeenCalled();
       } finally {
         flushSpy.mockRestore();
