@@ -126,3 +126,63 @@ describe("PreparationPanel link-only warning", () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe("PreparationPanel save shortcut", () => {
+  it("saves rich text on Ctrl+S", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal("fetch", fetchMock)
+    renderPanel(RICH_DOC)
+
+    fireEvent.keyDown(window, { key: "s", ctrlKey: true })
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/training-sessions/session-1/preparation",
+      expect.objectContaining({ method: "PUT" }),
+    )
+    expect(screen.queryByText("Vložit přípravu rovnou do Tappky?")).not.toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
+  it("saves rich text on Cmd+S", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal("fetch", fetchMock)
+    renderPanel(RICH_DOC)
+
+    fireEvent.keyDown(window, { key: "s", metaKey: true })
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    vi.unstubAllGlobals()
+  })
+
+  it("warns instead of saving on Ctrl+S when the preparation is only a link", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal("fetch", fetchMock)
+    renderPanel(LINK_ONLY_DOC)
+
+    fireEvent.keyDown(window, { key: "s", ctrlKey: true })
+
+    expect(await screen.findByText("Vložit přípravu rovnou do Tappky?")).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
+  it("ignores a repeat Ctrl+S while a save is in flight", async () => {
+    let resolveSave!: (value: unknown) => void
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve
+        }),
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    renderPanel(RICH_DOC)
+
+    fireEvent.keyDown(window, { key: "s", ctrlKey: true })
+    fireEvent.keyDown(window, { key: "s", ctrlKey: true })
+    resolveSave({ ok: true, json: async () => ({}) })
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    vi.unstubAllGlobals()
+  })
+})
