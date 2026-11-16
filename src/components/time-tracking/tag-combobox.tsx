@@ -16,6 +16,7 @@ import { findTeamTagByName, hasTeamTags, isTagRequired, pickerTags } from "@/lib
 import type { TagCatalog, TimeDirection, TimeTag } from "@/lib/time-tracking/types"
 import { cn } from "@/lib/utils"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,7 +27,15 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerNestedRoot,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { DrawerNestingContext } from "@/components/ui/responsive-dialog"
 import { Spinner } from "@/components/ui/spinner"
 
 export const TAGS_ENDPOINT = "/api/time-tags"
@@ -103,6 +112,11 @@ export function TagCombobox({
   const [query, setQuery] = React.useState("")
   const [catalog, setCatalog] = React.useState<TagCatalog | null>(initialCatalog ?? null)
   const [isLoading, setIsLoading] = React.useState(false)
+  // On mobile the options open in a nested drawer instead of a popover: the
+  // popover portals to document.body, outside the modal drawer's scroll lock,
+  // so its list can't be scrolled on touch devices.
+  const isMobile = useIsMobile()
+  const isNestedInDrawer = React.useContext(DrawerNestingContext)
 
   const loadCatalog = React.useCallback(async () => {
     setIsLoading(true)
@@ -222,132 +236,153 @@ export function TagCombobox({
   const newTagCount = canCreateTags ? (catalog?.newTagCount ?? 0) : 0
   const isDisabled = disabled || direction === null
 
+  const triggerButton = (
+    <Button
+      id={id}
+      type="button"
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      aria-invalid={ariaInvalid}
+      disabled={isDisabled}
+      className={cn("w-full justify-start gap-2 font-normal", className)}
+    >
+      <Tag className="size-4 text-muted-foreground" aria-hidden />
+      {direction === null ? (
+        <span className="text-muted-foreground">{PICK_DIRECTION_FIRST_LABEL}</span>
+      ) : value.newTagName !== null ? (
+        <>
+          <span className="truncate">{value.newTagName}</span>
+          <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+            {DRAFT_BADGE_LABEL}
+          </Badge>
+        </>
+      ) : selectedTag ? (
+        <span className="truncate">{selectedTag.name}</span>
+      ) : value.tagId !== null ? (
+        <span className="text-muted-foreground">Vybraný tag</span>
+      ) : (
+        <span className="text-muted-foreground">{required ? PICK_TAG_LABEL : NO_TAG_LABEL}</span>
+      )}
+      <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" aria-hidden />
+    </Button>
+  )
+
+  const optionsContent = (
+    <>
+      <Command className="border-0 shadow-none">
+        <CommandInput
+          value={query}
+          onValueChange={setQuery}
+          placeholder={
+            canCreateTags
+              ? `Hledat nebo vytvořit tag pro ${direction ? TIME_DIRECTION_LABELS[direction] : "směr"}`
+              : "Hledat tag"
+          }
+          aria-label={canCreateTags ? "Hledat nebo vytvořit tag" : "Hledat tag"}
+          maxLength={TAG_NAME_MAX_LENGTH}
+        />
+        <CommandList>
+          {isLoading ? (
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+              <Spinner aria-label="Načítám tagy" />
+              Načítám tagy
+            </div>
+          ) : (
+            <>
+              {!canCreate && hiddenMatch === undefined && <CommandEmpty>Žádný tag</CommandEmpty>}
+              <CommandGroup>
+                {!required && (
+                  <CommandItem value={NO_TAG_VALUE} keywords={[NO_TAG_LABEL]} onSelect={() => selectTag(null)}>
+                    <X className="size-4 text-muted-foreground" aria-hidden />
+                    <span className="flex-1">{NO_TAG_LABEL}</span>
+                    {value.tagId === null && value.newTagName === null && (
+                      <Check className="size-4 text-primary" aria-hidden />
+                    )}
+                  </CommandItem>
+                )}
+                {value.newTagName !== null && (
+                  <CommandItem
+                    value={DRAFT_VALUE}
+                    keywords={[value.newTagName]}
+                    onSelect={() => selectDraft(value.newTagName ?? "")}
+                  >
+                    <Plus className="size-4 text-muted-foreground" aria-hidden />
+                    <span className="flex-1 truncate">{value.newTagName}</span>
+                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                      {DRAFT_BADGE_LABEL}
+                    </Badge>
+                    <Check className="size-4 text-primary" aria-hidden />
+                  </CommandItem>
+                )}
+                {options.map((tag) => (
+                  <CommandItem key={tag.id} value={tag.id} keywords={[tag.name]} onSelect={() => selectTag(tag)}>
+                    <Tag className="size-4 text-muted-foreground" aria-hidden />
+                    <span className="flex-1 truncate">{tag.name}</span>
+                    {value.tagId === tag.id && <Check className="size-4 text-primary" aria-hidden />}
+                  </CommandItem>
+                ))}
+                {hiddenMatch !== undefined && (
+                  <CommandItem
+                    forceMount
+                    value={`${SHOW_VALUE_PREFIX}${hiddenMatch.id}`}
+                    onSelect={() => void showTag(hiddenMatch, { closeAfter: true })}
+                  >
+                    <Eye className="size-4" aria-hidden />
+                    <span className="truncate">Zobrazit tag týmu „{hiddenMatch.name}“</span>
+                  </CommandItem>
+                )}
+                {canCreate && (
+                  <CommandItem
+                    forceMount
+                    value={`${CREATE_VALUE_PREFIX}${trimmedQuery}`}
+                    onSelect={() => selectDraft(trimmedQuery)}
+                  >
+                    <Plus className="size-4" aria-hidden />
+                    <span className="truncate">Nový tag „{trimmedQuery}“</span>
+                  </CommandItem>
+                )}
+              </CommandGroup>
+            </>
+          )}
+        </CommandList>
+      </Command>
+      {newTagCount > 0 && (
+        <div className="flex items-center gap-2 border-t px-3 py-2 text-sm">
+          <Link
+            href={TAG_SETTINGS_URL}
+            className="flex min-w-0 flex-1 items-center gap-2 font-medium text-primary hover:underline focus-ring rounded-sm"
+            onClick={() => setOpen(false)}
+          >
+            <Sparkles className="size-4 shrink-0" aria-hidden />
+            <span className="truncate">{newTagsLabel(newTagCount)}</span>
+          </Link>
+          <Button type="button" variant="ghost" size="xs" onClick={() => void ignoreNewTags()}>
+            Ignorovat
+          </Button>
+        </div>
+      )}
+    </>
+  )
+
+  if (isMobile) {
+    const DrawerRoot = isNestedInDrawer ? DrawerNestedRoot : Drawer
+    return (
+      <DrawerRoot open={open} onOpenChange={handleOpenChange}>
+        <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
+        <DrawerContent>
+          <DrawerTitle className="sr-only">Vybrat tag</DrawerTitle>
+          <div className="min-h-0 overflow-y-auto px-4 pb-4">{optionsContent}</div>
+        </DrawerContent>
+      </DrawerRoot>
+    )
+  }
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          id={id}
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          aria-invalid={ariaInvalid}
-          disabled={isDisabled}
-          className={cn("w-full justify-start gap-2 font-normal", className)}
-        >
-          <Tag className="size-4 text-muted-foreground" aria-hidden />
-          {direction === null ? (
-            <span className="text-muted-foreground">{PICK_DIRECTION_FIRST_LABEL}</span>
-          ) : value.newTagName !== null ? (
-            <>
-              <span className="truncate">{value.newTagName}</span>
-              <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                {DRAFT_BADGE_LABEL}
-              </Badge>
-            </>
-          ) : selectedTag ? (
-            <span className="truncate">{selectedTag.name}</span>
-          ) : value.tagId !== null ? (
-            <span className="text-muted-foreground">Vybraný tag</span>
-          ) : (
-            <span className="text-muted-foreground">{required ? PICK_TAG_LABEL : NO_TAG_LABEL}</span>
-          )}
-          <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" aria-hidden />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
       <PopoverContent align="start" className="w-(--radix-popover-trigger-width) min-w-64 p-0">
-        <Command className="border-0 shadow-none">
-          <CommandInput
-            value={query}
-            onValueChange={setQuery}
-            placeholder={
-              canCreateTags
-                ? `Hledat nebo vytvořit tag pro ${direction ? TIME_DIRECTION_LABELS[direction] : "směr"}`
-                : "Hledat tag"
-            }
-            aria-label={canCreateTags ? "Hledat nebo vytvořit tag" : "Hledat tag"}
-            maxLength={TAG_NAME_MAX_LENGTH}
-          />
-          <CommandList>
-            {isLoading ? (
-              <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
-                <Spinner aria-label="Načítám tagy" />
-                Načítám tagy
-              </div>
-            ) : (
-              <>
-                {!canCreate && hiddenMatch === undefined && <CommandEmpty>Žádný tag</CommandEmpty>}
-                <CommandGroup>
-                  {!required && (
-                    <CommandItem value={NO_TAG_VALUE} keywords={[NO_TAG_LABEL]} onSelect={() => selectTag(null)}>
-                      <X className="size-4 text-muted-foreground" aria-hidden />
-                      <span className="flex-1">{NO_TAG_LABEL}</span>
-                      {value.tagId === null && value.newTagName === null && (
-                        <Check className="size-4 text-primary" aria-hidden />
-                      )}
-                    </CommandItem>
-                  )}
-                  {value.newTagName !== null && (
-                    <CommandItem
-                      value={DRAFT_VALUE}
-                      keywords={[value.newTagName]}
-                      onSelect={() => selectDraft(value.newTagName ?? "")}
-                    >
-                      <Plus className="size-4 text-muted-foreground" aria-hidden />
-                      <span className="flex-1 truncate">{value.newTagName}</span>
-                      <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                        {DRAFT_BADGE_LABEL}
-                      </Badge>
-                      <Check className="size-4 text-primary" aria-hidden />
-                    </CommandItem>
-                  )}
-                  {options.map((tag) => (
-                    <CommandItem key={tag.id} value={tag.id} keywords={[tag.name]} onSelect={() => selectTag(tag)}>
-                      <Tag className="size-4 text-muted-foreground" aria-hidden />
-                      <span className="flex-1 truncate">{tag.name}</span>
-                      {value.tagId === tag.id && <Check className="size-4 text-primary" aria-hidden />}
-                    </CommandItem>
-                  ))}
-                  {hiddenMatch !== undefined && (
-                    <CommandItem
-                      forceMount
-                      value={`${SHOW_VALUE_PREFIX}${hiddenMatch.id}`}
-                      onSelect={() => void showTag(hiddenMatch, { closeAfter: true })}
-                    >
-                      <Eye className="size-4" aria-hidden />
-                      <span className="truncate">Zobrazit tag týmu „{hiddenMatch.name}“</span>
-                    </CommandItem>
-                  )}
-                  {canCreate && (
-                    <CommandItem
-                      forceMount
-                      value={`${CREATE_VALUE_PREFIX}${trimmedQuery}`}
-                      onSelect={() => selectDraft(trimmedQuery)}
-                    >
-                      <Plus className="size-4" aria-hidden />
-                      <span className="truncate">Nový tag „{trimmedQuery}“</span>
-                    </CommandItem>
-                  )}
-                </CommandGroup>
-              </>
-            )}
-          </CommandList>
-        </Command>
-        {newTagCount > 0 && (
-          <div className="flex items-center gap-2 border-t px-3 py-2 text-sm">
-            <Link
-              href={TAG_SETTINGS_URL}
-              className="flex min-w-0 flex-1 items-center gap-2 font-medium text-primary hover:underline focus-ring rounded-sm"
-              onClick={() => setOpen(false)}
-            >
-              <Sparkles className="size-4 shrink-0" aria-hidden />
-              <span className="truncate">{newTagsLabel(newTagCount)}</span>
-            </Link>
-            <Button type="button" variant="ghost" size="xs" onClick={() => void ignoreNewTags()}>
-              Ignorovat
-            </Button>
-          </div>
-        )}
+        {optionsContent}
       </PopoverContent>
     </Popover>
   )
