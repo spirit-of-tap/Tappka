@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event"
 import type { TagCatalog, TimeDirection, TimeTag } from "@/lib/time-tracking/types"
 
 import { NO_TAG_SELECTION, TagCombobox, newTagsLabel, type TagSelection } from "./tag-combobox"
+import * as useMobileModule from "@/hooks/use-mobile"
 
 vi.mock("sonner", () => ({
   toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn() }),
@@ -212,5 +213,23 @@ describe("newTagsLabel", () => {
     [5, "5 nových tagů"],
   ])("%i → %s", (count, label) => {
     expect(newTagsLabel(count)).toBe(label)
+  })
+})
+
+describe("TagCombobox on mobile", () => {
+  it("opens the options in a drawer and selects a tag", async () => {
+    const isMobileSpy = vi.spyOn(useMobileModule, "useIsMobile").mockReturnValue(true)
+    try {
+      const { onChange, user } = renderCombobox("project")
+      await user.click(screen.getByRole("combobox"))
+
+      expect(screen.getByRole("dialog", { name: "Vybrat tag" })).toBeInTheDocument()
+      expect(screen.getByRole("option", { name: "Bez tagu" })).toBeInTheDocument()
+
+      await user.click(screen.getByRole("option", { name: "fellaship" }))
+      expect(onChange).toHaveBeenCalledWith({ tagId: FELLA_PROJECT.id, newTagName: null })
+    } finally {
+      isMobileSpy.mockRestore()
+    }
   })
 })

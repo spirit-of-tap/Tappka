@@ -2,7 +2,7 @@
 
 import { FileText, Link2Off, Megaphone } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { TiptapEditor } from "@/components/essays/tiptap-editor"
@@ -68,6 +68,22 @@ export function PreparationPanel({
   const [doc, setDoc] = useState<object>(contentJson ?? EMPTY_DOC)
   const [pending, setPending] = useState(false)
   const [linkWarningOpen, setLinkWarningOpen] = useState(false)
+
+  // Save entry for the window Ctrl+S shortcut below. Null for viewers, so the
+  // browser keeps its own "save page" behavior there.
+  const saveShortcutRef = useRef<(() => void) | null>(null)
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "s") return
+      const save = saveShortcutRef.current
+      if (!save) return
+      event.preventDefault()
+      save()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [])
 
   if (!canEdit) {
     if (!publishedAt || !contentJson || contentTextFromJson(contentJson) === "") {
@@ -137,12 +153,20 @@ export function PreparationPanel({
   }
 
   function handleSaveClick() {
+    // The Uložit button is disabled while saving, but the keyboard shortcut
+    // bypasses it — guard here instead of at each caller.
+    if (pending) return
     if (isLinkOnlyPreparation(doc)) {
       setLinkWarningOpen(true)
       return
     }
     void saveNow()
   }
+
+  // The window shortcut goes through the same path as the Uložit button, so
+  // the link-only warning still applies. Assigned during render like the
+  // editor's own callback refs (onChangeRef in TiptapEditor).
+  saveShortcutRef.current = handleSaveClick
 
   function handleConfirmLinkOnly() {
     setLinkWarningOpen(false)
@@ -183,7 +207,13 @@ export function PreparationPanel({
         )}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">Uloženou přípravu uvidí všichni, kdo si TS otevřou.</p>
-          <Button size="sm" disabled={pending} onClick={handleSaveClick} className="self-start sm:self-auto">
+          <Button
+            size="sm"
+            disabled={pending}
+            onClick={handleSaveClick}
+            title="Uložit (Ctrl+S)"
+            className="self-start sm:self-auto"
+          >
             Uložit
           </Button>
         </div>
