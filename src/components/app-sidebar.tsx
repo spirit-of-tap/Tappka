@@ -196,8 +196,10 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   if (isMobile) return null
   return (
     // collapsible="none": the sidebar is permanent chrome — no toggle, no
-    // rail, no keyboard shortcut can hide it.
-    <Sidebar collapsible="none" {...props}>
+    // rail, no keyboard shortcut can hide it. The `hidden md:flex` guard keeps
+    // it display:none on mobile during SSR and the pre-hydration paint, before
+    // `useIsMobile` flips to true and unmounts it, so it never flashes.
+    <Sidebar collapsible="none" className="hidden md:flex" {...props}>
       <AppSidebarContent user={user} />
     </Sidebar>
   )
