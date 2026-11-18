@@ -3723,6 +3723,10 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: undefined
       }
+      remove_training_session_guest: {
+        Args: { p_session_id: string; p_profile_id: string }
+        Returns: number
+      }
       search_training_sessions: { Args: { p_query: string }; Returns: string[] }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

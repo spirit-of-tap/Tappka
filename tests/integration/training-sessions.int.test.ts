@@ -13,13 +13,14 @@ interface Seeded {
   other: { profileId: string; authId: string };
   outsider: { profileId: string; authId: string };
   coach: { profileId: string; authId: string };
+  admin: { profileId: string; authId: string };
 }
 
 async function insertMember(
   client: PoolClient,
   name: string,
   teamId: string | null,
-  role: "student" | "coach" = "student",
+  role: "student" | "coach" | "admin" = "student",
 ) {
   const auth = await insertAuthUser(client);
   const { rows: userRows } = await client.query(
@@ -48,6 +49,7 @@ async function seed(client: PoolClient): Promise<Seeded> {
     other: await insertMember(client, "Other", otherTeamId),
     outsider: await insertMember(client, "Outsider", otherTeamId),
     coach: await insertMember(client, "Coach", null, "coach"),
+    admin: await insertMember(client, "Admin", otherTeamId, "admin"),
   };
 }
 
@@ -316,6 +318,77 @@ describe("join_training_session / leave_training_session", () => {
       await asClaims(client, { sub: s.other.authId });
       expect(await search("vyjednávání")).toEqual([id]);
       expect(await search("100%")).toEqual([]); // wildcard escaped
+    });
+  });
+});
+
+describe("remove_training_session_guest", () => {
+  const insertGuest = (client: PoolClient, sessionId: string, profileId: string) =>
+    client.query(
+      "insert into public.training_session_guests (training_session_id, profile_id) values ($1, $2)",
+      [sessionId, profileId],
+    );
+
+  const remove = async (client: PoolClient, sessionId: string, profileId: string): Promise<number> => {
+    await client.query("savepoint remove_training_session_guest");
+    try {
+      const { rows } = await client.query(
+        "select public.remove_training_session_guest($1, $2) as n",
+        [sessionId, profileId],
+      );
+      await client.query("release savepoint remove_training_session_guest");
+      return rows[0].n as number;
+    } catch (error) {
+      await client.query("rollback to savepoint remove_training_session_guest");
+      throw error;
+    }
+  };
+
+  it("lets a facilitator remove a cross and broadcasts through the ordinary delete path", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      await insertGuest(client, id, s.other.profileId);
+
+      await asClaims(client, { sub: s.owner.authId });
+      expect(await remove(client, id, s.other.profileId)).toBe(0);
+      const { rows } = await client.query(
+        "select 1 from public.training_session_guests where training_session_id = $1",
+        [id],
+      );
+      expect(rows).toHaveLength(0);
+    });
+  });
+
+  it("rejects a teammate who does not facilitate and an outsider", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      const id = await insertSession(client, s.teamId, s.owner.profileId);
+      await insertGuest(client, id, s.other.profileId);
+
+      for (const person of [s.teammate, s.outsider]) {
+        await asClaims(client, { sub: person.authId });
+        await expect(remove(client, id, s.other.profileId)).rejects.toThrow("forbidden");
+      }
+      const { rows } = await client.query(
+        "select 1 from public.training_session_guests where training_session_id = $1",
+        [id],
+      );
+      expect(rows).toHaveLength(1);
+    });
+  });
+
+  it("blocks removal after the session started, but lets an admin remove any time", async () => {
+    await withRollback(async (client) => {
+      const s = await seed(client);
+      const started = await insertSession(client, s.teamId, s.owner.profileId, { startsInHours: -1 });
+      await insertGuest(client, started, s.other.profileId);
+
+      await asClaims(client, { sub: s.owner.authId });
+      await expect(remove(client, started, s.other.profileId)).rejects.toThrow("already_started");
+
+      await asClaims(client, { sub: s.admin.authId });
+      expect(await remove(client, started, s.other.profileId)).toBe(0);
     });
   });
 });

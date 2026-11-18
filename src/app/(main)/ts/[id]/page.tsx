@@ -118,6 +118,7 @@ export default async function TsDetailPage({ params }: PageProps) {
   }
 
   const isFacilitator = session.facilitators.some((f) => f.profile?.id === profile.id)
+  const canRemoveGuests = isFacilitator && status === "upcoming"
   const canEditPrep = canEditPreparation(
     { profileId: profile.id, role: profile.role },
     session.facilitators.flatMap((f) => (f.profile ? [f.profile.id] : [])),
@@ -247,6 +248,14 @@ export default async function TsDetailPage({ params }: PageProps) {
                         </span>
                         {isViewer && canLeave && (
                           <GuestJoinButton sessionId={session.id} joined conflictText={null} variant="icon" />
+                        )}
+                        {!isViewer && canRemoveGuests && g.profile && (
+                          <GuestJoinButton
+                            sessionId={session.id}
+                            joined
+                            conflictText={null}
+                            removeTarget={{ profileId: g.profile_id, name: g.profile.name }}
+                          />
                         )}
                       </span>
                     )
