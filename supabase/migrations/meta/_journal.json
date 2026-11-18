@@ -1023,6 +1023,13 @@
       "when": 1794960254021,
       "tag": "20261118000414_facilitator_remove_guest",
       "breakpoints": true
+    },
+    {
+      "idx": 146,
+      "version": "7",
+      "when": 1794985748230,
+      "tag": "20261118070908_fix_facilitator_remove_guest",
+      "breakpoints": true
     }
   ]
 }
