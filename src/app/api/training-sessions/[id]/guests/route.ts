@@ -26,7 +26,7 @@ async function handle(rpc: "join_training_session" | "leave_training_session", p
   if (!isValidId(id)) return invalidIdFailure().response
 
   const { data, error } = await context.supabase.rpc(rpc, { p_session_id: id })
-  if (error) return rpcFailure(error)
+  if (error) return rpcFailure(error).response
   return NextResponse.json({ data: { guestCount: data } })
 }
 
@@ -47,6 +47,6 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     target === null
       ? await context.supabase.rpc("leave_training_session", { p_session_id: id })
       : await context.supabase.rpc("remove_training_session_guest", { p_session_id: id, p_profile_id: target })
-  if (error) return rpcFailure(error)
+  if (error) return rpcFailure(error).response
   return NextResponse.json({ data: { guestCount: data } })
 }
