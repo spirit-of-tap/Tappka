@@ -522,6 +522,9 @@ describe('formatDraftTime', () => {
 });
 
 describe('DraftRecoveryBanner', () => {
+  // Deterministic "now" so the same-day assertion holds in any timezone and after midnight.
+  const now = new Date(2026, 10, 19, 20, 0);
+
   it('offers restore and discard with the draft time', async () => {
     const onRestore = vi.fn();
     const onDiscard = vi.fn();
@@ -529,6 +532,7 @@ describe('DraftRecoveryBanner', () => {
     render(
       <DraftRecoveryBanner
         savedAt={new Date(2026, 10, 19, 14, 32).toISOString()}
+        now={now}
         wordCount={120}
         onRestore={onRestore}
         onDiscard={onDiscard}
@@ -549,6 +553,7 @@ describe('DraftRecoveryBanner', () => {
     render(
       <DraftRecoveryBanner
         savedAt={new Date(2026, 10, 19, 14, 32).toISOString()}
+        now={now}
         onRestore={vi.fn()}
         onDiscard={vi.fn()}
       />,
@@ -557,6 +562,8 @@ describe('DraftRecoveryBanner', () => {
   });
 });
 ```
+
+Note: `formatWordCount(120)` in this repo returns `"120 slov"` (cs-CZ), so the `/120 slov/` assertion is correct. The `formatDraftTime` tests construct dates in LOCAL time, so the expected strings are TZ-independent. Always pass an explicit `now` when asserting the rendered time — never rely on the real clock.
 
 ### Step 2: Run test to verify it fails
 
@@ -571,6 +578,7 @@ Create `src/components/editor-drafts/draft-recovery-banner.tsx`:
 'use client';
 
 import { History } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { formatWordCount } from '@/lib/essays/text-stats';
 
@@ -578,6 +586,8 @@ interface DraftRecoveryBannerProps {
   savedAt: string;
   /** Shown as "· 120 slov" when provided and non-zero. */
   wordCount?: number;
+  /** Test/SSR determinism hook; defaults to the current time. */
+  now?: Date;
   onRestore: () => void;
   onDiscard: () => void;
 }
@@ -585,20 +595,24 @@ interface DraftRecoveryBannerProps {
 /** "z 14:32" for a same-day draft, "z 18. 11. 09:05" once it crosses midnight. */
 export function formatDraftTime(savedAt: string, now = new Date()): string {
   const saved = new Date(savedAt);
+  if (Number.isNaN(saved.getTime())) return '';
   const time = saved.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
   if (saved.toDateString() === now.toDateString()) return time;
   const date = saved.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
   return `${date} ${time}`;
 }
 
-/** Notice above an editor offering to recover a draft saved in this browser. */
-export function DraftRecoveryBanner({ savedAt, wordCount, onRestore, onDiscard }: DraftRecoveryBannerProps) {
+/**
+ * Notice above an editor offering to recover a draft saved in this browser.
+ * Render only after mount: time formatting is viewer-local, so an SSR render
+ * would hydrate-mismatch on the time.
+ */
+export function DraftRecoveryBanner({ savedAt, wordCount, now, onRestore, onDiscard }: DraftRecoveryBannerProps) {
   const showWordCount = wordCount !== undefined && wordCount > 0;
 
   return (
     <div
       role="status"
-      aria-label="Nalezen rozepsaný text"
       className="flex flex-col gap-3 rounded-lg border bg-muted/50 p-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="flex min-w-0 items-start gap-3">
@@ -606,7 +620,7 @@ export function DraftRecoveryBanner({ savedAt, wordCount, onRestore, onDiscard }
           <History className="size-4" aria-hidden />
         </span>
         <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-medium">Máš rozepsaný text z {formatDraftTime(savedAt)}</p>
+          <p className="text-sm font-medium">Máš rozepsaný text z {formatDraftTime(savedAt, now)}</p>
           <p className="text-xs text-muted-foreground">
             {showWordCount ? `${formatWordCount(wordCount)} · ` : ''}
             Neuložený text zůstal v tomto prohlížeči.
@@ -614,8 +628,8 @@ export function DraftRecoveryBanner({ savedAt, wordCount, onRestore, onDiscard }
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2 self-start sm:self-auto">
-        <Button size="sm" onClick={onRestore}>Obnovit</Button>
-        <Button size="sm" variant="ghost" onClick={onDiscard}>Zahodit</Button>
+        <Button type="button" size="sm" onClick={onRestore}>Obnovit</Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onDiscard}>Zahodit</Button>
       </div>
     </div>
   );
