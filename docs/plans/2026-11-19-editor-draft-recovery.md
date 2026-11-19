@@ -640,6 +640,7 @@ git commit -m "feat(editor-drafts): add draft recovery banner"
 
 **Files:**
 - Modify: `src/components/essays/essay-editor-form.tsx`
+- Modify: `src/app/(main)/cteni/eseje/nova/page.tsx`
 - Test: `src/components/essays/essay-editor-form.test.tsx`
 
 ### Step 1: Write the failing tests
@@ -656,23 +657,24 @@ Then add a new `describe` block (before the final line of the file):
 describe('EssayEditorForm — draft recovery', () => {
   const essayScope = 'essay:essay-1';
 
-  function seedDraft(savedAt: string, payload: Record<string, unknown>) {
-    window.localStorage.setItem(buildDraftKey(essayScope), JSON.stringify({ savedAt, payload }));
+  function seedDraft(scope: string, savedAt: string, payload: Record<string, unknown>) {
+    window.localStorage.setItem(buildDraftKey(scope), JSON.stringify({ savedAt, payload }));
   }
+
+  const EMPTY_PAYLOAD = {
+    title: '', contentJson: { type: 'doc' }, contentText: '',
+    bookId: null, contentSourceId: null, book: null, contentSource: null,
+  };
 
   beforeEach(() => {
     window.localStorage.clear();
   });
 
   it('offers to restore a newer draft and fills the form on Obnovit', async () => {
-    seedDraft(new Date().toISOString(), {
+    seedDraft(essayScope, new Date().toISOString(), {
+      ...EMPTY_PAYLOAD,
       title: 'Obnovený název',
-      contentJson: { type: 'doc', content: [] },
       contentText: 'Obnovený text',
-      bookId: null,
-      contentSourceId: null,
-      book: null,
-      contentSource: null,
     });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
@@ -688,10 +690,7 @@ describe('EssayEditorForm — draft recovery', () => {
   });
 
   it('Zahodit removes the stored draft and hides the banner', async () => {
-    seedDraft(new Date().toISOString(), {
-      title: '', contentJson: { type: 'doc' }, contentText: '',
-      bookId: null, contentSourceId: null, book: null, contentSource: null,
-    });
+    seedDraft(essayScope, new Date().toISOString(), EMPTY_PAYLOAD);
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<EssayEditorForm initialEssay={draftEssay} />);
@@ -703,10 +702,7 @@ describe('EssayEditorForm — draft recovery', () => {
   });
 
   it('stays silent when the server copy is newer than the draft', async () => {
-    seedDraft('2026-07-01T10:00:00Z', {
-      title: '', contentJson: { type: 'doc' }, contentText: '',
-      bookId: null, contentSourceId: null, book: null, contentSource: null,
-    });
+    seedDraft(essayScope, '2026-07-01T10:00:00Z', EMPTY_PAYLOAD);
 
     render(<EssayEditorForm initialEssay={{ ...draftEssay, updated_at: '2026-08-01T10:00:00Z' }} />);
 
@@ -714,28 +710,38 @@ describe('EssayEditorForm — draft recovery', () => {
   });
 
   it('offers a draft on /nova, where no server copy exists', async () => {
-    window.localStorage.setItem(buildDraftKey('essay:nova'), JSON.stringify({
-      savedAt: new Date().toISOString(),
-      payload: {
-        title: 'Nový náčrt', contentJson: { type: 'doc' }, contentText: 'text',
-        bookId: null, contentSourceId: null, book: null, contentSource: null,
-      },
-    }));
+    seedDraft('essay:nova:profile-1', new Date().toISOString(), {
+      ...EMPTY_PAYLOAD,
+      title: 'Nový náčrt',
+      contentText: 'text',
+    });
 
-    render(<EssayEditorForm />);
+    render(<EssayEditorForm profileId="profile-1" />);
 
     expect(screen.getByText(/Máš rozepsaný text z/)).toBeInTheDocument();
+  });
+
+  it('keeps /nova drafts separate per profile', async () => {
+    seedDraft('essay:nova:profile-2', new Date().toISOString(), {
+      ...EMPTY_PAYLOAD,
+      title: 'Cizí náčrt',
+      contentText: 'text',
+    });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
   });
 
   it('writes the draft to localStorage while typing', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
-    render(<EssayEditorForm />);
+    render(<EssayEditorForm profileId="profile-1" />);
 
     await user.type(screen.getByLabelText('Název eseje'), 'Rozepsaná esej');
     await vi.advanceTimersByTimeAsync(1500);
 
-    const raw = window.localStorage.getItem(buildDraftKey('essay:nova'));
+    const raw = window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'));
     expect(raw).not.toBeNull();
     expect(JSON.parse(raw!).payload.title).toBe('Rozepsaná esej');
   });
@@ -744,10 +750,10 @@ describe('EssayEditorForm — draft recovery', () => {
     fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
-    render(<EssayEditorForm />);
+    render(<EssayEditorForm profileId="profile-1" />);
     await user.type(screen.getByLabelText('Název eseje'), 'Uložená esej');
     await vi.advanceTimersByTimeAsync(1500);
-    expect(window.localStorage.getItem(buildDraftKey('essay:nova'))).not.toBeNull();
+    expect(window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'))).not.toBeNull();
 
     await user.click(saveButton());
     await waitFor(() => {
@@ -756,10 +762,12 @@ describe('EssayEditorForm — draft recovery', () => {
     });
     await vi.advanceTimersByTimeAsync(100);
 
-    expect(window.localStorage.getItem(buildDraftKey('essay:nova'))).toBeNull();
+    expect(window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'))).toBeNull();
   });
 });
 ```
+
+(These tests use the jsdom default already active for `src/components/**/*.test.tsx`, so no environment docblock is needed here.)
 
 ### Step 2: Run test to verify it fails
 
@@ -781,9 +789,15 @@ import { extractPlainTextFromContentJson } from '@/lib/essays/content-text';
 
 (Note: `normalizeContentJson` and `EMPTY_DOC` are already imported; extend that import with `extractPlainTextFromContentJson`.)
 
-2. Add the payload interface near `EssayEditorFormProps`:
+2. Add the payload interface and the `profileId` prop:
 
 ```ts
+interface EssayEditorFormProps {
+  initialEssay?: EssayWithDetails;
+  /** Scopes the /nova draft so a shared machine never leaks one account's draft to another. */
+  profileId?: string;
+}
+
 interface EssayDraftPayload {
   title: string;
   contentJson: object;
@@ -795,7 +809,7 @@ interface EssayDraftPayload {
 }
 ```
 
-3. Inside the component, right after the `creatingRef` declaration, extend `latestRef` with the selected objects and add the draft wiring:
+3. Destructure `profileId` in the component signature and add it to `latestRef` bookkeeping. Inside the component, right after the `creatingRef` declaration, extend `latestRef` with the selected objects and add the draft wiring:
 
 ```ts
 const latestRef = useRef({
@@ -822,7 +836,9 @@ const creatingRef = useRef(false);
 // Recovery net: the draft outlives tab closes and crashes. The scope is
 // derived from the initial essay only, so it is stable across the create
 // flow (where `migrate` moves the stored draft once the id exists).
-const draftScope = initialEssay?.id ? `essay:${initialEssay.id}` : 'essay:nova';
+const draftScope = initialEssay?.id
+  ? `essay:${initialEssay.id}`
+  : `essay:nova:${profileId ?? 'anonymous'}`;
 const { draft, update, discard, migrate } = useEditorDraft<EssayDraftPayload>(draftScope);
 const [draftBannerDismissed, setDraftBannerDismissed] = useState(false);
 
@@ -904,6 +920,36 @@ const showDraftBanner = draft !== null
   />
 )}
 ```
+
+8. Pass the profile id from the nova page. In `src/app/(main)/cteni/eseje/nova/page.tsx`, follow the edit page's pattern:
+
+```tsx
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserProfile } from '@/lib/auth-helpers';
+import { EssayEditorForm } from '@/components/essays/essay-editor-form';
+import { PageShell } from '@/components/ui/page-shell';
+
+export default async function NovaEsejPage() {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
+  if (!user) redirect('/auth/login');
+
+  const profile = await getCurrentUserProfile(supabase, { user });
+
+  return (
+    <PageShell size="wide">
+      {/* The visible document title is the editor's own title field, so the
+          page heading only needs to exist for assistive technology. */}
+      <h1 className="sr-only">Napsat esej</h1>
+      <EssayEditorForm profileId={profile?.id} />
+    </PageShell>
+  );
+}
+```
+
+(Check the exact `getCurrentUserProfile` signature in `src/lib/auth-helpers.ts` and mirror how the edit page calls it. If the page previously had no auth guard, keep the redirect behavior consistent with `/cteni/eseje/[essayId]/upravit`.)
 
 ### Step 4: Run test to verify it passes
 

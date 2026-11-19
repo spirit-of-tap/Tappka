@@ -46,8 +46,11 @@ banner: "Máš rozepsaný text z 14:32" with optional word count, buttons
 
 `src/components/essays/essay-editor-form.tsx`:
 
-- Key: `tappka:draft:essay:<id>`, or `tappka:draft:essay:nova` on the
-  new-essay page (an unsaved new essay has no id).
+- Key: `tappka:draft:essay:<id>`, or `tappka:draft:essay:nova:<profileId>`
+  on the new-essay page (an unsaved new essay has no id). The profile id
+  keeps a shared machine from offering one account's unsaved /nova draft to
+  another account; the `essay:<id>` scope is already per-user because essay
+  ids are.
 - Payload: `{ title, contentJson, contentText, bookId, contentSourceId }` —
   restoring brings back the title and the book/source picker, not just the
   prose.
@@ -88,8 +91,11 @@ banner: "Máš rozepsaný text z 14:32" with optional word count, buttons
 - After restore, the key keeps updating while the text is still unsaved and
   clears on the first successful save. Closing again before saving works
   again.
-- Multi-account on a shared machine: essay ids are per-user, so drafts
-  cannot collide across accounts.
+- Multi-account on a shared machine: essay ids are per-user, so `essay:<id>`
+  drafts cannot collide across accounts; the `/nova` draft is namespaced by
+  profile id (`essay:nova:<profileId>`) for the same reason. TS preparation
+  drafts are per-session documents that every editor of that session can
+  already read, so no extra namespacing is needed there.
 
 ## Copy
 
