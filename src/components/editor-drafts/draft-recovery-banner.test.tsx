@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
 import { DraftRecoveryBanner, formatDraftTime } from './draft-recovery-banner';
 
 describe('formatDraftTime', () => {
@@ -15,6 +16,12 @@ describe('formatDraftTime', () => {
     const now = new Date(2026, 10, 19, 20, 0);
     expect(formatDraftTime(savedAt, now)).toBe('18. 11. 09:05');
   });
+
+  it('returns an empty string for an unparseable timestamp', () => {
+    const now = new Date(2026, 10, 19, 20, 0);
+    expect(() => formatDraftTime('garbage', now)).not.toThrow();
+    expect(formatDraftTime('garbage', now)).toBe('');
+  });
 });
 
 describe('DraftRecoveryBanner', () => {
@@ -26,6 +33,7 @@ describe('DraftRecoveryBanner', () => {
       <DraftRecoveryBanner
         savedAt={new Date(2026, 10, 19, 14, 32).toISOString()}
         wordCount={120}
+        now={new Date(2026, 10, 19, 20, 0)}
         onRestore={onRestore}
         onDiscard={onDiscard}
       />,
@@ -45,6 +53,7 @@ describe('DraftRecoveryBanner', () => {
     render(
       <DraftRecoveryBanner
         savedAt={new Date(2026, 10, 19, 14, 32).toISOString()}
+        now={new Date(2026, 10, 19, 20, 0)}
         onRestore={vi.fn()}
         onDiscard={vi.fn()}
       />,
