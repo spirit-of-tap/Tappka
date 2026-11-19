@@ -44,6 +44,15 @@ function safeRemove(storage: Storage, key: string): void {
   }
 }
 
+/** Safely returns window.localStorage, or null when the getter itself throws. */
+export function getLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Reads and shape-checks a draft; expired, corrupt or malformed entries are
  * removed from storage. The payload is not validated beyond the

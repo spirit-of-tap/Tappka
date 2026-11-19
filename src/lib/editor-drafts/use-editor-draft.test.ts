@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { StrictMode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { useEditorDraft, WRITE_DEBOUNCE_MS } from './use-editor-draft';
 import { buildDraftKey, writeDraft } from './draft-storage';
@@ -13,6 +14,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('useEditorDraft', () => {
@@ -43,6 +45,7 @@ describe('useEditorDraft', () => {
 
   it('collapses rapid updates into one write', () => {
     const { result } = renderHook(() => useEditorDraft<string>('preparation:session-1'));
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
     act(() => {
       result.current.update('a');
       vi.advanceTimersByTime(WRITE_DEBOUNCE_MS - 1);
@@ -51,6 +54,7 @@ describe('useEditorDraft', () => {
     });
     const stored = JSON.parse(storage.getItem(buildDraftKey('preparation:session-1'))!);
     expect(stored.payload).toBe('b');
+    expect(setItemSpy).toHaveBeenCalledTimes(1);
   });
 
   it('flushes the pending update immediately', () => {
@@ -84,6 +88,36 @@ describe('useEditorDraft', () => {
     act(() => { window.dispatchEvent(new Event('pagehide')); });
     const stored = JSON.parse(storage.getItem(buildDraftKey('preparation:session-1'))!);
     expect(stored.payload).toBe('před zavřením');
+  });
+
+  it('flushes pending updates when the tab becomes hidden', () => {
+    const { result } = renderHook(() => useEditorDraft<string>('preparation:session-1'));
+    act(() => { result.current.update('na pozadí'); });
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+    delete (document as { visibilityState?: unknown }).visibilityState;
+    const stored = JSON.parse(storage.getItem(buildDraftKey('preparation:session-1'))!);
+    expect(stored.payload).toBe('na pozadí');
+  });
+
+  it('resets the draft when the scope changes to one without a stored draft', () => {
+    writeDraft(storage, 'preparation:session-1', 'starý obsah');
+    const { result, rerender } = renderHook(
+      ({ scope }: { scope: string }) => useEditorDraft<string>(scope),
+      { initialProps: { scope: 'preparation:session-1' } },
+    );
+    expect(result.current.draft?.payload).toBe('starý obsah');
+    rerender({ scope: 'preparation:session-2' });
+    expect(result.current.draft).toBeNull();
+  });
+
+  it('hydrates idempotently under StrictMode double-mount', () => {
+    writeDraft(storage, 'preparation:session-1', 'rozepsaná');
+    const { result } = renderHook(() => useEditorDraft<string>('preparation:session-1'), {
+      wrapper: StrictMode,
+    });
+    expect(result.current.draft?.payload).toBe('rozepsaná');
+    expect(storage.getItem(buildDraftKey('preparation:session-1'))).not.toBeNull();
   });
 
   it('migrate moves the stored draft and future writes to the new scope', () => {

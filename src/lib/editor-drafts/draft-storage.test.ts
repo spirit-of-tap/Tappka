@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  buildDraftKey, isDraftExpired, isDraftNewerThan, moveDraft,
+  buildDraftKey, getLocalStorage, isDraftExpired, isDraftNewerThan, moveDraft,
   readDraft, removeDraft, writeDraft, DRAFT_TTL_MS,
 } from './draft-storage';
 
@@ -27,6 +27,23 @@ function throwingStorage(): Storage {
 
 beforeEach(() => {
   storage.clear();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('getLocalStorage', () => {
+  it('returns window.localStorage', () => {
+    expect(getLocalStorage()).toBe(window.localStorage);
+  });
+
+  it('returns null when the getter throws', () => {
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    expect(getLocalStorage()).toBeNull();
+  });
 });
 
 describe('buildDraftKey', () => {
