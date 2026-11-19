@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildDraftKey, isDraftExpired, isDraftNewerThan, moveDraft,
   readDraft, removeDraft, writeDraft, DRAFT_TTL_MS,
@@ -9,6 +9,20 @@ const storage = window.localStorage;
 
 function hoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+function throwingStorage(): Storage {
+  const fail = vi.fn(() => {
+    throw new Error('quota');
+  });
+  return {
+    length: 0,
+    clear: fail,
+    getItem: fail,
+    key: fail,
+    removeItem: fail,
+    setItem: fail,
+  };
 }
 
 beforeEach(() => {
@@ -38,9 +52,16 @@ describe('writeDraft / readDraft', () => {
     expect(readDraft(storage, 'essay:nova')).toBeNull();
   });
 
+  it('removes the corrupt entry from storage', () => {
+    storage.setItem('tappka:draft:essay:nova', '{invalid json');
+    expect(readDraft(storage, 'essay:nova')).toBeNull();
+    expect(storage.getItem('tappka:draft:essay:nova')).toBeNull();
+  });
+
   it('returns null for a value without savedAt/payload', () => {
     storage.setItem('tappka:draft:essay:nova', JSON.stringify({ foo: 1 }));
     expect(readDraft(storage, 'essay:nova')).toBeNull();
+    expect(storage.getItem('tappka:draft:essay:nova')).toBeNull();
   });
 
   it('drops and removes an expired draft', () => {
@@ -72,6 +93,10 @@ describe('isDraftExpired', () => {
   it('is true past the TTL', () => {
     expect(isDraftExpired(new Date(Date.now() - DRAFT_TTL_MS - 1000).toISOString())).toBe(true);
   });
+
+  it('is false for a future-dated timestamp (clock skew fails open)', () => {
+    expect(isDraftExpired(new Date(Date.now() + 60 * 60 * 1000).toISOString())).toBe(false);
+  });
 });
 
 describe('isDraftNewerThan', () => {
@@ -87,6 +112,10 @@ describe('isDraftNewerThan', () => {
 
   it('suppresses the draft when the server copy is newer', () => {
     expect(isDraftNewerThan(draft, '2026-08-03T10:00:00Z')).toBe(false);
+  });
+
+  it('suppresses the draft when timestamps are equal', () => {
+    expect(isDraftNewerThan(draft, '2026-08-02T10:00:00Z')).toBe(false);
   });
 
   it('offers the draft when the server timestamp is unparseable', () => {
@@ -110,8 +139,33 @@ describe('moveDraft', () => {
     expect(readDraft<{ title: string }>(storage, 'essay:essay-1')?.payload.title).toBe('X');
   });
 
+  it('keeps the draft when scopes are equal', () => {
+    writeDraft(storage, 'essay:nova', { title: 'X' });
+    moveDraft(storage, 'essay:nova', 'essay:nova');
+    expect(storage.getItem('tappka:draft:essay:nova')).not.toBeNull();
+    expect(readDraft<{ title: string }>(storage, 'essay:nova')?.payload.title).toBe('X');
+  });
+
   it('does nothing when there is no stored draft', () => {
     moveDraft(storage, 'essay:nova', 'essay:essay-1');
     expect(storage.getItem('tappka:draft:essay:essay-1')).toBeNull();
+  });
+});
+
+describe('error swallowing', () => {
+  it('writeDraft does not throw when storage throws', () => {
+    expect(() => writeDraft(throwingStorage(), 'essay:nova', { title: 'X' })).not.toThrow();
+  });
+
+  it('readDraft returns null and does not throw when storage throws', () => {
+    expect(readDraft(throwingStorage(), 'essay:nova')).toBeNull();
+  });
+
+  it('removeDraft does not throw when storage throws', () => {
+    expect(() => removeDraft(throwingStorage(), 'essay:nova')).not.toThrow();
+  });
+
+  it('moveDraft does not throw when storage throws', () => {
+    expect(() => moveDraft(throwingStorage(), 'essay:nova', 'essay:essay-1')).not.toThrow();
   });
 });

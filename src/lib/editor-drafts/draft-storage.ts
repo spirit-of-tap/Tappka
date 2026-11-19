@@ -1,7 +1,8 @@
 /**
  * Pure localStorage helpers for editor drafts. All reads and writes go
  * through here so the hook stays thin and every rule (TTL, shape, key
- * prefix) lives in one testable place.
+ * prefix) lives in one testable place. Reads lazily remove expired or
+ * corrupt entries instead of merely hiding them.
  */
 
 export const DRAFT_KEY_PREFIX = 'tappka:draft:';
@@ -16,7 +17,7 @@ export function buildDraftKey(scope: string): string {
   return `${DRAFT_KEY_PREFIX}${scope}`;
 }
 
-/** Drops a draft whose timestamp is unparseable or older than the TTL. */
+/** Returns true when the timestamp is unparseable or older than the TTL. */
 export function isDraftExpired(savedAt: string, now = Date.now()): boolean {
   const timestamp = Date.parse(savedAt);
   if (Number.isNaN(timestamp)) return true;
@@ -34,22 +35,44 @@ export function isDraftNewerThan(draft: EditorDraft<unknown>, serverTime: string
   return Date.parse(draft.savedAt) > serverTimestamp;
 }
 
-/** Reads and shape-checks a draft; expired or corrupt entries are dropped. */
+/** Best-effort removal; storage errors are swallowed. */
+function safeRemove(storage: Storage, key: string): void {
+  try {
+    storage.removeItem(key);
+  } catch {
+    // Storage disabled.
+  }
+}
+
+/**
+ * Reads and shape-checks a draft; expired, corrupt or malformed entries are
+ * removed from storage. The payload is not validated beyond the
+ * savedAt/payload shape — callers must treat it as untrusted.
+ */
 export function readDraft<T>(storage: Storage, scope: string): EditorDraft<T> | null {
   const key = buildDraftKey(scope);
   try {
     const raw = storage.getItem(key);
     if (raw === null) return null;
     const parsed = JSON.parse(raw) as { savedAt?: unknown; payload?: unknown };
-    if (typeof parsed !== 'object' || parsed === null) return null;
-    if (typeof parsed.savedAt !== 'string' || !('payload' in parsed)) return null;
-    if (isDraftExpired(parsed.savedAt)) {
-      storage.removeItem(key);
+    if (typeof parsed !== 'object' || parsed === null) {
+      safeRemove(storage, key);
       return null;
     }
+    if (typeof parsed.savedAt !== 'string' || !('payload' in parsed)) {
+      safeRemove(storage, key);
+      return null;
+    }
+    if (isDraftExpired(parsed.savedAt)) {
+      safeRemove(storage, key);
+      return null;
+    }
+    // The shape check guarantees savedAt/payload exist; the payload content
+    // itself may not match T, so callers must treat it as untrusted.
     return { savedAt: parsed.savedAt, payload: parsed.payload as T };
   } catch {
-    // Corrupt JSON or storage disabled — treat as no draft.
+    // Corrupt JSON — remove the entry and treat as no draft.
+    safeRemove(storage, key);
     return null;
   }
 }
@@ -66,15 +89,12 @@ export function writeDraft<T>(storage: Storage, scope: string, payload: T): Edit
 }
 
 export function removeDraft(storage: Storage, scope: string): void {
-  try {
-    storage.removeItem(buildDraftKey(scope));
-  } catch {
-    // Storage disabled.
-  }
+  safeRemove(storage, buildDraftKey(scope));
 }
 
 /** Moves a stored draft between scopes; a no-op when nothing is stored. */
 export function moveDraft(storage: Storage, fromScope: string, toScope: string): void {
+  if (fromScope === toScope) return;
   try {
     const fromKey = buildDraftKey(fromScope);
     const raw = storage.getItem(fromKey);
