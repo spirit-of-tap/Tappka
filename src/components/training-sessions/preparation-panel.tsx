@@ -76,6 +76,10 @@ export function PreparationPanel({
   const [doc, setDoc] = useState<object>(contentJson ?? EMPTY_DOC)
   const [pending, setPending] = useState(false)
   const [linkWarningOpen, setLinkWarningOpen] = useState(false)
+  // Remounts the editor after a draft restore: TiptapEditor only applies
+  // initialContent to an empty editor, so a non-empty one must be recreated
+  // to visibly show the restored doc.
+  const [editorKey, setEditorKey] = useState(0)
 
   // Save entry for the window Ctrl+S shortcut below. Null for viewers, so the
   // browser keeps its own "save page" behavior there.
@@ -207,6 +211,7 @@ export function PreparationPanel({
             wordCount={countWords(contentTextFromJson(draft.payload.contentJson))}
             onRestore={() => {
               setDoc(normalizeContentJson(draft.payload.contentJson))
+              setEditorKey((key) => key + 1)
               setDraftBannerDismissed(true)
             }}
             onDiscard={() => {
@@ -216,6 +221,7 @@ export function PreparationPanel({
           />
         )}
         <TiptapEditor
+          key={editorKey}
           initialContent={doc}
           onChange={(json) => {
             setDoc(json)

@@ -7,7 +7,19 @@ import { PreparationPanel } from "./preparation-panel"
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 vi.mock("@/components/essays/tiptap-editor", () => ({
-  TiptapEditor: () => <div data-testid="tiptap-editor" />,
+  TiptapEditor: ({ onChange }: { onChange?: (json: object) => void }) => (
+    <div data-testid="tiptap-editor">
+      <textarea
+        aria-label="Editor přípravy"
+        onChange={(e) =>
+          onChange?.({
+            type: "doc",
+            content: [{ type: "paragraph", content: [{ type: "text", text: e.target.value }] }],
+          })
+        }
+      />
+    </div>
+  ),
 }))
 
 const LINK_ONLY_DOC = {
@@ -217,6 +229,28 @@ describe("PreparationPanel draft recovery", () => {
         }),
       )
     })
+
+    // The saved content is on the server and the editor still holds exactly
+    // that content, so the local draft is redundant.
+    expect(window.localStorage.getItem(buildDraftKey(scope))).toBeNull()
+  })
+
+  it("keeps the draft when the person keeps typing during the save", async () => {
+    writeDraft(window.localStorage, scope, { contentJson: RICH_DOC })
+    let resolveFetch: (value: unknown) => void
+    const fetchMock = vi.fn(() => new Promise((resolve) => { resolveFetch = resolve }))
+    vi.stubGlobal("fetch", fetchMock)
+    renderPanel(null)
+
+    fireEvent.click(screen.getByRole("button", { name: "Obnovit" }))
+
+    fireEvent.click(screen.getByRole("button", { name: "Uložit" }))
+    // While the PUT is in flight, the person keeps typing.
+    fireEvent.change(screen.getByLabelText("Editor přípravy"), { target: { value: "ještě píšu" } })
+    resolveFetch!({ ok: true, json: async () => ({}) })
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    expect(window.localStorage.getItem(buildDraftKey(scope))).not.toBeNull()
   })
 
   it("Zahodit clears the draft and hides the banner", async () => {
