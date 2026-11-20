@@ -297,15 +297,17 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
     setContent({ json, text });
     latestRef.current.content = { json, text };
     markDirty();
+    setDraftBannerDismissed(true);
     scheduleDraft();
-  }, [markDirty, scheduleDraft]);
+  }, [markDirty, setDraftBannerDismissed, scheduleDraft]);
 
   const handleTitleChange = useCallback((value: string) => {
     setTitle(value);
     latestRef.current.title = value;
     markDirty();
+    setDraftBannerDismissed(true);
     scheduleDraft();
-  }, [markDirty, scheduleDraft]);
+  }, [markDirty, setDraftBannerDismissed, scheduleDraft]);
 
   const handleBookChange = useCallback((book: BookSearchResult | null) => {
     setSelectedBook(book);
@@ -317,8 +319,9 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
       latestRef.current.contentSource = null;
     }
     markDirty();
+    setDraftBannerDismissed(true);
     scheduleDraft();
-  }, [markDirty, scheduleDraft]);
+  }, [markDirty, setDraftBannerDismissed, scheduleDraft]);
 
   const handleSourceChange = useCallback((source: ContentSource | null) => {
     setSelectedSource(source);
@@ -330,8 +333,9 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
       latestRef.current.book = null;
     }
     markDirty();
+    setDraftBannerDismissed(true);
     scheduleDraft();
-  }, [markDirty, scheduleDraft]);
+  }, [markDirty, setDraftBannerDismissed, scheduleDraft]);
 
   /** One search across both books and content sources, in a single round trip. */
   const searchSources = async (q: string) => {
@@ -510,6 +514,7 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
             points={selectedBookPoints}
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
+            onDeleted={discard}
           />
         </>
       )}

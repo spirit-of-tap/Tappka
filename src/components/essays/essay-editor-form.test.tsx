@@ -840,4 +840,98 @@ describe('EssayEditorForm — draft recovery', () => {
 
     expect(window.localStorage.getItem(buildDraftKey(essayScope))).not.toBeNull();
   });
+
+  it('clears the draft when the essay is deleted', async () => {
+    seedDraft(essayScope, new Date().toISOString(), EMPTY_PAYLOAD);
+    fetchSpy.mockResolvedValue(jsonResponse({ success: true }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await user.click(screen.getByRole('button', { name: 'Další akce' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Smazat esej' }));
+    await user.click(screen.getByRole('button', { name: 'Smazat' }));
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith('/api/essays/essay-1', { method: 'DELETE' });
+    });
+    await waitFor(() => {
+      expect(window.localStorage.getItem(buildDraftKey(essayScope))).toBeNull();
+    });
+  });
+
+  it('withdraws the banner offer once the author starts typing', async () => {
+    seedDraft('essay:nova:profile-1', new Date().toISOString(), {
+      ...EMPTY_PAYLOAD,
+      title: 'Starý náčrt',
+      contentText: 'text',
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+    expect(screen.getByText(/Máš rozepsaný text z/)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Název eseje'), 'Nový text');
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
+
+    // The safety net stays: the draft still follows the typing, only the
+    // stale offer is withdrawn.
+    await vi.advanceTimersByTimeAsync(1500);
+    const raw = window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'));
+    expect(raw).not.toBeNull();
+    expect(JSON.parse(raw!).payload.title).toBe('Nový text');
+  });
+
+  it('keeps writing drafts under the essay scope after creation', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+    await user.type(screen.getByLabelText('Název eseje'), 'První název');
+    await user.click(saveButton());
+    await waitFor(() => {
+      const creates = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays');
+      expect(creates).toHaveLength(1);
+    });
+
+    // After creation the draft scope follows the essay id (migrate).
+    await user.type(screen.getByLabelText('Název eseje'), ' pokračování');
+    await vi.advanceTimersByTimeAsync(1500);
+
+    expect(window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'))).toBeNull();
+    const moved = window.localStorage.getItem(buildDraftKey('essay:essay-1'));
+    expect(moved).not.toBeNull();
+    expect(JSON.parse(moved!).payload.title).toBe('První název pokračování');
+  });
+
+  it('keeps the draft when typing continues during a save', async () => {
+    let resolvePatch: (value: Response) => void = () => {};
+    fetchSpy.mockImplementation(() => new Promise<Response>((resolve) => {
+      resolvePatch = resolve;
+    }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+    await user.type(screen.getByLabelText('Název eseje'), 'První verze');
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(window.localStorage.getItem(buildDraftKey(essayScope))).not.toBeNull();
+
+    await user.click(saveButton());
+    await waitFor(() => {
+      const patches = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays/essay-1');
+      expect(patches).toHaveLength(1);
+    });
+
+    // The save is still in flight — keep typing.
+    await user.type(screen.getByLabelText('Název eseje'), ' druhá verze');
+    resolvePatch(jsonResponse({}, 200));
+    await waitFor(() => {
+      expect(screen.queryByText('Ukládám…')).not.toBeInTheDocument();
+    });
+    await vi.advanceTimersByTimeAsync(1500);
+
+    // The saved copy missed the newest keystrokes, so the draft must survive.
+    expect(window.localStorage.getItem(buildDraftKey(essayScope))).not.toBeNull();
+  });
 });

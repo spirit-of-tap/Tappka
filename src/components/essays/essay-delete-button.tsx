@@ -28,6 +28,8 @@ interface EssayDeleteButtonProps {
   /** Pass to drive the dialog from elsewhere (a menu); omit to get a trigger button. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Called after a successful delete — the editor uses it to clear the local draft. */
+  onDeleted?: () => void;
 }
 
 export function EssayDeleteButton({
@@ -36,6 +38,7 @@ export function EssayDeleteButton({
   points = 0,
   open: openProp,
   onOpenChange,
+  onDeleted,
 }: EssayDeleteButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -51,6 +54,7 @@ export function EssayDeleteButton({
         return;
       }
       toast.success(hasTitle ? 'Esej smazána.' : 'Rozepsaná esej smazána.');
+      onDeleted?.();
       // replace, not push: the editor URL now points at a deleted essay, and
       // Back should not walk into a 404.
       router.replace('/cteni/prehled');
