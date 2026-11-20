@@ -1242,6 +1242,27 @@ git add src/components/training-sessions/preparation-panel.tsx src/components/tr
 git commit -m "feat(ts): recover unsaved preparation from a local draft"
 ```
 
+### Post-review fixes (recorded)
+
+Applied in a follow-up commit after code-quality review (critical, empirically
+reproduced):
+
+- **Restore did not reach the visible editor when it already held content.**
+  `TiptapEditor` only syncs `initialContent` when the editor is empty, so
+  restoring a newer draft over a published prep dismissed the banner while
+  the editor kept showing the published text — a save then PUTs content the
+  person isn't seeing, and the first keystroke overwrote the restored draft.
+  Fix: the panel remounts the editor (`key={editorKey}`, bumped in
+  `onRestore`), re-initializing it with the restored doc. The essay editor
+  has the same defect (its tests mock the editor) and gets the equivalent
+  fix.
+- Tests: the TiptapEditor mock now exposes an `onChange` textarea; the
+  restore test also asserts the draft key is cleared after a successful
+  save; a typing-during-save test proves the in-flight guard keeps the
+  draft; a new no-mock test file (`preparation-panel-restore.test.tsx`)
+  renders the REAL editor and asserts the restored text replaces the
+  published text on Obnovit (RED before the remount fix).
+
 ---
 
 ## Task 6: Full verification
