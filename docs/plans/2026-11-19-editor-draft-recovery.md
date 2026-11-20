@@ -690,6 +690,7 @@ describe('EssayEditorForm — draft recovery', () => {
       title: 'Obnovený název',
       contentText: 'Obnovený text',
     });
+    fetchSpy.mockResolvedValue(jsonResponse({}, 200));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     render(<EssayEditorForm initialEssay={draftEssay} />);
@@ -700,7 +701,16 @@ describe('EssayEditorForm — draft recovery', () => {
 
     expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
     expect(screen.getByLabelText('Název eseje')).toHaveValue('Obnovený název');
-    expect(screen.getByLabelText('Text eseje')).toHaveValue('Obnovený text');
+
+    // The mocked TiptapEditor is uncontrolled, so prove the restored prose
+    // reached the form state by saving and inspecting the PATCH body.
+    await user.click(saveButton());
+    await waitFor(() => {
+      const patches = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays/essay-1');
+      expect(patches).toHaveLength(1);
+      const body = JSON.parse(String(patches[0][1]?.body)) as { content_text: string };
+      expect(body.content_text).toBe('Obnovený text');
+    });
   });
 
   it('Zahodit removes the stored draft and hides the banner', async () => {
@@ -716,9 +726,12 @@ describe('EssayEditorForm — draft recovery', () => {
   });
 
   it('stays silent when the server copy is newer than the draft', async () => {
-    seedDraft(essayScope, '2026-07-01T10:00:00Z', EMPTY_PAYLOAD);
+    // Both timestamps must stay inside the 14-day TTL, or the draft would be
+    // dropped by expiry before the comparison ever runs.
+    const now = Date.now();
+    seedDraft(essayScope, new Date(now - 2 * 3_600_000).toISOString(), EMPTY_PAYLOAD);
 
-    render(<EssayEditorForm initialEssay={{ ...draftEssay, updated_at: '2026-08-01T10:00:00Z' }} />);
+    render(<EssayEditorForm initialEssay={{ ...draftEssay, updated_at: new Date(now - 3_600_000).toISOString() }} />);
 
     expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
   });
@@ -1039,13 +1052,28 @@ describe("PreparationPanel draft recovery", () => {
   })
 
   it("stays silent when the published copy is newer than the draft", () => {
+    // Both timestamps must stay inside the 14-day TTL, or the draft would be
+    // dropped by expiry before the comparison ever runs.
+    const now = Date.now()
     window.localStorage.setItem(buildDraftKey(scope), JSON.stringify({
-      savedAt: "2026-08-01T10:00:00Z",
+      savedAt: new Date(now - 2 * 3_600_000).toISOString(),
       payload: { contentJson: RICH_DOC },
     }))
-    renderPanel(RICH_DOC)
+    render(
+      <PreparationPanel
+        sessionId="session-1"
+        topic="Knihy 3v1"
+        canEdit
+        upcoming
+        contentJson={RICH_DOC}
+        publishedAt={new Date(now - 3_600_000).toISOString()}
+        attachments={[]}
+        startsAt="2026-11-16T07:00:00.000Z"
+        endsAt="2026-11-16T11:00:00.000Z"
+        facilitatorNames={[]}
+      />,
+    )
 
-    // publishedAt (2026-11-16) is newer than the draft.
     expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument()
   })
 
@@ -1071,7 +1099,7 @@ describe("PreparationPanel draft recovery", () => {
 })
 ```
 
-Note: the existing `renderPanel(contentJson)` passes `publishedAt={null}`. The newest test passes a real `publishedAt` by rendering directly.
+Note: the existing `renderPanel(contentJson)` passes `publishedAt={null}` (draft offered). The "server newer" test needs a real `publishedAt` and renders directly; the viewer test also renders directly with `canEdit={false}`.
 
 ### Step 2: Run test to verify it fails
 
