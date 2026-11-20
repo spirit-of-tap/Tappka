@@ -1017,6 +1017,16 @@ restored text. Fixed by passing the live `content.json` and remounting the
 editor (`editorKey` bumped in `handleRestoreDraft`), covered by a new
 no-mock real-editor test (`essay-editor-form-restore.test.tsx`).
 
+Third follow-up (whole-feature review):
+- Draft cleared when the essay is deleted (`EssayDeleteButton` gains an
+  optional `onDeleted` prop; the form passes `discard`).
+- The banner offer is withdrawn as soon as the person edits any field
+  (`setDraftBannerDismissed(true)` in all four change handlers) — the
+  mount-time restore snapshot can no longer clobber newer typing.
+- Seam tests: post-create typing lands under the migrated `essay:<id>`
+  scope (proves the `migrate` call site); essay typing-during-save keeps
+  the draft.
+
 ---
 
 ## Task 5: Wire TS preparation (`preparation-panel.tsx`)
@@ -1270,6 +1280,13 @@ reproduced):
   draft; a new no-mock test file (`preparation-panel-restore.test.tsx`)
   renders the REAL editor and asserts the restored text replaces the
   published text on Obnovit (RED before the remount fix).
+
+Second follow-up (whole-feature review):
+- The banner offer is withdrawn as soon as the person edits
+  (`setDraftBannerDismissed(true)` in the editor `onChange`) — the
+  mount-time restore snapshot can no longer clobber newer typing.
+- `sanitizePreparationDraft` guards a tampered `payload: null` entry so it
+  can no longer crash the panel at render (tested).
 
 ---
 
