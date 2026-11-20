@@ -59,6 +59,16 @@ interface PreparationDraftPayload {
   contentJson: object
 }
 
+/**
+ * Untrusted localStorage payloads must be coerced before render: a tampered
+ * entry like `{ savedAt, payload: null }` passes the storage shape check but
+ * would crash the banner's word count otherwise.
+ */
+function sanitizePreparationDraft(payload: unknown): PreparationDraftPayload {
+  const p = (typeof payload === "object" && payload !== null ? payload : {}) as Record<string, unknown>
+  return { contentJson: (p.contentJson ?? {}) as object }
+}
+
 export function PreparationPanel({
   sessionId,
   topic,
@@ -201,16 +211,17 @@ export function PreparationPanel({
   const showLinkHint = isLinkOnlyPreparation(doc)
   const linkHref = showLinkHint ? findPreparationLink(doc) : null
   const showDraftBanner = draft !== null && !draftBannerDismissed && isDraftNewerThan(draft, publishedAt)
+  const safeDraftPayload = draft !== null ? sanitizePreparationDraft(draft.payload) : null
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        {showDraftBanner && draft !== null && (
+        {showDraftBanner && draft !== null && safeDraftPayload !== null && (
           <DraftRecoveryBanner
             savedAt={draft.savedAt}
-            wordCount={countWords(contentTextFromJson(draft.payload.contentJson))}
+            wordCount={safeDraftPayload !== null ? countWords(contentTextFromJson(safeDraftPayload.contentJson)) : undefined}
             onRestore={() => {
-              setDoc(normalizeContentJson(draft.payload.contentJson))
+              setDoc(normalizeContentJson(safeDraftPayload.contentJson))
               setEditorKey((key) => key + 1)
               setDraftBannerDismissed(true)
             }}
@@ -226,6 +237,9 @@ export function PreparationPanel({
           onChange={(json) => {
             setDoc(json)
             update({ contentJson: json })
+            // The restore offer shows a frozen snapshot; once the person edits
+            // over it, the offer is withdrawn. The draft keeps updating.
+            setDraftBannerDismissed(true)
           }}
           placeholder="Co je potřeba si připravit, přečíst nebo promyslet předem?"
         />

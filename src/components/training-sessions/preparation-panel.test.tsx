@@ -309,4 +309,31 @@ describe("PreparationPanel draft recovery", () => {
 
     expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument()
   })
+
+  it("withdraws the recovery offer once the person starts editing", () => {
+    writeDraft(window.localStorage, scope, { contentJson: RICH_DOC })
+    vi.stubGlobal("fetch", vi.fn())
+    renderPanel(null)
+
+    expect(screen.getByText(/Máš rozepsaný text z/)).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText("Editor přípravy"), { target: { value: "nový text" } })
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument()
+  })
+
+  it("survives a tampered draft payload", () => {
+    window.localStorage.setItem(buildDraftKey(scope), JSON.stringify({
+      savedAt: new Date().toISOString(),
+      payload: null,
+    }))
+    vi.stubGlobal("fetch", vi.fn())
+    renderPanel(null)
+
+    expect(screen.getByText(/Máš rozepsaný text z/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: "Obnovit" }))
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument()
+  })
 })
