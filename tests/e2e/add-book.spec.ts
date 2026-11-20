@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import {
   cleanupTestData,
   getSetupSessionCookie,
@@ -100,7 +100,26 @@ async function passGateAndPick(page: Page) {
   await page.getByRole('button', { name: /Jake Knapp/ }).click();
 }
 
+// The analytics consent banner is fixed to the bottom and covers action
+// buttons. It renders on a later re-render (not on load), so pre-record a
+// "declined" choice in the browser context instead of racing it — the same
+// mechanism the training-sessions spec uses.
+async function declineAnalyticsConsent(context: BrowserContext): Promise<void> {
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY ?? "";
+  await context.addInitScript(
+    ({ key, now }) => {
+      localStorage.setItem(`__ph_opt_in_out_${key}`, "0");
+      localStorage.setItem("tappka-consent-at", String(now));
+    },
+    { key: posthogKey, now: Date.now() },
+  );
+}
+
 test.describe('adding a book', () => {
+  test.beforeEach(async ({ context }) => {
+    await declineAnalyticsConsent(context);
+  });
+
   test('gate → search → enrichment → checkout → submitted', async ({ page }) => {
     const { cookie } = await getSetupSessionCookie();
     await setAuthCookie(page.context(), cookie);
