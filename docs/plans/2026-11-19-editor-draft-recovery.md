@@ -986,9 +986,28 @@ Expected: PASS (old + new tests).
 ### Step 5: Commit
 
 ```bash
-git add src/components/essays/essay-editor-form.tsx src/components/essays/essay-editor-form.test.tsx
+git add src/components/essays/essay-editor-form.tsx src/components/essays/essay-editor-form.test.tsx src/app/\(main\)/cteni/eseje/nova/page.tsx
 git commit -m "feat(essays): recover unsaved essays from a local draft"
 ```
+
+### Post-review fixes (recorded)
+
+Applied in a follow-up commit after spec + code-quality review:
+
+- `sanitizeEssayDraft(payload: unknown)` helper: the stored payload is
+  untrusted — coerces every field to its safe default before the banner's
+  `countWords(...)` and `handleRestoreDraft` touch it (a tampered non-string
+  `contentText` used to crash the editor during render, with no way to
+  dismiss the draft).
+- `handleBookChange` / `handleSourceChange` now also sync
+  `latestRef.current.book` / `contentSource` (not just the ids) in the same
+  tick, so a draft flushed right after a picker change stores a consistent
+  payload.
+- Tests: the clear-on-save test also asserts the migrated `essay:<id>` key
+  is gone (previously `migrate` masked the discard); a PATCH-path clear test,
+  a tampered-payload render test, a failed-save-keeps-draft test, and a
+  selected-book-in-draft test were added; the two negative tests now also
+  assert the draft key survives (suppression ≠ deletion).
 
 ---
 
