@@ -20,6 +20,13 @@ import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
 const GENERIC_ERROR_MESSAGE = "Akci se nepodařilo dokončit"
+const UNNAMED_PERSON = "Bez jména"
+
+/** A guest (cross) the facilitator removes: the removal acts on another person's sign-up. */
+export interface GuestRemovalTarget {
+  profileId: string
+  name: string | null
+}
 
 export interface GuestJoinButtonProps {
   sessionId: string
@@ -27,6 +34,8 @@ export interface GuestJoinButtonProps {
   conflictText: string | null
   /** "status": while joined, a "you're going" pill that turns into leave on hover/focus. */
   variant?: "default" | "badge" | "icon" | "status"
+  /** When set, the button removes another person's cross sign-up (facilitators only). */
+  removeTarget?: GuestRemovalTarget
   className?: string
 }
 
@@ -35,23 +44,31 @@ export function GuestJoinButton({
   joined,
   conflictText,
   variant = "default",
+  removeTarget,
   className,
 }: GuestJoinButtonProps) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false)
+  const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false)
 
   async function submit() {
     setPending(true)
     try {
-      const res = await fetch(`/api/training-sessions/${sessionId}/guests`, { method: joined ? "DELETE" : "POST" })
+      const res = await fetch(`/api/training-sessions/${sessionId}/guests`, {
+        method: removeTarget || joined ? "DELETE" : "POST",
+        ...(removeTarget && {
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profileId: removeTarget.profileId }),
+        }),
+      })
       const body = (await res.json().catch(() => ({}))) as { error?: string }
       if (!res.ok) {
         toast.error(body.error ?? GENERIC_ERROR_MESSAGE)
         return
       }
-      toast.success(joined ? "Odhlášeno z TS" : "Přihlášeno na TS")
+      toast.success(removeTarget ? "Osoba byla odhlášena z TS" : joined ? "Odhlášeno z TS" : "Přihlášeno na TS")
     } catch {
       toast.error(GENERIC_ERROR_MESSAGE)
     } finally {
@@ -61,7 +78,8 @@ export function GuestJoinButton({
   }
 
   function onClick() {
-    if (!joined && conflictText) setConfirmOpen(true)
+    if (removeTarget) setRemoveConfirmOpen(true)
+    else if (!joined && conflictText) setConfirmOpen(true)
     // Touch has no hover preview of "Odhlásit se", so a tap on the status pill asks first.
     else if (joined && variant === "status") setLeaveConfirmOpen(true)
     else void submit()
@@ -69,7 +87,24 @@ export function GuestJoinButton({
 
   let trigger: React.ReactNode
 
-  if (variant === "icon") {
+  if (removeTarget) {
+    const targetName = removeTarget.name ?? UNNAMED_PERSON
+    trigger = (
+      <button
+        type="button"
+        title={`Odebrat ${targetName} z crossu`}
+        aria-label={`Odebrat ${targetName} z crossu`}
+        disabled={pending}
+        onClick={onClick}
+        className={cn(
+          "flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors cursor-pointer focus-ring",
+          className,
+        )}
+      >
+        {pending ? <Spinner className="size-3" /> : <X className="size-3.5 shrink-0" aria-hidden />}
+      </button>
+    )
+  } else if (variant === "icon") {
     trigger = (
       <button
         type="button"
@@ -166,7 +201,7 @@ export function GuestJoinButton({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Odhlásit se z TS?</AlertDialogTitle>
-            <AlertDialogDescription>Uvolníš místo pro někoho dalšího. Přihlásit se můžeš znovu, dokud bude volno.</AlertDialogDescription>
+            <AlertDialogDescription>Uvolníš místo pro někoho jiného. Přihlásit se můžeš znovu, dokud bude volno.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Zpět</AlertDialogCancel>
@@ -174,6 +209,20 @@ export function GuestJoinButton({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {removeTarget && (
+        <AlertDialog open={removeConfirmOpen} onOpenChange={setRemoveConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Odebrat {removeTarget.name ?? UNNAMED_PERSON} z TS?</AlertDialogTitle>
+              <AlertDialogDescription>Uvolníš tím místo pro někoho jiného. Osoba se může přihlásit znovu, dokud bude volno.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zpět</AlertDialogCancel>
+              <AlertDialogAction onClick={() => void submit()}>Odebrat</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </>
   )
 }
