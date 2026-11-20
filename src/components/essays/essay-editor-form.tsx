@@ -305,10 +305,10 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
   const handleBookChange = useCallback((book: BookSearchResult | null) => {
     setSelectedBook(book);
     latestRef.current.bookId = book?.id ?? null;
+    latestRef.current.book = book;
     if (book) {
       setSelectedSource(null);
       latestRef.current.contentSourceId = null;
-      latestRef.current.book = book;
       latestRef.current.contentSource = null;
     }
     markDirty();
@@ -318,10 +318,10 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
   const handleSourceChange = useCallback((source: ContentSource | null) => {
     setSelectedSource(source);
     latestRef.current.contentSourceId = source?.id ?? null;
+    latestRef.current.contentSource = source;
     if (source) {
       setSelectedBook(null);
       latestRef.current.bookId = null;
-      latestRef.current.contentSource = source;
       latestRef.current.book = null;
     }
     markDirty();

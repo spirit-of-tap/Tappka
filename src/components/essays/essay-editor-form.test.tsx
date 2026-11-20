@@ -742,6 +742,44 @@ describe('EssayEditorForm — draft recovery', () => {
     expect(payload.book).toEqual(expect.objectContaining({ id: 'b1' }));
   });
 
+  it('clears the book from the draft when it is deselected', async () => {
+    fetchSpy.mockImplementation((url) => {
+      if (typeof url === 'string' && url.startsWith('/api/essays/source-search')) {
+        return Promise.resolve(jsonResponse({
+          data: {
+            books: [{
+              id: 'b1', title_cs: 'Atomic Habits', author: 'James Clear', book_points: 3,
+              list_status: 'shortlist', is_rocket_model: false, google_books_cover_url: null, highlight_category: null,
+            }],
+            sources: [],
+          },
+        }));
+      }
+      return Promise.resolve(jsonResponse({}, 200));
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'Atomic');
+    await vi.advanceTimersByTimeAsync(400);
+    await waitFor(() => expect(screen.getByText('Atomic Habits')).toBeInTheDocument());
+    await user.click(screen.getByText('Atomic Habits'));
+    await vi.advanceTimersByTimeAsync(1500);
+
+    const before = window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'));
+    expect(JSON.parse(before!).payload.bookId).toBe('b1');
+
+    // The book card's "Změnit" button deselects the picker.
+    await user.click(screen.getByRole('button', { name: 'Změnit' }));
+    await vi.advanceTimersByTimeAsync(1500);
+
+    const raw = window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'));
+    expect(raw).not.toBeNull();
+    const payload = JSON.parse(raw!).payload as { bookId: string | null; book: { id: string } | null };
+    expect(payload.bookId).toBeNull();
+    expect(payload.book).toBeNull();
+  });
+
   it('clears the draft once a save lands', async () => {
     fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
