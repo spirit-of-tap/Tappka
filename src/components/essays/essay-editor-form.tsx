@@ -202,6 +202,10 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
     : `essay:nova:${profileId ?? 'anonymous'}`;
   const { draft, update, discard, migrate } = useEditorDraft<EssayDraftPayload>(draftScope);
   const [draftBannerDismissed, setDraftBannerDismissed] = useState(false);
+  // Remounts the editor after a draft restore: TiptapEditor only applies
+  // initialContent to an empty editor, so a non-empty one must be recreated
+  // to visibly show the restored doc.
+  const [editorKey, setEditorKey] = useState(0);
 
   const scheduleDraft = useCallback(() => {
     const latest = latestRef.current;
@@ -286,6 +290,7 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
     latestRef.current.contentSource = payload.contentSource;
     markDirty();
     setDraftBannerDismissed(true);
+    setEditorKey((key) => key + 1);
   }, [draft, markDirty]);
 
   const handleContentChange = useCallback((json: object, text: string) => {
@@ -755,8 +760,9 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
             blank paper reads as a rendering bug rather than an invitation. */}
         <div className="flex min-h-[30rem] flex-col rounded-xl border bg-card shadow-xs">
           <TiptapEditor
+            key={editorKey}
             className="flex-1"
-            initialContent={initialEssay?.content_json ?? undefined}
+            initialContent={content.json}
             onChange={handleContentChange}
             placeholder="Co tě kniha naučila? Začni psát…"
           />
