@@ -63,6 +63,28 @@ interface EssayDraftPayload {
 }
 
 /**
+ * Coerces an untrusted stored draft payload into a safe shape. localStorage
+ * is outside the app's trust boundary: readDraft only validates the
+ * { savedAt, payload } envelope, so every field here may be missing or of
+ * the wrong type. Anything unrecognized degrades to its empty default; the
+ * book/contentSource objects pass through as-is (self-inflicted data only —
+ * downstream badges/renderers tolerate null but a tampered object is the
+ * caller's own risk).
+ */
+function sanitizeEssayDraft(payload: unknown): EssayDraftPayload {
+  const p = (typeof payload === 'object' && payload !== null ? payload : {}) as Record<string, unknown>;
+  return {
+    title: typeof p.title === 'string' ? p.title : '',
+    contentJson: typeof p.contentJson === 'object' && p.contentJson !== null ? p.contentJson : {},
+    contentText: typeof p.contentText === 'string' ? p.contentText : '',
+    bookId: typeof p.bookId === 'string' ? p.bookId : null,
+    contentSourceId: typeof p.contentSourceId === 'string' ? p.contentSourceId : null,
+    book: (p.book ?? null) as BookSearchResult | null,
+    contentSource: (p.contentSource ?? null) as ContentSource | null,
+  };
+}
+
+/**
  * Reflects `status`/`isDirty` from `useEssaySave`. A brief green glow marks
  * the moment a save actually lands, giving the passive status text one
  * active beat the author can feel.
@@ -249,21 +271,19 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
 
   const handleRestoreDraft = useCallback(() => {
     if (!draft) return;
-    const payload = draft.payload;
+    const payload = sanitizeEssayDraft(draft.payload);
     const json = normalizeContentJson(payload.contentJson);
-    const text = typeof payload.contentText === 'string'
-      ? payload.contentText
-      : extractPlainTextFromContentJson(json);
-    setTitle(payload.title ?? '');
+    const text = payload.contentText || extractPlainTextFromContentJson(json);
+    setTitle(payload.title);
     setContent({ json, text });
-    setSelectedBook(payload.book ?? null);
-    setSelectedSource(payload.contentSource ?? null);
-    latestRef.current.title = payload.title ?? '';
+    setSelectedBook(payload.book);
+    setSelectedSource(payload.contentSource);
+    latestRef.current.title = payload.title;
     latestRef.current.content = { json, text };
-    latestRef.current.bookId = payload.bookId ?? null;
-    latestRef.current.contentSourceId = payload.contentSourceId ?? null;
-    latestRef.current.book = payload.book ?? null;
-    latestRef.current.contentSource = payload.contentSource ?? null;
+    latestRef.current.bookId = payload.bookId;
+    latestRef.current.contentSourceId = payload.contentSourceId;
+    latestRef.current.book = payload.book;
+    latestRef.current.contentSource = payload.contentSource;
     markDirty();
     setDraftBannerDismissed(true);
   }, [draft, markDirty]);
@@ -288,6 +308,8 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
     if (book) {
       setSelectedSource(null);
       latestRef.current.contentSourceId = null;
+      latestRef.current.book = book;
+      latestRef.current.contentSource = null;
     }
     markDirty();
     scheduleDraft();
@@ -299,6 +321,8 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
     if (source) {
       setSelectedBook(null);
       latestRef.current.bookId = null;
+      latestRef.current.contentSource = source;
+      latestRef.current.book = null;
     }
     markDirty();
     scheduleDraft();
@@ -404,6 +428,7 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
   const showDraftBanner = draft !== null
     && !draftBannerDismissed
     && isDraftNewerThan(draft, initialEssay?.updated_at ?? null);
+  const safeDraftPayload = draft !== null ? sanitizeEssayDraft(draft.payload) : null;
 
   return (
     <div className="space-y-4">
@@ -458,7 +483,7 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
       {showDraftBanner && draft !== null && (
         <DraftRecoveryBanner
           savedAt={draft.savedAt}
-          wordCount={countWords(draft.payload.contentText)}
+          wordCount={safeDraftPayload !== null ? countWords(safeDraftPayload.contentText) : undefined}
           onRestore={handleRestoreDraft}
           onDiscard={() => {
             discard();

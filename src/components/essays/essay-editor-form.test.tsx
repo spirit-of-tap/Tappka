@@ -632,6 +632,20 @@ describe('EssayEditorForm — draft recovery', () => {
     });
   });
 
+  it('renders with a tampered draft without crashing', async () => {
+    seedDraft(essayScope, new Date().toISOString(), { title: 123, contentText: null });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    expect(screen.getByText(/Máš rozepsaný text z/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Obnovit' }));
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Název eseje')).toHaveValue('');
+  });
+
   it('Zahodit removes the stored draft and hides the banner', async () => {
     seedDraft(essayScope, new Date().toISOString(), EMPTY_PAYLOAD);
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
@@ -653,6 +667,9 @@ describe('EssayEditorForm — draft recovery', () => {
     render(<EssayEditorForm initialEssay={{ ...draftEssay, updated_at: new Date(now - 3_600_000).toISOString() }} />);
 
     expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
+    // Suppression comes from the isDraftNewerThan comparison, not from
+    // silently deleting the stored draft.
+    expect(window.localStorage.getItem(buildDraftKey(essayScope))).not.toBeNull();
   });
 
   it('offers a draft on /nova, where no server copy exists', async () => {
@@ -677,6 +694,8 @@ describe('EssayEditorForm — draft recovery', () => {
     render(<EssayEditorForm profileId="profile-1" />);
 
     expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
+    // The other profile's draft is merely out of scope — it must survive.
+    expect(window.localStorage.getItem(buildDraftKey('essay:nova:profile-2'))).not.toBeNull();
   });
 
   it('writes the draft to localStorage while typing', async () => {
@@ -690,6 +709,37 @@ describe('EssayEditorForm — draft recovery', () => {
     const raw = window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'));
     expect(raw).not.toBeNull();
     expect(JSON.parse(raw!).payload.title).toBe('Rozepsaná esej');
+  });
+
+  it('includes the selected book in the written draft', async () => {
+    fetchSpy.mockImplementation((url) => {
+      if (typeof url === 'string' && url.startsWith('/api/essays/source-search')) {
+        return Promise.resolve(jsonResponse({
+          data: {
+            books: [{
+              id: 'b1', title_cs: 'Atomic Habits', author: 'James Clear', book_points: 3,
+              list_status: 'shortlist', is_rocket_model: false, google_books_cover_url: null, highlight_category: null,
+            }],
+            sources: [],
+          },
+        }));
+      }
+      return Promise.resolve(jsonResponse({}, 200));
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+    await user.type(screen.getByLabelText('Hledat knihu nebo jiný zdroj'), 'Atomic');
+    await vi.advanceTimersByTimeAsync(400);
+    await waitFor(() => expect(screen.getByText('Atomic Habits')).toBeInTheDocument());
+    await user.click(screen.getByText('Atomic Habits'));
+    await vi.advanceTimersByTimeAsync(1500);
+
+    const raw = window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'));
+    expect(raw).not.toBeNull();
+    const payload = JSON.parse(raw!).payload as { bookId: string | null; book: { id: string } | null };
+    expect(payload.bookId).toBe('b1');
+    expect(payload.book).toEqual(expect.objectContaining({ id: 'b1' }));
   });
 
   it('clears the draft once a save lands', async () => {
@@ -709,5 +759,47 @@ describe('EssayEditorForm — draft recovery', () => {
     await vi.advanceTimersByTimeAsync(100);
 
     expect(window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'))).toBeNull();
+    // migrate moves the draft to the essay scope; only the clear-on-save
+    // discard removes it there. Without this assertion the test would pass
+    // even if the discard effect were deleted.
+    expect(window.localStorage.getItem(buildDraftKey('essay:essay-1'))).toBeNull();
+  });
+
+  it('clears the draft on an existing essay once a save lands', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({}, 200));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+    await user.type(screen.getByLabelText('Název eseje'), 'Uložená esej');
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(window.localStorage.getItem(buildDraftKey(essayScope))).not.toBeNull();
+
+    await user.click(saveButton());
+    await waitFor(() => {
+      const patches = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays/essay-1');
+      expect(patches).toHaveLength(1);
+    });
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(window.localStorage.getItem(buildDraftKey(essayScope))).toBeNull();
+  });
+
+  it('keeps the draft when a save fails', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ error: 'x' }, 500));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+    await user.type(screen.getByLabelText('Název eseje'), 'Neuložený text');
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(window.localStorage.getItem(buildDraftKey(essayScope))).not.toBeNull();
+
+    await user.click(saveButton());
+    await waitFor(() => {
+      const patches = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays/essay-1');
+      expect(patches).toHaveLength(1);
+    });
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(window.localStorage.getItem(buildDraftKey(essayScope))).not.toBeNull();
   });
 });
