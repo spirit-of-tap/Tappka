@@ -28,12 +28,15 @@ import { Spinner } from '@/components/ui/spinner';
 import { StorageImage } from '@/components/storage/storage-image';
 import { BookStatusBadges } from '@/components/books/book-status-badges';
 import { ContentSourceIllustration } from '@/components/content-sources/content-source-illustration';
+import { DraftRecoveryBanner } from '@/components/editor-drafts/draft-recovery-banner';
+import { isDraftNewerThan } from '@/lib/editor-drafts/draft-storage';
+import { useEditorDraft } from '@/lib/editor-drafts/use-editor-draft';
 import { useEssaySave, type EssaySaveStatus } from '@/lib/essays/use-essay-save';
 import { useUnsavedChangesGuard } from '@/lib/essays/use-unsaved-changes-guard';
 import { formatPoints, resolveEssayPoints } from '@/lib/books/points';
 import { LegacyPointsBadge } from '@/components/essays/legacy-points-badge';
 import { countWords, formatReadingTime, formatWordCount } from '@/lib/essays/text-stats';
-import { EMPTY_DOC, normalizeContentJson } from '@/lib/essays/content-text';
+import { EMPTY_DOC, extractPlainTextFromContentJson, normalizeContentJson } from '@/lib/essays/content-text';
 import { CONTENT_SOURCE_KIND_LABELS } from '@/lib/content-sources/types';
 import { cn } from '@/lib/utils';
 import type { Book, HighlightCategory } from '@/lib/books/types';
@@ -45,6 +48,18 @@ type BookSearchResult = Book & { highlight_category: HighlightCategory | null };
 
 interface EssayEditorFormProps {
   initialEssay?: EssayWithDetails;
+  /** Scopes the /nova draft so a shared machine never leaks one account's draft to another. */
+  profileId?: string;
+}
+
+interface EssayDraftPayload {
+  title: string;
+  contentJson: object;
+  contentText: string;
+  bookId: string | null;
+  contentSourceId: string | null;
+  book: BookSearchResult | null;
+  contentSource: ContentSource | null;
 }
 
 /**
@@ -111,7 +126,7 @@ function SaveStatus({
   );
 }
 
-export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
+export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProps) {
   const [title, setTitle] = useState(initialEssay?.title ?? '');
   const [content, setContent] = useState<{ json: object; text: string }>({
     json: normalizeContentJson(initialEssay?.content_json ?? EMPTY_DOC),
@@ -136,10 +151,48 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
 
   // The save closure must read the newest values, not the ones captured when
   // the debounce timer was armed.
-  const latestRef = useRef({ title, content, bookId: selectedBook?.id ?? null, contentSourceId: selectedSource?.id ?? null, essayId });
-  latestRef.current = { title, content, bookId: selectedBook?.id ?? null, contentSourceId: selectedSource?.id ?? null, essayId };
+  const latestRef = useRef({
+    title,
+    content,
+    bookId: selectedBook?.id ?? null,
+    contentSourceId: selectedSource?.id ?? null,
+    essayId,
+    book: selectedBook as BookSearchResult | null,
+    contentSource: selectedSource as ContentSource | null,
+  });
+  latestRef.current = {
+    title,
+    content,
+    bookId: selectedBook?.id ?? null,
+    contentSourceId: selectedSource?.id ?? null,
+    essayId,
+    book: selectedBook as BookSearchResult | null,
+    contentSource: selectedSource as ContentSource | null,
+  };
 
   const creatingRef = useRef(false);
+
+  // Recovery net: the draft outlives tab closes and crashes. The scope is
+  // derived from the initial essay only, so it is stable across the create
+  // flow (where `migrate` moves the stored draft once the id exists).
+  const draftScope = initialEssay?.id
+    ? `essay:${initialEssay.id}`
+    : `essay:nova:${profileId ?? 'anonymous'}`;
+  const { draft, update, discard, migrate } = useEditorDraft<EssayDraftPayload>(draftScope);
+  const [draftBannerDismissed, setDraftBannerDismissed] = useState(false);
+
+  const scheduleDraft = useCallback(() => {
+    const latest = latestRef.current;
+    update({
+      title: latest.title,
+      contentJson: latest.content.json,
+      contentText: latest.content.text,
+      bookId: latest.bookId,
+      contentSourceId: latest.contentSourceId,
+      book: latest.book,
+      contentSource: latest.contentSource,
+    });
+  }, [update]);
 
   const persist = useCallback(async () => {
     const { title: t, content: c, bookId, contentSourceId, essayId: id } = latestRef.current;
@@ -158,6 +211,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
         const { data } = await res.json();
         setEssayId(data.id);
         latestRef.current.essayId = data.id;
+        migrate(`essay:${data.id}`);
         // Shallow URL swap: router.replace would remount the page and tear
         // down Tiptap mid-sentence. Next's App Router supports the native
         // History API and keeps usePathname in sync.
@@ -175,7 +229,7 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       keepalive: true,
     });
     if (!res.ok) throw new Error('save failed');
-  }, []);
+  }, [migrate]);
 
   const hasSomethingToSave = title.trim().length > 0 || content.text.trim().length > 0
     || selectedBook !== null || selectedSource !== null;
@@ -185,17 +239,48 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
   });
   const guard = useUnsavedChangesGuard(isDirty || status === 'saving');
 
+  // A save that caught up with every edit makes the local draft redundant.
+  const draftCaughtUp = status === 'saved' && !isDirty;
+  const prevDraftCaughtUpRef = useRef(false);
+  useEffect(() => {
+    if (draftCaughtUp && !prevDraftCaughtUpRef.current) discard();
+    prevDraftCaughtUpRef.current = draftCaughtUp;
+  }, [draftCaughtUp, discard]);
+
+  const handleRestoreDraft = useCallback(() => {
+    if (!draft) return;
+    const payload = draft.payload;
+    const json = normalizeContentJson(payload.contentJson);
+    const text = typeof payload.contentText === 'string'
+      ? payload.contentText
+      : extractPlainTextFromContentJson(json);
+    setTitle(payload.title ?? '');
+    setContent({ json, text });
+    setSelectedBook(payload.book ?? null);
+    setSelectedSource(payload.contentSource ?? null);
+    latestRef.current.title = payload.title ?? '';
+    latestRef.current.content = { json, text };
+    latestRef.current.bookId = payload.bookId ?? null;
+    latestRef.current.contentSourceId = payload.contentSourceId ?? null;
+    latestRef.current.book = payload.book ?? null;
+    latestRef.current.contentSource = payload.contentSource ?? null;
+    markDirty();
+    setDraftBannerDismissed(true);
+  }, [draft, markDirty]);
+
   const handleContentChange = useCallback((json: object, text: string) => {
     setContent({ json, text });
     latestRef.current.content = { json, text };
     markDirty();
-  }, [markDirty]);
+    scheduleDraft();
+  }, [markDirty, scheduleDraft]);
 
   const handleTitleChange = useCallback((value: string) => {
     setTitle(value);
     latestRef.current.title = value;
     markDirty();
-  }, [markDirty]);
+    scheduleDraft();
+  }, [markDirty, scheduleDraft]);
 
   const handleBookChange = useCallback((book: BookSearchResult | null) => {
     setSelectedBook(book);
@@ -205,7 +290,8 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       latestRef.current.contentSourceId = null;
     }
     markDirty();
-  }, [markDirty]);
+    scheduleDraft();
+  }, [markDirty, scheduleDraft]);
 
   const handleSourceChange = useCallback((source: ContentSource | null) => {
     setSelectedSource(source);
@@ -215,7 +301,8 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
       latestRef.current.bookId = null;
     }
     markDirty();
-  }, [markDirty]);
+    scheduleDraft();
+  }, [markDirty, scheduleDraft]);
 
   /** One search across both books and content sources, in a single round trip. */
   const searchSources = async (q: string) => {
@@ -314,6 +401,10 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
     : 0;
   const selectedBookPointsFrozen = selectedBookFrozenPoints != null;
 
+  const showDraftBanner = draft !== null
+    && !draftBannerDismissed
+    && isDraftNewerThan(draft, initialEssay?.updated_at ?? null);
+
   return (
     <div className="space-y-4">
       {/* Top navigation & action bar: Back button alone on the left, save
@@ -363,6 +454,18 @@ export function EssayEditorForm({ initialEssay }: EssayEditorFormProps) {
           )}
         </div>
       </header>
+
+      {showDraftBanner && draft !== null && (
+        <DraftRecoveryBanner
+          savedAt={draft.savedAt}
+          wordCount={countWords(draft.payload.contentText)}
+          onRestore={handleRestoreDraft}
+          onDiscard={() => {
+            discard();
+            setDraftBannerDismissed(true);
+          }}
+        />
+      )}
 
       {essayId && (
         <>

@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EssayEditorForm } from '@/components/essays/essay-editor-form';
+import { buildDraftKey } from '@/lib/editor-drafts/draft-storage';
 
 const push = vi.fn();
 const replace = vi.fn();
@@ -583,5 +584,130 @@ describe('EssayEditorForm — unsaved changes guard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Odejít bez uložení' }));
     expect(push).toHaveBeenCalledWith('/cteni/prehled');
+  });
+});
+
+describe('EssayEditorForm — draft recovery', () => {
+  const essayScope = 'essay:essay-1';
+
+  function seedDraft(scope: string, savedAt: string, payload: Record<string, unknown>) {
+    window.localStorage.setItem(buildDraftKey(scope), JSON.stringify({ savedAt, payload }));
+  }
+
+  const EMPTY_PAYLOAD = {
+    title: '', contentJson: { type: 'doc' }, contentText: '',
+    bookId: null, contentSourceId: null, book: null, contentSource: null,
+  };
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('offers to restore a newer draft and fills the form on Obnovit', async () => {
+    seedDraft(essayScope, new Date().toISOString(), {
+      ...EMPTY_PAYLOAD,
+      title: 'Obnovený název',
+      contentText: 'Obnovený text',
+    });
+    fetchSpy.mockResolvedValue(jsonResponse({}, 200));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    expect(screen.getByText(/Máš rozepsaný text z/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Obnovit' }));
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Název eseje')).toHaveValue('Obnovený název');
+
+    // The mocked TiptapEditor is uncontrolled, so prove the restored prose
+    // reached the form state by saving and inspecting the PATCH body.
+    await user.click(saveButton());
+    await waitFor(() => {
+      const patches = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays/essay-1');
+      expect(patches).toHaveLength(1);
+      const body = JSON.parse(String(patches[0][1]?.body)) as { content_text: string };
+      expect(body.content_text).toBe('Obnovený text');
+    });
+  });
+
+  it('Zahodit removes the stored draft and hides the banner', async () => {
+    seedDraft(essayScope, new Date().toISOString(), EMPTY_PAYLOAD);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm initialEssay={draftEssay} />);
+
+    await user.click(screen.getByRole('button', { name: 'Zahodit' }));
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(buildDraftKey(essayScope))).toBeNull();
+  });
+
+  it('stays silent when the server copy is newer than the draft', async () => {
+    // Both timestamps must stay inside the 14-day TTL, or the draft would be
+    // dropped by expiry before the comparison ever runs.
+    const now = Date.now();
+    seedDraft(essayScope, new Date(now - 2 * 3_600_000).toISOString(), EMPTY_PAYLOAD);
+
+    render(<EssayEditorForm initialEssay={{ ...draftEssay, updated_at: new Date(now - 3_600_000).toISOString() }} />);
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
+  });
+
+  it('offers a draft on /nova, where no server copy exists', async () => {
+    seedDraft('essay:nova:profile-1', new Date().toISOString(), {
+      ...EMPTY_PAYLOAD,
+      title: 'Nový náčrt',
+      contentText: 'text',
+    });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+
+    expect(screen.getByText(/Máš rozepsaný text z/)).toBeInTheDocument();
+  });
+
+  it('keeps /nova drafts separate per profile', async () => {
+    seedDraft('essay:nova:profile-2', new Date().toISOString(), {
+      ...EMPTY_PAYLOAD,
+      title: 'Cizí náčrt',
+      contentText: 'text',
+    });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+
+    expect(screen.queryByText(/Máš rozepsaný text z/)).not.toBeInTheDocument();
+  });
+
+  it('writes the draft to localStorage while typing', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+
+    await user.type(screen.getByLabelText('Název eseje'), 'Rozepsaná esej');
+    await vi.advanceTimersByTimeAsync(1500);
+
+    const raw = window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'));
+    expect(raw).not.toBeNull();
+    expect(JSON.parse(raw!).payload.title).toBe('Rozepsaná esej');
+  });
+
+  it('clears the draft once a save lands', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ data: { id: 'essay-1' } }, 201));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    render(<EssayEditorForm profileId="profile-1" />);
+    await user.type(screen.getByLabelText('Název eseje'), 'Uložená esej');
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'))).not.toBeNull();
+
+    await user.click(saveButton());
+    await waitFor(() => {
+      const creates = fetchSpy.mock.calls.filter(([url]) => url === '/api/essays');
+      expect(creates).toHaveLength(1);
+    });
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(window.localStorage.getItem(buildDraftKey('essay:nova:profile-1'))).toBeNull();
   });
 });
