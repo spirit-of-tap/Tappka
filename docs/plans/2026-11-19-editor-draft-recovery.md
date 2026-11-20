@@ -1009,6 +1009,14 @@ Applied in a follow-up commit after spec + code-quality review:
   selected-book-in-draft test were added; the two negative tests now also
   assert the draft key survives (suppression ≠ deletion).
 
+Second follow-up (restore visibility, same root cause as Task 5's critical):
+`TiptapEditor` only syncs `initialContent` when the editor is empty, and the
+essay form passed the static `initialEssay.content_json` — so restoring a
+draft left the visible editor on the server copy while saves used the
+restored text. Fixed by passing the live `content.json` and remounting the
+editor (`editorKey` bumped in `handleRestoreDraft`), covered by a new
+no-mock real-editor test (`essay-editor-form-restore.test.tsx`).
+
 ---
 
 ## Task 5: Wire TS preparation (`preparation-panel.tsx`)
