@@ -10,12 +10,17 @@ import {
 } from '@/components/ui/card';
 import { DASHBOARD_SECTION, DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { ProfileAvatar } from '@/components/profile-avatar';
+import { cn } from '@/lib/utils';
 import { isMelvilDiscountLive } from '@/lib/books/melvil-discount';
 import {
   CTENI_DISCOVER_HREF,
   MELVIL_DISCOUNT,
   teamBookPointsHref,
 } from '@/lib/constants/cteni';
+
+const PODIUM_HEIGHT = { 1: 88, 2: 64, 3: 48 } as const;
+/** DOM stays in rank order for screen readers; the podium shows 2nd · 1st · 3rd. */
+const PODIUM_ORDER = { 1: 'order-2', 2: 'order-1', 3: 'order-3' } as const;
 
 interface TeamSnapshotCardProps {
   stats: {
@@ -30,7 +35,7 @@ interface TeamSnapshotCardProps {
 
 export function TeamSnapshotCard({ stats, hasTeam, teamId, teamName }: TeamSnapshotCardProps) {
   const top = [...stats].sort((a, b) => b.approved_points - a.approved_points).slice(0, 3);
-  const leaderPoints = top[0]?.approved_points ?? 0;
+  const podium = top.map((row, i) => ({ row, place: (i + 1) as 1 | 2 | 3 }));
 
   return (
     <Card className={DASHBOARD_SECTION}>
@@ -49,39 +54,37 @@ export function TeamSnapshotCard({ stats, hasTeam, teamId, teamName }: TeamSnaps
           </CardAction>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         {!hasTeam ? (
           <p className="text-sm text-muted-foreground">Nemáš přiřazený tým.</p>
-        ) : top.length === 0 ? (
+        ) : podium.length === 0 ? (
           <p className="text-sm text-muted-foreground">Tým zatím nemá žádné body.</p>
         ) : (
-          <ul className="space-y-3">
-            {top.map((row, i) => (
-              <li key={row.profile.id}>
+          <ol aria-label="Pořadí podle knižních bodů" className="flex h-40 items-end justify-center gap-3">
+            {podium.map(({ row, place }, i) => (
+              <li key={row.profile.id} className={cn('flex w-20 min-w-0 flex-col items-center gap-1.5', PODIUM_ORDER[place])}>
                 <Link
                   href={`/komunita/profil/${row.profile.id}`}
-                  className="group focus-ring flex items-center gap-3 rounded-md"
+                  className="focus-ring group flex min-w-0 flex-col items-center gap-1 rounded-md"
                 >
-                  <span className="w-4 text-sm tabular-nums text-muted-foreground">
-                    {i + 1}.
-                  </span>
-                  <ProfileAvatar picture={row.profile.picture} name={row.profile.name} size={28} />
-                  <span className="flex-1 truncate text-sm group-hover:underline underline-offset-4">
+                  <ProfileAvatar picture={row.profile.picture} name={row.profile.name} size={place === 1 ? 36 : 30} />
+                  <span className="max-w-20 truncate text-xs group-hover:underline underline-offset-4">
                     {row.profile.name}
                   </span>
-                  <span aria-hidden className="h-1.5 w-20 shrink-0 rounded-full bg-muted">
-                    <span
-                      className="block h-1.5 rounded-full bg-chart-2"
-                      style={{ width: `${leaderPoints > 0 ? (row.approved_points / leaderPoints) * 100 : 0}%` }}
-                    />
-                  </span>
-                  <span className="w-9 text-right text-sm font-bold tabular-nums">
-                    {row.approved_points} b.
-                  </span>
                 </Link>
+                <span
+                  style={{ height: `${PODIUM_HEIGHT[place]}px`, animationDelay: `${i * 90}ms` }}
+                  className={cn(
+                    'flex w-full origin-bottom items-start justify-center rounded-t-xl rounded-b-sm pt-2 font-heading text-sm font-bold tabular-nums motion-safe:animate-bar-grow',
+                    place === 1 ? 'bg-chart-2 text-card' : 'bg-chart-2/15 text-chart-2-strong',
+                  )}
+                >
+                  <span className="sr-only">{place}. místo, </span>
+                  {row.approved_points} b.
+                </span>
               </li>
             ))}
-          </ul>
+          </ol>
         )}
       </CardContent>
       {isMelvilDiscountLive(new Date()) && (

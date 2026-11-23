@@ -67,11 +67,11 @@ describe("TeamSnapshotCard", () => {
     );
   });
 
-  it("keeps the rank and points inside the row link", () => {
+  it("puts each reader's place and points on their podium step", () => {
     render(<TeamSnapshotCard stats={stats} hasTeam />);
-    const topRow = screen.getByRole("link", { name: /Bohuš Dvořák/ });
-    expect(topRow.textContent).toContain("1.");
-    expect(topRow.textContent).toContain("50 b.");
+    const leader = screen.getByRole("link", { name: /Bohuš Dvořák/ }).closest("li");
+    expect(leader?.textContent).toContain("1. místo");
+    expect(leader?.textContent).toContain("50 b.");
   });
 
   it("shows a hint instead of the leaderboard when the user has no team", () => {

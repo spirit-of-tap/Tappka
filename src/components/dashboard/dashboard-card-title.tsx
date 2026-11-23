@@ -3,11 +3,8 @@ import type { ReactNode } from 'react';
 import { CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-/**
- * Dashboard widgets are sections inside a shared panel, separated by hairlines,
- * not standalone cards: Card's own border, background and shadow are dropped.
- */
-export const DASHBOARD_SECTION = 'gap-4 rounded-none border-0 bg-transparent py-5 shadow-none';
+/** Standalone dashboard card: fills its grid cell, softer radius than the default Card. */
+export const DASHBOARD_SECTION = 'h-full gap-4 rounded-2xl py-5';
 
 /** Small coloured label that heads every dashboard card; each card picks its colour. */
 export function DashboardCardTitle({ children, className }: { children: ReactNode; className?: string }) {

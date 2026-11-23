@@ -18,7 +18,7 @@ describe("NextTrainingSessionCard", () => {
   it("shows the next session with time, team, location and facilitator", () => {
     render(<NextTrainingSessionCard session={session} />);
 
-    expect(screen.getByText("Nejbližší training session")).toBeInTheDocument();
+    expect(screen.getByText(/Nejbližší training session/)).toBeInTheDocument();
     expect(screen.getByText("Strategická session")).toBeInTheDocument();
     expect(screen.getByText(/4\. listopadu/)).toBeInTheDocument();
     expect(screen.getByText(/10:00–11:30/)).toBeInTheDocument();
