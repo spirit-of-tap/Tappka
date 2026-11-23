@@ -100,7 +100,7 @@ export function GuestJoinButton({
         <div
           className={cn(
             "flex size-6 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-2xs",
-            joined && "bg-destructive/10 text-destructive",
+            joined && "bg-destructive/10 text-destructive-strong",
           )}
         >
           {pending ? (

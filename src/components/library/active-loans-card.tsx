@@ -198,7 +198,7 @@ export function ActiveLoansCard({ loans }: ActiveLoansCardProps) {
                       className={cn(
                         'rounded-full px-2 py-0.2 text-[10px] font-semibold',
                         dueInfo.tone === 'destructive' &&
-                          'bg-destructive/10 text-destructive',
+                          'bg-destructive/10 text-destructive-strong',
                         dueInfo.tone === 'warning' &&
                           'bg-warning/15 text-warning-strong',
                       )}
