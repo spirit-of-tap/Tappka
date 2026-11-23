@@ -232,6 +232,8 @@ export default async function ProfilePage({ params, searchParams }: PageProps) {
                 personalEmail={profile.personal_email}
                 phoneNumber={profile.phone_number}
                 birthday={birthday}
+                dateOfBirth={profile.date_of_birth}
+                isOwnProfile={isOwnProfile}
               />
             </div>
           </TabsContent>
