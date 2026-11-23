@@ -43,11 +43,10 @@ function SessionDateTile({ startsAt }: { startsAt: string }) {
 
   return (
     <div
-      data-surface="frame"
       aria-hidden
-      className="flex w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-sidebar py-2.5 text-foreground"
+      className="flex w-18 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-primary/10 py-3 text-primary"
     >
-      <span className="text-[11px] font-bold uppercase tracking-widest text-primary">
+      <span className="text-[11px] font-bold uppercase tracking-widest">
         {part({ weekday: 'short' })}
       </span>
       <span className="font-heading text-2xl font-extrabold leading-none">{part({ day: 'numeric' })}</span>

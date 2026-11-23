@@ -21,9 +21,9 @@ interface MetricsCardProps {
 
 export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
   return (
-    <Card data-surface="frame" className="h-full border-transparent bg-sidebar">
+    <Card className="h-full">
       <CardHeader>
-        <DashboardCardTitle>Metriky</DashboardCardTitle>
+        <DashboardCardTitle className="text-foreground">Metriky</DashboardCardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
@@ -32,7 +32,7 @@ export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
               <BookOpen className="size-3.5" />
               Knižní body
             </div>
-            <p className="text-2xl font-bold tabular-nums leading-none group flex items-center gap-2">
+            <p className="font-heading text-2xl font-extrabold tabular-nums leading-none group flex items-center gap-2 text-chart-5">
               {formatPointsWithLabel(bookPoints)}
               <ArrowRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </p>
@@ -42,7 +42,7 @@ export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
               <Handshake className="size-3.5" />
               Zákaznické schůzky
             </div>
-            <p className="text-2xl font-bold tabular-nums leading-none group flex items-center gap-2">
+            <p className="font-heading text-2xl font-extrabold tabular-nums leading-none group flex items-center gap-2 text-chart-2-strong">
               {meetingCount} {meetingLabel(meetingCount)}
               <ArrowRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </p>

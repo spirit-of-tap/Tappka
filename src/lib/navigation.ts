@@ -21,7 +21,7 @@ import {
 import { KasaIcon } from "@/lib/komunitni-kasa/brand/kasa-icon";
 import { canAccessFeature, type AccessProfile, type BetaFeature } from "./feature-access";
 
-/** Sidebar group for in-app modules; modules without one stay in "Hlavní". */
+/** Sidebar group for in-app modules; modules without one stay in "Společné". */
 export type NavGroup = "individual" | "team";
 
 export interface NavModule {
@@ -96,33 +96,47 @@ export function getHubModules(profile: AccessProfile | null | undefined | boolea
   });
 }
 
+/** Colour family of a sidebar section: its dot and the icon chips of its items. */
+export type NavTone = "shared" | "individual" | "team" | "neutral";
+
 export interface NavSection {
   title: string;
+  /** One line under the title saying who the modules are for. */
+  hint?: string;
+  tone: NavTone;
   items: NavModule[];
 }
 
-const NAV_GROUP_TITLES: Record<NavGroup, string> = {
-  individual: "Individuální",
-  team: "Týmové",
+const NAV_GROUPS: Record<NavGroup, { title: string; hint: string }> = {
+  individual: { title: "Můj rozvoj", hint: "Tvoje vlastní práce a růst" },
+  team: { title: "Můj tým", hint: "Co děláte společně jako tým" },
 };
 
 /**
- * Sidebar grouping: shared modules in "Hlavní", then individual and team
+ * Sidebar grouping: shared modules in "Společné", then individual and team
  * modules; external links get their own section so they never read as in-app
  * modules.
  */
 export function getSidebarSections(devItems: NavModule[] = []): NavSection[] {
   const internal = NAV_MODULES.filter((m) => !m.external);
   const external = NAV_MODULES.filter((m) => m.external);
-  const grouped = (Object.keys(NAV_GROUP_TITLES) as NavGroup[]).map((group) => ({
-    title: NAV_GROUP_TITLES[group],
+  const grouped = (Object.keys(NAV_GROUPS) as NavGroup[]).map((group) => ({
+    ...NAV_GROUPS[group],
+    tone: group,
     items: internal.filter((m) => m.group === group),
   }));
 
   return [
-    { title: "Hlavní", items: internal.filter((m) => !m.group) },
+    {
+      title: "Společné",
+      hint: "Pro celou akademii",
+      tone: "shared",
+      items: internal.filter((m) => !m.group),
+    },
     ...grouped,
-    ...(external.length > 0 ? [{ title: "Externí odkazy", items: external }] : []),
-    ...(devItems.length > 0 ? [{ title: "Dev", items: devItems }] : []),
+    ...(external.length > 0
+      ? [{ title: "Externí odkazy", tone: "neutral" as const, items: external }]
+      : []),
+    ...(devItems.length > 0 ? [{ title: "Dev", tone: "neutral" as const, items: devItems }] : []),
   ];
 }

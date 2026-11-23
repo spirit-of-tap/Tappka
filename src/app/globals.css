@@ -64,8 +64,6 @@
   --color-time-practise: var(--time-practise);
   --color-time-project: var(--time-project);
   --color-sidebar: var(--sidebar);
-  --color-sheet: var(--sheet);
-  --color-sheet-foreground: var(--sheet-foreground);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
@@ -89,13 +87,7 @@
 /* TAP Brand Colors - Light Theme */
 :root {
   --radius: 0.5rem;
-  /* The page sheet's colours, resolved here on the root (light or .dark) and
-     inherited as values, so they survive the frame remap below. The active
-     sidebar item uses them to look like a tab of the sheet. */
-  --sheet: var(--background);
-  --sheet-foreground: var(--foreground);
-
-  /* Warm cream sheet inside the brown frame; cards sit on it in white. */
+  /* Warm cream page; cards sit on it in white. */
   --background: oklch(0.965 0.012 80);
   --foreground: oklch(0.245 0.03 8.6); /* TAP Brown #2c1a1d */
 
@@ -162,17 +154,15 @@
   --time-practise: var(--chart-1); /* TAP Red */
   --time-project: var(--chart-5); /* Violet */
 
-  /* Sidebar = the brown frame around the sheet (dark in both themes).
-     TAP red is too dark on brown, so the frame's primary is a light coral. */
-  --sidebar: oklch(0.243 0.029 8.5); /* TAP Brown */
-  --sidebar-foreground: oklch(0.95 0.015 70);
-  --sidebar-muted-foreground: oklch(0.76 0.03 20);
-  --sidebar-primary: oklch(0.76 0.13 28);
-  --sidebar-primary-foreground: oklch(0.243 0.029 8.5);
-  --sidebar-accent: oklch(0.31 0.032 8.5);
-  --sidebar-accent-foreground: oklch(0.97 0.012 70);
-  --sidebar-border: oklch(0.36 0.032 8.5);
-  --sidebar-ring: oklch(0.76 0.13 28);
+  /* Warm white sidebar, a step above the cream page. */
+  --sidebar: oklch(0.993 0.004 80);
+  --sidebar-foreground: oklch(0.245 0.03 8.6); /* TAP Brown */
+  --sidebar-primary: oklch(0.484 0.184 27.7); /* TAP Red */
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.95 0.012 75);
+  --sidebar-accent-foreground: oklch(0.245 0.03 8.6);
+  --sidebar-border: oklch(0.92 0.012 60);
+  --sidebar-ring: oklch(0.484 0.184 27.7);
 }
 
 /* TAP Brand Colors - Dark Theme */
@@ -233,39 +223,15 @@
   --time-practise: var(--chart-1); /* TAP Red */
   --time-project: var(--chart-5); /* Violet */
 
-  /* Frame: darker than the sheet (--background) so the sheet floats. */
-  --sidebar: oklch(0.14 0.012 8);
-  --sidebar-foreground: oklch(0.95 0.015 70);
-  --sidebar-muted-foreground: oklch(0.72 0.025 15);
-  --sidebar-primary: oklch(0.76 0.13 28);
-  --sidebar-primary-foreground: oklch(0.14 0.012 8);
-  --sidebar-accent: oklch(0.22 0.02 8);
-  --sidebar-accent-foreground: oklch(0.97 0.012 70);
-  --sidebar-border: oklch(0.26 0.025 8);
-  --sidebar-ring: oklch(0.76 0.13 28);
-}
-
-/* Everything rendered inside the sidebar (search trigger, timer, Beta badge,
-   feedback link, user menu trigger) uses the generic tokens; remap them to the
-   frame so those components need no sidebar-specific variants. Portalled
-   popovers/menus render outside this scope and keep the page tokens.
-   [data-surface="frame"] gives the same treatment to frame-coloured blocks
-   inside the sheet (dashboard header, Metriky card, session date tile). */
-[data-slot="sidebar"],
-[data-surface="frame"] {
-  --background: var(--sidebar);
-  --foreground: var(--sidebar-foreground);
-  --card: var(--sidebar-accent);
-  --card-foreground: var(--sidebar-foreground);
-  --muted: var(--sidebar-accent);
-  --muted-foreground: var(--sidebar-muted-foreground);
-  --accent: var(--sidebar-accent);
-  --accent-foreground: var(--sidebar-accent-foreground);
-  --primary: var(--sidebar-primary);
-  --primary-foreground: var(--sidebar-primary-foreground);
-  --border: var(--sidebar-border);
-  --input: var(--sidebar-border);
-  --ring: var(--sidebar-ring);
+  /* Between the page and the cards, so the sidebar sits just above the page. */
+  --sidebar: oklch(0.205 0.022 8.2);
+  --sidebar-foreground: oklch(0.995 0.014 121.7); /* TAP White */
+  --sidebar-primary: oklch(0.66 0.21 27.5); /* TAP Red */
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.26 0.028 8.5);
+  --sidebar-accent-foreground: oklch(0.995 0.014 121.7);
+  --sidebar-border: oklch(0.28 0.03 8.7);
+  --sidebar-ring: oklch(0.66 0.21 27.5);
 }
 
 @layer base {

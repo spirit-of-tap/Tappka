@@ -104,23 +104,22 @@ use tokens — a hardcoded color in a component is a defect.
 ## Colors
 
 Brand core: TAP red `#b31b1b` (primary, links, focus), TAP brown `#2c1a1d`
-(foreground, secondary surface, the app frame), TAP white `#fcfff7` (logo
+(foreground, secondary surface), TAP white `#fcfff7` (logo
 text on red).
 
-**Frame and sheet (motiv „Plovoucí list“, #212).** On desktop the app is a
-brown frame (`--sidebar`, TAP brown in light, near-black in dark) holding a
-floating, rounded cream sheet (`--background`) with white cards (`--card`).
-The sidebar is dark in both themes, so inside `[data-slot="sidebar"]`
-`globals.css` remaps the generic tokens (`--foreground`, `--muted-foreground`,
-`--primary`, `--border`, `--card`, …) to the frame. Components rendered in
-the sidebar therefore use normal tokens and need no sidebar variants. TAP red
-is too dark on brown, so `--primary` in the frame is a light coral
-(`--sidebar-primary`); the brand logo tile uses `bg-tap-red` directly. On
-mobile there is no frame, the page is the cream sheet. The dashboard header
-(greeting + key counts) is a frame-coloured block (`[data-surface="frame"]`
-gets the same token remap) that ends in a rounded cream corner, so the sheet
-appears to start below it; the same surface is used for the Metriky card and
-the training-session date tile. Status
+**Light and lively (motiv „Světlá a živá“, #212).** Cream page
+(`--background`), white cards (`--card`) and a warm white sidebar
+(`--sidebar`, with a right border) that uses the normal page tokens. Colour
+comes from tinted tiles, not dark blocks: each sidebar section has a colour
+(Společné = `primary`, Můj rozvoj = `chart-5` violet, Můj tým = `chart-3`
+teal) shown as a dot by its title and as the icon chip of its items, and every
+section carries a one-line hint saying who it is for. Beta modules get a small
+amber dot (`sr-only` "Beta"). The dashboard opens with a white greeting card
+whose key counts are tinted tiles (`bg-<colour>/10–15` with the matching
+`-strong` text); each card title is a small coloured label in its card's
+colour. Reading progress is a ring against the cumulative goal for the
+current semester (`cumulativeSemesterMilestone`). The brand logo tile uses
+`bg-tap-red` directly. Status
 semantics: `success` green, `warning` amber (hue = chart-2), `info` teal
 (hue = chart-3), `destructive` red.
 
@@ -168,9 +167,9 @@ Header rules:
 
 ## Elevation & Depth
 
-Depth comes from layers, not shadows: brown frame → cream sheet
-(`rounded-2xl`, 8px inset from the frame) → white cards with 1px `border` +
-`rounded-lg`. No heavy shadows. Hover = `accent` tint (`hover:bg-accent`).
+Depth comes from layers, not shadows: cream page → white cards with 1px
+`border` (`rounded-xl`, the dashboard greeting card `rounded-3xl`), or a tinted
+card without border for a highlighted block (e.g. reservations). No heavy shadows. Hover = `accent` tint (`hover:bg-accent`).
 
 ## Shapes
 

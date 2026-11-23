@@ -30,17 +30,18 @@ interface TeamSnapshotCardProps {
 
 export function TeamSnapshotCard({ stats, hasTeam, teamId, teamName }: TeamSnapshotCardProps) {
   const top = [...stats].sort((a, b) => b.approved_points - a.approved_points).slice(0, 3);
+  const leaderPoints = top[0]?.approved_points ?? 0;
 
   return (
     <Card className="h-full">
       <CardHeader>
-        <DashboardCardTitle>{teamName ? `Tým ${teamName}` : 'Tým'}</DashboardCardTitle>
+        <DashboardCardTitle className="text-chart-2-strong">{teamName ? `Tým ${teamName}` : 'Tým'}</DashboardCardTitle>
         <CardDescription>Nejlepší čtenáři:ky podle knižních bodů</CardDescription>
         {teamId && (
           <CardAction>
             <Link
               href={teamBookPointsHref(teamId)}
-              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
+              className="inline-flex items-center gap-1 text-sm font-medium text-chart-2-strong hover:underline underline-offset-4"
             >
               Celý tým
               <ArrowRight className="size-3.5" />
@@ -68,7 +69,13 @@ export function TeamSnapshotCard({ stats, hasTeam, teamId, teamName }: TeamSnaps
                   <span className="flex-1 truncate text-sm group-hover:underline underline-offset-4">
                     {row.profile.name}
                   </span>
-                  <span className="text-sm font-medium tabular-nums">
+                  <span aria-hidden className="h-1.5 w-20 shrink-0 rounded-full bg-muted">
+                    <span
+                      className="block h-1.5 rounded-full bg-chart-2"
+                      style={{ width: `${leaderPoints > 0 ? (row.approved_points / leaderPoints) * 100 : 0}%` }}
+                    />
+                  </span>
+                  <span className="w-9 text-right text-sm font-bold tabular-nums">
                     {row.approved_points} b.
                   </span>
                 </Link>

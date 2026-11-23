@@ -2,66 +2,49 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ReadingProgressCard } from "@/components/dashboard/reading-progress-card";
 
-// The semester number and label render as separate text nodes inside one span.
-const semesterLabel = (text: string) => (_: string, el: Element | null) =>
-  el?.tagName === "SPAN" && el.textContent === text;
-
 describe("ReadingProgressCard", () => {
   const stats = { approved_points: 30, pending_points: 5, essay_count: 2 };
 
-  it("renders the card with essay count", () => {
-    render(<ReadingProgressCard stats={stats} />);
-    expect(screen.getByText("Čtení")).toBeInTheDocument();
-    expect(screen.getByText(/2 eseje/)).toBeInTheDocument();
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("shows pending books message when pending_points > 0", () => {
+  function atSemester(date: string) {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(date));
+  }
+
+  it("summarises essays and pending books", () => {
     render(<ReadingProgressCard stats={stats} />);
-    expect(screen.getByText(/5 knih čeká/)).toBeInTheDocument();
+    expect(screen.getByText(/2 eseje · 5 knih čeká na schválení/)).toBeInTheDocument();
   });
 
-  it("shows singular pending text for 1 pending point", () => {
+  it("uses singular pending text for 1 pending point", () => {
     render(<ReadingProgressCard stats={{ approved_points: 0, pending_points: 1, essay_count: 0 }} />);
-    expect(screen.getByText(/1 kniha čeká/)).toBeInTheDocument();
+    expect(screen.getByText(/Zatím žádné eseje · 1 kniha čeká/)).toBeInTheDocument();
   });
 
-  it("shows 'žádné eseje' when essay_count is 0", () => {
-    render(<ReadingProgressCard stats={{ approved_points: 0, pending_points: 0, essay_count: 0 }} />);
-    expect(screen.getByText("Zatím žádné eseje")).toBeInTheDocument();
-  });
-
-  it("renders a link to /cteni/prehled", () => {
+  it("links to /cteni/prehled", () => {
     render(<ReadingProgressCard stats={stats} />);
-    const link = screen.getByRole("link", { name: /Přehled/ });
-    expect(link).toHaveAttribute("href", "/cteni/prehled");
+    expect(screen.getByRole("link", { name: /Přehled/ })).toHaveAttribute("href", "/cteni/prehled");
   });
 
-  it("renders the config-derived progress strip", () => {
+  it("measures points against the cumulative goal of the cohort's semester", () => {
+    atSemester("2026-10-15T12:00:00");
     render(
-      <ReadingProgressCard
-        stats={{ approved_points: 50, pending_points: 0, essay_count: 0, approved_points_this_semester: 10 }}
-      />,
+      <ReadingProgressCard stats={{ approved_points: 7, pending_points: 0, essay_count: 4 }} onboardingYear={2025} />,
     );
-    // Goals come from METRICS["knizni-body"]: 20 per semester, 120 per study.
-    expect(screen.getByText("50/120")).toBeInTheDocument();
-    expect(screen.getByText(/za studium/)).toBeInTheDocument();
-    expect(screen.getByText("10/20")).toBeInTheDocument();
-    expect(screen.getByText(/tento semestr/)).toBeInTheDocument();
+    // Cohort 2025 is in its 3rd semester in October 2026: 3 × 20 b.
+    expect(screen.getByText(/Čtení · 3\. semestr/)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "7 z 60 knižních bodů" })).toBeInTheDocument();
+    expect(screen.getByText("Zbývá 53 bodů")).toBeInTheDocument();
   });
 
-  describe("semester number", () => {
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it("derives the semester from the team's onboarding year", () => {
-      vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(new Date("2026-10-15T12:00:00"));
-
-      render(<ReadingProgressCard stats={stats} onboardingYear={2026} />);
-
-      expect(screen.getAllByText(semesterLabel("1. semestr")).length).toBeGreaterThan(0);
-      expect(screen.queryByText(semesterLabel("3. semestr"))).not.toBeInTheDocument();
-    });
+  it("reports the surplus once the goal is met", () => {
+    atSemester("2026-10-15T12:00:00");
+    render(
+      <ReadingProgressCard stats={{ approved_points: 25, pending_points: 0, essay_count: 5 }} onboardingYear={2026} />,
+    );
+    expect(screen.getByText("Cíl splněn (+5)")).toBeInTheDocument();
   });
 });

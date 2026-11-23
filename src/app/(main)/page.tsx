@@ -29,12 +29,14 @@ import { cn } from "@/lib/utils";
 const TEAMS_SUPPORT_URL =
   "https://teams.microsoft.com/l/channel/19%3Aea499f40a2864e03862e5b517fa824a8%40thread.tacv2/HelpDesk%20IT%20House?groupId=c84b63de-1603-4ba8-98a6-9825300c0f22&tenantId=f26a48e1-fc21-461a-b97f-ac5bd535f341";
 
+const RESERVATION_PREVIEW_COUNT = 3;
+
 const EMPTY_STATS = { approved_points: 0, pending_points: 0, essay_count: 0, approved_points_this_semester: 0 };
 
 async function getUpcomingReservations(
   supabase: Awaited<ReturnType<typeof createClient>>,
   profileId: string,
-): Promise<{ next: DashboardReservation | null; count: number }> {
+): Promise<{ upcoming: DashboardReservation[]; count: number }> {
   const { data, count } = await supabase
     .from("reservations")
     .select("id, title, start_at, end_at, room:rooms(id, code, name)", { count: "exact" })
@@ -42,9 +44,9 @@ async function getUpcomingReservations(
     .is("cancelled_at", null)
     .gt("end_at", new Date().toISOString())
     .order("start_at")
-    .limit(1);
+    .limit(RESERVATION_PREVIEW_COUNT);
 
-  return { next: (data?.[0] as DashboardReservation | undefined) ?? null, count: count ?? 0 };
+  return { upcoming: (data ?? []) as DashboardReservation[], count: count ?? 0 };
 }
 
 /** Grid placement on the 3-column desktop dashboard; the rest take one cell. */
@@ -84,7 +86,7 @@ export default async function DashboardPage() {
     needsStats
       ? getUserBookPointsStats(supabase, profile.id).catch(() => EMPTY_STATS)
       : null,
-    getUpcomingReservations(supabase, profile.id).catch(() => ({ next: null, count: 0 })),
+    getUpcomingReservations(supabase, profile.id).catch(() => ({ upcoming: [], count: 0 })),
     needsUnread
       ? getUnreadTeamEssaysForCoach(supabase, profile.id, profile.team_id!).catch(
           () => [],
@@ -134,7 +136,7 @@ export default async function DashboardPage() {
     );
   }
   if (has("reservation")) {
-    nodes["reservation"] = <NextReservationCard reservation={reservations.next} />;
+    nodes["reservation"] = <NextReservationCard reservations={reservations.upcoming} total={reservations.count} />;
   }
   if (has("ke-kontrole")) {
     nodes["ke-kontrole"] = (

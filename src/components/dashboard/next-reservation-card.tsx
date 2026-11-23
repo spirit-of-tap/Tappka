@@ -1,11 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, DoorOpen } from 'lucide-react';
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-} from '@/components/ui/card';
+
+import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card';
 import { DashboardEmptyState } from '@/components/dashboard/dashboard-empty-state';
 import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { Button } from '@/components/ui/button';
@@ -20,7 +16,9 @@ export interface DashboardReservation {
 }
 
 interface NextReservationCardProps {
-  reservation: DashboardReservation | null;
+  reservations: DashboardReservation[];
+  /** All upcoming reservations, including those not previewed. */
+  total: number;
 }
 
 function relativeDayLabel(startTime: string): string {
@@ -29,20 +27,22 @@ function relativeDayLabel(startTime: string): string {
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
 
-  if (start.toDateString() === today.toDateString()) return 'dnes';
-  if (start.toDateString() === tomorrow.toDateString()) return 'zítra';
+  if (start.toDateString() === today.toDateString()) return 'Dnes';
+  if (start.toDateString() === tomorrow.toDateString()) return 'Zítra';
   return formatDateShort(start);
 }
 
-export function NextReservationCard({ reservation }: NextReservationCardProps) {
+export function NextReservationCard({ reservations, total }: NextReservationCardProps) {
+  const more = total - reservations.length;
+
   return (
-    <Card className="h-full">
+    <Card className="h-full border-transparent bg-chart-3/10">
       <CardHeader>
-        <DashboardCardTitle>Nadcházející rezervace</DashboardCardTitle>
+        <DashboardCardTitle className="text-chart-3-strong">Tvoje rezervace</DashboardCardTitle>
         <CardAction>
           <Link
             href="/reservations"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline underline-offset-4"
+            className="inline-flex items-center gap-1 text-sm font-medium text-chart-3-strong hover:underline underline-offset-4"
           >
             Místnosti
             <ArrowRight className="size-3.5" />
@@ -50,24 +50,34 @@ export function NextReservationCard({ reservation }: NextReservationCardProps) {
         </CardAction>
       </CardHeader>
       <CardContent>
-        {reservation ? (
-          <div className="flex gap-3">
-            <span aria-hidden className="w-1 shrink-0 rounded-full bg-chart-3" />
-            <div className="min-w-0 space-y-0.5">
-              <p className="font-medium">{reservation.room?.name ?? reservation.title}</p>
-              <p className="text-sm text-muted-foreground first-letter:uppercase">
-                {relativeDayLabel(reservation.start_at)} · {formatTime(reservation.start_at)}–
-                {formatTime(reservation.end_at)}
-              </p>
-              {reservation.room && reservation.title && (
-                <p className="text-sm text-muted-foreground line-clamp-1">{reservation.title}</p>
-              )}
-            </div>
-          </div>
+        {reservations.length > 0 ? (
+          <ul className="space-y-2">
+            {reservations.map((reservation) => (
+              <li key={reservation.id} className="flex items-center gap-3 rounded-xl bg-card px-3 py-2.5">
+                <span className="w-14 shrink-0 font-heading text-sm font-bold text-chart-3-strong">
+                  {relativeDayLabel(reservation.start_at)}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">
+                    {reservation.room?.name ?? reservation.title}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {formatTime(reservation.start_at)}–{formatTime(reservation.end_at)}
+                    {reservation.room && reservation.title && ` · ${reservation.title}`}
+                  </span>
+                </span>
+              </li>
+            ))}
+            {more > 0 && (
+              <li className="px-1 text-xs font-medium text-chart-3-strong">
+                a {more} {more === 1 ? 'další' : 'dalších'}
+              </li>
+            )}
+          </ul>
         ) : (
           <DashboardEmptyState
             icon={DoorOpen}
-            tone="bg-chart-3/15 text-chart-3-strong"
+            tone="bg-card text-chart-3-strong"
             title="Žádná rezervace"
             description="Potřebuješ místo na schůzku nebo práci v týmu? Zabookuj si místnost."
             action={
