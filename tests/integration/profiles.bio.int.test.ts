@@ -24,7 +24,7 @@ describe("profiles bio trigger", () => {
       await asClaims(client, { sub: authUserId });
       await expect(
         client.query("update public.profiles set name = 'X' where id = $1", [profileId]),
-      ).rejects.toThrow(/Only picture, bio_json and beta_access_granted_at/);
+      ).rejects.toThrow(/Only picture, bio_json, contact fields and beta_access_granted_at/);
     });
   });
 

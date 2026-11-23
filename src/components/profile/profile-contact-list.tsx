@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Cake, Check, Copy, Mail, Phone, type LucideIcon } from 'lucide-react';
+import { Cake, Check, Copy, Mail, Pencil, Phone, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { copyTextToClipboard } from '@/lib/utils/clipboard';
+
+import { ContactEditDialog } from './contact-edit-dialog';
 
 /** How long the copy button shows its "copied" checkmark. */
 const COPIED_FEEDBACK_MS = 2000;
@@ -16,6 +18,9 @@ interface ProfileContactListProps {
   phoneNumber: string | null;
   /** Pre-formatted on the server so it hydrates identically. */
   birthday: string | null;
+  /** Raw `YYYY-MM-DD` value, used to prefill the edit form. */
+  dateOfBirth: string | null;
+  isOwnProfile: boolean;
 }
 
 export function ProfileContactList({
@@ -23,24 +28,63 @@ export function ProfileContactList({
   personalEmail,
   phoneNumber,
   birthday,
+  dateOfBirth,
+  isOwnProfile,
 }: ProfileContactListProps) {
+  const [editOpen, setEditOpen] = useState(false);
+  const isIncomplete = !personalEmail || !phoneNumber || !birthday;
+
   return (
-    <section aria-label="Kontakt" className="grid gap-2 sm:grid-cols-2">
-      <ContactRow icon={Mail} label="Školní e-mail" value={workEmail} href={`mailto:${workEmail}`} copyable />
-      {personalEmail && (
-        <ContactRow icon={Mail} label="Osobní e-mail" value={personalEmail} href={`mailto:${personalEmail}`} copyable />
+    <section aria-labelledby="profile-contact-heading" className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="profile-contact-heading" className="text-sm font-semibold">
+          Kontakt
+        </h2>
+        {isOwnProfile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditOpen(true)}
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="size-3.5" />
+            Upravit kontakt
+          </Button>
+        )}
+      </div>
+
+      {isOwnProfile && isIncomplete && (
+        <p className="text-xs text-muted-foreground">
+          Doplň telefon, osobní e-mail a narozeniny, ať se ti ostatní můžou snadno ozvat.
+        </p>
       )}
-      {phoneNumber && (
-        <ContactRow
-          icon={Phone}
-          label="Telefon"
-          value={phoneNumber}
-          href={`tel:${phoneNumber.replace(/\s+/g, '')}`}
-          copyable
-          callable
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <ContactRow icon={Mail} label="Školní e-mail" value={workEmail} href={`mailto:${workEmail}`} copyable />
+        {personalEmail && (
+          <ContactRow icon={Mail} label="Osobní e-mail" value={personalEmail} href={`mailto:${personalEmail}`} copyable />
+        )}
+        {phoneNumber && (
+          <ContactRow
+            icon={Phone}
+            label="Telefon"
+            value={phoneNumber}
+            href={`tel:${phoneNumber.replace(/\s+/g, '')}`}
+            copyable
+            callable
+          />
+        )}
+        {birthday && <ContactRow icon={Cake} label="Narozeniny" value={birthday} />}
+      </div>
+
+      {isOwnProfile && (
+        <ContactEditDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          workEmail={workEmail}
+          initialValues={{ phone_number: phoneNumber, personal_email: personalEmail, date_of_birth: dateOfBirth }}
         />
       )}
-      {birthday && <ContactRow icon={Cake} label="Narozeniny" value={birthday} />}
     </section>
   );
 }
