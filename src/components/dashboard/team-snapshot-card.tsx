@@ -81,11 +81,18 @@ export function TeamSnapshotCard({ stats, hasTeam, teamId, teamName }: TeamSnaps
         <CardFooter className="mt-auto">
           <Link
             href={CTENI_DISCOVER_HREF}
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-4"
+            className="focus-ring group flex w-full items-center gap-3 rounded-xl bg-chart-2/10 px-3 py-2.5 transition-colors hover:bg-chart-2/15"
           >
-            <Tag className="size-3" aria-hidden="true" />
-            Mimochodem: s kódem {MELVIL_DISCOUNT.code} máš {MELVIL_DISCOUNT.percent} % na knihy od
-            Melvilu
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-chart-2/20 text-chart-2-strong">
+              <Tag className="size-4" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1 text-sm">
+              <span className="font-medium">{MELVIL_DISCOUNT.percent} % na knihy od Melvilu</span>
+              <span className="block text-xs text-muted-foreground">Zadej kód při objednávce</span>
+            </span>
+            <code className="rounded-md border border-dashed border-chart-2-strong/40 px-2 py-1 font-mono text-xs font-bold tracking-wider text-chart-2-strong">
+              {MELVIL_DISCOUNT.code}
+            </code>
           </Link>
         </CardFooter>
       )}

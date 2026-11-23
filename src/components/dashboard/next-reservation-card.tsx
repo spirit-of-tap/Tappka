@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, DoorOpen } from 'lucide-react';
 import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
 } from '@/components/ui/card';
+import { DashboardEmptyState } from '@/components/dashboard/dashboard-empty-state';
 import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { Button } from '@/components/ui/button';
 import { formatDateShort, formatTime } from '@/lib/reservations/utils';
@@ -39,12 +39,6 @@ export function NextReservationCard({ reservation }: NextReservationCardProps) {
     <Card className="h-full">
       <CardHeader>
         <DashboardCardTitle>Nadcházející rezervace</DashboardCardTitle>
-        {reservation && (
-          <CardDescription>
-            {relativeDayLabel(reservation.start_at)} ·{' '}
-            {formatTime(reservation.start_at)}–{formatTime(reservation.end_at)}
-          </CardDescription>
-        )}
         <CardAction>
           <Link
             href="/reservations"
@@ -57,21 +51,31 @@ export function NextReservationCard({ reservation }: NextReservationCardProps) {
       </CardHeader>
       <CardContent>
         {reservation ? (
-          <div>
-            <p className="text-sm font-medium">{reservation.title}</p>
-            {reservation.room && (
-              <p className="text-sm text-muted-foreground">{reservation.room.name}</p>
-            )}
+          <div className="flex gap-3">
+            <span aria-hidden className="w-1 shrink-0 rounded-full bg-chart-3" />
+            <div className="min-w-0 space-y-0.5">
+              <p className="font-medium">{reservation.room?.name ?? reservation.title}</p>
+              <p className="text-sm text-muted-foreground first-letter:uppercase">
+                {relativeDayLabel(reservation.start_at)} · {formatTime(reservation.start_at)}–
+                {formatTime(reservation.end_at)}
+              </p>
+              {reservation.room && reservation.title && (
+                <p className="text-sm text-muted-foreground line-clamp-1">{reservation.title}</p>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col items-start gap-2">
-            <p className="text-sm text-muted-foreground">
-              Nemáš žádnou nadcházející rezervaci.
-            </p>
-            <Button asChild variant="secondary" size="sm">
-              <Link href="/reservations">Rezervovat místnost</Link>
-            </Button>
-          </div>
+          <DashboardEmptyState
+            icon={DoorOpen}
+            tone="bg-chart-3/15 text-chart-3-strong"
+            title="Žádná rezervace"
+            description="Potřebuješ místo na schůzku nebo práci v týmu? Zabookuj si místnost."
+            action={
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/reservations">Rezervovat místnost</Link>
+              </Button>
+            }
+          />
         )}
       </CardContent>
     </Card>

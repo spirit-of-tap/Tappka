@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CheckCheck, Users } from 'lucide-react';
 import {
   Card,
   CardAction,
@@ -8,6 +8,7 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
+import { DashboardEmptyState } from '@/components/dashboard/dashboard-empty-state';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
@@ -23,13 +24,11 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
     <Card className="h-full">
       <CardHeader>
         <DashboardCardTitle>Eseje ke kontrole</DashboardCardTitle>
-        <CardDescription>
-          {!hasTeam
-            ? 'Nemáš přiřazený tým'
-            : essays.length === 0
-              ? 'Vše přečteno'
-              : `${essays.length} ${essays.length === 1 ? 'nepřečtená esej' : essays.length < 5 ? 'nepřečtené eseje' : 'nepřečtených esejí'}`}
-        </CardDescription>
+        {hasTeam && essays.length > 0 && (
+          <CardDescription>
+            {`${essays.length} ${essays.length === 1 ? 'nepřečtená esej' : essays.length < 5 ? 'nepřečtené eseje' : 'nepřečtených esejí'} od tvého týmu`}
+          </CardDescription>
+        )}
         <CardAction>
           <Link
             href="/cteni/eseje/ke-kontrole"
@@ -42,11 +41,20 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
       </CardHeader>
       <CardContent>
         {preview.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {hasTeam
-              ? 'Žádné eseje nečekají na kontrolu. 🎉'
-              : 'Eseje tvého týmu se zobrazí, jakmile ti bude tým přiřazen.'}
-          </p>
+          hasTeam ? (
+            <DashboardEmptyState
+              icon={CheckCheck}
+              tone="bg-success/10 text-success-strong"
+              title="Máš všechno přečteno"
+              description="Žádná esej tvého týmu nečeká na tvou kontrolu. Nové se tu objeví, jakmile je někdo odevzdá."
+            />
+          ) : (
+            <DashboardEmptyState
+              icon={Users}
+              title="Zatím bez týmu"
+              description="Eseje tvého týmu se tu zobrazí, jakmile ti bude tým přiřazen."
+            />
+          )
         ) : (
           <ul className="space-y-3">
             {preview.map((essay) => {

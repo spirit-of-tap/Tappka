@@ -44,7 +44,7 @@ describe("NextTrainingSessionCard", () => {
   it("shows an exploration empty state when nothing is scheduled", () => {
     render(<NextTrainingSessionCard session={null} />);
 
-    expect(screen.getByText("Nemáš naplánovanou žádnou training session.")).toBeInTheDocument();
+    expect(screen.getByText("Žádná naplánovaná TS")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Objevovat TS" })).toHaveAttribute(
       "href",
       "/ts/objevovat",

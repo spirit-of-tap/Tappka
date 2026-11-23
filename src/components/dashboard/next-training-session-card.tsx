@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, CalendarClock, MapPin, Users } from 'lucide-react';
+import { ArrowRight, CalendarClock, MapPin, Presentation, Users } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import {
   CardContent,
   CardHeader,
 } from '@/components/ui/card';
+import { DashboardEmptyState } from '@/components/dashboard/dashboard-empty-state';
 import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { TS_ROUTES } from '@/lib/training-sessions/constants';
 import {
@@ -122,14 +123,17 @@ export function NextTrainingSessionCard({ session }: NextTrainingSessionCardProp
             </div>
           </Link>
         ) : (
-          <div className="flex flex-col items-start gap-2">
-            <p className="text-sm text-muted-foreground">
-              Nemáš naplánovanou žádnou training session.
-            </p>
-            <Button asChild variant="secondary" size="sm">
-              <Link href={TS_ROUTES.discover}>Objevovat TS</Link>
-            </Button>
-          </div>
+          <DashboardEmptyState
+            icon={Presentation}
+            tone="bg-chart-5/15 text-chart-5"
+            title="Žádná naplánovaná TS"
+            description="Tvůj tým zatím nemá další training session. Mrkni, jestli se nedá přidat na cross jiného týmu."
+            action={
+              <Button asChild variant="secondary" size="sm">
+                <Link href={TS_ROUTES.discover}>Objevovat TS</Link>
+              </Button>
+            }
+          />
         )}
       </CardContent>
     </Card>
