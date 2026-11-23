@@ -120,22 +120,20 @@ function RoomTile({ item, selected, isToday, delay, onSelect }: RoomTileProps) {
         aria-pressed={selected}
         onClick={() => onSelect(room)}
         className={cn(
-          "h-full min-h-32 w-full flex-col items-stretch justify-between gap-3 whitespace-normal rounded-2xl p-4 text-left font-normal transition motion-safe:hover:-translate-y-0.5 hover:shadow-md sm:min-h-36",
+          "h-full min-h-32 w-full min-w-0 flex-col overflow-hidden items-stretch justify-between gap-3 whitespace-normal rounded-2xl p-4 text-left font-normal transition motion-safe:hover:-translate-y-0.5 hover:shadow-md sm:min-h-36",
           STATUS_TILE_CLASSES[status.kind],
           selected && "ring-2 ring-chart-3 ring-offset-2 ring-offset-card",
         )}
       >
-        <span className="flex items-start justify-between gap-2">
-          <span className="font-heading text-3xl font-bold leading-none">
-            {room.code.toUpperCase()}
-          </span>
+        <span className="font-heading text-3xl font-bold leading-none">
+          {room.code.toUpperCase()}
+        </span>
+        <span className="block min-w-0 space-y-0.5">
           {mineStart && (
-            <Badge className="shrink-0 rounded-full bg-primary px-2 text-[11px] text-primary-foreground">
+            <Badge className="mb-1.5 max-w-full truncate rounded-full bg-primary px-2 text-[11px] text-primary-foreground">
               Tvoje · {formatTime(mineStart)}
             </Badge>
           )}
-        </span>
-        <span className="block space-y-0.5">
           <span className="line-clamp-2 block text-sm font-medium">{getRoomTitle(room)}</span>
           <span className="block text-xs font-semibold">{getStatusLine(status, isToday)}</span>
         </span>
