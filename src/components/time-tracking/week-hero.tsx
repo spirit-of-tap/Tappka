@@ -29,7 +29,7 @@ export function WeekHero({ current, target, label, className }: WeekHeroProps) {
     >
       <ProgressRing
         percent={fill}
-        strokeClassName={passed ? "stroke-success" : "stroke-primary"}
+        strokeClassName={passed ? "stroke-success" : "stroke-foreground"}
         className="md:size-28"
         role="progressbar"
         aria-label={label}
@@ -43,7 +43,7 @@ export function WeekHero({ current, target, label, className }: WeekHeroProps) {
         </text>
       </ProgressRing>
       <div className="min-w-0 space-y-1">
-        <p className="text-sm font-bold text-primary">{label}</p>
+        <p className="text-sm font-bold text-muted-foreground">{label}</p>
         <p className="font-heading text-3xl font-extrabold tabular-nums leading-tight">
           {formatMetricValue(current, "hours")}
           <span className="ml-1.5 text-base font-medium text-muted-foreground">
