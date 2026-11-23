@@ -67,8 +67,6 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
   const isToday = isSameDay(day, now);
 
   useEffect(() => {
-    if (isToday && refreshKey === 0) return;
-
     let cancelled = false;
     const params = new URLSearchParams({
       start_date: day.toISOString(),
@@ -81,7 +79,8 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
         if (!cancelled) setLoaded({ key: dayKey, items: result.data ?? [] });
       })
       .catch(() => {
-        if (!cancelled) setLoaded({ key: dayKey, items: [] });
+        // Today can fall back to the server-rendered reservations.
+        if (!cancelled && !isToday) setLoaded({ key: dayKey, items: [] });
       });
 
     return () => {

@@ -7,9 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import {
-  DAY_BAR_END_HOUR,
-  DAY_BAR_START_HOUR,
-  getDayBarSegments,
   getRoomFloor,
   OTHER_FLOOR_LABEL,
   type RoomMapStatus,
@@ -18,6 +15,7 @@ import {
 import { formatTime } from "@/lib/reservations/utils";
 import { DAY_NAMES_CS, type Reservation, type Room } from "@/lib/reservations/types";
 
+import { RoomDayTimeline } from "./room-day-timeline";
 import { getRoomTitle, getStatusLine, STATUS_DOT_CLASSES } from "./room-map";
 
 const BASE_DURATIONS = [30, 60, 120];
@@ -29,7 +27,6 @@ const PILL_CLASSES: Record<RoomMapStatus["kind"], { dot: string; label: string }
 };
 
 const HERO_CHIP_CLASSES = "rounded-lg bg-hero-foreground/10 px-2 py-0.5 text-xs text-hero-muted";
-const DAY_BAR_TICKS = [DAY_BAR_START_HOUR, 14, DAY_BAR_END_HOUR];
 
 const CHIP_CLASSES = {
   free: "bg-success/12 text-success-strong hover:bg-success/20 hover:text-success-strong",
@@ -80,13 +77,6 @@ export function RoomDetailPanel({
   const hasRestrictedDays = (room.available_days?.length ?? 0) > 0;
   const floor = getRoomFloor(room.code);
   const floorLabel = floor === null ? OTHER_FLOOR_LABEL : `${floor}. patro`;
-  const segments = getDayBarSegments(reservations, room.id, day, mineIds);
-  const now = new Date();
-  const nowPercent =
-    ((now.getHours() + now.getMinutes() / 60 - DAY_BAR_START_HOUR) /
-      (DAY_BAR_END_HOUR - DAY_BAR_START_HOUR)) *
-    100;
-  const showNow = isToday && nowPercent >= 0 && nowPercent <= 100;
 
   return (
     <section
@@ -128,42 +118,23 @@ export function RoomDetailPanel({
             )}
           </div>
         )}
-        <div className="relative pt-1">
-          <div
-            role="img"
-            aria-label={`Obsazenost ${DAY_BAR_START_HOUR}–${DAY_BAR_END_HOUR} h`}
-            className="relative h-2 overflow-hidden rounded-full bg-hero-foreground/10"
-          >
-            {segments.map((segment) => (
-              <span
-                key={segment.id}
-                className={cn("absolute inset-y-0", segment.mine ? "bg-primary" : "bg-chart-2")}
-                style={{ left: `${segment.left}%`, width: `${segment.width}%` }}
-              />
-            ))}
-          </div>
-          {showNow && (
-            <span
-              aria-hidden
-              className="absolute -top-1 h-4 w-0.5 -translate-x-1/2 rounded-full bg-hero-foreground"
-              style={{ left: `${nowPercent}%` }}
-            />
-          )}
-          <div className="mt-1 flex justify-between text-[10px] tabular-nums text-hero-muted">
-            {DAY_BAR_TICKS.map((hour) => (
-              <span key={hour}>{hour}</span>
-            ))}
-          </div>
-        </div>
       </div>
 
-      <div className="space-y-4 p-5">
+      <div className="space-y-5 p-5">
         {status.kind === "closed" ? (
           <p className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground">
             Místnost je v tento den zavřená
           </p>
         ) : (
           <>
+            <RoomDayTimeline
+              roomId={room.id}
+              day={day}
+              reservations={reservations}
+              mineIds={mineIds}
+              isToday={isToday}
+              chosen={chosenChip ? { start: chosenChip.start, end: chosenChip.end } : null}
+            />
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <h4 className="text-sm font-bold text-chart-3-strong">Začátek</h4>

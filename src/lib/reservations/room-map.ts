@@ -154,42 +154,46 @@ export function getSlotChips(
   return chips;
 }
 
-export const DAY_BAR_START_HOUR = 8;
-export const DAY_BAR_END_HOUR = 20;
+export const TIMELINE_START_HOUR = OPERATING_HOURS.start;
+export const TIMELINE_END_HOUR = OPERATING_HOURS.end;
 
-export interface DayBarSegment {
+export interface TimelineSegment {
   id: string;
+  start: Date;
+  end: Date;
   left: number;
   width: number;
   mine: boolean;
 }
 
-/** Reservations of one room clipped to the day bar range, as percentages of its width. */
-export function getDayBarSegments(
+/** Position of a moment on the day timeline in percent, clamped to 0–100. */
+export function timelinePercent(moment: Date, day: Date): number {
+  const start = new Date(day);
+  start.setHours(TIMELINE_START_HOUR, 0, 0, 0);
+  const span = (TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 3_600_000;
+  return Math.min(100, Math.max(0, ((moment.getTime() - start.getTime()) / span) * 100));
+}
+
+/** One room's reservations clipped to opening hours, sorted, as timeline percentages. */
+export function getTimelineSegments(
   reservations: Reservation[],
   roomId: string,
   day: Date,
   mineIds?: ReadonlySet<string>,
-): DayBarSegment[] {
-  const barStart = new Date(day);
-  barStart.setHours(DAY_BAR_START_HOUR, 0, 0, 0);
-  const barEnd = new Date(day);
-  barEnd.setHours(DAY_BAR_END_HOUR, 0, 0, 0);
-  const span = barEnd.getTime() - barStart.getTime();
+): TimelineSegment[] {
+  const open = new Date(day);
+  open.setHours(TIMELINE_START_HOUR, 0, 0, 0);
+  const close = new Date(day);
+  close.setHours(TIMELINE_END_HOUR, 0, 0, 0);
 
   return reservations
     .filter((r) => r.room_id === roomId && !r.cancelled_at)
     .flatMap((r) => {
-      const start = Math.max(new Date(r.start_at).getTime(), barStart.getTime());
-      const end = Math.min(new Date(r.end_at).getTime(), barEnd.getTime());
+      const start = new Date(Math.max(new Date(r.start_at).getTime(), open.getTime()));
+      const end = new Date(Math.min(new Date(r.end_at).getTime(), close.getTime()));
       if (end <= start) return [];
-      return [
-        {
-          id: r.id,
-          left: ((start - barStart.getTime()) / span) * 100,
-          width: ((end - start) / span) * 100,
-          mine: mineIds?.has(r.id) ?? false,
-        },
-      ];
-    });
+      const left = timelinePercent(start, day);
+      return [{ id: r.id, start, end, left, width: timelinePercent(end, day) - left, mine: mineIds?.has(r.id) ?? false }];
+    })
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
 }

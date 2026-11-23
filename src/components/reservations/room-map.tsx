@@ -96,10 +96,7 @@ export function RoomMap({ items, selectedId, isToday, onSelect }: RoomMapProps) 
         className="pointer-events-none absolute -right-16 -bottom-24 size-72 rounded-full border-[36px] border-hero-foreground/5"
       />
       <div className="relative space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-hero-muted">
-            Plánek místností
-          </p>
+        <div className="flex justify-end">
           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-hero-muted">
             {LEGEND.map(({ key, label }) => (
               <li key={key} className="inline-flex items-center gap-1.5">

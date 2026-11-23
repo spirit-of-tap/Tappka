@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   getRoomFloor,
-  getDayBarSegments,
+  getTimelineSegments,
+  timelinePercent,
   getRoomMapStatus,
   getSlotChips,
   groupRoomsByFloor,
@@ -149,29 +150,35 @@ describe("getSlotChips", () => {
   });
 });
 
-describe("getDayBarSegments", () => {
+describe("getTimelineSegments", () => {
   const day = new Date(2026, 10, 23);
   const at = (h: number, m = 0) => new Date(2026, 10, 23, h, m);
 
-  it("positions reservations as percentages of the 8-20 h bar", () => {
-    const [segment] = getDayBarSegments([reservation("d1", at(11), at(14))], "d1", day);
+  it("positions reservations as percentages of the 7-22 h opening hours", () => {
+    const [segment] = getTimelineSegments([reservation("d1", at(10), at(13))], "d1", day);
 
-    expect(segment.left).toBeCloseTo(25);
-    expect(segment.width).toBeCloseTo(25);
+    expect(segment.left).toBeCloseTo(20);
+    expect(segment.width).toBeCloseTo(20);
     expect(segment.mine).toBe(false);
   });
 
-  it("clips to the bar, ignores other rooms and out-of-range reservations, flags own ones", () => {
-    const own = reservation("d1", at(7), at(9));
-    const segments = getDayBarSegments(
-      [own, reservation("d2", at(10), at(11)), reservation("d1", at(21), at(22))],
+  it("clips to opening hours, sorts, ignores other rooms and flags own ones", () => {
+    const own = reservation("d1", at(6), at(8));
+    const segments = getTimelineSegments(
+      [reservation("d1", at(21), at(23)), own, reservation("d2", at(10), at(11))],
       "d1",
       day,
       new Set([own.id]),
     );
 
-    expect(segments).toHaveLength(1);
-    expect(segments[0]).toMatchObject({ left: 0, mine: true });
-    expect(segments[0].width).toBeCloseTo(100 / 12);
+    expect(segments.map((s) => [s.start.getHours(), s.end.getHours(), s.mine])).toEqual([
+      [7, 8, true],
+      [21, 22, false],
+    ]);
+  });
+
+  it("clamps moments outside opening hours", () => {
+    expect(timelinePercent(at(5), day)).toBe(0);
+    expect(timelinePercent(at(23), day)).toBe(100);
   });
 });
