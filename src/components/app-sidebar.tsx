@@ -13,7 +13,7 @@ import {
 import { getSidebarSections, type NavModule } from "@/lib/navigation"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
+import { BetaBadge } from "@/components/beta-badge"
 import { NavUser } from "@/components/nav-user"
 import { SpotlightTrigger } from "@/components/spotlight"
 import { useOptionalTimer } from "@/components/time-tracking/timer-provider"
@@ -113,12 +113,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                           <Link href={item.url}>
                             <item.icon className="size-4" />
                             <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
-                            >
-                              Beta
-                            </Badge>
+                            <BetaBadge className="ml-auto" />
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -167,13 +162,9 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                 isActive={pathname === "/zpetna-vazba"}
                 className={cn(
                   "group/menu-button",
-                  "bg-rose-50/60 text-rose-700",
-                  "dark:bg-rose-950/40 dark:text-rose-300",
-                  "data-[active=true]:bg-rose-100 data-[active=true]:text-rose-800",
-                  "data-[active=true]:dark:bg-rose-900/60 data-[active=true]:dark:text-rose-200",
-                  "hover:bg-rose-100 hover:text-rose-800",
-                  "dark:hover:bg-rose-900/60 dark:hover:text-rose-200",
-                  "border border-rose-200/50 dark:border-rose-800/40",
+                  "border border-primary/20 bg-primary/5 text-primary",
+                  "hover:bg-primary/10 hover:text-primary",
+                  "data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
                 )}
               >
                 <Link href="/zpetna-vazba">

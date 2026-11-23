@@ -12,7 +12,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Badge } from "@/components/ui/badge";
+import { BetaBadge } from "@/components/beta-badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSpotlight } from "./spotlight-context";
@@ -381,12 +381,7 @@ export function SpotlightDialog() {
                       {item.title}
                     </span>
                     {item.feature && (
-                      <Badge
-                        variant="secondary"
-                        className="h-4 px-1 text-[9px] font-medium leading-none"
-                      >
-                        Beta
-                      </Badge>
+                      <BetaBadge className="h-4 px-1 text-[9px] leading-none" />
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground truncate leading-tight">

@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { BetaBadge } from "@/components/beta-badge"
 import type { NavModule } from "@/lib/navigation"
 import { cn } from "@/lib/utils"
 
@@ -33,9 +33,7 @@ function ModuleCard({ module, profileId }: { module: NavModule; profileId?: stri
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold leading-tight">{module.title}</h2>
           {module.feature && (
-            <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">
-              Beta
-            </Badge>
+            <BetaBadge />
           )}
         </div>
         <p className="text-xs leading-relaxed text-muted-foreground">{module.description}</p>

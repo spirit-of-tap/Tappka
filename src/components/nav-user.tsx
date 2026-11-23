@@ -11,7 +11,7 @@ import {
   FlaskConical,
   Settings,
 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { BetaBadge } from "@/components/beta-badge"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 
@@ -140,9 +140,7 @@ export function NavUser({ user }: NavUserProps) {
                 <DropdownMenuItem onClick={() => router.push("/portfolio")}>
                   <BriefcaseBusiness className="mr-2 h-4 w-4" />
                   <span className="flex-1">Portfolio</span>
-                  <Badge variant="secondary" className="h-5 text-[10px] px-1.5">
-                    Beta
-                  </Badge>
+                  <BetaBadge />
                 </DropdownMenuItem>
               )}
               <DropdownMenuSub>

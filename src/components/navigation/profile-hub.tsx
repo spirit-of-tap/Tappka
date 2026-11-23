@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { BetaBadge } from "@/components/beta-badge"
 import { Button } from "@/components/ui/button"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { getAvatarUrl } from "@/lib/storage/public-url"
@@ -102,12 +102,10 @@ export function ProfileHub({ user }: ProfileHubProps) {
           <Link href="/portfolio" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent focus-ring">
             <BriefcaseBusiness className="size-4 text-muted-foreground" />
             <span className="flex-1">Portfolio</span>
-            <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-              Beta
-            </Badge>
+            <BetaBadge />
           </Link>
         )}
-        <Link href="/zpetna-vazba" className="flex items-center gap-3 bg-rose-50/60 px-4 py-3 text-sm text-rose-700 hover:bg-rose-100 focus-ring dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/60">
+        <Link href="/zpetna-vazba" className="flex items-center gap-3 bg-primary/5 px-4 py-3 text-sm text-primary hover:bg-primary/10 focus-ring">
           <Heart className="size-4" />
           Zpětná vazba
         </Link>
