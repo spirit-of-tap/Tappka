@@ -37,7 +37,7 @@ export function ContactEditDialog({ open, onOpenChange, workEmail, initialValues
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Upravit kontakt</DialogTitle>
-          <DialogDescription>Údaje uvidí všichni přihlášení v Tappce na tvém profilu.</DialogDescription>
+          <DialogDescription>Údaje se zobrazí na tvém profilu všem v Tappce.</DialogDescription>
         </DialogHeader>
         {/* Mounting the form only while open resets the draft every time the dialog opens. */}
         {open && (
