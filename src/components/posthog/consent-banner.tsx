@@ -87,7 +87,7 @@ export function ConsentBanner() {
         </Link>
       </p>
 
-      <p className="mt-3.5 pt-2.5 border-t border-border/50 text-[11px] leading-normal text-muted-foreground/70">
+      <p className="mt-3.5 pt-2.5 border-t border-border/50 text-[11px] leading-normal text-muted-foreground">
         Zákon o el. komunikacích (§ 89 odst. 3 ZEK) a nařízení GDPR. Volba je
         dobrovolná a kdykoli ji změníš v Nastavení.
       </p>
