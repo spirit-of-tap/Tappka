@@ -1,3 +1,4 @@
+import { PALETTE_BOOT_SCRIPT } from "@/lib/theme/palettes";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
@@ -111,6 +112,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="cs" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: PALETTE_BOOT_SCRIPT }} />
+      </head>
       <body
         className={`${roboto.variable} ${poppins.variable} ${pacifico.variable} font-body antialiased`}
       >

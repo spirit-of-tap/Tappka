@@ -10,6 +10,7 @@ import {
   BriefcaseBusiness,
   FlaskConical,
   Settings,
+  Palette,
 } from "lucide-react"
 import { BetaBadge } from "@/components/beta-badge"
 import { useRouter } from "next/navigation"
@@ -166,6 +167,11 @@ export function NavUser({ user }: NavUserProps) {
                   <DropdownMenuItem onClick={() => setTheme("system")}>
                     <Laptop className="mr-2 h-4 w-4" />
                     Systém
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push(SETTINGS_ROUTES.vzhled)}>
+                    <Palette className="mr-2 h-4 w-4" />
+                    Barevné motivy…
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>

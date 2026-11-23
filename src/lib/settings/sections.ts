@@ -7,13 +7,14 @@ import { canAccessFeature, type AccessProfile } from "@/lib/feature-access"
 export const SETTINGS_ROUTES = {
   root: "/settings",
   dashboard: "/settings/dashboard",
+  vzhled: "/settings/vzhled",
   notifikace: "/settings/notifikace",
   cas: "/settings/cas",
   ts: "/settings/ts",
   mistnosti: "/settings/mistnosti",
 } as const
 
-export const SETTINGS_SECTION_IDS = ["dashboard", "notifikace", "cas", "ts", "mistnosti"] as const
+export const SETTINGS_SECTION_IDS = ["dashboard", "vzhled", "notifikace", "cas", "ts", "mistnosti"] as const
 export type SettingsSectionId = (typeof SETTINGS_SECTION_IDS)[number]
 
 /** Same roles the room/TS schedule page has always required; they also manage any team's calendar. */
@@ -32,6 +33,13 @@ const SECTIONS: Record<SettingsSectionId, SettingsSection & { visible: (profile:
     title: "Dashboard",
     description: "Co vidíš na úvodní stránce",
     href: SETTINGS_ROUTES.dashboard,
+    visible: () => true,
+  },
+  vzhled: {
+    id: "vzhled",
+    title: "Vzhled",
+    description: "Světlý, tmavý a barevné motivy",
+    href: SETTINGS_ROUTES.vzhled,
     visible: () => true,
   },
   notifikace: {

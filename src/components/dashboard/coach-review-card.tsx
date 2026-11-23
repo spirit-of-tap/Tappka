@@ -27,7 +27,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
       className={
         done
           ? 'flex h-full flex-col gap-3 rounded-2xl bg-success/12 p-5 text-success-strong md:p-6'
-          : 'flex h-full flex-col gap-3 rounded-2xl bg-primary p-5 text-primary-foreground md:p-6'
+          : 'flex h-full flex-col gap-3 rounded-2xl bg-spotlight p-5 text-spotlight-foreground md:p-6'
       }
     >
       <div className="flex items-start gap-2">
@@ -67,7 +67,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
               <li key={essay.id}>
                 <Link
                   href={`/cteni/eseje/${essay.id}`}
-                  className="focus-ring group flex items-center gap-3 rounded-xl bg-primary-foreground/10 px-3 py-2 transition-[background-color,transform] duration-200 hover:bg-primary-foreground/18 motion-safe:hover:translate-x-1"
+                  className="focus-ring group flex items-center gap-3 rounded-xl bg-spotlight-foreground/10 px-3 py-2 transition-[background-color,transform] duration-200 hover:bg-spotlight-foreground/15 motion-safe:hover:translate-x-1"
                 >
                   <ProfileAvatar picture={essay.author?.picture ?? null} name={essay.author?.name ?? '?'} size={28} />
                   <span className="min-w-0 flex-1">

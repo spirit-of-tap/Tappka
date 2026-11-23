@@ -123,7 +123,15 @@ the progress card that turns between Knižní body and Zákaznické schůzky
 team podium. Motion is light and always `motion-safe:`: cards rise in with
 a stagger (`animate-rise`), rings draw (`animate-ring-draw`), podium steps
 grow (`animate-bar-grow`); the route loader is the breathing T tile with a
-sweeping bar. Reading progress is a ring against the cumulative goal for the
+sweeping bar.
+
+Colour palettes (Nastavení → Vzhled) sit on top of light/dark: `data-palette`
+on `<html>` (set before paint by `PALETTE_BOOT_SCRIPT`, stored per browser in
+localStorage) swaps the surface, primary, sidebar, hero and spotlight tokens.
+Palettes: Tappka (default, no attribute), Les, Oceán, Levandule, Meruňka,
+Grafit. Chart colours stay fixed so data reads the same in every palette.
+Strong call-to-action surfaces use `bg-spotlight` (full primary in light,
+primary sunk into the card in dark, so it never glares). Reading progress is a ring against the cumulative goal for the
 current semester (`cumulativeSemesterMilestone`). The brand logo tile uses
 `bg-tap-red` directly. Status
 semantics: `success` green, `warning` amber (hue = chart-2), `info` teal

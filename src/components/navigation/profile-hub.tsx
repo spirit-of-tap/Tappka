@@ -13,6 +13,7 @@ import {
   Moon,
   Sun,
   User as UserIcon,
+  Palette,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -127,6 +128,10 @@ export function ProfileHub({ user }: ProfileHubProps) {
             </Button>
           ))}
         </div>
+        <Link href={SETTINGS_ROUTES.vzhled} className="focus-ring mt-3 inline-flex items-center gap-1.5 rounded-sm text-sm font-medium text-primary hover:underline underline-offset-4">
+          <Palette className="size-4" aria-hidden />
+          Barevné motivy
+        </Link>
       </div>
 
       <div className="divide-y overflow-hidden rounded-xl border bg-card">

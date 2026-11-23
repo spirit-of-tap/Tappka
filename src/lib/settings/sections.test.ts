@@ -8,11 +8,11 @@ const coach = { role: "coach", beta_access_granted_at: null, beta_cohort: "A" as
 
 describe("visibleSettingsSections", () => {
   it("shows notifications and Čas tags to a student with Čas access, but not rooms", () => {
-    expect(visibleSettingsSections(student).map((s) => s.id)).toEqual(["dashboard", "notifikace", "cas", "ts"])
+    expect(visibleSettingsSections(student).map((s) => s.id)).toEqual(["dashboard", "vzhled", "notifikace", "cas", "ts"])
   })
 
   it("follows Čas feature access (released, so also without beta)", () => {
-    expect(visibleSettingsSections(noBeta).map((s) => s.id)).toEqual(["dashboard", "notifikace", "cas"])
+    expect(visibleSettingsSections(noBeta).map((s) => s.id)).toEqual(["dashboard", "vzhled", "notifikace", "cas"])
   })
 
   it("shows rooms to coaches and admins", () => {

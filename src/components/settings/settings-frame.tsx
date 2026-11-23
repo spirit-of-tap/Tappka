@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Building2, CalendarSync, ChevronLeft, ChevronRight, LayoutDashboard, Tags, type LucideIcon } from "lucide-react"
+import { Bell, Building2, CalendarSync, ChevronLeft, ChevronRight, LayoutDashboard, Palette, Tags, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 
 const SECTION_ICONS: Record<SettingsSectionId, LucideIcon> = {
   dashboard: LayoutDashboard,
+  vzhled: Palette,
   notifikace: Bell,
   cas: Tags,
   ts: CalendarSync,
