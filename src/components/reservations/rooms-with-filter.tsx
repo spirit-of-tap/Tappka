@@ -151,6 +151,7 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
     chips.find((chip) => chip.state === "free")?.start ??
     null;
 
+  const mineIds = new Set(myReservations.map((r) => r.id));
   const freeCount = items.filter((item) => item.status.kind === "free").length;
 
   const handleSelectRoom = useCallback((room: Room) => {
@@ -184,18 +185,12 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
       )}
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21.25rem]">
-        <section
-          aria-label="Plánek místností"
-          className="rounded-2xl border bg-card p-4 text-card-foreground motion-safe:animate-rise sm:p-5"
-          style={{ animationDelay: "100ms" }}
-        >
-          <RoomMap
-            items={orderedItems}
-            selectedId={selectedItem?.room.id ?? null}
-            isToday={isToday}
-            onSelect={handleSelectRoom}
-          />
-        </section>
+        <RoomMap
+          items={orderedItems}
+          selectedId={selectedItem?.room.id ?? null}
+          isToday={isToday}
+          onSelect={handleSelectRoom}
+        />
 
         <div ref={panelRef} className="scroll-mt-4 lg:sticky lg:top-4">
           {selectedItem && (
@@ -205,6 +200,9 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
               isToday={isToday}
               isLoading={isLoadingDay}
               chips={chips}
+              day={day}
+              reservations={dayReservations.filter((r) => r.room_id === selectedItem.room.id)}
+              mineIds={mineIds}
               duration={duration}
               chosenStart={effectiveStart}
               onChooseStart={setChosenStart}

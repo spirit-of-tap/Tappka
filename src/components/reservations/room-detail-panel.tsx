@@ -3,23 +3,33 @@
 import Link from "next/link";
 import { CalendarClock } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import type { RoomMapStatus, SlotChip } from "@/lib/reservations/room-map";
+import {
+  DAY_BAR_END_HOUR,
+  DAY_BAR_START_HOUR,
+  getDayBarSegments,
+  getRoomFloor,
+  OTHER_FLOOR_LABEL,
+  type RoomMapStatus,
+  type SlotChip,
+} from "@/lib/reservations/room-map";
 import { formatTime } from "@/lib/reservations/utils";
-import { DAY_NAMES_CS, type Room } from "@/lib/reservations/types";
+import { DAY_NAMES_CS, type Reservation, type Room } from "@/lib/reservations/types";
 
-import { getRoomTitle, getStatusLine } from "./room-map";
+import { getRoomTitle, getStatusLine, STATUS_DOT_CLASSES } from "./room-map";
 
 const BASE_DURATIONS = [30, 60, 120];
 
-const PILL_CLASSES: Record<RoomMapStatus["kind"], { pill: string; dot: string; label: string }> = {
-  free: { pill: "bg-success/12 text-success-strong", dot: "bg-success", label: "Volná" },
-  busy: { pill: "bg-chart-2/15 text-chart-2-strong", dot: "bg-chart-2", label: "Obsazená" },
-  closed: { pill: "bg-muted text-muted-foreground", dot: "bg-muted-foreground", label: "Zavřeno" },
+const PILL_CLASSES: Record<RoomMapStatus["kind"], { dot: string; label: string }> = {
+  free: { dot: STATUS_DOT_CLASSES.free, label: "Volná" },
+  busy: { dot: STATUS_DOT_CLASSES.busy, label: "Obsazená" },
+  closed: { dot: STATUS_DOT_CLASSES.closed, label: "Zavřeno" },
 };
+
+const HERO_CHIP_CLASSES = "rounded-lg bg-hero-foreground/10 px-2 py-0.5 text-xs text-hero-muted";
+const DAY_BAR_TICKS = [DAY_BAR_START_HOUR, 14, DAY_BAR_END_HOUR];
 
 const CHIP_CLASSES = {
   free: "bg-success/12 text-success-strong hover:bg-success/20 hover:text-success-strong",
@@ -39,6 +49,9 @@ interface RoomDetailPanelProps {
   isToday: boolean;
   isLoading: boolean;
   chips: SlotChip[];
+  day: Date;
+  reservations: Reservation[];
+  mineIds?: ReadonlySet<string>;
   duration: number;
   chosenStart: Date | null;
   onChooseStart: (start: Date) => void;
@@ -52,6 +65,9 @@ export function RoomDetailPanel({
   isToday,
   isLoading,
   chips,
+  day,
+  reservations,
+  mineIds,
   duration,
   chosenStart,
   onChooseStart,
@@ -62,126 +78,172 @@ export function RoomDetailPanel({
   const durations = [...new Set([...BASE_DURATIONS, duration])].sort((a, b) => a - b);
   const chosenChip = chips.find((chip) => chip.start.getTime() === chosenStart?.getTime());
   const hasRestrictedDays = (room.available_days?.length ?? 0) > 0;
+  const floor = getRoomFloor(room.code);
+  const floorLabel = floor === null ? OTHER_FLOOR_LABEL : `${floor}. patro`;
+  const segments = getDayBarSegments(reservations, room.id, day, mineIds);
+  const now = new Date();
+  const nowPercent =
+    ((now.getHours() + now.getMinutes() / 60 - DAY_BAR_START_HOUR) /
+      (DAY_BAR_END_HOUR - DAY_BAR_START_HOUR)) *
+    100;
+  const showNow = isToday && nowPercent >= 0 && nowPercent <= 100;
 
   return (
     <section
       aria-label="Detail místnosti"
-      className="space-y-5 rounded-2xl border bg-card p-5 text-card-foreground motion-safe:animate-rise"
+      className="overflow-hidden rounded-3xl border bg-card text-card-foreground shadow-sm motion-safe:animate-rise"
       style={{ animationDelay: "200ms" }}
     >
-      <div className="space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="font-heading text-5xl font-bold leading-none text-chart-3-strong">
-            {room.code.toUpperCase()}
-          </h3>
-          <span
-            className={cn(
-              "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-              pill.pill,
-            )}
-          >
-            <span aria-hidden className={cn("size-1.5 rounded-full", pill.dot)} />
+      <div className="relative space-y-3 overflow-hidden bg-hero p-5 text-hero-foreground">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-12 size-36 rounded-full border-[18px] border-hero-foreground/5"
+        />
+        <div className="relative flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-hero-muted">
+            {floorLabel}
+          </p>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-hero-foreground/10 px-2.5 py-1 text-xs font-semibold">
+            <span aria-hidden className={cn("size-2 rounded-full", pill.dot)} />
             {pill.label}
           </span>
         </div>
-        <p className="text-base font-medium">{getRoomTitle(room)}</p>
-        {room.description && (
-          <p className="text-sm text-muted-foreground">{room.description}</p>
-        )}
-        <p className="text-xs font-semibold text-muted-foreground">
-          {getStatusLine(status, isToday)}
-        </p>
+        <div className="relative space-y-1">
+          <h3 className="font-heading text-4xl font-bold leading-none">
+            {room.code.toUpperCase()}
+          </h3>
+          <p className="text-base font-medium">{getRoomTitle(room)}</p>
+          {room.description && <p className="text-sm text-hero-muted">{room.description}</p>}
+          <p className="text-xs font-semibold text-hero-muted">
+            {getStatusLine(status, isToday)}
+          </p>
+        </div>
         {(room.can_have_ts || hasRestrictedDays) && (
-          <div className="flex flex-wrap gap-1.5">
-            {room.can_have_ts && (
-              <Badge variant="outline" className="text-xs">
-                TS místnost
-              </Badge>
-            )}
+          <div className="relative flex flex-wrap gap-1.5">
+            {room.can_have_ts && <span className={HERO_CHIP_CLASSES}>TS místnost</span>}
             {hasRestrictedDays && (
-              <Badge variant="outline" className="text-xs">
-                {(room.available_days ?? []).map((day) => DAY_NAMES_CS[day]).join(", ")}
-              </Badge>
+              <span className={HERO_CHIP_CLASSES}>
+                {(room.available_days ?? []).map((d) => DAY_NAMES_CS[d]).join(", ")}
+              </span>
             )}
           </div>
         )}
+        <div className="relative pt-1">
+          <div
+            role="img"
+            aria-label={`Obsazenost ${DAY_BAR_START_HOUR}–${DAY_BAR_END_HOUR} h`}
+            className="relative h-2 overflow-hidden rounded-full bg-hero-foreground/10"
+          >
+            {segments.map((segment) => (
+              <span
+                key={segment.id}
+                className={cn("absolute inset-y-0", segment.mine ? "bg-primary" : "bg-chart-2")}
+                style={{ left: `${segment.left}%`, width: `${segment.width}%` }}
+              />
+            ))}
+          </div>
+          {showNow && (
+            <span
+              aria-hidden
+              className="absolute -top-1 h-4 w-0.5 -translate-x-1/2 rounded-full bg-hero-foreground"
+              style={{ left: `${nowPercent}%` }}
+            />
+          )}
+          <div className="mt-1 flex justify-between text-[10px] tabular-nums text-hero-muted">
+            {DAY_BAR_TICKS.map((hour) => (
+              <span key={hour}>{hour}</span>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {status.kind === "closed" ? (
-        <p className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground">
-          Místnost je v tento den zavřená
-        </p>
-      ) : (
-        <>
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <h4 className="text-sm font-bold text-chart-3-strong">Volné časy</h4>
-              {isLoading && <Spinner className="size-3.5" />}
+      <div className="space-y-4 p-5">
+        {status.kind === "closed" ? (
+          <p className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground">
+            Místnost je v tento den zavřená
+          </p>
+        ) : (
+          <>
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <h4 className="text-sm font-bold text-chart-3-strong">Začátek</h4>
+                {isLoading && <Spinner className="size-3.5" />}
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-4">
+                {chips.filter((chip) => chip.state !== "past").map((chip) => {
+                  const isChosen = chip.start.getTime() === chosenStart?.getTime();
+                  const isFree = chip.state === "free";
+                  return (
+                    <Button
+                      key={chip.start.getTime()}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={!isFree}
+                      aria-pressed={isChosen}
+                      onClick={() => onChooseStart(chip.start)}
+                      className={cn(
+                        "h-8 px-0 text-xs tabular-nums",
+                        isChosen ? CHIP_CLASSES.chosen : isFree ? CHIP_CLASSES.free : CHIP_CLASSES.taken,
+                      )}
+                    >
+                      {formatTime(chip.start)}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-4">
-              {chips.filter((chip) => chip.state !== "past").map((chip) => {
-                const isChosen = chip.start.getTime() === chosenStart?.getTime();
-                const isFree = chip.state === "free";
-                return (
+
+            <div>
+              <h4 className="mb-2 text-sm font-bold text-chart-3-strong">Délka</h4>
+              <div className="flex rounded-xl bg-muted p-1">
+                {durations.map((minutes) => (
                   <Button
-                    key={chip.start.getTime()}
+                    key={minutes}
                     type="button"
-                    variant="ghost"
                     size="sm"
-                    disabled={!isFree}
-                    aria-pressed={isChosen}
-                    onClick={() => onChooseStart(chip.start)}
+                    variant="ghost"
+                    aria-pressed={minutes === duration}
+                    onClick={() => onChooseDuration(minutes)}
                     className={cn(
-                      "h-8 px-0 text-xs tabular-nums",
-                      isChosen ? CHIP_CLASSES.chosen : isFree ? CHIP_CLASSES.free : CHIP_CLASSES.taken,
+                      "h-8 flex-1 rounded-lg",
+                      minutes === duration
+                        ? "bg-card text-foreground shadow-sm hover:bg-card hover:text-foreground"
+                        : "text-muted-foreground",
                     )}
                   >
-                    {formatTime(chip.start)}
+                    {formatDuration(minutes)}
                   </Button>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          </>
+        )}
 
-          <div>
-            <h4 className="mb-2 text-sm font-bold text-chart-3-strong">Délka</h4>
-            <div className="flex flex-wrap gap-1.5">
-              {durations.map((minutes) => (
-                <Button
-                  key={minutes}
-                  type="button"
-                  size="sm"
-                  variant={minutes === duration ? "default" : "outline"}
-                  aria-pressed={minutes === duration}
-                  onClick={() => onChooseDuration(minutes)}
-                  className="h-8"
-                >
-                  {formatDuration(minutes)}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      <div className="space-y-2">
-        <Button
-          type="button"
-          size="lg"
-          className="w-full"
-          disabled={!chosenChip}
-          onClick={onBook}
-        >
-          {chosenChip
-            ? `Rezervovat ${formatTime(chosenChip.start)}–${formatTime(chosenChip.end)}`
-            : "Rezervovat"}
-        </Button>
-        <Button asChild variant="ghost" size="sm" className="w-full">
-          <Link href={`/reservations/${room.code}`}>
-            <CalendarClock className="size-4" />
-            Celý rozvrh místnosti
-          </Link>
-        </Button>
+        <div className="space-y-2">
+          <Button
+            type="button"
+            size="lg"
+            className="h-12 w-full rounded-xl shadow-lg shadow-primary/25"
+            disabled={!chosenChip}
+            onClick={onBook}
+          >
+            {chosenChip
+              ? `Rezervovat ${formatTime(chosenChip.start)}–${formatTime(chosenChip.end)}`
+              : "Rezervovat"}
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
+          >
+            <Link href={`/reservations/${room.code}`}>
+              <CalendarClock className="size-4" />
+              Celý rozvrh místnosti
+            </Link>
+          </Button>
+        </div>
       </div>
     </section>
   );

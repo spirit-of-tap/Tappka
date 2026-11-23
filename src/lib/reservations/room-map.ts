@@ -153,3 +153,43 @@ export function getSlotChips(
 
   return chips;
 }
+
+export const DAY_BAR_START_HOUR = 8;
+export const DAY_BAR_END_HOUR = 20;
+
+export interface DayBarSegment {
+  id: string;
+  left: number;
+  width: number;
+  mine: boolean;
+}
+
+/** Reservations of one room clipped to the day bar range, as percentages of its width. */
+export function getDayBarSegments(
+  reservations: Reservation[],
+  roomId: string,
+  day: Date,
+  mineIds?: ReadonlySet<string>,
+): DayBarSegment[] {
+  const barStart = new Date(day);
+  barStart.setHours(DAY_BAR_START_HOUR, 0, 0, 0);
+  const barEnd = new Date(day);
+  barEnd.setHours(DAY_BAR_END_HOUR, 0, 0, 0);
+  const span = barEnd.getTime() - barStart.getTime();
+
+  return reservations
+    .filter((r) => r.room_id === roomId && !r.cancelled_at)
+    .flatMap((r) => {
+      const start = Math.max(new Date(r.start_at).getTime(), barStart.getTime());
+      const end = Math.min(new Date(r.end_at).getTime(), barEnd.getTime());
+      if (end <= start) return [];
+      return [
+        {
+          id: r.id,
+          left: ((start - barStart.getTime()) / span) * 100,
+          width: ((end - start) / span) * 100,
+          mine: mineIds?.has(r.id) ?? false,
+        },
+      ];
+    });
+}

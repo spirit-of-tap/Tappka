@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getRoomFloor,
+  getDayBarSegments,
   getRoomMapStatus,
   getSlotChips,
   groupRoomsByFloor,
@@ -145,5 +146,32 @@ describe("getSlotChips", () => {
   it("stops offering starts that would end after closing", () => {
     const chips = getSlotChips(day, [], 120, at(7));
     expect(chips.at(-1)?.end).toEqual(at(22));
+  });
+});
+
+describe("getDayBarSegments", () => {
+  const day = new Date(2026, 10, 23);
+  const at = (h: number, m = 0) => new Date(2026, 10, 23, h, m);
+
+  it("positions reservations as percentages of the 8-20 h bar", () => {
+    const [segment] = getDayBarSegments([reservation("d1", at(11), at(14))], "d1", day);
+
+    expect(segment.left).toBeCloseTo(25);
+    expect(segment.width).toBeCloseTo(25);
+    expect(segment.mine).toBe(false);
+  });
+
+  it("clips to the bar, ignores other rooms and out-of-range reservations, flags own ones", () => {
+    const own = reservation("d1", at(7), at(9));
+    const segments = getDayBarSegments(
+      [own, reservation("d2", at(10), at(11)), reservation("d1", at(21), at(22))],
+      "d1",
+      day,
+      new Set([own.id]),
+    );
+
+    expect(segments).toHaveLength(1);
+    expect(segments[0]).toMatchObject({ left: 0, mine: true });
+    expect(segments[0].width).toBeCloseTo(100 / 12);
   });
 });
