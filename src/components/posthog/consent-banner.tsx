@@ -11,6 +11,9 @@ import { recordConsentChoice, shouldAskConsent } from "@/lib/consent";
 const emptySubscribe = () => () => {};
 
 function needsChoice(): boolean {
+  // Without a PostHog key nothing is ever measured, so there is nothing to consent to.
+  // An uninitialised client still reports "pending" instead of throwing.
+  if (!posthog.__loaded) return false;
   try {
     return shouldAskConsent(posthog.get_explicit_consent_status());
   } catch {

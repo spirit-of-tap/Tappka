@@ -106,6 +106,9 @@ test.describe("essay manual save and auto-publish", () => {
 
   test("warns before leaving with unsaved changes, and Zůstat keeps the draft", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
+    // Enter the editor from the overview like a user does, so "Zpět" has an
+    // in-app page to return to instead of the browser's initial about:blank.
+    await page.goto("/cteni/prehled");
     await page.goto("/cteni/eseje/nova");
 
     await page.getByLabel("Název eseje").fill(GUARD_TITLE);
@@ -136,8 +139,7 @@ test.describe("essay manual save and auto-publish", () => {
     await expect(page).toHaveURL(/\/upravit$/, { timeout: 15_000 });
     await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
 
-    await page.getByRole("button", { name: "Další akce" }).click();
-    await page.getByRole("menuitem", { name: "Historie verzí" }).click();
+    await page.getByRole("button", { name: "Historie verzí" }).click();
     const history = page.getByRole("dialog");
     await expect(history.getByText("Historie verzí")).toBeVisible();
     // Scoped to the sheet: the editor footer also reports a word count.
