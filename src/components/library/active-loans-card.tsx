@@ -181,7 +181,7 @@ export function ActiveLoansCard({ loans }: ActiveLoansCardProps) {
                   <span
                     className={cn(
                       'inline-flex items-center gap-1 text-xs',
-                      dueInfo.tone === 'destructive' && 'text-destructive font-semibold',
+                      dueInfo.tone === 'destructive' && 'text-destructive-strong font-semibold',
                       dueInfo.tone === 'warning' && 'text-warning-strong font-medium',
                       dueInfo.tone === 'neutral' && 'text-muted-foreground',
                     )}

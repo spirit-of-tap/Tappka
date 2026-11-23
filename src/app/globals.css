@@ -264,7 +264,7 @@
   /* Dark mode already clears WCAG AA (~9.1:1) as plain --chart-3. */
   --chart-3-strong: oklch(0.761 0.103 195.2);
   --chart-4: oklch(0.704 0.158 327.1); /* Magenta */
-  --chart-5: oklch(0.653 0.132 289.9); /* Violet */
+  --chart-5: oklch(calc(0.653 + var(--shade-lift, 0) * 1.5) 0.132 289.9); /* Violet */
 
   --time-training: oklch(0.78 0.12 235); /* Light blue */
   --time-reading: oklch(0.86 0.15 92); /* Yellow */
