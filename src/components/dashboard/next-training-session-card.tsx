@@ -29,7 +29,7 @@ const HERO =
   'group/hero relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl bg-hero p-5 text-hero-foreground md:p-6';
 /** Hover only where the whole card is one link (a scheduled session). */
 const HERO_HOVER =
-  'transition-[transform,box-shadow] duration-300 ease-out hover:shadow-xl hover:shadow-hero/40 focus-within:shadow-xl focus-within:shadow-hero/40 motion-safe:hover:-translate-y-1';
+  'transition-[transform,box-shadow] duration-500 ease-smooth will-change-transform hover:shadow-lg hover:shadow-hero/25 focus-within:shadow-lg focus-within:shadow-hero/25 motion-safe:hover:-translate-y-0.5';
 
 function pragueDayIndex(date: Date): number {
   const [y, m, d] = date.toLocaleDateString('sv-SE', { timeZone: TIME_ZONE }).split('-').map(Number);
@@ -52,7 +52,7 @@ function SessionDateTile({ startsAt }: { startsAt: string }) {
   return (
     <div
       aria-hidden
-      className="flex w-20 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-primary py-3.5 text-primary-foreground shadow-lg shadow-black/20 transition-transform duration-300 ease-out motion-safe:group-hover/hero:-rotate-3 motion-safe:group-hover/hero:scale-105"
+      className="flex w-20 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-primary py-3.5 text-primary-foreground shadow-lg shadow-black/20 transition-transform duration-500 ease-smooth motion-safe:group-hover/hero:-rotate-2 motion-safe:group-hover/hero:scale-[1.03]"
     >
       <span className="text-[11px] font-bold uppercase tracking-widest">{part({ weekday: 'short' })}</span>
       <span className="font-heading text-3xl font-extrabold leading-none">{part({ day: 'numeric' })}</span>
@@ -81,7 +81,7 @@ function HeroRing() {
   return (
     <span
       aria-hidden
-      className="pointer-events-none absolute -right-12 -bottom-20 size-56 rounded-full border-[28px] border-hero-foreground/5 transition-[transform,border-color] duration-700 ease-out group-hover/hero:border-hero-foreground/10 motion-safe:group-hover/hero:-translate-x-6 motion-safe:group-hover/hero:-translate-y-4 motion-safe:group-hover/hero:scale-110"
+      className="pointer-events-none absolute -right-12 -bottom-20 size-56 rounded-full border-[28px] border-hero-foreground/5 transition-[transform,border-color] duration-1000 ease-smooth group-hover/hero:border-hero-foreground/10 motion-safe:group-hover/hero:-translate-x-3 motion-safe:group-hover/hero:-translate-y-2 motion-safe:group-hover/hero:scale-105"
     />
   );
 }
@@ -124,7 +124,7 @@ export function NextTrainingSessionCard({ session, now = new Date() }: NextTrain
         <SessionDateTile startsAt={session.starts_at} />
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-start gap-2">
-            <p className="font-heading text-xl font-bold leading-snug group-hover:underline underline-offset-4 md:text-2xl">
+            <p className="font-heading text-xl font-bold leading-snug decoration-hero-foreground/0 underline underline-offset-4 transition-[text-decoration-color] duration-500 ease-smooth group-hover:decoration-hero-foreground/40 md:text-2xl">
               {session.topic}
             </p>
             {session.isCross && <Badge variant="secondary">Cross</Badge>}
@@ -138,9 +138,9 @@ export function NextTrainingSessionCard({ session, now = new Date() }: NextTrain
           {facilitatorNames.length > 0 && (
             <p className="text-sm text-hero-muted">Facilitace: {facilitatorNames.join(', ')}</p>
           )}
-          <span className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-hero-foreground opacity-70 transition-all duration-300 group-hover:opacity-100 motion-safe:group-hover:translate-x-1">
+          <span className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-hero-foreground opacity-70 transition-[opacity,transform] duration-500 ease-smooth group-hover:opacity-100 motion-safe:group-hover:translate-x-1">
             Detail TS
-            <ArrowUpRight className="size-4 transition-transform duration-300 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5" aria-hidden />
+            <ArrowUpRight className="size-4 transition-transform duration-500 ease-smooth motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5" aria-hidden />
           </span>
         </div>
       </Link>
