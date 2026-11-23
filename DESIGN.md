@@ -112,7 +112,7 @@ text on red).
 (`--sidebar`, with a right border) that uses the normal page tokens. Colour
 comes from tinted tiles, not dark blocks: each sidebar section has a colour
 (Společné = `primary`, Můj rozvoj = `chart-5` violet, Můj tým = `chart-3`
-teal) shown as a dot by its title and as the icon chip of its items, and every
+teal) shown as a vertical stripe along the whole section and as the icon chip of its items, and every
 section carries a one-line hint saying who it is for. Beta modules get a small
 amber dot (`sr-only` "Beta"). The dashboard opens with a white greeting card
 whose key counts are tinted tiles (`bg-<colour>/10–15` with the matching

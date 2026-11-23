@@ -69,8 +69,14 @@ export function NextReservationCard({ reservations, total }: NextReservationCard
               </li>
             ))}
             {more > 0 && (
-              <li className="px-1 text-xs font-medium text-chart-3-strong">
-                a {more} {more === 1 ? 'další' : 'dalších'}
+              <li>
+                <Link
+                  href="/reservations"
+                  className="flex items-center justify-center gap-1 rounded-xl border border-dashed border-chart-3-strong/30 px-3 py-2 text-xs font-medium text-chart-3-strong hover:bg-card"
+                >
+                  + {more} {more === 1 ? 'další rezervace' : more < 5 ? 'další rezervace' : 'dalších rezervací'}
+                  <ArrowRight className="size-3" aria-hidden />
+                </Link>
               </li>
             )}
           </ul>

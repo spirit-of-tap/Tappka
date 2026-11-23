@@ -46,12 +46,12 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 const NAV_ITEM_CLASS = "h-9 gap-2.5 px-2 data-[active=true]:font-semibold"
 
-/** Section colour: the dot beside the title and the icon chip of every item. */
-const TONE_CLASSES: Record<NavTone, { dot: string; chip: string }> = {
-  shared: { dot: "bg-primary", chip: "bg-primary/10 text-primary" },
-  individual: { dot: "bg-chart-5", chip: "bg-chart-5/15 text-chart-5" },
-  team: { dot: "bg-chart-3", chip: "bg-chart-3/15 text-chart-3-strong" },
-  neutral: { dot: "bg-muted-foreground", chip: "bg-muted text-muted-foreground" },
+/** Section colour: the stripe along the whole section and the icon chip of every item. */
+const TONE_CLASSES: Record<NavTone, { stripe: string; chip: string }> = {
+  shared: { stripe: "bg-primary", chip: "bg-primary/10 text-primary" },
+  individual: { stripe: "bg-chart-5", chip: "bg-chart-5/15 text-chart-5" },
+  team: { stripe: "bg-chart-3", chip: "bg-chart-3/15 text-chart-3-strong" },
+  neutral: { stripe: "bg-muted-foreground/40", chip: "bg-muted text-muted-foreground" },
 }
 
 function NavIcon({ item, tone }: { item: NavModule; tone: NavTone }) {
@@ -122,13 +122,14 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
             section.items.some((item) => !item.feature || canAccessFeature(accessProfile, item.feature)),
           )
           .map((section) => (
-          <SidebarGroup key={section.title} className="py-1">
+          <SidebarGroup key={section.title} className="relative py-1 pl-4">
+            <span
+              aria-hidden
+              className={cn("absolute top-3 bottom-2 left-2 w-1 rounded-full", TONE_CLASSES[section.tone].stripe)}
+            />
             <div className="px-2 pt-2 pb-1.5">
-              <p className="flex items-center gap-2 text-sm font-bold">
-                <span aria-hidden className={cn("size-2 rounded-full", TONE_CLASSES[section.tone].dot)} />
-                {section.title}
-              </p>
-              {section.hint && <p className="pl-4 text-xs text-muted-foreground">{section.hint}</p>}
+              <p className="text-sm font-bold">{section.title}</p>
+              {section.hint && <p className="text-xs text-muted-foreground">{section.hint}</p>}
             </div>
             <SidebarGroupContent>
               <SidebarMenu>
