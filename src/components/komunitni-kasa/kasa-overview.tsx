@@ -88,7 +88,7 @@ export function KasaOverview() {
 
   return (
     <section aria-labelledby="stav-kasy" className="space-y-4 motion-safe:animate-rise" style={{ animationDelay: "120ms" }}>
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 rounded-2xl bg-hero p-6 text-hero-foreground shadow-md sm:p-8">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 rounded-3xl bg-hero p-6 text-hero-foreground sm:p-8">
         <div className="space-y-1">
           <h2 id="stav-kasy" className="flex items-center gap-2 text-sm font-medium text-hero-muted">
             <Landmark className="size-4" aria-hidden />
@@ -100,7 +100,7 @@ export function KasaOverview() {
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 tabular-nums text-hero-foreground hover:bg-hero-foreground/10 hover:text-hero-foreground"
+            className="focus-ring-hero gap-1.5 tabular-nums text-hero-foreground hover:bg-hero-foreground/10 hover:text-hero-foreground"
             onClick={handleCopy}
             aria-label={`Zkopírovat číslo účtu ${account.number}`}
           >
@@ -115,7 +115,7 @@ export function KasaOverview() {
             asChild
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-hero-foreground hover:bg-hero-foreground/10 hover:text-hero-foreground"
+            className="focus-ring-hero gap-1.5 text-hero-foreground hover:bg-hero-foreground/10 hover:text-hero-foreground"
           >
             <a href={RB_TRANSPARENT_URL} target="_blank" rel="noopener noreferrer">
               Transparentní účet <ExternalLink className="size-3.5" aria-hidden />

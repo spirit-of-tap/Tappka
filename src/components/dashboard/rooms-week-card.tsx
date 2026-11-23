@@ -5,11 +5,14 @@ import { useState } from 'react';
 import { ArrowRight, DoorOpen, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { DashboardEmptyState } from '@/components/dashboard/dashboard-empty-state';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import type { WeekDay, WeekReservation } from '@/lib/dashboard/rooms-week';
 import { cn } from '@/lib/utils';
+import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 
 const LIST_LIMIT = 4;
+const ROW_STAGGER_MS = 50;
+const RESERVATION_FORMS: [string, string, string] = ['rezervace', 'rezervace', 'rezervací'];
 
 interface RoomsWeekCardProps {
   days: WeekDay[];
@@ -19,7 +22,7 @@ interface RoomsWeekCardProps {
 }
 
 function moreLabel(n: number): string {
-  return n >= 5 ? `+ ${n} dalších rezervací` : `+ ${n} další rezervace`;
+  return `+ ${n} ${pluralizeCz(n, ['další rezervace', 'další rezervace', 'dalších rezervací'])}`;
 }
 
 /**
@@ -55,7 +58,7 @@ export function RoomsWeekCard({ days, items, total }: RoomsWeekCardProps) {
               type="button"
               variant="ghost"
               aria-pressed={active}
-              aria-label={`${day.label}: ${day.count} rezervací`}
+              aria-label={`${day.label}: ${day.count} ${pluralizeCz(day.count, RESERVATION_FORMS)}`}
               onClick={() => setSelected(active ? null : day.key)}
               className={cn(
                 'flex h-auto min-w-0 flex-col gap-1 rounded-xl px-0 py-2 font-normal',
@@ -83,8 +86,8 @@ export function RoomsWeekCard({ days, items, total }: RoomsWeekCardProps) {
           {shown.map((r, i) => (
             <li
               key={r.id}
-              style={{ animationDelay: `${i * 50}ms` }}
-              className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted/50 motion-safe:animate-rise"
+              style={{ animationDelay: `${i * ROW_STAGGER_MS}ms` }}
+              className="flex items-center gap-3 rounded-xl px-2 py-2 motion-safe:transition-colors hover:bg-muted/50 motion-safe:animate-rise"
             >
               <span className="w-22 shrink-0 text-xs leading-tight whitespace-nowrap">
                 <span className="block font-bold text-chart-3-strong">{r.dayLabel}</span>
@@ -105,16 +108,21 @@ export function RoomsWeekCard({ days, items, total }: RoomsWeekCardProps) {
           ))}
         </ul>
       ) : selectedDay ? (
-        <p className="flex-1 rounded-xl border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
-          {selectedDay.label} nemáš nic zarezervováno.
-        </p>
+        <Empty className="border p-4 md:p-4">
+          <EmptyHeader>
+            <EmptyTitle className="text-base">Na {selectedDay.label.toLowerCase()} nemáš nic zarezervováno</EmptyTitle>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <DashboardEmptyState
-          icon={DoorOpen}
-          tone="bg-chart-3/15 text-chart-3-strong"
-          title="Žádná rezervace"
-          description="Potřebuješ místo na schůzku nebo práci v týmu? Zabookuj si místnost."
-        />
+        <Empty className="p-4 md:p-4">
+          <EmptyHeader>
+            <EmptyMedia variant="icon" className="bg-chart-3/15 text-chart-3-strong">
+              <DoorOpen aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle className="text-base">Žádná rezervace</EmptyTitle>
+            <EmptyDescription>Potřebuješ místo na schůzku nebo práci v týmu? Zabookuj si místnost.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       )}
 
       <div className="mt-auto flex items-center gap-3">

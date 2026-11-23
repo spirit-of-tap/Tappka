@@ -54,7 +54,7 @@ export const ROLE_COLORS: Record<ProfileRole, string> = {
   student: 'bg-chart-3/15 text-chart-3-strong',
   mentor: 'bg-chart-5/15 text-chart-5',
   coach: 'bg-chart-2/15 text-chart-2-strong',
-  admin: 'bg-destructive/15 text-destructive',
+  admin: 'bg-destructive/15 text-destructive-strong',
 };
 
 // Year labels

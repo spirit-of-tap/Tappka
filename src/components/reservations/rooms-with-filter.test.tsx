@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { toast } from "sonner"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { Reservation, RoomWithStatus } from "@/lib/reservations/types"
@@ -9,6 +10,8 @@ import { RoomsWithFilter } from "./rooms-with-filter"
 vi.mock("next/link", () => ({
   default: (props: React.ComponentProps<"a">) => <a {...props} />,
 }))
+
+vi.mock("sonner", () => ({ toast: { error: vi.fn() } }))
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
@@ -143,5 +146,30 @@ describe("RoomsWithFilter", () => {
     await user.click(within(panel).getByRole("button", { name: "2 h" }))
 
     expect(within(panel).getByRole("button", { name: "Rezervovat 09:00–11:00" })).toBeInTheDocument()
+  })
+
+  it("does not claim every room is free when another day fails to load", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500, json: async () => ({}) }))
+    renderMap()
+
+    await user.click(screen.getByRole("button", { name: "Zítra" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("stav místností proto neznáme")
+    expect(toast.error).toHaveBeenCalledWith("Nepodařilo se načíst rezervace")
+    expect(screen.queryByRole("region", { name: "Plánek místností" })).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Volná/)).not.toBeInTheDocument()
+
+    vi.unstubAllGlobals()
+  })
+
+  it("keeps the server data for today and shows a notice when the refresh fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")))
+    renderMap()
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("nemusí být aktuální")
+    expect(screen.getByText("Obsazená do 10:30")).toBeInTheDocument()
+
+    vi.unstubAllGlobals()
   })
 })

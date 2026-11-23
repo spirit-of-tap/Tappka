@@ -67,7 +67,7 @@ export function MyEssayList({
             <Link
               href={awaitingReply ? `/cteni/eseje/${essay.id}#komentare` : `/cteni/eseje/${essay.id}`}
               className={cn(
-                'group focus-ring flex items-center gap-3 rounded-xl px-3 py-3 transition-colors',
+                'group focus-ring flex items-center gap-3 rounded-xl px-3 py-3 motion-safe:transition-colors',
                 awaitingReply ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-muted/50',
               )}
             >
@@ -94,7 +94,7 @@ export function MyEssayList({
                   {isEssayPinned(essay) && (
                     <Pin className="size-3 shrink-0 fill-primary text-primary" aria-label="Připnuto" />
                   )}
-                  <h3 className="truncate text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+                  <h3 className="truncate text-sm font-semibold leading-snug motion-safe:transition-colors group-hover:text-primary">
                     {essay.title}
                   </h3>
                 </div>

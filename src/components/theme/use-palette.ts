@@ -16,15 +16,6 @@ import {
   type ShadeId,
 } from '@/lib/theme/palettes';
 
-function subscribe(onChange: () => void): () => void {
-  window.addEventListener(PALETTE_CHANGE_EVENT, onChange);
-  window.addEventListener('storage', onChange);
-  return () => {
-    window.removeEventListener(PALETTE_CHANGE_EVENT, onChange);
-    window.removeEventListener('storage', onChange);
-  };
-}
-
 /** A per-device appearance choice kept in localStorage and mirrored on <html>. */
 function useStoredChoice<T extends string>(
   key: string,
@@ -40,6 +31,22 @@ function useStoredChoice<T extends string>(
       return fallback;
     }
   }, [key, fallback, isValid]);
+
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const onStorage = (event: StorageEvent) => {
+        if (event.key === key || event.key === null) apply(document.documentElement, read());
+        onChange();
+      };
+      window.addEventListener(PALETTE_CHANGE_EVENT, onChange);
+      window.addEventListener('storage', onStorage);
+      return () => {
+        window.removeEventListener(PALETTE_CHANGE_EVENT, onChange);
+        window.removeEventListener('storage', onStorage);
+      };
+    },
+    [key, apply, read],
+  );
 
   const value = useSyncExternalStore(subscribe, read, () => fallback);
 

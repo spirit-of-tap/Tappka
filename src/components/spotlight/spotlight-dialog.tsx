@@ -265,7 +265,7 @@ export function SpotlightDialog() {
       onOpenChange={handleOpenChange}
       showCloseButton={false}
       filter={filterCommandItem}
-      className="sm:max-w-xl rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-2xl shadow-black/10 dark:shadow-black/50 overflow-hidden p-0 gap-0"
+      className="sm:max-w-xl rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-md overflow-hidden p-0 gap-0"
       title="Rychlé vyhledávání"
       description="Rychlý přechod na stránky a moduly v Tappce"
     >
@@ -292,7 +292,7 @@ export function SpotlightDialog() {
                 size="sm"
                 type="button"
                 onClick={() => setSearch("chci napsat novou esej")}
-                className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md transition-colors font-normal"
+                className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md motion-safe:transition-colors font-normal"
               >
                 <span className="text-muted-foreground/40 mr-1">“</span>
                 <span>chci napsat novou esej</span>
@@ -303,7 +303,7 @@ export function SpotlightDialog() {
                 size="sm"
                 type="button"
                 onClick={() => setSearch("zákaznické schůzky")}
-                className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md transition-colors font-normal"
+                className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md motion-safe:transition-colors font-normal"
               >
                 <span className="text-muted-foreground/40 mr-1">“</span>
                 <span>zákaznické schůzky</span>
@@ -314,7 +314,7 @@ export function SpotlightDialog() {
                 size="sm"
                 type="button"
                 onClick={() => setSearch("chci zarezervovat místnost")}
-                className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md transition-colors font-normal"
+                className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md motion-safe:transition-colors font-normal"
               >
                 <span className="text-muted-foreground/40 mr-1">“</span>
                 <span>chci zarezervovat místnost</span>
@@ -340,7 +340,7 @@ export function SpotlightDialog() {
                   size="sm"
                   type="button"
                   onClick={() => setSearch("chci napsat novou esej")}
-                  className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md transition-colors font-normal"
+                  className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md motion-safe:transition-colors font-normal"
                 >
                   <span className="text-muted-foreground/40 mr-1">“</span>
                   <span>chci napsat novou esej</span>
@@ -351,7 +351,7 @@ export function SpotlightDialog() {
                   size="sm"
                   type="button"
                   onClick={() => setSearch("zákaznické schůzky")}
-                  className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md transition-colors font-normal"
+                  className="h-7 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-md motion-safe:transition-colors font-normal"
                 >
                   <span className="text-muted-foreground/40 mr-1">“</span>
                   <span>zákaznické schůzky</span>
@@ -367,12 +367,12 @@ export function SpotlightDialog() {
                   value={item.id}
                   onSelect={() => handleSelect(item)}
                   className={cn(
-                    "group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl px-2.5 py-2 text-sm transition-colors",
+                    "group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl px-2.5 py-2 text-sm motion-safe:transition-colors",
                     "data-[selected=true]:bg-accent/80 data-[selected=true]:text-accent-foreground",
                   )}
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/50 text-muted-foreground transition-colors group-data-[selected=true]:border-primary/20 group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-primary">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/50 text-muted-foreground motion-safe:transition-colors group-data-[selected=true]:border-primary/20 group-data-[selected=true]:bg-primary/10 group-data-[selected=true]:text-primary">
                   <item.icon className="size-4" />
                 </div>
                 <div className="flex flex-col min-w-0 gap-0.5">

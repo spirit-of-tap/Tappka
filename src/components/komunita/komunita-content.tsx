@@ -9,6 +9,7 @@ import { UserCard } from '@/components/komunita/user-card';
 import { isAlumnus } from '@/lib/komunita/alumni';
 import type { ProfileWithTeam, TeamWithCount } from '@/lib/komunita/types';
 import { cn } from '@/lib/utils';
+import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 
 interface KomunitaContentProps {
   profiles: ProfileWithTeam[];
@@ -113,7 +114,7 @@ export function KomunitaContent({
         <Users className="size-4 text-primary" />
         <span>
           {filtered.length}{' '}
-          {filtered.length === 1 ? 'člověk' : filtered.length < 5 ? 'lidé' : 'lidí'}
+          {pluralizeCz(filtered.length, ['člověk', 'lidé', 'lidí'])}
         </span>
       </div>
 
@@ -157,7 +158,7 @@ export function KomunitaContent({
               >
                 <ChevronDown
                   className={cn(
-                    'size-3.5 transition-transform duration-200',
+                    'size-3.5 motion-safe:transition-transform motion-safe:duration-200',
                     showAlumni && 'rotate-180'
                   )}
                 />

@@ -26,8 +26,8 @@ export function SpotlightTrigger({
       onClick={open}
       aria-label="Rychlé vyhledávání (Klávesová zkratka ⌘K)"
       className={cn(
-        "group relative flex h-9 w-full items-center justify-between gap-2 rounded-xl bg-sidebar-accent px-3 text-sm text-muted-foreground transition-colors",
-        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:brightness-110 focus-visible:ring-1 focus-visible:ring-sidebar-ring",
+        "group relative flex h-9 w-full items-center justify-between gap-2 rounded-xl bg-sidebar-accent/60 px-3 text-sm text-muted-foreground motion-safe:transition-colors",
+        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-1 focus-visible:ring-sidebar-ring",
         className,
       )}
     >

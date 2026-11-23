@@ -23,15 +23,15 @@ const BASE_DURATIONS = [30, 60, 120];
 const PILL_CLASSES: Record<RoomMapStatus["kind"], { dot: string; label: string }> = {
   free: { dot: STATUS_DOT_CLASSES.free, label: "Volná" },
   busy: { dot: STATUS_DOT_CLASSES.busy, label: "Obsazená" },
-  closed: { dot: STATUS_DOT_CLASSES.closed, label: "Zavřeno" },
+  closed: { dot: STATUS_DOT_CLASSES.closed, label: "Zavřená" },
 };
 
-const HERO_CHIP_CLASSES = "rounded-lg bg-hero-foreground/10 px-2 py-0.5 text-xs text-hero-muted";
+const HERO_CHIP_CLASSES = "rounded-lg bg-hero-foreground/10 px-2 py-0.5 text-xs text-hero-foreground/80";
 
 const CHIP_CLASSES = {
   free: "bg-success/12 text-success-strong hover:bg-success/20 hover:text-success-strong",
   taken: "bg-muted text-muted-foreground line-through",
-  chosen: "bg-chart-3 text-card hover:bg-chart-3/90 hover:text-card",
+  chosen: "bg-chart-3-strong text-card hover:bg-chart-3-strong/90 hover:text-card",
 } as const;
 
 export function formatDuration(minutes: number): string {
@@ -195,7 +195,7 @@ export function RoomDetailPanel({
           <Button
             type="button"
             size="lg"
-            className="h-12 w-full rounded-xl shadow-lg shadow-primary/25"
+            className="h-12 w-full rounded-xl"
             disabled={!chosenChip}
             onClick={onBook}
           >

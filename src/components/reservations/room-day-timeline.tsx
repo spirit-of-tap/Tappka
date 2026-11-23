@@ -13,6 +13,9 @@ const LABEL_EVERY_HOURS = 2;
 const RANGE_LABEL_WIDTH = 24;
 const START_LABEL_WIDTH = 9;
 
+const TICK_TEXT = "text-[10px]";
+const SEGMENT_TEXT = "text-[11px]";
+
 const HOURS = Array.from(
   { length: TIMELINE_END_HOUR - TIMELINE_START_HOUR + 1 },
   (_, i) => TIMELINE_START_HOUR + i,
@@ -61,7 +64,7 @@ export function RoomDayTimeline({
         {showNow && (
           <span
             aria-hidden
-            className="absolute top-0 -translate-x-1/2 rounded-md bg-foreground px-1.5 py-0.5 text-[10px] font-bold leading-none text-background tabular-nums"
+            className={cn("absolute top-0 -translate-x-1/2 rounded-md bg-foreground px-1.5 py-0.5 font-bold leading-none text-background tabular-nums", TICK_TEXT)}
             style={{ left: `${nowPercent}%` }}
           >
             {formatTime(now)}
@@ -91,8 +94,9 @@ export function RoomDayTimeline({
             <span
               key={segment.id}
               className={cn(
-                "absolute inset-y-1 flex items-center justify-center overflow-hidden rounded-lg px-1 text-[11px] font-semibold whitespace-nowrap tabular-nums",
-                segment.mine ? "bg-primary text-primary-foreground" : "bg-chart-2 text-card",
+                "absolute inset-y-1 flex items-center justify-center overflow-hidden rounded-lg px-1 font-semibold whitespace-nowrap tabular-nums",
+                SEGMENT_TEXT,
+                segment.mine ? "bg-primary text-primary-foreground" : "bg-chart-2 text-warning-foreground",
               )}
               style={{ left: `${segment.left}%`, width: `${segment.width}%` }}
             >
@@ -104,7 +108,7 @@ export function RoomDayTimeline({
 
           {chosen && chosenWidth > 0 && (
             <span
-              className="absolute inset-y-0.5 rounded-lg border-2 border-chart-3 bg-chart-3/20 transition-[left,width] duration-500 ease-smooth"
+              className="absolute inset-y-0.5 rounded-lg border-2 border-chart-3 bg-chart-3/20 motion-safe:transition-[left,width] motion-safe:duration-500 motion-safe:ease-smooth"
               style={{ left: `${chosenLeft}%`, width: `${chosenWidth}%` }}
             />
           )}
@@ -114,7 +118,7 @@ export function RoomDayTimeline({
           )}
         </div>
 
-        <div aria-hidden className="relative mt-1 h-4 text-[10px] text-muted-foreground tabular-nums">
+        <div aria-hidden className={cn("relative mt-1 h-4 text-muted-foreground tabular-nums", TICK_TEXT)}>
           {HOURS.filter((hour) => (hour - TIMELINE_START_HOUR) % LABEL_EVERY_HOURS === 0).map((hour) => (
             <span
               key={hour}
@@ -127,7 +131,7 @@ export function RoomDayTimeline({
         </div>
       </div>
 
-      <ul aria-hidden className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+      <ul aria-hidden className={cn("flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground", SEGMENT_TEXT)}>
         <LegendItem className="bg-success/30 ring-1 ring-inset ring-success/40">volno</LegendItem>
         <LegendItem className="bg-chart-2">obsazeno</LegendItem>
         <LegendItem className="bg-primary">tvoje</LegendItem>

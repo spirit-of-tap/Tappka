@@ -61,7 +61,7 @@ export default async function RocketModelPage() {
                 </Link>
                 <div className="min-w-0 flex-1 space-y-1 py-0.5">
                   <Link href={`/cteni/knihy/${book.id}`} className="flex items-center gap-1.5 min-w-0">
-                    <p className="truncate min-w-0 text-sm font-medium leading-snug transition-colors group-hover:text-primary" title={fullTitle}>
+                    <p className="truncate min-w-0 text-sm font-medium leading-snug motion-safe:transition-colors group-hover:text-primary" title={fullTitle}>
                       {bookTitle}
                     </p>
                     <BookStatusBadges book={book} />

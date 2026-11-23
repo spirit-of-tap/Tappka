@@ -57,7 +57,7 @@ export function DashboardWidgetSettings({ widgets, shown }: DashboardWidgetSetti
         const checked = visible.has(widget.id)
         const isLast = checked && visible.size === 1
         return (
-          <div key={widget.id} className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3">
+          <div key={widget.id} className="flex items-center justify-between gap-4 rounded-2xl border bg-card px-4 py-3">
             <div className="min-w-0">
               <p className="text-sm font-medium">{widget.label}</p>
               <p className="text-xs text-muted-foreground">{isLast ? LAST_WIDGET_HINT : widget.description}</p>

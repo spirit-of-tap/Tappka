@@ -130,7 +130,7 @@ export function SocialEssayFeedCard({
   return (
     <article
       className={cn(
-        'group flex flex-col rounded-2xl border bg-card p-4.5 sm:p-5 transition-all hover:border-border hover:shadow-sm space-y-3.5',
+        'group flex flex-col rounded-2xl border bg-card p-4.5 sm:p-5 motion-safe:transition-all hover:border-border hover:shadow-sm space-y-3.5',
         reason && REASON_CARD_CLASSES[reason],
         className,
       )}
@@ -196,7 +196,7 @@ export function SocialEssayFeedCard({
           return (
             <Link
               href={`/cteni/knihy/${essay.book.id}`}
-              className="flex items-center gap-2.5 rounded-xl border bg-muted/40 p-2 transition-colors hover:bg-muted/70"
+              className="flex items-center gap-2.5 rounded-xl border bg-muted/40 p-2 motion-safe:transition-colors hover:bg-muted/70"
             >
               <div className="flex h-10 w-7 shrink-0 items-center justify-center overflow-hidden rounded bg-muted">
                 {essay.book.google_books_cover_url ? (
@@ -260,14 +260,14 @@ export function SocialEssayFeedCard({
       {/* 3. Essay Title & Excerpt */}
       <div className="space-y-2">
         <Link href={`/cteni/eseje/${essay.id}`} className="block">
-          <h3 className="text-base sm:text-lg font-bold text-foreground transition-colors group-hover:text-primary leading-snug">
+          <h3 className="text-base sm:text-lg font-bold text-foreground motion-safe:transition-colors group-hover:text-primary leading-snug">
             {essay.title}
           </h3>
         </Link>
 
         {snippet ? (
           <Link href={`/cteni/eseje/${essay.id}`} className="block">
-            <p className="line-clamp-5 text-sm sm:text-[15px] leading-relaxed text-muted-foreground hover:text-foreground transition-colors">
+            <p className="line-clamp-5 text-sm sm:text-[15px] leading-relaxed text-muted-foreground hover:text-foreground motion-safe:transition-colors">
               „{snippet}“
             </p>
           </Link>

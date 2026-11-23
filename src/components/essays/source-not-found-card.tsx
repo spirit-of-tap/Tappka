@@ -10,7 +10,7 @@ function AddLink({ href, title, description }: { href: string; title: string; de
   return (
     <Link
       href={href}
-      className="focus-ring group flex flex-1 items-center gap-3 rounded-xl border border-dashed bg-card p-4 transition-colors hover:border-primary/40 hover:bg-muted/50"
+      className="focus-ring group flex flex-1 items-center gap-3 rounded-xl border border-dashed bg-card p-4 motion-safe:transition-colors hover:border-primary/40 hover:bg-muted/50"
     >
       <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Plus className="size-4" />
@@ -19,7 +19,7 @@ function AddLink({ href, title, description }: { href: string; title: string; de
         <span className="block text-sm font-medium">{title}</span>
         <span className="block text-xs text-muted-foreground">{description}</span>
       </span>
-      <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+      <ArrowRight className="size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:group-hover:translate-x-0.5" />
     </Link>
   );
 }

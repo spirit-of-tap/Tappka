@@ -45,7 +45,7 @@ export function QuickActions({ isCoach, unreadCount = 0 }: QuickActionsProps) {
         <Link
           key={href}
           href={href}
-          className="focus-ring inline-flex h-10 items-center gap-2 rounded-full border bg-card pr-4 pl-1.5 text-sm font-medium transition-colors hover:bg-accent"
+          className="focus-ring inline-flex h-10 items-center gap-2 rounded-full border bg-card pr-4 pl-1.5 text-sm font-medium motion-safe:transition-colors hover:bg-accent"
         >
           <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full', chip)}>
             <Icon className="size-3.5" aria-hidden />

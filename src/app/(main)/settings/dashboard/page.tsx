@@ -10,7 +10,7 @@ import { greetingName } from "@/lib/profile/greeting-name"
 import { createClient } from "@/lib/supabase/server"
 
 const PAGE_TITLE = "Dashboard"
-const PAGE_DESCRIPTION = "Nastav si oslovení a vyber, co uvidíš na úvodní stránce."
+const PAGE_DESCRIPTION = "Nastav si oslovení a vyber, co uvidíš na úvodní stránce"
 
 export const metadata = {
   title: PAGE_TITLE,

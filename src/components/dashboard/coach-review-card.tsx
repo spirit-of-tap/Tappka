@@ -4,6 +4,8 @@ import { ArrowRight, CheckCheck, Users } from 'lucide-react';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { CoachReviewEssay } from '@/lib/essays/types';
+import { cn } from '@/lib/utils';
+import { pluralizeCz } from '@/lib/utils/pluralize-cz';
 
 interface CoachReviewCardProps {
   essays: CoachReviewEssay[];
@@ -11,10 +13,14 @@ interface CoachReviewCardProps {
 }
 
 const PREVIEW_COUNT = 3;
+const TIME_ZONE = 'Europe/Prague';
 
 function essaysLabel(n: number): string {
-  if (n === 1) return 'nepřečtená esej od tvého týmu';
-  return n < 5 ? 'nepřečtené eseje od tvého týmu' : 'nepřečtených esejí od tvého týmu';
+  return pluralizeCz(n, [
+    'nepřečtená esej od tvého týmu',
+    'nepřečtené eseje od tvého týmu',
+    'nepřečtených esejí od tvého týmu',
+  ]);
 }
 
 /** Solid TAP-red card: the one thing a coach should act on today. */
@@ -32,9 +38,9 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
     >
       <div className="flex items-start gap-2">
         <div className="min-w-0">
-          <h2 className="text-xs font-medium uppercase tracking-wider opacity-80">Eseje ke kontrole</h2>
+          <h2 className="text-xs font-medium uppercase tracking-wider">Eseje ke kontrole</h2>
           {hasTeam && essays.length > 0 && (
-            <p className="text-sm opacity-90">{essaysLabel(essays.length)}</p>
+            <p className="text-sm">{essaysLabel(essays.length)}</p>
           )}
         </div>
         {hasTeam && essays.length > 0 && (
@@ -46,7 +52,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
 
       {!hasTeam ? (
         <div className="flex flex-1 items-center gap-3">
-          <Users className="size-6 shrink-0 opacity-80" aria-hidden />
+          <Users className="size-6 shrink-0 text-spotlight-muted" aria-hidden />
           <p className="text-sm">Eseje tvého týmu se tu zobrazí, jakmile ti bude tým přiřazen.</p>
         </div>
       ) : done ? (
@@ -56,7 +62,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
           </span>
           <div>
             <p className="font-heading font-bold">Máš všechno přečteno</p>
-            <p className="text-sm text-foreground/70">Nové eseje se tu objeví, jakmile je někdo odevzdá.</p>
+            <p className="text-sm">Nové eseje se tu objeví, jakmile je někdo odevzdá.</p>
           </div>
         </div>
       ) : (
@@ -67,20 +73,20 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
               <li key={essay.id}>
                 <Link
                   href={`/cteni/eseje/${essay.id}`}
-                  className="focus-ring group flex items-center gap-3 rounded-xl bg-spotlight-foreground/10 px-3 py-2 transition-[background-color,transform] duration-200 hover:bg-spotlight-foreground/15 motion-safe:hover:translate-x-1"
+                  className="focus-ring-spotlight group flex items-center gap-3 rounded-xl bg-spotlight-foreground/10 px-3 py-2 motion-safe:transition-[background-color,transform] duration-200 hover:bg-spotlight-foreground/15 motion-safe:hover:translate-x-1"
                 >
                   <ProfileAvatar picture={essay.author?.picture ?? null} name={essay.author?.name ?? '?'} size={28} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium group-hover:underline underline-offset-4">
                       {essay.title}
                     </span>
-                    <span className="block truncate text-xs opacity-80">
-                      {essay.author?.name ?? 'Neznámý:á autor:ka'}
+                    <span className="block truncate text-xs text-spotlight-muted">
+                      {essay.author?.name ?? 'Neznámá osoba'}
                       {sourceTitle && ` · ${sourceTitle}`}
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs opacity-80">
-                    {new Date(essay.created_at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}
+                  <span className="shrink-0 text-xs text-spotlight-muted">
+                    {new Date(essay.created_at).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', timeZone: TIME_ZONE })}
                   </span>
                 </Link>
               </li>
@@ -91,7 +97,10 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
 
       <Link
         href="/cteni/eseje/ke-kontrole"
-        className="focus-ring mt-auto inline-flex items-center gap-1 self-start rounded-sm text-sm font-medium hover:underline underline-offset-4"
+        className={cn(
+          done ? 'focus-ring' : 'focus-ring-spotlight',
+          'mt-auto inline-flex items-center gap-1 self-start rounded-sm text-sm font-medium hover:underline underline-offset-4',
+        )}
       >
         {done ? 'Přehled esejí' : 'Otevřít vše'}
         <ArrowRight className="size-3.5" />

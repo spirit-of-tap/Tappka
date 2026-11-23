@@ -7,7 +7,7 @@ import {
   Settings,
   BriefcaseBusiness,
   FlaskConical,
-  Heart,
+  MessageSquareHeart,
   Laptop,
   LogOut,
   Moon,
@@ -107,8 +107,8 @@ export function ProfileHub({ user }: ProfileHubProps) {
           </Link>
         )}
         <Link href="/zpetna-vazba" className="flex items-center gap-3 bg-primary/5 px-4 py-3 text-sm text-primary hover:bg-primary/10 focus-ring">
-          <Heart className="size-4" />
-          Zpětná vazba
+          <MessageSquareHeart className="size-4" />
+          Napiš nám zpětnou vazbu
         </Link>
       </div>
 

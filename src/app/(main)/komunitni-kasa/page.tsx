@@ -32,6 +32,8 @@ const QUICK_LINKS = [
   },
 ] as const;
 
+const QUICK_LINK_STAGGER_MS = 60;
+
 export default async function KomunitniKasaPage() {
   if (!(await checkKasaAccess())) return <FeatureComingSoon featureName="Komunitní kasa" />;
 
@@ -44,8 +46,8 @@ export default async function KomunitniKasaPage() {
             <Link
               key={href}
               href={href}
-              className="group focus-ring flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs transition motion-safe:animate-rise motion-safe:hover:-translate-y-0.5 hover:shadow-md"
-              style={{ animationDelay: `${(i + 1) * 60}ms` }}
+              className="group focus-ring flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs motion-safe:transition motion-safe:animate-rise motion-safe:hover:-translate-y-0.5 hover:shadow-md"
+              style={{ animationDelay: `${(i + 1) * QUICK_LINK_STAGGER_MS}ms` }}
             >
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-chart-2/15 text-chart-2-strong">
                 <Icon className="size-5" aria-hidden />
@@ -55,7 +57,7 @@ export default async function KomunitniKasaPage() {
                 <span className="block text-sm text-muted-foreground">{description}</span>
               </span>
               <ArrowRight
-                className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                className="size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:group-hover:translate-x-0.5"
                 aria-hidden
               />
             </Link>

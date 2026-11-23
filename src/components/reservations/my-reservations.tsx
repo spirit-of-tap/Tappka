@@ -20,6 +20,7 @@ import { EditReservationDialog } from "./edit-reservation-dialog";
 import { formatTime, isReservationActive } from "@/lib/reservations/utils";
 import type { ReservationWithDetails } from "@/lib/reservations/types";
 import { cn } from "@/lib/utils";
+import { pluralizeCz } from "@/lib/utils/pluralize-cz";
 
 const SHOW_COUNT = 5;
 
@@ -55,12 +56,14 @@ export function MyReservations({ reservations }: MyReservationsProps) {
       ))}
 
       {!showAll && remaining > 0 && (
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setShowAll(true)}
-          className="focus-ring w-full rounded-lg py-2.5 text-center text-sm font-medium text-chart-3-strong transition-colors hover:bg-muted/50"
+          className="w-full rounded-lg py-2.5 text-sm font-medium text-chart-3-strong"
         >
-          + {remaining} dalších
-        </button>
+          + {remaining} {pluralizeCz(remaining, ["další", "další", "dalších"])}
+        </Button>
       )}
     </div>
   );
@@ -102,71 +105,61 @@ function ReservationItem({ reservation }: ReservationItemProps) {
     }
   };
 
-  // Keyboard equivalent of clicking the row. Ignore keys that bubble up from the
-  // nested action buttons so Enter on "Smazat" doesn't also open the edit dialog.
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) return;
-    if (event.key !== "Enter" && event.key !== " ") return;
-
-    event.preventDefault();
-    setEditOpen(true);
-  };
-
   return (
     <>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={`Upravit rezervaci ${reservation.title}`}
-        className="focus-ring flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer group"
-        onClick={() => setEditOpen(true)}
-        onKeyDown={handleKeyDown}
-      >
-        <div className="flex h-11 w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-chart-3/10 leading-tight text-chart-3-strong">
-          <span className="text-[10px] uppercase">
-            {startDate.toLocaleDateString("cs-CZ", { weekday: "short", timeZone: "Europe/Prague" })}
+      <div className="flex items-center gap-1 px-2 py-2 rounded-xl hover:bg-muted/50 motion-safe:transition-colors group">
+        <Button
+          type="button"
+          variant="ghost"
+          aria-label={`Upravit rezervaci ${reservation.title}`}
+          className="h-auto min-w-0 flex-1 justify-start gap-3 whitespace-normal p-0 text-left font-normal hover:bg-transparent"
+          onClick={() => setEditOpen(true)}
+        >
+          <span className="flex h-11 w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-chart-3/10 leading-tight text-chart-3-strong">
+            <span className="text-[10px] uppercase">
+              {startDate.toLocaleDateString("cs-CZ", { weekday: "short", timeZone: "Europe/Prague" })}
+            </span>
+            <span className="font-heading text-sm font-bold">
+              {startDate.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", timeZone: "Europe/Prague" })}
+            </span>
           </span>
-          <span className="font-heading text-sm font-bold">
-            {startDate.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", timeZone: "Europe/Prague" })}
-          </span>
-        </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h4 className="font-medium text-sm truncate">
-              {reservation.title}
-            </h4>
-            <span className="shrink-0 rounded-md bg-chart-3/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-chart-3-strong">
-              {reservation.room?.code?.toUpperCase() || reservation.room?.name || "Místnost"}
+          <span className="block flex-1 min-w-0">
+            <span className="flex items-center gap-2">
+              <span className="font-medium text-sm truncate">
+                {reservation.title}
+              </span>
+              <span className="shrink-0 rounded-md bg-chart-3/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-chart-3-strong">
+                {reservation.room?.code?.toUpperCase() || reservation.room?.name || "Místnost"}
+              </span>
             </span>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {formatTime(startDate)}–{formatTime(endDate)}
+            <span className="mt-1 flex items-center gap-2">
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {formatTime(startDate)}–{formatTime(endDate)}
+              </span>
+              <span className="flex gap-1">
+                {isActive && (
+                  <Badge variant="default" className="text-[10px] h-4 px-1.5">
+                    Probíhá
+                  </Badge>
+                )}
+                {reservation.person_count && (
+                  <Badge variant="outline" className="text-[10px] h-4 px-1.5 gap-0.5">
+                    <Users className="size-2.5" />
+                    {reservation.person_count}
+                  </Badge>
+                )}
+              </span>
             </span>
-            <div className="flex gap-1">
-              {isActive && (
-                <Badge variant="default" className="text-[10px] h-4 px-1.5">
-                  Probíhá
-                </Badge>
-              )}
-              {reservation.person_count && (
-                <Badge variant="outline" className="text-[10px] h-4 px-1.5 gap-0.5">
-                  <Users className="size-2.5" />
-                  {reservation.person_count}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
+          </span>
+        </Button>
 
         {/* Actions — hidden until hover */}
         <div
           className={cn(
-            "flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
+            "flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 motion-safe:transition-opacity",
             "max-sm:opacity-100"
           )}
-          onClick={(e) => e.stopPropagation()}
         >
           <Button
             variant="ghost"

@@ -155,6 +155,7 @@ export function ActiveLoansCard({ loans }: ActiveLoansCardProps) {
             <div className="flex items-start gap-3.5 min-w-0">
               <Link
                 href={`/cteni/knihy/${book.id}`}
+                aria-label={book.title_cs}
                 className="shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center focus-ring mt-0.5 border border-border/40"
               >
                 {book.google_books_cover_url ? (

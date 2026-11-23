@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { format } from "date-fns";
 import { cs } from "date-fns/locale";
 import { Calendar as CalendarIcon, X } from "lucide-react";
@@ -57,6 +57,9 @@ const DURATION_OPTIONS = [
  */
 export function RoomFilter({ value, onChange }: RoomFilterProps) {
   const [showCalendar, setShowCalendar] = useState(false);
+  const dateLabelId = useId();
+  const timeId = useId();
+  const durationId = useId();
   const { date: filterDate, startTime, duration } = value;
 
   const setDate = (date: Date) => onChange({ ...value, date });
@@ -76,10 +79,10 @@ export function RoomFilter({ value, onChange }: RoomFilterProps) {
       style={{ animationDelay: "60ms" }}>
       {/* Date Selection */}
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+        <span id={dateLabelId} className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           Datum:
-        </label>
-        <div className="flex gap-1">
+        </span>
+        <div role="group" aria-labelledby={dateLabelId} className="flex gap-1">
           <Button
             variant={isToday ? "default" : "outline"}
             size="sm"
@@ -128,11 +131,12 @@ export function RoomFilter({ value, onChange }: RoomFilterProps) {
 
       {/* Time Picker */}
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+        <label htmlFor={timeId} className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           Čas:
         </label>
         <div className="w-36">
           <TimePicker
+            id={timeId}
             value={startTime}
             onChange={(time) => onChange({ ...value, startTime: time })}
             date={filterDate}
@@ -143,11 +147,11 @@ export function RoomFilter({ value, onChange }: RoomFilterProps) {
 
       {/* Duration Dropdown */}
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+        <label htmlFor={durationId} className="text-sm font-medium text-muted-foreground whitespace-nowrap">
           Délka:
         </label>
         <Select value={duration || ''} onValueChange={(val) => onChange({ ...value, duration: val || null })}>
-          <SelectTrigger size="sm" className="w-32 h-8">
+          <SelectTrigger id={durationId} size="sm" aria-label="Délka" className="w-32 h-8">
             <SelectValue placeholder="Vybrat..." />
           </SelectTrigger>
           <SelectContent>

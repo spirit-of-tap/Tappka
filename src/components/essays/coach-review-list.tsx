@@ -381,7 +381,7 @@ export function CoachReviewList({
     return (
       <div
         aria-busy={loading}
-        className={loading ? 'space-y-3 opacity-60 transition-opacity' : 'space-y-3 transition-opacity'}
+        className={loading ? 'space-y-3 opacity-60 motion-safe:transition-opacity' : 'space-y-3 motion-safe:transition-opacity'}
       >
         {essays.map((essay) => (
           <ReviewRow
@@ -712,7 +712,7 @@ function ReviewRow({
               </div>
 
               {/* Title */}
-              <h3 className="line-clamp-2 text-sm sm:text-base font-bold leading-snug transition-colors group-hover:text-primary">
+              <h3 className="line-clamp-2 text-sm sm:text-base font-bold leading-snug motion-safe:transition-colors group-hover:text-primary">
                 {essay.title}
               </h3>
 

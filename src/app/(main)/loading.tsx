@@ -3,7 +3,7 @@ export default function Loading() {
     <div role="status" className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
       <span
         aria-hidden
-        className="flex size-12 items-center justify-center rounded-2xl bg-primary font-heading text-xl font-extrabold text-primary-foreground shadow-lg shadow-primary/25 motion-safe:animate-breathe"
+        className="flex size-12 items-center justify-center rounded-2xl bg-primary font-heading text-xl font-extrabold text-primary-foreground motion-safe:animate-breathe"
       >
         T
       </span>

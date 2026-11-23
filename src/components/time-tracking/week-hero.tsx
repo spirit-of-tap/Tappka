@@ -1,10 +1,8 @@
 import { Check } from "lucide-react"
 
+import { ProgressRing } from "@/components/ui/progress-ring"
 import { formatMetricValue } from "@/lib/metrics/config"
 import { cn } from "@/lib/utils"
-
-const RING_RADIUS = 40
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 
 interface WeekHeroProps {
   /** Hours tracked in the period. */
@@ -19,7 +17,6 @@ interface WeekHeroProps {
 export function WeekHero({ current, target, label, className }: WeekHeroProps) {
   const passed = target > 0 && current >= target
   const fill = target > 0 ? Math.min(100, Math.max(0, (current / target) * 100)) : 0
-  const dash = (fill / 100) * RING_CIRCUMFERENCE
   const remaining = Math.max(0, target - current)
   const surplus = current - target
 
@@ -30,9 +27,10 @@ export function WeekHero({ current, target, label, className }: WeekHeroProps) {
         className,
       )}
     >
-      <svg
-        viewBox="0 0 96 96"
-        className="size-24 shrink-0 md:size-28"
+      <ProgressRing
+        percent={fill}
+        strokeClassName={passed ? "stroke-success" : "stroke-primary"}
+        className="md:size-28"
         role="progressbar"
         aria-label={label}
         aria-valuemin={0}
@@ -40,24 +38,12 @@ export function WeekHero({ current, target, label, className }: WeekHeroProps) {
         aria-valuenow={current}
         aria-valuetext={`${formatMetricValue(current, "hours")} z ${formatMetricValue(target, "hours")}`}
       >
-        <circle cx="48" cy="48" r={RING_RADIUS} fill="none" strokeWidth="10" className="stroke-muted" />
-        <circle
-          cx="48"
-          cy="48"
-          r={RING_RADIUS}
-          fill="none"
-          strokeWidth="10"
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${RING_CIRCUMFERENCE}`}
-          transform="rotate(-90 48 48)"
-          className={cn("motion-safe:animate-ring-draw", passed ? "stroke-success" : "stroke-chart-5")}
-        />
         <text x="48" y="54" textAnchor="middle" className="fill-foreground font-heading text-[22px] font-extrabold">
           {Math.round(fill)}&nbsp;%
         </text>
-      </svg>
+      </ProgressRing>
       <div className="min-w-0 space-y-1">
-        <p className="text-sm font-bold text-chart-5">{label}</p>
+        <p className="text-sm font-bold text-primary">{label}</p>
         <p className="font-heading text-3xl font-extrabold tabular-nums leading-tight">
           {formatMetricValue(current, "hours")}
           <span className="ml-1.5 text-base font-medium text-muted-foreground">

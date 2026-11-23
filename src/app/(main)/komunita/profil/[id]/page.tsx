@@ -27,12 +27,12 @@ export const metadata = {
   title: 'Profil',
 };
 import { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCount } from '@/components/ui/tabs';
-import { ROLE_LABELS, ROLE_COLORS, type ProfileWithTeam } from '@/lib/komunita/types';
+import { ROLE_COLORS, ROLE_LABELS, type ProfileWithTeam } from '@/lib/komunita/types';
+import { cn } from '@/lib/utils';
 import { formatPoints, formatPointsWithLabel, pointsLabel } from '@/lib/books/points';
 import type { AccessProfile } from '@/lib/feature-access';
 import { getVisibleGatedStats } from '@/lib/profile/profile-stats';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
-import { cn } from '@/lib/utils';
 
 interface PageProps {
   params: Promise<{ id: string }>;

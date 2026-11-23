@@ -1,12 +1,14 @@
-import { PALETTE_BOOT_SCRIPT } from "@/lib/theme/palettes";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
 import NextTopLoader from "nextjs-toploader";
-import { Toaster } from "@/components/ui/sonner";
-import { PostHogProvider } from "./posthog-provider";
-import { PostHogPageView } from "./posthog-pageview";
+
 import { ConsentBanner } from "@/components/posthog/consent-banner";
+import { Toaster } from "@/components/ui/sonner";
+import { PALETTE_BOOT_SCRIPT } from "@/lib/theme/palettes";
+
+import { PostHogPageView } from "./posthog-pageview";
+import { PostHogProvider } from "./posthog-provider";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL

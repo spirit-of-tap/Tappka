@@ -31,6 +31,7 @@ import {
   type TsPersonSummary,
 } from "@/lib/training-sessions/types";
 import { cn } from "@/lib/utils";
+import { pluralizeCz } from "@/lib/utils/pluralize-cz";
 
 import { GuestJoinButton } from "./guest-join-button";
 
@@ -131,9 +132,9 @@ export function SessionCard({
     <article
       style={featured ? undefined : accent.surface}
       className={cn(
-        "group relative overflow-hidden rounded-2xl p-4 transition duration-300 ease-out sm:p-5",
+        "group relative overflow-hidden rounded-2xl p-4 motion-safe:transition motion-safe:duration-300 motion-safe:ease-out sm:p-5",
         featured
-          ? "bg-hero text-hero-foreground hover:shadow-xl hover:shadow-hero/40 motion-safe:hover:-translate-y-1"
+          ? "rounded-3xl bg-hero text-hero-foreground hover:shadow-md motion-safe:hover:-translate-y-1"
           : "border bg-card shadow-xs hover:shadow-md motion-safe:hover:-translate-y-0.5",
         isOngoing && !featured && "border-success/40 ring-1 ring-success/20",
         isCancelled && "opacity-60",
@@ -142,7 +143,7 @@ export function SessionCard({
       {featured && (
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-12 -bottom-20 size-56 rounded-full border-[28px] border-hero-foreground/5 transition-[transform,border-color] duration-700 ease-out group-hover:border-hero-foreground/10 motion-safe:group-hover:-translate-x-6 motion-safe:group-hover:-translate-y-4 motion-safe:group-hover:scale-110"
+          className="pointer-events-none absolute -right-12 -bottom-20 size-56 rounded-full border-[28px] border-hero-foreground/5 motion-safe:transition-[transform,border-color] motion-safe:duration-700 motion-safe:ease-out group-hover:border-hero-foreground/10 motion-safe:group-hover:-translate-x-6 motion-safe:group-hover:-translate-y-4 motion-safe:group-hover:scale-110"
         />
       )}
 
@@ -231,16 +232,16 @@ export function SessionCard({
           <Link
             href={TS_ROUTES.detail(session.id)}
             className={cn(
-              "group/link mt-1 flex items-start justify-between gap-2 rounded-sm font-heading font-bold leading-snug hover:underline underline-offset-4 focus-ring",
+              "group/link mt-1 flex items-start justify-between gap-2 rounded-sm font-heading font-bold leading-snug hover:underline underline-offset-4",
               featured
-                ? "text-xl text-hero-foreground md:text-2xl"
-                : "text-lg text-foreground",
+                ? "focus-ring-hero text-xl text-hero-foreground md:text-2xl"
+                : "focus-ring text-lg text-foreground",
             )}
           >
             <span>{session.topic}</span>
             <ChevronRight
               className={cn(
-                "mt-1.5 size-4 shrink-0 transition-transform group-hover/link:translate-x-0.5 motion-reduce:transition-none",
+                "mt-1.5 size-4 shrink-0 motion-safe:transition-transform motion-safe:group-hover/link:translate-x-0.5",
                 featured
                   ? "text-hero-muted group-hover/link:text-hero-foreground"
                   : "text-muted-foreground group-hover/link:text-foreground",
@@ -303,7 +304,7 @@ export function SessionCard({
                           )}
                           aria-hidden
                         />
-                        <span>Příprava je připravená</span>
+                        <span>Příprava je hotová</span>
                       </>
                     ) : (
                       <>
@@ -312,8 +313,8 @@ export function SessionCard({
                             "size-3.5 shrink-0",
                             isAttending &&
                               (featured
-                                ? "text-chart-2"
-                                : "text-chart-2-strong"),
+                                ? "text-warning"
+                                : "text-warning-strong"),
                           )}
                           aria-hidden
                         />
@@ -322,8 +323,8 @@ export function SessionCard({
                             isAttending && "font-medium",
                             isAttending &&
                               (featured
-                                ? "text-hero-foreground"
-                                : "text-chart-2-strong"),
+                                ? "text-warning"
+                                : "text-warning-strong"),
                           )}
                         >
                           Příprava zatím chybí
@@ -361,7 +362,7 @@ function DateLeaf({ startsAt }: { startsAt: string }) {
   return (
     <div
       aria-hidden
-      className="flex h-fit w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-primary py-3 text-primary-foreground shadow-lg shadow-black/20 transition-transform duration-300 ease-out sm:w-20 motion-safe:group-hover:-rotate-3 motion-safe:group-hover:scale-105"
+      className="flex h-fit w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-primary py-3 text-primary-foreground motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out sm:w-20 motion-safe:group-hover:-rotate-3 motion-safe:group-hover:scale-105"
     >
       <span className="text-[11px] font-bold uppercase tracking-widest">
         {part({ weekday: "short" })}
@@ -474,7 +475,7 @@ function CrossSeats({ guests, capacity, featured }: CrossSeatsProps) {
       <dd className="flex min-w-0 items-center gap-2">
         <span
           role="img"
-          aria-label={`Obsazeno ${guests.length} z ${capacity} míst`}
+          aria-label={`Obsazeno ${guests.length} z ${capacity} ${pluralizeCz(capacity, ["místa", "míst", "míst"])}`}
           className="flex shrink-0 items-center gap-1"
         >
           {filled.map((p) => (

@@ -129,7 +129,7 @@ export function getSidebarSections(devItems: NavModule[] = []): NavSection[] {
   return [
     {
       title: "Společné",
-      hint: "Pro celou akademii",
+      hint: "Pro celou komunitu",
       tone: "shared",
       items: internal.filter((m) => !m.group),
     },

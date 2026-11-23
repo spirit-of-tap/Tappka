@@ -113,7 +113,7 @@ function ToolbarButton({ onClick, isActive, title, children }: {
       onMouseDown={(e) => { e.preventDefault(); onClick(); }}
       title={title}
       className={cn(
-        'p-1.5 rounded transition-colors',
+        'p-1.5 rounded motion-safe:transition-colors',
         isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
@@ -390,19 +390,19 @@ export function TiptapEditor({
             {/* Highlight + color picker */}
             <div className="relative flex items-center" ref={pickerRef}>
               <button type="button" onMouseDown={(e) => { e.preventDefault(); toggleHighlight(); }} title="Zvýraznit"
-                className={cn('p-1.5 rounded-l transition-colors', editor.isActive('highlight') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+                className={cn('p-1.5 rounded-l motion-safe:transition-colors', editor.isActive('highlight') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
                 <div className="relative">
                   <Highlighter className="size-4" />
                   <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full ring-1 ring-background" style={{ backgroundColor: HIGHLIGHT_COLORS[activeColor] }} />
                 </div>
               </button>
               <button type="button" onMouseDown={(e) => { e.preventDefault(); setPickerOpen((o) => !o); }} title="Barva zvýraznění"
-                className="p-1 rounded-r text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-[10px] leading-none">▾</button>
+                className="p-1 rounded-r text-muted-foreground hover:bg-muted hover:text-foreground motion-safe:transition-colors text-[10px] leading-none">▾</button>
               {pickerOpen && (
                 <div className="absolute top-full left-0 mt-1.5 flex items-center gap-1.5 bg-popover border rounded-xl px-2.5 py-2 shadow-lg z-20">
                   {Object.entries(HIGHLIGHT_COLORS).map(([name, hex]) => (
                     <button key={name} type="button" onMouseDown={(e) => { e.preventDefault(); applyHighlight(name); }} title={name}
-                      className={cn('size-5 rounded-full transition-transform hover:scale-125 ring-offset-background', activeColor === name ? 'ring-2 ring-foreground ring-offset-1' : '')}
+                      className={cn('size-5 rounded-full motion-safe:transition-transform motion-safe:hover:scale-125 ring-offset-background', activeColor === name ? 'ring-2 ring-foreground ring-offset-1' : '')}
                       style={{ backgroundColor: hex }} />
                   ))}
                 </div>
@@ -429,7 +429,7 @@ export function TiptapEditor({
               <DropdownMenuTrigger
                 title="Tabulka"
                 className={cn(
-                  'rounded p-1.5 transition-colors',
+                  'rounded p-1.5 motion-safe:transition-colors',
                   inTable ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
               >
@@ -494,7 +494,7 @@ export function TiptapEditor({
                 <DropdownMenuTrigger
                   disabled={uploadPercent != null}
                   title="Vložit obrázek"
-                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+                  className="rounded p-1.5 text-muted-foreground motion-safe:transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
                 >
                   <ImageIcon className="size-4" />
                 </DropdownMenuTrigger>
@@ -515,7 +515,7 @@ export function TiptapEditor({
                 onMouseDown={(e) => { e.preventDefault(); galleryInputRef.current?.click(); }}
                 disabled={uploadPercent != null}
                 title="Vložit obrázek"
-                className="p-1.5 rounded transition-colors text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
+                className="p-1.5 rounded motion-safe:transition-colors text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
               >
                 <ImageIcon className="size-4" />
               </button>
@@ -553,27 +553,27 @@ export function TiptapEditor({
         className="flex items-center gap-0.5 bg-popover border rounded-lg shadow-lg px-1.5 py-1"
       >
         <button type="button" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleBold().run(); }}
-          className={cn('p-1.5 rounded text-sm transition-colors', editor.isActive('bold') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+          className={cn('p-1.5 rounded text-sm motion-safe:transition-colors', editor.isActive('bold') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
           <Bold className="size-3.5" />
         </button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleItalic().run(); }}
-          className={cn('p-1.5 rounded transition-colors', editor.isActive('italic') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+          className={cn('p-1.5 rounded motion-safe:transition-colors', editor.isActive('italic') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
           <Italic className="size-3.5" />
         </button>
         <button type="button" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleUnderline().run(); }}
-          className={cn('p-1.5 rounded transition-colors', editor.isActive('underline') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+          className={cn('p-1.5 rounded motion-safe:transition-colors', editor.isActive('underline') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
           <UnderlineIcon className="size-3.5" />
         </button>
         <div className="w-px h-4 bg-border mx-0.5" />
         {Object.entries(HIGHLIGHT_COLORS).map(([name, hex]) => (
           <button key={name} type="button"
             onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().setHighlight({ color: name }).run(); }}
-            className={cn('size-4 rounded-full transition-transform hover:scale-125 ring-offset-background', editor.isActive('highlight', { color: name }) ? 'ring-2 ring-foreground ring-offset-1' : '')}
+            className={cn('size-4 rounded-full motion-safe:transition-transform motion-safe:hover:scale-125 ring-offset-background', editor.isActive('highlight', { color: name }) ? 'ring-2 ring-foreground ring-offset-1' : '')}
             style={{ backgroundColor: hex }} />
         ))}
         <div className="w-px h-4 bg-border mx-0.5" />
         <button type="button" onMouseDown={(e) => { e.preventDefault(); openLinkDialog(); }}
-          className={cn('p-1.5 rounded transition-colors', editor.isActive('link') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+          className={cn('p-1.5 rounded motion-safe:transition-colors', editor.isActive('link') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
           <LinkIcon className="size-3.5" />
         </button>
       </div>
@@ -615,7 +615,7 @@ export function TiptapEditor({
               setLinkUrl(editor.getAttributes('link').href ?? linkPopover.href);
               setLinkDialogOpen(true);
             }}
-            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="p-1 rounded hover:bg-muted motion-safe:transition-colors text-muted-foreground hover:text-foreground"
           >
             <Pencil className="size-3.5" />
           </button>
@@ -627,7 +627,7 @@ export function TiptapEditor({
               setLinkPopover(null);
               editor.chain().focus().setTextSelection(linkPopover.pos).extendMarkRange('link').unsetLink().run();
             }}
-            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
+            className="p-1 rounded hover:bg-muted motion-safe:transition-colors text-muted-foreground hover:text-destructive"
           >
             <Trash2 className="size-3.5" />
           </button>

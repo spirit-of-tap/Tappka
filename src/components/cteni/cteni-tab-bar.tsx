@@ -109,7 +109,7 @@ export function CteniTabBar({ isCoachOrAdmin, reviewCount }: CteniTabBarProps) {
                 'px-3 py-3.5 text-sm font-medium transition-colors focus-ring',
                 'after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full',
                 'after:bg-primary after:opacity-0 after:transition-opacity',
-                'text-foreground/60 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',
+                'text-muted-foreground hover:text-foreground',
                 'data-[active=true]:text-foreground data-[active=true]:after:opacity-100',
               ].join(' ')}
             >

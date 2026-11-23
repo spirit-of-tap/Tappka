@@ -61,44 +61,41 @@ const renderList = () => render(<MyReservations reservations={[reservation]} />)
 const editDialogHeading = () => screen.queryByRole("heading", { name: "Upravit rezervaci" });
 
 describe("MyReservations row keyboard operability", () => {
-  it("exposes the row as a focusable button", () => {
+  it("exposes the primary action as a native button without nesting interactive elements", () => {
     renderList();
 
-    const row = screen.getByRole("button", { name: ROW_LABEL });
-    expect(row).toHaveAttribute("role", "button");
-    expect(row).toHaveAttribute("tabindex", "0");
-    expect(row).toHaveClass("focus-ring");
+    const primary = screen.getByRole("button", { name: ROW_LABEL });
+    expect(primary.tagName).toBe("BUTTON");
+    expect(primary.querySelector("button, a, [role='button']")).toBeNull();
+    expect(screen.getByRole("button", { name: "Upravit" }).closest("button[aria-label^='Upravit rezervaci']")).toBeNull();
   });
 
-  it("opens the edit dialog on Space and prevents the default scroll", () => {
+  it("opens the edit dialog on Space", async () => {
     renderList();
-    const row = screen.getByRole("button", { name: ROW_LABEL });
 
     expect(editDialogHeading()).not.toBeInTheDocument();
 
-    // fireEvent returns false when the handler called preventDefault().
-    const notPrevented = fireEvent.keyDown(row, { key: " " });
-
-    expect(notPrevented).toBe(false);
-    expect(editDialogHeading()).toBeInTheDocument();
-  });
-
-  it("opens the edit dialog on Enter", () => {
-    renderList();
-    const row = screen.getByRole("button", { name: ROW_LABEL });
-
-    fireEvent.keyDown(row, { key: "Enter" });
+    screen.getByRole("button", { name: ROW_LABEL }).focus();
+    await userEvent.keyboard(" ");
 
     expect(editDialogHeading()).toBeInTheDocument();
   });
 
-  it("ignores other keys", () => {
+  it("opens the edit dialog on Enter", async () => {
     renderList();
-    const row = screen.getByRole("button", { name: ROW_LABEL });
 
-    fireEvent.keyDown(row, { key: "a" });
+    screen.getByRole("button", { name: ROW_LABEL }).focus();
+    await userEvent.keyboard("{Enter}");
 
-    expect(editDialogHeading()).not.toBeInTheDocument();
+    expect(editDialogHeading()).toBeInTheDocument();
+  });
+
+  it("opens the edit dialog on click", async () => {
+    renderList();
+
+    await userEvent.click(screen.getByRole("button", { name: ROW_LABEL }));
+
+    expect(editDialogHeading()).toBeInTheDocument();
   });
 
   it("does not open the edit dialog for keydown bubbling up from the row actions", () => {

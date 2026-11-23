@@ -29,6 +29,9 @@ import { cn } from "@/lib/utils";
 const TEAMS_SUPPORT_URL =
   "https://teams.microsoft.com/l/channel/19%3Aea499f40a2864e03862e5b517fa824a8%40thread.tacv2/HelpDesk%20IT%20House?groupId=c84b63de-1603-4ba8-98a6-9825300c0f22&tenantId=f26a48e1-fc21-461a-b97f-ac5bd535f341";
 
+const CARD_STAGGER_MS = 70;
+const CARD_STAGGER_BASE_MS = 80;
+
 const EMPTY_STATS = { approved_points: 0, pending_points: 0, essay_count: 0, approved_points_this_semester: 0 };
 
 /** Nearest upcoming reservations (enough to fill the week strip) and the count of all of them. */
@@ -175,7 +178,7 @@ export default async function DashboardPage() {
             {cards.map((id, i) => (
               <div
                 key={id}
-                style={{ animationDelay: `${80 + i * 70}ms` }}
+                style={{ animationDelay: `${CARD_STAGGER_BASE_MS + i * CARD_STAGGER_MS}ms` }}
                 className={cn("min-w-0 motion-safe:animate-rise", i === 0 && "md:col-span-2", spanOf(i))}
               >
                 {nodes[id]}

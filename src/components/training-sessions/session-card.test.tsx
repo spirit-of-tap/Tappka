@@ -113,7 +113,7 @@ describe("SessionCard", () => {
         now={now}
       />,
     )
-    expect(screen.getByText("Příprava je připravená")).toBeInTheDocument()
+    expect(screen.getByText("Příprava je hotová")).toBeInTheDocument()
   })
 
   it("can hide the preparation state when browsing", () => {

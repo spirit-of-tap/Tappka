@@ -7,9 +7,12 @@ import { StorageAvatar } from '@/components/storage/storage-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ProfileWithTeam } from '@/lib/komunita/types';
-import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
+import { ROLE_COLORS, ROLE_LABELS } from '@/lib/komunita/types';
 import { teamAccentStyles } from '@/lib/training-sessions/format';
 import { cn } from '@/lib/utils';
+
+const STAGGER_MS = 30;
+const MAX_STAGGER_STEPS = 11;
 
 interface UserCardProps {
   profile: ProfileWithTeam;
@@ -29,17 +32,17 @@ export function UserCard({ profile, pictureUrl, from, showTeam = true, index = 0
     <Link
       href={href}
       className="group focus-ring rounded-2xl motion-safe:animate-rise"
-      style={{ animationDelay: `${Math.min(index, 11) * 30}ms` }}
+      style={{ animationDelay: `${Math.min(index, MAX_STAGGER_STEPS) * STAGGER_MS}ms` }}
     >
       <Card
-        className="relative h-full overflow-hidden rounded-2xl border-border/60 py-0 shadow-xs transition motion-safe:group-hover:-translate-y-0.5 group-hover:shadow-md"
+        className="relative h-full overflow-hidden rounded-2xl border-border/60 py-0 shadow-xs motion-safe:transition motion-safe:group-hover:-translate-y-0.5 group-hover:shadow-md"
         style={accent.surface}
       >
         {accent.stripe && <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={accent.stripe} />}
         <CardContent className="flex items-center gap-3.5 p-4 pl-5">
           <div
             className={cn(
-              'rounded-full ring-2 transition-all',
+              'rounded-full ring-2 motion-safe:transition-all',
               profile.team?.color ? '' : 'ring-border'
             )}
             style={

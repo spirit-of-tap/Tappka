@@ -1,15 +1,9 @@
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 
+import { ProgressRing, progressPercent } from '@/components/ui/progress-ring';
 import { bookPointsSlide, type BookStats } from '@/lib/dashboard/progress-slides';
 import { currentStudySemester } from '@/lib/metrics/semester-milestone';
-
-const RING_RADIUS = 40;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-
-function percent(value: number, target: number): number {
-  return target > 0 ? Math.min(100, Math.max(0, (value / target) * 100)) : 0;
-}
 
 interface ReadingProgressCardProps {
   stats: BookStats;
@@ -22,31 +16,23 @@ interface ReadingProgressCardProps {
 /** Book points against the semester milestone and the whole study. */
 export function ReadingProgressCard({ stats, onboardingYear, details, detailsLabel }: ReadingProgressCardProps) {
   const slide = bookPointsSlide(stats, currentStudySemester(new Date(), onboardingYear));
-  const dash = (percent(slide.value, slide.goal) / 100) * RING_CIRCUMFERENCE;
 
   const body = (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <svg viewBox="0 0 96 96" className="size-24 shrink-0" role="img" aria-label={slide.ringLabel}>
-          <circle cx="48" cy="48" r={RING_RADIUS} fill="none" strokeWidth="10" className="stroke-muted" />
-          <circle
-            cx="48"
-            cy="48"
-            r={RING_RADIUS}
-            fill="none"
-            strokeWidth="10"
-            strokeLinecap="round"
-            strokeDasharray={`${dash} ${RING_CIRCUMFERENCE}`}
-            transform="rotate(-90 48 48)"
-            className="stroke-chart-5 motion-safe:animate-ring-draw"
-          />
+        <ProgressRing
+          percent={progressPercent(slide.value, slide.goal)}
+          strokeClassName="stroke-chart-5"
+          role="img"
+          aria-label={slide.ringLabel}
+        >
           <text x="48" y="47" textAnchor="middle" className="fill-foreground font-heading text-[22px] font-extrabold">
             {slide.value}
           </text>
           <text x="48" y="64" textAnchor="middle" className="fill-muted-foreground text-[11px]">
             z {slide.goal} {slide.unit}
           </text>
-        </svg>
+        </ProgressRing>
         <div className="min-w-0 space-y-1">
           <p className="font-heading text-lg font-bold">{slide.headline}</p>
           <p className="text-sm text-muted-foreground">{slide.detail}</p>
@@ -69,7 +55,7 @@ export function ReadingProgressCard({ stats, onboardingYear, details, detailsLab
         >
           <div
             className="h-2 rounded-full bg-chart-5 motion-safe:animate-in motion-safe:slide-in-from-left-full motion-safe:duration-700"
-            style={{ width: `${percent(slide.value, slide.studyTotal)}%` }}
+            style={{ width: `${progressPercent(slide.value, slide.studyTotal)}%` }}
           />
         </div>
       </div>
@@ -86,18 +72,18 @@ export function ReadingProgressCard({ stats, onboardingYear, details, detailsLab
   }
 
   return (
-    <details className="group rounded-2xl border bg-card shadow-sm motion-safe:animate-rise">
-      <summary className="focus-ring cursor-pointer list-none rounded-2xl p-5 md:p-6 [&::-webkit-details-marker]:hidden">
-        <div className="mb-4 flex items-center gap-2">
-          <h2 className="text-sm font-bold text-chart-5">{slide.title}</h2>
-          <span className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-chart-5">
-            {detailsLabel}
-            <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
-          </span>
-        </div>
+    <section className="rounded-2xl border bg-card shadow-sm motion-safe:animate-rise">
+      <div className="space-y-4 p-5 md:p-6">
+        <h2 className="text-sm font-bold text-chart-5">{slide.title}</h2>
         {body}
-      </summary>
-      <div className="border-t px-5 py-4 md:px-6">{details}</div>
-    </details>
+      </div>
+      <details className="group border-t">
+        <summary className="focus-ring flex cursor-pointer list-none items-center gap-1 px-5 py-3 text-sm font-medium text-chart-5 md:px-6 [&::-webkit-details-marker]:hidden">
+          {detailsLabel}
+          <ChevronDown className="size-4 motion-safe:transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="border-t px-5 py-4 md:px-6">{details}</div>
+      </details>
+    </section>
   );
 }

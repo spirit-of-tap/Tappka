@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { addDays, addMinutes, format, isSameDay, startOfDay } from "date-fns";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { RoomFilter, getDefaultStartTime, type FilterState } from "./room-filter";
 import { RoomMap, type MapRoom } from "./room-map";
@@ -13,6 +15,7 @@ import {
   groupRoomsByFloor,
   type StatusWindow,
 } from "@/lib/reservations/room-map";
+import { pluralizeCz } from "@/lib/utils/pluralize-cz";
 import { DEFAULT_RESERVATION_MINUTES } from "@/lib/reservations/utils";
 import type { Reservation, Room, RoomWithStatus } from "@/lib/reservations/types";
 
@@ -35,6 +38,8 @@ interface LoadedDay {
 
 const DAY_KEY_FORMAT = "yyyy-MM-dd";
 const MOBILE_QUERY = "(max-width: 1023px)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const LOAD_ERROR_MESSAGE = "Nepodařilo se načíst rezervace";
 
 function parseTime(day: Date, time: string): Date {
   const [hours, minutes] = time.split(":").map(Number);
@@ -53,6 +58,7 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
     duration: null,
   }));
   const [loaded, setLoaded] = useState<LoadedDay | null>(null);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [chosenStart, setChosenStart] = useState<Date | null>(null);
@@ -74,13 +80,19 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
     });
 
     fetch(`/api/reservations?${params}`)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error(`Reservations request failed: ${response.status}`);
+        return response.json();
+      })
       .then((result: { data?: Reservation[] }) => {
-        if (!cancelled) setLoaded({ key: dayKey, items: result.data ?? [] });
+        if (cancelled) return;
+        setLoaded({ key: dayKey, items: result.data ?? [] });
+        setFailedKey(null);
       })
       .catch(() => {
-        // Today can fall back to the server-rendered reservations.
-        if (!cancelled && !isToday) setLoaded({ key: dayKey, items: [] });
+        if (cancelled) return;
+        setFailedKey(dayKey);
+        toast.error(LOAD_ERROR_MESSAGE);
       });
 
     return () => {
@@ -91,7 +103,9 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
   }, [dayKey, refreshKey, isToday]);
 
   const hasLoadedDay = loaded?.key === dayKey;
-  const isLoadingDay = !hasLoadedDay && !isToday;
+  const loadFailed = failedKey === dayKey;
+  const isUnavailable = loadFailed && !hasLoadedDay && !isToday;
+  const isLoadingDay = !hasLoadedDay && !isToday && !loadFailed;
   const dayReservations = hasLoadedDay ? loaded.items : isToday ? reservations : [];
 
   const filterActive = filter.duration !== null;
@@ -152,11 +166,13 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
 
   const mineIds = new Set(myReservations.map((r) => r.id));
   const freeCount = items.filter((item) => item.status.kind === "free").length;
+  const freeSummary = `${freeCount} ${pluralizeCz(freeCount, ["volná", "volné", "volných"])} z ${rooms.length} ${pluralizeCz(rooms.length, ["místnosti", "místností", "místností"])}`;
 
   const handleSelectRoom = useCallback((room: Room) => {
     setSelectedId(room.id);
     if (window.matchMedia?.(MOBILE_QUERY).matches) {
-      panelRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+      const reduceMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
+      panelRef.current?.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     }
   }, []);
 
@@ -172,45 +188,68 @@ export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWi
     if (!open) setRefreshKey((key) => key + 1);
   };
 
+  const handleRetry = () => {
+    setFailedKey(null);
+    setRefreshKey((key) => key + 1);
+  };
+
   return (
     <div className="space-y-4">
       <RoomFilter value={filter} onChange={setFilter} />
 
-      {filterActive && (
+      {filterActive && !isUnavailable && (
         <div className="flex items-center gap-2 px-1 text-sm font-medium text-chart-3-strong">
-          <span>{freeCount} volné z {rooms.length} místností</span>
+          <span>{freeSummary}</span>
           {isLoadingDay && <Spinner className="size-3.5" />}
         </div>
       )}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21.25rem]">
-        <RoomMap
-          items={orderedItems}
-          selectedId={selectedItem?.room.id ?? null}
-          isToday={isToday}
-          onSelect={handleSelectRoom}
-        />
-
-        <div ref={panelRef} className="scroll-mt-4 lg:sticky lg:top-4">
-          {selectedItem && (
-            <RoomDetailPanel
-              room={selectedItem.room}
-              status={selectedItem.status}
-              isToday={isToday}
-              isLoading={isLoadingDay}
-              chips={chips}
-              day={day}
-              reservations={dayReservations.filter((r) => r.room_id === selectedItem.room.id)}
-              mineIds={mineIds}
-              duration={duration}
-              chosenStart={effectiveStart}
-              onChooseStart={setChosenStart}
-              onChooseDuration={setChosenDuration}
-              onBook={handleBook}
-            />
-          )}
+      {loadFailed && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong"
+        >
+          <span>
+            {isUnavailable
+              ? "Rezervace pro tento den se nepodařilo načíst, stav místností proto neznáme."
+              : "Rezervace se nepodařilo načíst, stav místností nemusí být aktuální."}
+          </span>
+          <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
+            Zkusit znovu
+          </Button>
         </div>
-      </div>
+      )}
+
+      {!isUnavailable && (
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21.25rem]">
+          <RoomMap
+            items={orderedItems}
+            selectedId={selectedItem?.room.id ?? null}
+            isToday={isToday}
+            onSelect={handleSelectRoom}
+          />
+
+          <div ref={panelRef} className="scroll-mt-4 lg:sticky lg:top-4">
+            {selectedItem && (
+              <RoomDetailPanel
+                room={selectedItem.room}
+                status={selectedItem.status}
+                isToday={isToday}
+                isLoading={isLoadingDay}
+                chips={chips}
+                day={day}
+                reservations={dayReservations.filter((r) => r.room_id === selectedItem.room.id)}
+                mineIds={mineIds}
+                duration={duration}
+                chosenStart={effectiveStart}
+                onChooseStart={setChosenStart}
+                onChooseDuration={setChosenDuration}
+                onBook={handleBook}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {booking && (
         <QuickReservationDialog

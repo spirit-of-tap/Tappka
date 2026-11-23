@@ -31,7 +31,7 @@ export function DirectionSummary({ byDirection, className }: DirectionSummaryPro
             </dd>
             <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
-                className={cn("h-full rounded-full transition-[width] duration-700", direction.dotClass)}
+                className={cn("h-full rounded-full motion-safe:transition-[width] motion-safe:duration-700", direction.dotClass)}
                 style={{ width: `${share}%` }}
               />
             </div>

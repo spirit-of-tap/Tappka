@@ -101,8 +101,8 @@ export default async function TsOverviewPage() {
 
       <div className="space-y-10">
         {facilitating.length > 0 && (
-          <section aria-labelledby="ts-facilitating" className="space-y-3 rounded-2xl bg-chart-2/10 p-4 sm:p-5">
-            <h2 id="ts-facilitating" className="flex items-center gap-2 font-heading text-lg font-semibold text-chart-2-strong">
+          <section aria-labelledby="ts-facilitating" className="space-y-3 rounded-2xl bg-warning/10 p-4 sm:p-5">
+            <h2 id="ts-facilitating" className="flex items-center gap-2 font-heading text-lg font-semibold text-warning-strong">
               <FileEdit className="size-5 shrink-0" aria-hidden />
               <span>Čeká tě facilitace</span>
             </h2>
@@ -116,7 +116,7 @@ export default async function TsOverviewPage() {
                     <p className="font-heading font-semibold text-foreground">{s.topic}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatDayHeading(s.starts_at)} · {formatTimeRange(s.starts_at, s.ends_at)} ·{" "}
-                      <span className="font-medium text-chart-2-strong">příprava zatím chybí</span>
+                      <span className="font-medium text-warning-strong">příprava zatím chybí</span>
                     </p>
                   </div>
                   <Button asChild size="sm" className="shrink-0 self-start sm:self-center">
@@ -177,7 +177,7 @@ export default async function TsOverviewPage() {
               {missingReflections.map((s) => (
                 <li
                   key={s.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5 shadow-xs transition motion-safe:hover:-translate-y-0.5 hover:shadow-md"
+                  className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5 shadow-xs motion-safe:transition motion-safe:hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">{formatDayHeading(s.starts_at)}</p>

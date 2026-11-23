@@ -117,7 +117,7 @@ function SaveStatus({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1 text-xs transition-colors',
+        'inline-flex items-center gap-1.5 rounded-full border border-transparent px-2.5 py-1 text-xs motion-safe:transition-colors',
         justSaved && 'save-glow border-success/40 bg-success/10',
       )}
     >
@@ -626,7 +626,7 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
             <span>Načítám zdroj…</span>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed bg-muted/20 p-2.5 sm:p-3 transition-colors hover:border-primary/30 hover:bg-muted/30">
+          <div className="rounded-xl border border-dashed bg-muted/20 p-2.5 sm:p-3 motion-safe:transition-colors hover:border-primary/30 hover:bg-muted/30">
             <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
               <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <BookOpen className="size-3.5 text-primary" />
@@ -676,7 +676,7 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
                     <li key={`book-${book.id}`}>
                       <button
                         type="button"
-                        className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
+                        className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left motion-safe:transition-colors hover:bg-muted"
                         onClick={() => {
                           handleBookChange(book);
                           setBookResults([]);
@@ -716,7 +716,7 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
                     <li key={`source-${source.id}`}>
                       <button
                         type="button"
-                        className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted"
+                        className="focus-ring flex w-full items-center gap-3 px-3 py-2 text-left motion-safe:transition-colors hover:bg-muted"
                         onClick={() => {
                           handleSourceChange(source);
                           setBookResults([]);
@@ -758,7 +758,7 @@ export function EssayEditorForm({ initialEssay, profileId }: EssayEditorFormProp
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Název eseje"
-          className="h-auto rounded-none border-0 border-b border-border/70 bg-transparent px-0 py-2 font-heading text-2xl leading-tight font-bold shadow-none transition-colors placeholder:text-muted-foreground/40 focus-visible:border-primary/60 focus-visible:ring-0 md:text-3xl"
+          className="h-auto rounded-none border-0 border-b border-border/70 bg-transparent px-0 py-2 font-heading text-2xl leading-tight font-bold shadow-none motion-safe:transition-colors placeholder:text-muted-foreground/40 focus-visible:border-primary/60 focus-visible:ring-0 md:text-3xl"
         />
 
         {/* A fixed floor, not a viewport fraction: on a tall window 60vh of

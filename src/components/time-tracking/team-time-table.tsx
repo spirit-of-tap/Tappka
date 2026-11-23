@@ -152,14 +152,14 @@ function MemberTimeRow({ row, now, targetHours }: MemberTimeRowProps) {
       <CollapsibleTrigger
         className={cn(
           "group grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 text-left text-sm",
-          "transition-colors hover:bg-accent focus-ring",
+          "motion-safe:transition-colors hover:bg-accent focus-ring",
           COLUMN_GRID,
         )}
       >
         <span className="flex min-w-0 items-center gap-2">
           <ChevronRight
             aria-hidden
-            className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90 motion-reduce:transition-none"
+            className="size-4 shrink-0 text-muted-foreground motion-safe:transition-transform group-data-[state=open]:rotate-90 motion-reduce:transition-none"
           />
           <ProfileAvatar picture={member.picture} name={member.name} size={AVATAR_SIZE} />
           <span className="min-w-0 truncate font-medium">{member.name}</span>

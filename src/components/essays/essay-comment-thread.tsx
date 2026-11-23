@@ -31,7 +31,7 @@ const REPLY_AVATAR_SIZE = 24;
 const ACTION_ROW_CLASS = 'flex items-center gap-3 pt-1';
 
 const ACTION_BUTTON_CLASS =
-  'inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:underline disabled:opacity-50';
+  'inline-flex items-center gap-1 text-xs text-muted-foreground motion-safe:transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none focus-visible:underline disabled:opacity-50';
 
 interface CommentThread {
   comment: EssayCommentWithAuthor;
@@ -103,7 +103,7 @@ function CommentComposer({
   return (
     <div
       className={cn(
-        'rounded-lg border bg-card transition-colors focus-within:border-ring',
+        'rounded-lg border bg-card motion-safe:transition-colors focus-within:border-ring',
         replyToName && 'border-primary/40',
       )}
     >
@@ -118,7 +118,7 @@ function CommentComposer({
           </span>
           <button
             type="button"
-            className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+            className="shrink-0 text-muted-foreground motion-safe:transition-colors hover:text-foreground"
             onClick={onCancelReply}
           >
             Zrušit
@@ -292,7 +292,7 @@ export function EssayCommentThread({
     return (
       <div
         className={cn(
-          'group/comment flex gap-3 rounded-lg transition-colors',
+          'group/comment flex gap-3 rounded-lg motion-safe:transition-colors',
           isCoach && !isReply && 'border border-primary/20 bg-primary/[0.03] p-3 dark:bg-primary/[0.06]',
           isReplyTarget && '-mx-2 bg-primary/5 px-2 py-1.5 ring-1 ring-primary/15',
         )}
@@ -452,7 +452,7 @@ export function EssayCommentThread({
                 {(replies.length > 0 || isThreadTargeted) && (
                   <div
                     className={cn(
-                      'ml-4 mt-2 space-y-3 border-l-2 pl-4 transition-colors',
+                      'ml-4 mt-2 space-y-3 border-l-2 pl-4 motion-safe:transition-colors',
                       isThreadTargeted ? 'border-primary/40' : 'border-border',
                     )}
                   >

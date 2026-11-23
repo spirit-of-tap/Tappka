@@ -26,16 +26,16 @@ export const STATUS_DOT_CLASSES: Record<RoomMapStatus["kind"] | "mine", string> 
 };
 
 const STATUS_TEXT_CLASSES: Record<RoomMapStatus["kind"], string> = {
-  free: "text-[color-mix(in_oklch,var(--success)_70%,white)]",
+  free: "text-hero-success",
   busy: "text-chart-2",
-  closed: "text-hero-muted",
+  closed: "text-hero-foreground/80",
 };
 
 const LEGEND: { key: keyof typeof STATUS_DOT_CLASSES; label: string }[] = [
   { key: "free", label: "volná" },
   { key: "busy", label: "obsazená" },
   { key: "mine", label: "tvoje" },
-  { key: "closed", label: "zavřeno" },
+  { key: "closed", label: "zavřená" },
 ];
 
 export function getRoomTitle(room: Pick<Room, "code" | "name">): string {
@@ -154,8 +154,8 @@ function RoomTile({ item, selected, isToday, delay, onSelect }: RoomTileProps) {
         aria-pressed={selected}
         onClick={() => onSelect(room)}
         className={cn(
-          "relative h-full min-h-36 w-full min-w-0 flex-col items-stretch justify-between gap-3 overflow-hidden whitespace-normal rounded-2xl border border-hero-foreground/10 bg-hero-foreground/5 p-4 text-left font-normal text-hero-foreground transition duration-500 ease-smooth hover:bg-hero-foreground/10 hover:text-hero-foreground motion-safe:hover:-translate-y-0.5",
-          status.kind === "closed" && "opacity-70",
+          "relative h-full min-h-36 w-full min-w-0 flex-col items-stretch justify-between gap-3 overflow-hidden whitespace-normal rounded-2xl border border-hero-foreground/10 bg-hero-foreground/5 p-4 text-left font-normal text-hero-foreground focus-ring-hero motion-safe:transition motion-safe:duration-500 motion-safe:ease-smooth hover:bg-hero-foreground/10 hover:text-hero-foreground motion-safe:hover:-translate-y-0.5",
+          status.kind === "closed" && "border-dashed",
           selected && "border-chart-3 bg-hero-foreground/10 ring-2 ring-chart-3/40",
         )}
       >
@@ -175,7 +175,7 @@ function RoomTile({ item, selected, isToday, delay, onSelect }: RoomTileProps) {
               Tvoje · {formatTime(mineStart)}
             </Badge>
           )}
-          <span className="line-clamp-2 block text-sm text-hero-muted">{getRoomTitle(room)}</span>
+          <span className="line-clamp-2 block text-sm text-hero-foreground/80">{getRoomTitle(room)}</span>
           <span className={cn("block text-xs font-bold", STATUS_TEXT_CLASSES[status.kind])}>
             {getStatusLine(status, isToday)}
           </span>

@@ -21,7 +21,7 @@ function TeamPill({
     <Link
       href={`/komunita/tymy/${team.id}`}
       className={cn(
-        'group focus-ring inline-flex items-center gap-2 rounded-full border bg-card py-1.5 pl-3 pr-2 text-sm shadow-xs transition motion-safe:hover:-translate-y-0.5 hover:bg-muted hover:shadow-md',
+        'group focus-ring inline-flex items-center gap-2 rounded-full border bg-card py-1.5 pl-3 pr-2 text-sm shadow-xs motion-safe:transition motion-safe:hover:-translate-y-0.5 hover:bg-muted hover:shadow-md',
         muted && 'opacity-70 hover:opacity-100'
       )}
     >
@@ -75,11 +75,11 @@ export function TeamBadges({ teams }: TeamBadgesProps) {
           <button
             type="button"
             onClick={() => setShowAlumni((v) => !v)}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground motion-safe:transition-colors hover:text-foreground"
           >
             <ChevronDown
               className={cn(
-                'size-3.5 transition-transform',
+                'size-3.5 motion-safe:transition-transform',
                 showAlumni && 'rotate-180'
               )}
             />
