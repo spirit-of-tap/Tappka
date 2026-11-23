@@ -5,8 +5,8 @@ import { Check, Laptop, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Button } from '@/components/ui/button';
-import { usePalette } from '@/components/theme/use-palette';
-import { PALETTES } from '@/lib/theme/palettes';
+import { usePalette, useShade } from '@/components/theme/use-palette';
+import { PALETTES, SHADES } from '@/lib/theme/palettes';
 import { cn } from '@/lib/utils';
 
 const MODES = [
@@ -41,6 +41,7 @@ export function AppearanceSettings() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const { theme, setTheme } = useTheme();
   const [palette, setPalette] = usePalette();
+  const [shade, setShade] = useShade();
 
   return (
     <div className="space-y-8">
@@ -60,6 +61,48 @@ export function AppearanceSettings() {
               >
                 <mode.icon className="size-4" aria-hidden />
                 {mode.label}
+              </Button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="font-heading text-lg font-bold">Tmavý režim</h2>
+          <p className="text-sm text-muted-foreground">Jak tmavé má být tmavé zobrazení.</p>
+        </div>
+        <div role="radiogroup" aria-label="Tmavý režim" className="grid max-w-xl gap-3 sm:grid-cols-2">
+          {SHADES.map((s) => {
+            const active = mounted && shade === s.id;
+            return (
+              <Button
+                key={s.id}
+                type="button"
+                variant="outline"
+                role="radio"
+                aria-checked={active}
+                onClick={() => {
+                  setShade(s.id);
+                  if (theme === 'light') setTheme('dark');
+                }}
+                className={cn(
+                  'h-auto flex-col items-stretch gap-3 rounded-xl p-3 text-left font-normal whitespace-normal',
+                  active && 'border-primary ring-2 ring-primary/30',
+                )}
+              >
+                <div className="dark" data-shade={s.id}>
+                  <div data-palette={palette} className="text-foreground">
+                    <PalettePreview />
+                  </div>
+                </div>
+                <span className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">{s.label}</span>
+                    <span className="block text-xs text-muted-foreground">{s.description}</span>
+                  </span>
+                  {active && <Check className="size-4 text-primary" aria-hidden />}
+                </span>
               </Button>
             );
           })}

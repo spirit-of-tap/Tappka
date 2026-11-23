@@ -129,7 +129,9 @@ Colour palettes (Nastavení → Vzhled) sit on top of light/dark: `data-palette`
 on `<html>` (set before paint by `PALETTE_BOOT_SCRIPT`, stored per browser in
 localStorage) swaps the surface, primary, sidebar, hero and spotlight tokens.
 Palettes: Tappka (default, no attribute), Les, Oceán, Levandule, Meruňka,
-Grafit. Chart colours stay fixed so data reads the same in every palette.
+Růžová, Grafit. Dark mode has two shades: Klasický and Tlumený
+(`data-shade="dim"` sets `--shade-lift`, which every dark surface token adds
+to its lightness, so it works with every palette). Chart colours stay fixed so data reads the same in every palette.
 Strong call-to-action surfaces use `bg-spotlight` (full primary in light,
 primary sunk into the card in dark, so it never glares). Reading progress is a ring against the cumulative goal for the
 current semester (`cumulativeSemesterMilestone`). The brand logo tile uses

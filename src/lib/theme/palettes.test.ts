@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 
-import { applyPalette, isPalette, PALETTE_BOOT_SCRIPT } from './palettes';
+import { applyPalette, applyShade, isPalette, PALETTE_BOOT_SCRIPT } from './palettes';
 
 describe('palettes', () => {
   it('recognises known palette ids only', () => {
@@ -26,6 +26,20 @@ describe('palettes', () => {
     localStorage.setItem('palette', 'x" onload="');
     new Function(PALETTE_BOOT_SCRIPT)();
     expect(document.documentElement.hasAttribute('data-palette')).toBe(false);
+    localStorage.clear();
+  });
+
+  it('applies the dim shade and drops it for the classic one', () => {
+    const root = document.createElement('html');
+    applyShade(root, 'dim');
+    expect(root.getAttribute('data-shade')).toBe('dim');
+    applyShade(root, 'classic');
+    expect(root.hasAttribute('data-shade')).toBe(false);
+
+    localStorage.setItem('shade', 'dim');
+    new Function(PALETTE_BOOT_SCRIPT)();
+    expect(document.documentElement.getAttribute('data-shade')).toBe('dim');
+    document.documentElement.removeAttribute('data-shade');
     localStorage.clear();
   });
 });

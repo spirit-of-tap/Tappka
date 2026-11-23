@@ -4,21 +4,17 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 import {
   applyPalette,
+  applyShade,
   DEFAULT_PALETTE,
+  DEFAULT_SHADE,
   isPalette,
+  isShade,
   PALETTE_CHANGE_EVENT,
   PALETTE_STORAGE_KEY,
+  SHADE_STORAGE_KEY,
   type PaletteId,
+  type ShadeId,
 } from '@/lib/theme/palettes';
-
-function read(): PaletteId {
-  try {
-    const value = localStorage.getItem(PALETTE_STORAGE_KEY);
-    return isPalette(value) ? value : DEFAULT_PALETTE;
-  } catch {
-    return DEFAULT_PALETTE;
-  }
-}
 
 function subscribe(onChange: () => void): () => void {
   window.addEventListener(PALETTE_CHANGE_EVENT, onChange);
@@ -29,19 +25,44 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-/** Per-device colour palette, stored in localStorage and mirrored on <html>. */
-export function usePalette(): [PaletteId, (palette: PaletteId) => void] {
-  const palette = useSyncExternalStore(subscribe, read, () => DEFAULT_PALETTE);
-
-  const setPalette = useCallback((next: PaletteId) => {
+/** A per-device appearance choice kept in localStorage and mirrored on <html>. */
+function useStoredChoice<T extends string>(
+  key: string,
+  fallback: T,
+  isValid: (value: unknown) => value is T,
+  apply: (root: HTMLElement, value: T) => void,
+): [T, (value: T) => void] {
+  const read = useCallback((): T => {
     try {
-      localStorage.setItem(PALETTE_STORAGE_KEY, next);
+      const value = localStorage.getItem(key);
+      return isValid(value) ? value : fallback;
     } catch {
-      // Private mode: the palette still applies for this page view.
+      return fallback;
     }
-    applyPalette(document.documentElement, next);
-    window.dispatchEvent(new Event(PALETTE_CHANGE_EVENT));
-  }, []);
+  }, [key, fallback, isValid]);
 
-  return [palette, setPalette];
+  const value = useSyncExternalStore(subscribe, read, () => fallback);
+
+  const set = useCallback(
+    (next: T) => {
+      try {
+        localStorage.setItem(key, next);
+      } catch {
+        // Private mode: the choice still applies for this page view.
+      }
+      apply(document.documentElement, next);
+      window.dispatchEvent(new Event(PALETTE_CHANGE_EVENT));
+    },
+    [key, apply],
+  );
+
+  return [value, set];
+}
+
+export function usePalette(): [PaletteId, (palette: PaletteId) => void] {
+  return useStoredChoice(PALETTE_STORAGE_KEY, DEFAULT_PALETTE, isPalette, applyPalette);
+}
+
+export function useShade(): [ShadeId, (shade: ShadeId) => void] {
+  return useStoredChoice(SHADE_STORAGE_KEY, DEFAULT_SHADE, isShade, applyShade);
 }

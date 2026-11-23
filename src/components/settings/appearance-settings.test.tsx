@@ -29,4 +29,12 @@ describe('AppearanceSettings', () => {
     expect(document.documentElement.getAttribute('data-palette')).toBe('les');
     expect(screen.getByRole('radio', { name: /Les/ })).toHaveAttribute('aria-checked', 'true');
   });
+
+  it('switches to the dim dark shade', () => {
+    render(<AppearanceSettings />);
+    fireEvent.click(screen.getByRole('radio', { name: /Tlumený/ }));
+    expect(localStorage.getItem('shade')).toBe('dim');
+    expect(document.documentElement.getAttribute('data-shade')).toBe('dim');
+    document.documentElement.removeAttribute('data-shade');
+  });
 });
