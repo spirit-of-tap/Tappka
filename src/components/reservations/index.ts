@@ -2,8 +2,8 @@
  * Re-export all reservation components
  */
 
-export { RoomCard } from './room-card';
-export { RoomList } from './room-list';
+export { RoomMap } from './room-map';
+export { RoomDetailPanel } from './room-detail-panel';
 export { MyReservations } from './my-reservations';
 export { TimePicker } from './time-picker';
 export { DaySchedule } from './day-schedule';

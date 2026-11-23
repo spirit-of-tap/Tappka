@@ -5,7 +5,6 @@ import { ReservationsViewTracker } from "@/components/reservations/reservations-
 import { getNextAvailableTime } from "@/lib/reservations/utils";
 import { getCurrentUserProfile } from "@/lib/auth-helpers";
 import { PageHeader } from "@/components/ui/page-header";
-import { ReservationsSummary } from "@/components/reservations/reservations-summary";
 import { PageShell } from "@/components/ui/page-shell";
 import type { RoomWithStatus, ReservationWithDetails } from "@/lib/reservations/types";
 
@@ -86,10 +85,6 @@ export default async function ReservationsPage() {
     };
   });
 
-  const inSevenDays = now.getTime() + 7 * 24 * 60 * 60 * 1000;
-  const upcomingThisWeek = myReservations.filter(
-    (r) => new Date(r.start_at).getTime() <= inSevenDays
-  ).length;
 
   return (
     <PageShell>
@@ -99,18 +94,13 @@ export default async function ReservationsPage() {
         description="Vyber si místnost a zarezervuj si ji"
       />
 
-      <ReservationsSummary
-        upcomingThisWeek={upcomingThisWeek}
-        freeRooms={roomsWithStatus.filter((r) => !r.currentReservation).length}
-        totalRooms={roomsWithStatus.length}
+      <RoomsWithFilter
+        rooms={roomsWithStatus}
+        reservations={reservations}
+        myReservations={myReservations}
       />
 
       <ReservationsTabs myReservations={myReservations} />
-
-      <div>
-        <h2 className="mb-4 font-heading text-xl font-semibold">Místnosti</h2>
-        <RoomsWithFilter rooms={roomsWithStatus} />
-      </div>
     </PageShell>
   );
 }

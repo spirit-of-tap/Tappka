@@ -27,13 +27,6 @@ export type Room = Tables<'rooms'>;
 export interface RoomWithStatus extends Room {
   currentReservation: Reservation | null;
   nextAvailableTime: Date | null;
-  // Filter availability metadata (set when time filter is active)
-  availabilityForFilter?: {
-    isAvailable: boolean;
-    reason?: 'occupied' | 'day_restricted';
-    conflictTime?: string; // e.g., "13:00-15:00"
-    conflictTitle?: string; // e.g., "Training Session"
-  };
 }
 
 // Reservation from database
