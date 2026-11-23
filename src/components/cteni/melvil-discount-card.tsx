@@ -83,7 +83,7 @@ export function MelvilDiscountCard() {
           />
           <span
             aria-hidden="true"
-            className="absolute -right-px -top-px size-5 translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/20 bg-background [clip-path:inset(0_50%_0_0)] sm:hidden"
+            className="absolute -right-px -top-px h-5 w-2.5 -translate-y-1/2 rounded-l-full border border-r-0 border-primary/20 bg-background sm:hidden"
           />
           <span
             aria-hidden="true"
