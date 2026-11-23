@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import { ArrowRight, CalendarClock } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
+import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { Button } from '@/components/ui/button';
 import { formatDateShort, formatTime } from '@/lib/reservations/utils';
 
@@ -38,10 +38,7 @@ export function NextReservationCard({ reservation }: NextReservationCardProps) {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarClock className="size-4 text-muted-foreground" />
-          Nadcházející rezervace
-        </CardTitle>
+        <DashboardCardTitle>Nadcházející rezervace</DashboardCardTitle>
         {reservation && (
           <CardDescription>
             {relativeDayLabel(reservation.start_at)} ·{' '}

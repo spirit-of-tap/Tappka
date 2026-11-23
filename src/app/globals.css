@@ -241,8 +241,11 @@
 /* Everything rendered inside the sidebar (search trigger, timer, Beta badge,
    feedback link, user menu trigger) uses the generic tokens; remap them to the
    frame so those components need no sidebar-specific variants. Portalled
-   popovers/menus render outside this scope and keep the page tokens. */
-[data-slot="sidebar"] {
+   popovers/menus render outside this scope and keep the page tokens.
+   [data-surface="frame"] gives the same treatment to frame-coloured blocks
+   inside the sheet (dashboard header, Metriky card, session date tile). */
+[data-slot="sidebar"],
+[data-surface="frame"] {
   --background: var(--sidebar);
   --foreground: var(--sidebar-foreground);
   --card: var(--sidebar-accent);

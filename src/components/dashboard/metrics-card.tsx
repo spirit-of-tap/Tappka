@@ -1,11 +1,11 @@
 import Link from "next/link"
-import { BarChart3, BookOpen, Handshake, ArrowRight } from "lucide-react"
+import { BookOpen, Handshake, ArrowRight } from "lucide-react"
 import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
+import { DashboardCardTitle } from "@/components/dashboard/dashboard-card-title"
 import { formatPointsWithLabel } from "@/lib/books/points"
 
 function meetingLabel(n: number): string {
@@ -21,12 +21,9 @@ interface MetricsCardProps {
 
 export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
   return (
-    <Card className="h-full">
+    <Card data-surface="frame" className="h-full border-transparent bg-sidebar">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart3 className="size-4 text-muted-foreground" />
-          Metriky
-        </CardTitle>
+        <DashboardCardTitle>Metriky</DashboardCardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">

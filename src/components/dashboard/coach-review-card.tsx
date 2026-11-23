@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import { ArrowRight, Inbox } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
+import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
 import type { CoachReviewEssay } from '@/lib/essays/types';
 
@@ -22,10 +22,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Inbox className="size-4 text-muted-foreground" />
-          Ke kontrole
-        </CardTitle>
+        <DashboardCardTitle>Ke kontrole</DashboardCardTitle>
         <CardDescription>
           {!hasTeam
             ? 'Nemáš přiřazený tým'

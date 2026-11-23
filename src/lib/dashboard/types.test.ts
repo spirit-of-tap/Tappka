@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   widgetsForRole,
   sanitizeWidgetIds,
-  availableWidgetIds,
+  resolveDashboardWidgets,
   availableWidgets,
   DASHBOARD_WIDGETS,
 } from "@/lib/dashboard/types";
@@ -67,16 +67,6 @@ describe("sanitizeWidgetIds", () => {
   });
 });
 
-describe("availableWidgetIds", () => {
-  it("keeps metrics when the user has beta access", () => {
-    expect(availableWidgetIds(["quick-actions", "metrics"], true)).toEqual(["quick-actions", "metrics"]);
-  });
-
-  it("drops a stale 'metrics' entry when beta access is missing, so it can never render as a permanent skeleton", () => {
-    expect(availableWidgetIds(["quick-actions", "metrics"], false)).toEqual(["quick-actions"]);
-  });
-});
-
 describe("availableWidgets", () => {
   it("excludes the metrics catalog entry when beta access is missing", () => {
     const ids = availableWidgets(DASHBOARD_WIDGETS, false).map((w) => w.id);
@@ -86,5 +76,28 @@ describe("availableWidgets", () => {
   it("includes the metrics catalog entry when beta access is present", () => {
     const ids = availableWidgets(DASHBOARD_WIDGETS, true).map((w) => w.id);
     expect(ids).toContain("metrics");
+  });
+});
+
+describe("resolveDashboardWidgets", () => {
+  it("shows everything the role can see when nothing is saved", () => {
+    expect(resolveDashboardWidgets(null, "student", true)).toEqual(
+      widgetsForRole("student").map((w) => w.id),
+    );
+    expect(resolveDashboardWidgets([], "coach", true)).toEqual(
+      widgetsForRole("coach").map((w) => w.id),
+    );
+  });
+
+  it("keeps a saved choice but always in canonical order", () => {
+    expect(resolveDashboardWidgets(["team-snapshot", "quick-actions"], "student", true)).toEqual([
+      "quick-actions",
+      "team-snapshot",
+    ]);
+  });
+
+  it("drops metrics without beta access, also from the default", () => {
+    expect(resolveDashboardWidgets(null, "student", false)).not.toContain("metrics");
+    expect(resolveDashboardWidgets(["metrics", "reading"], "student", false)).toEqual(["reading"]);
   });
 });

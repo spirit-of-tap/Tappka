@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Tag, Users } from 'lucide-react';
+import { ArrowRight, Tag } from 'lucide-react';
 import {
   Card,
   CardAction,
@@ -7,8 +7,8 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
+import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { isMelvilDiscountLive } from '@/lib/books/melvil-discount';
 import {
@@ -34,10 +34,7 @@ export function TeamSnapshotCard({ stats, hasTeam, teamId, teamName }: TeamSnaps
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="size-4 text-muted-foreground" />
-          {teamName ? `Tým ${teamName}` : 'Tým'}
-        </CardTitle>
+        <DashboardCardTitle>{teamName ? `Tým ${teamName}` : 'Tým'}</DashboardCardTitle>
         <CardDescription>Nejlepší čtenáři:ky podle knižních bodů</CardDescription>
         {teamId && (
           <CardAction>

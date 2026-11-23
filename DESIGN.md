@@ -116,7 +116,11 @@ The sidebar is dark in both themes, so inside `[data-slot="sidebar"]`
 the sidebar therefore use normal tokens and need no sidebar variants. TAP red
 is too dark on brown, so `--primary` in the frame is a light coral
 (`--sidebar-primary`); the brand logo tile uses `bg-tap-red` directly. On
-mobile there is no frame, the page is the cream sheet. Status
+mobile there is no frame, the page is the cream sheet. The dashboard header
+(greeting + key counts) is a frame-coloured block (`[data-surface="frame"]`
+gets the same token remap) that ends in a rounded cream corner, so the sheet
+appears to start below it; the same surface is used for the Metriky card and
+the training-session date tile. Status
 semantics: `success` green, `warning` amber (hue = chart-2), `info` teal
 (hue = chart-3), `destructive` red.
 

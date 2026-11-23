@@ -1,13 +1,13 @@
 import Link from 'next/link';
-import { ArrowRight, BookOpen } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
+import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { MetricProgress } from '@/components/metrics/metric-progress';
 import { getMetric } from '@/lib/metrics/config';
 
@@ -23,10 +23,7 @@ export function ReadingProgressCard({ stats, onboardingYear }: ReadingProgressCa
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="size-4 text-muted-foreground" />
-          Čtení
-        </CardTitle>
+        <DashboardCardTitle>Čtení</DashboardCardTitle>
         <CardDescription>
           {stats.essay_count === 0
             ? 'Zatím žádné eseje'
