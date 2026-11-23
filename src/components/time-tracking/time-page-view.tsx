@@ -4,7 +4,6 @@ import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Clock, FilterX, Plus } from "lucide-react"
 
-import { MetricProgress } from "@/components/metrics/metric-progress"
 import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import { Button } from "@/components/ui/button"
 import {
@@ -45,6 +44,7 @@ import { DirectionSummary } from "./direction-summary"
 import { EntryFormDialog } from "./entry-form-dialog"
 import { RunningEntryRow, TimeEntryRow } from "./time-entry-row"
 import { useOptionalTimer } from "./timer-provider"
+import { WeekHero } from "./week-hero"
 
 export const DIRECTION_PARAM = "direction"
 export const TAG_PARAM = "tag"
@@ -223,16 +223,10 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
 
       <DateRangeNav range={range} todayKey={todayKey} />
 
-      <MetricProgress
-        period="week"
-        unit="hours"
-        goals={[
-          {
-            current: summary.totalMs / MS_PER_HOUR,
-            target: scaleWeeklyTarget(METRICS["time-weekly"].target, range),
-            label: periodLabel,
-          },
-        ]}
+      <WeekHero
+        current={summary.totalMs / MS_PER_HOUR}
+        target={scaleWeeklyTarget(METRICS["time-weekly"].target, range)}
+        label={periodLabel}
       />
 
       <DirectionSummary byDirection={summary.byDirection} />
@@ -321,7 +315,7 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {showRunning && runningInRange && (
             <RunningEntryRow
               entry={runningInRange}
@@ -333,14 +327,16 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
           {days.map((day) => {
             const dayTotal = day.entries.reduce((sum, entry) => sum + entryDurationMs(entry), 0)
             return (
-              <section key={day.dateKey} aria-labelledby={`day-${day.dateKey}`} className="space-y-1">
-                <div className="flex items-baseline justify-between gap-2 px-2">
+              <section key={day.dateKey} aria-labelledby={`day-${day.dateKey}`} className="space-y-2">
+                <div className="flex items-baseline justify-between gap-2 px-1">
                   <h2 id={`day-${day.dateKey}`} className="text-sm font-semibold capitalize">
                     {formatDayHeading(day.dateKey)}
                   </h2>
-                  <span className="text-xs tabular-nums text-muted-foreground">{formatDurationShort(dayTotal)}</span>
+                  <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                    {formatDurationShort(dayTotal)}
+                  </span>
                 </div>
-                <ul className="space-y-0.5">
+                <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border bg-card p-1 shadow-sm">
                   {day.entries.map((entry) => (
                     <li key={entry.id}>
                       <TimeEntryRow

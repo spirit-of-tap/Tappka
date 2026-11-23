@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "preferred_name" text;

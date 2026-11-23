@@ -34,14 +34,16 @@ export function DecisionExplainer() {
       title="Kdo rozhoduje o výdajích"
       aside={SMERNICE_IS_DRAFT ? <DraftBadge /> : null}
     >
-      <ul className="space-y-4">
+      <ul className="grid gap-3 sm:grid-cols-2">
         {EXPENSE_KINDS.map((kind) => {
           const Icon = KIND_ICONS[kind.id];
           return (
-            <li key={kind.id} className="flex gap-3">
-              <Icon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
+            <li key={kind.id} className="flex gap-3 rounded-2xl border bg-card p-4 shadow-xs">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-chart-2/15 text-chart-2-strong">
+                <Icon className="size-5" aria-hidden />
+              </span>
               <p className="text-sm leading-relaxed">
-                <span className="font-medium">{kind.title}. </span>
+                <span className="font-heading font-semibold">{kind.title}. </span>
                 <span className="text-muted-foreground">{kind.plain}</span>
               </p>
             </li>

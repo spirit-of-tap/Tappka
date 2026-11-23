@@ -84,13 +84,13 @@ export function KomunitaContent({
     <div className="space-y-6">
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" />
         <Input
           type="search"
           placeholder="Hledat podle jména nebo emailu…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-12 pl-12 pr-12 text-base rounded-xl shadow-sm"
+          className="h-14 rounded-2xl border-border/60 bg-card pl-12 pr-12 text-base shadow-sm focus-visible:border-primary"
         />
         {query && (
           <Button
@@ -109,8 +109,8 @@ export function KomunitaContent({
       <TeamBadges teams={teams} />
 
       {/* Results Count */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Users className="size-4" />
+      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <Users className="size-4 text-primary" />
         <span>
           {filtered.length}{' '}
           {filtered.length === 1 ? 'člověk' : filtered.length < 5 ? 'lidé' : 'lidí'}
@@ -133,9 +133,10 @@ export function KomunitaContent({
         <div className="space-y-6">
           {activeProfiles.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {activeProfiles.map((profile) => (
+              {activeProfiles.map((profile, i) => (
                 <UserCard
                   key={profile.id}
+                  index={i}
                   profile={profile}
                   pictureUrl={pictureUrls[profile.id] ?? null}
                 />

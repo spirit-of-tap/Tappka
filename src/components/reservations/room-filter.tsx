@@ -180,7 +180,8 @@ export function RoomFilter({ rooms, onFilterChange, onFilterStateChange, onCheck
   const isTomorrow = format(filterDate, 'yyyy-MM-dd') === format(tomorrow, 'yyyy-MM-dd');
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/30 rounded-lg border">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border bg-card p-4 shadow-sm motion-safe:animate-rise"
+      style={{ animationDelay: "180ms" }}>
       {/* Date Selection */}
       <div className="flex items-center gap-2">
         <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">

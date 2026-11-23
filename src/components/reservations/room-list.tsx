@@ -46,6 +46,9 @@ export function RoomList({ rooms, filterState, onRoomClick }: RoomListProps) {
     return { tsRooms, quietRepre, d107, other };
   }, [sortedRooms]);
 
+  const delayFor = (id: string) =>
+    Math.min(sortedRooms.findIndex((r) => r.id === id), 8) * 40 + 220;
+
   if (rooms.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -59,25 +62,25 @@ export function RoomList({ rooms, filterState, onRoomClick }: RoomListProps) {
       {/* Column 1: TS rooms (D126, D132, D226) */}
       <div className="flex flex-col gap-4">
         {groupedRooms.tsRooms.map((room) => (
-          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} />
+          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} animationDelay={delayFor(room.id)} />
         ))}
       </div>
       
       {/* Column 2: Quiet & Representational (D127, D129) */}
       <div className="flex flex-col gap-4">
         {groupedRooms.quietRepre.map((room) => (
-          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} />
+          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} animationDelay={delayFor(room.id)} />
         ))}
       </div>
       
       {/* Column 3: D107 */}
       <div className="flex flex-col gap-4">
         {groupedRooms.d107.map((room) => (
-          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} />
+          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} animationDelay={delayFor(room.id)} />
         ))}
         {/* Any other rooms */}
         {groupedRooms.other.map((room) => (
-          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} />
+          <RoomCard key={room.id} room={room} filterState={filterState} onRoomClick={onRoomClick} animationDelay={delayFor(room.id)} />
         ))}
       </div>
     </div>

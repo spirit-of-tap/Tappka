@@ -36,8 +36,8 @@ export function MyReservations({ reservations }: MyReservationsProps) {
 
   if (sorted.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-center">
-        <CalendarOff className="size-12 text-muted-foreground/50 mb-3" />
+      <div className="flex flex-col items-center justify-center py-6 text-center">
+        <CalendarOff className="size-10 text-muted-foreground/50 mb-3" />
         <p className="text-muted-foreground text-sm">
           Nemáš žádné aktivní rezervace
         </p>
@@ -49,7 +49,7 @@ export function MyReservations({ reservations }: MyReservationsProps) {
   const remaining = sorted.length - SHOW_COUNT;
 
   return (
-    <div className="divide-y divide-border/50 -mx-1">
+    <div className="-mx-2 flex flex-col gap-0.5">
       {visible.map((reservation) => (
         <ReservationItem key={reservation.id} reservation={reservation} />
       ))}
@@ -57,7 +57,7 @@ export function MyReservations({ reservations }: MyReservationsProps) {
       {!showAll && remaining > 0 && (
         <button
           onClick={() => setShowAll(true)}
-          className="w-full py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors text-center"
+          className="focus-ring w-full rounded-lg py-2.5 text-center text-sm font-medium text-chart-3-strong transition-colors hover:bg-muted/50"
         >
           + {remaining} dalších
         </button>
@@ -118,32 +118,30 @@ function ReservationItem({ reservation }: ReservationItemProps) {
         role="button"
         tabIndex={0}
         aria-label={`Upravit rezervaci ${reservation.title}`}
-        className="focus-ring flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+        className="focus-ring flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer group"
         onClick={() => setEditOpen(true)}
         onKeyDown={handleKeyDown}
       >
-        {/* Date badge */}
-        <div className="flex-shrink-0 w-12 h-10 rounded-md bg-primary/10 flex flex-col items-center justify-center leading-tight">
-          <span className="text-[10px] text-muted-foreground uppercase">
+        <div className="flex h-11 w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-chart-3/10 leading-tight text-chart-3-strong">
+          <span className="text-[10px] uppercase">
             {startDate.toLocaleDateString("cs-CZ", { weekday: "short", timeZone: "Europe/Prague" })}
           </span>
-          <span className="text-sm font-bold text-primary">
+          <span className="font-heading text-sm font-bold">
             {startDate.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", timeZone: "Europe/Prague" })}
           </span>
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
             <h4 className="font-medium text-sm truncate">
               {reservation.title}
             </h4>
-            <span className="text-xs text-muted-foreground shrink-0">
+            <span className="shrink-0 rounded-md bg-chart-3/15 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-chart-3-strong">
               {reservation.room?.code?.toUpperCase() || reservation.room?.name || "Místnost"}
             </span>
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-muted-foreground tabular-nums">
               {formatTime(startDate)}–{formatTime(endDate)}
             </span>
             <div className="flex gap-1">

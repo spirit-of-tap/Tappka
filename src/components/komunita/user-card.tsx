@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ProfileWithTeam } from '@/lib/komunita/types';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/komunita/types';
+import { teamAccentStyles } from '@/lib/training-sessions/format';
 import { cn } from '@/lib/utils';
 
 interface UserCardProps {
@@ -15,18 +16,27 @@ interface UserCardProps {
   pictureUrl: string | null;
   from?: string;
   showTeam?: boolean;
+  index?: number;
 }
 
-export function UserCard({ profile, pictureUrl, from, showTeam = true }: UserCardProps) {
+export function UserCard({ profile, pictureUrl, from, showTeam = true, index = 0 }: UserCardProps) {
+  const accent = teamAccentStyles(profile.team?.color);
   const href = from
     ? `/komunita/profil/${profile.id}?from=${encodeURIComponent(from)}`
     : `/komunita/profil/${profile.id}`;
 
   return (
-    <Link href={href} className="group focus-ring rounded-xl">
-      <Card className="h-full py-0 border-border/60 shadow-none transition-colors group-hover:border-border group-hover:bg-muted/40">
-        <CardContent className="flex items-center gap-3 p-3">
-          {/* Avatar with team-colored ring */}
+    <Link
+      href={href}
+      className="group focus-ring rounded-2xl motion-safe:animate-rise"
+      style={{ animationDelay: `${Math.min(index, 11) * 30}ms` }}
+    >
+      <Card
+        className="relative h-full overflow-hidden rounded-2xl border-border/60 py-0 shadow-xs transition motion-safe:group-hover:-translate-y-0.5 group-hover:shadow-md"
+        style={accent.surface}
+      >
+        {accent.stripe && <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={accent.stripe} />}
+        <CardContent className="flex items-center gap-3.5 p-4 pl-5">
           <div
             className={cn(
               'rounded-full ring-2 transition-all',
@@ -42,19 +52,19 @@ export function UserCard({ profile, pictureUrl, from, showTeam = true }: UserCar
               storageKey={pictureUrl}
               name={profile.name}
               size="default"
-              className="size-12"
+              className="size-14"
             />
           </div>
 
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex items-center gap-1.5">
-              <h3 className="truncate font-semibold text-sm leading-tight">
+              <h3 className="truncate font-heading text-sm font-semibold leading-tight">
                 {profile.name}
               </h3>
               <Tooltip>
                 <TooltipTrigger asChild>
                   {profile.user_id ? (
-                    <UserCheck className="size-3.5 text-green-500 shrink-0" />
+                    <UserCheck className="size-3.5 text-success-strong shrink-0" />
                   ) : (
                     <UserX className="size-3.5 text-muted-foreground/60 shrink-0" />
                   )}

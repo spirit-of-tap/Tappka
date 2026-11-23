@@ -76,7 +76,7 @@ export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
 
       {/* Results Counter */}
       {hasActiveFilter && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
+        <div className="flex items-center gap-2 px-1 text-sm font-medium text-chart-3-strong">
           <span>{availableCount} volné z {rooms.length} místností</span>
           {isChecking && <Spinner className="size-3.5" />}
         </div>

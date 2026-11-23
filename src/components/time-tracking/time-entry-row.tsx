@@ -76,7 +76,7 @@ function RowShell({ children, className }: { children: React.ReactNode; classNam
   return (
     <div
       className={cn(
-        "flex min-h-12 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-accent/50",
+        "flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-muted/50",
         className,
       )}
     >
@@ -152,7 +152,7 @@ export function TimeEntryRow({ entry, onEdit, onDeleted, onDeleteFailed }: TimeE
           {formatClock(entry.started_at)}–{end ? formatClock(end) : ""}
           {endsNextDay && <span className="ml-1">{NEXT_DAY_NOTE}</span>}
         </span>
-        <span className="min-w-16 text-sm font-medium tabular-nums">{duration}</span>
+        <span className="min-w-16 text-sm font-bold tabular-nums">{duration}</span>
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -220,7 +220,7 @@ export function RunningEntryRow({ entry, elapsedMs, onStop, isPending = false }:
   const dotClass = DIRECTION_DOT_CLASS[entry.direction]
 
   return (
-    <RowShell className="border border-success/30 bg-success/5 hover:bg-success/10">
+    <RowShell className="border border-success/30 bg-success/5 shadow-sm hover:bg-success/10">
       <EntryMain
         entry={entry}
         dot={

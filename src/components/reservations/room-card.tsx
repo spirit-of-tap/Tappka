@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { addMinutes } from "date-fns";
-import { Clock, Users } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, Clock, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatTime, inferReservationKind } from "@/lib/reservations/utils";
@@ -14,12 +13,13 @@ interface RoomCardProps {
   room: RoomWithStatus;
   filterState?: FilterState | null;
   onRoomClick?: (room: RoomWithStatus) => void;
+  animationDelay?: number;
 }
 
 /**
  * Card component displaying a room's current status and availability
  */
-export function RoomCard({ room, filterState, onRoomClick }: RoomCardProps) {
+export function RoomCard({ room, filterState, onRoomClick, animationDelay = 0 }: RoomCardProps) {
   const filterAvailability = room.availabilityForFilter;
   const isFilterActive = filterState?.duration != null;
   const isOccupiedNow = room.currentReservation !== null;
@@ -30,17 +30,16 @@ export function RoomCard({ room, filterState, onRoomClick }: RoomCardProps) {
   const isDayRestricted =
     isFilterActive && filterAvailability?.reason === "day_restricted";
 
-  // Determine status color
-  const statusColor = isOccupied
-    ? "border-destructive bg-destructive/5"
-    : "border-success bg-success/5";
-
   const statusBadge = isOccupied
     ? {
         label: isDayRestricted ? "Nedostupná" : "Obsazeno",
-        variant: "destructive" as const,
+        pill: "bg-destructive/10 text-destructive",
+        dot: "bg-destructive",
       }
-    : { label: "Volná", variant: "default" as const };
+    : { label: "Volná", pill: "bg-success/12 text-success-strong", dot: "bg-success" };
+
+  const roomCode = room.code.toUpperCase();
+  const roomTitle = room.name.replace(new RegExp(`^${room.code}\\s*[–-]\\s*`, "i"), "");
 
   const filterWindowLabel =
     filterState?.duration != null ? getFilterWindowLabel(filterState) : null;
@@ -63,74 +62,67 @@ export function RoomCard({ room, filterState, onRoomClick }: RoomCardProps) {
   };
 
   const cardContent = (
-    <Card
+    <div
       className={cn(
-        "h-full transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer border-l-4 relative overflow-hidden",
-        statusColor,
-        isFilteredOut && "grayscale-[30%]"
+        "group relative flex h-full flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 text-card-foreground shadow-sm transition motion-safe:hover:-translate-y-0.5 hover:shadow-md",
+        isFilteredOut && "bg-muted/40"
       )}
     >
-      {/* Diagonal stripe pattern for unavailable rooms */}
       {isFilteredOut && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.03) 10px, rgba(0, 0, 0, 0.03) 20px)',
-          }}
-        />
+        <div className="-mx-4 -mt-4 flex items-center gap-2 bg-muted px-4 py-1.5 text-muted-foreground">
+          <Clock className="size-4 flex-shrink-0" />
+          <span className="text-sm font-medium line-clamp-2">
+            {filterAvailability.reason === 'day_restricted'
+              ? 'Nedostupná v tento den'
+              : filterAvailability.conflictTime && filterAvailability.conflictTitle
+                ? `Obsazeno ${filterAvailability.conflictTime} – ${filterAvailability.conflictTitle}`
+                : `Obsazeno ${filterAvailability.conflictTime || 'v tento čas'}`
+            }
+          </span>
+        </div>
       )}
-      <CardContent className="p-4 h-full flex flex-col relative z-10">
-        {/* Filter unavailability banner */}
-        {isFilteredOut && (
-          <div className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-4 mb-3 bg-muted text-muted-foreground">
-            <Clock className="size-4 flex-shrink-0" />
-            <span className="text-sm font-medium line-clamp-2">
-              {filterAvailability.reason === 'day_restricted'
-                ? 'Nedostupná v tento den'
-                : filterAvailability.conflictTime && filterAvailability.conflictTitle
-                  ? `Obsazeno ${filterAvailability.conflictTime} – ${filterAvailability.conflictTitle}`
-                  : `Obsazeno ${filterAvailability.conflictTime || 'v tento čas'}`
-              }
+
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-heading text-2xl font-bold leading-none text-chart-3-strong">
+            {roomCode}
+          </h3>
+          <p className="mt-1.5 truncate text-sm font-medium">{roomTitle}</p>
+          <p className="truncate text-xs text-muted-foreground min-h-4">
+            {room.description || "\u00A0"}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+            statusBadge.pill
+          )}
+        >
+          <span aria-hidden className={cn("size-1.5 rounded-full", statusBadge.dot)} />
+          {statusBadge.label}
+        </span>
+      </div>
+
+      <div className="flex-1 space-y-1.5">
+        {!isFilterActive && isOccupiedNow && room.currentReservation && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Users className="size-4 flex-shrink-0" />
+            <span className="truncate text-sm">
+              {getReservationLabel(room.currentReservation)}
             </span>
           </div>
         )}
 
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="min-w-0 flex-1 pr-2">
-            <h3 className="font-heading font-bold text-lg">{room.name}</h3>
-            <p className="text-sm text-muted-foreground line-clamp-1 min-h-[1.25rem]">
-              {room.description || "\u00A0"}
-            </p>
+        {statusDetail && (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="size-4 flex-shrink-0" />
+            <span className="text-sm">{statusDetail}</span>
           </div>
-          <Badge variant={statusBadge.variant} className="flex-shrink-0">
-            {statusBadge.label}
-          </Badge>
-        </div>
+        )}
+      </div>
 
-        {/* Status info */}
-        <div className="space-y-2 flex-1">
-          {/* Current reservation (live state only - it is stale for a filter window) */}
-          {!isFilterActive && isOccupiedNow && room.currentReservation && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Users className="size-4 flex-shrink-0" />
-              <span className="text-sm">
-                {getReservationLabel(room.currentReservation)}
-              </span>
-            </div>
-          )}
-
-          {/* Availability for the filtered window / live availability */}
-          {statusDetail && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="size-4 flex-shrink-0" />
-              <span className="text-sm">{statusDetail}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Room features - always at bottom */}
-        <div className="flex items-center gap-2 pt-2 mt-auto min-h-[1.75rem]">
+      <div className="flex items-center gap-2 border-t pt-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
           {room.can_have_ts && (
             <Badge variant="outline" className="text-xs">
               TS místnost
@@ -142,15 +134,23 @@ export function RoomCard({ room, filterState, onRoomClick }: RoomCardProps) {
             </Badge>
           )}
         </div>
-      </CardContent>
-    </Card>
+        <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-chart-3-strong">
+          Rezervovat
+          <ArrowRight className="size-3.5 transition-transform motion-safe:group-hover:translate-x-0.5" />
+        </span>
+      </div>
+    </div>
   );
 
   return (
     <Link
       href={`/reservations/${room.code}`}
       onClick={handleClick}
-      className={cn("block h-full", isFilteredOut && "opacity-70")}
+      className={cn(
+        "focus-ring block h-full rounded-2xl motion-safe:animate-rise",
+        isFilteredOut && "opacity-70"
+      )}
+      style={{ animationDelay: `${animationDelay}ms` }}
     >
       {cardContent}
     </Link>

@@ -15,7 +15,7 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 import { MyEssayList } from './my-essay-list';
 import { CopyEssaysButton } from './copy-essays-button';
-import { MetricProgress } from '@/components/metrics/metric-progress';
+import { ReadingProgressCard } from './reading-progress-card';
 import { TeamPointsRanking } from '@/components/teams/team-points-ranking';
 import { MobileFab, MobileFabSpacer } from '@/components/mobile-fab';
 import { ActiveLoansCard } from '@/components/library/active-loans-card';
@@ -71,21 +71,9 @@ export function PrehledContent({
 
   return (
     <div className="space-y-8">
-      {/* 1. Reading goal / semester progress */}
       <section aria-label="Pokrok ve čtení">
-        <MetricProgress
-          goals={[
-            {
-              current: stats.approved_points_this_semester,
-              target: KNIZNI_BODY_METRIC.target ?? 0,
-              label: 'tento semestr',
-            },
-            {
-              current: stats.approved_points,
-              target: KNIZNI_BODY_METRIC.totalForStudy ?? 0,
-              label: 'za studium',
-            },
-          ]}
+        <ReadingProgressCard
+          stats={stats}
           onboardingYear={onboardingYear}
           detailsLabel={teamStats.length > 0 ? 'Pořadí v týmu' : undefined}
           details={
@@ -100,10 +88,9 @@ export function PrehledContent({
         />
       </section>
 
-      {/* 2. Borrowed books — full width, due dates are time-sensitive */}
+      {/* Full width: due dates are time-sensitive */}
       <ActiveLoansCard loans={loans} />
 
-      {/* 3. My essays */}
       <section
         aria-labelledby="my-essays-heading"
         className="space-y-3"

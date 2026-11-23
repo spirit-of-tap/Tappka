@@ -23,6 +23,7 @@ import { MessageCircleQuestion, ExternalLink } from "lucide-react";
 import { buildRoomsWeek, type WeekReservationInput } from "@/lib/dashboard/rooms-week";
 import { bookPointsSlide, customerMeetingsSlide, type ProgressSlide } from "@/lib/dashboard/progress-slides";
 import { currentStudySemester } from "@/lib/metrics/semester-milestone";
+import { greetingName } from "@/lib/profile/greeting-name";
 import { cn } from "@/lib/utils";
 
 const TEAMS_SUPPORT_URL =
@@ -61,7 +62,7 @@ export default async function DashboardPage() {
   if (!profile) redirect("/auth/login");
 
   const isCoach = profile.role === "coach" || profile.role === "admin";
-  const firstName = profile.name ? profile.name.split(" ")[0] : "";
+  const firstName = greetingName(profile);
 
   const { data: layoutRow } = await supabase
     .from("dashboard_layouts")

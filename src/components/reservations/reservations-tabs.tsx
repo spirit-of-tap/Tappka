@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MyReservations } from "./my-reservations";
 import type { ReservationWithDetails } from "@/lib/reservations/types";
 
@@ -9,17 +8,16 @@ interface ReservationsTabsProps {
 }
 
 /**
- * Handles responsive layout for the user's reservations list
+ * Card wrapping the user's upcoming reservations
  */
 export function ReservationsTabs({ myReservations }: ReservationsTabsProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Moje rezervace</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <MyReservations reservations={myReservations} />
-      </CardContent>
-    </Card>
+    <section
+      className="rounded-2xl border bg-card p-5 text-card-foreground shadow-sm motion-safe:animate-rise md:p-6"
+      style={{ animationDelay: "120ms" }}
+    >
+      <h2 className="mb-3 text-sm font-bold text-chart-3-strong">Moje rezervace</h2>
+      <MyReservations reservations={myReservations} />
+    </section>
   );
 }

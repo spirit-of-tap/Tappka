@@ -40,13 +40,14 @@ export default async function KomunitniKasaPage() {
       <div className="mx-auto max-w-3xl space-y-8">
         <PageHeader title="Komunitní kasa" description={DESCRIPTION} icon={<KasaMark className="size-10" />} />
         <nav aria-label="Materiály a dokumenty kasy" className="grid gap-3 sm:grid-cols-2">
-          {QUICK_LINKS.map(({ href, title, description, icon: Icon }) => (
+          {QUICK_LINKS.map(({ href, title, description, icon: Icon }, i) => (
             <Link
               key={href}
               href={href}
-              className="group flex items-center gap-4 rounded-xl border p-4 transition-colors hover:bg-accent focus-ring"
+              className="group focus-ring flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-xs transition motion-safe:animate-rise motion-safe:hover:-translate-y-0.5 hover:shadow-md"
+              style={{ animationDelay: `${(i + 1) * 60}ms` }}
             >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-chart-2/15 text-chart-2-strong">
                 <Icon className="size-5" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">

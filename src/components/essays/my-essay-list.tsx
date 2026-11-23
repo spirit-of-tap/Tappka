@@ -48,7 +48,7 @@ export function MyEssayList({
   );
 
   return (
-    <ul className="divide-y divide-border/60">
+    <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border bg-card p-1 shadow-sm">
       {sorted.map((essay) => {
         const date = new Date(essay.created_at).toLocaleDateString('cs-CZ', {
           day: 'numeric',
@@ -67,8 +67,8 @@ export function MyEssayList({
             <Link
               href={awaitingReply ? `/cteni/eseje/${essay.id}#komentare` : `/cteni/eseje/${essay.id}`}
               className={cn(
-                'group focus-ring -mx-2 flex items-center gap-3 rounded-md px-2 py-3 transition-colors',
-                awaitingReply ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-accent/50',
+                'group focus-ring flex items-center gap-3 rounded-xl px-3 py-3 transition-colors',
+                awaitingReply ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-muted/50',
               )}
             >
               <div className="flex h-12 w-8.5 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted ring-1 ring-border/50">

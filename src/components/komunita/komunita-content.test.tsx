@@ -14,6 +14,7 @@ function createMockProfile(
     work_email: 'jan.novak@example.com',
     personal_email: null,
     phone_number: null,
+    preferred_name: null,
     date_of_birth: null,
     picture: null,
     bio_json: null,

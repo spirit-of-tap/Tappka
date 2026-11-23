@@ -11,10 +11,6 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-// The semester number and label render as separate text nodes inside one span.
-const semesterLabel = (text: string) => (_: string, el: Element | null) =>
-  el?.tagName === 'SPAN' && el.textContent === text;
-
 describe('PrehledContent', () => {
   const defaultProps = {
     stats: {
@@ -91,8 +87,8 @@ describe('PrehledContent', () => {
         </TooltipProvider>,
       );
 
-      expect(screen.getAllByText(semesterLabel('1. semestr')).length).toBeGreaterThan(0);
-      expect(screen.queryByText(semesterLabel('3. semestr'))).not.toBeInTheDocument();
+      expect(screen.getByText('Knižní body · 1. semestr')).toBeInTheDocument();
+      expect(screen.queryByText('Knižní body · 3. semestr')).not.toBeInTheDocument();
     });
   });
 

@@ -21,7 +21,7 @@ function TeamPill({
     <Link
       href={`/komunita/tymy/${team.id}`}
       className={cn(
-        'group focus-ring inline-flex items-center gap-2 rounded-full border bg-card pl-2.5 pr-1.5 py-1 text-sm transition-colors hover:bg-muted',
+        'group focus-ring inline-flex items-center gap-2 rounded-full border bg-card py-1.5 pl-3 pr-2 text-sm shadow-xs transition motion-safe:hover:-translate-y-0.5 hover:bg-muted hover:shadow-md',
         muted && 'opacity-70 hover:opacity-100'
       )}
     >
@@ -39,7 +39,7 @@ function TeamPill({
           'inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-medium tabular-nums',
           muted
             ? 'text-muted-foreground'
-            : 'bg-muted text-muted-foreground group-hover:bg-background'
+            : 'bg-primary/10 text-primary group-hover:bg-primary/15'
         )}
       >
         {team.member_count}
