@@ -152,7 +152,7 @@ export function MyEssayList({
                   (source.isFrozen ? (
                     <LegacyPointsBadge points={points} />
                   ) : (
-                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-foreground">
                       {formatPoints(points)} b.
                     </span>
                   ))}
