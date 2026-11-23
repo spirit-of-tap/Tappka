@@ -8,7 +8,7 @@ import {
   CardFooter,
   CardHeader,
 } from '@/components/ui/card';
-import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
+import { DASHBOARD_SECTION, DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { isMelvilDiscountLive } from '@/lib/books/melvil-discount';
 import {
@@ -33,7 +33,7 @@ export function TeamSnapshotCard({ stats, hasTeam, teamId, teamName }: TeamSnaps
   const leaderPoints = top[0]?.approved_points ?? 0;
 
   return (
-    <Card className="h-full">
+    <Card className={DASHBOARD_SECTION}>
       <CardHeader>
         <DashboardCardTitle className="text-chart-2-strong">{teamName ? `Tým ${teamName}` : 'Tým'}</DashboardCardTitle>
         <CardDescription>Nejlepší čtenáři:ky podle knižních bodů</CardDescription>

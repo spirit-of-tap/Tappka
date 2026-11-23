@@ -40,17 +40,17 @@ export function QuickActions({ isCoach, unreadCount = 0 }: QuickActionsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <nav aria-label="Rychlé akce" className="flex flex-wrap gap-2">
       {actions.map(({ href, label, icon: Icon, chip, badge }) => (
         <Link
           key={href}
           href={href}
-          className="focus-ring flex min-h-14 items-center gap-3 rounded-xl border bg-card px-3.5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+          className="focus-ring inline-flex h-10 items-center gap-2 rounded-full border bg-card pr-4 pl-1.5 text-sm font-medium transition-colors hover:bg-accent"
         >
-          <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', chip)}>
-            <Icon className="size-4" aria-hidden />
+          <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full', chip)}>
+            <Icon className="size-3.5" aria-hidden />
           </span>
-          <span className="min-w-0 flex-1">{label}</span>
+          {label}
           {badge ? (
             <span className="rounded-full bg-primary px-1.5 text-xs tabular-nums text-primary-foreground">
               {badge}
@@ -58,6 +58,6 @@ export function QuickActions({ isCoach, unreadCount = 0 }: QuickActionsProps) {
           ) : null}
         </Link>
       ))}
-    </div>
+    </nav>
   );
 }

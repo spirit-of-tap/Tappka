@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card';
-import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
+import { DASHBOARD_SECTION, DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { getMetric } from '@/lib/metrics/config';
 import { cumulativeSemesterMilestone, currentStudySemester } from '@/lib/metrics/semester-milestone';
 
@@ -46,7 +46,7 @@ export function ReadingProgressCard({ stats, onboardingYear }: ReadingProgressCa
   const dash = (percent(points, goal) / 100) * RING_CIRCUMFERENCE;
 
   return (
-    <Card className="h-full">
+    <Card className={DASHBOARD_SECTION}>
       <CardHeader>
         <DashboardCardTitle className="text-chart-5">Čtení · {semester}. semestr</DashboardCardTitle>
         <CardAction>

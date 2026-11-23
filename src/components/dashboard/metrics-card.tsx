@@ -5,7 +5,7 @@ import {
   CardContent,
   CardHeader,
 } from "@/components/ui/card"
-import { DashboardCardTitle } from "@/components/dashboard/dashboard-card-title"
+import { DASHBOARD_SECTION, DashboardCardTitle } from "@/components/dashboard/dashboard-card-title"
 import { formatPointsWithLabel } from "@/lib/books/points"
 
 function meetingLabel(n: number): string {
@@ -21,7 +21,7 @@ interface MetricsCardProps {
 
 export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
   return (
-    <Card className="h-full">
+    <Card className={DASHBOARD_SECTION}>
       <CardHeader>
         <DashboardCardTitle className="text-foreground">Metriky</DashboardCardTitle>
       </CardHeader>
@@ -32,7 +32,7 @@ export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
               <BookOpen className="size-3.5" />
               Knižní body
             </div>
-            <p className="font-heading text-2xl font-extrabold tabular-nums leading-none group flex items-center gap-2 text-chart-5">
+            <p className="font-heading text-xl font-extrabold tabular-nums leading-none whitespace-nowrap group flex items-center gap-2 text-chart-5">
               {formatPointsWithLabel(bookPoints)}
               <ArrowRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </p>
@@ -42,7 +42,7 @@ export function MetricsCard({ bookPoints, meetingCount }: MetricsCardProps) {
               <Handshake className="size-3.5" />
               Zákaznické schůzky
             </div>
-            <p className="font-heading text-2xl font-extrabold tabular-nums leading-none group flex items-center gap-2 text-chart-2-strong">
+            <p className="font-heading text-xl font-extrabold tabular-nums leading-none whitespace-nowrap group flex items-center gap-2 text-chart-2-strong">
               {meetingCount} {meetingLabel(meetingCount)}
               <ArrowRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </p>

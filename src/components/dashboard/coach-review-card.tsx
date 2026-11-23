@@ -7,7 +7,7 @@ import {
   CardDescription,
   CardHeader,
 } from '@/components/ui/card';
-import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
+import { DASHBOARD_SECTION, DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { DashboardEmptyState } from '@/components/dashboard/dashboard-empty-state';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { getEssaySourceDisplay } from '@/lib/essays/source-display';
@@ -22,7 +22,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
   const preview = essays.slice(0, 3);
 
   return (
-    <Card className="h-full">
+    <Card className={DASHBOARD_SECTION}>
       <CardHeader>
         <DashboardCardTitle className="flex items-center gap-2">
           Eseje ke kontrole

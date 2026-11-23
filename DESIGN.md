@@ -114,10 +114,12 @@ comes from tinted tiles, not dark blocks: each sidebar section has a colour
 (Společné = `primary`, Můj rozvoj = `chart-5` violet, Můj tým = `chart-3`
 teal) shown as a vertical stripe along the whole section and as the icon chip of its items, and every
 section carries a one-line hint saying who it is for. Beta modules get a small
-amber dot (`sr-only` "Beta"). The dashboard opens with a white greeting card
-whose key counts are tinted tiles (`bg-<colour>/10–15` with the matching
-`-strong` text); each card title is a small coloured label in its card's
-colour. Reading progress is a ring against the cumulative goal for the
+amber dot (`sr-only` "Beta"). The dashboard avoids a wall of tiles: the greeting
+sits straight on the page with the key counts in one sentence (coloured
+links), quick actions are small pill buttons, and the widgets are sections
+inside two panels (main: TS, reservations, essays to review; side: reading,
+team, Metriky) separated by inset hairlines (`DASHBOARD_SECTION`). Each
+section title is a small coloured label. Reading progress is a ring against the cumulative goal for the
 current semester (`cumulativeSemesterMilestone`). The brand logo tile uses
 `bg-tap-red` directly. Status
 semantics: `success` green, `warning` amber (hue = chart-2), `info` teal

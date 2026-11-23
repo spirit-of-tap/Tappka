@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Fragment, type ReactNode } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 
 import { formatPoints, pointsLabel } from '@/lib/books/points';
@@ -25,82 +26,93 @@ interface DashboardHeroProps {
   bookPoints: number | null;
   upcomingReservations: number;
   unreadEssays: number | null;
+  /** Quick actions, rendered under the greeting. */
+  children?: ReactNode;
 }
 
-const TILE =
-  'focus-ring flex min-w-32 flex-col gap-1 rounded-2xl px-4 py-3 transition-[filter] hover:brightness-95 dark:hover:brightness-125';
+const STAT_LINK = 'focus-ring rounded-sm font-semibold underline-offset-4 hover:underline';
 
 function reservationLabel(n: number): string {
-  if (n === 1) return 'rezervace';
-  return n >= 2 && n <= 4 ? 'rezervace' : 'rezervací';
+  if (n === 1) return 'nadcházející rezervaci';
+  return n >= 2 && n <= 4 ? 'nadcházející rezervace' : 'nadcházejících rezervací';
 }
 
 function essayLabel(n: number): string {
-  if (n === 1) return 'esej ke kontrole';
-  return n >= 2 && n <= 4 ? 'eseje ke kontrole' : 'esejí ke kontrole';
+  if (n === 1) return 'esej týmu ke kontrole';
+  return n >= 2 && n <= 4 ? 'eseje týmu ke kontrole' : 'esejí týmu ke kontrole';
 }
 
-/** Greeting card with the key numbers as tinted tiles that link to their pages. */
+/**
+ * Greeting straight on the page (no card) with the key numbers in one
+ * sentence; each number links to its page. Quick actions go below it.
+ */
 export function DashboardHero({
   firstName,
   now,
   bookPoints,
   upcomingReservations,
   unreadEssays,
+  children,
 }: DashboardHeroProps) {
   const weekday = now.toLocaleDateString('cs-CZ', { weekday: 'long', timeZone: TIME_ZONE });
   const greeting = WEEKDAY_GREETINGS[weekday] ?? FALLBACK_GREETING;
 
-  return (
-    <section className="flex flex-wrap items-center gap-x-6 gap-y-4 rounded-3xl border bg-card p-5 md:p-6">
-      <div className="min-w-0 flex-1 basis-60">
-        <p className="font-quote text-lg text-primary">{greeting},</p>
-        <h1 className="font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
-          {firstName ? `Vítej, ${firstName}!` : 'Vítej!'}
-        </h1>
-        <p className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
-          {now.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', timeZone: TIME_ZONE })}
-          <Link
-            href={SETTINGS_ROUTES.dashboard}
-            className="focus-ring inline-flex items-center gap-1 rounded-md hover:text-foreground"
-          >
-            <SlidersHorizontal className="size-3.5" aria-hidden />
-            Upravit
-          </Link>
-        </p>
-      </div>
+  const stats: ReactNode[] = [];
+  if (bookPoints !== null) {
+    stats.push(
+      <Link key="points" href="/cteni/prehled" className={cn(STAT_LINK, 'text-chart-5')}>
+        {formatPoints(bookPoints)} {pointsLabel(bookPoints) === 'bodů' ? 'knižních' : 'knižní'} {pointsLabel(bookPoints)}
+      </Link>,
+    );
+  }
+  stats.push(
+    <Link key="reservations" href="/reservations" className={cn(STAT_LINK, 'text-chart-3-strong')}>
+      {upcomingReservations} {reservationLabel(upcomingReservations)}
+    </Link>,
+  );
+  if (unreadEssays !== null) {
+    stats.push(
+      unreadEssays > 0 ? (
+        <Link key="essays" href="/cteni/eseje/ke-kontrole" className={cn(STAT_LINK, 'text-primary')}>
+          {unreadEssays} {essayLabel(unreadEssays)}
+        </Link>
+      ) : (
+        <Link key="essays" href="/cteni/eseje/ke-kontrole" className={cn(STAT_LINK, 'text-success-strong')}>
+          eseje týmu přečtené
+        </Link>
+      ),
+    );
+  }
 
-      <ul className="flex flex-wrap gap-3">
-        {bookPoints !== null && (
-          <li>
-            <Link href="/cteni/prehled" className={cn(TILE, 'bg-chart-5/15 text-chart-5')}>
-              <b className="font-heading text-3xl leading-none font-extrabold">{formatPoints(bookPoints)}</b>
-              <span className="text-sm font-medium">
-                {pointsLabel(bookPoints) === 'bodů' ? 'knižních' : 'knižní'} {pointsLabel(bookPoints)}
-              </span>
-            </Link>
-          </li>
-        )}
-        <li>
-          <Link href="/reservations" className={cn(TILE, 'bg-chart-3/15 text-chart-3-strong')}>
-            <b className="font-heading text-3xl leading-none font-extrabold">{upcomingReservations}</b>
-            <span className="text-sm font-medium">{reservationLabel(upcomingReservations)}</span>
-          </Link>
-        </li>
-        {unreadEssays !== null && (
-          <li>
-            <Link
-              href="/cteni/eseje/ke-kontrole"
-              className={cn(TILE, unreadEssays > 0 ? 'bg-primary/10 text-primary' : 'bg-success/10 text-success-strong')}
-            >
-              <b className="font-heading text-3xl leading-none font-extrabold">{unreadEssays}</b>
-              <span className="text-sm font-medium">
-                {unreadEssays > 0 ? essayLabel(unreadEssays) : 'vše přečteno'}
-              </span>
-            </Link>
-          </li>
-        )}
-      </ul>
+  return (
+    <section className="flex flex-col gap-4 pt-2">
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+        <div className="min-w-0">
+          <p className="font-quote text-lg text-primary">{greeting},</p>
+          <h1 className="font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
+            {firstName ? `Vítej, ${firstName}!` : 'Vítej!'}
+          </h1>
+        </div>
+        <Link
+          href={SETTINGS_ROUTES.dashboard}
+          className="focus-ring ml-auto inline-flex items-center gap-1 rounded-md text-sm text-muted-foreground hover:text-foreground"
+        >
+          <SlidersHorizontal className="size-3.5" aria-hidden />
+          Upravit
+        </Link>
+      </div>
+      <p className="text-base text-muted-foreground">
+        {now.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TIME_ZONE })}
+        {' · Máš '}
+        {stats.map((stat, i) => (
+          <Fragment key={i}>
+            {i > 0 && (i === stats.length - 1 ? ' a ' : ', ')}
+            {stat}
+          </Fragment>
+        ))}
+        .
+      </p>
+      {children}
     </section>
   );
 }

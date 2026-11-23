@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionProfile } from "@/lib/auth/session";
 import {
@@ -49,11 +49,10 @@ async function getUpcomingReservations(
   return { upcoming: (data ?? []) as DashboardReservation[], count: count ?? 0 };
 }
 
-/** Grid placement on the 3-column desktop dashboard; the rest take one cell. */
-const WIDGET_SPAN: Partial<Record<DashboardWidgetId, string>> = {
-  "quick-actions": "md:col-span-2 xl:col-span-3",
-  "next-session": "xl:col-span-2",
-};
+/** Widgets in the narrow side panel; every other card-like widget goes in the main panel. */
+const SIDE_WIDGETS: ReadonlySet<DashboardWidgetId> = new Set(["reading", "team-snapshot", "metrics"]);
+
+const PANEL = "flex min-w-0 flex-col rounded-3xl border bg-card";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -162,6 +161,10 @@ export default async function DashboardPage() {
     );
   }
 
+  const placed = layout.filter((id) => id !== "quick-actions" && nodes[id]);
+  const mainWidgets = placed.filter((id) => !SIDE_WIDGETS.has(id));
+  const sideWidgets = placed.filter((id) => SIDE_WIDGETS.has(id));
+
   return (
     <>
       <FirstLoginConfetti />
@@ -172,17 +175,39 @@ export default async function DashboardPage() {
         bookPoints={isCoach || !stats ? null : stats.approved_points}
         upcomingReservations={reservations.count}
         unreadEssays={isCoach && profile.team_id ? unreadEssays.length : null}
-      />
+      >
+        {nodes["quick-actions"]}
+      </DashboardHero>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {layout.map((id) =>
-          nodes[id] ? (
-            <div key={id} className={cn(WIDGET_SPAN[id])}>
-              {nodes[id]}
+      {(mainWidgets.length > 0 || sideWidgets.length > 0) && (
+        <div
+          className={cn(
+            "grid items-start gap-4",
+            mainWidgets.length > 0 && sideWidgets.length > 0 && "lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]",
+          )}
+        >
+          {mainWidgets.length > 0 && (
+            <div className={PANEL}>
+              {mainWidgets.map((id, i) => (
+                <Fragment key={id}>
+                  {i > 0 && <div aria-hidden className="mx-6 h-px bg-border" />}
+                  {nodes[id]}
+                </Fragment>
+              ))}
             </div>
-          ) : null,
-        )}
-      </div>
+          )}
+          {sideWidgets.length > 0 && (
+            <div className={PANEL}>
+              {sideWidgets.map((id, i) => (
+                <Fragment key={id}>
+                  {i > 0 && <div aria-hidden className="mx-6 h-px bg-border" />}
+                  {nodes[id]}
+                </Fragment>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Support */}
       <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">

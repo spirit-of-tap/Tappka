@@ -10,7 +10,7 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { DashboardEmptyState } from '@/components/dashboard/dashboard-empty-state';
-import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
+import { DASHBOARD_SECTION, DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { TS_ROUTES } from '@/lib/training-sessions/constants';
 import {
   formatDayHeading,
@@ -62,10 +62,7 @@ export function NextTrainingSessionCard({ session }: NextTrainingSessionCardProp
     : [];
 
   return (
-    <Card className="relative h-full overflow-hidden">
-      {session && (
-        <span aria-hidden className="absolute inset-y-0 left-0 w-1" style={accent.stripe} />
-      )}
+    <Card className={DASHBOARD_SECTION}>
       <CardHeader>
         <DashboardCardTitle>Nejbližší training session</DashboardCardTitle>
         <CardAction>

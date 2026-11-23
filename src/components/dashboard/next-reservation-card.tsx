@@ -3,7 +3,7 @@ import { ArrowRight, DoorOpen } from 'lucide-react';
 
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card';
 import { DashboardEmptyState } from '@/components/dashboard/dashboard-empty-state';
-import { DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
+import { DASHBOARD_SECTION, DashboardCardTitle } from '@/components/dashboard/dashboard-card-title';
 import { Button } from '@/components/ui/button';
 import { formatDateShort, formatTime } from '@/lib/reservations/utils';
 
@@ -36,7 +36,7 @@ export function NextReservationCard({ reservations, total }: NextReservationCard
   const more = total - reservations.length;
 
   return (
-    <Card className="h-full border-transparent bg-chart-3/10">
+    <Card className={DASHBOARD_SECTION}>
       <CardHeader>
         <DashboardCardTitle className="text-chart-3-strong">Tvoje rezervace</DashboardCardTitle>
         <CardAction>
@@ -51,9 +51,9 @@ export function NextReservationCard({ reservations, total }: NextReservationCard
       </CardHeader>
       <CardContent>
         {reservations.length > 0 ? (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {reservations.map((reservation) => (
-              <li key={reservation.id} className="flex items-center gap-3 rounded-xl bg-card px-3 py-2.5">
+              <li key={reservation.id} className="flex items-center gap-3 border-l-2 border-chart-3 pl-3">
                 <span className="w-14 shrink-0 font-heading text-sm font-bold text-chart-3-strong">
                   {relativeDayLabel(reservation.start_at)}
                 </span>
@@ -72,7 +72,7 @@ export function NextReservationCard({ reservations, total }: NextReservationCard
               <li>
                 <Link
                   href="/reservations"
-                  className="flex items-center justify-center gap-1 rounded-xl border border-dashed border-chart-3-strong/30 px-3 py-2 text-xs font-medium text-chart-3-strong hover:bg-card"
+                  className="inline-flex items-center gap-1 pl-3.5 text-xs font-medium text-chart-3-strong hover:underline underline-offset-4"
                 >
                   + {more} {more === 1 ? 'další rezervace' : more < 5 ? 'další rezervace' : 'dalších rezervací'}
                   <ArrowRight className="size-3" aria-hidden />
@@ -83,7 +83,7 @@ export function NextReservationCard({ reservations, total }: NextReservationCard
         ) : (
           <DashboardEmptyState
             icon={DoorOpen}
-            tone="bg-card text-chart-3-strong"
+            tone="bg-chart-3/15 text-chart-3-strong"
             title="Žádná rezervace"
             description="Potřebuješ místo na schůzku nebo práci v týmu? Zabookuj si místnost."
             action={
