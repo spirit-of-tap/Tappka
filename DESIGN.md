@@ -4,11 +4,14 @@ description: Student portal of Tiimiakatemia Prague (TAP). shadcn/ui (new-york) 
 colors:
   primary: "#b31b1b"
   primary-foreground: "#ffffff"
-  background: "#fcfff7"
+  background: "oklch(0.965 0.012 80)"
+  card: "#ffffff"
+  sidebar: "#2c1a1d"
+  sidebar-primary: "oklch(0.76 0.13 28)"
   foreground: "#2c1a1d"
   secondary: "#2c1a1d"
-  muted: "oklch(0.967 0.007 121.6)"
-  accent: "oklch(0.946 0.015 76.6)"
+  muted: "oklch(0.94 0.012 75)"
+  accent: "oklch(0.93 0.02 70)"
   destructive: "oklch(0.581 0.223 27.9)"
   success: "oklch(0.6 0.14 145)"
   success-strong: "oklch(0.489 0.14 145)"
@@ -57,7 +60,7 @@ components:
     textColor: "#ffffff"
     rounded: "{rounded.md}"
   card:
-    backgroundColor: "{colors.background}"
+    backgroundColor: "{colors.card}"
     rounded: "{rounded.lg}"
   text-foreground:
     typography: "{typography.body}"
@@ -101,7 +104,19 @@ use tokens — a hardcoded color in a component is a defect.
 ## Colors
 
 Brand core: TAP red `#b31b1b` (primary, links, focus), TAP brown `#2c1a1d`
-(foreground, secondary surface), TAP white `#fcfff7` (background). Status
+(foreground, secondary surface, the app frame), TAP white `#fcfff7` (logo
+text on red).
+
+**Frame and sheet (motiv „Plovoucí list“, #212).** On desktop the app is a
+brown frame (`--sidebar`, TAP brown in light, near-black in dark) holding a
+floating, rounded cream sheet (`--background`) with white cards (`--card`).
+The sidebar is dark in both themes, so inside `[data-slot="sidebar"]`
+`globals.css` remaps the generic tokens (`--foreground`, `--muted-foreground`,
+`--primary`, `--border`, `--card`, …) to the frame. Components rendered in
+the sidebar therefore use normal tokens and need no sidebar variants. TAP red
+is too dark on brown, so `--primary` in the frame is a light coral
+(`--sidebar-primary`); the brand logo tile uses `bg-tap-red` directly. On
+mobile there is no frame, the page is the cream sheet. Status
 semantics: `success` green, `warning` amber (hue = chart-2), `info` teal
 (hue = chart-3), `destructive` red.
 
@@ -149,8 +164,9 @@ Header rules:
 
 ## Elevation & Depth
 
-Flat surfaces with 1px `border`; cards use `bg-card`/`border` + `rounded-lg`.
-No heavy shadows. Hover = `accent` tint (`hover:bg-accent`).
+Depth comes from layers, not shadows: brown frame → cream sheet
+(`rounded-2xl`, 8px inset from the frame) → white cards with 1px `border` +
+`rounded-lg`. No heavy shadows. Hover = `accent` tint (`hover:bg-accent`).
 
 ## Shapes
 

@@ -88,10 +88,11 @@
 :root {
   --radius: 0.5rem;
 
-  --background: oklch(0.995 0.014 121.7); /* TAP White #fcfff7 */
+  /* Warm cream sheet inside the brown frame; cards sit on it in white. */
+  --background: oklch(0.965 0.012 80);
   --foreground: oklch(0.245 0.03 8.6); /* TAP Brown #2c1a1d */
 
-  --card: oklch(0.995 0.014 121.7); /* TAP White */
+  --card: oklch(1 0 0);
   --card-foreground: oklch(0.245 0.03 8.6); /* TAP Brown */
 
   --popover: oklch(1 0 0); /* Pure White */
@@ -103,10 +104,10 @@
   --secondary: oklch(0.303 0.041 8.9); /* Lighter TAP Brown */
   --secondary-foreground: oklch(0.995 0.014 121.7); /* TAP White */
 
-  --muted: oklch(0.967 0.007 121.6); /* Very light warm gray */
+  --muted: oklch(0.94 0.012 75); /* One step below the cream sheet */
   --muted-foreground: oklch(0.393 0.057 9.2); /* Medium TAP Brown */
 
-  --accent: oklch(0.946 0.015 76.6); /* Soft warm tint (subtle hover/highlight) */
+  --accent: oklch(0.93 0.02 70); /* Hover tint, visible on both cream and white */
   --accent-foreground: oklch(0.245 0.03 8.6); /* TAP Brown */
 
   --destructive: oklch(0.581 0.223 27.9); /* Destructive red */
@@ -154,15 +155,17 @@
   --time-practise: var(--chart-1); /* TAP Red */
   --time-project: var(--chart-5); /* Violet */
 
-  /* Sidebar */
-  --sidebar: oklch(0.985 0.01 121.7);
-  --sidebar-foreground: oklch(0.245 0.03 8.6);
-  --sidebar-primary: oklch(0.484 0.184 27.7);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.946 0.015 76.6);
-  --sidebar-accent-foreground: oklch(0.245 0.03 8.6);
-  --sidebar-border: oklch(0.877 0.013 5.8);
-  --sidebar-ring: oklch(0.484 0.184 27.7);
+  /* Sidebar = the brown frame around the sheet (dark in both themes).
+     TAP red is too dark on brown, so the frame's primary is a light coral. */
+  --sidebar: oklch(0.243 0.029 8.5); /* TAP Brown */
+  --sidebar-foreground: oklch(0.95 0.015 70);
+  --sidebar-muted-foreground: oklch(0.76 0.03 20);
+  --sidebar-primary: oklch(0.76 0.13 28);
+  --sidebar-primary-foreground: oklch(0.243 0.029 8.5);
+  --sidebar-accent: oklch(0.31 0.032 8.5);
+  --sidebar-accent-foreground: oklch(0.97 0.012 70);
+  --sidebar-border: oklch(0.36 0.032 8.5);
+  --sidebar-ring: oklch(0.76 0.13 28);
 }
 
 /* TAP Brand Colors - Dark Theme */
@@ -223,15 +226,36 @@
   --time-practise: var(--chart-1); /* TAP Red */
   --time-project: var(--chart-5); /* Violet */
 
-  /* Sidebar */
-  --sidebar: oklch(0.205 0.022 8.2);
-  --sidebar-foreground: oklch(0.995 0.014 121.7);
-  --sidebar-primary: oklch(0.66 0.21 27.5);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.325 0.034 8.1);
-  --sidebar-accent-foreground: oklch(0.995 0.014 121.7);
-  --sidebar-border: oklch(0.303 0.041 8.9);
-  --sidebar-ring: oklch(0.66 0.21 27.5);
+  /* Frame: darker than the sheet (--background) so the sheet floats. */
+  --sidebar: oklch(0.14 0.012 8);
+  --sidebar-foreground: oklch(0.95 0.015 70);
+  --sidebar-muted-foreground: oklch(0.72 0.025 15);
+  --sidebar-primary: oklch(0.76 0.13 28);
+  --sidebar-primary-foreground: oklch(0.14 0.012 8);
+  --sidebar-accent: oklch(0.22 0.02 8);
+  --sidebar-accent-foreground: oklch(0.97 0.012 70);
+  --sidebar-border: oklch(0.26 0.025 8);
+  --sidebar-ring: oklch(0.76 0.13 28);
+}
+
+/* Everything rendered inside the sidebar (search trigger, timer, Beta badge,
+   feedback link, user menu trigger) uses the generic tokens; remap them to the
+   frame so those components need no sidebar-specific variants. Portalled
+   popovers/menus render outside this scope and keep the page tokens. */
+[data-slot="sidebar"] {
+  --background: var(--sidebar);
+  --foreground: var(--sidebar-foreground);
+  --card: var(--sidebar-accent);
+  --card-foreground: var(--sidebar-foreground);
+  --muted: var(--sidebar-accent);
+  --muted-foreground: var(--sidebar-muted-foreground);
+  --accent: var(--sidebar-accent);
+  --accent-foreground: var(--sidebar-accent-foreground);
+  --primary: var(--sidebar-primary);
+  --primary-foreground: var(--sidebar-primary-foreground);
+  --border: var(--sidebar-border);
+  --input: var(--sidebar-border);
+  --ring: var(--sidebar-ring);
 }
 
 @layer base {

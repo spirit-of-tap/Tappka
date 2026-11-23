@@ -75,7 +75,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
     <>
       <SidebarHeader className="gap-2.5">
         <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-tap-red text-tap-white">
             <span className="font-heading font-bold text-sm">T</span>
           </div>
           <div className="flex flex-col gap-0.5 leading-none">

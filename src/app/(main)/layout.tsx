@@ -78,9 +78,9 @@ export default async function DashboardLayout({
           betaCohort={sidebarUser.beta_cohort}
           teamId={profile.team_id}
         />
-        <SidebarProvider>
+        <SidebarProvider className="md:bg-sidebar">
           <AppSidebar user={sidebarUser} />
-          <SidebarInset>
+          <SidebarInset className="md:my-2 md:mr-2 md:rounded-2xl">
             <main className="flex flex-1 flex-col gap-4 p-4 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-4">{children}</main>
             <footer className="hidden border-t p-4 md:block">
               <p className="text-center text-xs text-muted-foreground">
