@@ -67,7 +67,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
               <li key={essay.id}>
                 <Link
                   href={`/cteni/eseje/${essay.id}`}
-                  className="focus-ring group flex items-center gap-3 rounded-xl bg-primary-foreground/10 px-3 py-2 transition-colors hover:bg-primary-foreground/18"
+                  className="focus-ring group flex items-center gap-3 rounded-xl bg-primary-foreground/10 px-3 py-2 transition-[background-color,transform] duration-200 hover:bg-primary-foreground/18 motion-safe:hover:translate-x-1"
                 >
                   <ProfileAvatar picture={essay.author?.picture ?? null} name={essay.author?.name ?? '?'} size={28} />
                   <span className="min-w-0 flex-1">
