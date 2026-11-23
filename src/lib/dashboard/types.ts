@@ -39,8 +39,8 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   },
   {
     id: 'ke-kontrole',
-    label: 'Ke kontrole',
-    description: 'Nepřečtené eseje tvého týmu, které čekají na kontrolu.',
+    label: 'Eseje ke kontrole',
+    description: 'Pro kouče:ky: eseje tvého týmu, které jsi ještě nečetl:a.',
     roles: ['coach', 'admin'],
   },
   {

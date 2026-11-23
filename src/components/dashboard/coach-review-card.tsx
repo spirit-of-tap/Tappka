@@ -22,7 +22,7 @@ export function CoachReviewCard({ essays, hasTeam }: CoachReviewCardProps) {
   return (
     <Card className="h-full">
       <CardHeader>
-        <DashboardCardTitle>Ke kontrole</DashboardCardTitle>
+        <DashboardCardTitle>Eseje ke kontrole</DashboardCardTitle>
         <CardDescription>
           {!hasTeam
             ? 'Nemáš přiřazený tým'

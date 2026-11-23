@@ -46,6 +46,9 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   }
 }
 
+/** Active item takes the sheet's colours, so it reads as connected to the page. */
+const NAV_ITEM_CLASS = "data-[active=true]:bg-sheet data-[active=true]:text-sheet-foreground"
+
 function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const pathname = usePathname()
   const { state } = useSidebar()
@@ -93,8 +96,12 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {sections.map((section) => (
-          <SidebarGroup key={section.title}>
+        {sections
+          .filter((section) =>
+            section.items.some((item) => !item.feature || canAccessFeature(accessProfile, item.feature)),
+          )
+          .map((section) => (
+          <SidebarGroup key={section.title} className="py-1">
             <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -108,6 +115,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                         <SidebarMenuButton
                           asChild
                           isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
+                          className={NAV_ITEM_CLASS}
                           tooltip={item.title}
                         >
                           <Link href={item.url}>
@@ -126,6 +134,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                       <SidebarMenuButton
                         asChild
                         isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
+                        className={NAV_ITEM_CLASS}
                       >
                         <Link
                           href={item.url}
@@ -153,7 +162,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
         ))}
       </SidebarContent>
       {user && (
-        <SidebarFooter>
+        <SidebarFooter className="border-t border-sidebar-border">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -161,14 +170,13 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                 tooltip="Zpětná vazba"
                 isActive={pathname === "/zpetna-vazba"}
                 className={cn(
-                  "group/menu-button",
-                  "border border-primary/20 bg-primary/5 text-primary",
-                  "hover:bg-primary/10 hover:text-primary",
-                  "data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
+                  "text-primary",
+                  "hover:bg-sidebar-accent hover:text-primary",
+                  "data-[active=true]:bg-sidebar-accent data-[active=true]:text-primary",
                 )}
               >
                 <Link href="/zpetna-vazba">
-                  <Heart className="size-4 animate-pulse transition-transform group-data-[active=true]/menu-button:scale-110" />
+                  <Heart className="size-4" />
                   <span className="font-medium">Zpětná vazba</span>
                 </Link>
               </SidebarMenuButton>

@@ -103,6 +103,23 @@ describe("getSidebarSections", () => {
     expect(external.items.map((m) => m.url)).toEqual([HARMONOGRAM_URL]);
   });
 
+  it("splits in-app modules into shared, individual and team sections", () => {
+    const titles = getSidebarSections().map((s) => s.title);
+    expect(titles.slice(0, 3)).toEqual(["Hlavní", "Individuální", "Týmové"]);
+
+    const byTitle = (title: string) =>
+      getSidebarSections().find((s) => s.title === title)!.items.map((m) => m.url);
+    expect(byTitle("Hlavní")).toContain("/");
+    expect(byTitle("Individuální")).toEqual(expect.arrayContaining(["/cas", "/cteni/prehled"]));
+    expect(byTitle("Týmové")).toEqual(expect.arrayContaining(["/ts/prehled", "/tymovy-denik"]));
+
+    const internalCount = NAV_MODULES.filter((m) => !m.external).length;
+    const sectioned = getSidebarSections()
+      .slice(0, 3)
+      .reduce((n, s) => n + s.items.length, 0);
+    expect(sectioned).toBe(internalCount);
+  });
+
   it("puts dev tools in their own trailing section", () => {
     const dev = [
       {

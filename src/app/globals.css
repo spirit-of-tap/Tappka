@@ -64,6 +64,8 @@
   --color-time-practise: var(--time-practise);
   --color-time-project: var(--time-project);
   --color-sidebar: var(--sidebar);
+  --color-sheet: var(--sheet);
+  --color-sheet-foreground: var(--sheet-foreground);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
@@ -87,6 +89,11 @@
 /* TAP Brand Colors - Light Theme */
 :root {
   --radius: 0.5rem;
+  /* The page sheet's colours, resolved here on the root (light or .dark) and
+     inherited as values, so they survive the frame remap below. The active
+     sidebar item uses them to look like a tab of the sheet. */
+  --sheet: var(--background);
+  --sheet-foreground: var(--foreground);
 
   /* Warm cream sheet inside the brown frame; cards sit on it in white. */
   --background: oklch(0.965 0.012 80);

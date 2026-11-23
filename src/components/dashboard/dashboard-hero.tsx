@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { SlidersHorizontal } from 'lucide-react';
 
-import { formatPointsWithLabel } from '@/lib/books/points';
+import { formatPoints, pointsLabel } from '@/lib/books/points';
 import { SETTINGS_ROUTES } from '@/lib/settings/sections';
+import { cn } from '@/lib/utils';
 
 const TIME_ZONE = 'Europe/Prague';
 
@@ -26,8 +27,16 @@ interface DashboardHeroProps {
   unreadEssays: number | null;
 }
 
+const PILL = 'focus-ring flex h-8 items-center gap-1.5 rounded-full px-3 transition-colors';
+
 function reservationLabel(n: number): string {
-  return n >= 1 && n <= 4 ? 'rezervace' : 'rezervací';
+  if (n === 1) return 'nadcházející rezervace';
+  return n >= 2 && n <= 4 ? 'nadcházející rezervace' : 'nadcházejících rezervací';
+}
+
+function essayLabel(n: number): string {
+  if (n === 1) return 'esej týmu čeká na tvou kontrolu';
+  return n >= 2 && n <= 4 ? 'eseje týmu čekají na tvou kontrolu' : 'esejí týmu čeká na tvou kontrolu';
 }
 
 /**
@@ -61,16 +70,32 @@ export function DashboardHero({
 
         <ul className="flex flex-wrap gap-2 text-sm">
           {bookPoints !== null && (
-            <li className="flex h-8 items-center gap-1.5 rounded-full bg-accent px-3">
-              <b className="font-heading">{formatPointsWithLabel(bookPoints)}</b>
+            <li>
+              <Link href="/cteni/prehled" className={cn(PILL, 'bg-accent hover:bg-muted')}>
+                <b className="font-heading">{formatPoints(bookPoints)}</b>{' '}
+                {pointsLabel(bookPoints) === 'bodů' ? 'knižních' : 'knižní'} {pointsLabel(bookPoints)}
+              </Link>
             </li>
           )}
-          <li className="flex h-8 items-center gap-1.5 rounded-full bg-accent px-3">
-            <b className="font-heading">{upcomingReservations}</b> {reservationLabel(upcomingReservations)}
+          <li>
+            <Link href="/reservations" className={cn(PILL, 'bg-accent hover:bg-muted')}>
+              <b className="font-heading">{upcomingReservations}</b> {reservationLabel(upcomingReservations)}
+            </Link>
           </li>
           {unreadEssays !== null && (
-            <li className="flex h-8 items-center gap-1.5 rounded-full bg-primary/20 px-3">
-              <b className="font-heading">{unreadEssays}</b> ke kontrole
+            <li>
+              <Link
+                href="/cteni/eseje/ke-kontrole"
+                className={cn(PILL, unreadEssays > 0 ? 'bg-primary/20 hover:bg-primary/30' : 'bg-accent hover:bg-muted')}
+              >
+                {unreadEssays > 0 ? (
+                  <>
+                    <b className="font-heading">{unreadEssays}</b> {essayLabel(unreadEssays)}
+                  </>
+                ) : (
+                  'Eseje týmu máš přečtené'
+                )}
+              </Link>
             </li>
           )}
         </ul>
