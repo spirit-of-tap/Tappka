@@ -74,10 +74,9 @@ export function ReadingPathHero({ stats, essays, onboardingYear }: ReadingPathHe
 
       <div aria-hidden="true" className="relative mx-2 mb-12 mt-12 h-5">
         <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-hero-foreground/20" />
-        <div
-          className="absolute left-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-hero-success motion-safe:animate-in motion-safe:slide-in-from-left-full motion-safe:duration-700"
-          style={{ width: `${path.fillPercent}%` }}
-        />
+        <div className="absolute left-0 top-1/2 h-1.5 -translate-y-1/2" style={{ width: `${path.fillPercent}%` }}>
+          <div className="size-full origin-left rounded-full bg-hero-success motion-safe:animate-bar-grow-x" />
+        </div>
 
         {milestones.map((milestone, index) => (
           <div key={milestone.id}>
