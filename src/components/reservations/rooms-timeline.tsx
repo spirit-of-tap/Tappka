@@ -18,6 +18,8 @@ import {
 import { formatTime, isRoomAvailableOnDay } from "@/lib/reservations/utils";
 import type { Reservation, Room } from "@/lib/reservations/types";
 
+import { getRoomTitle } from "./room-map";
+
 const LABEL_EVERY_HOURS = 3;
 /** Segments narrower than this (in % of the day) drop their title to stay legible. */
 const TITLE_MIN_WIDTH = 7;
@@ -30,6 +32,12 @@ const HOURS = Array.from(
 );
 
 const subscribeNoop = () => () => {};
+
+function roomSubtitle(room: Room, open: boolean): string {
+  const title = getRoomTitle(room);
+  const label = title.toLowerCase() === room.code.toLowerCase() ? (room.description ?? "") : title;
+  return open ? label : [label, "zavřeno"].filter(Boolean).join(" · ");
+}
 
 interface RoomsTimelineProps {
   rooms: Room[];
@@ -171,7 +179,7 @@ export function RoomsTimeline({ rooms, profileId }: RoomsTimelineProps) {
                         {room.code}
                       </span>
                       <span className="block truncate text-sm text-muted-foreground">
-                        {open ? room.name : `${room.name} · zavřeno`}
+                        {roomSubtitle(room, open)}
                       </span>
                     </span>
 
