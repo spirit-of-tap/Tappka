@@ -197,3 +197,76 @@ export function getTimelineSegments(
     })
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 }
+
+export const DRAG_SNAP_MINUTES = 15;
+export const CLICK_SELECTION_MINUTES = 60;
+
+export interface TimeRange {
+  start: Date;
+  end: Date;
+}
+
+/** Minutes after midnight at a horizontal fraction of the timeline, snapped to the drag step. */
+export function timelineMinutesAt(fraction: number): number {
+  const span = (TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 60;
+  const raw = TIMELINE_START_HOUR * 60 + Math.min(1, Math.max(0, fraction)) * span;
+  return Math.round(raw / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
+}
+
+function atMinutes(day: Date, minutes: number): Date {
+  const result = new Date(day);
+  result.setHours(0, minutes, 0, 0);
+  return result;
+}
+
+/**
+ * Turns a drag between two timeline points into a bookable range: inside opening
+ * hours, not in the past and cut at the next reservation. A click (both points
+ * on the same step) selects `CLICK_SELECTION_MINUTES`. Null when nothing fits,
+ * e.g. the drag starts on a reservation.
+ */
+export function bookableRange(
+  day: Date,
+  fromMinutes: number,
+  toMinutes: number,
+  roomReservations: Reservation[],
+  now: Date = new Date(),
+): TimeRange | null {
+  let startMin = Math.min(fromMinutes, toMinutes);
+  let endMin = Math.max(fromMinutes, toMinutes);
+  if (endMin - startMin < DRAG_SNAP_MINUTES) endMin = startMin + CLICK_SELECTION_MINUTES;
+
+  const sameDay = now.toDateString() === day.toDateString();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const earliest = Math.max(
+    TIMELINE_START_HOUR * 60,
+    sameDay ? Math.ceil(nowMin / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES : 0,
+  );
+  startMin = Math.max(startMin, earliest);
+  endMin = Math.min(endMin, TIMELINE_END_HOUR * 60);
+
+  const start = atMinutes(day, startMin);
+  let end = atMinutes(day, endMin);
+  for (const reservation of roomReservations) {
+    if (reservation.cancelled_at) continue;
+    const busyStart = new Date(reservation.start_at);
+    const busyEnd = new Date(reservation.end_at);
+    if (busyStart <= start && start < busyEnd) return null;
+    if (busyStart > start && busyStart < end) end = busyStart;
+  }
+
+  return end.getTime() - start.getTime() >= DRAG_SNAP_MINUTES * 60_000 ? { start, end } : null;
+}
+
+/** The first bookable range of the day from now on, for keyboard booking. */
+export function firstBookableRange(
+  day: Date,
+  roomReservations: Reservation[],
+  now: Date = new Date(),
+): TimeRange | null {
+  for (let minutes = TIMELINE_START_HOUR * 60; minutes < TIMELINE_END_HOUR * 60; minutes += DRAG_SNAP_MINUTES) {
+    const range = bookableRange(day, minutes, minutes, roomReservations, now);
+    if (range) return range;
+  }
+  return null;
+}

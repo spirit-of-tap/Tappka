@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  bookableRange,
+  firstBookableRange,
   getRoomFloor,
   getTimelineSegments,
   timelinePercent,
   getRoomMapStatus,
   getSlotChips,
   groupRoomsByFloor,
+  timelineMinutesAt,
 } from "./room-map";
 import type { Reservation, Room } from "./types";
 
@@ -180,5 +183,42 @@ describe("getTimelineSegments", () => {
   it("clamps moments outside opening hours", () => {
     expect(timelinePercent(at(5), day)).toBe(0);
     expect(timelinePercent(at(23), day)).toBe(100);
+  });
+});
+
+describe("drag selection", () => {
+  const day = new Date(2026, 10, 24);
+  const at = (h: number, m = 0) => new Date(2026, 10, 24, h, m);
+  const morning = at(8);
+  const busy = [reservation("d126", at(9), at(10, 30))];
+
+  it("snaps the pointer position to 15 minutes within opening hours", () => {
+    expect(timelineMinutesAt(0)).toBe(7 * 60);
+    expect(timelineMinutesAt(1)).toBe(22 * 60);
+    expect(timelineMinutesAt(0.5)).toBe(14 * 60 + 30);
+  });
+
+  it("books one hour on a click", () => {
+    expect(bookableRange(day, 11 * 60, 11 * 60, busy, morning)).toEqual({ start: at(11), end: at(12) });
+  });
+
+  it("keeps the dragged range in either direction", () => {
+    expect(bookableRange(day, 14 * 60, 12 * 60, busy, morning)).toEqual({ start: at(12), end: at(14) });
+  });
+
+  it("cuts the range at the next reservation and refuses a start inside one", () => {
+    expect(bookableRange(day, 8 * 60, 11 * 60, busy, morning)).toEqual({ start: at(8), end: at(9) });
+    expect(bookableRange(day, 9 * 60 + 30, 12 * 60, busy, morning)).toBeNull();
+  });
+
+  it("never starts in the past or ends after closing", () => {
+    expect(bookableRange(day, 13 * 60, 15 * 60, [], at(14, 5))).toEqual({ start: at(14, 15), end: at(15) });
+    expect(bookableRange(day, 21 * 60 + 30, 21 * 60 + 30, [], morning)).toEqual({ start: at(21, 30), end: at(22) });
+    expect(bookableRange(day, 21 * 60, 21 * 60, [], at(21, 50))).toBeNull();
+  });
+
+  it("finds the first free hour for keyboard booking", () => {
+    expect(firstBookableRange(day, busy, at(8, 40))).toEqual({ start: at(8, 45), end: at(9) });
+    expect(firstBookableRange(day, [], at(21, 50))).toBeNull();
   });
 });

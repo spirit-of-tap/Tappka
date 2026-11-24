@@ -1,9 +1,13 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { Reservation, Room } from "@/lib/reservations/types"
 
 import { RoomsTimeline } from "./rooms-timeline"
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}))
 
 vi.mock("next/link", () => ({
   default: (props: React.ComponentProps<"a">) => <a {...props} />,
@@ -59,12 +63,19 @@ describe("RoomsTimeline", () => {
 
   it("links every room to its calendar for the shown day, ordered by floor", () => {
     render(<RoomsTimeline rooms={rooms} profileId="me" />)
-    const links = screen.getAllByRole("link")
+    const links = screen.getAllByRole("link", { name: /^Kalendář místnosti/ })
     expect(links.map((l) => l.getAttribute("href"))).toEqual([
       "/reservations/d126?date=2026-11-24",
       "/reservations/d226?date=2026-11-24",
     ])
-    expect(links[0]).toHaveAccessibleName("Přední Koučovačka: otevřít kalendář místnosti")
+  })
+
+  it("opens the booking dialog for the first free time from the keyboard", async () => {
+    render(<RoomsTimeline rooms={rooms} profileId="me" />)
+    const axis = screen.getByRole("button", { name: /Zarezervovat D126/ })
+    await waitFor(() => expect(axis).toBeEnabled())
+    fireEvent.click(axis, { detail: 0 })
+    expect(await screen.findByRole("dialog")).toHaveTextContent("14:30")
   })
 
   it("shows reservation titles on the axis", async () => {

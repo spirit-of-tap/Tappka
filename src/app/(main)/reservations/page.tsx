@@ -25,7 +25,7 @@ export default async function ReservationsPage() {
       <ReservationsViewTracker />
       <PageHeader
         title="Rezervace"
-        description="Celý den všech místností na jedné ose. Klikni na místnost a v jejím kalendáři si ji zarezervuješ."
+        description="Táhni přes volné místo na ose a hned si místnost zarezervuješ. Kliknutím na místnost otevřeš její kalendář."
       />
       <RoomsTimeline rooms={rooms ?? []} profileId={profile?.id ?? ""} />
     </PageShell>
