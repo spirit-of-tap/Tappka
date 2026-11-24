@@ -322,3 +322,14 @@ Language: `cs`. **NO generic masculine.** Apply these rules in strict order:
 2. **SEPARATOR IS STRICTLY `:`**: If gendering is unavoidable (past tense, specific roles), use **only** a colon (`autor:ka`, `přidal:a`, `koučů:ek`). **NEVER** use `/`, `*`, `_`, or `()`.
 3. **ROLES:** Always `Student:ka`, `Mentor:ka`, `Kouč:ka`.
 4. **EXCEPTIONS (Do not alter):** Names, quotes, titles, 1st-person plural ("Odeslali jsme"), and data-bound labels (book `Autor` field).
+
+### Komunita team map (dark)
+
+The Komunita page is one `bg-hero` panel: a map of team bubbles plus a side
+panel (right on `lg`, below on mobile). Bubble diameter follows a sqrt scale of
+the head count (`bubbleDiameter` in `src/lib/komunita/team-map.ts`), laid out
+with `flex-wrap`, so any number of teams just grows in rows. Team colour (data,
+passed as `--team-color`) is used only for the ring, tint, dots and the glow of
+the one selected bubble, never for text; all text uses `hero-foreground` /
+`hero-muted`. This glow is a second allowed exception to "no coloured glows".
+Ring avatars are decorative (`aria-hidden`); the panel lists the members.

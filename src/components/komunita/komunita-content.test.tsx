@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { KomunitaContent } from '@/components/komunita/komunita-content';
-import type { ProfileWithTeam, TeamWithCount } from '@/lib/komunita/types';
+import type { ProfileWithTeam } from '@/lib/komunita/types';
 
 function createMockProfile(
   overrides: Partial<ProfileWithTeam> = {},
@@ -48,28 +48,6 @@ function createMockProfile(
       created_by_profile_id: null,
       updated_by_profile_id: null,
     },
-    ...overrides,
-  };
-}
-
-function createMockTeam(overrides: Partial<TeamWithCount> = {}): TeamWithCount {
-  return {
-    id: 'team-1',
-    name: 'Aktivní Tým',
-    color: '#ff0000',
-    picture: null,
-    group_picture: null,
-    website_url: null,
-    instagram_url: null,
-    linkedin_url: null,
-    ico: null,
-    onboardingYear: 2025,
-    removed_at: null,
-    created_at: '2025-09-01T00:00:00Z',
-    updated_at: '2025-09-01T00:00:00Z',
-    created_by_profile_id: null,
-    updated_by_profile_id: null,
-    member_count: 1,
     ...overrides,
   };
 }
@@ -124,18 +102,47 @@ describe('KomunitaContent', () => {
     team: null,
   });
 
-  it('renders active profiles and staff without a team in the main grid', () => {
+  it('shows the selected team members in the panel and staff as a neutral bubble', () => {
     render(
       <KomunitaContent
         profiles={[activeProfile, coachWithoutTeam]}
         pictureUrls={{}}
-        teams={[createMockTeam()]}
       />,
     );
 
     expect(screen.getByText('Aktivní Student')).toBeInTheDocument();
-    expect(screen.getByText('Kouč Bez Týmu')).toBeInTheDocument();
+    expect(screen.queryByText('Kouč Bez Týmu')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Kouči:ky a vedení, 1 člověk' })).toBeInTheDocument();
     expect(screen.queryByText(/Už nestudující/)).not.toBeInTheDocument();
+  });
+
+  it('selects the viewer team by default and switches on bubble click', async () => {
+    const user = userEvent.setup();
+    const other = createMockProfile({
+      id: 'p-other',
+      name: 'Jiný Člen',
+      team_id: 'team-2',
+      team: { ...activeProfile.team!, id: 'team-2', name: 'Druhý Tým' },
+    });
+    render(
+      <KomunitaContent
+        profiles={[activeProfile, other, coachWithoutTeam]}
+        pictureUrls={{}}
+        viewerTeamId="team-2"
+      />,
+    );
+
+    const second = screen.getByRole('button', { name: 'Tým Druhý Tým, 1 člověk' });
+    const first = screen.getByRole('button', { name: 'Tým Aktivní Tým, 1 člověk' });
+    expect(second).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Jiný Člen')).toBeInTheDocument();
+    expect(screen.queryByText('Aktivní Student')).not.toBeInTheDocument();
+
+    await user.click(first);
+    expect(first).toHaveAttribute('aria-pressed', 'true');
+    expect(second).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Aktivní Student')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Detail týmu →' })).toHaveAttribute('href', '/komunita/tymy/team-1');
   });
 
   it('collapses students who left their team into the alumni section by default', () => {
@@ -143,7 +150,6 @@ describe('KomunitaContent', () => {
       <KomunitaContent
         profiles={[activeProfile, leftTeamProfile]}
         pictureUrls={{}}
-        teams={[createMockTeam()]}
       />,
     );
 
@@ -158,7 +164,6 @@ describe('KomunitaContent', () => {
       <KomunitaContent
         profiles={[activeProfile, oldTeamProfile]}
         pictureUrls={{}}
-        teams={[createMockTeam()]}
       />,
     );
 
@@ -173,7 +178,6 @@ describe('KomunitaContent', () => {
       <KomunitaContent
         profiles={[activeProfile, oldTeamProfile, leftTeamProfile]}
         pictureUrls={{}}
-        teams={[createMockTeam()]}
       />,
     );
 
@@ -199,7 +203,6 @@ describe('KomunitaContent', () => {
       <KomunitaContent
         profiles={[activeProfile, leftTeamProfile]}
         pictureUrls={{}}
-        teams={[createMockTeam()]}
       />,
     );
 
@@ -212,24 +215,38 @@ describe('KomunitaContent', () => {
     expect(screen.queryByText(/Už nestudující/)).not.toBeInTheDocument();
   });
 
-  it('filters people when searching by query', async () => {
+  it('dims bubbles without a match and lists results with the team', async () => {
     const user = userEvent.setup();
-    render(
-      <KomunitaContent
-        profiles={[activeProfile, coachWithoutTeam, oldTeamProfile]}
-        pictureUrls={{}}
-        teams={[createMockTeam()]}
-      />,
-    );
+    const other = createMockProfile({
+      id: 'p-other',
+      name: 'Jiný Člen',
+      team_id: 'team-2',
+      team: { ...activeProfile.team!, id: 'team-2', name: 'Druhý Tým' },
+    });
+    render(<KomunitaContent profiles={[activeProfile, other, coachWithoutTeam]} pictureUrls={{}} />);
 
-    const searchInput = screen.getByPlaceholderText(
-      'Hledat podle jména nebo emailu…',
-    );
-    await user.type(searchInput, 'Kouč');
+    await user.type(screen.getByPlaceholderText('Hledat podle jména nebo emailu…'), 'Jiný');
 
-    expect(screen.getByText('Kouč Bez Týmu')).toBeInTheDocument();
-    expect(screen.queryByText('Aktivní Student')).not.toBeInTheDocument();
+    expect(screen.getByText('Výsledky hledání')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Jiný Člen/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Aktivní Student/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tým Aktivní Tým, 1 člověk' })).toHaveClass('opacity-35');
+    expect(screen.getByRole('button', { name: 'Tým Druhý Tým, 1 člověk' })).not.toHaveClass('opacity-35');
     expect(screen.queryByText(/Už nestudující/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Druhý Tým$/  }));
+    expect(screen.queryByText('Výsledky hledání')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Zpět na výsledky hledání' })).toBeInTheDocument();
+  });
+
+  it('matches teams by name', async () => {
+    const user = userEvent.setup();
+    render(<KomunitaContent profiles={[activeProfile, coachWithoutTeam]} pictureUrls={{}} />);
+
+    await user.type(screen.getByPlaceholderText('Hledat podle jména nebo emailu…'), 'aktivni tym');
+
+    expect(screen.getByRole('link', { name: /Aktivní Student/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Kouči:ky a vedení, 1 člověk' })).toHaveClass('opacity-35');
   });
 
   it('shows empty state when no profiles match search', async () => {
@@ -238,7 +255,6 @@ describe('KomunitaContent', () => {
       <KomunitaContent
         profiles={[activeProfile]}
         pictureUrls={{}}
-        teams={[createMockTeam()]}
       />,
     );
 
@@ -248,5 +264,8 @@ describe('KomunitaContent', () => {
     await user.type(searchInput, 'Neznámé Jméno');
 
     expect(screen.getByText('Nikoho jsme nenašli')).toBeInTheDocument();
+
+    await user.click(screen.getAllByRole('button', { name: 'Vymazat hledání' }).at(-1)!);
+    expect(screen.queryByText('Nikoho jsme nenašli')).not.toBeInTheDocument();
   });
 });
