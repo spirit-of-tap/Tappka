@@ -47,7 +47,7 @@ export default async function TsDiscoverPage({ searchParams }: PageProps) {
   const commitments = viewerUpcoming.map(toTiming)
 
   return (
-    <PageShell size="medium">
+    <PageShell size="full">
       <PageHeader
         title="Objevovat"
         description={PAGE_DESCRIPTION}

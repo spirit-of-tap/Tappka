@@ -2,7 +2,7 @@ import { CalendarDays } from "lucide-react"
 
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { findConflicts } from "@/lib/training-sessions/conflicts"
-import { groupByPragueDay } from "@/lib/training-sessions/format"
+import { formatRelativeDay, groupByPragueDay } from "@/lib/training-sessions/format"
 import { toTiming, type SessionTiming, type TrainingSessionListItem } from "@/lib/training-sessions/types"
 
 import { SessionCard, type SessionViewer } from "./session-card"
@@ -51,11 +51,12 @@ export function SessionAgenda({
     <div className="space-y-6">
       {groupByPragueDay(sessions, (s) => s.starts_at).map((group) => (
         <section key={group.dateKey} aria-labelledby={`day-${group.dateKey}`} className="space-y-2.5">
-          <div className="flex items-center gap-3 pt-1">
-            <h2 id={`day-${group.dateKey}`} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-baseline gap-3 pt-1">
+            <h3 id={`day-${group.dateKey}`} className="font-heading text-lg font-bold text-foreground sm:text-xl">
               {group.heading}
-            </h2>
-            <div className="h-px flex-1 bg-border/60" />
+            </h3>
+            <span className="text-sm font-medium text-muted-foreground">{formatRelativeDay(group.dateKey, now)}</span>
+            <div className="h-px flex-1 self-center bg-border" />
           </div>
           <div className="space-y-3">
             {group.items.map((session) => {

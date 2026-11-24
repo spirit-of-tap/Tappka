@@ -95,13 +95,15 @@ export function SessionCard({
   const hasPreparation = Boolean(session.preparation?.published_at);
   const accent = teamAccentStyles(session.team?.color);
   const showPreparationState = showPreparation && isUpcoming && !isCancelled;
-  const muted = featured ? "text-hero-muted" : "text-muted-foreground";
+  const showAttending = isAttending && isUpcoming && !isCancelled;
+  const tinted = showAttending && !featured;
+  const muted = featured ? "text-hero-muted" : tinted ? "text-foreground" : "text-muted-foreground";
   const hasMeta = (showLocation && Boolean(location)) || showPreparationState;
 
   // One spot answers "am I going?": a status pill when attending, otherwise the join action.
   let attendance: ReactNode = null;
   if (isUpcoming && !isCancelled) {
-    if (isOwnTeam) attendance = <AttendingPill label="Jdeš · tvůj tým" />;
+    if (isOwnTeam) attendance = <AttendingPill label="Jdeš · tvůj tým" featured={featured} />;
     else if (joined) {
       attendance = canShowGuestControls ? (
         <GuestJoinButton
@@ -111,7 +113,7 @@ export function SessionCard({
           variant="status"
         />
       ) : (
-        <AttendingPill label="Jdeš jako cross" />
+        <AttendingPill label="Jdeš jako cross" featured={featured} />
       );
     } else if (canShowGuestControls) {
       attendance = isFull ? (
@@ -130,16 +132,27 @@ export function SessionCard({
 
   return (
     <article
-      style={featured ? undefined : accent.surface}
+      style={featured || tinted ? undefined : accent.surface}
       className={cn(
         "group relative overflow-hidden rounded-2xl p-4 motion-safe:transition motion-safe:duration-300 motion-safe:ease-out sm:p-5",
         featured
           ? "rounded-3xl bg-hero text-hero-foreground hover:shadow-md motion-safe:hover:-translate-y-1"
-          : "border bg-card shadow-xs hover:shadow-md motion-safe:hover:-translate-y-0.5",
+          : "border shadow-xs hover:shadow-md motion-safe:hover:-translate-y-0.5",
+        !featured && (tinted ? "border-success/40 bg-success/10" : "bg-card"),
+        featured && showAttending && "ring-2 ring-hero-success",
         isOngoing && !featured && "border-success/40 ring-1 ring-success/20",
         isCancelled && "opacity-60",
       )}
     >
+      {showAttending && (
+        <span
+          aria-hidden
+          className={cn(
+            "absolute inset-y-0 left-0 w-1.5",
+            featured ? "bg-hero-success" : "bg-success",
+          )}
+        />
+      )}
       {featured && (
         <span
           aria-hidden
@@ -155,6 +168,7 @@ export function SessionCard({
             startsAt={session.starts_at}
             endsAt={session.ends_at}
             stripe={accent.stripe}
+            attending={tinted}
           />
         )}
 
@@ -338,7 +352,7 @@ export function SessionCard({
                 <div
                   className={cn(
                     "ml-auto flex shrink-0 items-center gap-2",
-                    featured && "rounded-full bg-card",
+                    featured && !showAttending && "rounded-full bg-card",
                   )}
                 >
                   {attendance}
@@ -379,15 +393,20 @@ function TimeLeaf({
   startsAt,
   endsAt,
   stripe,
+  attending,
 }: {
   startsAt: string;
   endsAt: string;
   stripe: { backgroundColor: string } | undefined;
+  attending: boolean;
 }) {
   return (
     <div
       aria-hidden
-      className="relative hidden h-fit w-16 shrink-0 flex-col items-center gap-0.5 overflow-hidden rounded-xl bg-muted px-1 pt-3.5 pb-2.5 sm:flex"
+      className={cn(
+        "relative hidden h-fit w-16 shrink-0 flex-col items-center gap-0.5 overflow-hidden rounded-xl px-1 pt-3.5 pb-2.5 sm:flex",
+        attending ? "bg-success/20" : "bg-muted",
+      )}
     >
       <span
         className="absolute inset-x-0 top-0 h-1.5 bg-primary"
@@ -396,7 +415,12 @@ function TimeLeaf({
       <span className="font-heading text-lg font-extrabold leading-none tabular-nums text-foreground">
         {formatTime(startsAt)}
       </span>
-      <span className="text-xs tabular-nums text-muted-foreground">
+      <span
+        className={cn(
+          "text-xs tabular-nums",
+          attending ? "text-foreground" : "text-muted-foreground",
+        )}
+      >
         {formatTime(endsAt)}
       </span>
     </div>
@@ -526,9 +550,22 @@ function CrossSeats({ guests, capacity, featured }: CrossSeatsProps) {
   );
 }
 
-function AttendingPill({ label }: { label: string }) {
+function AttendingPill({
+  label,
+  featured,
+}: {
+  label: string;
+  featured: boolean;
+}) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-success/12 px-3 py-1 text-sm font-semibold text-success-strong">
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold",
+        featured
+          ? "bg-hero-success text-hero"
+          : "bg-success-strong text-background",
+      )}
+    >
       <UserCheck className="size-4 shrink-0" aria-hidden />
       {label}
     </span>

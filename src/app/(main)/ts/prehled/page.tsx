@@ -73,7 +73,7 @@ export default async function TsOverviewPage() {
   }
 
   return (
-    <PageShell size="medium">
+    <PageShell size="full">
       <PageHeader
         title="Tréninkové sessions"
         description={PAGE_DESCRIPTION}
@@ -129,7 +129,7 @@ export default async function TsOverviewPage() {
         )}
 
         <section aria-labelledby="ts-upcoming" className="space-y-3">
-          <h2 id="ts-upcoming" className="font-heading text-lg font-semibold">
+          <h2 id="ts-upcoming" className="font-heading text-2xl font-bold text-foreground">
             Nadcházející
           </h2>
           {upcoming.length > 0 ? (
@@ -194,7 +194,7 @@ export default async function TsOverviewPage() {
 
         <section aria-labelledby="ts-history" className="space-y-3">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 id="ts-history" className="font-heading text-lg font-semibold">
+            <h2 id="ts-history" className="font-heading text-2xl font-bold text-foreground">
               Historie
             </h2>
             {history.length >= TS_HISTORY_LIMIT && (
