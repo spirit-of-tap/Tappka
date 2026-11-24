@@ -214,20 +214,61 @@ export function RoomsTimeline({ rooms, profileId }: RoomsTimelineProps) {
       <ul aria-label="Místnosti" className="space-y-2 md:hidden">
         {orderedRooms.map((room) => {
           const open = isRoomAvailableOnDay(room, day);
+          const segments = getTimelineSegments(reservations, room.id, day, mineIds);
           return (
             <li key={room.id}>
               <Link
                 href={`/reservations/${room.code}?date=${dayKey}`}
-                className="focus-ring flex min-h-16 items-center gap-3 rounded-2xl border bg-card px-4 py-3 shadow-xs hover:bg-accent/60"
+                className="focus-ring block space-y-3 rounded-2xl border bg-card px-4 py-3 shadow-xs hover:bg-accent/60"
               >
-                <span className="min-w-0 flex-1">
-                  <span className="block font-heading text-lg font-extrabold uppercase leading-tight">{room.code}</span>
-                  <span className="block truncate text-sm text-muted-foreground">{roomSubtitle(room, open)}</span>
+                <span className="flex items-center gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-heading text-lg font-extrabold uppercase leading-tight">{room.code}</span>
+                    <span className="block truncate text-sm text-muted-foreground">{roomSubtitle(room, open)}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-primary">
+                    <CalendarDays className="size-4" aria-hidden />
+                    Kalendář
+                    <ChevronRight className="size-4" aria-hidden />
+                  </span>
                 </span>
-                <span className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-primary">
-                  <CalendarDays className="size-4" aria-hidden />
-                  Kalendář
-                  <ChevronRight className="size-4" aria-hidden />
+                <span aria-hidden className="block">
+                  <span
+                    className={cn(
+                      "relative block h-6 overflow-hidden rounded-lg",
+                      open ? "bg-success/12 ring-1 ring-inset ring-success/20" : "bg-muted",
+                    )}
+                  >
+                    {isClient && showNow && open && (
+                      <span className="absolute inset-y-0 left-0 bg-muted/80" style={{ width: `${nowPercent}%` }} />
+                    )}
+                    {!hasDay && isClient && failedKey !== dayKey && <Skeleton className="absolute inset-0.5 rounded-md" />}
+                    {open &&
+                      segments.map((segment) => (
+                        <span
+                          key={segment.id}
+                          className={cn("absolute inset-y-1 rounded-md", segment.mine ? "bg-primary" : "bg-chart-2")}
+                          style={{ left: `${segment.left}%`, width: `${segment.width}%` }}
+                        />
+                      ))}
+                    {isClient && showNow && (
+                      <span
+                        className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-primary"
+                        style={{ left: `${nowPercent}%` }}
+                      />
+                    )}
+                  </span>
+                  <span className="relative mt-1 block h-3.5 text-[0.65rem] text-muted-foreground tabular-nums">
+                    {HOURS.filter((hour) => (hour - TIMELINE_START_HOUR) % LABEL_EVERY_HOURS === 0).map((hour) => (
+                      <span
+                        key={hour}
+                        className="absolute -translate-x-1/2 first:translate-x-0 last:-translate-x-full"
+                        style={{ left: `${hourPercent(day, hour)}%` }}
+                      >
+                        {hour}
+                      </span>
+                    ))}
+                  </span>
                 </span>
               </Link>
             </li>
