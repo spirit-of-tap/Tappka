@@ -1,6 +1,5 @@
 import { checkKasaAccess } from "@/lib/komunitni-kasa/access";
 import { FeatureComingSoon } from "@/components/beta/feature-coming-soon";
-import { DecisionExplainer } from "@/components/komunitni-kasa/decision-explainer";
 import { KasaContact } from "@/components/komunitni-kasa/kasa-contact";
 import { KasaQuickLinks } from "@/components/komunitni-kasa/kasa-quick-links";
 import { KasaMark } from "@/components/komunitni-kasa/kasa-mark";
@@ -25,7 +24,6 @@ export default async function KomunitniKasaPage() {
         <KasaOverview
           aside={
             <>
-              <DecisionExplainer />
               <KasaContact />
               <KasaQuickLinks />
             </>
