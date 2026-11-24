@@ -262,7 +262,7 @@ function CumulativeSemesterProgress({
                           ? "font-medium text-foreground"
                           : isNextTarget
                             ? "font-semibold text-foreground"
-                            : "font-normal text-muted-foreground/40"
+                            : "font-normal text-muted-foreground"
                     }`}
                   >
                     {isActiveSem && <span className="size-1.5 rounded-full bg-primary" />}
