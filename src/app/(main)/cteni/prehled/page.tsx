@@ -1,12 +1,9 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserProfile } from '@/lib/auth-helpers';
 import { getUserBookPointsStats, getTeamBookPointsStats, getAllEssays } from '@/lib/essays/queries';
 import { getMyLoans } from '@/lib/library/queries';
 import { getEssaysAwaitingReply } from '@/lib/essays/awaiting-reply';
-import { Button } from '@/components/ui/button';
 import { PrehledContent } from '@/components/essays/prehled-content';
 import { CteniViewTracker } from '@/components/cteni/cteni-view-tracker';
 import { HelpDialog } from '@/components/help-dialog';
@@ -16,7 +13,7 @@ import { PageShell } from '@/components/ui/page-shell';
 
 export const metadata = {
   title: 'Moje čtení',
-  description: 'Tvůj pokrok, knihy a eseje',
+  description: 'Tvůj pokrok a eseje',
 };
 
 export default async function PrehledPage() {
@@ -45,23 +42,15 @@ export default async function PrehledPage() {
   ).catch(() => new Set<string>());
 
   return (
-    <PageShell size="full" className="max-w-6xl">
+    <PageShell size="medium">
       <CteniViewTracker />
       <PageHeader
         title="Moje čtení"
-        description="Tvůj pokrok, knihy a eseje"
+        description="Tvůj pokrok a eseje"
         action={
-          <>
-            <Button asChild className="hidden sm:inline-flex">
-              <Link href="/cteni/eseje/nova">
-                <Plus />
-                Napsat esej
-              </Link>
-            </Button>
-            <HelpDialog question="Co jsou esejbanka a knižní body?">
-              <InfoCard />
-            </HelpDialog>
-          </>
+          <HelpDialog question="Co jsou esejbanka a knižní body?">
+            <InfoCard />
+          </HelpDialog>
         }
       />
 
@@ -74,7 +63,6 @@ export default async function PrehledPage() {
         loans={loans}
         teamStats={teamStats}
         currentProfileId={profile.id}
-        teamName={profile.team?.name}
       />
     </PageShell>
   );

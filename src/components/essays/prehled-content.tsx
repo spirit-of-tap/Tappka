@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { FileText, Search, SearchX, X } from 'lucide-react';
+import { Plus, FileText, Search, SearchX, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Empty,
@@ -15,10 +15,10 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group';
 import { MyEssayList } from './my-essay-list';
 import { CopyEssaysButton } from './copy-essays-button';
-import { ReadingPathHero } from './reading-path-hero';
+import { MetricProgress } from '@/components/metrics/metric-progress';
 import { TeamPointsRanking } from '@/components/teams/team-points-ranking';
 import { MobileFab, MobileFabSpacer } from '@/components/mobile-fab';
-import { ReadingShelf } from '@/components/library/reading-shelf';
+import { ActiveLoansCard } from '@/components/library/active-loans-card';
 import { getMetric } from '@/lib/metrics/config';
 import { filterMyEssays } from '@/lib/essays/my-essay-search';
 import type { EssayWithDetails } from '@/lib/essays/types';
@@ -46,7 +46,6 @@ interface PrehledContentProps {
   }[];
   /** Highlights the viewer's row in the team ranking. */
   currentProfileId?: string;
-  teamName?: string | null;
 }
 
 const KNIZNI_BODY_METRIC = getMetric('knizni-body');
@@ -60,7 +59,6 @@ export function PrehledContent({
   loans = [],
   teamStats = [],
   currentProfileId,
-  teamName,
 }: PrehledContentProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,123 +69,138 @@ export function PrehledContent({
     setSearchQuery('');
   };
 
-  const hasTeam = teamStats.length > 0;
-
   return (
-    <div className="space-y-6">
-      <ReadingPathHero stats={stats} essays={myEssays} onboardingYear={onboardingYear} />
+    <div className="space-y-8">
+      {/* 1. Reading goal / semester progress */}
+      <section aria-label="Pokrok ve čtení">
+        <MetricProgress
+          goals={[
+            {
+              current: stats.approved_points_this_semester,
+              target: KNIZNI_BODY_METRIC.target ?? 0,
+              label: 'tento semestr',
+            },
+            {
+              current: stats.approved_points,
+              target: KNIZNI_BODY_METRIC.totalForStudy ?? 0,
+              label: 'za studium',
+            },
+          ]}
+          onboardingYear={onboardingYear}
+          detailsLabel={teamStats.length > 0 ? 'Pořadí v týmu' : undefined}
+          details={
+            teamStats.length > 0 ? (
+              <TeamPointsRanking
+                stats={teamStats}
+                goal={KNIZNI_BODY_METRIC.totalForStudy ?? 0}
+                currentProfileId={currentProfileId}
+              />
+            ) : undefined
+          }
+        />
+      </section>
 
-      <div className={hasTeam ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_18.75rem]' : undefined}>
-        <div className="min-w-0 space-y-8">
-          <ReadingShelf loans={loans} />
+      {/* 2. Borrowed books — full width, due dates are time-sensitive */}
+      <ActiveLoansCard loans={loans} />
 
-          <section
-            aria-labelledby="my-essays-heading"
-            className="space-y-3"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="my-essays-heading" className="text-base font-semibold">
-                Moje eseje{' '}
-                {myEssays.length > 0 && (
-                  <span className="font-normal text-muted-foreground">{myEssays.length}</span>
-                )}
-              </h2>
-              <div className="flex items-center gap-1">
-                {myEssays.length > 0 && <CopyEssaysButton essays={myEssays} />}
-                {myEssays.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={isSearchOpen ? 'Zavřít hledání' : 'Hledat v mých esejích'}
-                    aria-expanded={isSearchOpen}
-                    aria-controls="my-essays-search"
-                    onClick={() => (isSearchOpen ? closeSearch() : setIsSearchOpen(true))}
-                    className={isSearchOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}
-                  >
-                    <Search />
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {isSearchOpen && (
-              <InputGroup id="my-essays-search">
-                <InputGroupAddon>
-                  <Search />
-                </InputGroupAddon>
-                <InputGroupInput
-                  type="search"
-                  autoFocus
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') closeSearch();
-                  }}
-                  placeholder="Název, kniha nebo text eseje"
-                  aria-label="Hledat v mých esejích"
-                />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupButton size="icon-xs" aria-label="Zavřít hledání" onClick={closeSearch}>
-                    <X />
-                  </InputGroupButton>
-                </InputGroupAddon>
-              </InputGroup>
+      {/* 3. My essays */}
+      <section
+        aria-labelledby="my-essays-heading"
+        className="space-y-3"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="my-essays-heading" className="text-base font-semibold">
+            Moje eseje{' '}
+            {myEssays.length > 0 && (
+              <span className="font-normal text-muted-foreground">{myEssays.length}</span>
             )}
+          </h2>
+          <div className="flex items-center gap-1">
+            {myEssays.length > 0 && <CopyEssaysButton essays={myEssays} />}
+            {myEssays.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={isSearchOpen ? 'Zavřít hledání' : 'Hledat v mých esejích'}
+                aria-expanded={isSearchOpen}
+                aria-controls="my-essays-search"
+                onClick={() => (isSearchOpen ? closeSearch() : setIsSearchOpen(true))}
+                className={isSearchOpen ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'}
+              >
+                <Search />
+              </Button>
+            )}
+            {myEssays.length > 0 && (
+              <Button asChild size="sm" className="hidden sm:inline-flex">
+                <Link href="/cteni/eseje/nova">
+                  <Plus className="size-4" />
+                  Napsat esej
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
 
-            {myEssays.length === 0 ? (
-              <Empty className="gap-4 border border-dashed p-6 md:p-8">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <FileText />
-                  </EmptyMedia>
-                  <EmptyTitle>Zatím žádná esej</EmptyTitle>
-                  <EmptyDescription>
-                    Piš průběžně, ukládá se to samo. Esej uvidí ostatní, jakmile jí dáš název.
-                  </EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent>
-                  <Button asChild size="sm">
-                    <Link href="/cteni/eseje/nova">Napsat esej</Link>
-                  </Button>
-                </EmptyContent>
-              </Empty>
-            ) : filteredEssays.length === 0 ? (
-              <Empty className="border border-dashed">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <SearchX />
-                  </EmptyMedia>
-                  <EmptyTitle>Nic nenalezeno</EmptyTitle>
-                  <EmptyDescription>Zkus jiné slovo z názvu, knihy nebo textu eseje.</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <MyEssayList
+        {isSearchOpen && (
+          <InputGroup id="my-essays-search">
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput
+              type="search"
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') closeSearch();
+              }}
+              placeholder="Název, kniha nebo text eseje"
+              aria-label="Hledat v mých esejích"
+            />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton size="icon-xs" aria-label="Zavřít hledání" onClick={closeSearch}>
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        )}
+
+        {myEssays.length === 0 ? (
+          <Empty className="gap-4 border border-dashed p-6 md:p-8">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <FileText />
+              </EmptyMedia>
+              <EmptyTitle>Zatím žádná esej</EmptyTitle>
+              <EmptyDescription>
+                Piš průběžně, ukládá se to samo. Esej uvidí ostatní, jakmile jí dáš název.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button asChild size="sm">
+                <Link href="/cteni/eseje/nova">Napsat esej</Link>
+              </Button>
+            </EmptyContent>
+          </Empty>
+        ) : filteredEssays.length === 0 ? (
+          <Empty className="border border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <SearchX />
+              </EmptyMedia>
+              <EmptyTitle>Nic nenalezeno</EmptyTitle>
+              <EmptyDescription>Zkus jiné slovo z názvu, knihy nebo textu eseje.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <MyEssayList
                 essays={filteredEssays}
                 votedEssayIds={votedEssayIds}
                 awaitingReplyIds={awaitingReplyIds}
               />
-            )}
-          </section>
-        </div>
-
-        {hasTeam && (
-          <aside
-            aria-labelledby="team-ranking-heading"
-            className="space-y-3 self-start rounded-2xl border bg-card p-4 shadow-sm"
-          >
-            <h2 id="team-ranking-heading" className="text-base font-semibold">
-              {teamName ? `Tým ${teamName}` : 'Tým'} · body
-            </h2>
-            <TeamPointsRanking
-              stats={teamStats}
-              goal={KNIZNI_BODY_METRIC.totalForStudy ?? 0}
-              currentProfileId={currentProfileId}
-            />
-          </aside>
         )}
-      </div>
+      </section>
 
       {/* Mobile Floating Action Button */}
       <MobileFab label="Napsat esej" href="/cteni/eseje/nova" />
