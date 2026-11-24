@@ -58,7 +58,7 @@ export function formatClock(instant: string | Date): string {
 }
 
 function entryLabel(entry: TimeEntryWithTag): string {
-  return entry.title ?? TIME_DIRECTION_LABELS[entry.direction]
+  return entry.title ?? entry.tag?.name ?? TIME_DIRECTION_LABELS[entry.direction]
 }
 
 /** `{ error }` body of a failed API call, or the generic message. */
@@ -72,34 +72,52 @@ export async function readApiError(response: Response): Promise<string> {
   return TIME_TRACKING_MESSAGES.generic
 }
 
-function RowShell({ children, className }: { children: React.ReactNode; className?: string }) {
+function RowShell({
+  direction,
+  children,
+  className,
+}: {
+  direction: TimeDirection
+  children: React.ReactNode
+  className?: string
+}) {
   return (
     <div
       className={cn(
-        "flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 motion-safe:transition-colors hover:bg-muted/50",
+        "relative flex min-h-16 items-center gap-3 overflow-hidden rounded-2xl border bg-card py-2.5 pr-2 pl-5 text-card-foreground shadow-sm motion-safe:transition-colors hover:bg-accent/40",
         className,
       )}
     >
+      <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1.5", DIRECTION_DOT_CLASS[direction])} />
       {children}
     </div>
   )
 }
 
-function EntryMain({ entry, dot }: { entry: TimeEntryWithTag; dot: React.ReactNode }) {
+function EntryMain({ entry, dot }: { entry: TimeEntryWithTag; dot?: React.ReactNode }) {
+  const label = entryLabel(entry)
+  const showTagBadge = entry.tag !== null && entry.tag.name !== label
   return (
-    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-      {dot}
-      <span className="min-w-0 truncate text-sm font-medium">{entryLabel(entry)}</span>
-      {entry.tag && (
-        <Badge variant="outline" className="bg-muted/60 font-normal">
-          {entry.tag.name}
-        </Badge>
-      )}
-      {entry.source === "attendance" && (
-        <Badge variant="outline" className="border-transparent bg-muted font-normal text-muted-foreground">
-          {ATTENDANCE_CHIP_LABEL}
-        </Badge>
-      )}
+    <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 items-center gap-2">
+        {dot}
+        <span className="min-w-0 truncate text-sm font-bold">{label}</span>
+      </div>
+      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+        {label !== TIME_DIRECTION_LABELS[entry.direction] && (
+          <span className="text-xs text-muted-foreground">{TIME_DIRECTION_LABELS[entry.direction]}</span>
+        )}
+        {showTagBadge && entry.tag && (
+          <Badge variant="outline" className="bg-muted/60 font-normal">
+            {entry.tag.name}
+          </Badge>
+        )}
+        {entry.source === "attendance" && (
+          <Badge variant="outline" className="border-transparent bg-muted font-normal text-muted-foreground">
+            {ATTENDANCE_CHIP_LABEL}
+          </Badge>
+        )}
+      </div>
     </div>
   )
 }
@@ -114,7 +132,7 @@ export interface TimeEntryRowProps {
   onDeleteFailed?: (entry: TimeEntryWithTag) => void
 }
 
-/** A finished entry: dot · title / direction · tag · od–do · délka · ⋮ menu. */
+/** A finished entry: direction stripe · title / direction · tag · od–do · délka · ⋮ menu. */
 export function TimeEntryRow({ entry, onEdit, onDeleted, onDeleteFailed }: TimeEntryRowProps) {
   const router = useRouter()
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -142,11 +160,8 @@ export function TimeEntryRow({ entry, onEdit, onDeleted, onDeleteFailed }: TimeE
   }
 
   return (
-    <RowShell>
-      <EntryMain
-        entry={entry}
-        dot={<span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", DIRECTION_DOT_CLASS[entry.direction])} />}
-      />
+    <RowShell direction={entry.direction}>
+      <EntryMain entry={entry} />
       <div className="flex shrink-0 flex-col items-end gap-0.5 text-right sm:flex-row sm:items-center sm:gap-3">
         <span className="text-xs tabular-nums text-muted-foreground">
           {formatClock(entry.started_at)}–{end ? formatClock(end) : ""}
@@ -220,7 +235,7 @@ export function RunningEntryRow({ entry, elapsedMs, onStop, isPending = false }:
   const dotClass = DIRECTION_DOT_CLASS[entry.direction]
 
   return (
-    <RowShell className="border border-success/30 bg-success/5 shadow-sm hover:bg-success/10">
+    <RowShell direction={entry.direction} className="border-success/30 bg-success/5 hover:bg-success/10">
       <EntryMain
         entry={entry}
         dot={

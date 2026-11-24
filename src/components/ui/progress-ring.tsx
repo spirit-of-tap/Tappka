@@ -14,17 +14,26 @@ interface ProgressRingProps extends Omit<ComponentProps<'svg'>, 'viewBox'> {
   percent: number;
   /** Stroke utility for the arc, e.g. `stroke-chart-5`. */
   strokeClassName: string;
+  /** Stroke utility for the background track. */
+  trackClassName?: string;
   /** SVG `<text>` nodes drawn in the centre (96x96 viewBox). */
   children?: ReactNode;
 }
 
 /** Ring that draws up to `percent`; centre content is passed as SVG children. */
-export function ProgressRing({ percent, strokeClassName, children, className, ...props }: ProgressRingProps) {
+export function ProgressRing({
+  percent,
+  strokeClassName,
+  trackClassName = 'stroke-muted',
+  children,
+  className,
+  ...props
+}: ProgressRingProps) {
   const dash = (percent / 100) * RING_CIRCUMFERENCE;
 
   return (
     <svg viewBox="0 0 96 96" className={cn('size-24 shrink-0', className)} {...props}>
-      <circle cx="48" cy="48" r={RING_RADIUS} fill="none" strokeWidth="10" className="stroke-muted" />
+      <circle cx="48" cy="48" r={RING_RADIUS} fill="none" strokeWidth="10" className={trackClassName} />
       <circle
         cx="48"
         cy="48"

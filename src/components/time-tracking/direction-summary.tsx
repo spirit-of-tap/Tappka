@@ -13,20 +13,25 @@ export function DirectionSummary({ byDirection, className }: DirectionSummaryPro
   const totalMs = TIME_DIRECTIONS.reduce((sum, direction) => sum + byDirection[direction.value], 0)
 
   return (
-    <dl className={cn("grid grid-cols-2 gap-3 sm:grid-cols-4", className)}>
+    <dl className={cn("grid grid-cols-2 gap-3 lg:grid-cols-4", className)}>
       {TIME_DIRECTIONS.map((direction, index) => {
         const share = totalMs > 0 ? (byDirection[direction.value] / totalMs) * 100 : 0
         return (
           <div
             key={direction.value}
             style={{ animationDelay: `${index * 60}ms` }}
-            className="space-y-2 rounded-2xl border bg-card p-4 shadow-sm motion-safe:animate-rise"
+            className="space-y-2 rounded-2xl border bg-card p-4 text-card-foreground shadow-sm motion-safe:animate-rise"
           >
-            <dt className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", direction.dotClass)} />
-              {direction.label}
+            <dt className="flex items-center justify-between gap-2 text-sm font-medium">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", direction.dotClass)} />
+                <span className="truncate">{direction.label}</span>
+              </span>
+              <span className="text-xs tabular-nums text-muted-foreground" data-testid={`direction-share-${direction.value}`}>
+                {Math.round(share)}&nbsp;%
+              </span>
             </dt>
-            <dd className="font-heading text-xl font-bold tabular-nums" data-testid={`direction-total-${direction.value}`}>
+            <dd className="font-heading text-2xl font-bold tabular-nums" data-testid={`direction-total-${direction.value}`}>
               {formatMetricValue(byDirection[direction.value] / MS_PER_HOUR, "hours")}
             </dd>
             <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-muted">

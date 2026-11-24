@@ -26,10 +26,12 @@ import {
 } from "@/components/ui/select"
 import { METRICS } from "@/lib/metrics/config"
 import { MS_PER_HOUR, TIME_DIRECTIONS, TIME_DIRECTION_VALUES } from "@/lib/time-tracking/constants"
+import { breakdownByDay } from "@/lib/time-tracking/day-breakdown"
 import {
   type DateKeyRange,
   matchPreset,
   presetLabel,
+  rangeDayCount,
   scaleWeeklyTarget,
 } from "@/lib/time-tracking/date-range"
 import { entryDurationMs, formatDurationShort } from "@/lib/time-tracking/duration"
@@ -39,6 +41,7 @@ import { cn } from "@/lib/utils"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
 import { formatDayHeading, formatRangeLabel } from "./cas-query"
+import { MAX_CHART_DAYS } from "./day-chart"
 import { DateRangeNav } from "./date-range-nav"
 import { DirectionSummary } from "./direction-summary"
 import { EntryFormDialog } from "./entry-form-dialog"
@@ -130,11 +133,14 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
 
   const closed = React.useMemo(() => items.filter((entry) => entry.ended_at !== null), [items])
 
-  const summary = summarize(runningInRange ? [...closed, runningInRange] : closed, {
+  const rangeEntries = runningInRange ? [...closed, runningInRange] : closed
+  const summary = summarize(rangeEntries, {
     includeRunning: true,
     now: new Date(liveNowMs),
     range: instants,
   })
+  const chartDays =
+    rangeDayCount(range) > MAX_CHART_DAYS ? null : breakdownByDay(rangeEntries, range, new Date(liveNowMs))
 
   const matchesFilter = React.useCallback(
     (entry: TimeEntryWithTag) =>
@@ -227,6 +233,14 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
         current={summary.totalMs / MS_PER_HOUR}
         target={scaleWeeklyTarget(METRICS["time-weekly"].target, range)}
         label={periodLabel}
+        rangeLabel={activePreset ? formatRangeLabel(range) : undefined}
+        byDirection={summary.byDirection}
+        days={chartDays}
+        todayKey={todayKey}
+        timerElapsedMs={timer?.active ? timer.elapsedMs : null}
+        timerPending={timer?.isPending}
+        onStartTimer={timer?.openStartSheet}
+        onStopTimer={timer?.openStopSheet}
       />
 
       <DirectionSummary byDirection={summary.byDirection} />
@@ -336,7 +350,7 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
                     {formatDurationShort(dayTotal)}
                   </span>
                 </div>
-                <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border bg-card p-1 shadow-sm">
+                <ul className="space-y-2">
                   {day.entries.map((entry) => (
                     <li key={entry.id}>
                       <TimeEntryRow
