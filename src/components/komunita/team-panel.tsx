@@ -15,9 +15,12 @@ interface PanelProps {
 }
 
 const PANEL_CLASS =
-  'rounded-2xl border border-hero-foreground/15 bg-hero-foreground/5 p-4 lg:self-start';
-const DENSE_PANEL_CLASS = 'lg:sticky lg:top-4';
+  'rounded-2xl border border-hero-foreground/15 bg-hero-foreground/5 p-4';
+const DENSE_PANEL_CLASS = 'lg:sticky lg:top-4 lg:self-start';
 const LIST_SCROLL_CLASS = 'lg:max-h-[calc(100vh-16rem)] lg:overflow-y-auto';
+// Fills the map's height instead of stretching it; the list scrolls inside.
+const FIT_PANEL_CLASS = 'lg:absolute lg:inset-0 lg:flex lg:flex-col';
+const FIT_LIST_CLASS = 'lg:min-h-0 lg:flex-1 lg:overflow-y-auto';
 
 function ColorDot({ color }: { color: string | null }) {
   return (
@@ -64,7 +67,7 @@ export function TeamPanel({
   const coaches = coachLine(group);
 
   return (
-    <div className={cn(PANEL_CLASS, dense && DENSE_PANEL_CLASS)}>
+    <div className={cn(PANEL_CLASS, dense ? DENSE_PANEL_CLASS : FIT_PANEL_CLASS)}>
       {onBackToResults && (
         <Button
           type="button"
@@ -95,7 +98,7 @@ export function TeamPanel({
           </Link>
         )}
       </div>
-      <ul className={cn('space-y-0.5', dense && LIST_SCROLL_CLASS)}>
+      <ul className={cn('space-y-0.5', dense ? LIST_SCROLL_CLASS : FIT_LIST_CLASS)}>
         {group.members.map((member) => (
           <MemberRow key={member.id} profile={member} pictureUrl={pictureUrls[member.id] ?? null} />
         ))}
@@ -118,12 +121,12 @@ export function SearchResultsPanel({
   onSelectGroup: (groupId: string) => void;
 }) {
   return (
-    <div className={cn(PANEL_CLASS, dense && DENSE_PANEL_CLASS)}>
+    <div className={cn(PANEL_CLASS, dense ? DENSE_PANEL_CLASS : FIT_PANEL_CLASS)}>
       <div className="space-y-1 pb-3">
         <h2 className="font-heading text-xl font-bold text-hero-foreground">Výsledky hledání</h2>
         <p className="text-sm text-hero-muted">{formatMemberCount(people.length)}</p>
       </div>
-      <ul className={cn('space-y-0.5', dense && LIST_SCROLL_CLASS)}>
+      <ul className={cn('space-y-0.5', dense ? LIST_SCROLL_CLASS : FIT_LIST_CLASS)}>
         {people.map((person) => {
           const groupId = groupIdOf.get(person.id);
           const group = groupId ? groupsById.get(groupId) : undefined;

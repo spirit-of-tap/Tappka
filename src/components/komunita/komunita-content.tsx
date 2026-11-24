@@ -137,7 +137,7 @@ export function KomunitaContent({
               pictureUrls={pictureUrls}
               onSelect={selectGroup}
             />
-            <div ref={panelRef} className="scroll-mt-4">
+            <div ref={panelRef} className={cn('scroll-mt-4', !dense && 'lg:relative lg:min-h-96')}>
               {isSearching && showResults ? (
                 <SearchResultsPanel
                   people={search.people}
