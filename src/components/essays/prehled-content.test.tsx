@@ -24,26 +24,27 @@ describe('PrehledContent', () => {
     loans: [],
   };
 
-  it('shows only progress and essays — team and shelf live elsewhere', () => {
+  it('shows the path hero, the shelf and the essays', () => {
     render(
       <TooltipProvider>
         <PrehledContent {...defaultProps} />
       </TooltipProvider>,
     );
 
+    expect(screen.getByRole('heading', { name: /Cesta \d\. semestrem/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Právě čtu' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Moje eseje' })).toBeInTheDocument();
     expect(screen.getByText('Zatím žádná esej')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Tým' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /Chci si přečíst/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Tým/ })).not.toBeInTheDocument();
   });
 
-  it('reveals the team ranking when the progress bar is expanded', async () => {
-    const user = userEvent.setup();
+  it('always shows the team ranking when there is a team', () => {
     render(
       <TooltipProvider>
         <PrehledContent
           {...defaultProps}
           currentProfileId="me"
+          teamName="Alfa"
           teamStats={[
             { profile: { id: 'me', name: 'Ondřej Kulhavý', picture: null }, approved_points: 12, pending_points: 0 },
             { profile: { id: 'p2', name: 'Jan Novák', picture: null }, approved_points: 30, pending_points: 5 },
@@ -52,24 +53,9 @@ describe('PrehledContent', () => {
       </TooltipProvider>,
     );
 
-    const cue = screen.getByText('Pořadí v týmu');
-    const details = cue.closest('details');
-    expect(details).not.toHaveAttribute('open');
-
-    await user.click(cue);
-    expect(details).toHaveAttribute('open');
+    expect(screen.getByRole('heading', { name: 'Tým Alfa · body' })).toBeInTheDocument();
     expect(screen.getByText('Jan N.')).toBeVisible();
     expect(screen.getByText('Ty')).toBeVisible();
-  });
-
-  it('has no team cue without a team', () => {
-    render(
-      <TooltipProvider>
-        <PrehledContent {...defaultProps} />
-      </TooltipProvider>,
-    );
-
-    expect(screen.queryByText('Pořadí v týmu')).not.toBeInTheDocument();
   });
 
   describe('semester number', () => {
@@ -87,8 +73,8 @@ describe('PrehledContent', () => {
         </TooltipProvider>,
       );
 
-      expect(screen.getByText('Knižní body · 1. semestr')).toBeInTheDocument();
-      expect(screen.queryByText('Knižní body · 3. semestr')).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Cesta 1. semestrem' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Cesta 3. semestrem' })).not.toBeInTheDocument();
     });
   });
 

@@ -157,8 +157,11 @@ Klasický and Tlumený (`data-shade="dim"` sets `--shade-lift` 0.075, which ever
 dark surface token adds to its lightness, so it works with every palette; the
 default dark `primary`, `ring` and `sidebar-primary` also add `lift × 1.5` so
 `text-primary` stays ≥ 4.5:1 on lifted cards). Chart colours stay fixed so data
-reads the same in every palette. Reading progress is a ring against the cumulative goal for the
-current semester (`cumulativeSemesterMilestone`). The brand logo tile uses
+reads the same in every palette. Reading progress on the dashboard is a ring against the cumulative goal for the
+current semester (`cumulativeSemesterMilestone`); on Moje čtení it is the dark
+`bg-hero` "Cesta semestrem" path with one dot per credited essay (`src/lib/essays/reading-path.ts`).
+Book covers and essay-card bands take a deterministic colour from `BOOK_TONE_CLASSES`
+(`src/lib/essays/book-tone.ts`, chart tokens that clear 4.5:1 with `primary-foreground`). The brand logo tile uses
 `bg-tap-red` directly. Status
 semantics: `success` green, `warning` amber (hue = chart-2), `info` teal
 (hue = chart-3), `destructive` red.

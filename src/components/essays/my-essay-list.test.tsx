@@ -86,3 +86,44 @@ describe('MyEssayList comments', () => {
     expect(links[1]).toHaveAttribute('href', '/cteni/eseje/a');
   });
 });
+
+describe('MyEssayList cards', () => {
+  const bookEssay = (listStatus: 'processing' | 'longlist', overrides: Partial<EssayWithDetails> = {}) =>
+    essay({
+      id: `essay-${listStatus}`,
+      title: 'Moje úvaha',
+      book_id: 'book-1',
+      book: {
+        id: 'book-1',
+        title_cs: 'Clean Code',
+        author: 'Robert C. Martin',
+        book_points: 2,
+        list_status: listStatus,
+        is_rocket_model: false,
+        google_books_cover_url: null,
+        highlight_category: null,
+      },
+      ...overrides,
+    });
+
+  it('puts the book title on the band and flags an essay waiting for review', () => {
+    render(<MyEssayList essays={[bookEssay('processing')]} />);
+
+    expect(screen.getByText('Clean Code')).toBeInTheDocument();
+    expect(screen.getByText('Čeká na kouče:ku')).toHaveClass('text-warning-strong');
+  });
+
+  it('shows approved essays with their points', () => {
+    render(<MyEssayList essays={[bookEssay('longlist')]} />);
+
+    expect(screen.getByText('Schváleno')).toHaveClass('text-success-strong');
+    expect(screen.getByText('2 b.')).toBeInTheDocument();
+  });
+
+  it('links to the comments when a coach awaits a reply', () => {
+    render(<MyEssayList essays={[bookEssay('longlist')]} awaitingReplyIds={new Set(['essay-longlist'])} />);
+
+    expect(screen.getByText('Kouč:ka čeká na tvou odpověď')).toBeInTheDocument();
+    expect(screen.getByRole('link')).toHaveAttribute('href', '/cteni/eseje/essay-longlist#komentare');
+  });
+});
