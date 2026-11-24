@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Wallet, type LucideIcon } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import {
   EXPENSE_KINDS,
@@ -7,16 +7,16 @@ import {
   SMERNICE_IS_DRAFT,
   type ExpenseKind,
 } from "@/lib/komunitni-kasa/smernice-data";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { KasaSection } from "./kasa-section";
-
-const KIND_ICONS: Record<ExpenseKind["id"], LucideIcon> = {
-  provozni: Wallet,
-  strategicke: Users,
-};
 
 export const SMERNICE_HREF = "/komunitni-kasa/dokumenty/smernice";
+
+const STEP_TONES: Record<ExpenseKind["id"], string> = {
+  provozni: "bg-success/15 text-success-strong",
+  strategicke: "bg-warning/15 text-warning-strong",
+};
 
 export function DraftBadge() {
   return (
@@ -26,33 +26,43 @@ export function DraftBadge() {
   );
 }
 
-/** Dvě věty o tom, kdo rozhoduje o výdajích (podle návrhu směrnice). */
+/** Kdo rozhoduje o výdajích (podle návrhu směrnice) — dva kroky podle velikosti výdaje. */
 export function DecisionExplainer() {
   return (
-    <KasaSection
-      id="jak-se-rozhoduje"
-      title="Kdo rozhoduje o výdajích"
-      aside={SMERNICE_IS_DRAFT ? <DraftBadge /> : null}
-    >
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {EXPENSE_KINDS.map((kind) => {
-          const Icon = KIND_ICONS[kind.id];
-          return (
-            <li key={kind.id} className="flex gap-3 rounded-2xl border bg-card p-4 shadow-xs">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-chart-2/15 text-chart-2-strong">
-                <Icon className="size-5" aria-hidden />
-              </span>
-              <p className="text-sm leading-relaxed">
-                <span className="font-heading font-semibold">{kind.title}. </span>
-                <span className="text-muted-foreground">{kind.plain}</span>
-              </p>
-            </li>
-          );
-        })}
-      </ul>
+    <section aria-labelledby="jak-se-rozhoduje" className="space-y-4 rounded-2xl bg-card p-5 shadow-xs ring-1 ring-border/60">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h2 id="jak-se-rozhoduje" className="font-heading text-base font-semibold">
+          Kdo rozhoduje o výdajích
+        </h2>
+        {SMERNICE_IS_DRAFT ? <DraftBadge /> : null}
+      </div>
+      <ol className="space-y-0">
+        {EXPENSE_KINDS.map((kind, i) => (
+          <li key={kind.id} className="relative flex gap-3 pb-4 last:pb-0">
+            {i < EXPENSE_KINDS.length - 1 ? (
+              <span aria-hidden className="absolute top-8 bottom-1 left-4 w-px -translate-x-1/2 bg-border" />
+            ) : null}
+            <span
+              aria-hidden
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums",
+                STEP_TONES[kind.id],
+              )}
+            >
+              {i + 1}
+            </span>
+            <p className="min-w-0 text-sm leading-relaxed">
+              <span className="font-heading font-semibold">{kind.title}. </span>
+              <span className="text-muted-foreground">{kind.plain}</span>
+            </p>
+          </li>
+        ))}
+      </ol>
       <Button asChild variant="link" size="sm" className="h-auto px-0">
-        <Link href={SMERNICE_HREF}>Celé znění směrnice</Link>
+        <Link href={SMERNICE_HREF}>
+          Celé znění směrnice <ArrowRight className="size-3.5" aria-hidden />
+        </Link>
       </Button>
-    </KasaSection>
+    </section>
   );
 }
