@@ -50,7 +50,7 @@ export default async function CasPage({ searchParams }: CasPageProps) {
   ])
 
   return (
-    <PageShell size="wide">
+    <PageShell size="full">
       <TimePageView
         entries={entries}
         tagCatalog={{ tags, selectedTagIds, newTagCount }}
