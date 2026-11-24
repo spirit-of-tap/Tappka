@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { Calendar, MapPin } from "lucide-react";
+import Link from "next/link";
+import { Calendar, ChevronLeft, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { PageBack } from "@/components/ui/page-back";
+import { Button } from "@/components/ui/button";
 import { RoomScheduleView } from "@/components/reservations/room-schedule-view";
 import { AlternativeRooms } from "@/components/reservations/alternative-rooms";
 import { DAY_NAMES_CS } from "@/lib/reservations/types";
@@ -133,8 +134,12 @@ export default async function RoomDetailPage({ params, searchParams }: RoomDetai
 
   return (
     <div className="space-y-6">
-      {/* Back navigation */}
-      <PageBack href="/reservations" label="Zpět na rezervace" />
+      <Button asChild variant="outline" size="lg" className="rounded-xl font-semibold shadow-xs">
+        <Link href="/reservations">
+          <ChevronLeft aria-hidden />
+          Zpět na všechny místnosti
+        </Link>
+      </Button>
 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
