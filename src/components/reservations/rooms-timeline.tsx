@@ -7,6 +7,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StorageAvatar } from "@/components/storage/storage-avatar";
 import { cn } from "@/lib/utils";
 import {
   bookableRange,
@@ -20,14 +21,12 @@ import {
   type TimeRange,
 } from "@/lib/reservations/room-map";
 import { formatTime, isRoomAvailableOnDay } from "@/lib/reservations/utils";
-import type { Reservation, Room } from "@/lib/reservations/types";
+import type { ReservationWithDetails, Room } from "@/lib/reservations/types";
 
 import { QuickReservationDialog } from "./quick-reservation-dialog";
 import { getRoomTitle } from "./room-map";
 
 const LABEL_EVERY_HOURS = 3;
-/** Segments narrower than this (in % of the day) drop their title to stay legible. */
-const TITLE_MIN_WIDTH = 7;
 const DAY_KEY_FORMAT = "yyyy-MM-dd";
 const LOAD_ERROR_MESSAGE = "Rezervace se nepodařilo načíst. Zkus to prosím znovu.";
 const NOTHING_FREE_MESSAGE = "Tahle místnost už dnes nemá volný čas.";
@@ -61,7 +60,7 @@ interface RoomsTimelineProps {
 
 interface LoadedDay {
   key: string;
-  items: Reservation[];
+  items: ReservationWithDetails[];
 }
 
 interface Drag {
@@ -104,7 +103,7 @@ export function RoomsTimeline({ rooms, profileId }: RoomsTimelineProps) {
         if (!response.ok) throw new Error(`Reservations request failed: ${response.status}`);
         return response.json();
       })
-      .then((result: { data?: Reservation[] }) => {
+      .then((result: { data?: ReservationWithDetails[] }) => {
         if (cancelled) return;
         setLoaded({ key: dayKey, items: result.data ?? [] });
         setFailedKey(null);
@@ -125,6 +124,7 @@ export function RoomsTimeline({ rooms, profileId }: RoomsTimelineProps) {
   const mineIds = new Set(reservations.filter((r) => r.owner_profile_id === profileId).map((r) => r.id));
   const dayLabel = day.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "numeric" });
 
+  const byId = new Map(reservations.map((r) => [r.id, r]));
   const roomReservations = (roomId: string) => reservations.filter((r) => r.room_id === roomId);
   const dragRange = drag ? bookableRange(day, drag.from, drag.to, roomReservations(drag.roomId), now) : null;
 
@@ -369,15 +369,24 @@ export function RoomsTimeline({ rooms, profileId }: RoomsTimelineProps) {
                           key={segment.id}
                           aria-hidden
                           className={cn(
-                            "absolute inset-y-1.5 flex items-center overflow-hidden rounded-lg px-2 text-xs font-semibold whitespace-nowrap",
+                            "absolute inset-y-1.5 flex items-center overflow-hidden rounded-lg px-1",
                             segment.mine ? "bg-primary text-primary-foreground" : "bg-chart-2 text-warning-foreground",
                           )}
                           style={{ left: `${segment.left}%`, width: `${segment.width}%` }}
+                          title={[
+                            byId.get(segment.id)?.title,
+                            byId.get(segment.id)?.user?.name,
+                            `${formatTime(segment.start)}–${formatTime(segment.end)}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
                         >
-                          {segment.width >= TITLE_MIN_WIDTH &&
-                            (segment.mine
-                              ? "Ty"
-                              : (reservations.find((r) => r.id === segment.id)?.title ?? formatTime(segment.start)))}
+                          <StorageAvatar
+                            storageKey={byId.get(segment.id)?.user?.picture ?? null}
+                            name={byId.get(segment.id)?.user?.name ?? null}
+                            size="sm"
+                            className="ring-2 ring-card"
+                          />
                         </span>
                       ))}
                     {showPreview && previewWidth > 0 && (

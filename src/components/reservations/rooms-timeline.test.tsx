@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { Reservation, Room } from "@/lib/reservations/types"
+import type { ReservationWithDetails, Room } from "@/lib/reservations/types"
 
 import { RoomsTimeline } from "./rooms-timeline"
 
@@ -31,7 +31,8 @@ const rooms: Room[] = [
   { ...baseRoom, id: "r1", code: "d126", name: "Přední Koučovačka" },
 ]
 
-const reservation = (id: string, owner: string, title: string): Reservation => ({
+const reservation = (id: string, owner: string, title: string): ReservationWithDetails => ({
+  user: { id: owner, name: "Jana Nováková", picture: null },
   id,
   room_id: "r1",
   owner_profile_id: owner,
@@ -78,8 +79,9 @@ describe("RoomsTimeline", () => {
     expect(await screen.findByRole("dialog")).toHaveTextContent("14:30")
   })
 
-  it("shows reservation titles on the axis", async () => {
-    render(<RoomsTimeline rooms={rooms} profileId="me" />)
-    await waitFor(() => expect(screen.getByText("Konzultace")).toBeInTheDocument())
+  it("shows who booked a slot instead of its title", async () => {
+    const { container } = render(<RoomsTimeline rooms={rooms} profileId="me" />)
+    await waitFor(() => expect(screen.getByText("JN")).toBeInTheDocument())
+    expect(container.querySelector('[title^="Konzultace · Jana Nováková"]')).not.toBeNull()
   })
 })
