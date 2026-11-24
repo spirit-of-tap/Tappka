@@ -47,12 +47,12 @@ test.describe("komunitní kasa", () => {
     await expect(page).toHaveURL(/\/komunitni-kasa\/dokumenty\/stanovy$/);
   });
 
-  test("main page keeps rules and contact visible without bank data", async ({ page }) => {
+  test("main page keeps contact and links visible without bank data", async ({ page }) => {
     await page.route("**/api/komunitni-kasa", (r) => r.fulfill({ status: 502, body: '{"error":"Banka neodpovídá"}' }));
     await page.goto("/komunitni-kasa");
     await expect(page.getByText("Data se nepodařilo načíst")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kdo rozhoduje o výdajích" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kontakt" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "S dotazy pomůže" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pro družstva" })).toBeVisible();
   });
 
   test("brand page downloads a PNG", async ({ page }) => {
