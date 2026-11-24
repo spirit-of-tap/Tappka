@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import {
   getRoomFloor,
   OTHER_FLOOR_LABEL,
+  TIMELINE_END_HOUR,
+  TIMELINE_START_HOUR,
   type RoomMapStatus,
   type SlotChip,
 } from "@/lib/reservations/room-map";
@@ -74,6 +76,7 @@ export function RoomDetailPanel({
   const pill = PILL_CLASSES[status.kind];
   const durations = [...new Set([...BASE_DURATIONS, duration])].sort((a, b) => a - b);
   const chosenChip = chips.find((chip) => chip.start.getTime() === chosenStart?.getTime());
+  const upcomingChips = chips.filter((chip) => chip.state !== "past");
   const hasRestrictedDays = (room.available_days?.length ?? 0) > 0;
   const floor = getRoomFloor(room.code);
   const floorLabel = floor === null ? OTHER_FLOOR_LABEL : `${floor}. patro`;
@@ -140,29 +143,37 @@ export function RoomDetailPanel({
                 <h4 className="text-sm font-bold text-chart-3-strong">Začátek</h4>
                 {isLoading && <Spinner className="size-3.5" />}
               </div>
-              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-4">
-                {chips.filter((chip) => chip.state !== "past").map((chip) => {
-                  const isChosen = chip.start.getTime() === chosenStart?.getTime();
-                  const isFree = chip.state === "free";
-                  return (
-                    <Button
-                      key={chip.start.getTime()}
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={!isFree}
-                      aria-pressed={isChosen}
-                      onClick={() => onChooseStart(chip.start)}
-                      className={cn(
-                        "h-8 px-0 text-xs tabular-nums",
-                        isChosen ? CHIP_CLASSES.chosen : isFree ? CHIP_CLASSES.free : CHIP_CLASSES.taken,
-                      )}
-                    >
-                      {formatTime(chip.start)}
-                    </Button>
-                  );
-                })}
-              </div>
+              {upcomingChips.length === 0 && !isLoading ? (
+                <p className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground">
+                  {isToday
+                    ? `Dnes už se nedá začít tak, aby rezervace skončila do ${TIMELINE_END_HOUR}:00. Zkus kratší délku nebo jiný den.`
+                    : `Tahle délka se do otevírací doby (${TIMELINE_START_HOUR}–${TIMELINE_END_HOUR} h) nevejde.`}
+                </p>
+              ) : (
+                <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-4">
+                  {upcomingChips.map((chip) => {
+                    const isChosen = chip.start.getTime() === chosenStart?.getTime();
+                    const isFree = chip.state === "free";
+                    return (
+                      <Button
+                        key={chip.start.getTime()}
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={!isFree}
+                        aria-pressed={isChosen}
+                        onClick={() => onChooseStart(chip.start)}
+                        className={cn(
+                          "h-8 px-0 text-xs tabular-nums",
+                          isChosen ? CHIP_CLASSES.chosen : isFree ? CHIP_CLASSES.free : CHIP_CLASSES.taken,
+                        )}
+                      >
+                        {formatTime(chip.start)}
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div>
