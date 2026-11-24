@@ -42,7 +42,7 @@ export default async function PrehledPage() {
   ).catch(() => new Set<string>());
 
   return (
-    <PageShell size="medium" className="lg:mx-0">
+    <PageShell size="medium">
       <CteniViewTracker />
       <PageHeader
         title="Moje čtení"
