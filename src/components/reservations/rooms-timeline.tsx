@@ -211,7 +211,31 @@ export function RoomsTimeline({ rooms, profileId }: RoomsTimelineProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border bg-card p-3 shadow-xs sm:p-5">
+      <ul aria-label="Místnosti" className="space-y-2 md:hidden">
+        {orderedRooms.map((room) => {
+          const open = isRoomAvailableOnDay(room, day);
+          return (
+            <li key={room.id}>
+              <Link
+                href={`/reservations/${room.code}?date=${dayKey}`}
+                className="focus-ring flex min-h-16 items-center gap-3 rounded-2xl border bg-card px-4 py-3 shadow-xs hover:bg-accent/60"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block font-heading text-lg font-extrabold uppercase leading-tight">{room.code}</span>
+                  <span className="block truncate text-sm text-muted-foreground">{roomSubtitle(room, open)}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5 text-sm font-semibold text-primary">
+                  <CalendarDays className="size-4" aria-hidden />
+                  Kalendář
+                  <ChevronRight className="size-4" aria-hidden />
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-2xl border bg-card p-3 shadow-xs sm:p-5 md:block">
         <div className="min-w-[40rem]">
           <div
             aria-hidden
@@ -363,7 +387,7 @@ export function RoomsTimeline({ rooms, profileId }: RoomsTimelineProps) {
         </p>
       )}
 
-      <ul aria-label="Legenda" className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <ul aria-label="Legenda" className="hidden flex-wrap md:flex gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <LegendItem className="bg-success/30 ring-1 ring-inset ring-success/40">volno, táhni pro rezervaci</LegendItem>
         <LegendItem className="bg-chart-2">obsazeno</LegendItem>
         <LegendItem className="bg-primary">tvoje</LegendItem>
