@@ -21,9 +21,11 @@ export default async function HledatPage() {
   const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null;
   if (!user) redirect('/auth/login');
 
-  const profile = await getCurrentUserProfile(supabase, { user });
+  // Started before the profile resolves; only the team essays and wishlist wait for it.
+  const profilePromise = getCurrentUserProfile(supabase, { user });
 
   const [
+    profile,
     books,
     libraryBookIdsSet,
     popularEssays,
@@ -37,18 +39,19 @@ export default async function HledatPage() {
     contentSources,
     wishlist,
   ] = await Promise.all([
+    profilePromise,
     getBooks(supabase, { listStatus: 'shortlist', minEssayCount: SCROLLKY_MIN_BOOK_ESSAYS, sortBy: 'popular', pageSize: SCROLLKY_INITIAL_BOOK_COUNT }),
     getBookIdsInLibrary(supabase),
     getEssays(supabase, { sort: 'month', pageSize: 40 }),
     getEssays(supabase, { sort: 'recent', pageSize: SCROLLKY_INITIAL_ESSAY_COUNT }),
-    (profile?.team_id ? getEssaysByTeam(supabase, profile.team_id, { pageSize: 40 }) : Promise.resolve([])) as Promise<EssayWithDetails[]>,
+    profilePromise.then((p) => (p?.team_id ? getEssaysByTeam(supabase, p.team_id, { pageSize: 40 }) : [])) as Promise<EssayWithDetails[]>,
     supabase.rpc('get_best_books_per_category', { top_n: 3 }),
     supabase.rpc('get_teams_with_member_stats'),
     getRocketModelBooks(supabase),
     getHighlightedBooks(supabase),
     getHighlightCategories(supabase),
     getContentSources(supabase, { pageSize: 12 }),
-    profile ? getMyWishlist(supabase, profile.id).catch(() => []) : Promise.resolve([]),
+    profilePromise.then((p) => (p ? getMyWishlist(supabase, p.id).catch(() => []) : [])),
   ]);
 
   type CategoryBook = { tag: string; id: string; title: string; author: string; cover_path: string | null; description: string | null; preview_link: string | null; tags: string[]; book_points: number; essay_count: number; list_status: BookListStatus; is_rocket_model: boolean; highlight_category: HighlightCategory | null };
@@ -58,13 +61,44 @@ export default async function HledatPage() {
     (categoryBestBooks[row.tag] ??= []).push(row);
   }
 
+  const allEssayIds = Array.from(
+    new Set([...popularEssays, ...recentEssays, ...teamEssays].map((e) => e.id)),
+  );
+  // Extract latest essays for books
+  const essaysByBookId: Record<string, Array<{ id: string; title: string; author: { id: string; name: string | null; picture: string | null; team_id?: string | null } | null }>> = {};
+  for (const essay of [...recentEssays, ...popularEssays, ...teamEssays]) {
+    if (!essay.book_id) continue;
+    const list = (essaysByBookId[essay.book_id] ??= []);
+    if (list.length < 4 && !list.some((e) => e.id === essay.id)) {
+      list.push({
+        id: essay.id,
+        title: essay.title,
+        author: essay.author ? {
+          id: essay.author.id,
+          name: essay.author.name,
+          picture: essay.author.picture,
+          team_id: essay.author.team_id,
+        } : null,
+      });
+    }
+  }
+
+  // Cards only see pool essays (recent/popular/team) — books missed by all
+  // pools would wrongly render "Zatím bez eseje", so backfill their latest essays.
+  const booksMissingEssays = books.filter(
+    (book) => (essaysByBookId[book.id] ?? []).length === 0 && (book.essay_count ?? 0) > 0,
+  );
   const categoryBookIds = Array.from(new Set(Object.values(categoryBestBooks).flat().map((b) => b.id)));
-  const { data: statusRows } = categoryBookIds.length > 0
-    ? await supabase
-        .from('books')
-        .select('id, list_status, is_rocket_model, highlight_category:highlight_categories(*)')
-        .in('id', categoryBookIds)
-    : { data: [] };
+  const [{ data: statusRows }, viewerFlags, fallbackEssaysByBookId] = await Promise.all([
+    categoryBookIds.length > 0
+      ? supabase
+          .from('books')
+          .select('id, list_status, is_rocket_model, highlight_category:highlight_categories(*)')
+          .in('id', categoryBookIds)
+      : { data: [] },
+    getViewerEssayFlags(supabase, profile?.id, allEssayIds),
+    getFallbackBookEssays(supabase, booksMissingEssays.map((book) => book.id)),
+  ]);
   const statusById = new Map<string, Pick<CategoryBook, 'list_status' | 'is_rocket_model' | 'highlight_category'>>();
   for (const row of (statusRows ?? []) as unknown as Array<{ id: string; list_status: BookListStatus; is_rocket_model: boolean; highlight_category: HighlightCategory | HighlightCategory[] | null }>) {
     statusById.set(row.id, {
@@ -104,39 +138,6 @@ export default async function HledatPage() {
     }
   }
 
-  const allEssayIds = Array.from(
-    new Set([...popularEssays, ...recentEssays, ...teamEssays].map((e) => e.id)),
-  );
-  const viewerFlags = await getViewerEssayFlags(supabase, profile?.id, allEssayIds);
-
-  // Extract latest essays for books
-  const essaysByBookId: Record<string, Array<{ id: string; title: string; author: { id: string; name: string | null; picture: string | null; team_id?: string | null } | null }>> = {};
-  for (const essay of [...recentEssays, ...popularEssays, ...teamEssays]) {
-    if (!essay.book_id) continue;
-    const list = (essaysByBookId[essay.book_id] ??= []);
-    if (list.length < 4 && !list.some((e) => e.id === essay.id)) {
-      list.push({
-        id: essay.id,
-        title: essay.title,
-        author: essay.author ? {
-          id: essay.author.id,
-          name: essay.author.name,
-          picture: essay.author.picture,
-          team_id: essay.author.team_id,
-        } : null,
-      });
-    }
-  }
-
-  // Cards only see pool essays (recent/popular/team) — books missed by all
-  // pools would wrongly render "Zatím bez eseje", so backfill their latest essays.
-  const booksMissingEssays = books.filter(
-    (book) => (essaysByBookId[book.id] ?? []).length === 0 && (book.essay_count ?? 0) > 0,
-  );
-  const fallbackEssaysByBookId = await getFallbackBookEssays(
-    supabase,
-    booksMissingEssays.map((book) => book.id),
-  );
   const mergedEssaysByBookId = mergeBookEssayMaps(essaysByBookId, fallbackEssaysByBookId);
 
   const popularWithVoted = annotateViewerFlags(popularEssays, viewerFlags);
