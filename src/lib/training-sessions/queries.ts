@@ -29,6 +29,19 @@ export interface ListSessionsFilter {
   limit?: number
   /** Rows to skip; only used for id-less listing (cursor-style feeds). */
   offset?: number
+  excludeTeamId?: string
+  /** Not cancelled and accepting at least one guest; whether a spot is still free is checked by the caller. */
+  openToGuests?: boolean
+  /** Keeps sessions inside any of these team/time windows; an empty list matches nothing. */
+  teamWindows?: TeamWindow[]
+}
+
+export interface TeamWindow {
+  teamIds: string[]
+  /** Inclusive ISO start of the window. */
+  from: string
+  /** Exclusive ISO end of the window. */
+  to: string
 }
 
 const DEFAULT_LIST_LIMIT = 200
@@ -58,6 +71,15 @@ export async function listSessions(
     if (filter.from) query = query.gte("ends_at", filter.from)
     if (filter.to) query = query.lt("ends_at", filter.to)
     if (filter.teamId) query = query.eq("team_id", filter.teamId)
+    if (filter.excludeTeamId) query = query.neq("team_id", filter.excludeTeamId)
+    if (filter.openToGuests) query = query.is("cancelled_at", null).gt("guest_capacity", 0)
+    if (filter.teamWindows) {
+      query = query.or(
+        filter.teamWindows
+          .map((w) => `and(team_id.in.(${w.teamIds.join(",")}),starts_at.gte.${w.from},starts_at.lt.${w.to})`)
+          .join(","),
+      )
+    }
     if (ids) query = query.in("id", ids)
     // Chunked id lookups already sort globally below, so offset belongs to the plain listing path.
     const offset = ids ? 0 : (filter.offset ?? 0)
@@ -67,6 +89,7 @@ export async function listSessions(
     return (data ?? []) as unknown as TrainingSessionListItem[]
   }
 
+  if (filter.teamWindows?.length === 0) return []
   if (!filter.ids) return run()
   if (filter.ids.length === 0) return []
   const results = (await Promise.all(chunk(filter.ids, ID_CHUNK_SIZE).map((ids) => run(ids)))).flat()
@@ -80,16 +103,19 @@ export async function listViewerSessions(
   viewer: SessionViewer,
   filter: Omit<ListSessionsFilter, "teamId" | "ids">,
 ): Promise<TrainingSessionListItem[]> {
-  const { data, error } = await supabase
-    .from("training_session_guests")
-    .select("training_session_id")
-    .eq("profile_id", viewer.profileId)
-  if (error) throw error
-  const joinedIds = (data ?? []).map((g) => g.training_session_id)
+  const listJoined = async (): Promise<TrainingSessionListItem[]> => {
+    const { data, error } = await supabase
+      .from("training_session_guests")
+      .select("training_session_id")
+      .eq("profile_id", viewer.profileId)
+    if (error) throw error
+    const joinedIds = (data ?? []).map((g) => g.training_session_id)
+    return joinedIds.length > 0 ? listSessions(supabase, { ...filter, ids: joinedIds }) : []
+  }
 
   const [teamSessions, joinedSessions] = await Promise.all([
     viewer.teamId ? listSessions(supabase, { ...filter, teamId: viewer.teamId }) : [],
-    joinedIds.length > 0 ? listSessions(supabase, { ...filter, ids: joinedIds }) : [],
+    listJoined(),
   ])
   const unique = new Map([...teamSessions, ...joinedSessions].map((s) => [s.id, s]))
   return [...unique.values()]

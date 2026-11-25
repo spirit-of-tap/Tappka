@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { matchesDiscoverFilter, sessionStudyYear } from "./discover"
+import { matchesDiscoverFilter, sessionStudyYear, studyYearWindows } from "./discover"
 import type { TrainingSessionListItem } from "./types"
 
 const NOW = "2026-11-05T09:00:00.000Z"
@@ -91,5 +91,36 @@ describe("matchesDiscoverFilter", () => {
       guests: [{ profile_id: "g1", joined_at: "2026-11-01T00:00:00Z", profile: null }],
     })
     expect(matchesDiscoverFilter(full, "volna-mista", null, viewer, NOW)).toBe(false)
+  })
+})
+
+describe("studyYearWindows", () => {
+  const teams = [
+    { id: "t1", onboardingYear: 2024 },
+    { id: "t2", onboardingYear: 2 },
+    { id: "t3", onboardingYear: null },
+    { id: "t4", onboardingYear: 2026 },
+  ]
+
+  it("groups teams of one cohort into a single window", () => {
+    expect(studyYearWindows(teams, 2, NOW)).toEqual([
+      { teamIds: ["t1"], from: "2025-09-01T00:00:00.000Z", to: "2026-09-01T00:00:00.000Z" },
+      { teamIds: ["t2"], from: "2026-09-01T00:00:00.000Z", to: "2027-09-01T00:00:00.000Z" },
+      { teamIds: ["t3", "t4"], from: "2027-09-01T00:00:00.000Z", to: "2028-09-01T00:00:00.000Z" },
+    ])
+  })
+
+  it("agrees with sessionStudyYear on both sides of every boundary", () => {
+    for (const year of [1, 2, 3]) {
+      for (const window of studyYearWindows(teams, year, NOW)) {
+        const lastMoment = new Date(Date.parse(window.to) - 1).toISOString()
+        for (const teamId of window.teamIds) {
+          const onboarding = teams.find((team) => team.id === teamId)?.onboardingYear
+          expect(sessionStudyYear(window.from, onboarding, NOW)).toBe(year)
+          expect(sessionStudyYear(lastMoment, onboarding, NOW)).toBe(year)
+          expect(sessionStudyYear(window.to, onboarding, NOW)).not.toBe(year)
+        }
+      }
+    }
   })
 })
