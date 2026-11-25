@@ -767,38 +767,47 @@ export async function getUserBookPointsStats(
   /** Points approved in the current semester (winter Sep–Jan, summer Feb–Aug). */
   approved_points_this_semester: number;
 }> {
-  const { data: bookEssays, error } = await supabase
-    .from('essays')
-    .select('id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
-    .eq('author_profile_id', profileId)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .not('book_id', 'is', null);
+  const [
+    { data: bookEssays, error },
+    { data: sourceEssays, error: sourceError },
+    { data: orphanFrozenEssays, error: orphanError },
+    { count },
+  ] = await Promise.all([
+    supabase
+      .from('essays')
+      .select('id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
+      .eq('author_profile_id', profileId)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .not('book_id', 'is', null),
+    supabase
+      .from('essays')
+      .select('id, content_source_id, frozen_book_points, published_at, content_sources!inner(points, status)')
+      .eq('author_profile_id', profileId)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .not('content_source_id', 'is', null),
+    // Frozen essays whose old-system book was never linked/imported at all —
+    // no book_id to key on, but the earned credit still counts.
+    supabase
+      .from('essays')
+      .select('id, frozen_book_points, published_at')
+      .eq('author_profile_id', profileId)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .is('book_id', null)
+      .is('content_source_id', null)
+      .not('frozen_book_points', 'is', null),
+    supabase
+      .from('essays')
+      .select('*', { count: 'exact', head: true })
+      .eq('author_profile_id', profileId)
+      .not('published_at', 'is', null)
+      .is('removed_at', null),
+  ]);
 
   if (error) throw error;
-
-  const { data: sourceEssays, error: sourceError } = await supabase
-    .from('essays')
-    .select('id, content_source_id, frozen_book_points, published_at, content_sources!inner(points, status)')
-    .eq('author_profile_id', profileId)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .not('content_source_id', 'is', null);
-
   if (sourceError) throw sourceError;
-
-  // Frozen essays whose old-system book was never linked/imported at all —
-  // no book_id to key on, but the earned credit still counts.
-  const { data: orphanFrozenEssays, error: orphanError } = await supabase
-    .from('essays')
-    .select('id, frozen_book_points, published_at')
-    .eq('author_profile_id', profileId)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .is('book_id', null)
-    .is('content_source_id', null)
-    .not('frozen_book_points', 'is', null);
-
   if (orphanError) throw orphanError;
 
   type BookRow = {
@@ -881,12 +890,6 @@ export async function getUserBookPointsStats(
 
   const approved_points = Array.from(approved.values()).reduce((s, p) => s + p, 0);
 
-  const { count } = await supabase
-    .from('essays')
-    .select('*', { count: 'exact', head: true })
-    .eq('author_profile_id', profileId)
-    .not('published_at', 'is', null)
-    .is('removed_at', null);
 
   return {
     approved_points,
@@ -908,38 +911,40 @@ export async function getAuthorsApprovedBookPoints(
 ): Promise<Record<string, number>> {
   if (authorProfileIds.length === 0) return {};
 
-  const { data: bookEssays, error } = await supabase
-    .from('essays')
-    .select('id, author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
-    .in('author_profile_id', authorProfileIds)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .not('book_id', 'is', null);
+  const [
+    { data: bookEssays, error },
+    { data: sourceEssays, error: sourceError },
+    { data: orphanFrozenEssays, error: orphanError },
+  ] = await Promise.all([
+    supabase
+      .from('essays')
+      .select('id, author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
+      .in('author_profile_id', authorProfileIds)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .not('book_id', 'is', null),
+    supabase
+      .from('essays')
+      .select('id, author_profile_id, content_source_id, frozen_book_points, content_sources!inner(points, status)')
+      .in('author_profile_id', authorProfileIds)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .not('content_source_id', 'is', null),
+    // Frozen essays whose old-system book was never linked/imported at all —
+    // no book_id to key on, but the earned credit still counts.
+    supabase
+      .from('essays')
+      .select('id, author_profile_id, frozen_book_points')
+      .in('author_profile_id', authorProfileIds)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .is('book_id', null)
+      .is('content_source_id', null)
+      .not('frozen_book_points', 'is', null),
+  ]);
 
   if (error) throw error;
-
-  const { data: sourceEssays, error: sourceError } = await supabase
-    .from('essays')
-    .select('id, author_profile_id, content_source_id, frozen_book_points, content_sources!inner(points, status)')
-    .in('author_profile_id', authorProfileIds)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .not('content_source_id', 'is', null);
-
   if (sourceError) throw sourceError;
-
-  // Frozen essays whose old-system book was never linked/imported at all —
-  // no book_id to key on, but the earned credit still counts.
-  const { data: orphanFrozenEssays, error: orphanError } = await supabase
-    .from('essays')
-    .select('id, author_profile_id, frozen_book_points')
-    .in('author_profile_id', authorProfileIds)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .is('book_id', null)
-    .is('content_source_id', null)
-    .not('frozen_book_points', 'is', null);
-
   if (orphanError) throw orphanError;
 
   type BookRow = {
@@ -1031,38 +1036,40 @@ export async function getTeamBookPointsStats(
 
   const profileIds = teamProfiles.map((p: { id: string }) => p.id);
 
-  const { data: bookEssays, error: essayError } = await supabase
-    .from('essays')
-    .select('id, author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
-    .in('author_profile_id', profileIds)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .not('book_id', 'is', null);
+  const [
+    { data: bookEssays, error: essayError },
+    { data: sourceEssays, error: sourceError },
+    { data: orphanFrozenEssays, error: orphanError },
+  ] = await Promise.all([
+    supabase
+      .from('essays')
+      .select('id, author_profile_id, book_id, frozen_book_points, published_at, books!inner(book_points, list_status)')
+      .in('author_profile_id', profileIds)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .not('book_id', 'is', null),
+    supabase
+      .from('essays')
+      .select('id, author_profile_id, content_source_id, frozen_book_points, content_sources!inner(points, status)')
+      .in('author_profile_id', profileIds)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .not('content_source_id', 'is', null),
+    // Frozen essays whose old-system book was never linked/imported at all —
+    // no book_id to key on, but the earned credit still counts.
+    supabase
+      .from('essays')
+      .select('id, author_profile_id, frozen_book_points')
+      .in('author_profile_id', profileIds)
+      .not('published_at', 'is', null)
+      .is('removed_at', null)
+      .is('book_id', null)
+      .is('content_source_id', null)
+      .not('frozen_book_points', 'is', null),
+  ]);
 
   if (essayError) throw essayError;
-
-  const { data: sourceEssays, error: sourceError } = await supabase
-    .from('essays')
-    .select('id, author_profile_id, content_source_id, frozen_book_points, content_sources!inner(points, status)')
-    .in('author_profile_id', profileIds)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .not('content_source_id', 'is', null);
-
   if (sourceError) throw sourceError;
-
-  // Frozen essays whose old-system book was never linked/imported at all —
-  // no book_id to key on, but the earned credit still counts.
-  const { data: orphanFrozenEssays, error: orphanError } = await supabase
-    .from('essays')
-    .select('id, author_profile_id, frozen_book_points')
-    .in('author_profile_id', profileIds)
-    .not('published_at', 'is', null)
-    .is('removed_at', null)
-    .is('book_id', null)
-    .is('content_source_id', null)
-    .not('frozen_book_points', 'is', null);
-
   if (orphanError) throw orphanError;
 
   type BookRow = {
