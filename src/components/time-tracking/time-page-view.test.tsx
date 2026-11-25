@@ -178,6 +178,20 @@ describe("TimePageView", () => {
     expect(replace).toHaveBeenCalledWith("/cas?from=2026-09-14&to=2026-09-20&direction=practise", { scroll: false })
   })
 
+  it("shows the remaining time and the top direction in the hero", () => {
+    renderView([MONDAY_TRAINING, WEDNESDAY_PRACTISE])
+
+    expect(screen.getByText(/Zbývá 34\s*h/)).toBeInTheDocument()
+    expect(screen.getByText("Nejvíc dáváš do směru Training.")).toBeInTheDocument()
+    expect(screen.getByRole("list", { name: "Čas po dnech" })).toBeInTheDocument()
+  })
+
+  it("hides the day chart for ranges over two weeks", () => {
+    renderView([MONDAY_TRAINING], presetRange("this-month", TODAY_KEY))
+
+    expect(screen.queryByRole("list", { name: "Čas po dnech" })).not.toBeInTheDocument()
+  })
+
   it("labels the weekly goal with the preset name", () => {
     renderView([MONDAY_TRAINING])
 

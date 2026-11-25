@@ -22,7 +22,7 @@ export function MobileTimerTab() {
       variant="ghost"
       aria-label={running ? "Zastavit časomíru" : "Spustit časomíru"}
       onClick={running ? openStopSheet : openStartSheet}
-      className="h-auto flex-1 flex-col gap-0.5 rounded-none px-0 py-0 text-muted-foreground transition-transform hover:bg-transparent active:scale-[0.98] focus-ring"
+      className="h-auto flex-1 flex-col gap-0.5 rounded-none px-0 py-0 text-muted-foreground motion-safe:transition-transform hover:bg-transparent motion-safe:active:scale-[0.98] focus-ring"
     >
       <span
         aria-hidden

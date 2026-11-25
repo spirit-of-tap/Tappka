@@ -37,7 +37,7 @@ export function EssayPinButton({ essayId, isPinned: initialPinned }: EssayPinBut
       onClick={toggle}
       disabled={loading}
       className={cn(
-        'inline-flex items-center gap-1.5 text-xs rounded-md px-2 py-1 transition-colors',
+        'inline-flex items-center gap-1.5 text-xs rounded-md px-2 py-1 motion-safe:transition-colors',
         pinned
           ? 'bg-primary/10 text-primary hover:bg-primary/15'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted',

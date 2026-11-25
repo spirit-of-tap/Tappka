@@ -155,6 +155,7 @@ export function ActiveLoansCard({ loans }: ActiveLoansCardProps) {
             <div className="flex items-start gap-3.5 min-w-0">
               <Link
                 href={`/cteni/knihy/${book.id}`}
+                aria-label={book.title_cs}
                 className="shrink-0 w-11 h-15 rounded-md overflow-hidden bg-muted flex items-center justify-center focus-ring mt-0.5 border border-border/40"
               >
                 {book.google_books_cover_url ? (
@@ -180,7 +181,7 @@ export function ActiveLoansCard({ loans }: ActiveLoansCardProps) {
                   <span
                     className={cn(
                       'inline-flex items-center gap-1 text-xs',
-                      dueInfo.tone === 'destructive' && 'text-destructive font-semibold',
+                      dueInfo.tone === 'destructive' && 'text-destructive-strong font-semibold',
                       dueInfo.tone === 'warning' && 'text-warning-strong font-medium',
                       dueInfo.tone === 'neutral' && 'text-muted-foreground',
                     )}
@@ -197,7 +198,7 @@ export function ActiveLoansCard({ loans }: ActiveLoansCardProps) {
                       className={cn(
                         'rounded-full px-2 py-0.2 text-[10px] font-semibold',
                         dueInfo.tone === 'destructive' &&
-                          'bg-destructive/10 text-destructive',
+                          'bg-destructive/10 text-destructive-strong',
                         dueInfo.tone === 'warning' &&
                           'bg-warning/15 text-warning-strong',
                       )}

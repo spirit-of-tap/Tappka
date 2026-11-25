@@ -225,7 +225,7 @@ export function EssayHistorySheet({
                               type="button"
                               onClick={() => void openRevision(revision)}
                               disabled={isPending}
-                              className="focus-ring group ml-3 block w-full rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/60 disabled:opacity-60"
+                              className="focus-ring group ml-3 block w-full rounded-lg px-3 py-2.5 text-left motion-safe:transition-colors hover:bg-muted/60 disabled:opacity-60"
                             >
                               <div className="flex items-baseline justify-between gap-2">
                                 <span className="text-sm font-semibold tabular-nums">
@@ -254,7 +254,7 @@ export function EssayHistorySheet({
                                 {isPending ? (
                                   <Spinner className="size-3" />
                                 ) : (
-                                  <Eye className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                                  <Eye className="size-3 opacity-0 motion-safe:transition-opacity group-hover:opacity-100" />
                                 )}
                               </p>
 

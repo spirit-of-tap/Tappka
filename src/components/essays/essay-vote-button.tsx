@@ -130,17 +130,17 @@ export function EssayVoteButton({
             disabled={loading}
             aria-label={voted ? 'Odebrat hlas' : 'Označit esej jako užitečnou'}
             className={cn(
-              'relative flex shrink-0 items-center gap-2.5 rounded-full border border-border/80 bg-card px-5 py-2.5 transition-colors select-none whitespace-nowrap shadow-2xs',
+              'relative flex shrink-0 items-center gap-2.5 rounded-full border border-border/80 bg-card px-5 py-2.5 motion-safe:transition-colors select-none whitespace-nowrap shadow-2xs',
               burst && 'vote-pop',
               voted
-                ? 'bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/25 hover:bg-primary/90'
+                ? 'bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
             {loading ? (
               <Spinner className="size-4" />
             ) : (
-              <ThumbsUp className={cn('transition-transform', voted ? 'size-5' : 'size-4')} />
+              <ThumbsUp className={cn('motion-safe:transition-transform', voted ? 'size-5' : 'size-4')} />
             )}
             <span className="text-sm font-semibold">
               {voted ? 'Líbilo se mi to' : 'Líbí se mi to'}
@@ -164,7 +164,7 @@ export function EssayVoteButton({
       disabled={loading}
       aria-label={voted ? 'Odebrat hlas' : 'Hlasovat'}
       className={cn(
-        'flex items-center gap-1 text-xs rounded-full px-2 py-0.5 transition-colors select-none',
+        'flex items-center gap-1 text-xs rounded-full px-2 py-0.5 motion-safe:transition-colors select-none',
         voted
           ? 'bg-primary/15 text-primary font-semibold'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',

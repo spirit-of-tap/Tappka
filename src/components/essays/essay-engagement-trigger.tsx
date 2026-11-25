@@ -34,7 +34,7 @@ export function EssayEngagementTrigger({
         type="button"
         onClick={() => openWithTab('views')}
         className={cn(
-          'inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors focus-ring rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer select-none',
+          'inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground motion-safe:transition-colors focus-ring rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer select-none',
           className,
         )}
         title="Zobrazit aktivitu u eseje"
@@ -51,7 +51,7 @@ export function EssayEngagementTrigger({
             type="button"
             onClick={() => openWithTab('votes')}
             className={cn(
-              'inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors focus-ring rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer select-none tabular-nums',
+              'inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground motion-safe:transition-colors focus-ring rounded px-1.5 py-0.5 -mx-1.5 cursor-pointer select-none tabular-nums',
               className,
             )}
             title="Zobrazit, kdo dal to se mi líbí"

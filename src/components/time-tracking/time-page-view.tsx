@@ -4,7 +4,6 @@ import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Clock, FilterX, Plus } from "lucide-react"
 
-import { MetricProgress } from "@/components/metrics/metric-progress"
 import { MobileFab, MobileFabSpacer } from "@/components/mobile-fab"
 import { Button } from "@/components/ui/button"
 import {
@@ -27,10 +26,12 @@ import {
 } from "@/components/ui/select"
 import { METRICS } from "@/lib/metrics/config"
 import { MS_PER_HOUR, TIME_DIRECTIONS, TIME_DIRECTION_VALUES } from "@/lib/time-tracking/constants"
+import { breakdownByDay } from "@/lib/time-tracking/day-breakdown"
 import {
   type DateKeyRange,
   matchPreset,
   presetLabel,
+  rangeDayCount,
   scaleWeeklyTarget,
 } from "@/lib/time-tracking/date-range"
 import { entryDurationMs, formatDurationShort } from "@/lib/time-tracking/duration"
@@ -40,11 +41,13 @@ import { cn } from "@/lib/utils"
 import { pluralizeCz } from "@/lib/utils/pluralize-cz"
 
 import { formatDayHeading, formatRangeLabel } from "./cas-query"
+import { MAX_CHART_DAYS } from "./day-chart"
 import { DateRangeNav } from "./date-range-nav"
 import { DirectionSummary } from "./direction-summary"
 import { EntryFormDialog } from "./entry-form-dialog"
 import { RunningEntryRow, TimeEntryRow } from "./time-entry-row"
 import { useOptionalTimer } from "./timer-provider"
+import { WeekHero } from "./week-hero"
 
 export const DIRECTION_PARAM = "direction"
 export const TAG_PARAM = "tag"
@@ -130,11 +133,14 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
 
   const closed = React.useMemo(() => items.filter((entry) => entry.ended_at !== null), [items])
 
-  const summary = summarize(runningInRange ? [...closed, runningInRange] : closed, {
+  const rangeEntries = runningInRange ? [...closed, runningInRange] : closed
+  const summary = summarize(rangeEntries, {
     includeRunning: true,
     now: new Date(liveNowMs),
     range: instants,
   })
+  const chartDays =
+    rangeDayCount(range) > MAX_CHART_DAYS ? null : breakdownByDay(rangeEntries, range, new Date(liveNowMs))
 
   const matchesFilter = React.useCallback(
     (entry: TimeEntryWithTag) =>
@@ -223,16 +229,18 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
 
       <DateRangeNav range={range} todayKey={todayKey} />
 
-      <MetricProgress
-        period="week"
-        unit="hours"
-        goals={[
-          {
-            current: summary.totalMs / MS_PER_HOUR,
-            target: scaleWeeklyTarget(METRICS["time-weekly"].target, range),
-            label: periodLabel,
-          },
-        ]}
+      <WeekHero
+        current={summary.totalMs / MS_PER_HOUR}
+        target={scaleWeeklyTarget(METRICS["time-weekly"].target, range)}
+        label={periodLabel}
+        rangeLabel={activePreset ? formatRangeLabel(range) : undefined}
+        byDirection={summary.byDirection}
+        days={chartDays}
+        todayKey={todayKey}
+        timerElapsedMs={timer?.active ? timer.elapsedMs : null}
+        timerPending={timer?.isPending}
+        onStartTimer={timer?.openStartSheet}
+        onStopTimer={timer?.openStopSheet}
       />
 
       <DirectionSummary byDirection={summary.byDirection} />
@@ -321,7 +329,7 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {showRunning && runningInRange && (
             <RunningEntryRow
               entry={runningInRange}
@@ -333,14 +341,16 @@ export function TimePageView({ entries, tagCatalog, range, instants, todayKey, n
           {days.map((day) => {
             const dayTotal = day.entries.reduce((sum, entry) => sum + entryDurationMs(entry), 0)
             return (
-              <section key={day.dateKey} aria-labelledby={`day-${day.dateKey}`} className="space-y-1">
-                <div className="flex items-baseline justify-between gap-2 px-2">
+              <section key={day.dateKey} aria-labelledby={`day-${day.dateKey}`} className="space-y-2">
+                <div className="flex items-baseline justify-between gap-2 px-1">
                   <h2 id={`day-${day.dateKey}`} className="text-sm font-semibold capitalize">
                     {formatDayHeading(day.dateKey)}
                   </h2>
-                  <span className="text-xs tabular-nums text-muted-foreground">{formatDurationShort(dayTotal)}</span>
+                  <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                    {formatDurationShort(dayTotal)}
+                  </span>
                 </div>
-                <ul className="space-y-0.5">
+                <ul className="space-y-2">
                   {day.entries.map((entry) => (
                     <li key={entry.id}>
                       <TimeEntryRow

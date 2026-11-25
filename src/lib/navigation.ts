@@ -21,6 +21,9 @@ import {
 import { KasaIcon } from "@/lib/komunitni-kasa/brand/kasa-icon";
 import { canAccessFeature, type AccessProfile, type BetaFeature } from "./feature-access";
 
+/** Sidebar group for in-app modules; modules without one stay in "Společné". */
+export type NavGroup = "individual" | "team";
+
 export interface NavModule {
   title: string;
   url: string;
@@ -35,6 +38,7 @@ export interface NavModule {
   description: string;
   /** Renders as a full-width featured card on the /moduly hub (high-traffic modules). */
   featured?: boolean;
+  group?: NavGroup;
 }
 
 export const HARMONOGRAM_URL = "https://docs.google.com/spreadsheets/d/1NLVDSlRzAAg0JysRx6F6qaMs5Vh96Pe4NLRSPzWzGBY/edit?gid=204439";
@@ -45,20 +49,20 @@ export const NAV_MODULES: NavModule[] = [
   { title: "Harmonogram", url: HARMONOGRAM_URL, icon: CalendarRange, external: true, description: "Aktuální harmonogram školy a rozvrhu." },
   { title: "Komunita", url: "/komunita", icon: Users, description: "Lidé, týmy a profily v Tiimiakatemii." },
   { title: "Komunitní kasa", url: "/komunitni-kasa", icon: KasaIcon, description: "Stav kasy, kam jdou peníze, pravidla a značka." },
-  { title: "Zák. schůzky", url: "/schuzky", icon: Handshake, feature: "customerMeetings", description: "Evidence zákaznických schůzek." },
-  { title: "Koučování", url: "/koucovani", icon: GraduationCap, feature: "coaching", description: "Evidence koučovacích sezení." },
-  { title: "Týmová reflexe", url: "/tymova-reflexe", icon: NotebookPen, feature: "teamReflection", description: "Reflexe týmové spolupráce a ročníková hodnocení." },
-  { title: "Týmový deník", url: "/tymovy-denik", icon: Activity, feature: "teamDiary", description: "Denní zápisy a přehled týmových aktivit." },
-  { title: "Čas", url: "/cas", icon: Timer, description: "Časomíra a přehled času ve směrech Training / Reading / Practise / Projekt." },
-  { title: "Training sessions", url: "/ts/prehled", icon: Presentation, description: "Tréninkové sessions týmů, příprava, docházka a reflexe." },
-  { title: "Rocket Model", url: "/rocket-model", icon: Rocket, feature: "rocketModel", description: "Osobní a týmové hodnocení podle Rocket Modelu." },
-  { title: "Týmové dokumenty", url: "/tymove-dokumenty", icon: Files, feature: "teamDocuments", description: "Smlouvy, finanční politika a další dokumenty týmu." },
+  { title: "Zák. schůzky", url: "/schuzky", group: "individual", icon: Handshake, feature: "customerMeetings", description: "Evidence zákaznických schůzek." },
+  { title: "Koučování", url: "/koucovani", group: "individual", icon: GraduationCap, feature: "coaching", description: "Evidence koučovacích sezení." },
+  { title: "Týmová reflexe", url: "/tymova-reflexe", group: "team", icon: NotebookPen, feature: "teamReflection", description: "Reflexe týmové spolupráce a ročníková hodnocení." },
+  { title: "Týmový deník", url: "/tymovy-denik", group: "team", icon: Activity, feature: "teamDiary", description: "Denní zápisy a přehled týmových aktivit." },
+  { title: "Čas", url: "/cas", group: "individual", icon: Timer, description: "Časomíra a přehled času ve směrech Training / Reading / Practise / Projekt." },
+  { title: "Training sessions", url: "/ts/prehled", group: "team", icon: Presentation, description: "Tréninkové sessions týmů, příprava, docházka a reflexe." },
+  { title: "Rocket Model", url: "/rocket-model", group: "team", icon: Rocket, feature: "rocketModel", description: "Osobní a týmové hodnocení podle Rocket Modelu." },
+  { title: "Týmové dokumenty", url: "/tymove-dokumenty", group: "team", icon: Files, feature: "teamDocuments", description: "Smlouvy, finanční politika a další dokumenty týmu." },
   { title: "Nástroje a techniky", url: "/nastroje-techniky", icon: Wrench, feature: "toolsTechniques", featured: true, description: "Katalog modelů, technik a nástrojů pro práci." },
-  { title: "Osobnostní testy", url: "/osobnostni-testy", icon: Brain, feature: "personalityTests", description: "Výsledky osobnostních testů a jejich vývoj v čase." },
+  { title: "Osobnostní testy", url: "/osobnostni-testy", group: "individual", icon: Brain, feature: "personalityTests", description: "Výsledky osobnostních testů a jejich vývoj v čase." },
   // Čtení renders as a plain link; its sub-navigation lives in
   // src/app/(main)/cteni/layout.tsx as a tab bar.
-  { title: "Čtení", url: "/cteni/prehled", icon: BookOpen, featured: true, description: "Knihovna knih, eseje a jejich hodnocení." },
-  { title: "Birth Giving", url: "/birth-giving", icon: Gift, feature: "birthGiving", description: "Týmová setkání Birth Giving a retrospektivy." },
+  { title: "Čtení", url: "/cteni/prehled", group: "individual", icon: BookOpen, featured: true, description: "Knihovna knih, eseje a jejich hodnocení." },
+  { title: "Birth Giving", url: "/birth-giving", group: "team", icon: Gift, feature: "birthGiving", description: "Týmová setkání Birth Giving a retrospektivy." },
 ];
 
 /** /moduly hub card order — by visit frequency, most visited first (product owner data).
@@ -92,22 +96,47 @@ export function getHubModules(profile: AccessProfile | null | undefined | boolea
   });
 }
 
+/** Colour family of a sidebar section: its dot and the icon chips of its items. */
+export type NavTone = "shared" | "individual" | "team" | "neutral";
+
 export interface NavSection {
   title: string;
+  /** One line under the title saying who the modules are for. */
+  hint?: string;
+  tone: NavTone;
   items: NavModule[];
 }
 
+const NAV_GROUPS: Record<NavGroup, { title: string; hint: string }> = {
+  individual: { title: "Můj rozvoj", hint: "Tvoje vlastní práce a růst" },
+  team: { title: "Můj tým", hint: "Co děláte společně jako tým" },
+};
+
 /**
- * Sidebar grouping: internal modules stay in "Hlavní", external links get
- * their own section so they never read as in-app modules.
+ * Sidebar grouping: shared modules in "Společné", then individual and team
+ * modules; external links get their own section so they never read as in-app
+ * modules.
  */
 export function getSidebarSections(devItems: NavModule[] = []): NavSection[] {
   const internal = NAV_MODULES.filter((m) => !m.external);
   const external = NAV_MODULES.filter((m) => m.external);
+  const grouped = (Object.keys(NAV_GROUPS) as NavGroup[]).map((group) => ({
+    ...NAV_GROUPS[group],
+    tone: group,
+    items: internal.filter((m) => m.group === group),
+  }));
 
   return [
-    { title: "Hlavní", items: internal },
-    ...(external.length > 0 ? [{ title: "Externí odkazy", items: external }] : []),
-    ...(devItems.length > 0 ? [{ title: "Dev", items: devItems }] : []),
+    {
+      title: "Společné",
+      hint: "Pro celou komunitu",
+      tone: "shared",
+      items: internal.filter((m) => !m.group),
+    },
+    ...grouped,
+    ...(external.length > 0
+      ? [{ title: "Externí odkazy", tone: "neutral" as const, items: external }]
+      : []),
+    ...(devItems.length > 0 ? [{ title: "Dev", tone: "neutral" as const, items: devItems }] : []),
   ];
 }

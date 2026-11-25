@@ -1,3 +1,5 @@
+import { pluralizeCz } from "@/lib/utils/pluralize-cz"
+
 import type { SessionConflict } from "./conflicts"
 import { PRAGUE_TIME_ZONE } from "./constants"
 import type { SessionTiming } from "./types"
@@ -19,6 +21,24 @@ export function pragueDateKey(value: string | Date): string {
 export function formatDayHeading(iso: string): string {
   const text = DAY_HEADING_FORMAT.format(new Date(iso))
   return text.charAt(0).toLocaleUpperCase("cs-CZ") + text.slice(1)
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+const DAY_COUNT_FORMS: [string, string, string] = ["den", "dny", "dnů"]
+
+function dayNumber(dateKey: string): number {
+  return Date.parse(`${dateKey}T00:00:00Z`) / MS_PER_DAY
+}
+
+/** Relative hint for a Prague day key ("Dnes", "Zítra", "za 3 dny"), measured in calendar days. */
+export function formatRelativeDay(dateKey: string, now: string | Date): string {
+  const offset = Math.round(dayNumber(dateKey) - dayNumber(pragueDateKey(now)))
+  if (offset === 0) return "Dnes"
+  if (offset === 1) return "Zítra"
+  if (offset === -1) return "Včera"
+  const days = Math.abs(offset)
+  const unit = pluralizeCz(days, DAY_COUNT_FORMS)
+  return offset > 0 ? `za ${days} ${unit}` : `před ${days} ${unit}`
 }
 
 export function formatTime(iso: string): string {

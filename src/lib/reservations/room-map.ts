@@ -1,0 +1,272 @@
+import { OPERATING_HOURS } from "./types";
+import type { Reservation, Room } from "./types";
+import {
+  doTimesOverlap,
+  getNextAvailableTime,
+  isRoomAvailableOnDay,
+  isSlotInPast,
+} from "./utils";
+
+export const OTHER_FLOOR_LABEL = "Ostatní";
+
+export const SLOT_CHIP_STEP_MINUTES = 30;
+
+export interface FloorGroup<T extends { code: string }> {
+  key: string;
+  label: string;
+  rooms: T[];
+}
+
+/** Floor is the first digit after the building letter: D126 -> 1, D226 -> 2. */
+export function getRoomFloor(code: string): number | null {
+  const match = /^[a-z]+(\d)/i.exec(code.trim());
+  return match ? Number(match[1]) : null;
+}
+
+export function groupRoomsByFloor<T extends { code: string }>(
+  rooms: T[],
+): FloorGroup<T>[] {
+  const byFloor = new Map<number, T[]>();
+  const other: T[] = [];
+
+  for (const room of rooms) {
+    const floor = getRoomFloor(room.code);
+    if (floor === null) {
+      other.push(room);
+    } else {
+      byFloor.set(floor, [...(byFloor.get(floor) ?? []), room]);
+    }
+  }
+
+  const byCode = (a: T, b: T) => a.code.localeCompare(b.code);
+
+  const groups: FloorGroup<T>[] = [...byFloor.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([floor, floorRooms]) => ({
+      key: String(floor),
+      label: `${floor}. patro`,
+      rooms: [...floorRooms].sort(byCode),
+    }));
+
+  if (other.length > 0) {
+    groups.push({
+      key: "other",
+      label: OTHER_FLOOR_LABEL,
+      rooms: [...other].sort(byCode),
+    });
+  }
+
+  return groups;
+}
+
+export type RoomMapStatus =
+  | { kind: "closed" }
+  | { kind: "busy"; until: Date | null }
+  | { kind: "free"; until: Date | null; reservationCount: number };
+
+export interface StatusWindow {
+  start: Date;
+  end: Date;
+}
+
+/**
+ * Status of a room for a day. With a `window` the room is busy when a
+ * reservation overlaps it; without one (a whole-day view) it is only closed or free.
+ */
+export function getRoomMapStatus(
+  room: Room,
+  reservations: Reservation[],
+  day: Date,
+  window: StatusWindow | null,
+): RoomMapStatus {
+  if (!isRoomAvailableOnDay(room, day)) {
+    return { kind: "closed" };
+  }
+
+  const roomReservations = reservations.filter((r) => r.room_id === room.id);
+
+  if (!window) {
+    return { kind: "free", until: null, reservationCount: roomReservations.length };
+  }
+
+  const isBusy = roomReservations.some((r) =>
+    doTimesOverlap(window.start, window.end, new Date(r.start_at), new Date(r.end_at)),
+  );
+
+  if (isBusy) {
+    return { kind: "busy", until: getNextAvailableTime(roomReservations, window.start) };
+  }
+
+  const nextStart = roomReservations
+    .map((r) => new Date(r.start_at))
+    .filter((start) => start >= window.end && start.toDateString() === window.start.toDateString())
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+
+  const sameDay = window.start.toDateString();
+  return {
+    kind: "free",
+    until: nextStart ?? null,
+    reservationCount: roomReservations.filter((r) => new Date(r.start_at).toDateString() === sameDay).length,
+  };
+}
+
+export type SlotChipState = "free" | "busy" | "past";
+
+export interface SlotChip {
+  start: Date;
+  end: Date;
+  state: SlotChipState;
+}
+
+/** Start times for one room and day, with the chosen duration applied to every chip. */
+export function getSlotChips(
+  day: Date,
+  reservations: Reservation[],
+  durationMinutes: number,
+  now: Date = new Date(),
+): SlotChip[] {
+  const dayEnd = new Date(day);
+  dayEnd.setHours(OPERATING_HOURS.end, 0, 0, 0);
+
+  const chips: SlotChip[] = [];
+  const cursor = new Date(day);
+  cursor.setHours(OPERATING_HOURS.start, 0, 0, 0);
+
+  while (cursor.getTime() + durationMinutes * 60_000 <= dayEnd.getTime()) {
+    const start = new Date(cursor);
+    const end = new Date(cursor.getTime() + durationMinutes * 60_000);
+
+    let state: SlotChipState = "free";
+    if (isSlotInPast(start, now)) {
+      state = "past";
+    } else if (
+      reservations.some((r) =>
+        doTimesOverlap(start, end, new Date(r.start_at), new Date(r.end_at)),
+      )
+    ) {
+      state = "busy";
+    }
+
+    chips.push({ start, end, state });
+    cursor.setMinutes(cursor.getMinutes() + SLOT_CHIP_STEP_MINUTES);
+  }
+
+  return chips;
+}
+
+export const TIMELINE_START_HOUR = OPERATING_HOURS.start;
+export const TIMELINE_END_HOUR = OPERATING_HOURS.end;
+
+export interface TimelineSegment {
+  id: string;
+  start: Date;
+  end: Date;
+  left: number;
+  width: number;
+  mine: boolean;
+}
+
+/** Position of a moment on the day timeline in percent, clamped to 0–100. */
+export function timelinePercent(moment: Date, day: Date): number {
+  const start = new Date(day);
+  start.setHours(TIMELINE_START_HOUR, 0, 0, 0);
+  const span = (TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 3_600_000;
+  return Math.min(100, Math.max(0, ((moment.getTime() - start.getTime()) / span) * 100));
+}
+
+/** One room's reservations clipped to opening hours, sorted, as timeline percentages. */
+export function getTimelineSegments(
+  reservations: Reservation[],
+  roomId: string,
+  day: Date,
+  mineIds?: ReadonlySet<string>,
+): TimelineSegment[] {
+  const open = new Date(day);
+  open.setHours(TIMELINE_START_HOUR, 0, 0, 0);
+  const close = new Date(day);
+  close.setHours(TIMELINE_END_HOUR, 0, 0, 0);
+
+  return reservations
+    .filter((r) => r.room_id === roomId && !r.cancelled_at)
+    .flatMap((r) => {
+      const start = new Date(Math.max(new Date(r.start_at).getTime(), open.getTime()));
+      const end = new Date(Math.min(new Date(r.end_at).getTime(), close.getTime()));
+      if (end <= start) return [];
+      const left = timelinePercent(start, day);
+      return [{ id: r.id, start, end, left, width: timelinePercent(end, day) - left, mine: mineIds?.has(r.id) ?? false }];
+    })
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+}
+
+export const DRAG_SNAP_MINUTES = 15;
+export const CLICK_SELECTION_MINUTES = 60;
+
+export interface TimeRange {
+  start: Date;
+  end: Date;
+}
+
+/** Minutes after midnight at a horizontal fraction of the timeline, snapped to the drag step. */
+export function timelineMinutesAt(fraction: number): number {
+  const span = (TIMELINE_END_HOUR - TIMELINE_START_HOUR) * 60;
+  const raw = TIMELINE_START_HOUR * 60 + Math.min(1, Math.max(0, fraction)) * span;
+  return Math.round(raw / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES;
+}
+
+function atMinutes(day: Date, minutes: number): Date {
+  const result = new Date(day);
+  result.setHours(0, minutes, 0, 0);
+  return result;
+}
+
+/**
+ * Turns a drag between two timeline points into a bookable range: inside opening
+ * hours, not in the past and cut at the next reservation. A click (both points
+ * on the same step) selects `CLICK_SELECTION_MINUTES`. Null when nothing fits,
+ * e.g. the drag starts on a reservation.
+ */
+export function bookableRange(
+  day: Date,
+  fromMinutes: number,
+  toMinutes: number,
+  roomReservations: Reservation[],
+  now: Date = new Date(),
+): TimeRange | null {
+  let startMin = Math.min(fromMinutes, toMinutes);
+  let endMin = Math.max(fromMinutes, toMinutes);
+  if (endMin - startMin < DRAG_SNAP_MINUTES) endMin = startMin + CLICK_SELECTION_MINUTES;
+
+  const sameDay = now.toDateString() === day.toDateString();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const earliest = Math.max(
+    TIMELINE_START_HOUR * 60,
+    sameDay ? Math.ceil(nowMin / DRAG_SNAP_MINUTES) * DRAG_SNAP_MINUTES : 0,
+  );
+  startMin = Math.max(startMin, earliest);
+  endMin = Math.min(endMin, TIMELINE_END_HOUR * 60);
+
+  const start = atMinutes(day, startMin);
+  let end = atMinutes(day, endMin);
+  for (const reservation of roomReservations) {
+    if (reservation.cancelled_at) continue;
+    const busyStart = new Date(reservation.start_at);
+    const busyEnd = new Date(reservation.end_at);
+    if (busyStart <= start && start < busyEnd) return null;
+    if (busyStart > start && busyStart < end) end = busyStart;
+  }
+
+  return end.getTime() - start.getTime() >= DRAG_SNAP_MINUTES * 60_000 ? { start, end } : null;
+}
+
+/** The first bookable range of the day from now on, for keyboard booking. */
+export function firstBookableRange(
+  day: Date,
+  roomReservations: Reservation[],
+  now: Date = new Date(),
+): TimeRange | null {
+  for (let minutes = TIMELINE_START_HOUR * 60; minutes < TIMELINE_END_HOUR * 60; minutes += DRAG_SNAP_MINUTES) {
+    const range = bookableRange(day, minutes, minutes, roomReservations, now);
+    if (range) return range;
+  }
+  return null;
+}

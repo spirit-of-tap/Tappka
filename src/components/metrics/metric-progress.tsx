@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { Check, ChevronDown } from "lucide-react"
 import { formatMetricValue, type MetricPeriod, type MetricUnit } from "@/lib/metrics/config"
-import { getSemesterInfo } from "@/lib/timeline/semester-utils"
+import { cumulativeSemesterMilestone, currentStudySemester } from "@/lib/metrics/semester-milestone"
 
 export interface MetricGoal {
   current: number
@@ -116,16 +116,10 @@ function CumulativeSemesterProgress({
   const studyTarget = studyGoal?.target ?? semesterTarget * 6
   const totalAchieved = studyGoal ? studyGoal.current : semesterCurrent
 
-  // Calculate actual academic semester (1..6) from calendar date and cohort
-  const semesterInfo = getSemesterInfo(now, onboardingYear ?? 2025)
-  const computedSem = semesterInfo?.studyYear
-    ? (semesterInfo.studyYear - 1) * 2 + (semesterInfo.semester === "winter" ? 1 : 2)
-    : 2
-  const activeSemester = explicitSemester ?? (studyGoal ? Math.min(6, Math.max(1, computedSem)) : 1)
+  const activeSemester = explicitSemester ?? (studyGoal ? currentStudySemester(now, onboardingYear) : 1)
 
-  // Cumulative target for current semester
   const activeExpectedMilestone = studyGoal
-    ? Math.min(studyTarget, activeSemester * semesterTarget)
+    ? cumulativeSemesterMilestone(semesterTarget, studyTarget, activeSemester)
     : semesterTarget
 
   const cumulativeDelta = totalAchieved - activeExpectedMilestone
@@ -268,7 +262,7 @@ function CumulativeSemesterProgress({
                           ? "font-medium text-foreground"
                           : isNextTarget
                             ? "font-semibold text-foreground"
-                            : "font-normal text-muted-foreground/40"
+                            : "font-normal text-muted-foreground"
                     }`}
                   >
                     {isActiveSem && <span className="size-1.5 rounded-full bg-primary" />}

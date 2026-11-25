@@ -13,10 +13,11 @@ export interface DashboardWidgetMeta {
   id: DashboardWidgetId;
   label: string;
   description: string;
-  /** Roles that can add this widget. */
+  /** Roles that can see this widget. */
   roles: ProfileRole[];
 }
 
+/** Canonical order: the dashboard always renders widgets in this order. */
 export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   {
     id: 'quick-actions',
@@ -31,12 +32,6 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
     roles: ['student', 'mentor', 'coach', 'admin'],
   },
   {
-    id: 'reading',
-    label: 'Čtení',
-    description: 'Tvůj postup v knižních bodech a počet napsaných esejí.',
-    roles: ['student', 'mentor'],
-  },
-  {
     id: 'reservation',
     label: 'Nadcházející rezervace',
     description: 'Tvoje nejbližší rezervace místnosti.',
@@ -44,9 +39,15 @@ export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   },
   {
     id: 'ke-kontrole',
-    label: 'Ke kontrole',
-    description: 'Nepřečtené eseje tvého týmu, které čekají na kontrolu.',
+    label: 'Eseje ke kontrole',
+    description: 'Pro kouče:ky: eseje tvého týmu, které jsi ještě nečetl:a.',
     roles: ['coach', 'admin'],
+  },
+  {
+    id: 'reading',
+    label: 'Čtení',
+    description: 'Tvůj postup v knižních bodech a počet napsaných esejí.',
+    roles: ['student', 'mentor'],
   },
   {
     id: 'team-snapshot',
@@ -79,15 +80,23 @@ export function sanitizeWidgetIds(ids: unknown, role: ProfileRole): DashboardWid
   return result;
 }
 
-/**
- * Drops widgets whose extra precondition isn't met (currently: 'metrics'
- * requires beta access), so a stale saved layout can't reference a widget
- * that will never get a node and render as a permanent loading skeleton.
- */
-export function availableWidgetIds(ids: DashboardWidgetId[], hasMetricsAccess: boolean): DashboardWidgetId[] {
-  return hasMetricsAccess ? ids : ids.filter((id) => id !== 'metrics');
-}
-
+/** 'metrics' additionally requires beta access. */
 export function availableWidgets(widgets: DashboardWidgetMeta[], hasMetricsAccess: boolean): DashboardWidgetMeta[] {
   return hasMetricsAccess ? widgets : widgets.filter((w) => w.id !== 'metrics');
+}
+
+/**
+ * Widgets the dashboard shows, in canonical order. A saved choice that leaves
+ * nothing visible (none saved, or only widgets no longer available) falls back
+ * to everything the role can see.
+ */
+export function resolveDashboardWidgets(
+  saved: unknown,
+  role: ProfileRole,
+  hasMetricsAccess: boolean,
+): DashboardWidgetId[] {
+  const chosen = new Set(sanitizeWidgetIds(saved, role));
+  const all = availableWidgets(widgetsForRole(role), hasMetricsAccess).map((w) => w.id);
+  const shown = all.filter((id) => chosen.has(id));
+  return shown.length === 0 ? all : shown;
 }

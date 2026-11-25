@@ -182,7 +182,7 @@ export default async function TsDetailPage({ params }: PageProps) {
   const hasBadges = status === "ongoing" || status === "cancelled" || isOwnTeam || joined
 
   return (
-    <PageShell size="medium">
+    <PageShell size="full">
       <PageHeader
         title={session.topic}
         back={{ href: isOwnTeam || joined ? TS_ROUTES.overview : TS_ROUTES.discover, label: isOwnTeam || joined ? "Přehled" : "Objevovat" }}

@@ -81,7 +81,7 @@ export default async function DashboardLayout({
         <SidebarProvider>
           <AppSidebar user={sidebarUser} />
           <SidebarInset>
-            <main className="flex flex-1 flex-col gap-4 p-4 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-4">{children}</main>
+            <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-4">{children}</main>
             <footer className="hidden border-t p-4 md:block">
               <p className="text-center text-xs text-muted-foreground">
                 Tiimiakatemia Prague {new Date().getFullYear()}

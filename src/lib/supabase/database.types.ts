@@ -1486,6 +1486,7 @@ export type Database = {
           personal_email: string | null
           phone_number: string | null
           picture: string | null
+          preferred_name: string | null
           role: Database["public"]["Enums"]["profile_role"]
           team_id: string | null
           team_left_at: string | null
@@ -1510,6 +1511,7 @@ export type Database = {
           personal_email?: string | null
           phone_number?: string | null
           picture?: string | null
+          preferred_name?: string | null
           role?: Database["public"]["Enums"]["profile_role"]
           team_id?: string | null
           team_left_at?: string | null
@@ -1534,6 +1536,7 @@ export type Database = {
           personal_email?: string | null
           phone_number?: string | null
           picture?: string | null
+          preferred_name?: string | null
           role?: Database["public"]["Enums"]["profile_role"]
           team_id?: string | null
           team_left_at?: string | null

@@ -54,7 +54,7 @@ export function CoachReadButton({
     return (
       <div
         className={cn(
-          'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border p-4 sm:p-5 transition-colors',
+          'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border p-4 sm:p-5 motion-safe:transition-colors',
           read
             ? 'border-emerald-500/30 bg-emerald-500/[0.04] dark:bg-emerald-500/[0.07]'
             : 'border-border bg-card/60',

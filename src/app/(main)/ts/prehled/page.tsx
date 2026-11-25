@@ -2,7 +2,7 @@ import { CalendarDays, FileEdit, MessageSquareText, Plus } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 
-import { MetricProgress } from "@/components/metrics/metric-progress"
+import { AttendanceTile } from "@/components/training-sessions/attendance-tile"
 import { FeedRefresher } from "@/components/training-sessions/feed-refresher"
 import { SessionAgenda } from "@/components/training-sessions/session-agenda"
 import { Button } from "@/components/ui/button"
@@ -73,7 +73,7 @@ export default async function TsOverviewPage() {
   }
 
   return (
-    <PageShell size="medium">
+    <PageShell size="full">
       <PageHeader
         title="Tréninkové sessions"
         description={PAGE_DESCRIPTION}
@@ -96,21 +96,12 @@ export default async function TsOverviewPage() {
       <FeedRefresher />
 
       {attendance && attendance.heldCount > 0 && (
-        <MetricProgress
-          unit="percent"
-          goals={[
-            {
-              current: attendance.percent,
-              target: TS_ATTENDANCE_TARGET_PERCENT,
-              label: "Tvoje docházka na TS · tento semestr",
-            },
-          ]}
-        />
+        <AttendanceTile percent={attendance.percent} target={TS_ATTENDANCE_TARGET_PERCENT} />
       )}
 
       <div className="space-y-10">
         {facilitating.length > 0 && (
-          <section aria-labelledby="ts-facilitating" className="space-y-2.5">
+          <section aria-labelledby="ts-facilitating" className="space-y-3 rounded-2xl bg-warning/10 p-4 sm:p-5">
             <h2 id="ts-facilitating" className="flex items-center gap-2 font-heading text-lg font-semibold text-warning-strong">
               <FileEdit className="size-5 shrink-0" aria-hidden />
               <span>Čeká tě facilitace</span>
@@ -119,15 +110,16 @@ export default async function TsOverviewPage() {
               {facilitating.map((s) => (
                 <li
                   key={s.id}
-                  className="flex flex-col justify-between gap-3 rounded-xl bg-warning/10 p-4 text-sm sm:flex-row sm:items-center"
+                  className="flex flex-col justify-between gap-3 rounded-xl bg-card p-4 text-sm shadow-xs sm:flex-row sm:items-center"
                 >
                   <div className="space-y-0.5">
-                    <p className="font-semibold text-foreground">{s.topic}</p>
-                    <p className="text-xs text-warning-strong">
-                      {formatDayHeading(s.starts_at)} · {formatTimeRange(s.starts_at, s.ends_at)} · příprava zatím chybí
+                    <p className="font-heading font-semibold text-foreground">{s.topic}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDayHeading(s.starts_at)} · {formatTimeRange(s.starts_at, s.ends_at)} ·{" "}
+                      <span className="font-medium text-warning-strong">příprava zatím chybí</span>
                     </p>
                   </div>
-                  <Button asChild size="sm" variant="outline" className="shrink-0 self-start sm:self-center">
+                  <Button asChild size="sm" className="shrink-0 self-start sm:self-center">
                     <Link href={`${TS_ROUTES.detail(s.id)}?tab=priprava`}>Napsat přípravu</Link>
                   </Button>
                 </li>
@@ -137,7 +129,7 @@ export default async function TsOverviewPage() {
         )}
 
         <section aria-labelledby="ts-upcoming" className="space-y-3">
-          <h2 id="ts-upcoming" className="font-heading text-lg font-semibold">
+          <h2 id="ts-upcoming" className="font-heading text-2xl font-bold text-foreground">
             Nadcházející
           </h2>
           {upcoming.length > 0 ? (
@@ -146,6 +138,7 @@ export default async function TsOverviewPage() {
               viewer={viewer}
               commitments={upcoming.map(toTiming)}
               now={nowIso}
+              featureFirst
               emptyTitle="Nemáš naplánované žádné TS"
               emptyDescription=""
             />
@@ -177,14 +170,14 @@ export default async function TsOverviewPage() {
         {missingReflections.length > 0 && (
           <section aria-labelledby="ts-reflections" className="space-y-3">
             <h2 id="ts-reflections" className="flex items-center gap-2 font-heading text-lg font-semibold">
-              <MessageSquareText className="size-4 text-warning-strong" aria-hidden />
+              <MessageSquareText className="size-4 text-chart-2-strong" aria-hidden />
               <span>Chybí týmová reflexe</span>
             </h2>
             <ul className="grid gap-2 sm:grid-cols-2">
               {missingReflections.map((s) => (
                 <li
                   key={s.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5 shadow-xs"
+                  className="flex items-center justify-between gap-3 rounded-xl border bg-card p-3.5 shadow-xs motion-safe:transition motion-safe:hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">{formatDayHeading(s.starts_at)}</p>
@@ -201,7 +194,7 @@ export default async function TsOverviewPage() {
 
         <section aria-labelledby="ts-history" className="space-y-3">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 id="ts-history" className="font-heading text-lg font-semibold">
+            <h2 id="ts-history" className="font-heading text-2xl font-bold text-foreground">
               Historie
             </h2>
             {history.length >= TS_HISTORY_LIMIT && (

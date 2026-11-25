@@ -10,8 +10,9 @@ import {
   BriefcaseBusiness,
   FlaskConical,
   Settings,
+  Palette,
 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { BetaBadge } from "@/components/beta-badge"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 
@@ -89,10 +90,10 @@ export function NavUser({ user }: NavUserProps) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="rounded-xl border bg-card data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarFallback className="rounded-lg">
+              <Avatar className="h-8 w-8 rounded-full">
+                <AvatarFallback className="rounded-full text-xs font-bold">
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
@@ -140,9 +141,7 @@ export function NavUser({ user }: NavUserProps) {
                 <DropdownMenuItem onClick={() => router.push("/portfolio")}>
                   <BriefcaseBusiness className="mr-2 h-4 w-4" />
                   <span className="flex-1">Portfolio</span>
-                  <Badge variant="secondary" className="h-5 text-[10px] px-1.5">
-                    Beta
-                  </Badge>
+                  <BetaBadge />
                 </DropdownMenuItem>
               )}
               <DropdownMenuSub>
@@ -168,6 +167,11 @@ export function NavUser({ user }: NavUserProps) {
                   <DropdownMenuItem onClick={() => setTheme("system")}>
                     <Laptop className="mr-2 h-4 w-4" />
                     Systém
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push(SETTINGS_ROUTES.vzhled)}>
+                    <Palette className="mr-2 h-4 w-4" />
+                    Barevné motivy…
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>

@@ -39,7 +39,7 @@ export function BackButton({ fallbackHref = '/cteni/prehled', requestNavigation 
       type="button"
       onClick={goBack}
       disabled={pending}
-      className="focus-ring -ml-2 inline-flex min-h-11 items-center gap-0.5 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+      className="focus-ring -ml-2 inline-flex min-h-11 items-center gap-0.5 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground motion-safe:transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
     >
       {pending ? <Spinner className="size-5 shrink-0" /> : <ChevronLeft className="size-5 shrink-0" aria-hidden="true" />}
       Zpět

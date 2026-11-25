@@ -49,6 +49,7 @@ function TopBobBookRow({ book }: { book: BookWithProfiles }) {
     <div className="group flex gap-3 px-3 py-3">
       <Link
         href={`/cteni/knihy/${book.id}`}
+        aria-label={book.title_cs}
         className="mt-0.5 flex h-16 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted"
       >
         {book.google_books_cover_url ? (

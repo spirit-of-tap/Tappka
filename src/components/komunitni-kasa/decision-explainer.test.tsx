@@ -18,6 +18,13 @@ describe("DecisionExplainer", () => {
     expect(rules[1]).toHaveTextContent(EXPENSE_KINDS[1].plain);
   });
 
+  it("numbers the steps in order", () => {
+    render(<DecisionExplainer />);
+    const rules = screen.getAllByRole("listitem");
+    expect(rules[0]).toHaveTextContent(/^1/);
+    expect(rules[1]).toHaveTextContent(/^2/);
+  });
+
   it("links to the full text", () => {
     render(<DecisionExplainer />);
     expect(screen.getByRole("link", { name: /celé znění směrnice/i })).toHaveAttribute(

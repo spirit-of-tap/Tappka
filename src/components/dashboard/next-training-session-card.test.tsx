@@ -18,7 +18,7 @@ describe("NextTrainingSessionCard", () => {
   it("shows the next session with time, team, location and facilitator", () => {
     render(<NextTrainingSessionCard session={session} />);
 
-    expect(screen.getByText("Nejbližší training session")).toBeInTheDocument();
+    expect(screen.getByText(/Nejbližší training session/)).toBeInTheDocument();
     expect(screen.getByText("Strategická session")).toBeInTheDocument();
     expect(screen.getByText(/4\. listopadu/)).toBeInTheDocument();
     expect(screen.getByText(/10:00–11:30/)).toBeInTheDocument();
@@ -44,7 +44,7 @@ describe("NextTrainingSessionCard", () => {
   it("shows an exploration empty state when nothing is scheduled", () => {
     render(<NextTrainingSessionCard session={null} />);
 
-    expect(screen.getByText("Nemáš naplánovanou žádnou training session.")).toBeInTheDocument();
+    expect(screen.getByText("Žádná naplánovaná TS")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Objevovat TS" })).toHaveAttribute(
       "href",
       "/ts/objevovat",

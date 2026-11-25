@@ -500,7 +500,7 @@ export function DaySchedule({ date, reservations, scheduleBreak, onSlotClick, on
                 );
                 return solidHeight > 0 ? (
                   <div
-                    className="bg-muted/40 cursor-not-allowed"
+                    className="absolute inset-x-0 top-0 cursor-not-allowed bg-muted/40"
                     style={{ height: `${solidHeight}px` }}
                   />
                 ) : null;

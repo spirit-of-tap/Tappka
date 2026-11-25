@@ -29,7 +29,7 @@ export function TopicPills() {
           key={tag}
           onClick={() => setTag(tag)}
           className={cn(
-            'shrink-0 text-xs px-3 py-1 rounded-full border transition-colors whitespace-nowrap',
+            'shrink-0 text-xs px-3 py-1 rounded-full border motion-safe:transition-colors whitespace-nowrap',
             activeTag === tag
               ? 'bg-primary text-primary-foreground border-primary'
               : 'bg-background text-muted-foreground border-border hover:border-foreground hover:text-foreground',

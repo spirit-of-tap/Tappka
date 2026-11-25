@@ -24,12 +24,12 @@ export function UserCard({ profile, pictureUrl, from, showTeam = true }: UserCar
 
   return (
     <Link href={href} className="group focus-ring rounded-xl">
-      <Card className="h-full py-0 border-border/60 shadow-none transition-colors group-hover:border-border group-hover:bg-muted/40">
+      <Card className="h-full py-0 border-border/60 shadow-none motion-safe:transition-colors group-hover:border-border group-hover:bg-muted/40">
         <CardContent className="flex items-center gap-3 p-3">
           {/* Avatar with team-colored ring */}
           <div
             className={cn(
-              'rounded-full ring-2 transition-all',
+              'rounded-full ring-2 motion-safe:transition-all',
               profile.team?.color ? '' : 'ring-border'
             )}
             style={
@@ -54,7 +54,7 @@ export function UserCard({ profile, pictureUrl, from, showTeam = true }: UserCar
               <Tooltip>
                 <TooltipTrigger asChild>
                   {profile.user_id ? (
-                    <UserCheck className="size-3.5 text-green-500 shrink-0" />
+                    <UserCheck className="size-3.5 text-success-strong shrink-0" />
                   ) : (
                     <UserX className="size-3.5 text-muted-foreground/60 shrink-0" />
                   )}

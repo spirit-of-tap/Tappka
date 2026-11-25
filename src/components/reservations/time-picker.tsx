@@ -18,6 +18,7 @@ interface TimePickerProps {
   minTime?: string; // HH:MM format
   date?: Date; // The date being picked - used to filter out past times when today
   placeholder?: string;
+  id?: string;
   hourOnly?: boolean; // Only show full hours (no 15-min intervals)
 }
 
@@ -31,6 +32,7 @@ export function TimePicker({
   minTime,
   date,
   placeholder = "Vybrat čas",
+  id,
   hourOnly = false,
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
@@ -107,6 +109,7 @@ export function TimePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           disabled={disabled}
           className={cn(

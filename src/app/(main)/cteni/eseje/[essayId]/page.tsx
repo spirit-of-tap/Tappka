@@ -140,7 +140,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
       {/* Source (book or content source) */}
       {essay.book ? (
         <Link href={`/cteni/knihy/${essay.book.id}`} className="group block mb-8">
-          <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 transition-colors">
+          <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/60 motion-safe:transition-colors">
             <div className="shrink-0 w-9 h-12 rounded overflow-hidden bg-muted flex items-center justify-center">
               {essay.book.google_books_cover_url ? (
                 <StorageImage
@@ -157,7 +157,7 @@ export default async function EssayDetailPage({ params }: PageProps) {
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground mb-0.5">Zdroj</p>
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{essay.book.title_cs}</p>
+                <p className="text-sm font-medium truncate group-hover:text-primary motion-safe:transition-colors">{essay.book.title_cs}</p>
                 <BookStatusBadges book={essay.book} />
               </div>
               <p className="text-xs text-muted-foreground truncate">{essay.book.author}</p>

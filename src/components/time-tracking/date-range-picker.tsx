@@ -112,7 +112,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             aria-label={`Období: ${activePreset ? `${presetLabel(activePreset)}, ` : ""}${rangeLabel}`}
-            className={cn("min-w-0 justify-start gap-2 font-normal transition-opacity", isPending && "opacity-60")}
+            className={cn("min-w-0 justify-start gap-2 font-normal motion-safe:transition-opacity", isPending && "opacity-60")}
           >
             <CalendarDays className="size-4 text-muted-foreground" />
             {activePreset ? (

@@ -34,6 +34,25 @@ describe("SessionCard", () => {
     expect(screen.queryByRole("button", { name: /Přihlásit se/ })).not.toBeInTheDocument()
   })
 
+  it("turns the card green when the viewer attends", () => {
+    render(<SessionCard session={session} viewer={{ profileId: "p1", teamId: "t1" }} conflicts={[]} now={now} />)
+    const card = screen.getByRole("article")
+    expect(card).toHaveClass("bg-success/10", "border-success/40")
+    expect(card).not.toHaveClass("bg-card")
+  })
+
+  it("adds a hero-success ring to the featured card when attending", () => {
+    render(<SessionCard session={session} viewer={{ profileId: "p1", teamId: "t1" }} conflicts={[]} now={now} featured />)
+    expect(screen.getByRole("article")).toHaveClass("bg-hero", "ring-hero-success")
+  })
+
+  it("keeps the card neutral when the viewer does not attend", () => {
+    render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
+    const card = screen.getByRole("article")
+    expect(card).toHaveClass("bg-card")
+    expect(card).not.toHaveClass("bg-success/10")
+  })
+
   it("shows occupancy and a join button for other teams", () => {
     render(<SessionCard session={session} viewer={{ profileId: "x", teamId: "t2" }} conflicts={[]} now={now} />)
     expect(screen.getByRole("img", { name: "Obsazeno 1 z 3 míst" })).toBeInTheDocument()
@@ -113,7 +132,7 @@ describe("SessionCard", () => {
         now={now}
       />,
     )
-    expect(screen.getByText("Příprava je připravená")).toBeInTheDocument()
+    expect(screen.getByText("Příprava je hotová")).toBeInTheDocument()
   })
 
   it("can hide the preparation state when browsing", () => {

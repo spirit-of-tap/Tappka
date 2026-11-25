@@ -77,7 +77,7 @@ export default async function CasTymPage({ searchParams }: CasTymPageProps) {
 
   if (!team) {
     return (
-      <PageShell size="wide">
+      <PageShell size="full">
         <PageHeader title={PAGE_TITLE} />
         {canPickTeam ? (
           <NoTeamState title="Zatím tu nejsou žádné týmy" description="Jakmile nějaký tým vznikne, uvidíš tady jeho čas." />
@@ -94,7 +94,7 @@ export default async function CasTymPage({ searchParams }: CasTymPageProps) {
   const { members, entries } = await listTeamMemberEntries(supabase, team.id, instants)
 
   return (
-    <PageShell size="wide">
+    <PageShell size="full">
       <PageHeader
         title={PAGE_TITLE}
         description={team.name || undefined}

@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         room:rooms(id, code, name),
-        user:profiles!owner_profile_id(id, name)
+        user:profiles!owner_profile_id(id, name, picture)
       `)
       .is("cancelled_at", null)
       .order("start_at");

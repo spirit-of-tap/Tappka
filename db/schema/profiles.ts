@@ -37,6 +37,7 @@ export const users = pgTable("users", {
 export const profiles = pgTable("profiles", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	name: text(),
+	preferredName: text("preferred_name"),
 	picture: text(),
 	bioJson: jsonb("bio_json"),
 	userId: uuid("user_id"),

@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Building2, CalendarSync, ChevronLeft, ChevronRight, Tags, type LucideIcon } from "lucide-react"
+import { Bell, Building2, CalendarSync, ChevronLeft, ChevronRight, LayoutDashboard, Palette, Tags, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ReactNode } from "react"
@@ -9,6 +9,8 @@ import { activeSettingsSection, SETTINGS_ROUTES, type SettingsSection, type Sett
 import { cn } from "@/lib/utils"
 
 const SECTION_ICONS: Record<SettingsSectionId, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  vzhled: Palette,
   notifikace: Bell,
   cas: Tags,
   ts: CalendarSync,
@@ -41,7 +43,7 @@ export function SettingsFrame({ sections, children }: SettingsFrameProps) {
                   href={section.href}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-accent focus-ring md:rounded-md md:px-3 md:py-2",
+                    "flex items-center gap-3 px-4 py-3 text-sm motion-safe:transition-colors hover:bg-accent focus-ring md:rounded-md md:px-3 md:py-2",
                     isActive && "bg-accent font-medium text-foreground",
                   )}
                 >

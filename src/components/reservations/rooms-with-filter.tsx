@@ -1,103 +1,265 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { addMinutes } from "date-fns";
-import { RoomList } from "./room-list";
-import { RoomFilter, type FilterState } from "./room-filter";
-import { QuickReservationDialog } from "./quick-reservation-dialog";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { addDays, addMinutes, format, isSameDay, startOfDay } from "date-fns";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import type { RoomWithStatus } from "@/lib/reservations/types";
+import { RoomFilter, getDefaultStartTime, type FilterState } from "./room-filter";
+import { RoomMap, type MapRoom } from "./room-map";
+import { RoomDetailPanel } from "./room-detail-panel";
+import { QuickReservationDialog } from "./quick-reservation-dialog";
+import {
+  getRoomMapStatus,
+  getSlotChips,
+  groupRoomsByFloor,
+  type StatusWindow,
+} from "@/lib/reservations/room-map";
+import { pluralizeCz } from "@/lib/utils/pluralize-cz";
+import { DEFAULT_RESERVATION_MINUTES } from "@/lib/reservations/utils";
+import type { Reservation, Room, RoomWithStatus } from "@/lib/reservations/types";
 
 interface RoomsWithFilterProps {
   rooms: RoomWithStatus[];
+  reservations: Reservation[];
+  myReservations: Reservation[];
+}
+
+interface Booking {
+  room: Room;
+  start: Date;
+  end: Date;
+}
+
+interface LoadedDay {
+  key: string;
+  items: Reservation[];
+}
+
+const DAY_KEY_FORMAT = "yyyy-MM-dd";
+const MOBILE_QUERY = "(max-width: 1023px)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const LOAD_ERROR_MESSAGE = "Nepodařilo se načíst rezervace";
+
+function parseTime(day: Date, time: string): Date {
+  const [hours, minutes] = time.split(":").map(Number);
+  const result = new Date(day);
+  result.setHours(hours, minutes, 0, 0);
+  return result;
 }
 
 /**
- * Client component wrapper that combines room list with filter functionality
+ * Floor-plan room map with a detail panel for the selected room and day
  */
-export function RoomsWithFilter({ rooms }: RoomsWithFilterProps) {
-  const [filteredRooms, setFilteredRooms] = useState<RoomWithStatus[]>(rooms);
-  const [filterState, setFilterState] = useState<FilterState | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
-
-  // Dialog state for quick reservation
+export function RoomsWithFilter({ rooms, reservations, myReservations }: RoomsWithFilterProps) {
+  const [filter, setFilter] = useState<FilterState>(() => ({
+    date: new Date(),
+    startTime: getDefaultStartTime(),
+    duration: null,
+  }));
+  const [loaded, setLoaded] = useState<LoadedDay | null>(null);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [chosenStart, setChosenStart] = useState<Date | null>(null);
+  const [chosenDuration, setChosenDuration] = useState<number | null>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<RoomWithStatus | null>(null);
-  const [reservationStartTime, setReservationStartTime] = useState<Date | null>(null);
-  const [reservationEndTime, setReservationEndTime] = useState<Date | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  const handleFilterChange = useCallback((newRooms: RoomWithStatus[]) => {
-    setFilteredRooms(newRooms);
-  }, []);
+  const now = new Date();
+  const day = startOfDay(filter.date);
+  const dayKey = format(day, DAY_KEY_FORMAT);
+  const isToday = isSameDay(day, now);
 
-  const handleFilterStateChange = useCallback((state: FilterState) => {
-    setFilterState(state);
-  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams({
+      start_date: day.toISOString(),
+      end_date: addDays(day, 1).toISOString(),
+    });
 
-  const handleCheckingChange = useCallback((checking: boolean) => {
-    setIsChecking(checking);
-  }, []);
+    fetch(`/api/reservations?${params}`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Reservations request failed: ${response.status}`);
+        return response.json();
+      })
+      .then((result: { data?: Reservation[] }) => {
+        if (cancelled) return;
+        setLoaded({ key: dayKey, items: result.data ?? [] });
+        setFailedKey(null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setFailedKey(dayKey);
+        toast.error(LOAD_ERROR_MESSAGE);
+      });
 
-  // Handle room click - open dialog with prefilled times if filter is active
-  const handleRoomClick = useCallback((room: RoomWithStatus) => {
-    if (filterState?.duration) {
-      // Filter is active - open dialog with prefilled times
-      const [hours, minutes] = filterState.startTime.split(":").map(Number);
-      const startTime = new Date(filterState.date);
-      startTime.setHours(hours, minutes, 0, 0);
-      
-      const durationMinutes = parseInt(filterState.duration, 10);
-      const endTime = addMinutes(startTime, durationMinutes);
+    return () => {
+      cancelled = true;
+    };
+    // `day` is derived from `dayKey`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayKey, refreshKey, isToday]);
 
-      setSelectedRoom(room);
-      setReservationStartTime(startTime);
-      setReservationEndTime(endTime);
-      setDialogOpen(true);
+  const hasLoadedDay = loaded?.key === dayKey;
+  const loadFailed = failedKey === dayKey;
+  const isUnavailable = loadFailed && !hasLoadedDay && !isToday;
+  const isLoadingDay = !hasLoadedDay && !isToday && !loadFailed;
+  const dayReservations = hasLoadedDay ? loaded.items : isToday ? reservations : [];
+
+  const filterActive = filter.duration !== null;
+  const filterStart = parseTime(day, filter.startTime);
+  const filterMinutes = filter.duration ? parseInt(filter.duration, 10) : null;
+
+  let statusWindow: StatusWindow | null = null;
+  if (filterMinutes !== null) {
+    statusWindow = { start: filterStart, end: addMinutes(filterStart, filterMinutes) };
+  } else if (isToday) {
+    statusWindow = { start: now, end: addMinutes(now, 1) };
+  }
+
+  const items: MapRoom[] = rooms.map((room) => {
+    const mine = myReservations
+      .filter(
+        (r) =>
+          r.room_id === room.id &&
+          isSameDay(new Date(r.start_at), day) &&
+          new Date(r.end_at) > now,
+      )
+      .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime())[0];
+
+    return {
+      room,
+      status: getRoomMapStatus(room, dayReservations, day, statusWindow),
+      mineStart: mine ? new Date(mine.start_at) : null,
+    };
+  });
+
+  const orderedItems = groupRoomsByFloor(rooms).flatMap((group) =>
+    group.rooms.map((room) => items.find((item) => item.room.id === room.id)!),
+  );
+  const selectedItem =
+    orderedItems.find((item) => item.room.id === selectedId) ??
+    orderedItems.find((item) => item.status.kind === "free") ??
+    orderedItems[0] ??
+    null;
+
+  const duration = chosenDuration ?? filterMinutes ?? DEFAULT_RESERVATION_MINUTES;
+  const chips =
+    selectedItem && selectedItem.status.kind !== "closed"
+      ? getSlotChips(
+          day,
+          dayReservations.filter((r) => r.room_id === selectedItem.room.id),
+          duration,
+          now,
+        )
+      : [];
+  const isFreeStart = (start: Date | null) =>
+    start !== null &&
+    chips.some((chip) => chip.state === "free" && chip.start.getTime() === start.getTime());
+  const filterChipStart = filterActive ? filterStart : null;
+  const effectiveStart =
+    [chosenStart, filterChipStart].find(isFreeStart) ??
+    chips.find((chip) => chip.state === "free")?.start ??
+    null;
+
+  const mineIds = new Set(myReservations.map((r) => r.id));
+  const freeCount = items.filter((item) => item.status.kind === "free").length;
+  const freeSummary = `${freeCount} ${pluralizeCz(freeCount, ["volná", "volné", "volných"])} z ${rooms.length} ${pluralizeCz(rooms.length, ["místnosti", "místností", "místností"])}`;
+
+  const handleSelectRoom = useCallback((room: Room) => {
+    setSelectedId(room.id);
+    if (window.matchMedia?.(MOBILE_QUERY).matches) {
+      const reduceMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
+      panelRef.current?.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
     }
-    // If no filter active, the room card will navigate normally via Link
-  }, [filterState]);
+  }, []);
 
-  // Check if filter is active (duration is selected)
-  const hasActiveFilter = filterState?.duration !== null && filterState?.duration !== undefined;
-  
-  // Count available rooms when filter is active
-  const availableCount = filteredRooms.filter(
-    r => !r.availabilityForFilter || r.availabilityForFilter.isAvailable
-  ).length;
+  const handleBook = () => {
+    const chip = chips.find((c) => c.start.getTime() === effectiveStart?.getTime());
+    if (!selectedItem || !chip) return;
+    setBooking({ room: selectedItem.room, start: chip.start, end: chip.end });
+    setDialogOpen(true);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) setRefreshKey((key) => key + 1);
+  };
+
+  const handleRetry = () => {
+    setFailedKey(null);
+    setRefreshKey((key) => key + 1);
+  };
 
   return (
     <div className="space-y-4">
-      <RoomFilter
-        rooms={rooms}
-        onFilterChange={handleFilterChange}
-        onFilterStateChange={handleFilterStateChange}
-        onCheckingChange={handleCheckingChange}
-      />
+      <RoomFilter value={filter} onChange={setFilter} />
 
-      {/* Results Counter */}
-      {hasActiveFilter && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
-          <span>{availableCount} volné z {rooms.length} místností</span>
-          {isChecking && <Spinner className="size-3.5" />}
+      {filterActive && !isUnavailable && (
+        <div className="flex items-center gap-2 px-1 text-sm font-medium text-chart-3-strong">
+          <span>{freeSummary}</span>
+          {isLoadingDay && <Spinner className="size-3.5" />}
         </div>
       )}
-      
-      <RoomList 
-        rooms={filteredRooms} 
-        filterState={hasActiveFilter ? filterState : null}
-        onRoomClick={hasActiveFilter ? handleRoomClick : undefined}
-      />
 
-      {/* Quick Reservation Dialog */}
-      {selectedRoom && (
+      {loadFailed && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive-strong"
+        >
+          <span>
+            {isUnavailable
+              ? "Rezervace pro tento den se nepodařilo načíst, stav místností proto neznáme."
+              : "Rezervace se nepodařilo načíst, stav místností nemusí být aktuální."}
+          </span>
+          <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
+            Zkusit znovu
+          </Button>
+        </div>
+      )}
+
+      {!isUnavailable && (
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21.25rem]">
+          <RoomMap
+            items={orderedItems}
+            selectedId={selectedItem?.room.id ?? null}
+            isToday={isToday}
+            onSelect={handleSelectRoom}
+          />
+
+          <div ref={panelRef} className="scroll-mt-4 lg:sticky lg:top-4">
+            {selectedItem && (
+              <RoomDetailPanel
+                room={selectedItem.room}
+                status={selectedItem.status}
+                isToday={isToday}
+                isLoading={isLoadingDay}
+                chips={chips}
+                day={day}
+                reservations={dayReservations.filter((r) => r.room_id === selectedItem.room.id)}
+                mineIds={mineIds}
+                duration={duration}
+                chosenStart={effectiveStart}
+                onChooseStart={setChosenStart}
+                onChooseDuration={setChosenDuration}
+                onBook={handleBook}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {booking && (
         <QuickReservationDialog
           open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          roomId={selectedRoom.id}
-          roomName={selectedRoom.name}
-          roomCode={selectedRoom.code}
-          startTime={reservationStartTime}
-          endTime={reservationEndTime}
+          onOpenChange={handleDialogOpenChange}
+          roomId={booking.room.id}
+          roomName={booking.room.name}
+          roomCode={booking.room.code}
+          startTime={booking.start}
+          endTime={booking.end}
         />
       )}
     </div>

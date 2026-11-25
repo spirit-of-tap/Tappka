@@ -96,11 +96,28 @@ describe("navigation config", () => {
 describe("getSidebarSections", () => {
   it("keeps external links out of the main section", () => {
     const sections = getSidebarSections();
-    const main = sections.find((s) => s.title === "Hlavní")!;
+    const main = sections.find((s) => s.title === "Společné")!;
     const external = sections.find((s) => s.title === "Externí odkazy")!;
 
     expect(main.items.some((m) => m.external)).toBe(false);
     expect(external.items.map((m) => m.url)).toEqual([HARMONOGRAM_URL]);
+  });
+
+  it("splits in-app modules into shared, individual and team sections", () => {
+    const titles = getSidebarSections().map((s) => s.title);
+    expect(titles.slice(0, 3)).toEqual(["Společné", "Můj rozvoj", "Můj tým"]);
+
+    const byTitle = (title: string) =>
+      getSidebarSections().find((s) => s.title === title)!.items.map((m) => m.url);
+    expect(byTitle("Společné")).toContain("/");
+    expect(byTitle("Můj rozvoj")).toEqual(expect.arrayContaining(["/cas", "/cteni/prehled"]));
+    expect(byTitle("Můj tým")).toEqual(expect.arrayContaining(["/ts/prehled", "/tymovy-denik"]));
+
+    const internalCount = NAV_MODULES.filter((m) => !m.external).length;
+    const sectioned = getSidebarSections()
+      .slice(0, 3)
+      .reduce((n, s) => n + s.items.length, 0);
+    expect(sectioned).toBe(internalCount);
   });
 
   it("puts dev tools in their own trailing section", () => {
@@ -114,7 +131,7 @@ describe("getSidebarSections", () => {
       },
     ];
 
-    expect(getSidebarSections(dev).at(-1)).toEqual({ title: "Dev", items: dev });
+    expect(getSidebarSections(dev).at(-1)).toEqual({ title: "Dev", tone: "neutral", items: dev });
   });
 });
 

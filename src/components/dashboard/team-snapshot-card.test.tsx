@@ -67,21 +67,21 @@ describe("TeamSnapshotCard", () => {
     );
   });
 
-  it("keeps the rank and points inside the row link", () => {
+  it("puts each reader's place and points on their podium step", () => {
     render(<TeamSnapshotCard stats={stats} hasTeam />);
-    const topRow = screen.getByRole("link", { name: /Bohuš Dvořák/ });
-    expect(topRow.textContent).toContain("1.");
-    expect(topRow.textContent).toContain("50 b.");
+    const leader = screen.getByRole("link", { name: /Bohuš Dvořák/ }).closest("li");
+    expect(leader?.textContent).toContain("1. místo");
+    expect(leader?.textContent).toContain("50 b.");
   });
 
   it("shows a hint instead of the leaderboard when the user has no team", () => {
     render(<TeamSnapshotCard stats={[]} hasTeam={false} />);
-    expect(screen.getByText("Nemáš přiřazený tým.")).toBeInTheDocument();
+    expect(screen.getByText("Nemáš přiřazený tým")).toBeInTheDocument();
   });
 
   it("shows an empty state when the team has no points yet", () => {
     render(<TeamSnapshotCard stats={[]} hasTeam />);
-    expect(screen.getByText("Tým zatím nemá žádné body.")).toBeInTheDocument();
+    expect(screen.getByText("Tým zatím nemá žádné body")).toBeInTheDocument();
   });
 
   describe("Melvil discount hint", () => {

@@ -88,7 +88,7 @@ export default async function BookDetailPage({ params }: PageProps) {
       {/* Hero */}
       <div className="flex flex-col gap-6 sm:flex-row sm:gap-8">
         <div className="mx-auto shrink-0 sm:mx-0">
-          <div className="flex aspect-[2/3] w-44 items-center justify-center overflow-hidden rounded-xl bg-muted shadow-lg ring-1 ring-border/50">
+          <div className="flex aspect-[2/3] w-44 items-center justify-center overflow-hidden rounded-xl bg-muted shadow-md ring-1 ring-border/50">
             {book.google_books_cover_url ? (
               <StorageImage
                 storageKey={book.google_books_cover_url}

@@ -33,7 +33,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false,
 
   return (
     <Link href={`/cteni/eseje/${essay.id}`} className="group block h-full">
-      <Card className="h-full transition-all group-hover:shadow-md group-hover:border-border/80 py-0">
+      <Card className="h-full motion-safe:transition-all group-hover:shadow-md group-hover:border-border/80 py-0">
         <CardContent className="px-4 py-3 flex flex-col h-full gap-2">
 
           {/* Author row */}
@@ -51,7 +51,7 @@ export function EssayCard({ essay, showVoteButton = false, initialVoted = false,
           {/* Title + snippet + optional cover */}
           <div className="flex-1 flex gap-3">
             <div className="flex-1 space-y-1.5 min-w-0">
-              <h3 className="font-bold text-base leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+              <h3 className="font-bold text-base leading-snug line-clamp-2 group-hover:text-primary motion-safe:transition-colors">
                 {essay.title}
               </h3>
               {snippet && (

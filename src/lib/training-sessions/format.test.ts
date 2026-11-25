@@ -4,6 +4,7 @@ import {
   formatConflict,
   formatDayHeading,
   formatPeopleList,
+  formatRelativeDay,
   formatTimeRange,
   groupByPragueDay,
   pragueDateKey,
@@ -37,6 +38,23 @@ describe("Prague formatting", () => {
       ["2026-10-06", [1, 2]],
       ["2026-10-07", [3]],
     ])
+  })
+})
+
+describe("formatRelativeDay", () => {
+  const now = "2026-11-24T09:00:00Z"
+  it("names today, tomorrow and yesterday", () => {
+    expect(formatRelativeDay("2026-11-24", now)).toBe("Dnes")
+    expect(formatRelativeDay("2026-11-25", now)).toBe("Zítra")
+    expect(formatRelativeDay("2026-11-23", now)).toBe("Včera")
+  })
+  it("counts calendar days with Czech plural forms", () => {
+    expect(formatRelativeDay("2026-11-27", now)).toBe("za 3 dny")
+    expect(formatRelativeDay("2026-11-29", now)).toBe("za 5 dnů")
+    expect(formatRelativeDay("2026-11-21", now)).toBe("před 3 dny")
+  })
+  it("measures against the Prague day, not the UTC day", () => {
+    expect(formatRelativeDay("2026-11-25", "2026-11-24T23:30:00Z")).toBe("Dnes")
   })
 })
 

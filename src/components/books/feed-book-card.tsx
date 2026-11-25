@@ -54,6 +54,7 @@ export function FeedBookCard({
         <div className="flex items-start gap-3 min-w-0">
           <Link
             href={`/cteni/knihy/${book.id}`}
+            aria-label={book.title_cs}
             className="shrink-0 w-11 h-15 sm:w-12 sm:h-17 rounded-md overflow-hidden bg-muted flex items-center justify-center shadow-2xs group-hover:shadow-xs transition-shadow"
           >
             {book.google_books_cover_url ? (

@@ -6,14 +6,13 @@ import { usePathname } from "next/navigation"
 import {
   ArrowUpRight,
   Database,
-  Heart,
   Mail,
+  MessageSquareHeart,
 } from "lucide-react"
 
-import { getSidebarSections, type NavModule } from "@/lib/navigation"
+import { getSidebarSections, type NavModule, type NavTone } from "@/lib/navigation"
 import { canAccessFeature, type BetaCohort } from "@/lib/feature-access"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
 import { SpotlightTrigger } from "@/components/spotlight"
 import { useOptionalTimer } from "@/components/time-tracking/timer-provider"
@@ -24,7 +23,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -46,10 +44,30 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   }
 }
 
+const NAV_ITEM_CLASS = "h-9 gap-2.5 px-2 data-[active=true]:font-semibold"
+
+/** Section colour: the stripe along the whole section and the icon chip of every item. */
+const TONE_CLASSES: Record<NavTone, { stripe: string; chip: string }> = {
+  shared: { stripe: "bg-primary", chip: "bg-primary/10 text-primary" },
+  individual: { stripe: "bg-chart-5", chip: "bg-chart-5/15 text-chart-5" },
+  team: { stripe: "bg-chart-3", chip: "bg-chart-3/15 text-chart-3-strong" },
+  neutral: { stripe: "bg-muted-foreground/40", chip: "bg-muted text-muted-foreground" },
+}
+
+function NavIcon({ item, tone }: { item: NavModule; tone: NavTone }) {
+  return (
+    <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-md", TONE_CLASSES[tone].chip)}>
+      <item.icon className="size-3.5" aria-hidden />
+    </span>
+  )
+}
+
 function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
   const pathname = usePathname()
   const { state } = useSidebar()
-  const showTimer = useOptionalTimer()?.canAccess ?? false
+  const timer = useOptionalTimer()
+  const showTimer = timer?.canAccess ?? false
+  const timerRunning = showTimer && timer?.active != null
   const accessProfile = user
     ? {
         role: user.role ?? "student",
@@ -67,15 +85,15 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
     { title: "Supabase Studio", url: "http://127.0.0.1:54323", icon: Database, description: "", external: true },
   ]
 
-  const sections: { title: string; items: NavModule[] }[] = getSidebarSections(
+  const sections = getSidebarSections(
     isDevelopment ? DEV_INSPECT_ITEMS : [],
   )
 
   return (
     <>
-      <SidebarHeader className="gap-2.5">
+      <SidebarHeader className="gap-3 pt-4">
         <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-tap-red text-tap-white">
             <span className="font-heading font-bold text-sm">T</span>
           </div>
           <div className="flex flex-col gap-0.5 leading-none">
@@ -83,19 +101,36 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
             <span className="text-xs text-muted-foreground">Tiimiakatemia Prague</span>
           </div>
         </div>
-        {showTimer && (
+        <div className="flex items-center gap-2 px-2">
+          <SpotlightTrigger className="h-10 flex-1" placeholder="Hledat…" />
+          {showTimer && !timerRunning && (
+            <TimerWidget
+              collapsed
+              className="size-10 rounded-xl bg-primary/10 text-primary shadow-none hover:bg-primary/15"
+            />
+          )}
+        </div>
+        {timerRunning && (
           <div className="px-2">
             <TimerWidget collapsed={state === "collapsed"} />
           </div>
         )}
-        <div className="px-2">
-          <SpotlightTrigger />
-        </div>
       </SidebarHeader>
       <SidebarContent>
-        {sections.map((section) => (
-          <SidebarGroup key={section.title}>
-            <SidebarGroupLabel>{section.title}</SidebarGroupLabel>
+        {sections
+          .filter((section) =>
+            section.items.some((item) => !item.feature || canAccessFeature(accessProfile, item.feature)),
+          )
+          .map((section) => (
+          <SidebarGroup key={section.title} className="relative py-1 pl-4">
+            <span
+              aria-hidden
+              className={cn("absolute top-3 bottom-2 left-2 w-1 rounded-full", TONE_CLASSES[section.tone].stripe)}
+            />
+            <div className="px-2 pt-2 pb-1.5">
+              <p className="text-sm font-bold">{section.title}</p>
+              {section.hint && <p className="text-xs text-muted-foreground">{section.hint}</p>}
+            </div>
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
@@ -108,17 +143,18 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                         <SidebarMenuButton
                           asChild
                           isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
+                          className={NAV_ITEM_CLASS}
                           tooltip={item.title}
                         >
                           <Link href={item.url}>
-                            <item.icon className="size-4" />
+                            <NavIcon item={item} tone={section.tone} />
                             <span>{item.title}</span>
-                            <Badge
-                              variant="secondary"
-                              className="ml-auto h-5 text-[10px] px-1.5"
+                            <span
+                              title="Beta"
+                              className="ml-auto size-1.5 shrink-0 rounded-full bg-chart-2"
                             >
-                              Beta
-                            </Badge>
+                              <span className="sr-only">Beta</span>
+                            </span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -131,12 +167,13 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                       <SidebarMenuButton
                         asChild
                         isActive={pathname === item.url || pathname.startsWith(item.url + "/")}
+                        className={NAV_ITEM_CLASS}
                       >
                         <Link
                           href={item.url}
                           {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                         >
-                          <item.icon className="size-4" />
+                          <NavIcon item={item} tone={section.tone} />
                           <span>{item.title}</span>
                           {item.external && (
                             <>
@@ -158,7 +195,7 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
         ))}
       </SidebarContent>
       {user && (
-        <SidebarFooter>
+        <SidebarFooter className="gap-2 p-3">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -166,19 +203,14 @@ function AppSidebarContent({ user }: { user?: AppSidebarProps["user"] }) {
                 tooltip="Zpětná vazba"
                 isActive={pathname === "/zpetna-vazba"}
                 className={cn(
-                  "group/menu-button",
-                  "bg-rose-50/60 text-rose-700",
-                  "dark:bg-rose-950/40 dark:text-rose-300",
-                  "data-[active=true]:bg-rose-100 data-[active=true]:text-rose-800",
-                  "data-[active=true]:dark:bg-rose-900/60 data-[active=true]:dark:text-rose-200",
-                  "hover:bg-rose-100 hover:text-rose-800",
-                  "dark:hover:bg-rose-900/60 dark:hover:text-rose-200",
-                  "border border-rose-200/50 dark:border-rose-800/40",
+                  "h-10 rounded-xl bg-primary/10 px-3 text-primary",
+                  "hover:bg-primary/15 hover:text-primary",
+                  "data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
                 )}
               >
                 <Link href="/zpetna-vazba">
-                  <Heart className="size-4 animate-pulse transition-transform group-data-[active=true]/menu-button:scale-110" />
-                  <span className="font-medium">Zpětná vazba</span>
+                  <MessageSquareHeart className="size-4" />
+                  <span className="font-medium">Napiš nám zpětnou vazbu</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -199,7 +231,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     // rail, no keyboard shortcut can hide it. The `hidden md:flex` guard keeps
     // it display:none on mobile during SSR and the pre-hydration paint, before
     // `useIsMobile` flips to true and unmounts it, so it never flashes.
-    <Sidebar collapsible="none" className="hidden md:flex" {...props}>
+    <Sidebar collapsible="none" className="hidden border-r md:flex" {...props}>
       <AppSidebarContent user={user} />
     </Sidebar>
   )

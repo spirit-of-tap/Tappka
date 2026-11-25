@@ -100,7 +100,7 @@ export function GuestJoinButton({
         <div
           className={cn(
             "flex size-6 shrink-0 items-center justify-center rounded-full bg-background text-foreground shadow-2xs",
-            joined && "bg-destructive/10 text-destructive",
+            joined && "bg-destructive/10 text-destructive-strong",
           )}
         >
           {pending ? (
@@ -123,8 +123,8 @@ export function GuestJoinButton({
         onClick={onClick}
         aria-label="Jdeš jako cross – odhlásit se"
         className={cn(
-          "group/leave grid rounded-full bg-success/15 font-semibold text-success-strong",
-          "hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive",
+          "group/leave grid rounded-full bg-success-strong font-semibold text-background",
+          "hover:bg-destructive/10 hover:text-destructive-strong focus-visible:bg-destructive/10 focus-visible:text-destructive-strong",
           className,
         )}
       >

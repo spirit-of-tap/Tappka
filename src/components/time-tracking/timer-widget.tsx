@@ -52,12 +52,11 @@ export function TimerWidget({ collapsed = false, className }: TimerWidgetProps) 
     return (
       <Button
         type="button"
-        variant="outline"
         disabled={isPending}
         onClick={openStartSheet}
-        className={cn("w-full justify-start", className)}
+        className={cn("h-10 w-full justify-start rounded-xl", className)}
       >
-        <Play aria-hidden className="text-primary" />
+        <Play aria-hidden className="fill-current" />
         {START_LABEL}
       </Button>
     )

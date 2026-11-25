@@ -156,7 +156,7 @@ export function KomunitaContent({
               >
                 <ChevronDown
                   className={cn(
-                    'size-3.5 transition-transform duration-200',
+                    'size-3.5 motion-safe:transition-transform motion-safe:duration-200',
                     showAlumni && 'rotate-180'
                   )}
                 />

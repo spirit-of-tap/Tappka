@@ -58,7 +58,7 @@ export default async function CasReportingPage({ searchParams }: CasReportingPag
 
   if (!team) {
     return (
-      <PageShell size="wide">
+      <PageShell size="full">
         <PageHeader title={PAGE_TITLE} />
         <Empty>
           <EmptyMedia variant="icon">
@@ -79,7 +79,7 @@ export default async function CasReportingPage({ searchParams }: CasReportingPag
   ])
 
   return (
-    <PageShell size="wide">
+    <PageShell size="full">
       <PageHeader title={PAGE_TITLE} description={team.name || undefined} />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

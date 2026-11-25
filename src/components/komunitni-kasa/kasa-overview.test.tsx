@@ -62,12 +62,52 @@ describe("KasaOverview", () => {
     expect(await screen.findByText(czk(18000))).toBeInTheDocument();
   });
 
-  it("does not show income or spending totals", async () => {
+  it("shows this year's income and spending with payment counts", async () => {
     mockFetch(response(HISTORY));
     render(<KasaOverview />);
     await screen.findByText(czk(18000));
-    expect(screen.queryByText(/letos/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/tento měsíc/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Příjmy 2026").parentElement).toHaveTextContent(`+${czk(20000)}`);
+    expect(screen.getByText("Příjmy 2026").parentElement).toHaveTextContent("1 platba");
+    expect(screen.getByText("Výdaje 2026").parentElement).toHaveTextContent(`−${czk(12112)}`);
+    expect(screen.getByText("Výdaje 2026").parentElement).toHaveTextContent("3 platby");
+  });
+
+  it("shows the monthly contribution", async () => {
+    mockFetch(response(HISTORY));
+    render(<KasaOverview />);
+    const card = (await screen.findByText("Příspěvek")).parentElement;
+    expect(card).toHaveTextContent(czk(190));
+    expect(card).toHaveTextContent("měsíčně na osobu");
+  });
+
+  it("draws the trend chart with a screen-reader summary", async () => {
+    mockFetch(response(HISTORY));
+    render(<KasaOverview />);
+    expect(await screen.findByText("Vývoj za 12 měsíců")).toBeInTheDocument();
+    expect(screen.getByText("květen 2026 – říjen 2026")).toBeInTheDocument();
+    expect(screen.getByText(/Za 12 měsíců zůstatek/)).toHaveClass("sr-only");
+  });
+
+  it("hides the trend chart with fewer than two points in the last 12 months", async () => {
+    mockFetch(response([HISTORY[0]]));
+    render(<KasaOverview />);
+    await screen.findByText(czk(18000));
+    expect(screen.queryByText("Vývoj za 12 měsíců")).not.toBeInTheDocument();
+  });
+
+  it("groups the latest movements under month headings", async () => {
+    mockFetch(response(HISTORY));
+    render(<KasaOverview />);
+    expect(await screen.findByRole("heading", { name: "říjen 2026" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "červenec 2026" })).toBeInTheDocument();
+  });
+
+  it("renders the aside next to the movements and while loading or failing", async () => {
+    mockFetch(response(HISTORY));
+    render(<KasaOverview aside={<p>Postranní karta</p>} />);
+    expect(screen.getByText("Postranní karta")).toBeInTheDocument();
+    await screen.findByText(czk(18000));
+    expect(screen.getByText("Postranní karta")).toBeInTheDocument();
   });
 
   it("lists the latest movements in both directions with readable descriptions", async () => {
@@ -84,7 +124,7 @@ describe("KasaOverview", () => {
     mockFetch(response(HISTORY));
     render(<KasaOverview />);
     const list = await screen.findByRole("list", { name: "Poslední pohyby" });
-    const rows = within(list).getAllByRole("listitem");
+    const rows = within(list).getAllByRole("listitem").filter((r) => r.querySelector("p"));
     const income = rows.find((r) => r.textContent?.includes("Družstvo A"));
     const expense = rows.find((r) => r.textContent?.includes("KSDS"));
     expect(within(income!).getByText("Příchozí platba")).toHaveClass("sr-only");
@@ -92,10 +132,10 @@ describe("KasaOverview", () => {
     expect(income!.querySelector("svg")).not.toBeNull();
   });
 
-  it("offers a button to all movements under the list", async () => {
+  it("offers a link to all movements under the list", async () => {
     mockFetch(response(HISTORY));
     render(<KasaOverview />);
-    const link = await screen.findByRole("link", { name: "Zobrazit všechny pohyby" });
+    const link = await screen.findByRole("link", { name: /Zobrazit všechny pohyby/ });
     expect(link).toHaveAttribute("href", "/komunitni-kasa/pohyby");
     const list = screen.getByRole("list", { name: "Poslední pohyby" });
     expect(list.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

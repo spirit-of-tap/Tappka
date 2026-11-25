@@ -1,0 +1,224 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  bookableRange,
+  firstBookableRange,
+  getRoomFloor,
+  getTimelineSegments,
+  timelinePercent,
+  getRoomMapStatus,
+  getSlotChips,
+  groupRoomsByFloor,
+  timelineMinutesAt,
+} from "./room-map";
+import type { Reservation, Room } from "./types";
+
+const room = (code: string, overrides: Partial<Room> = {}): Room => ({
+  id: code,
+  code,
+  name: code,
+  description: null,
+  available_days: null,
+  can_have_ts: false,
+  removed_at: null,
+  created_at: "2026-01-01T00:00:00.000Z",
+  created_by_profile_id: "p1",
+  updated_at: "2026-01-01T00:00:00.000Z",
+  updated_by_profile_id: "p1",
+  ...overrides,
+});
+
+const reservation = (roomId: string, start: Date, end: Date): Reservation => ({
+  id: `${roomId}-${start.getTime()}`,
+  room_id: roomId,
+  owner_profile_id: "p1",
+  title: "x",
+  person_count: 1,
+  start_at: start.toISOString(),
+  end_at: end.toISOString(),
+  cancelled_at: null,
+  cancelled_by_profile_id: null,
+  created_at: "2026-01-01T00:00:00.000Z",
+  created_by_profile_id: "p1",
+  updated_at: "2026-01-01T00:00:00.000Z",
+  updated_by_profile_id: "p1",
+});
+
+describe("getRoomFloor", () => {
+  it("reads the first digit after the letter", () => {
+    expect(getRoomFloor("D126")).toBe(1);
+    expect(getRoomFloor("d226")).toBe(2);
+    expect(getRoomFloor("D107")).toBe(1);
+  });
+
+  it("returns null for unparsable codes", () => {
+    expect(getRoomFloor("aula")).toBeNull();
+    expect(getRoomFloor("126")).toBeNull();
+    expect(getRoomFloor("")).toBeNull();
+  });
+});
+
+describe("groupRoomsByFloor", () => {
+  it("groups by floor, sorts floors and rooms, and puts unparsable codes last", () => {
+    const groups = groupRoomsByFloor([
+      room("d226"),
+      room("zahrada"),
+      room("d132"),
+      room("d126"),
+    ]);
+
+    expect(groups.map((g) => g.label)).toEqual(["1. patro", "2. patro", "Ostatní"]);
+    expect(groups[0].rooms.map((r) => r.code)).toEqual(["d126", "d132"]);
+    expect(groups[2].rooms.map((r) => r.code)).toEqual(["zahrada"]);
+  });
+
+  it("returns no groups for no rooms", () => {
+    expect(groupRoomsByFloor([])).toEqual([]);
+  });
+});
+
+describe("getRoomMapStatus", () => {
+  const day = new Date(2026, 10, 23);
+  const at = (h: number, m = 0) => new Date(2026, 10, 23, h, m);
+
+  it("is closed on days the room is not available", () => {
+    const monday = new Date(2026, 10, 23);
+    const closed = room("d1", { available_days: [2] });
+    expect(getRoomMapStatus(closed, [], monday, null)).toEqual({ kind: "closed" });
+  });
+
+  it("is busy until the end of the overlapping reservation", () => {
+    const r = room("d1");
+    const status = getRoomMapStatus(r, [reservation("d1", at(10), at(11))], day, {
+      start: at(10, 30),
+      end: at(11, 30),
+    });
+    expect(status).toEqual({ kind: "busy", until: at(11) });
+  });
+
+  it("is free until the next reservation", () => {
+    const r = room("d1");
+    const status = getRoomMapStatus(r, [reservation("d1", at(14), at(15))], day, {
+      start: at(10),
+      end: at(11),
+    });
+    expect(status).toEqual({ kind: "free", until: at(14), reservationCount: 1 });
+  });
+
+  it("ignores other rooms' reservations", () => {
+    const status = getRoomMapStatus(
+      room("d1"),
+      [reservation("d2", at(10), at(11))],
+      day,
+      { start: at(10), end: at(11) },
+    );
+    expect(status.kind).toBe("free");
+  });
+
+  it("is free in a whole-day view even with reservations", () => {
+    const status = getRoomMapStatus(
+      room("d1"),
+      [reservation("d1", at(10), at(11))],
+      day,
+      null,
+    );
+    expect(status).toEqual({ kind: "free", until: null, reservationCount: 1 });
+  });
+});
+
+describe("getSlotChips", () => {
+  const day = new Date(2026, 10, 23);
+  const at = (h: number, m = 0) => new Date(2026, 10, 23, h, m);
+
+  it("marks past, busy and free slots for the chosen duration", () => {
+    const chips = getSlotChips(day, [reservation("d1", at(9), at(10))], 60, at(7, 30));
+    const stateAt = (h: number, m = 0) =>
+      chips.find((c) => c.start.getTime() === at(h, m).getTime())?.state;
+
+    expect(stateAt(7)).toBe("past");
+    expect(stateAt(8)).toBe("free");
+    expect(stateAt(9)).toBe("busy");
+    expect(stateAt(10)).toBe("free");
+  });
+
+  it("makes a slot busy when the longer duration would run into a reservation", () => {
+    const chips = getSlotChips(day, [reservation("d1", at(10), at(11))], 120, at(7));
+    const nineThirty = chips.find((c) => c.start.getTime() === at(9, 30).getTime());
+    expect(nineThirty?.state).toBe("busy");
+  });
+
+  it("stops offering starts that would end after closing", () => {
+    const chips = getSlotChips(day, [], 120, at(7));
+    expect(chips.at(-1)?.end).toEqual(at(22));
+  });
+});
+
+describe("getTimelineSegments", () => {
+  const day = new Date(2026, 10, 23);
+  const at = (h: number, m = 0) => new Date(2026, 10, 23, h, m);
+
+  it("positions reservations as percentages of the 7-22 h opening hours", () => {
+    const [segment] = getTimelineSegments([reservation("d1", at(10), at(13))], "d1", day);
+
+    expect(segment.left).toBeCloseTo(20);
+    expect(segment.width).toBeCloseTo(20);
+    expect(segment.mine).toBe(false);
+  });
+
+  it("clips to opening hours, sorts, ignores other rooms and flags own ones", () => {
+    const own = reservation("d1", at(6), at(8));
+    const segments = getTimelineSegments(
+      [reservation("d1", at(21), at(23)), own, reservation("d2", at(10), at(11))],
+      "d1",
+      day,
+      new Set([own.id]),
+    );
+
+    expect(segments.map((s) => [s.start.getHours(), s.end.getHours(), s.mine])).toEqual([
+      [7, 8, true],
+      [21, 22, false],
+    ]);
+  });
+
+  it("clamps moments outside opening hours", () => {
+    expect(timelinePercent(at(5), day)).toBe(0);
+    expect(timelinePercent(at(23), day)).toBe(100);
+  });
+});
+
+describe("drag selection", () => {
+  const day = new Date(2026, 10, 24);
+  const at = (h: number, m = 0) => new Date(2026, 10, 24, h, m);
+  const morning = at(8);
+  const busy = [reservation("d126", at(9), at(10, 30))];
+
+  it("snaps the pointer position to 15 minutes within opening hours", () => {
+    expect(timelineMinutesAt(0)).toBe(7 * 60);
+    expect(timelineMinutesAt(1)).toBe(22 * 60);
+    expect(timelineMinutesAt(0.5)).toBe(14 * 60 + 30);
+  });
+
+  it("books one hour on a click", () => {
+    expect(bookableRange(day, 11 * 60, 11 * 60, busy, morning)).toEqual({ start: at(11), end: at(12) });
+  });
+
+  it("keeps the dragged range in either direction", () => {
+    expect(bookableRange(day, 14 * 60, 12 * 60, busy, morning)).toEqual({ start: at(12), end: at(14) });
+  });
+
+  it("cuts the range at the next reservation and refuses a start inside one", () => {
+    expect(bookableRange(day, 8 * 60, 11 * 60, busy, morning)).toEqual({ start: at(8), end: at(9) });
+    expect(bookableRange(day, 9 * 60 + 30, 12 * 60, busy, morning)).toBeNull();
+  });
+
+  it("never starts in the past or ends after closing", () => {
+    expect(bookableRange(day, 13 * 60, 15 * 60, [], at(14, 5))).toEqual({ start: at(14, 15), end: at(15) });
+    expect(bookableRange(day, 21 * 60 + 30, 21 * 60 + 30, [], morning)).toEqual({ start: at(21, 30), end: at(22) });
+    expect(bookableRange(day, 21 * 60, 21 * 60, [], at(21, 50))).toBeNull();
+  });
+
+  it("finds the first free hour for keyboard booking", () => {
+    expect(firstBookableRange(day, busy, at(8, 40))).toEqual({ start: at(8, 45), end: at(9) });
+    expect(firstBookableRange(day, [], at(21, 50))).toBeNull();
+  });
+});
