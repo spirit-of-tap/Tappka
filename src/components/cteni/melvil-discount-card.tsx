@@ -45,7 +45,7 @@ export function MelvilDiscountCard() {
         <div className="absolute -left-20 -top-28 size-72 rounded-full bg-primary/10 blur-3xl" />
       </div>
 
-      <div className="relative grid sm:grid-cols-[1fr_auto]">
+      <div className="relative grid grid-cols-1 sm:grid-cols-[1fr_auto]">
         <div className="flex flex-col gap-4 p-5 sm:p-6">
           <div className="flex items-center gap-3">
             <Image
@@ -56,7 +56,7 @@ export function MelvilDiscountCard() {
               className="h-auto w-24 shrink-0 dark:brightness-0 dark:invert sm:w-28"
             />
             <span className="h-6 w-px bg-border" aria-hidden="true" />
-            <span className="whitespace-nowrap text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Partnerská sleva
             </span>
           </div>
