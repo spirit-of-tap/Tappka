@@ -64,17 +64,22 @@ export function sessionStudyYear(
   )
 }
 
-/** Per team, the school year in which it was in `year`; the DB equivalent of the `sessionStudyYear` check. */
+/**
+ * The DB equivalent of the `sessionStudyYear` check: teams grouped by cohort, each
+ * with the school year in which that cohort was in `year`.
+ */
 export function studyYearWindows(teams: TeamCohort[], year: number, now: string): TeamWindow[] {
   const currentStartYear = schoolYearStartYearFor(now.slice(0, MONTH_KEY_LENGTH))
-  return teams.map((team) => {
+  const teamIdsBySchoolYear = new Map<number, string[]>()
+  for (const team of teams) {
     const schoolYear = normalizeOnboardingYear(team.onboardingYear, currentStartYear) + year - 1
-    return {
-      teamId: team.id,
-      from: `${schoolYear}${SCHOOL_YEAR_START_SUFFIX}`,
-      to: `${schoolYear + 1}${SCHOOL_YEAR_START_SUFFIX}`,
-    }
-  })
+    teamIdsBySchoolYear.set(schoolYear, [...(teamIdsBySchoolYear.get(schoolYear) ?? []), team.id])
+  }
+  return [...teamIdsBySchoolYear].map(([schoolYear, teamIds]) => ({
+    teamIds,
+    from: `${schoolYear}${SCHOOL_YEAR_START_SUFFIX}`,
+    to: `${schoolYear + 1}${SCHOOL_YEAR_START_SUFFIX}`,
+  }))
 }
 
 async function listTeamCohorts(supabase: SupabaseClient<Database>): Promise<TeamCohort[]> {
@@ -106,9 +111,9 @@ export function matchesDiscoverFilter(
 }
 
 /**
- * One batch of Objevovat results. Search resolves its id set first and pages
- * through the filtered matches; browsing pages raw rows so a filter that hides
- * a whole batch never stalls the scroll.
+ * One batch of Objevovat results. Filters run in SQL where they can; search pages
+ * through its filtered id matches, browsing pages raw rows so dropping full
+ * sessions never stalls the scroll.
  */
 export async function listDiscoverPage(
   supabase: SupabaseClient<Database>,

@@ -99,24 +99,27 @@ describe("studyYearWindows", () => {
     { id: "t1", onboardingYear: 2024 },
     { id: "t2", onboardingYear: 2 },
     { id: "t3", onboardingYear: null },
+    { id: "t4", onboardingYear: 2026 },
   ]
 
-  it("covers exactly the school year in which each team was in that ročník", () => {
+  it("groups teams of one cohort into a single window", () => {
     expect(studyYearWindows(teams, 2, NOW)).toEqual([
-      { teamId: "t1", from: "2025-09-01T00:00:00.000Z", to: "2026-09-01T00:00:00.000Z" },
-      { teamId: "t2", from: "2026-09-01T00:00:00.000Z", to: "2027-09-01T00:00:00.000Z" },
-      { teamId: "t3", from: "2027-09-01T00:00:00.000Z", to: "2028-09-01T00:00:00.000Z" },
+      { teamIds: ["t1"], from: "2025-09-01T00:00:00.000Z", to: "2026-09-01T00:00:00.000Z" },
+      { teamIds: ["t2"], from: "2026-09-01T00:00:00.000Z", to: "2027-09-01T00:00:00.000Z" },
+      { teamIds: ["t3", "t4"], from: "2027-09-01T00:00:00.000Z", to: "2028-09-01T00:00:00.000Z" },
     ])
   })
 
   it("agrees with sessionStudyYear on both sides of every boundary", () => {
     for (const year of [1, 2, 3]) {
       for (const window of studyYearWindows(teams, year, NOW)) {
-        const onboarding = teams.find((team) => team.id === window.teamId)?.onboardingYear
         const lastMoment = new Date(Date.parse(window.to) - 1).toISOString()
-        expect(sessionStudyYear(window.from, onboarding, NOW)).toBe(year)
-        expect(sessionStudyYear(lastMoment, onboarding, NOW)).toBe(year)
-        expect(sessionStudyYear(window.to, onboarding, NOW)).not.toBe(year)
+        for (const teamId of window.teamIds) {
+          const onboarding = teams.find((team) => team.id === teamId)?.onboardingYear
+          expect(sessionStudyYear(window.from, onboarding, NOW)).toBe(year)
+          expect(sessionStudyYear(lastMoment, onboarding, NOW)).toBe(year)
+          expect(sessionStudyYear(window.to, onboarding, NOW)).not.toBe(year)
+        }
       }
     }
   })

@@ -37,7 +37,7 @@ export interface ListSessionsFilter {
 }
 
 export interface TeamWindow {
-  teamId: string
+  teamIds: string[]
   /** Inclusive ISO start of the window. */
   from: string
   /** Exclusive ISO end of the window. */
@@ -76,7 +76,7 @@ export async function listSessions(
     if (filter.teamWindows) {
       query = query.or(
         filter.teamWindows
-          .map((w) => `and(team_id.eq.${w.teamId},starts_at.gte.${w.from},starts_at.lt.${w.to})`)
+          .map((w) => `and(team_id.in.(${w.teamIds.join(",")}),starts_at.gte.${w.from},starts_at.lt.${w.to})`)
           .join(","),
       )
     }
