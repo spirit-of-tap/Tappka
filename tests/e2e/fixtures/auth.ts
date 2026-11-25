@@ -354,9 +354,11 @@ export async function cleanupTestData(): Promise<void> {
 }
 
 /** Grants beta access, needed for pages gated on profile.beta_access_granted_at. */
+/** Grants beta access in cohort B, the cohort every beta feature is open to (see BETA_FEATURES). */
 export async function grantBetaAccess(profileId: string): Promise<void> {
   await restFetch(`/profiles?id=eq.${profileId}`, "PATCH", {
     beta_access_granted_at: new Date().toISOString(),
+    beta_cohort: "B",
   });
 }
 
