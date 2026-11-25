@@ -8,6 +8,7 @@ import { ConsentBanner } from "./consent-banner";
 
 vi.mock("posthog-js", () => ({
   default: {
+    __loaded: true,
     get_explicit_consent_status: vi.fn(),
     opt_in_capturing: vi.fn(),
     opt_out_capturing: vi.fn(),
@@ -61,5 +62,16 @@ describe("ConsentBanner", () => {
     expect(
       screen.getByRole("link", { name: /jak chráníme soukromí/i }),
     ).toHaveAttribute("href", "/ochrana-soukromi");
+  });
+
+  it("stays hidden when PostHog is not initialised", () => {
+    mockedPosthog.get_explicit_consent_status.mockReturnValue("pending");
+    mockedPosthog.__loaded = false;
+    try {
+      render(<ConsentBanner />);
+      expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      mockedPosthog.__loaded = true;
+    }
   });
 });

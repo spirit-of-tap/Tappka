@@ -130,11 +130,11 @@ test.describe("essay image upload", () => {
     await expect(page.locator(".ProseMirror img")).toHaveCount(0);
   });
 
-  test("never autosaves a blob URL for an upload still in flight", async ({ page, context }) => {
+  test("never saves a blob URL for an upload still in flight", async ({ page, context }) => {
     await setAuthCookie(context, cookieValue);
 
-    // Never resolves: the placeholder stays in the document across several
-    // autosave cycles, which is exactly when a blob URL could leak into the DB.
+    // Never resolves: the placeholder stays in the document while the essay is
+    // saved, which is exactly when a blob URL could leak into the DB.
     await page.route("**/api/essays/upload-image", () => {});
 
     const savedBodies: string[] = [];
@@ -150,21 +150,24 @@ test.describe("essay image upload", () => {
     await page.getByLabel("Název eseje").fill("Esej s obrázkem");
     await page.locator(".ProseMirror").click();
     await page.keyboard.type("Text před obrázkem.");
-    await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 20_000 });
+    await page.getByRole("button", { name: "Uložit" }).click();
+    await expect(page).toHaveURL(/\/upravit$/, { timeout: 15_000 });
+    await expect(page.getByText(/Uloženo/)).toBeVisible({ timeout: 15_000 });
 
     await page.evaluate(PICK_IMAGE);
     await expect(page.locator(".ProseMirror img[data-uploading]")).toBeVisible({ timeout: 15_000 });
 
-    // Keep typing so autosave definitely runs with the placeholder present.
     await page.locator(".ProseMirror").click();
     await page.keyboard.press("End");
     await page.keyboard.type(" A ještě text po obrázku.");
-    await page.waitForResponse(
+    const patched = page.waitForResponse(
       (res) => res.url().includes("/api/essays/") && res.request().method() === "PATCH",
       { timeout: 20_000 },
     );
+    await page.getByRole("button", { name: "Uložit" }).click();
+    await patched;
 
-    expect(savedBodies.length).toBeGreaterThan(0);
+    expect(savedBodies.length).toBeGreaterThan(1);
     for (const body of savedBodies) {
       expect(body).not.toContain("blob:");
     }
