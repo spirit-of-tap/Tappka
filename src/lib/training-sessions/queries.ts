@@ -103,16 +103,19 @@ export async function listViewerSessions(
   viewer: SessionViewer,
   filter: Omit<ListSessionsFilter, "teamId" | "ids">,
 ): Promise<TrainingSessionListItem[]> {
-  const { data, error } = await supabase
-    .from("training_session_guests")
-    .select("training_session_id")
-    .eq("profile_id", viewer.profileId)
-  if (error) throw error
-  const joinedIds = (data ?? []).map((g) => g.training_session_id)
+  const listJoined = async (): Promise<TrainingSessionListItem[]> => {
+    const { data, error } = await supabase
+      .from("training_session_guests")
+      .select("training_session_id")
+      .eq("profile_id", viewer.profileId)
+    if (error) throw error
+    const joinedIds = (data ?? []).map((g) => g.training_session_id)
+    return joinedIds.length > 0 ? listSessions(supabase, { ...filter, ids: joinedIds }) : []
+  }
 
   const [teamSessions, joinedSessions] = await Promise.all([
     viewer.teamId ? listSessions(supabase, { ...filter, teamId: viewer.teamId }) : [],
-    joinedIds.length > 0 ? listSessions(supabase, { ...filter, ids: joinedIds }) : [],
+    listJoined(),
   ])
   const unique = new Map([...teamSessions, ...joinedSessions].map((s) => [s.id, s]))
   return [...unique.values()]
